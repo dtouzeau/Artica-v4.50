@@ -1,20 +1,17 @@
-<br>This section help you to add words.
- if these words watchs emails will be filtered and consider as REJECTED
-</br>
-<bt_filter_headers>Subjects rules</bt_filter_headers>
-<bt_filter_headers_from>Mail from rules</bt_filter_headers_from>
-<bt_mime_attachments>attachments rules</bt_mime_attachments>
-<extension_list_title>filtered file attachments extension list</extension_list_title>
-<from_rules_explain>
-This feature allows you to block mails with specified words in sender's address
-</from_rules_explain>
-<js_del_extension>Delete this extension filter</js_del_extension>
+<br>In diesem Bereich k&#246;nnen Sie W&#246;rter hinzuf&#252;gen.
+ Wenn diese W&#246;rter in E-Mails erkannt werden, werden diese gefiltert und als ABGELEHNT betrachtet</br>
+<bt_filter_headers>Betreffregeln</bt_filter_headers>
+<bt_filter_headers_from>Absenderregeln</bt_filter_headers_from>
+<bt_mime_attachments>Anhangsregeln</bt_mime_attachments>
+<extension_list_title>Liste der gefilterten Dateianhang-Erweiterungen</extension_list_title>
+<from_rules_explain>Mit dieser Funktion k&#246;nnen Sie E-Mails mit bestimmten W&#246;rtern in der Absenderadresse blockieren</from_rules_explain>
+<js_del_extension>Diesen Erweiterungsfilter l&#246;schen</js_del_extension>
 <js_del_from>Diese Regel l%C3%B6schen</js_del_from>
-<js_del_subject>Delete this subject rule</js_del_subject>
-<mail_from_add>Add words rule for mail from mails</mail_from_add>
-<mime_attachments_add>Set the extension name like :exe or dll or bat</mime_attachments_add>
-<mime_attachments_explain>This feature allows you to block mails with specified attached file extension.</mime_attachments_explain>
-<postfix_error>Give the postfix error when pattern is matched</postfix_error>
-<subject_add>Add words rule for mail subjects</subject_add>
-<title_header>Subjects rules</title_header>
-<title_mime>attached files filtering</title_mime>
+<js_del_subject>Diese Betreffregel l&#246;schen</js_del_subject>
+<mail_from_add>Wortregel f&#252;r die Absenderadresse hinzuf&#252;gen</mail_from_add>
+<mime_attachments_add>Geben Sie den Erweiterungsnamen an, z. B. :exe oder dll oder bat</mime_attachments_add>
+<mime_attachments_explain>Mit dieser Funktion k&#246;nnen Sie E-Mails mit der angegebenen Dateierweiterung im Anhang blockieren.</mime_attachments_explain>
+<postfix_error>Geben Sie den Postfix-Fehler an, wenn das Muster &#252;bereinstimmt</postfix_error>
+<subject_add>Wortregel f&#252;r E-Mail-Betreffs hinzuf&#252;gen</subject_add>
+<title_header>Betreffregeln</title_header>
+<title_mime>Filterung angeh&#228;ngter Dateien</title_mime>

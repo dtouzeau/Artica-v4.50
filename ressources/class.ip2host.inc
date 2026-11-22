@@ -18,9 +18,9 @@ class ip2host{
     public function __construct($ip=null){
         if(!is_null($ip)) {
             $IpClass = new IP();
-            if ($IpClass->isIPv4($ip)) {
+            if ($IpClass->isIPv4($ip) || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
                 $this->ipaddr = $ip;
-                if ($this->ipaddr == "127.0.0.1") {
+                if ($this->ipaddr == "127.0.0.1" || $this->ipaddr == "::1") {
                     $this->output = $ip;
                     return;
                 }
@@ -55,7 +55,7 @@ class ip2host{
 
         $modsec=new modesctools();
         $MAIN=$modsec->hostinfo($ipaddr);
-        if($modsec->hostid>0){
+        if(!empty($modsec->hostid)){
             $MAIN["continent"]=$modsec->continent;
             $MAIN["continentCode"]="N/A";
             $MAIN["country"]=$modsec->country;
@@ -90,7 +90,7 @@ class ip2host{
         $available[]="http://ip-info-gcp.ff.avast.com/v2/info?ip=%addr";
         $urlindex=rand(0,count($available)-1);
         $url=$available[$urlindex];
-        $url=str_replace("%addr",$ipaddr,$url);
+        $url=str_replace("%addr",rawurlencode($ipaddr),$url);
         if($GLOBALS["VERBOSE"]) {VERBOSE("URL=$urlindex -> $url",__LINE__);}
 
         $curl=new ccurl($url);
@@ -137,7 +137,15 @@ class ip2host{
         if($MAIN["ipaddr"]=="0.0.0.0"){
             return false;
         }
-        $long=ip2long($MAIN["ipaddr"]);
+        // Adresse validee (IPv4 ou IPv6) et mise sous forme canonique
+        if(!filter_var($MAIN["ipaddr"], FILTER_VALIDATE_IP)){
+            return false;
+        }
+        $isV6=(strpos($MAIN["ipaddr"],":")!==false);
+        $MAIN["ipaddr"]=inet_ntop(inet_pton($MAIN["ipaddr"]));
+        // hton : entier pour l'IPv4, NULL pour l'IPv6 (colonne UNIQUE : jamais 0)
+        $long=null;
+        if(!$isV6){$long=ip2long($MAIN["ipaddr"]);}
 
         $q=new postgres_sql();
 
@@ -145,10 +153,10 @@ class ip2host{
         $VALS[]="'".$MAIN["ipaddr"]."'";
 
         $KEYS[]="hton";
-        $VALS[]=intval($long);
+        $VALS[]=($isV6?"NULL":intval($long));
 
         $KEYS[]="hostname";
-        $VALS[]="'".gethostbyaddr($MAIN["ipaddr"])."'";
+        $VALS[]="'".str_replace("'","`",gethostbyaddr($MAIN["ipaddr"]))."'";
 
         foreach ($MAIN as $key=>$val){
             if(!is_null($val)){
@@ -196,6 +204,9 @@ $sql="INSERT INTO hotstinfos (".@implode(",",$KEYS).")
 
     private function is_local_net($ipaddr):bool
     {
+        if (strpos($ipaddr, ":") !== false) {
+            return IP::isLocalIPv6($ipaddr);
+        }
         if ($this->ip_in_range($ipaddr, "127.0.0.0/8")) {
             return true;
         }

@@ -1,22 +1,21 @@
-<build>Build settings</build>
-<build_domain>Build domain</build_domain>
-<build_group>Build Group</build_group>
-<build_org>Build organization</build_org>
-<build_user>Create user</build_user>
-<domain_iptext>Is this domain is a local domain ? If yes, just click on next button.[br]If this domain must be relayed to a server,put it the name or the IP address of the target server</domain_iptext>
-<domain_text>Define here the SMTP domain that will be used for your new organization.[br]The value should an Internet domain eg "domain.tld"</domain_text>
-<group_text>Now define a groupe name that will store your users, your users should be eMail users, Samba users, ftp users or Internet users</group_text>
+<build>Criar configura&#231;&#245;es</build>
+<build_domain>Criar dom&#237;nio</build_domain>
+<build_group>Criar grupo</build_group>
+<build_org>Criar organiza&#231;&#227;o</build_org>
+<build_user>Criar usu&#225;rio</build_user>
+<domain_iptext>Este dom&#237;nio &#233; um dom&#237;nio local? Se sim, basta clicar no bot&#227;o Pr&#243;ximo.[br]Se este dom&#237;nio tiver de ser retransmitido para um servidor, indique o nome ou o endere&#231;o IP do servidor de destino</domain_iptext>
+<domain_text>Defina aqui o dom&#237;nio SMTP que ser&#225; usado para a sua nova organiza&#231;&#227;o.[br]O valor deve ser um dom&#237;nio de Internet ex. &quot;domain.tld&quot;</domain_text>
+<group_text>Defina agora um nome de grupo que armazenar&#225; seus usu&#225;rios; seus usu&#225;rios devem ser usu&#225;rios de e-mail, usu&#225;rios Samba, usu&#225;rios ftp ou usu&#225;rios de Internet</group_text>
 <launch>Iniciar</launch>
-<org_text>The first parameter is to set an Organization.[br]An Organization is an entity that store users, groups and mail domains.[br]
-Give the name of your first organization...
-</org_text>
-<rebuild_modules>Rebuild Postfix Modules</rebuild_modules>
-<rebuild_postfix>Rebuild Postfix</rebuild_postfix>
-<relay_type>Relay type</relay_type>
-<uid>User id</uid>
-<user>First user</user>
-<user_text>Define here the first user that will be the recipient of your new domain. In this case, you can test the settings using this user.[br]
-Do not add the domain of this user just give an UID (first letters before @).[br]
-Give the password of this new user, it will be used if you have installed cyrus has an IMAP/POP3 mailbox server</user_text>
-<welcome>Welcome on Artica Postfix</welcome>
-<welcome_text>This section will help you to define main settings on Artica-Postfix in order to make it in production mode.[br]</welcome_text>
+<org_text>O primeiro par&#226;metro &#233; definir uma Organiza&#231;&#227;o.[br]Uma Organiza&#231;&#227;o &#233; uma entidade que armazena usu&#225;rios, grupos e dom&#237;nios de e-mail.[br]
+Indique o nome da sua primeira organiza&#231;&#227;o...</org_text>
+<rebuild_modules>Reconstruir os m&#243;dulos do Postfix</rebuild_modules>
+<rebuild_postfix>Reconstruir o Postfix</rebuild_postfix>
+<relay_type>Tipo de retransmiss&#227;o</relay_type>
+<uid>ID do usu&#225;rio</uid>
+<user>Primeiro usu&#225;rio</user>
+<user_text>Defina aqui o primeiro usu&#225;rio que ser&#225; o destinat&#225;rio do seu novo dom&#237;nio. Neste caso, voc&#234; pode testar as configura&#231;&#245;es usando este usu&#225;rio.[br]
+N&#227;o adicione o dom&#237;nio deste usu&#225;rio, apenas indique um UID (primeiras letras antes do @).[br]
+Indique a senha deste novo usu&#225;rio, ela ser&#225; usada se voc&#234; tiver instalado o cyrus como servidor de caixas de correio IMAP/POP3</user_text>
+<welcome>Bem-vindo ao Artica Postfix</welcome>
+<welcome_text>Esta se&#231;&#227;o ajudar&#225; voc&#234; a definir as configura&#231;&#245;es principais do Artica-Postfix para coloc&#225;-lo em modo de produ&#231;&#227;o.[br]</welcome_text>

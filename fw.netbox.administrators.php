@@ -32,7 +32,8 @@ function delete_admin_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $id=intval($_GET["delete"]);
-    $username=$_GET["account"];
+    // Pentest 2026-11-04 : account etait recopie sans encodage dans la page (XSS).
+    $username=req_html($_GET["account"]);
     $md=$_GET["md"];
     return $tpl->js_confirm_delete($username,"delete",$id,"$('#$md').remove()");
 }

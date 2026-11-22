@@ -5,8 +5,6 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 if(isset($_GET["service-status"])){service_status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_POST["SambaInterfaces"])){save_config();exit;}
-if(isset($_POST["SambaWorkgroup"])){save_config();exit;}
 if(isset($_GET["flat-config"])){flat_config();exit;}
 if(isset($_GET["link-js"])){link_js();exit;}
 if(isset($_GET["link-popup"])){link_popup();exit;}
@@ -45,7 +43,8 @@ function add_volume_js(){
     return $tpl->js_dialog2("{storage}:{ADD_VG}","$page?addvolume-popup=yes");
 }
 function link_btrfs():bool{
-    $dev=$_GET["link-btrfs"];
+    // Pentest 2026-11-04 : link-btrfs etait recopie sans encodage dans la page (XSS).
+    $dev=preg_replace('#[^A-Za-z0-9/_.:+@-]#','',(string)$_GET["link-btrfs"]);
     $tpl=new template_admin();
     $page=CurrentPageName();
     $jsafter=$tpl->framework_buildjs("/btrfs/link/$dev","btrfs.progress","btrfs.log",

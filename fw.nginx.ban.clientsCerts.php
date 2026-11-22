@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
 if(isset($_GET["service-js"])){service_js();exit;}
@@ -58,37 +60,16 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
 
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
+
 function rule_enable():bool{
     $ID=intval($_GET["pattern-enable"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
-    $ligne = $q->mysqli_fetch_array("SELECT * FROM nginx_clients_bans WHERE ID=$ID");
-    $enabled=intval($ligne["enabled"]);
-    $CLientName=$ligne["ClientName"];
-    $serviceid=$ligne["serviceid"];
+    $ligne=fetch_clients_ban_by_id($ID);
+    $enabled=isset($ligne["enabled"])?intval($ligne["enabled"]):0;
+    $CLientName=isset($ligne["ClientName"])?$ligne["ClientName"]:"#$ID";
+    $serviceid=isset($ligne["serviceid"])?intval($ligne["serviceid"]):0;
 
-    if($enabled==0){
-        $enabled=1;
-    }else{
-        $enabled=0;
-    }
+    $enabled=($enabled==0)?1:0;
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"nginx_clients_bans","set"=>array("enabled"=>"$enabled"),"where"=>array("ID"=>"$ID")));
     $get_servicename=get_servicename($serviceid);
     echo refresh_global_no_close($serviceid);
@@ -118,9 +99,7 @@ function rule_popup():bool{
     $ligne=array();
 
     if($ruleid>0) {
-        $q=new lib_sqlite(NginxGetDB());
-        $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
-        $ligne = $q->mysqli_fetch_array("SELECT * FROM nginx_clients_bans WHERE ID=$ruleid");
+        $ligne=fetch_clients_ban_by_id($ruleid);
         $bt="{apply}";
     }
     $form[]=$tpl->field_hidden("ruleid",$ruleid);
@@ -283,39 +262,19 @@ function popup_table2():bool{
     $search=$_GET["search"];
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap colspan='2'>{clients}</th>
         	<th nowrap>{website}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
 ";
-    $FILTER=false;
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
-    $sq[]="SELECT * FROM nginx_clients_bans";
-
-
-    if(strlen($search)>1){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $sq[]="WHERE ClientName LIKE '$search'";
-        $FILTER=true;
-    }
-
-    if($serviceid>0){
-        if($FILTER){
-            $sq[]="AND serviceid=$serviceid";
-        }else{
-            $sq[]="WHERE serviceid=$serviceid";
-        }
-    }
-    $results=$q->QUERY_SQL(@implode(" ",$sq));
+    $results=fetch_clients_bans_search($serviceid,$search);
 
     $c=0;
 
@@ -337,24 +296,24 @@ function popup_table2():bool{
         $enable=$tpl->icon_check($enable,"Loadjs('$page?pattern-enable=$ID&serviceid=$serviceid')","","AsWebMaster");
         $delete=$tpl->icon_delete("Loadjs('$page?pattern-remove=$ID&serviceid=$serviceid&md=$md')","AsWebMaster");
 
+        // Pentest 2026-11-04 : nom du site (donnee stockee) affiche sans encodage (XSS stockee).
         $service=get_servicename($ligne["serviceid"]);
         $ClientName=$tpl->td_href($ClientName,"","Loadjs('$page?rule-js=$ID&serviceid=$serviceid&function=$function')");
 
     $html[]="<tr id='$md'>
                 <td style='width:1%' nowrap><i class='".ico_user." fa-2x'></i></td>
 				<td style='width:100%;font-size:18px'>$ClientName</td>
-				<td style='width:1%;font-size:18px' nowrap >$service</td>
+				<td style='width:1%;font-size:18px' nowrap >".req_html($service)."</td>
 				<td style='width:1%' nowrap>$enable</td>
 				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }
 
-        $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('banclients-nginx-$serviceid','$page?top-buttons=$serviceid&function=$function');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
         }

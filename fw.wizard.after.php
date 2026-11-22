@@ -162,7 +162,7 @@ function use_entr_save(){
 	$sock->SaveConfigFile(base64_encode(serialize($LicenseInfos)), "LicenseInfos");
 	$sock->SET_INFO("HideCorporateFeatures", 0);
 	
-	if(!invalid_mail($_POST["mail"])){echo "<br>{$_POST["mail"]} INVALID !!!!! ";return;}
+	if(!invalid_mail($_POST["mail"])){echo "<br>".req_html($_POST["mail"])." INVALID !!!!! ";return;}
 	$sock->SET_INFO("IsWizardExecuted", 1);
 	$sock->SET_INFO("LicenseWasRequested", 1);
 	

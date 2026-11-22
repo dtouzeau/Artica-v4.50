@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 
 
 
@@ -28,11 +29,8 @@ function openvpn(){
 	if($EnableOpenVPNServer==1){
         $clientsDir=$GLOBALS["CLASS_UNIX"]->dirdir("/etc/artica-postfix/openvpn/clients");
 		writelogs(count($clientsDir)." openvpn client session(s)",__FUNCTION__,__FILE__,__LINE__);
-        if(count($clientsDir)>0){
-            $nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-            $cmd="$nohup {$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.openvpn.php --wakeup-clients >/dev/null 2>&1 &";
-            shell_exec2(trim($cmd));
-        }
+        // OpenVPN client wake-up was a no-op legacy shell-out (exec.openvpn.php had no
+        // --wakeup-clients handler). Maintenance now lives in the Go daemon cron.
     }
 	
 	$ini=new iniFrameWork();
@@ -41,7 +39,7 @@ function openvpn(){
     $l[]="master_version=$openvpn_version";
     $l[]="service_disabled=$EnableOPenVPNServerMode";
 
-	if(!is_file("/etc/artica-postfix/settings/Daemons/ArticaOpenVPNSettings")){
+	if(!artica_setting_exists("ArticaOpenVPNSettings")){
         return @implode("\n",$l);
     }
 
@@ -73,42 +71,18 @@ function openvpn(){
 	
 	
 	if(!$GLOBALS["DISABLE_WATCHDOG"]){
-		$pidtime="/etc/artica-postfix/pids/exec.openvpn.php.stats.time";
-		if($GLOBALS["CLASS_UNIX"]->file_time_min($pidtime)>4){
-			$nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-			$cmd="$nohup {$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.openvpn.php --stats >/dev/null 2>&1 &";
-			shell_exec2(trim($cmd));
-		}
-		
-		
-		$pidtime="/etc/artica-postfix/pids/exec.openvpn.php.GenStats.time";
-		if($GLOBALS["CLASS_UNIX"]->file_time_min($pidtime)>9){
-			$nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-			$cmd="$nohup {$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.openvpn.php --genstats >/dev/null 2>&1 &";
-			shell_exec2(trim($cmd));
-		}
-		
-		$pidTime="/etc/artica-postfix/pids/exec.openvpn.client-connect.php.xrun.time";
-		if($GLOBALS["CLASS_UNIX"]->file_time_min($pidtime)>4){
-			$nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-			$cmd="$nohup {$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.openvpn.client-connect.php >/dev/null 2>&1 &";
-			shell_exec2(trim($cmd));
-		}
-		
+		// OpenVPN server stats (--stats/--genstats) are now collected in-daemon by the Go cron
+		// (openvpn.ServerMetricsBuild, schedule_localconfig.go). The connection-event drain
+		// (exec.openvpn.client-connect.php / /home/openvpn-cnx) is obsolete: connect/disconnect
+		// are logged directly via the /openvpn/connect|disconnect REST webhooks (LogConnection).
+
 
 		
 	}
 	
 	
 
-	$pidtime="/etc/artica-postfix/pids/exec.openvpn.php.wakeup_server_mode.time";
-	if(!$GLOBALS["DISABLE_WATCHDOG"]){
-		if($GLOBALS["CLASS_UNIX"]->file_time_min($pidtime)>2){
-			$nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-			$cmd="$nohup {$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.openvpn.php --wakeup-server >/dev/null 2>&1 &";
-			shell_exec2(trim($cmd));
-		}
-	}
+	// --wakeup-server was a no-op legacy shell-out (exec.openvpn.php had no handler); removed.
 
 	$l[]="running=1";
 	$l[]=GetMemoriesOf($master_pid,"APP_OPENVPN");

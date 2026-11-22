@@ -187,7 +187,7 @@ function build_interface_strip(array $iface):string{
     if(!empty($mac)){
         $h[]="    <div class='col-md-2 col-sm-4' style='margin-bottom:5px'>";
         $h[]="      <span style='color:#999;font-size:10px;text-transform:uppercase'>MAC</span><br>";
-        $h[]="      <span style='font-family:monospace;font-size:12px'>".htmlspecialchars($mac)."</span>";
+        $h[]="      <span style='font-size:12px'>".htmlspecialchars($mac)."</span>";
         $h[]="    </div>";
     }
 
@@ -352,7 +352,7 @@ function build_charts_html(array $metrics,string $range,string $iface_safe,int $
     }
 
     // ── Chart.js Script ──
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[]="";
     $h[]="<script>";
 
     // formatBytes JS helper

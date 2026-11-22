@@ -1,4 +1,6 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 
 	class squid_parents{
@@ -56,7 +58,7 @@
             $never_direct_PP=array();
 			$EnableParentProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableParentProxy"));
 			$PrivoxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PrivoxyEnabled"));
-            if(!is_file("/etc/artica-postfix/settings/Daemons/SquidCacheLevel")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidCacheLevel", 2);}
+            if(!artica_setting_exists("SquidCacheLevel")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidCacheLevel", 2);}
             if($PrivoxyEnabled==1){$EnableParentProxy=0;}
 			$f=array();
 			$HyperCache="\n";
@@ -66,9 +68,10 @@
 				return true;
 			}
 
-            $sql="SELECT * FROM squid_parents_acls WHERE enabled=1 order by zorder";
-			$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-			$results=$q->QUERY_SQL($sql);
+            // acls.db is API-only — enabled squid_parents_acls via the acls backend.
+			$raw=acls_api_get("/proxy/parents/acls");
+			$results=array();
+			if(is_array($raw)){foreach($raw as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"]??0)!=1){continue;}$results[]=array("aclid"=>intval($rr["id"]??0),"rulename"=>(string)($rr["ruleName"]??""),"always_direct"=>intval($rr["alwaysDirect"]??0),"never_direct"=>intval($rr["neverDirect"]??0),"proxies"=>(string)($rr["proxies"]??""),"proxyproxy"=>intval($rr["proxyProxy"]??0),"use_lb"=>intval($rr["useLb"]??0));}}
 			$squid_acls_groups=new squid_acls_groups();
             $always_direct_rules=array();
             $PP_PARENTS=array();

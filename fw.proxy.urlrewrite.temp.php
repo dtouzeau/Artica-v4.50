@@ -2,6 +2,9 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 $users=new usersMenus();
 if(!$users->AsDansGuardianAdministrator){
@@ -10,7 +13,6 @@ if(!$users->AsDansGuardianAdministrator){
     exit();
 }
 
-if(isset($_GET["service-js"])){service_js();exit;}
 if(isset($_GET["popup-main"])){popup_main();exit;}
 if(isset($_GET["popup-table"])){popup_table();exit;}
 if(isset($_GET["popup-table2"])){popup_table2();exit;}
@@ -51,12 +53,25 @@ function compile_js_progress($ID,$final=null):string{
 }
 
 function rule_remove():bool{
+    $tpl        = new template_admin();
     $md=$_GET["md"];
     $ID=intval($_GET["pattern-remove"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT pattern FROM url_rewrite_temp WHERE ID=$ID");
-    $pattern=$ligne["pattern"];
-    $q->QUERY_SQL("DELETE FROM url_rewrite_temp WHERE ID=$ID");
+
+    // Fetch current row to get pattern for audit log
+    $rows = acls_api_get("/proxy/url-rewrite/temp");
+    $pattern = "";
+    if(is_array($rows)){
+        foreach($rows as $r){
+            if(intval($r["id"])==$ID){ $pattern=$r["pattern"]; break; }
+        }
+    }
+
+    list($ok,$data) = acls_api_send("DELETE", "/proxy/url-rewrite/temp/$ID");
+    if(!$ok){
+        echo $tpl->div_error(htmlspecialchars($data));
+        return false;
+    }
+
     echo "$('#$md').remove();\n";
     echo refresh_global();
     return admin_tracks("Remove url-filtering exclusion $pattern");
@@ -65,15 +80,24 @@ function rule_remove():bool{
 
 function rule_enable():bool{
     $ID=intval($_GET["pattern-enable"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT pattern,enabled FROM url_rewrite_temp WHERE ID=$ID");
-    $pattern=$ligne["pattern"];
-    if(intval($ligne["enabled"])==1){
-       $q->QUERY_SQL("UPDATE url_rewrite_temp SET enabled=0 WHERE ID=$ID");
-    }else{
-        $q->QUERY_SQL("UPDATE url_rewrite_temp SET enabled=1 WHERE ID=$ID");
+
+    // Fetch current row to read enabled state
+    $rows = acls_api_get("/proxy/url-rewrite/temp");
+    $pattern = "";
+    $currentEnabled = 0;
+    if(is_array($rows)){
+        foreach($rows as $r){
+            if(intval($r["id"])==$ID){
+                $pattern=$r["pattern"];
+                $currentEnabled=intval($r["enabled"]);
+                break;
+            }
+        }
     }
-    
+
+    $newEnabled = ($currentEnabled==1) ? 0 : 1;
+    acls_api_send("PUT", "/proxy/url-rewrite/temp/$ID", ["enabled"=>$newEnabled]);
+
     echo refresh_global();
     return admin_tracks("Enable/disable web-filtering exclusion $pattern");
 }
@@ -82,12 +106,26 @@ function rule_popup():bool{
     $ruleid     = intval($_GET["popup-rule"]);
     $tpl        = new template_admin();
     $bt="{add}";
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM url_rewrite_temp WHERE ID=$ruleid");
+
+    $ligne = [];
     if($ruleid>0){
         $bt="{apply}";
+        $rows = acls_api_get("/proxy/url-rewrite/temp");
+        if(is_array($rows)){
+            foreach($rows as $r){
+                if(intval($r["id"])==$ruleid){
+                    $ligne = [
+                        "maxmins"  => intval($r["maxMins"]),
+                        "pattern"  => $r["pattern"],
+                        "finaltime"=> intval($r["finalTime"]),
+                    ];
+                    break;
+                }
+            }
+        }
     }
-    if($ligne["maxmins"]==0){$ligne["maxmins"]=15;}
+
+    if(intval($ligne["maxmins"])==0){$ligne["maxmins"]=15;}
     $form[]=$tpl->field_hidden("ruleid",$ruleid);
     $form[]=$tpl->field_numeric("maxmins","{ttl} ({minutes})",$ligne["maxmins"]);
     $form[]=$tpl->field_text("pattern","{website}",$ligne["pattern"],true);
@@ -128,21 +166,27 @@ function rule_save():bool{
     $pattern=trim($_POST["pattern"]);
     $maxmins=intval($_POST["maxmins"]);
     if($maxmins<5){$maxmins=5;}
+    $finaltime=time()+$maxmins*60;
 
     if($ruleid==0){
-        $created=time();
-        $finaltime=time()+$maxmins*60;
-        $sql="INSERT INTO url_rewrite_temp (created,pattern,enabled,maxmins,finaltime) VALUES ('$created','$pattern',1,'$maxmins','$finaltime');)";
-
+        $body = [
+            "pattern"   => $pattern,
+            "maxmins"   => $maxmins,
+            "finaltime" => $finaltime,
+            "enabled"   => 1,
+        ];
+        list($ok,$data) = acls_api_send("POST", "/proxy/url-rewrite/temp", $body);
     }else{
-        $finaltime=time()+$maxmins*60;
-        $sql="UPDATE url_rewrite_temp SET pattern='$pattern', maxmins='$maxmins',finaltime=$finaltime WHERE ID=$ruleid;";
+        $body = [
+            "pattern"   => $pattern,
+            "maxMins"   => $maxmins,
+            "finalTime" => $finaltime,
+        ];
+        list($ok,$data) = acls_api_send("PUT", "/proxy/url-rewrite/temp/$ruleid", $body);
     }
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
+    if(!$ok){
+        echo $tpl->post_error(htmlspecialchars($data));
         return false;
     }
 
@@ -184,7 +228,7 @@ function top_buttons():bool{
     $function=$_GET["function"];
     $tpl        = new template_admin();
     $page       = CurrentPageName();
-   
+
     $topbuttons[] = array("Loadjs('$page?rule-js=0&function=$function&Mainfunc=$Mainfunc')", ico_plus, "{new_rule}");
     $topbuttons[] = array("Loadjs('$page?OnlyActive=yes&function=$function&Mainfunc=$Mainfunc')", ico_filter, "{OnlyActive}");
     $topbuttons[] = array("Loadjs('$page?disableall=yes&function=$function&Mainfunc=$Mainfunc')", ico_disabled, "{disable_all}");
@@ -195,16 +239,28 @@ function top_buttons():bool{
 
 function rule_disable_all():bool{
     $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("UPDATE url_rewrite_temp SET enabled=0 WHERE enabled=1");
+    $rows = acls_api_get("/proxy/url-rewrite/temp");
+    if(is_array($rows)){
+        foreach($rows as $r){
+            if(intval($r["enabled"])==1){
+                acls_api_send("PUT", "/proxy/url-rewrite/temp/".intval($r["id"]), ["enabled"=>0]);
+            }
+        }
+    }
     echo refresh_global();
     echo "$function();";
     return admin_tracks("Disable all web-filtering exclusions");
 }
 function rule_enable_all():bool{
     $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("UPDATE url_rewrite_temp SET enabled=1 WHERE enabled=0");
+    $rows = acls_api_get("/proxy/url-rewrite/temp");
+    if(is_array($rows)){
+        foreach($rows as $r){
+            if(intval($r["enabled"])==0){
+                acls_api_send("PUT", "/proxy/url-rewrite/temp/".intval($r["id"]), ["enabled"=>1]);
+            }
+        }
+    }
     echo refresh_global();
     echo "$function();";
     return admin_tracks("Enable all web-filtering exclusions");
@@ -214,14 +270,13 @@ function popup_table2():bool{
     $page       = CurrentPageName();
     $function =$_GET["function"];
     $Mainfunc=$_GET["Mainfunc"];
-    $searchQ="";
     $tableid    = time();
 
     $html[]="</div>";
     $search=$_GET["search"];
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>
 	<thead>
     	<tr>
     	    <th nowrap>{created}</small></th>
@@ -233,7 +288,7 @@ function popup_table2():bool{
         	<th nowrap>{delete}</small></th>
         </tr>
   	</thead>
-	<tbody>
+	<tbody id='urlrewritete-rows'>
 ";
 
 
@@ -244,39 +299,32 @@ function popup_table2():bool{
     if(isset($_SESSION[$KeyActive])){
         $OnlyActive=true;
     }
-    if($search<>null){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
-        $searchQ=" AND pattern LIKE '$search'";
+
+    // Normalize search term
+    $searchPattern = null;
+    if($search != null){
+        $searchPattern = strtolower(str_replace("*", "", $search));
     }
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $searchE="";
-    if($OnlyActive){
-        $searchE=" AND enabled=1";
-    }
-    $query="SELECT * FROM url_rewrite_temp WHERE 1 $searchQ$searchE";
-    $results=$q->QUERY_SQL($query);
+    $rows = acls_api_get("/proxy/url-rewrite/temp");
+    if(!is_array($rows)){ $rows=[]; }
 
-    VERBOSE($query,__LINE__);
+    VERBOSE("GET /proxy/url-rewrite/temp → ".count($rows)." rows",__LINE__);
 
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
-    }
+    foreach ($rows as $r){
+        if($OnlyActive && intval($r["enabled"])!=1){ continue; }
+        if($searchPattern!=null && strpos(strtolower($r["pattern"]),$searchPattern)===false){ continue; }
 
-    foreach ($results as $index=>$ligne){
-
-        $ID=$ligne["ID"];
-        $pattern=$ligne["pattern"];
-        $enable=$ligne["enabled"];
+        $ID=intval($r["id"]);
+        $pattern=$r["pattern"];
+        $enable=intval($r["enabled"]);
         if(strlen($pattern)>128){$pattern=substr($pattern,0,125)."...";}
-        $pattern=htmlentities($pattern);
-        $md=md5(serialize($ligne));
-        $created=$tpl->time_to_date($ligne["created"],true);
+        // Pentest 2026-11-04 : motif (donnee externe) affiche sans encodage (XSS stockee).
+        $pattern=req_html($pattern);
+        $md=md5(serialize($r));
+        $created=$tpl->time_to_date(intval($r["created"]),true);
 
-        $enable=$tpl->icon_check($enable,"Loadjs('$page?pattern-enable=$ID&Mainfunc=$Mainfunc')","","AsDansGuardianAdministrator");
+        $enableIcon=$tpl->icon_check($enable,"Loadjs('$page?pattern-enable=$ID&Mainfunc=$Mainfunc')","","AsDansGuardianAdministrator");
         $delete=$tpl->icon_delete("Loadjs('$page?pattern-remove=$ID&md=$md&Mainfunc=$Mainfunc')","AsDansGuardianAdministrator");
 
         $c++;
@@ -284,11 +332,12 @@ function popup_table2():bool{
         if($c>250){break;}
         $icoset=$tpl->icon_parameters("Loadjs('$page?rule-js=$ID&function=$function&Mainfunc=$Mainfunc')","AsDansGuardianAdministrator");
 
-        $maxmins=intval($ligne["maxmins"]);
+        $maxmins=intval($r["maxMins"]);
         if($maxmins==0){$maxmins=15;}
-        $duration=$tpl->time_to_date($ligne["finaltime"],true);
+        $finaltime=intval($r["finalTime"]);
+        $duration=$tpl->time_to_date($finaltime,true);
         $color="";
-        if($ligne["finaltime"]<time()){
+        if($finaltime<time()){
             $color="color:#CCCCCC;background-color:unset;";
             $expire=" ({expired})";
         }else{
@@ -301,16 +350,18 @@ function popup_table2():bool{
                 <td style='width:1%'  nowrap>$icoset</td>
 				<td style='width:100%'><code style='font-size: 14px;font-weight: bold;$color'>$pattern</code>$expire</td>
 				<td style='width:1%' nowrap>$duration</td>
-				<td style='width:1%'  nowrap >$enable</td>
+				<td style='width:1%'  nowrap >$enableIcon</td>
 				<td style='width:1%'  nowrap >$delete</td>
 				</tr>";
 
     }
         $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='urlrewritete-pager'></span></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('popup-temp-div-btn','$page?top-buttons=yes&function=$function&Mainfunc=$Mainfunc');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"urlrewritete-rows","urlrewritete-pager");
         return true;
 }

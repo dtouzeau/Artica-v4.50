@@ -26,32 +26,6 @@ class left_menus{
         return @implode("\n", $f);
     }
 
-    public function harmpManaged():string{
-        $EnableManagedReverseProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableManagedReverseProxy"));
-        if($EnableManagedReverseProxy==0){return "";}
-        if(!$this->users->AsHamrpAdmin){return "";}
-
-        $tpl=new template_admin();
-        $f[] = "<li id='left-menu'>";
-        $f[] = "<a href='#' ><i class=\"".ico_load_balancer."\"></i> <span class=\"nav-label\">{APP_HAMRP}</span> </a>";
-        $f[] = "<ul class='nav nav-second-level'>";
-
-        $q = new lib_sqlite("/home/artica/SQLITE/hamrp.db");
-
-        foreach ($_SESSION["HAMRP_PRIVS"] as $Groupid=>$none){
-            if($Groupid==0){continue;}
-            $ligne = $q->mysqli_fetch_array("SELECT * FROM groups WHERE ID='$Groupid'");
-            $groupname       = $ligne["groupname"];
-            $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.sites.php?harmpid=$Groupid",
-                "ICO"=>ico_earth,"TEXT"=>"$groupname",
-                "LEVEL3" => array(
-                    "ID" => "fw-left-menus-harmp-$Groupid",
-                    "PAGE" => "fw-left-menus-harmp.php?id=$Groupid")));
-        }
-        $f[] = "</ul>";
-        return @implode("\n", $f);
-
-    }
     public function hamrp():string{
         $EnableManagedReverseProxy=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableManagedReverseProxy"));
         if($EnableManagedReverseProxy==0){return "";}
@@ -104,15 +78,6 @@ class left_menus{
         return @implode("\n",$f);
     }
 
-    private function FireQOS_privs(): bool {
-        if ($this->users->AsFirewallManager) {
-            return true;
-        }
-        if ($this->users->AsSquidAdministrator) {
-            return true;
-        }
-        return false;
-    }
     public function Strongswan(): string {
         $EnableIPSEC=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableStrongswanServer"));
         if($EnableIPSEC==0){return "";}
@@ -198,99 +163,170 @@ class left_menus{
     }
 
     public function dockerd():string{
-        $EnableDockerService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDockerService"));
-        if($EnableDockerService==0){return "";}
-        $users=new usersMenus();
-        if(!$users->AsAnAdministratorGeneric){return "";}
+        // Artica Docker Manager: same guard as docker_require_admin() in the
+        // fw.system.docker.* pages; EnableDockerd is armed by the manager install.
+        if($this->users->isProxyManagerOnly()){return "<!-- DOCKER MANAGER: proxy manager only -->";}
+        include_once(dirname(__FILE__)."/class.docker.manager.inc");
+        if(count(docker_perms())==0){return "<!-- DOCKER MANAGER: no Docker privilege -->";}
+        $EnableDockerd=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDockerd"));
+        if($EnableDockerd==0){return "<!-- DOCKER MANAGER: EnableDockerd=0 -->";}
         $tpl=new template_admin();
+        $sub=$this->articaSubFolder();
+        // The pages sit directly under "Docker" (second level): no third-level loader.
+        $pages=array(
+            array("fw.system.docker.php","fab fa-docker","{status}","DOCKER_VIEW"),
+            array("fw.system.docker.containers.php","fas fa-boxes-stacked","{containers}","DOCKER_CONTAINER_VIEW"),
+            array("fw.system.docker.stacks.php","fas fa-layer-group","{docker_stacks}","DOCKER_STACK_VIEW"),
+            array("fw.system.docker.images.php","fas fa-compact-disc","{images}","DOCKER_IMAGE_VIEW"),
+            array("fw.system.docker.store.php","fas fa-store","{docker_store}","DOCKER_IMAGE_VIEW"),
+            array("fw.system.docker.images.downloads.php","fas fa-download","{docker_downloads}","DOCKER_IMAGE_VIEW"),
+            array("fw.system.docker.volumes.php","fas fa-hard-drive","{volumes}","DOCKER_VOLUME_VIEW"),
+            array("fw.system.docker.networks.php","fas fa-network-wired","{networks}","DOCKER_NETWORK_VIEW"),
+            array("fw.system.docker.sessions.php","fas fa-terminal","{sessions}","DOCKER_VIEW"),
+            array("fw.system.docker.performance.php","fas fa-gauge-high","{performance}","DOCKER_METRICS_VIEW"),
+            array("fw.system.docker.events.php","fas fa-bolt","{events}","DOCKER_EVENTS_VIEW"),
+            array("fw.system.docker.runtime.php","fas fa-shield-halved","{docker_runtime_title}","DOCKER_RUNTIME_VIEW"),
+            array("fw.system.docker.audit.php","fas fa-clipboard-list","{docker_audit_log}","DOCKER_ADMIN"),
+            array("fw.system.docker.RelayAgent.php","fas fa-tower-broadcast","{docker_relay_agent}","DOCKER_ADMIN"),
+        );
 
-        /*
-        $f[] = "<li id='left-menu'>";
-        $f[] = "<a href='#' ><i class=\"".ico_docker."\"></i> <span class=\"nav-label\">{web_services}</span> </a>";
-        $f[] = "<ul class='nav nav-second-level'>";
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.docker.frontends.php", "ICO"=>ico_clouds,"TEXT"=>"{perimeters}"));
-        $f[] = "</ul>";
-        $f[] = "</li>";
-*/
-        $f[] = "<!-- DOCKER START -->";
-        $f[] = "<li id='left-menu'>";
-        $f[] = "<a href='#' ><i class=\"".ico_docker."\"></i> <span class=\"nav-label\">{APP_DOCKER}</span> </a>";
-        $f[] = "<ul class='nav nav-second-level'>";
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.docker.status.php", "ICO"=>ico_dashboard,"TEXT"=>"{status}"));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.docker.containers.php", "ICO"=>ico_containers,"TEXT"=>"{containers}"));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.docker.images.php", "ICO"=>ico_cd,"TEXT"=>"{images}"));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.docker.networks.php", "ICO"=>ico_networks,"TEXT"=>"{networks}"));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.docker.volumes.php", "ICO"=>ico_hd,"TEXT"=>"{volumes}"));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.docker.events.php", "ICO"=>ico_eye,"TEXT"=>"{events}"));
-        $f[] = "</ul>";
-        $f[] = "</li>";
-        return @implode("\n", $f);
+        $f[]="<!-- DOCKER MANAGER START -->";
+        $f[]="                <li id='left-menu'>";
+        $f[]="                    <a href='#' ><i class=\"fab fa-docker\"></i> <span class=\"nav-label\">Docker</span> </a>";
+        $f[]="                    <ul class='nav nav-second-level'>";
+        foreach($pages as $p){
+            if(!docker_can($p[3])){continue;}
+            $f[]=$tpl->LeftMenu(array("PAGE"=>$sub.$p[0],"ICO"=>$p[1],"TEXT"=>$p[2]));
+        }
+        $f[]="					 </ul>";
+        $f[]="                </li>";
+        $f[]="<!-- DOCKER MANAGER END -->";
+        return @implode("\n",$f);
     }
 
-    //KEEPALIVED
-    public function keepalived(): string
-    {
+    private function isFailoverOrCluster():bool{
+        $APP_KEEPALIVED_ENABLE = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE"));
+        if($APP_KEEPALIVED_ENABLE==1){
+            return true;
+        }
+        $APP_KEEPALIVED_ENABLE_SLAVE = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE"));
+        if($APP_KEEPALIVED_ENABLE_SLAVE==1){
+            return true;
+        }
+        $PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
+        if($PowerDNSEnableClusterMaster==1){
+            return true;
+        }
+        $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
+        if($PowerDNSEnableClusterSlave==1){
+            return true;
+        }
+        return false;
+    }
+
+    private function isKeepAlived():bool{
+
         $slaveIsenable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE"));
         if ($slaveIsenable == 1) {
-            return "";
+            return true;
         }
         $APP_KEEPALIVED_ENABLE = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE"));
-        if ($APP_KEEPALIVED_ENABLE == 0) {
-            return "";
+        if($APP_KEEPALIVED_ENABLE==1){
+            return true;
         }
-        $f[] = "<!-- KEEPALIVED START -->";
-        $f[] = "<li id='left-menu'>";
-        $f[] = "<a href='#' ><i class=\"fas fa-project-diagram\"></i> <span class=\"nav-label\">{APP_KEEPALIVED} {keepalived_master}</span> </a>";
-        $f[] = "<ul class='nav nav-second-level'>";
-        $f[] = "                			<li id='left-menu'>";
-        $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.keepalived.parameters.php');\">
-                                                    <i class=\"fas fa-tachometer-alt\"></i> <span class=\"nav-label\">{parameters}</span> </a>";
-        $f[] = "							</li>";
-        $f[] = "                			<li id='left-menu'>";
-        $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.keepalived.instances.php');\">
-                                                    <i class=\"fas fa-network-wired\"></i> <span class=\"nav-label\">{services}</span> </a>";
-        $f[] = "							</li>";
-        $f[] = "                			<li id='left-menu'>";
-        $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.keepalived.events.php');\">
-                                                    <i class=\"fas fa-eye\"></i> <span class=\"nav-label\">{events}</span> </a>";
-        $f[] = "							</li>";
-        $f[] = "</ul>";
-        $f[] = "</li>";
-
-        return @implode("\n", $f);
-    }
-    //END KEEPALIVED
-
-    //KEEPALIVED SLAVE
-    public function keepalived_slave(): string
-    {
-        $masterIsenable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE"));
-        if ($masterIsenable == 1) {
-            return "";
-        }
-        $APP_KEEPALIVED_ENABLE = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE"));
-        if ($APP_KEEPALIVED_ENABLE == 0) {
-            return "";
-        }
-        $f[] = "<!-- KEEPALIVED START -->";
-        $f[] = "<li id='left-menu'>";
-        $f[] = "<a href='#' ><i class=\"fas fa-project-diagram\"></i> <span class=\"nav-label\">{APP_KEEPALIVED} {keepalived_secondary_nodes}</span> </a>";
-        $f[] = "<ul class='nav nav-second-level'>";
-        $f[] = "                			<li id='left-menu'>";
-        $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.keepalived.slave.status.php');\">
-                                                    <i class=\"fas fa-tachometer-alt\"></i> <span class=\"nav-label\">{status}</span> </a>";
-
-        $f[] = "                			<li id='left-menu'>";
-        $f[] = "                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.keepalived.events.php');\">
-                                                    <i class=\"fas fa-eye\"></i> <span class=\"nav-label\">{events}</span> </a>";
-        $f[] = "							</li>";
-        $f[] = "</ul>";
-        $f[] = "</li>";
-
-        return @implode("\n", $f);
+        return false;
     }
 
-    //END KEEPALIVED
+
+    public function FailOverOrCluster(){
+        $tpl=new template_admin();
+        if(!$this->users->AsAnAdministratorGeneric){
+            return "";
+        }
+
+        if(!$this->isFailoverOrCluster()){
+            return "";
+        }
+        $HTTP_X_ARTICA_SUBFOLDER=$this->articaSubFolder();
+        $f[]="<!-- Fail-over - Cluster START -->";
+        $f[]="    <li id='left-menu'>";
+        $f[]="    <a href='#' ><i class=\"fas fa-project-diagram\"></i> <span class=\"nav-label\">Failover/Cluster</span> </a>";
+        $f[]="    <ul class='nav nav-second-level'>";
+        $f[]=$this->Cluster();
+
+        if(!$this->isKeepAlived()){
+            $f[]="					 </ul>";
+            $f[]="                </li>";
+            $f[]="<!-- Fail-over - Cluster END -->";
+            return @implode("\n",$f);
+        }
+
+        $pageDeGarde="{$HTTP_X_ARTICA_SUBFOLDER}fw.keepalived.parameters.php";
+        $subtext="{keepalived_master}";
+        $slaveIsenable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE"));
+        if ($slaveIsenable == 1) {
+            $subtext="{keepalived_secondary_nodes}";
+            $pageDeGarde="{$HTTP_X_ARTICA_SUBFOLDER}fw.keepalived.slave.status.php";
+        }
+
+        $f[]="<!-- APP_KEEPALIVED -->";
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => $pageDeGarde,
+                "ICO" => "fas fa-project-diagram",
+                "TEXT" => "{APP_KEEPALIVED} $subtext",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-failover",
+                    "PAGE" => "fw-left-menus-failover.php")
+            )
+        );
+
+        $f[]="					 </ul>";
+        $f[]="                </li>";
+        $f[]="<!-- Fail-over - Cluster END -->";
+        return @implode("\n",$f);
+
+
+    }
+
+    private function Cluster():string{
+        if(!$this->users->AsAnAdministratorGeneric){return "";}
+        $tpl=new template_admin();
+        $f=array();
+        $PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
+        $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
+        $HTTP_X_ARTICA_SUBFOLDER=$this->articaSubFolder();
+        if($PowerDNSEnableClusterMaster==1){
+//<i class="fas fa-clone"></i>
+                $f[]=$tpl->LeftMenu(
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.cluster.master.php",
+                        "ICO"=>"fas fa-clone","TEXT"=>"Cluster ({master_mode})"));
+            }
+        if($PowerDNSEnableClusterSlave==1){
+//<i class="fas fa-clone"></i>
+                $f[]=$tpl->LeftMenu(
+                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.cluster.client.php",
+                        "ICO"=>"fas fa-clone","TEXT"=>"Cluster ({slave_mode})"));
+        }
+
+
+        return @implode("\n",$f);
+
+    }
+
+
+
+    private function articaSubFolder(){
+        $HTTP_X_ARTICA_SUBFOLDER="/";
+        if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_ARTICA_SUBFOLDER"]."/";
+        }
+        if(isset($_SERVER["HTTP_X_META_PREFIX"])){
+            $HTTP_X_ARTICA_SUBFOLDER="/".$_SERVER["HTTP_X_META_PREFIX"]."/";
+        }
+        return $HTTP_X_ARTICA_SUBFOLDER;
+    }
+
+
 
     public function reverse_proxys(): string {
         if(!$this->users->AsProxyMonitor){return "";}
@@ -399,30 +435,6 @@ class left_menus{
         return @implode("\n",$f);
     }
 
-    public function FireQOS(): string
-    {
-        if(!$this->FireQOS_privs()){return "";}
-        $FIREQOS_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIREQOS_INSTALLED"));
-        if($FIREQOS_INSTALLED==0){return "";}
-        $EnableFireQOS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFireQOS"));
-        if($EnableFireQOS==0){return "";}
-        $tpl=new template_admin();
-
-//<i class="fas fa-list-ol"></i>
-//<i class="fas fa-water-lower"></i>
-        $f[]="<!-- FIREQOS START -->";
-        $f[]="    <li id='left-menu'>";
-        $f[]="    <a href='#' ><i class=\"fas fa-water-lower\"></i> <span class=\"nav-label\">{traffic_shapping}</span> </a>";
-        $f[]="    <ul class='nav nav-second-level'>";
-        $f[]=$tpl->LeftMenu(
-            array("PAGE"=>"fw.network.fireqos.php","ICO"=>"fas fa-list-ol","TEXT"=>"{rules}"));
-        $f[]="					 </ul>";
-        $f[]="                </li>";
-        $f[]="<!-- FIREQOS END -->";
-
-        return @implode("\n",$f);
-
-    }
 
     public function ImapBox(): string
     {
@@ -435,6 +447,8 @@ class left_menus{
         $f[]="    <li id='left-menu'>";
         $f[]="        <a href='#' ><i class=\"fad fa-inbox-in\"></i> <span class=\"nav-label\">{APP_IMAPBOX}</span> </a>";
         $f[]="    <ul class='nav nav-second-level'>";
+
+
 
 
         $f[]=$tpl->LeftMenu(
@@ -556,7 +570,7 @@ class left_menus{
         $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
         if($HaClusterClient==1){$LockActiveDirectoryToKerberos=1;}
         $EnableKerbNTLM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbNTLM"));
-
+        $EnableSilentNTLMAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSilentNTLMAuth"));
         $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
         $EnablePostfix=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePostfix"));
         $EnableArticaAuthenticationAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaAuthenticationAgent"));
@@ -565,6 +579,7 @@ class left_menus{
         if($Enablehacluster==1){
             $EnableAdLDAPAuth=0;
             $HIDEADCONNECT=true;
+            $EnableSilentNTLMAuth=0;
         }
         if($HaClusterClient==1){$HIDEADCONNECT=true;}
         if($EnablePostfix==1){$HIDEADCONNECT=true;}
@@ -572,41 +587,55 @@ class left_menus{
         if($EnableArticaAuthenticationAgent==1){$HIDEADCONNECT=true;}
         if($EnableArticaAuthenticationAgent==1){$ADAGENT_INSTALLED=0;}
         if($EnableArticaAuthenticationAgent==1){$EnableKerbNTLM=0;}
+        if($EnableArticaAuthenticationAgent==1){$EnableSilentNTLMAuth=0;}
+
         $f[]="<!-- SQUIDEnable=$SQUIDEnable -->";
-        $f[]="<!-- HIDEADCONNECT=$HIDEADCONNECT -->";
+        if(!$HIDEADCONNECT) {
+            $f[] = "<!-- HIDEADCONNECT=FALSE -->";
+        }
+        $f[]="<!-- EnableSilentNTLMAuth=$EnableSilentNTLMAuth -->";
+
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"fab fab fa-windows\"></i> <span class=\"nav-label\">Active Directory</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
 
-        if($Enablehacluster==0 && $EnableArticaAuthenticationAgent==0) {
+        if($Enablehacluster==0
+            && $EnableArticaAuthenticationAgent==0
+            && $EnablePostfix==0
+            && $EnableSilentNTLMAuth==0) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.ad.status.php",
                 "ICO" => "fas fa-tachometer-alt", "TEXT" => "{status}"));
         }
 
 
         if(!$HIDEADCONNECT) {
-
-            if($EnableAdLDAPAuth==0) {
-
-                if ($EnableKerbNTLM == 0) {
+            if($EnableAdLDAPAuth==0 && $EnableSilentNTLMAuth==0) {
+                if ($EnableKerbNTLM == 0 ) {
                     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.kerberos-single.php",
                         "ICO" => "fas fa-plug", "TEXT" => "{kerberos_authentication}"));
+                    if($SQUIDEnable==1){
+                        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.negotiateauthenticator.php",
+                            "ICO" =>ico_chart_line, "TEXT" => "{statistics}"));
+                    }
                 }
 
 
                 if ($LockActiveDirectoryToKerberos == 0) {
-                    if ($EnableKerbNTLM == 0) {
+                    if ($EnableKerbNTLM == 0 && $EnableSilentNTLMAuth==0) {
                         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.kerberos.php",
                             "ICO" => "fas fa-plug", "TEXT" => "{cluster_mode}"));
                     }
 
-                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.ActiveDirectory.php",
-                        "ICO" => "fas fa-plug", "TEXT" => "{join_domain} (NTLM)"));
+                    if($EnableSilentNTLMAuth==0) {
+                        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.ActiveDirectory.php",
+                            "ICO" => "fas fa-plug", "TEXT" => "{join_domain} (NTLM)"));
+                    }
                 }
 
             }
 
-            if($SQUIDEnable==1){
+            $f[]="<!-- HIDEADCONNECT=$HIDEADCONNECT - L.".__LINE__."-->";
+            if($SQUIDEnable==1 && $EnableSilentNTLMAuth==0){
                 if(!$this->IsStandardAdConnection()) {
                     $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.squidadldap.php",
                         "ICO" => "fas fa-plug", "TEXT" => "{squid_ldap_auth}"));
@@ -615,23 +644,22 @@ class left_menus{
 
         }
 
-        if($SQUIDEnable==0){
-            if($Enablehacluster==0) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.ActiveDirectory.php",
-                    "ICO" => "fas fa-plug", "TEXT" => "{join_domain}"));
-            }
+        if($SQUIDEnable==0
+            && $Enablehacluster==0
+            && $EnablePostfix==0
 
+        ){
+            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.ActiveDirectory.php",
+                "ICO" => "fas fa-plug", "TEXT" => "{join_domain}"));
+        }
+        if($SQUIDEnable==1 && $EnableSilentNTLMAuth==1){
+            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.fakeauth.php",
+                "ICO" => "fas fa-user-secret", "TEXT" => "{silent_authentication}"));
         }
 
 
-        $APP_SAFEGUARD_AUTH_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SAFEGUARD_AUTH_INSTALLED"));
-        if($APP_SAFEGUARD_AUTH_INSTALLED==1){
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.system.Safeguard.php",
-                "ICO" => "fas fa-plug", "TEXT" => "SafeGuard Auth."));
-
-        }
         $ADAGENT_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADAGENT_INSTALLED"));
-        if($ADAGENT_INSTALLED==1) {
+        if($ADAGENT_INSTALLED==1 && $EnableSilentNTLMAuth==0) {
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.ad-agent-intro.php",
                     "ICO" => "fas fa-users-viewfinder",
@@ -642,7 +670,8 @@ class left_menus{
                 )
             );
         }else{
-            $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.system.activedirectory.ldap.php",
+            $f[]=$tpl->LeftMenu(array(
+                "PAGE"=>"fw.system.activedirectory.ldap.php",
                 "ICO"=>"fas fa-link","TEXT"=>"{connections}"));
         }
 
@@ -659,6 +688,7 @@ class left_menus{
                     "ICO" => ico_eye, "TEXT" => "{events}"));
             }
         }
+   
         if($EnablePostfix==0) {
             if ($EnableKerbNTLM == 1) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.winbindd.events.php",
@@ -757,8 +787,9 @@ class left_menus{
         //--------------------------- SAMBA ----------------------------------------------------------------------------
         if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SAMBA_INSTALLED"))==0){return "";}
         $EnableSamba=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSamba"));
+        include_once (dirname(__FILE__)."/class.artica-samba.inc");
         if($EnableSamba==0){return "";}
-        $disk=ico_hd;
+
         $tpl=new template_admin();
         if(!$this->users->AsSambaAdministrator){return "";}
         $f[]="<!-- SAMBA START -->";
@@ -768,39 +799,72 @@ class left_menus{
 
         $f[]=$tpl->LeftMenu(
             array("PAGE"=>"fw.samba.php",
-                "ICO"=>"fa fa-wrench","TEXT"=>"{status}",
+                "ICO"=>ico_dashboard,"TEXT"=>"{status}",
+            ) );
+
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_PLAKAR_INSTALLED"))==1){
+
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.plakar.server.php",
+                    "ICO" => "fas fa-warehouse",
+                    "TEXT" => "{backup_server}",
+                    "LEVEL3" => array(
+                        "ID" => "fw-left-menus-plakar",
+                        "PAGE" => "fw-left-menus-plakar.php")
+                )
+            );
+
+
+        }
+
+
+
+
+        $f[]=$tpl->LeftMenu(
+            array("PAGE"=>"fw.samba.instances2.php",
+                "ICO"=>"fas fa-server","TEXT"=>"{instances}",
             ) );
 
         $f[]=$tpl->LeftMenu(
-            array("PAGE"=>"fw.samba.instances.php",
-                "ICO"=>"fas fa-layer-group","TEXT"=>"{instances}",
+            array("PAGE"=>"fw.samba.agents.php",
+                "ICO"=>"fas fa-user-shield","TEXT"=>"{windows_agent}",
             ) );
 
-        $f[]=$tpl->LeftMenu(
-            array("PAGE"=>"fw.samba.shares.php",
-                "ICO"=>ico_directory,"TEXT"=>"{shares_center}",
-            ) );
 
-        $f[]=$tpl->LeftMenu(
-            array("PAGE"=>"fw.samba.users.php",
-                "ICO"=>"fas fa-users","TEXT"=>"{users}",
-            ) );
 
-        $f[]=$tpl->LeftMenu(
-            array("PAGE"=>"fw.samba.statistics.php",
-                "ICO"=>"fad fa-chart-bar","TEXT"=>"{statistics}",
-            ) );
+        // $instances restait INDEFINIE quand listInstances() levait une
+        // exception -- le foreach qui suit provoquait alors une TypeError en
+        // PHP 8, donc un menu de gauche entierement vide des que le daemon
+        // artica-samba ne repondait pas.
+        $instances = array();
+        $samba = new ArticaSamba();
+        try { $instances = $samba->listInstances(); }
+        catch (\RuntimeException $e) {
+            writelogs($e->getMessage(),__FUNCTION__,__FILE__,__LINE__);
+        }
+        if(!is_array($instances)){ $instances = array(); }
 
-        $f[]=$tpl->LeftMenu(
-            array("PAGE"=>"fw.samba.logs.php",
-                "ICO"=>ico_eye,"TEXT"=>"{events}",
-            ) );
+        foreach ($instances as $inst) {
+            $name=$inst["name"];
+            $id=$inst["id"];
 
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.samba.instance.php?instance-id=$id",
+                    "ICO" => ico_server,
+                    "TEXT" => $name,
+                    "LEVEL3" => array(
+                        "ID" => "fw-left-menus-samba-$id",
+                        "PAGE" => "fw-left-menus-samba.php?instance-id=$id")
+                )
+            );
+        }
+
+    /*
         $f[]="                			<li id='left-menu'>";
         $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.btrfs.php');\">
 														<i class=\"$disk\"></i> <span class=\"nav-label\">{storage}</span> </a>";
         $f[]="							</li>";
-
+*/
         $f[]="					 </ul>";
         $f[]="                </li>";
         $f[]="<!-- SAMBA END -->";
@@ -940,8 +1004,21 @@ class left_menus{
         return @implode("\n",$f);
     }
 
-    public function DNS()
-    {
+
+    private function DnsReader():bool{
+        if($this->users->AsAnAdministratorGeneric){
+            return true;
+        }
+        if ($this->users->AsDnsAdministrator) {
+            return true;
+        }
+        if ($this->users->AsDnsMonitor) {
+            return true;
+        }
+        return false;
+    }
+
+    public function DNS():string{
         $EnablePDNS = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePDNS"));
         $MAIN_TITLE = "DNS";
         $DNS_SERVICE=false;
@@ -953,22 +1030,23 @@ class left_menus{
         if ($EnablePDNS == 1) {
             $DNS_SERVICE = true;
         }
-
+        $tpl = new template_admin();
         $f[] = "<!-- " . __LINE__ . " DNS START -->";
-        if (!$this->users->AsAnAdministratorGeneric) {
+        if (!$tpl->DnsReader()) {
             return "";
         }
-        $tpl = new template_admin();
+
 
         $f[] = "                <li id='left-menu'>";
         $f[] = "                    <a href='#' ><i class=\"fa fas fa-database\"></i> <span class=\"nav-label\">$MAIN_TITLE</span> </a>";
         $f[] = "                    <ul class='nav nav-second-level'>";
 
-        if ($this->users->AsDnsAdministrator) {
-            if (($this->UnboundActive() == 1)) {
+        if ($this->DnsReader()) {
+           $UnboundActive=$this->UnboundActive();
+            if ($UnboundActive == 1) {
                 $f[] = $tpl->LeftMenu(
                     array("PAGE" => "fw.dns.unbound.php",
-                        "ICO" => "fas fa-database",
+                        "ICO" => ico_database,
                         "TEXT" => "{APP_UNBOUND}",
                         "LEVEL3" => array(
                             "ID" => "fw-left-menus-dns",
@@ -978,26 +1056,30 @@ class left_menus{
                 $DNS_SERVICE = true;
             }
 
+            if($UnboundActive == 1 OR $EnableDNSDist == 1) {
+                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.dnsdist.graphs.php", "ICO" => ico_chart_line, "TEXT" => "{statistics}"));
+            }
 
-        if ($EnableDNSDist == 1) {
-            $f[] = $tpl->LeftMenu(
-                array("PAGE" => "fw.dns.unbound.php",
-                    "ICO" => "fab fa-gripfire",
-                    "TEXT" => "{APP_DNSDIST}",
-                    "LEVEL3" => array(
-                        "ID" => "fw-left-menus-dns",
-                        "PAGE" => "fw-left-menus-dns.php")
-                )
-            );
 
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.forward.zone.php",  "ICO"=>"far fa-arrows","TEXT"=>"{forward_zones}"));
+            if ($EnableDNSDist == 1) {
+                $f[] = $tpl->LeftMenu(
+                    array("PAGE" => "fw.dns.unbound.php",
+                        "ICO" => "fab fa-gripfire",
+                        "TEXT" => "{APP_DNSDIST}",
+                        "LEVEL3" => array(
+                            "ID" => "fw-left-menus-dns",
+                            "PAGE" => "fw-left-menus-dns.php")
+                    )
+                );
 
-        }
-        if ($EnablePDNS == 1) {
+                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dns.forward.zone.php",  "ICO"=>"far fa-arrows","TEXT"=>"{forward_zones}"));
+
+            }
+            if ($EnablePDNS == 1) {
 
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.pdns.status.php",
-                    "ICO" => "fas fa-database",
+                    "ICO" => ico_database,
                     "TEXT" => "{APP_PDNS}",
                     "LEVEL3" => array(
                         "ID" => "fw-left-menus-pdns",
@@ -1008,7 +1090,7 @@ class left_menus{
         }
         if($this->users->AsPostfixAdministrator OR $this->users->AsDnsAdministrator){
             if($APP_RBLDNSD_ENABLED==1){
-                $f[]=$tpl->LeftMenu( array("PAGE"=>"fw.rbldnsd.php","ICO"=>"fas fa-database","TEXT"=>"{APP_RBLDNSD}","LEVEL3" => array(
+                $f[]=$tpl->LeftMenu( array("PAGE"=>"fw.rbldnsd.php","ICO"=>ico_database,"TEXT"=>"{APP_RBLDNSD}","LEVEL3" => array(
                     "ID" => "fw-left-menus-rbldnsd",
                     "PAGE" => "fw-left-menus-rbldnsd.php")));
             }
@@ -1095,16 +1177,44 @@ class left_menus{
 
     }
 
-    function OpenVPN(){
+    /**
+     * WireGuard VPN (daemon artica-wireguard pilote par articarest). Les pages
+     * fw.wireguard.*.php dialoguent avec /run/artica-wireguard.sock ; le menu
+     * n'apparait que si le service est installe ET active (memes cles Valkey
+     * que le module articarest/wireguard).
+     */
+    function WireGuard():string{
+        $tpl=new template_admin();
         if($this->users->isProxyManagerOnly()){return "";}
         if(!$this->users->AsVPNManager){return "";}
-        if(!$this->users->OPENVPN_INSTALLED){return "";}
+        $installed=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_WIREGUARD_INSTALLED"));
+        $enabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWireGuardManager"));
+        if($installed==0 || $enabled==0){return "";}
+
+        $f[]="<!-- WIREGUARD START -->";
+        $f[]="                <li id='left-menu'>";
+        $f[]="                    <a href='#' ><i class=\"fas fa-shield-halved\"></i> <span class=\"nav-label\">{APP_WIREGUARD_MANAGER}</span> </a>";
+        $f[]="                    <ul class='nav nav-second-level'>";
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.wireguard.settings.php","ICO"=>"fas fa-cogs","TEXT"=>"{parameters}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.wireguard.realms.php","ICO"=>"fas fa-layer-group","TEXT"=>"{wireguard_realms}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.wireguard.devices.php","ICO"=>"fas fa-laptop","TEXT"=>"{wireguard_devices}"));
+        $f[]="					 </ul>";
+        $f[]="                </li>";
+        $f[]="<!-- WIREGUARD END -->";
+        return @implode("\n",$f);
+    }
+
+    function OpenVPN(){
+        $f[]="<!-- OPENVPN START -->";
+        if($this->users->isProxyManagerOnly()){return "";}
+        if(!$this->users->AsVPNManager){return "";}
+        if(!$this->users->OPENVPN_INSTALLED){return "<!-- OPENVPN_INSTALLED - FALSE -->";}
         $EnableOpenVPNServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenVPNServer"));
         if($EnableOpenVPNServer==0){return "";}
 
-        $vpn=new openvpn();
-        if(intval($vpn->main_array["GLOBAL"]["ENABLE_SERVER"]==0)){return "";}
-        $f[]="<!-- OPENVPN START -->";
+
+
+
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"fa fa-compress\"></i> <span class=\"nav-label\">OpenVPN</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
@@ -1389,13 +1499,17 @@ class left_menus{
 
         $f[]="<!-- FIREWALL START -->";
         $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fab fa-free-code-camp\"></i> <span class=\"nav-label\">{your_firewall}</span> </a>";
+        $f[]="                    <a href='#' ><i class=\"fa-solid fa-block-brick-fire\"></i> <span class=\"nav-label\">{your_firewall}</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
 
         if($FireHolEnable==1) {
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.settings.php",
                     "ICO" => ico_options, "TEXT" => "{parameters}",
+                ));
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.firewall.siem.php",
+                    "ICO" => "fas fa-shield-halved", "TEXT" => "Artica SIEM",
                 ));
 
         }
@@ -1452,6 +1566,10 @@ class left_menus{
                 array("PAGE"=>"fw.masquerade.php",
                 "ICO"=>"fas fa-mask","TEXT"=>"Masquerade"));
 
+            $f[]=$tpl->LeftMenu(
+                array("PAGE"=>"fw.firewall.history.php",
+                "ICO"=>"fas fa-history","TEXT"=>"{fw_history}"));
+
             if ($EnableCrowdSec == 1) {
                 if(!$CrowdSecAdded) {
                     $f[] = $tpl->LeftMenu(
@@ -1470,11 +1588,8 @@ class left_menus{
                         "ICO"=>"fa fa-arrow-right","TEXT"=>"{APP_REDSOCKS}"));
             }
 
-            if ($EnableCrowdSec == 0) {
-                $f[] = $tpl->LeftMenu(
-                    array("PAGE" => "fw.ipfeeds.php",
-                        "ICO" => "fas fa-hockey-mask", "TEXT" => "{CybercrimeIPFeeds}"));
-            }
+            // Cybercrime IP Feeds est déjà dans le menu (plus haut, sauf $IPFeed) :
+            // ce second ajout le faisait apparaître deux fois sans CrowdSec.
 
 
             $f[] = $tpl->LeftMenu(
@@ -1484,7 +1599,7 @@ class left_menus{
 
         $f[]=$tpl->LeftMenu(
             array("PAGE"=>"fw.firewall.config.php",
-                "ICO"=>"fa fa-align-justify","TEXT"=>"{config}"));
+                "ICO"=>"fa fa-align-justify","TEXT"=>"{configuration}"));
 
         $f[]=$tpl->LeftMenu(
             array("PAGE"=>"fw.syslog.php",
@@ -1608,6 +1723,13 @@ class left_menus{
 														<i class=\"fas fa-cogs\"></i> <span class=\"nav-label\">{APP_DHCP}</span> </a>";
             $f[]="							</li>";
 
+            $f[]="                			<li id='left-menu'>";
+            $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.dhcp.metrics.php');\">
+													<i class=\"fas fa-chart-area\"></i> <span class=\"nav-label\">{statistics}</span> </a>";
+            $f[]="							</li>";
+
+
+
             $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.dhcp.reservations.php",
                 "ICO"=>ico_computer_down,"TEXT"=>"{reservations}"));
 
@@ -1651,8 +1773,8 @@ class left_menus{
     }
 
     public function MessagingSub($ID=0,$name=null):string{
+        include_once(dirname(__FILE__)."/class.maincf.multi.inc");
         $tpl=new template_admin();
-        $EnableDKFilter=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDKFilter"));
         $MilterGreyListEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MilterGreyListEnabled"));
         $EnableActiveDirectoryFeature=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"));
 
@@ -1677,20 +1799,43 @@ class left_menus{
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.queue.php?instance-id=$ID",
             "ICO"=>"fal fa-list-ul","TEXT"=>"{queue}"));
 
+
+
         $f[] = $tpl->LeftMenu(
             array("PAGE" => "fw.articamilter.php?instance-id=$ID",
                 "ICO" => ico_plug,
-                "TEXT" => "Artica Milter",
+                "TEXT" => "{global_smtp_rules}",
                 "LEVEL3" => array(
                     "ID" => "fw-left-menus-articamilter",
                     "PAGE" => "fw-left-menus-articamilter.php?instance-id=$ID")
             )
         );
 
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.postfix.sender-security.php?instance-id=$ID",
+                "ICO" => ico_outmail,
+                "TEXT" => "{outgoing_rules}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-postfix-outgoing",
+                    "PAGE" => "fw-left-menus-outgoing.php?instance-id=$ID")
+            )
+        );
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.postfix.incoming.intro.php?instance-id=$ID",
+                "ICO" => "fas fa-inbox-in",
+                "TEXT" => "{inbound_flow}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-postfix-incoming",
+                    "PAGE" => "fw-left-menus-incoming.php?instance-id=$ID")
+            )
+        );
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.log.explorer.php?instance-id=$ID", "ICO"=>ico_eye,"TEXT"=>"{postfix_log_explorer}"));
+
         if($ID==0){
             if($this->isFireWall()==1){
                 $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.firewall.php",
-                    "ICO"=>"fa-free-code-camp","TEXT"=>"{firewall}"));
+                    "ICO"=>"fa-solid fa-block-brick-fire","TEXT"=>"{firewall}"));
             }
             if ($EnableActiveDirectoryFeature == 1) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.postfix.activedirectory.php",
@@ -1704,42 +1849,39 @@ class left_menus{
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.rewrite.php?instance-id=$ID",
             "ICO"=>"fas fa-repeat-alt","TEXT"=>"{smtp_generic_maps}"));
 
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.rbl.php?instance-id=$ID",
-            "ICO"=>"fas fa-badge-check","TEXT"=>"{ip_reputation}"));
 
 
-        if($EnableDKFilter==1){
-            $f[]="                			<li id='left-menu'>";
-            $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.postfix.dkim.php');\">
-															<i class=\"fas fa-badge-check\"></i> <span class=\"nav-label\">{APP_OPENDKIM}</span> </a>";
-            $f[]="							</li>";
+        // instance-id manquait ici alors que le sous-menu et les quatre pages
+        // qu'il ouvre le passent tous: la page d'entree retombait sur l'instance
+        // 0 et ses tuiles menaient a la mauvaise instance, en silence.
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.postfix.auth.php?instance-id=$ID",
+                "ICO" => ico_users,
+                "TEXT" => "{authentication}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-postfix-auth",
+                    "PAGE" => "fw-left-menus-postfix-auth.php?instance-id=$ID")
+            )
+        );
+
+        // Icone et libelle etaient ceux de l'entree Authentification juste
+        // au-dessus, restes d'une copie: le menu affichait « Authentication »
+        // deux fois de suite, la seconde ouvrant les statistiques.
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.postfix.statistics.intro.php?instance-id=$ID",
+                "ICO" => "fas fa-chart-line",
+                "TEXT" => "{statistics}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-postfix-statistics",
+                    "PAGE" => "fw-left-menus-postfix-stats.php?instance-id=$ID")
+            )
+        );
 
 
-        }
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.maillog.tracker.php?instance-id=$ID",
+            "ICO"=>"fas fa-envelope-open-text","TEXT"=>"{maillog_tracker}"));
 
 
-
-
-        if($MilterGreyListEnabled==1){
-            $f[]="                			<li id='left-menu'>";
-            $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.postfix.milter-greylist.php');\">
-															<i class=\"fas fa-badge-check\"></i> <span class=\"nav-label\">{APP_MILTERGREYLIST}</span> </a>";
-            $f[]="							</li>";
-
-
-        }
-
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.rules.php?instance-id=$ID",
-            "ICO"=>"fas fa-filter","TEXT"=>"{global_smtp_rules}"));
-
-
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.postfix.blackwite.php?instance-id=$ID",
-            "ICO"=>"fas fa-filter","TEXT"=>"{blacklist}/{whitelist}"));
-
-        if($ID==0) {
-            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.postfix.refused.php",
-                "ICO" => ico_eye, "TEXT" => "{refused}"));
-        }
 
 
         $f[]="					 </ul>";
@@ -1757,10 +1899,6 @@ class left_menus{
         if($EnablePostfix==0){return "";}
         if(!$this->users->AsPostfixAdministrator){return "";}
         $EnablePostfixMultiInstance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePostfixMultiInstance"));
-
-
-
-
 
         if($EnablePostfixMultiInstance==1){
             $f[]="<!-- MESSAGING START  -->";
@@ -1803,6 +1941,8 @@ class left_menus{
 
 
 
+
+
         return $this->MessagingSub(0);
 
 
@@ -1811,7 +1951,64 @@ class left_menus{
     }
 
 
+    function CYRUS():string{
+        $EnableCyrusImap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCyrusImap"));
+        $APP_CYRUS_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_CYRUS_INSTALLED"));
+        if($APP_CYRUS_INSTALLED==0){
+            $EnableCyrusImap=0;
+        }
+        if($EnableCyrusImap==0){
+            return "<!-- CYRUS START EnableCyrusImap = $EnableCyrusImap APP_CYRUS_INSTALLED=$APP_CYRUS_INSTALLED -->";
+        }
+        if(!$this->users->AsMailBoxAdministrator){
+            return  "<!-- CYRUS START AsMailBoxAdministrator = FALSE -->";
+        }
+        $tpl=new template_admin();
 
+
+        $f[]="<!-- CYRUS START EnableCyrusImap = $EnableCyrusImap -->";
+        $f[]="                <li id='left-menu'>";
+        $f[]="                    <a href='#' ><i class=\"fa-solid fa-envelope-open-text\"></i> <span class=\"nav-label\">{mailboxes}</span> </a>";
+        $f[]="                    <ul class='nav nav-second-level'>";
+
+
+
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.cyrus-imapd.php?instance-id=0",
+            "ICO"=>ico_dashboard,"TEXT"=>"{status}"));
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.cyrus-imapd.domains.php?instance-id=0",
+            "ICO"=>"fas fa-globe","TEXT"=>"{cyrus.imapd.domains.title}"));
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.cyrus-imapd.mailboxes.php?instance-id=0",
+            "ICO"=>"fas fa-inbox","TEXT"=>"{cyrus.imapd.menu.mailboxes_accounts}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.cyrus-imapd.shared-mailboxes.php?instance-id=0",
+            "ICO"=>"fas fa-users","TEXT"=>"{cyrus.imapd.shared.title}"));
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.cyrus-imapd.search.php?instance-id=0",
+            "ICO"=>"fas fa-magnifying-glass","TEXT"=>"{cyrus.imapd.search.title}"));
+
+
+
+
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw-left-menus-cyrus-maintenance.php",
+                    "ICO" => ico_params,
+                    "TEXT" => "{maintenance}",
+                    "LEVEL3" => array(
+                        "ID" => "fw-left-menus-cyrus-maintenance",
+                        "PAGE" => "fw-left-menus-cyrus-maintenance.php?instance-id=0")
+                )
+            );
+
+
+
+        $f[] = "					 </ul>";
+        $f[] = "                </li>";
+        $f[] = "<!-- CYRUS END  -->";
+        return @implode("\n",$f);
+
+    }
 
 
     function PulseReverse():string{
@@ -1873,17 +2070,30 @@ class left_menus{
             )
         );
 
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.backends.php",
-            "ICO"=>"fas fa-server","TEXT"=>"{backends}"));
+        //$f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.backends.php", "ICO"=>"fas fa-server","TEXT"=>"{backends}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.backends2.php","ICO"=>"fas fa-server","TEXT"=>"{backends}"));
+
+
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.proxy.tempwhite.php?main-page=yes",
+        "ICO"=>"fa-solid fa-filter-slash","TEXT"=>"{temporary_whitelist}"));
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.acls-src.php",
+            "ICO"=>"fa fa-random","TEXT"=>"{src}"));
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.backends.metrics.php",
             "ICO"=>"fas fa-chart-bar","TEXT"=>"{metrics}"));
+
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.proxy.status.minimal.statistics.php?hacluster=yes",
             "ICO"=>"fas fa-chart-pie","TEXT"=>"{statistics}"));
 
 
         $EnableITChart=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableITChart");
+        $HaClusterEnableITChart=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterEnableITChart"));
+        if($HaClusterEnableITChart==1){
+            $EnableITChart=1;
+        }
         if($EnableITChart==1) {
             if($this->users->AsDansGuardianAdministrator) {
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.itcharter.php",
@@ -1893,16 +2103,20 @@ class left_menus{
 
         $f[]=$tpl->LeftMenu(
             array("PAGE"=>"fw.proxy.objects.list.php?hacluster=1",
-                "ICO"=>"fas fa-cubes","TEXT"=>"{firewall_objects}",
+                "ICO"=>"fas fa-cubes","TEXT"=>"{proxy_objects}",
             ) );
-
-
-
 
         if($Iperf3Installed==1){
             $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.iperf3.php",
                 "ICO"=>ico_speed,"TEXT"=>"{speed_test}"));
         }
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.failover.php",
+            "ICO"=>"fa-solid fa-arrow-right-arrow-left","TEXT"=>"Failover"));
+
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.hacluster.windows.php",
+            "ICO"=>ico_microsoft,"TEXT"=>"{windows_console}"));
 
         if(is_file("/usr/share/artica-postfix/fw.hacluster.events.php")) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.hacluster.events.php",
@@ -1950,8 +2164,11 @@ class left_menus{
 
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.rdpproxy.connections.php",
-            "ICO"=>"fas fa-users","TEXT"=>"{policies}"));
+            "ICO"=>"fa-solid fa-building-shield","TEXT"=>"{policies}"));
 
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.rdpproxy.decoys.php",
+            "ICO"=>"fas fa-user-secret","TEXT"=>"{rdpproxy_decoys}"));
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.rdpproxy.sessions.php",
             "ICO"=>"fa fa-desktop","TEXT"=>"{sessions}"));
@@ -1963,6 +2180,10 @@ class left_menus{
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.rdpproxy.events.php",
             "ICO"=>ico_eye,"TEXT"=>"{events}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.rdpproxy.siem.php",
+            "ICO"=>"fad fa-chart-pie","TEXT"=>"SIEM"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.rdpproxy.mfa.php",
+            "ICO"=>"fas fa-mobile-screen-button","TEXT"=>"{second_factor}"));
 
 
         //--------------------------- RDP PROXY - END
@@ -1974,6 +2195,7 @@ class left_menus{
 
     function isProxy():bool{
         if($this->users->AsSystemAdministrator){
+
             return true;
         }
 
@@ -1984,10 +2206,12 @@ class left_menus{
         if($this->users->isWebStatisticsAdministratorOnly()){
             return false;
         }
-        if(!$this->users->SQUID_INSTALLED){return false;}
-        if(($this->users->AsProxyMonitor)
-            OR ($this->users->AsWebStatisticsAdministrator)
-            OR ($this->users->AsDansGuardianAdministrator)){
+
+        if( $this->users->AsProxyMonitor){return true;}
+        if( $this->users->AsWebStatisticsAdministrator){
+            return true;
+        }
+        if( $this->users->AsDansGuardianAdministrator){
             return true;
         }
         return false;
@@ -2039,7 +2263,7 @@ class left_menus{
                 "ICO" => "fas fa-file-medical-alt", "TEXT" => "{file_descriptors}",));
 
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.dns.php",
-                "ICO" => "fas fa-database", "TEXT" => "{dns_settings}",));
+                "ICO" => ico_database, "TEXT" => "{dns_settings}",));
             if($SquidMikrotikEnabled==1){
                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.mikrotik.php", "ICO" => "fas fa-router", "TEXT" => "MikroTik",));
             }
@@ -2054,10 +2278,8 @@ class left_menus{
         }
 
         if($this->users->AsProxyMonitor) {
-            $TProxyFortiEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TProxyFortiEnable"));
-            if($TProxyFortiEnable==1) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.fortigate.tproxy.php", "ICO" => ico_firewall, "TEXT" => "Fortigate",));
-            }
+             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.transparent.fortigate.php", "ICO" => ico_firewall, "TEXT" => "Fortigate",));
+            // fw.proxy.transparent.fortigate.php / fw.fortigate.tproxy.php
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.ports.php", "ICO" => "fa-wrench", "TEXT" => "{listen_ports}",));
 
             $f[] = "<li id='left-menu'>";
@@ -2095,9 +2317,10 @@ class left_menus{
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.icap.center.php", "ICO" => "fas fa-plug", "TEXT" => "{icap_center}",));
         }
         if($this->users->AllowViewStatistics) {
-            if ($EnableStatsCommunicator == 0) {
-                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.statistics.service.php", "ICO" => "fad fa-chart-pie", "TEXT" => "{statistics_service}",));
-            }
+
+                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.siem.client.php", "ICO" => "fad fa-chart-pie",
+                    "TEXT" => "{statistics_service}",));
+
         }
 
         if($this->users->AsProxyMonitor) {
@@ -2111,7 +2334,11 @@ class left_menus{
                 )
             );
         }
-
+        if($this->users->AsProxyMonitor) {
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.proxy.quickcheck.php", "ICO" => "fas fa-stopwatch", "TEXT" => "QuickCheck"
+                ));
+        }
 
         if($this->users->AsSquidAdministrator) {
             $f[] = $tpl->LeftMenu(
@@ -2129,6 +2356,14 @@ class left_menus{
         $f[] = $this->Proxy_acls();
         if($this->users->AsSquidAdministrator) {
             $f[] = $this->Proxy_parents();
+        }
+
+        $SquidEnableWebConsoleClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidEnableWebConsoleClient"));
+        if($SquidEnableWebConsoleClient==1){
+            $f[] = $tpl->LeftMenu(array(
+                "PAGE" => "fw.proxy.windows.console.php",
+                "ICO" => ico_microsoft,
+                "TEXT" => "AdminAccess",));
         }
 
         return @implode("\n",$f);
@@ -2192,9 +2427,18 @@ class left_menus{
 
     }
 
+    private function Proxy_acls_privs():bool{
+        if ($this->users->AsDansGuardianAdministrator){
+            return true;
+        }
+        if ($this->users->AsProxyMonitor){
+            return true;
+        }
+        return false;
+    }
 
     private function Proxy_acls(){
-        if (!$this->users->AsDansGuardianAdministrator) {return "";}
+        if (!$this->Proxy_acls_privs()) {return "";}
         $SQUIDACLsEnabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDACLsEnabled"));
         $SQUIDACLsSimpleEnabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDACLsSimpleEnabled"));
         if ($SQUIDACLsEnabled == 0) {return "";}
@@ -2260,6 +2504,7 @@ class left_menus{
         $f[]="<ul class='nav nav-second-level'>";
 
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.hotspot.status.php","ICO" => "fas fa-tachometer-alt", "TEXT" => "{status}",));
+        $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.hotspot.audit.php","ICO" => "fas fa-stethoscope", "TEXT" => "{hotspot_audit}",));
 
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.hotspot.php","ICO" => "fas fa-hotel", "TEXT" => "{parameters}",));
 
@@ -2455,6 +2700,15 @@ class left_menus{
         }
 
         if($this->users->AsDansGuardianAdministrator) {
+            $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
+            if($SQUIDEnable==1){
+                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.squid.strictdeny.php", "ICO" => "fas fa-ban",
+                    "TEXT" => "StrictDeny"));
+
+            }
+
+
+
             if($EnableUfdbGuard==1) {
                 $UseRemoteUfdbguardService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteUfdbguardService"));
                 if($UseRemoteUfdbguardService==0) {
@@ -2472,6 +2726,12 @@ class left_menus{
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.categories.php", "ICO" => "fad fa-books",
                     "TEXT" => "{your_categories}"));
                 $c++;
+                // Certificats de la console Artica Categories Windows (droit CAT) :
+                // meme garde que la page fw.ufdb.categories.mtls.php.
+                if($this->users->AsDansGuardianAdministrator) {
+                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.categories.mtls.php", "ICO" => ico_microsoft,
+                        "TEXT" => "{categories_windows_console}"));
+                }
             }
 
 
@@ -2518,6 +2778,11 @@ class left_menus{
 
                 $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.blacklists.php", "ICO" => "fa fa-ban",
                     "TEXT" => "{deny_websites}"));
+
+                $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.antiflood.php", "ICO" => ico_firewall,
+                    "TEXT" => "Anti Flood/DoS"));
+
+
                 $c++;
             }
         }
@@ -2672,14 +2937,14 @@ class left_menus{
         //<i class="fa-brands fa-windows"></i>
         if($EnableHaExchange==0){return "";}
         $tpl=new template_admin();
-        $f[]="<!-- CATEGORIES SERVICE START  -->";
+        $f[]="<!-- APP_HAPROXY_EXCHANGE START  -->";
         $f[]="                <li id='left-menu'>";
         $f[]="                    <a href='#' ><i class=\"fa-brands fa-windows\"></i> <span class=\"nav-label\">{APP_HAPROXY_EXCHANGE}</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.haexchange.service.php","ICO"=>"fas fa-tachometer-alt","TEXT"=>"{status}",) );
         $f[]="					 </ul>";
         $f[]="</li>";
-        $f[]="<!--  CATEGORIES SERVICE END  -->";
+        $f[]="<!--  APP_HAPROXY_EXCHANGE END  -->";
 
         return @implode("\n",$f);
     }
@@ -2695,7 +2960,7 @@ class left_menus{
         }
         $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
         if($EnableLocalUfdbCatService==0){
-            $f[]="<!-- EnableLocalUfdbCatService -> FALSE  -->";
+            $f[]="<!-- EnableLocalUfdbCatService -> 0 -> FALSE  -->";
             return @implode("\n",$f);
 
         }
@@ -2712,9 +2977,29 @@ class left_menus{
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.categories.php", "ICO" => "fad fa-books",
             "TEXT" => "{your_categories}"));
 
+        // Certificats de la console Artica Categories Windows (droit CAT) :
+        // meme garde que la page fw.ufdb.categories.mtls.php.
+        if($this->users->AsDansGuardianAdministrator) {
+            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.categories.mtls.php", "ICO" => ico_microsoft,
+                "TEXT" => "{categories_windows_console}"));
+        }
+
         if($this->users->AsDansGuardianAdministrator OR $this->users->AsSquidPersonalCategories) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.proxy.categorize.php", "ICO" => "fas fa-book", "TEXT" => "{categorisation}",));
         }
+
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.mcpcatz.php",
+                "ICO" => "fa-solid fa-brain-circuit",
+                "TEXT" => "MCPCatz",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-stats-mcpcatz",
+                    "PAGE" => "fw-left-menus-mcpcatz.php")
+            )
+        );
+
+
+
 
         if($this->users->AsDansGuardianAdministrator OR $this->users->AsSquidAdministrator) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.dnscat.events.php", "ICO" => ico_eye, "TEXT" => "{events}",));
@@ -2775,15 +3060,11 @@ class left_menus{
         $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.proxypac.requests.php');\">
                                                         <i class=\"".ico_eye."\"></i> <span class=\"nav-label\">{realtime_requests}</span> </a>";
         $f[]="							</li>";
-
-
-
-/*
         $f[]="                			<li id='left-menu'>";
         $f[]="                   			<a href='#' OnClick=\"MenuRoot( $(this),'fw.proxypac.stats.php');\">
                                                         <i class=\"fas fa-chart-area\"></i> <span class=\"nav-label\">{statistics}</span> </a>";
         $f[]="							</li>";
-*/
+
 
         $f[]="					 </ul>";
         $f[]="                </li>";
@@ -2833,11 +3114,26 @@ class left_menus{
         $f[]="                    <ul class='nav nav-second-level'>";
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.status.php","ICO"=>"fas fa-tachometer-alt","TEXT"=>"{status}",) );
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.sites.php","ICO"=>"fas fa-list-alt","TEXT"=>"{services}",) );
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.egdeguard.php","ICO"=>"fa-solid fa-block-brick-fire","TEXT"=>"{edgeguard}",) );
+       // $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.sites.php","ICO"=>"fas fa-list-alt","TEXT"=>"{services}",) );
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.sites2.php","ICO"=>ico_earth,"TEXT"=>"{web_services}",) );
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.phpreverse.php","ICO"=>"fab fa-php","TEXT"=>"PHP/WordPress",) );
+         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.egdeguard.php","ICO"=>"fa-solid fa-block-brick-fire","TEXT"=>"{edgeguard}",) );
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.dockerrelay.php","ICO"=>"fab fa-docker","TEXT"=>"{dr_title}",) );
+
+
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.nginx.backends.sla.php",
+                "ICO" => "fas fa-heart-pulse",
+                "TEXT" => "SLA",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-nginx-slas",
+                    "PAGE" => "fw-left-menus-nginx-slas.php")
+            )
+        );
         //$f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.services.php","ICO"=>"fas fa-list-alt","TEXT"=>"{services} 2",) );
 
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.sla.php","ICO"=>ico_performance,"TEXT"=>"SLA",) );
+
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.habackends.php","ICO"=>"fas fa-balance-scale","TEXT"=>"{ha_backends}",) );
 
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.certificates-center.php","ICO"=>ico_certificate,"TEXT"=>"{certificates_center}",) );
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.clients.certificates.php","ICO"=>"fas fa-file-certificate","TEXT"=>"{client_certificates}",) );
@@ -2846,6 +3142,19 @@ class left_menus{
         if($ReverseAppClients==1) {
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.AppClientMTLS.php", "ICO" => ico_admin, "TEXT" => "{admin_clients}",));
         }
+
+
+
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.nginx.status.memory.php",
+                "ICO" => ico_loupe,
+                "TEXT" => "{monitoring}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-monitoring-nginx",
+                    "PAGE" => "fw-left-menus-nginx-monitoring.php")
+            )
+        );
+
 
 
 
@@ -2876,10 +3185,8 @@ class left_menus{
         }
 
 
-        //$f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.webcopy.php","ICO"=>"fad fa-copy","TEXT"=>"WebCopy",) );
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.requests.php","ICO"=>ico_eye,"TEXT"=>"{requests}",) );
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.events.php","ICO"=>ico_eye,"TEXT"=>"{service_events}",));
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.nginx.rest.events.php","ICO"=>ico_eye,"TEXT"=>"{APP_REVERSE_PROXY}",));
+
+
 
 
 
@@ -2903,7 +3210,7 @@ class left_menus{
         $tpl=new template_admin();
         $f[]="<!-- WEB Firewall START -->";
         $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fab fa-free-code-camp\"></i> <span class=\"nav-label\">Web Firewall</span> </a>";
+        $f[]="                    <a href='#' ><i class=\"fa-solid fa-block-brick-fire\"></i> <span class=\"nav-label\">Web Firewall</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
 
         $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.fw.status.php",
@@ -2930,6 +3237,10 @@ class left_menus{
 
             $f[] = $tpl->LeftMenu(array("PAGE" => "fw.modsecurity.threats.php",
                 "ICO" => ico_audit, "TEXT" => "Audit",
+            ) );
+
+            $f[] = $tpl->LeftMenu(array("PAGE" => "fw.nginx.waf.falsepositives.php",
+                "ICO" => "fas fa-user-check", "TEXT" => "{wfp_menu}",
             ) );
         }
 
@@ -3016,18 +3327,149 @@ class left_menus{
         }
 
 
-        if ($EnablePostfix == 1) {
-            $ArrayLeftStats[] = "<li id='left-menu'>";
-            $ArrayLeftStats[] = "<a href='#' OnClick=\"MenuRoot( $(this),'fw.postfix.statistics.members.php');\">";
-            $ArrayLeftStats[] = "<i class=\"fas fa-chart-pie\"></i> <span class=\"nav-label\">SMTP:{members}</span> </a>";
-            $ArrayLeftStats[] = "</li>";
-        }
-
 
 
         if(count($ArrayLeftStats)==0){return "";}
         return @implode("\n",$ArrayLeftStats);
 
+    }
+
+    public function SIEM():string{
+        $EnableArticaSiem=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaSiem"));
+        // Detenir un tenant SIEM donne acces a CE menu, sans AllowViewStatistics.
+        //
+        // Les deux droits ne recouvrent pas la meme chose: AllowViewStatistics ouvre les
+        // statistiques historiques de l'appliance entiere, alors qu'un tenant est un perimetre
+        // borne -- l'operateur d'un client ne verra que ses propres donnees, le serveur resolvant
+        // le filtre lui-meme. Exiger le premier pour lire le second reviendrait a demander un
+        // droit plus large que celui que l'on veut accorder.
+        if(!$this->users->AllowViewStatistics && count($this->users->SIEM_TENANTS)==0) {
+            return "<!-- ARTICA SIEM START Missing privileges  AllowViewStatistics -->";
+        }
+        $f[] = "<!-- ARTICA SIEM START  EnableArticaSiem = $EnableArticaSiem -->";
+        if($EnableArticaSiem==0){
+            return @implode("\n",$f);
+        }
+        $f[] = "                <li id='left-menu'>";
+        $f[] = "                    <a href='#' ><i class=\"fas fa-chart-area\"></i> <span class=\"nav-label\">{statistics}/SIEM</span> </a>";
+        $f[] = "	                  <ul class='nav nav-second-level'>";
+        $tpl=new template_admin();
+
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.status.php",
+                "ICO" => ico_speed, "TEXT" => "{global_parameters}",
+                "LEVEL3" => array(
+                "ID" => "fw-left-menus-siem-status",
+                "PAGE" => "fw-left-menus-siem-status.php")
+
+            ));
+
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.maps.php",
+                "ICO" =>ico_earth, "TEXT" => "{the_world}"));
+
+
+
+
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.dashboard.php",
+                "ICO" => "fas fa-chart-area",
+                "TEXT" => "{APP_SQUID}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-siem-proxies",
+                    "PAGE" => "fw-left-menus-siem-proxies.php")
+            )
+        );
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.firewall.dashboard.php",
+                "ICO" => ico_firewall,
+                "TEXT" => "Firewalls",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-siem-firewalls",
+                    "PAGE" => "fw-left-menus-siem-firewalls.php")
+            )
+        );
+
+        // Inventaire des clients internes FortiGate (artica-siem 0059) : l'entrée n'apparaît que
+        // si le SIEM détient des données FortiGate dans le périmètre du compte.
+        if(!function_exists("siem_fortigate_has_data")){
+            include_once(dirname(__FILE__)."/class.statistics_appliance.inc");
+        }
+        if(siem_fortigate_has_data()){
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.siem.fortigate.status.php",
+                    "ICO" => ico_firewall,
+                    "TEXT" => "Fortigate",
+                    "LEVEL3" => array(
+                        "ID" => "fw-left-menus-siem-fortigate",
+                        "PAGE" => "fw-left-menus-siem-fortigate.php")
+                )
+            );
+        }
+
+        // Feature 017 : famille reverse-proxy nginx (requêtes servies + WAF).
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.siem.nginx.status.php",
+                "ICO" => "fas fa-server",
+                "TEXT" => "{reverse_proxies}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-siem-nginx",
+                    "PAGE" => "fw-left-menus-siem-nginx.php")
+            )
+        );
+
+        // Feature 056 : famille DNS (réponses des résolveurs des appliances, 055).
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.siem.dns.status.php",
+                "ICO" => "fas fa-globe",
+                "TEXT" => "{dns_family}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-siem-dns",
+                    "PAGE" => "fw-left-menus-siem-dns.php")
+            )
+        );
+
+        // Feature 060 : famille DHCP (messages dhcpd/dhcrelay des appliances).
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.siem.dhcp.status.php",
+                "ICO" => "fas fa-network-wired",
+                "TEXT" => "{dhcp_family}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-siem-dhcp",
+                    "PAGE" => "fw-left-menus-siem-dhcp.php")
+            )
+        );
+
+        // Famille messagerie (mail) : rejets SMTP en temps réel.
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.postfix.search.php",
+                "ICO" => "fas fa-envelope",
+                "TEXT" => "{messaging}",
+                "LEVEL3" => array(
+                    "ID" => "fw-left-menus-siem-mail",
+                    "PAGE" => "fw-left-menus-siem-mail.php")
+            )
+        );
+
+
+
+
+
+
+
+        $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.statistics.anomalies.php",
+                "ICO" => ico_bug, "TEXT" => "{anomalies}"));
+
+
+
+
+
+
+        $f[] = "					 </ul>";
+        $f[] = "                </li>";
+        $f[] = "<!-- ARTICA SIEM END  -->";
+        return @implode("\n",$f);
     }
 
 
@@ -3070,17 +3512,30 @@ class left_menus{
         $EnableElasticSearch        = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableElasticSearch"));
         $EnableGeoipUpdate          = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableGeoipUpdate"));
         $EnableUfdbGuard            = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUfdbGuard"));
-        $UseRemoteUfdbguardService= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteUfdbguardService"));
+        $UseRemoteUfdbguardService  = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteUfdbguardService"));
+        $EnableArticaSiem           = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaSiem"));
         $tpl=new template_admin();
 
+        //fw.statistics.clickhouse.php
+
         if($APP_MANTICORE_INSTALLED==0){$MantiCoreSearchEnabled=0;}
+
+
+        if($EnableArticaSiem==1){
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.statistics.clickhouse.php",
+                    "ICO" => ico_database, "TEXT" => "{APP_CLICKHOUSE}"));
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.statistics.osint.php",
+                    "ICO" => "fas fa-radar", "TEXT" => "{osint_page_title}"));
+        }
 
         if ($ELASTICSEARCH_INSTALLED == 1) {
             if ($EnableElasticSearch == 1) {
                     $c++;
                     $f[] = $tpl->LeftMenu(
                         array("PAGE" => "fw.elasticsearch.php",
-                            "ICO" => "fas fa-database", "TEXT" => "{APP_ELASTICSEARCH}"));
+                            "ICO" => ico_database, "TEXT" => "{APP_ELASTICSEARCH}"));
 
             }
         }
@@ -3094,7 +3549,7 @@ class left_menus{
                 $c++;
                 $f[] = $tpl->LeftMenu(
                     array("PAGE" => "fw.openldap.php",
-                        "ICO" => "fas fa-database",
+                        "ICO" => ico_database,
                         "TEXT" => "{APP_OPENLDAP}",
                         "LEVEL3" => array(
                             "ID" => "fw-left-menus-openldap",
@@ -3109,7 +3564,7 @@ class left_menus{
                 $c++;
                 $f[] = $tpl->LeftMenu(
                     array("PAGE" => "fw.mysql.php",
-                        "ICO" => "fas fa-database", "TEXT" => "{mysql_server}"));
+                        "ICO" => ico_database, "TEXT" => "{mysql_server}"));
         }
 
         $EnableLokiDB=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLokiDB"));
@@ -3118,7 +3573,7 @@ class left_menus{
             $c++;
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.loki.php",
-                    "ICO" => "fas fa-database",
+                    "ICO" => ico_database,
                     "TEXT" => "{APP_LOKI}",
                     "LEVEL3" => array(
                         "ID" => "fw-left-menus-loki",
@@ -3131,7 +3586,7 @@ class left_menus{
             $c++;
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "fw.manticore.php",
-                    "ICO" => "fas fa-database", "TEXT" => "{APP_MANTICORE}"));
+                    "ICO" => ico_database, "TEXT" => "{APP_MANTICORE}"));
         }
 
         $EnableRedisService = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
@@ -3139,22 +3594,22 @@ class left_menus{
                 $c++;
                 $f[] = $tpl->LeftMenu(
                     array("PAGE" => "fw.redis.php",
-                        "ICO" => "fas fa-database", "TEXT" => "{APP_REDIS_SERVER}"));
+                        "ICO" => ico_database, "TEXT" => "{APP_REDIS_SERVER}"));
             }
 
 
-            if ($EnableGeoipUpdate == 1) {
-                $c++;
-                $f[] = $tpl->LeftMenu(
-                    array("PAGE" => "fw.geoip.php",
-                        "ICO" => "fas fa-database", "TEXT" => "{APP_GEOIP_TITLE}"));
 
-            }
+           $c++;
+           $f[] = $tpl->LeftMenu(
+            array("PAGE" => "fw.geoip.php",
+            "ICO" => ico_database, "TEXT" => "{APP_GEOIP_TITLE}"));
+
+
 
         if($this->users->AsDansGuardianAdministrator) {
             if($EnableUfdbGuard==1) {
                 if ($UseRemoteUfdbguardService == 0) {
-                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.databases.php", "ICO" => "fas fa-database",
+                    $f[] = $tpl->LeftMenu(array("PAGE" => "fw.ufdb.databases.php", "ICO" => ico_database,
                         "TEXT" => "{categories_databases}"));
                 }
             }
@@ -3193,7 +3648,11 @@ class left_menus{
     }
 
     public function NetworkAgents(): string {
-        if(!$this->users->AsArticaMetaAdmin){return "";}
+        // Infogerant (AsArticaMetaAdmin) ou administrateur de tenant (AsMetaAdmin) ; les entrees
+        // reservees a l'infogerant (tenants, clients mTLS) suivent meta_is_provider().
+        if(!function_exists("meta_can_view")){include_once(dirname(__FILE__)."/class.users.menus.inc");}
+        if(!meta_can_view($this->users)){return "";}
+        $provider=meta_is_provider($this->users);
         $EnableArticaMeta=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaMeta"));
         if($EnableArticaMeta==0){return "";}
         $tpl=new template_admin();
@@ -3204,7 +3663,17 @@ class left_menus{
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.php", "ICO"=>ico_dashboard,"TEXT"=>"{status}"));
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.list.php", "ICO"=>ico_computer,"TEXT"=>"{agents_list}"));
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.groups.php", "ICO"=>"fas fa-layer-group","TEXT"=>"{agent_groups}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.l2.fleet.php", "ICO"=>"fas fa-sitemap","TEXT"=>"{l2_fleet}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.packages.fleet.php", "ICO"=>"fas fa-box-open","TEXT"=>"{netagents_aptfleet_menu}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.policies.php", "ICO"=>"fas fa-sliders","TEXT"=>"{policies}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.scenarios.php", "ICO"=>"fas fa-list-check","TEXT"=>"{netagents_scenarios_menu}"));
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.policies.objects.php", "ICO"=>"fas fa-cubes","TEXT"=>"{netagents_po_menu}"));
         $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.artica.repository.php", "ICO"=>ico_database,"TEXT"=>"{repository}"));
+        if($provider){
+            $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.tenants.php", "ICO"=>"fas fa-building","TEXT"=>"{meta_tenants}"));
+            $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.policies.siemconnector.tenantmap.php", "ICO"=>"fas fa-satellite-dish","TEXT"=>"{netagents_siemc_map_menu}"));
+            $f[]=$tpl->LeftMenu(array("PAGE"=>"fw.netagents.mtls.php", "ICO"=>ico_certificate,"TEXT"=>"{mtls_clients}"));
+        }
         $f[]="					 </ul>";
         $f[]="                </li>";
         $f[]="<!-- NETWORK_AGENTS END -->";

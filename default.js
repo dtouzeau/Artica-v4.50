@@ -66,9 +66,38 @@ function NoSpinner(){
 	if ( $('#spinner').children('.ibox-content').hasClass('sk-loading') ){
 		$('#spinner').children('.ibox-content').toggleClass('sk-loading');
 	}
-	
-	$('.modal-backdrop').remove();
+
+	// Le backdrop d'un dialogue OUVERT appartient a Bootstrap: c'est lui qui le cree
+	// a l'ouverture et le retire a la fermeture. L'arracher depuis l'exterieur
+	// desynchronise son etat interne -- le dialogue peut disparaitre de lui-meme et
+	// "modal-open" reste colle sur <body>, donc overflow:hidden, donc plus d'ascenseur
+	// dans le menu lateral jusqu'au CTRL+F5 (symptomes remontes en 08/2026 sur
+	// fw.account.php, dont le contenu appelle NoSpinner() 4 fois).
+	// On conserve l'usage d'origine -- nettoyer un backdrop reste colle alors qu'aucune
+	// modale n'est ouverte -- en ne supprimant que dans ce cas precis.
+	//
+	// "Ouverte" doit inclure "en cours d'ouverture" : Bootstrap 4 (wizard/) ne pose
+	// .show sur la modale qu'a la fin du fondu du backdrop (150 ms), et c'est un
+	// handler transitionend pose sur CE backdrop qui declenche l'affichage. Un
+	// fragment AJAX qui appelle NoSpinner() pendant ce fondu (wiz.migration.php)
+	// retirait le backdrop, donc le handler : modal-open sur <body>, aucune modale
+	// visible (constate 09/2026 sur WizMigOpen). BS3 ne pose .in qu'apres son
+	// propre fondu, meme fenetre. Le marqueur fiable est l'etat interne du
+	// plugin, pose des l'entree dans show() : isShown (BS3) / _isShown (BS4).
+	if( !ModalIsOpenOrOpening() ){
+		$('.modal-backdrop').remove();
+	}
 	$('body').Wload('hide',{time:10});
+}
+
+function ModalIsOpenOrOpening(){
+	if( $('.modal.in, .modal.show').length > 0 ){ return true; }
+	var opening=false;
+	$('.modal').each(function(){
+		var d=$(this).data('bs.modal');
+		if( d && (d.isShown || d._isShown) ){ opening=true; }
+	});
+	return opening;
 }
 
 
@@ -514,15 +543,16 @@ function LoadAjaxSilent(ID,uri,concatene) {
 	        url: uri,
 	       
 		error: function(XMLHttpRequest, textStatus, errorThrown) {
-        		var StatusLength=textStatus.length;
-				if (errorThrown=='Internal Server Error'){
-					return OutError(ID,uri,errorThrown,textStatus);
+				// Same rule as LoadAjax: see LoadAjaxRetryDelay.
+				var attempt=LoadAjaxAttempts[uri]||0;
+				var delay=LoadAjaxRetryDelay(XMLHttpRequest.status,textStatus,attempt);
+				if(delay>=0){
+					LoadAjaxAttempts[uri]=attempt+1;
+					setTimeout(function(){ LoadAjaxSilent(ID,uri,concatene); },delay);
+					return;
 				}
-
-        		if(StatusLength==0){ LoadAjax(ID,uri,concatene); return; }
-	      		if(textStatus=='error'){ LoadAjax(ID,uri,concatene);return;}
-		 		if(textStatus=='Service Unavailable'){JavaScriptError=JavaScriptError+1;if(JavaScriptError<2){ LoadAjax(ID,uri,concatene); } }
-				return OutError(ID,uri,errorThrown,textStatus);
+				delete LoadAjaxAttempts[uri];
+				return OutError(ID,uri,errorThrown||("HTTP "+XMLHttpRequest.status),textStatus,XMLHttpRequest.status);
 
 			 try{
 				 $('body').Wload('hide',{time:800});
@@ -531,6 +561,7 @@ function LoadAjaxSilent(ID,uri,concatene) {
 			 }
         	},
         	success: function(data) {
+				delete LoadAjaxAttempts[uri];
 				$('#'+ID).html(data);
 				try{
 					$('body').Wload('hide',{time:800});
@@ -569,36 +600,72 @@ function LoadAjax(ID,uri,concatene) {
 	        url: uri,
 	        beforeSend: function() {  BuildingWait(ID,SpinnerType); },
 			error: function(XMLHttpRequest, textStatus, errorThrown) {
-
-        		var StatusLength=textStatus.length;
-        		if(StatusLength===0){
-					LoadAjax(ID,uri,concatene);
-					return;
+				// Under HTTP/2 errorThrown (statusText) is always empty, so the old
+				// test errorThrown=='Internal Server Error' never matched and a PHP
+				// fatal error was retried in a tight loop (143 000 requests in 2 h).
+				var attempt=LoadAjaxAttempts[uri]||0;
+				var delay=LoadAjaxRetryDelay(XMLHttpRequest.status,textStatus,attempt);
+				if(delay<0){
+					delete LoadAjaxAttempts[uri];
+					return OutError(ID,uri,errorThrown||("HTTP "+XMLHttpRequest.status),textStatus,XMLHttpRequest.status);
 				}
-				if (errorThrown=='Internal Server Error'){
-					return OutError(ID,uri,errorThrown,textStatus);
-
-				}
-	      		if(textStatus=='error'){ LoadAjax(ID,uri,concatene);return;}
-		 		if(textStatus=='Service Unavailable'){
-					 JavaScriptError=JavaScriptError+1;
-					 if(JavaScriptError<2){
-						 LoadAjax(ID,uri,concatene);
-						 return
-					 }
-					return OutError(ID,uri,errorThrown,textStatus);
-				}
-
-
+				LoadAjaxAttempts[uri]=attempt+1;
+				setTimeout(function(){ LoadAjax(ID,uri,concatene); },delay);
         	},
-        	success: function(data) { $('#'+ID).html(data); $('body').Wload('hide',{time:800}); }
-           });	
-	
+        	success: function(data) { delete LoadAjaxAttempts[uri]; $('#'+ID).html(data); $('body').Wload('hide',{time:800}); }
+           });
+
 }
 
-function OutError(ID,uri,errorThrown,textStatus){
+// Retry counters of LoadAjax, keyed by URI.
+var LoadAjaxAttempts={};
 
-	datas="<div class='widget red-bg p-lg text-center'><H1>An error has occurred making the request:<br> <code>"+uri+"</code><br>error Thrown:&laquo;" + errorThrown+"&raquo;<br>Status: &laquo;"+textStatus+"&raquo;</H1></div>";
+// LoadAjaxRetryDelay decides what LoadAjax does after a failed request.
+//   httpStatus: XMLHttpRequest.status (0 = no HTTP answer: network cut, abort, timeout)
+//   textStatus: jQuery status ("error", "timeout", "abort", "parsererror", "")
+//   attempt:    number of retries already made for this URI (0 on the first failure)
+// Returns the delay in milliseconds before retrying, or -1 to stop and show the error.
+function LoadAjaxRetryDelay(httpStatus,textStatus,attempt){
+	// Same policy as Loadjs(): at most 3 retries, 800 ms then doubling.
+	if(attempt>=3){return -1;}
+	// Wanted or permanent: the block was reloaded/left, or the answer is
+	// unreadable. A timeout already cost 40 s: retry it once, not three times.
+	if(textStatus==="abort" || textStatus==="parsererror"){return -1;}
+	if(textStatus==="timeout"){return attempt===0 ? 800 : -1;}
+	// No HTTP answer (connection closed under a reused keep-alive, network cut)
+	// or nginx/PHP-FPM restarting: transient. A 500 is a PHP fatal error and a
+	// 4xx a refusal (CSRF, privileges, 404): retrying them only loops.
+	if(httpStatus===0 || httpStatus===502 || httpStatus===503 || httpStatus===504){
+		return 800*Math.pow(2,attempt);
+	}
+	return -1;
+}
+
+// Translated labels of OutError(), set by the console header (template_admin::build_heads);
+// the English texts below are the fallback.
+var ArticaAjaxI18n=window.ArticaAjaxI18n||{};
+
+function OutErrorEscape(s){
+	return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+
+function OutError(ID,uri,errorThrown,textStatus,httpStatus){
+	var datas;
+	var i18n=window.ArticaAjaxI18n||{};
+	// HTTP 0 = no HTTP answer at all (after the retries): most often the browser stopped the request because it asks
+	// again to trust the console certificate (self-signed or renewed), or the connection was cut. Reloading the page
+	// shows the certificate prompt. An abort is a block reloaded or left on purpose, a timeout keeps the red error.
+	if(httpStatus===0 && textStatus!=="abort" && textStatus!=="timeout"){
+		var title=i18n.http0_title||"The connection to the console was interrupted";
+		var text=i18n.http0_text||"Your browser may be asking again to trust the certificate of the console. Refresh the page and, if asked, accept the certificate.";
+		var button=i18n.http0_button||"Refresh the page";
+		datas="<div class='widget yellow-bg p-lg text-center'><H2><i class='fas fa-exclamation-triangle'></i>&nbsp;"+OutErrorEscape(title)+"</H2>"+
+			"<p style='font-size:16px'>"+OutErrorEscape(text)+"</p>"+
+			"<button type='button' class='btn btn-default btn-rounded' OnClick='document.location.reload();'><i class='fas fa-sync-alt'></i>&nbsp;"+OutErrorEscape(button)+"</button>"+
+			"<p style='margin-top:10px;font-size:12px;opacity:.8'><code>"+OutErrorEscape(uri)+"</code></p></div>";
+	}else{
+		datas="<div class='widget red-bg p-lg text-center'><H1>An error has occurred making the request:<br> <code>"+OutErrorEscape(uri)+"</code><br>error Thrown:&laquo;" + OutErrorEscape(errorThrown)+"&raquo;<br>Status: &laquo;"+OutErrorEscape(textStatus)+"&raquo;</H1></div>";
+	}
 	if(document.getElementById(ID)) {
 		document.getElementById(ID).innerHTML = datas;
 	}
@@ -3379,6 +3446,10 @@ function Loadjs(src, lock, opts) {
 	var maxRetries = (opts.maxRetries != null) ? opts.maxRetries : 3;
 	var retryDelay = (opts.retryDelay != null) ? opts.retryDelay : 800;
 	var expect = opts.expect || "js";   // "js" | "html" | "auto"
+	// Extra HTTP statuses the caller knows to be transient. fw.progress.php passes
+	// [403]: right after a package install, nginx answered 403 for a few seconds
+	// (system directories briefly unreadable) and the progress loop died at 70 %.
+	var retryStatuses = opts.retryStatuses || [];
 
 	// add marker ONCE
 	if (src.indexOf("jQueryLjs=yes") === -1) {
@@ -3459,7 +3530,7 @@ function Loadjs(src, lock, opts) {
 			var msg = (errorThrown || textStatus || "").toString();
 
 			// Retry only on actual transient HTTP errors
-			if (status === 0 || status === 500 || status === 502 || status === 503 || status === 504) {
+			if (status === 0 || status === 500 || status === 502 || status === 503 || status === 504 || retryStatuses.indexOf(status) !== -1) {
 				doRetry("HTTP " + status + " " + msg);
 				return;
 			}
@@ -4100,5 +4171,391 @@ function loadJS(src) {
 		document.head.appendChild(script);
 	});
 }
+
+/* =========================================================================
+ * ArticaRefresh — moteur de rafraichissement periodique cote navigateur.
+ *
+ * Remplace le couple RefreshInterval_js()/fw.status.interval.php, qui
+ * declenchait une requete PHP par widget uniquement pour fabriquer un
+ * setInterval, puis chargeait deux fois le contenu au demarrage.
+ *
+ *   ArticaRefresh('div-id','fw.page.php?status=yes',5);      // reponse HTML
+ *   ArticaRefresh.js('div-id','fw.page.php?status=yes',5);   // reponse JS
+ *   ArticaRefresh.stopDiv('div-id'); ArticaRefresh.stopAll();
+ *   ArticaRefresh.now('div-id','fw.page.php?status=yes');    // tick immediat
+ *   ArticaRefresh.list();                                    // debug console
+ *
+ * Garanties :
+ *  - un seul timer par couple (div,url), pas de doublon si le code est rejoue
+ *  - pas de recouvrement : le tick suivant est planifie APRES la reponse
+ *  - pas de reecriture du DOM si le HTML recu est identique au precedent
+ *  - pas de requete si l'onglet est cache ou si le div est hors ecran
+ *  - arret automatique quand le div disparait (navigation AJAX)
+ *  - une panne installee grise le widget et date la donnee affichee
+ *    (voir ArticaRefresh.onFailure / .onRecover / .staleAfter / .i18n)
+ * ========================================================================= */
+(function (w) {
+	'use strict';
+
+	var TIMERS = {};
+	var MIN_INTERVAL = 3;		// secondes
+	var MAX_INTERVAL = 3600;	// secondes
+	var VIEWPORT_MARGIN = 250;	// px tolerance autour du viewport
+	var MAX_BACKOFF = 8;		// multiplicateur max de l'intervalle en erreur
+	var STAGGER = 120;			// ms entre deux premiers chargements
+	var STAGGER_MAX = 600;		// ms
+	var CSS_ID = 'arefresh-style';
+
+	/* Codes sur lesquels reessayer ne sert a rien : la ressource n'existe pas
+	 * ou nous n'y avons pas droit. Tout le reste (0 reseau, 408, 429, 5xx) est
+	 * considere comme transitoire. */
+	var PERMANENT = { 400: 1, 401: 1, 403: 1, 404: 1, 405: 1, 410: 1, 501: 1 };
+
+	function mkkey(div, url) { return div + "\n" + url; }
+
+	function nowMs() { return (new Date()).getTime(); }
+
+	/* Un div sans boite (contenu vide) reste eligible : sinon un widget qui
+	 * ne s'affiche qu'en cas d'alerte ne se chargerait jamais. */
+	function isViewable(el) {
+		if (el.offsetParent === null) {
+			var pos = '';
+			try { pos = w.getComputedStyle(el).position; } catch (e) { pos = ''; }
+			if (pos !== 'fixed') { return false; }	// display:none (ou ancetre cache)
+		}
+		var r = el.getBoundingClientRect();
+		if (r.width === 0 && r.height === 0) { return true; }
+		var vh = w.innerHeight || document.documentElement.clientHeight;
+		var vw = w.innerWidth || document.documentElement.clientWidth;
+		if (r.bottom < -VIEWPORT_MARGIN) { return false; }
+		if (r.top > vh + VIEWPORT_MARGIN) { return false; }
+		if (r.right < -VIEWPORT_MARGIN) { return false; }
+		if (r.left > vw + VIEWPORT_MARGIN) { return false; }
+		return true;
+	}
+
+	function sessionExpired(txt) {
+		if (!/^\s*</.test(txt)) { return false; }
+		if (!/http-equiv\s*=\s*["']?\s*refresh/i.test(txt)) { return false; }
+		return /fw\.login\.php|logoff/i.test(txt);
+	}
+
+	function pendingCount() {
+		var n = 0;
+		for (var k in TIMERS) { if (TIMERS.hasOwnProperty(k) && !TIMERS[k].loaded) { n++; } }
+		return n;
+	}
+
+	/* --- signalement visuel d'une donnee figee -------------------------
+	 * Le marquage ne touche QUE le div lui-meme (classe, attributs), jamais
+	 * son contenu : la deduplication de apply() compare le payload et le
+	 * noeud, elle reste donc valide et la reprise efface le marquage. */
+	function injectCss() {
+		if (document.getElementById(CSS_ID)) { return; }
+		var head = document.head || document.getElementsByTagName('head')[0];
+		if (!head) { return; }
+		var st = document.createElement('style');
+		st.id = CSS_ID;
+		st.type = 'text/css';
+		st.appendChild(document.createTextNode(
+			'.arefresh-stale{opacity:.55;filter:grayscale(.65);transition:opacity .25s,filter .25s;}' +
+			'.arefresh-stale::after{content:attr(data-arefresh-stale);position:absolute;top:8px;right:8px;' +
+			'z-index:20;background:#ed5565;color:#fff;font-size:11px;font-weight:600;line-height:1;' +
+			'padding:4px 8px;border-radius:3px;white-space:nowrap;pointer-events:none;' +
+			'box-shadow:0 1px 3px rgba(0,0,0,.25);}' +
+			'.arefresh-stopped::after{background:#676a6c;}'
+		));
+		head.appendChild(st);
+	}
+
+	function humanAge(ms) {
+		var s = Math.round(ms / 1000);
+		if (s < 60) { return s + 's'; }
+		var m = Math.floor(s / 60);
+		if (m < 60) { return m + 'mn'; }
+		var h = Math.floor(m / 60);
+		m = m % 60;
+		return h + 'h' + (m < 10 ? '0' : '') + m;
+	}
+
+	function addClass(el, cls) {
+		if (el.classList) { el.classList.add(cls); return; }
+		if ((' ' + el.className + ' ').indexOf(' ' + cls + ' ') === -1) {
+			el.className = el.className ? el.className + ' ' + cls : cls;
+		}
+	}
+
+	function removeClass(el, cls) {
+		if (el.classList) { el.classList.remove(cls); return; }
+		el.className = (' ' + el.className + ' ').split(' ' + cls + ' ').join(' ').replace(/^\s+|\s+$/g, '');
+	}
+
+	function markStale(entry, status, definitive) {
+		var el = document.getElementById(entry.div);
+		if (!el) { return; }
+		injectCss();
+
+		var age = entry.lastOk ? humanAge(nowMs() - entry.lastOk) : '';
+		var label = definitive ? ArticaRefresh.i18n.stopped : ArticaRefresh.i18n.stale;
+		el.setAttribute('data-arefresh-stale', age ? label + ' ' + age : label);
+
+		if (!entry.stale) {
+			/* ::after est en position absolue : il lui faut un ancetre positionne.
+			 * On ne patche que si le div est en static, et on defait a la reprise. */
+			var pos = '';
+			try { pos = w.getComputedStyle(el).position; } catch (e) { pos = ''; }
+			if (pos === 'static' || pos === '') { el.style.position = 'relative'; entry.posPatched = true; }
+
+			entry.prevTitle = el.getAttribute('title');
+			entry.staleNode = el;
+			addClass(el, 'arefresh-stale');
+			entry.stale = true;
+		}
+		if (definitive) { addClass(el, 'arefresh-stopped'); }
+		el.setAttribute('title', ArticaRefresh.i18n.stale + ' - HTTP ' + status + ' - ' + entry.url);
+	}
+
+	function clearStale(entry) {
+		if (!entry.stale) { return; }
+		entry.stale = false;
+		/* On defait sur le noeud reellement patche : si le div a ete recree
+		 * entre-temps, le nouveau ne porte pas notre marquage et son style
+		 * inline ne nous appartient pas. */
+		var el = entry.staleNode;
+		entry.staleNode = null;
+		if (!el) { return; }
+		removeClass(el, 'arefresh-stale');
+		removeClass(el, 'arefresh-stopped');
+		el.removeAttribute('data-arefresh-stale');
+		if (entry.posPatched) { el.style.position = ''; entry.posPatched = false; }
+		if (entry.prevTitle) { el.setAttribute('title', entry.prevTitle); }
+		else { el.removeAttribute('title'); }
+		entry.prevTitle = null;
+	}
+
+	function schedule(entry, delay) {
+		if (entry.dead) { return; }
+		if (entry.timer) { clearTimeout(entry.timer); }
+		entry.timer = setTimeout(function () { tick(entry); }, delay);
+	}
+
+	function destroy(entry) {
+		entry.dead = true;
+		if (entry.timer) { clearTimeout(entry.timer); entry.timer = null; }
+		delete TIMERS[entry.key];
+	}
+
+	/* Le timer n'est jamais arrete quand on met en pause : on saute seulement
+	 * la requete. La reprise est donc automatique en moins d'un intervalle,
+	 * y compris pour un onglet Bootstrap qui redevient visible. */
+	function tick(entry) {
+		if (entry.dead) { return; }
+		var el = document.getElementById(entry.div);
+		if (!el) { destroy(entry); return; }
+		if (entry.inflight) { schedule(entry, entry.interval); return; }
+
+		if (entry.loaded) {
+			if (document.hidden === true) { entry.paused++; schedule(entry, entry.interval); return; }
+			if (!isViewable(el)) { entry.paused++; schedule(entry, entry.interval); return; }
+		}
+		fetchNow(entry);
+	}
+
+	function fetchNow(entry) {
+		entry.inflight = true;
+		$.ajax({
+			type: 'GET',
+			url: entry.url,
+			dataType: 'text',
+			/* parite avec l'ancien code : Loadjs() forcait cache:false (donc un
+			 * _=<ts> anti-cache), LoadAjaxSilent() laissait le defaut jQuery. */
+			cache: (entry.mode !== 'js'),
+			timeout: 40000
+		}).done(function (txt) {
+			var wasFailing = entry.fails;
+			entry.fails = 0;
+			entry.loaded = true;
+			entry.hits++;
+			entry.lastOk = nowMs();
+			if (wasFailing > 0 || entry.stale) { ArticaRefresh.onRecover(entry, wasFailing); }
+			apply(entry, txt);
+		}).fail(function (jqxhr, textStatus, errorThrown) {
+			entry.fails++;
+			var status = (jqxhr && typeof jqxhr.status === 'number') ? jqxhr.status : 0;
+			ArticaRefresh.onFailure(entry, status, textStatus || errorThrown);
+		}).always(function () {
+			entry.inflight = false;
+			if (entry.dead) { return; }
+			var factor = entry.fails > 0 ? Math.min(Math.pow(2, entry.fails), MAX_BACKOFF) : 1;
+			schedule(entry, entry.interval * factor);
+		});
+	}
+
+	function apply(entry, txt) {
+		var el = document.getElementById(entry.div);
+		if (!el) { destroy(entry); return; }
+
+		if (entry.mode === 'js') {
+			/* Un payload JS n'est pas idempotent par construction
+			 * (innerHTML += ..., compteurs) : on l'execute toujours. */
+			try { $.globalEval(txt); }
+			catch (e) { console.error('ArticaRefresh: JS eval error', e, 'URL:', entry.url); }
+			return;
+		}
+
+		/* Mode HTML : .html() remplace le sous-arbre, donc un payload
+		 * identique produit un DOM identique -> on evite reparse, reflow,
+		 * re-execution des <script> et re-creation des objets Chart.
+		 * La comparaison porte aussi sur le noeud : si le div a ete recree
+		 * entre-temps (re-rendu du conteneur parent), il est vide et doit
+		 * etre reecrit meme si le payload n'a pas bouge. */
+		if (txt === entry.last && entry.node === el) { entry.skipped++; return; }
+		entry.last = txt;
+		entry.node = el;
+		$(el).html(txt);
+
+		if (sessionExpired(txt)) { destroy(entry); }
+	}
+
+	function register(div, url, interval, mode) {
+		if (!div || !url) { return null; }
+		var secs = parseInt(interval, 10);
+		if (isNaN(secs) || secs < MIN_INTERVAL) { secs = MIN_INTERVAL; }
+		if (secs > MAX_INTERVAL) {
+			console.warn('ArticaRefresh: interval', secs, 's clamped to', MAX_INTERVAL, 's ->', url);
+			secs = MAX_INTERVAL;
+		}
+		var k = mkkey(div, url);
+		if (TIMERS[k] && !TIMERS[k].dead) {
+			/* deja arme : on ne cree pas de doublon, mais si le div a ete
+			 * recree on redemande le contenu tout de suite. */
+			var known = TIMERS[k];
+			var cur = document.getElementById(div);
+			if (cur && known.node && known.node !== cur && !known.inflight) { schedule(known, 0); }
+			return known;
+		}
+
+		/* Deux rafraichisseurs sur le meme div s'ecraseraient mutuellement :
+		 * l'ancien est un reliquat de la page precedente (meme id reutilise). */
+		for (var old in TIMERS) {
+			if (TIMERS.hasOwnProperty(old) && TIMERS[old].div === div) {
+				console.warn('ArticaRefresh: replacing stale refresher on #' + div, TIMERS[old].url);
+				destroy(TIMERS[old]);
+			}
+		}
+
+		var entry = {
+			key: k, div: div, url: url, mode: mode || 'html',
+			interval: secs * 1000, timer: null, last: null, node: null,
+			inflight: false, loaded: false, dead: false,
+			stale: false, staleNode: null, posPatched: false, prevTitle: null, lastOk: 0,
+			fails: 0, hits: 0, skipped: 0, paused: 0
+		};
+		TIMERS[k] = entry;
+		schedule(entry, Math.min((pendingCount() - 1) * STAGGER, STAGGER_MAX));
+		return entry;
+	}
+
+	function ArticaRefresh(div, url, interval) { return register(div, url, interval, 'html'); }
+
+	ArticaRefresh.js = function (div, url, interval) { return register(div, url, interval, 'js'); };
+
+	ArticaRefresh.now = function (div, url) {
+		var e = TIMERS[mkkey(div, url)];
+		if (e && !e.dead && !e.inflight) { schedule(e, 0); }
+		return !!e;
+	};
+
+	ArticaRefresh.stop = function (div, url) {
+		var e = TIMERS[mkkey(div, url)];
+		if (e) { destroy(e); return true; }
+		return false;
+	};
+
+	ArticaRefresh.stopDiv = function (div) {
+		var n = 0;
+		for (var k in TIMERS) {
+			if (TIMERS.hasOwnProperty(k) && TIMERS[k].div === div) { destroy(TIMERS[k]); n++; }
+		}
+		return n;
+	};
+
+	ArticaRefresh.stopAll = function () {
+		var n = 0;
+		for (var k in TIMERS) { if (TIMERS.hasOwnProperty(k)) { destroy(TIMERS[k]); n++; } }
+		return n;
+	};
+
+	ArticaRefresh.list = function () {
+		var out = [];
+		for (var k in TIMERS) {
+			if (!TIMERS.hasOwnProperty(k)) { continue; }
+			var e = TIMERS[k];
+			out.push({ div: e.div, url: e.url, mode: e.mode, every: (e.interval / 1000) + 's',
+				hits: e.hits, skipped: e.skipped, paused: e.paused, fails: e.fails,
+				stale: e.stale, age: e.lastOk ? humanAge(nowMs() - e.lastOk) : '-' });
+		}
+		if (console.table) { console.table(out); }
+		return out;
+	};
+
+	/* Libelles du bandeau. class.template-admin.inc les remplace par les
+	 * versions traduites au premier RefreshInterval_* de la page. */
+	ArticaRefresh.i18n = { stale: 'Stale data', stopped: 'Refresh stopped' };
+
+	/* Nombre d'echecs consecutifs toleres avant de signaler visuellement que
+	 * la donnee affichee est figee (3 echecs = ~21s avec le backoff). */
+	ArticaRefresh.staleAfter = 3;
+
+	/* Politique d'echec. Trois regimes :
+	 *  - incident transitoire      -> silence, le contenu precedent reste
+	 *  - panne installee (>= N)    -> le widget est grise + badge d'anciennete
+	 *  - erreur definitive (4xx)   -> badge fige et timer arrete
+	 * Un widget de supervision qui affiche sans le dire une valeur vieille de
+	 * cinq minutes est plus dangereux qu'un widget visiblement en erreur.
+	 * Surchargeable par page : ArticaRefresh.onFailure = function(e,s,t){...}
+	 */
+	ArticaRefresh.onFailure = function (entry, status, textStatus) {
+		if (entry.fails === 1 || entry.fails % 10 === 0) {
+			console.warn('ArticaRefresh:', entry.fails, 'consecutive failure(s)',
+				'HTTP', status, textStatus, 'URL:', entry.url);
+		}
+
+		if (PERMANENT[status]) {
+			console.error('ArticaRefresh: giving up on #' + entry.div,
+				'HTTP', status, '-', entry.url);
+			markStale(entry, status, true);
+			destroy(entry);
+			return;
+		}
+
+		if (entry.fails >= ArticaRefresh.staleAfter) { markStale(entry, status, false); }
+	};
+
+	/* Retour a la normale : on efface le marquage avant de reecrire le
+	 * contenu. Surchargeable au meme titre que onFailure. */
+	ArticaRefresh.onRecover = function (entry, previousFails) {
+		if (previousFails > 0) {
+			console.info('ArticaRefresh: #' + entry.div, 'recovered after',
+				previousFails, 'failure(s)');
+		}
+		clearStale(entry);
+	};
+
+	/* Retour sur l'onglet : on rafraichit tout de suite, en escalier. */
+	document.addEventListener('visibilitychange', function () {
+		if (document.hidden) { return; }
+		var i = 0;
+		for (var k in TIMERS) {
+			if (!TIMERS.hasOwnProperty(k)) { continue; }
+			var e = TIMERS[k];
+			if (e.dead || e.inflight) { continue; }
+			schedule(e, Math.min(i * STAGGER, STAGGER_MAX));
+			i++;
+		}
+	});
+
+	w.ArticaRefresh = ArticaRefresh;
+})(window);
 
 

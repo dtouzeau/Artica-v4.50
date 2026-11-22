@@ -1,5 +1,5 @@
-<add_new_fetchmail_rule>New fetch rule</add_new_fetchmail_rule>
+<add_new_fetchmail_rule>Nueva regla de recuperaci&#243;n</add_new_fetchmail_rule>
 <add_new_fetchmail_rule_text>A%C3%B1ade una nueva regla para recibir correos de tu proveedor de Internet eMail</add_new_fetchmail_rule_text>
-<enable_fetchmail>Enable fetchmail</enable_fetchmail>
-<enable_fetchmail_text>If you turn to green, you will be able to retreive mails from your ISP or other mailbox server.</enable_fetchmail_text>
-<fetchmail_rules_text>View, edit, add your fetch mails rules</fetchmail_rules_text>
+<enable_fetchmail>Habilitar fetchmail</enable_fetchmail>
+<enable_fetchmail_text>Si lo pone en verde, podr&#225; recuperar correos de su ISP u otro servidor de buzones.</enable_fetchmail_text>
+<fetchmail_rules_text>Ver, editar, a&#241;adir sus reglas de recuperaci&#243;n de correo</fetchmail_rules_text>

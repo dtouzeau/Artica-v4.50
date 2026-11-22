@@ -1,1 +1,1 @@
-<fetchmail_daemon_settings>Fetchmail daemon settings</fetchmail_daemon_settings>
+<fetchmail_daemon_settings>Configura&#231;&#245;es do daemon fetchmail</fetchmail_daemon_settings>

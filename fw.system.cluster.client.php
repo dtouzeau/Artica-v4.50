@@ -8,15 +8,18 @@ include_once(dirname(__FILE__)."/ressources/class.snapshots.blacklists.inc");
 include_once(dirname(__FILE__)."/ressources/externals/class.aesCrypt.inc");
 
 
-if(isset($_GET["tabs"])){tabs();exit;}
+if(isset($_GET["build-page"])){build_page();exit;}
+// Ancien point d'entree du contenu (onglets en tete de page) : garde pour les liens existants.
+if(isset($_GET["tabs"])){build_page();exit;}
 if(isset($_GET["file-uploaded"])){file_uploaded_js();exit;}
 if(isset($_GET["client-certificate-js"])){client_certificate_js();exit;}
 if(isset($_GET["client-certificate-popup"])){client_certificate_popup();exit;}
 if(isset($_GET["parameters-js"])){parameters_js();exit;}
 if(isset($_GET["parameters-popup"])){parameters();exit;}
-if(isset($_GET["parameters-start"])){parameters_start();exit;}
+if(isset($_GET["parameters-tab"])){parameters_tab();exit;}
 if(isset($_GET["parameters-flat"])){parameters_flat();exit;}
 
+// Aussi appele par fw.dashboard.HaCluster.php (div package-cluster-status) : doit rester autonome.
 if(isset($_GET["status"])){status();exit;}
 if(isset($_POST["PowerDNSClusterSlaveInterface"])){Save();exit;}
 if(isset($_GET["freeze"])){freeze();exit;}
@@ -26,7 +29,7 @@ function page(){
     $tpl=new template_admin();
 
     $html=$tpl->page_header("Cluster ({slave_mode})",
-        "fas fa-clone","{pdns_slave_mode_explain}","$page?tabs=yes",
+        "fas fa-clone","{pdns_slave_mode_explain}","$page?build-page=yes",
         "cluster-client","progress-cluster-restart",false,"table-cluster-client");
 
     if(isset($_GET["main-page"])){
@@ -35,14 +38,63 @@ function page(){
     echo $tpl->_ENGINE_parse_body( $html);
 
 }
-function tabs():bool{
+
+// Colonne d'etat persistante a gauche (rafraichie toutes les 3 s), onglets a droite.
+function build_page():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $array["{parameters}"]="$page?parameters-start=yes";
+
+    $array["{parameters}"]="$page?parameters-tab=yes";
     $array["{events}"]="fw.system.cluster.events.php";
-    echo $tpl->tabs_default($array);
+
+    $html[]="<table style='width:100%;margin-top:10px'>";
+    $html[]="<tr>";
+    $html[]="<td style='width:400px;vertical-align:top'>";
+    $html[]="<div id='cluster-status' style='width:400px'></div>";
+    $html[]="</td>";
+    $html[]="<td style='width:99%;vertical-align:top;padding-left:20px'>";
+    // tabs_default() rend du HTML deja traduit : il ne repasse pas par le moteur.
+    $tabs=$tpl->tabs_default($array);
+    $end[]="</td>";
+    $end[]="</tr>";
+    $end[]="</table>";
+    // Le TINY apres les onglets, dans son propre script (recette des pages).
+    $end[]="<script>";
+    $end[]=$tpl->RefreshInterval_js("cluster-status",$page,"status=yes");
+    $end[]=cluster_client_tiny();
+    $end[]="</script>";
+    echo $tpl->_ENGINE_parse_body($html).$tabs.$tpl->_ENGINE_parse_body($end);
     return true;
 }
+
+function cluster_client_tiny():string{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $refresh="LoadAjaxSilent('cluster-client-flat','$page?parameters-flat=yes');LoadAjaxSilent('cluster-status','$page?status=yes');";
+    $PowerDNSClusterMasterAddress=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterMasterAddress"));
+    $PowerDNSClusterSlaveCertificate=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveCertificate");
+
+    $topbuttons=array();
+    $users=new usersMenus();
+    if($PowerDNSClusterMasterAddress<>null && $users->AsSystemAdministrator) {
+        // Avec un certificat client, la synchronisation passe par le protocole v2 (mTLS).
+        $v2=strlen($PowerDNSClusterSlaveCertificate)>10?"/v2":"";
+        $jsSync=$tpl->framework_buildjs("/cluster/client$v2/download",
+            "artica.cluster.progress","artica.cluster.log","progress-cluster-restart",$refresh);
+        $jsForce=$tpl->framework_buildjs("/cluster/client$v2/force",
+            "artica.cluster.progress","artica.cluster.log","progress-cluster-restart",$refresh);
+        $topbuttons[] = array($jsSync, ico_refresh, "{synchronize}");
+        $topbuttons[] = array($jsForce, ico_refresh, "{force_synchronize}");
+    }
+
+    $TINY_ARRAY["TITLE"]="Cluster ({slave_mode})";
+    $TINY_ARRAY["ICO"]="fas fa-clone";
+    $TINY_ARRAY["EXPL"]="{pdns_slave_mode_explain}";
+    $TINY_ARRAY["URL"]="cluster-client";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    return "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+}
+
 function parameters_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -75,168 +127,96 @@ function file_uploaded_js():bool{
         $tpl->js_error($json->Error);
         return false;
     }
-    echo "dialogInstance1.close();LoadAjax('form-flat','$page?parameters-flat=yes');";
+    echo "dialogInstance1.close();LoadAjaxSilent('cluster-client-flat','$page?parameters-flat=yes');LoadAjaxSilent('cluster-status','$page?status=yes');";
     return true;
 
 }
 
-function parameters_start(){
-    $tpl=new template_admin();
+function parameters_tab():bool{
     $page=CurrentPageName();
-
-    $html[]="<table style='width:100%;margin-top:20px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:400px;vertical-align:top'>";
-    $html[]="<div id='cluster-status' style='width:400px;vertical-align: top'></div>";
-    $html[]="</td>";
-    $html[]="<td style='width:99%;vertical-align: top'>";
-    $html[]="<div id='form-flat'></div>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-
-    $js=$tpl->RefreshInterval_js("cluster-status",$page,"status=yes");
-    $html[]="<script>";
-    $html[]=$js;
-    $html[]="LoadAjax('form-flat','$page?parameters-flat=yes');";
-    $html[]="</script>";
-
+    $tpl=new template_admin();
+    $html[]="<div id='cluster-client-flat' style='margin-top:10px'></div>";
+    $html[]="<script>LoadAjaxSilent('cluster-client-flat','$page?parameters-flat=yes');</script>";
     echo $tpl->_ENGINE_parse_body($html);
-
+    return true;
 }
+
+// Certificat client tel que stocke par ImportClientCertificate (classcerts.OpenSSLCertificateData).
+function cluster_client_certificate():array{
+    $raw=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveCertificate");
+    if(strlen($raw)<10){return array();}
+    $json=json_decode($raw,true);
+    if(!is_array($json)){return array();}
+    $name=trim((string)($json["CommonName"] ?? ""));
+    $Subject=(string)($json["Subject"] ?? "");
+    if($Subject<>""){
+        $Exploded=explode(",",$Subject);
+        if($name==""){$name=trim($Exploded[0]);}
+        foreach ($Exploded as $Value) {
+            if (preg_match("#^\s*OU=(.+)#i", $Value, $re)) {$name.=" /".trim($re[1]);}
+            elseif (preg_match("#^\s*O=(.+)#i", $Value, $re)) {$name.=" /".trim($re[1]);}
+        }
+    }
+    $issuer=(string)($json["Issuer"] ?? "");
+    if(preg_match("#CN=([^,]+)#i",$issuer,$re)){$issuer=trim($re[1]);}
+    return array("name"=>$name,"issuer"=>$issuer,"notafter"=>intval($json["NotAfter"] ?? 0));
+}
+
 function parameters_flat(){
     $tpl=new template_admin();
     $page=CurrentPageName();
 
+    $HaClusterClient = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
+    if($HaClusterClient==1){
+        $html[]="<div style='padding-left:15px'><H1>{APP_HACLUSTER_CLIENT}</H1><div id='hacluster-client-flat'></div></div>";
+        $html[]="<script>LoadAjax('hacluster-client-flat','fw.dashboard.HaCluster.php?flat=yes');</script>";
+        echo $tpl->_ENGINE_parse_body($html);
+        return;
+    }
+
     $PowerDNSClusterSlaveInterface = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveInterface"));
     $PowerDNSClusterMasterAddress = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterMasterAddress"));
-    $PowerDNSClusterMasterPort = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterMasterPort"));
-
-
+    $PowerDNSClusterMasterPort = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterMasterPort"));
     if ($PowerDNSClusterMasterPort == 0) {
         $PowerDNSClusterMasterPort = 58787;
     }
-
-    $jsRestart=$tpl->framework_buildjs("/cluster/client/download",
-        "artica.cluster.progress","artica.cluster.log","progress-cluster-restart",
-        "LoadAjax('form-flat','$page?parameters-flat=yes');");
-
-    $jsRestartV2=$tpl->framework_buildjs("/cluster/client/v2/download",
-        "artica.cluster.progress","artica.cluster.log","progress-cluster-restart",
-        "LoadAjax('form-flat','$page?parameters-flat=yes');");
-
-    $jsRestartForce=$tpl->framework_buildjs("/cluster/client/force",
-        "artica.cluster.progress","artica.cluster.log","progress-cluster-restart",
-        "LoadAjax('form-flat','$page?parameters-flat=yes');");
-
-    $jsRestartForceV2=$tpl->framework_buildjs("/cluster/client/v2/force",
-        "artica.cluster.progress","artica.cluster.log","progress-cluster-restart",
-        "LoadAjax('form-flat','$page?parameters-flat=yes');");
-
-    $HaClusterClient = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
-    if($HaClusterClient==0) {
-        $ClientCertificate = "";
-        $PowerDNSClusterSlaveCertificate = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveCertificate");
-
-        if (strlen($PowerDNSClusterSlaveCertificate) > 10) {
-            $json = json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveCertificate"));
-
-            if (property_exists($json, "Subject")) {
-                $Exploded = explode(",", $json->Subject);
-                $ClientCertificate = $Exploded[0];
-                foreach ($Exploded as $Value) {
-                    if (preg_match("#OU=(.+)#i", $Value, $re)) {
-                        $ClientCertificate = $ClientCertificate . " /$re[1]";
-                    }
-                    if (preg_match("#O=(.+)#i", $Value, $re)) {
-                        $ClientCertificate = $ClientCertificate . " /$re[1]";
-                    }
-                }
-            }
-        }
-        $tpl->table_form_field_js("Loadjs('$page?client-certificate-js=yes')");
-        if ($ClientCertificate == "") {
-            $tpl->table_form_field_bool("{client_certificate}", 0, ico_certificate);
-        } else {
-            $tpl->table_form_field_text("{client_certificate}", $ClientCertificate, ico_certificate);
-        }
-
-
-
-
-
-        $PowerDNSEnableClusterSlaveSchedule = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlaveSchedule"));
-        if ($PowerDNSEnableClusterSlaveSchedule < 5) {
-            $PowerDNSEnableClusterSlaveSchedule = 15;
-        }
-
-
-
-        $MINS[5] = "{each} 5 {minutes}";
-        $MINS[10] = "{each} 10 {minutes}";
-        $MINS[15] = "{each} 15 {minutes}";
-        $MINS[20] = "{each} 20 {minutes}";
-        $MINS[30] = "{each} 30 {minutes}";
-
-        $tpl->table_form_field_js("Loadjs('$page?parameters-js=yes')");
-        $tpl->table_form_field_text("{master_address}", "$PowerDNSClusterMasterAddress:$PowerDNSClusterMasterPort", ico_server);
-        if (strlen($PowerDNSClusterSlaveInterface) < 2) {
-            $tpl->table_form_field_text("{outgoing_interface}", "{all}", ico_nic);
-        }
-        $tpl->table_form_field_text("{schedule}",$MINS[$PowerDNSEnableClusterSlaveSchedule],ico_clock);
-
-        $html[]=$tpl->table_form_compile();
+    $PowerDNSEnableClusterSlaveSchedule = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlaveSchedule"));
+    if ($PowerDNSEnableClusterSlaveSchedule < 5) {
+        $PowerDNSEnableClusterSlaveSchedule = 15;
     }
 
-    $topbuttons=array();
-
-
-    if($PowerDNSClusterMasterAddress<>null) {
-        $users=new usersMenus();
-        if ($users->AsSystemAdministrator) {
-            $topbuttons[] = array($jsRestart, ico_refresh, "{synchronize}");
-            $topbuttons[] = array($jsRestartForce, ico_refresh, "{force_synchronize}");
-        }
-        $PowerDNSClusterSlaveCertificate = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveCertificate");
-
-        if(strlen($PowerDNSClusterSlaveCertificate)>10) {
-            $topbuttons=array();
-            $topbuttons[] = array($jsRestartV2, ico_refresh, "{synchronize}");
-            $topbuttons[] = array($jsRestartForceV2, ico_refresh, "{force_synchronize}");
-        }
+    $cert=cluster_client_certificate();
+    $tpl->table_form_field_js("Loadjs('$page?client-certificate-js=yes')");
+    if (!isset($cert["name"]) || $cert["name"] == "") {
+        $tpl->table_form_field_bool("{client_certificate}||{cluster_client_certificate_explain}", 0, ico_certificate);
+    } else {
+        $tpl->table_form_field_text("{client_certificate}||{cluster_client_certificate_explain}", htmlspecialchars($cert["name"]), ico_certificate);
     }
 
-    $jstiny2="";
-
-    if($HaClusterClient==1){
-        $html[]="<div style='padding-left:15px'><H1>{APP_HACLUSTER_CLIENT}</H1><div id='hacluster-client-flat'></div></div>";
-        $jstiny2="LoadAjax('hacluster-client-flat','fw.dashboard.HaCluster.php?flat=yes');";
+    $master="-";
+    if($PowerDNSClusterMasterAddress<>""){
+        $master=htmlspecialchars("$PowerDNSClusterMasterAddress:$PowerDNSClusterMasterPort");
+    }
+    $iface="{all}";
+    if (strlen($PowerDNSClusterSlaveInterface) >= 2) {
+        $iface=htmlspecialchars($PowerDNSClusterSlaveInterface);
     }
 
+    $tpl->table_form_field_js("Loadjs('$page?parameters-js=yes')");
+    $tpl->table_form_field_text("{master_address}||{cluster_master_address_explain}", $master, ico_server);
+    // Toujours affichee : l'ancienne page ne montrait l'interface que lorsqu'elle etait vide.
+    $tpl->table_form_field_text("{outgoing_interface}||{cluster_outgoing_interface_explain}", $iface, ico_nic);
+    $tpl->table_form_field_text("{schedule}||{cluster_schedule_explain}","{each} $PowerDNSEnableClusterSlaveSchedule {minutes}",ico_clock);
 
-    $TINY_ARRAY["TITLE"]="Cluster ({slave_mode})";
-    $TINY_ARRAY["ICO"]="fas fa-clone";
-    $TINY_ARRAY["EXPL"]="{pdns_slave_mode_explain}";
-    $TINY_ARRAY["URL"]="cluster-client";
-    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);;
-    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-
-
-    $html[]="<script>";
-    $html[]=$jstiny;
-    $html[]=$jstiny2;
-    $html[]="</script>";
-
-    echo $tpl->_ENGINE_parse_body($html);
-
+    echo $tpl->table_form_compile();
 }
 function parameters():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
 
-    $jsRestart="dialogInstance1.close();LoadAjax('form-flat','$page?parameters-flat=yes');".$tpl->framework_buildjs("/cluster/client/download",
+    $jsRestart="dialogInstance1.close();LoadAjaxSilent('cluster-client-flat','$page?parameters-flat=yes');".$tpl->framework_buildjs("/cluster/client/download",
         "artica.cluster.progress","artica.cluster.log","progress-cluster-restart",
-        "LoadAjax('table-cluster-client','$page?tabs=yes');");
+        "LoadAjaxSilent('cluster-status','$page?status=yes');");
 
     $PowerDNSClusterSlaveInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveInterface"));
     $PowerDNSClusterMasterAddress=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterMasterAddress"));
@@ -282,7 +262,7 @@ function Save():bool{
         $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/cluster/client/v2/status"));
 
         if(!$data->Status){
-            echo "jserror: $data->Error";
+            echo (new template_admin())->post_error("$data->Error");
             return false;
         }
 
@@ -313,12 +293,12 @@ function Save():bool{
     $error=curl_errno($ch);
     if($error>0){
         $text=curl_error($ch);
-        echo "jserror:".$tpl->_ENGINE_parse_body("{error} $error $text");
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body("{error} $error $text"));
         return false;
     }
 
     if($CURLINFO_HTTP_CODE>200){
-        echo "jserror:".$tpl->_ENGINE_parse_body("https://$PowerDNSClusterMasterAddress:$PowerDNSClusterMasterPort<br>{error} $CURLINFO_HTTP_CODE");
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body("https://$PowerDNSClusterMasterAddress:$PowerDNSClusterMasterPort<br>{error} $CURLINFO_HTTP_CODE"));
         return false;
     }
 
@@ -328,7 +308,7 @@ function Save():bool{
     $uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
     if($ARRAY["UUID"]<>null){
         if(trim($ARRAY["UUID"])==trim($uuid)){
-            echo "jserror:Loop back to myself, same uuid";
+            echo (new template_admin())->post_error("Loop back to myself, same uuid");
             return false;
         }
     }
@@ -339,6 +319,14 @@ return true;
 }
 function freeze():bool{
     $page=CurrentPageName();
+    $tpl=new template_admin();
+    header("content-type: application/x-javascript");
+    // Le bouton est masque aux non-administrateurs, mais l'URL restait appelable.
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){
+        $tpl->js_error("{ERROR_NO_PRIVS2}");
+        return false;
+    }
     $PowerDNSClusterClientStop=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterClientStop"));
 
     if($PowerDNSClusterClientStop==0){
@@ -346,54 +334,61 @@ function freeze():bool{
     }else{
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("PowerDNSClusterClientStop",0);
     }
-    header("content-type: application/x-javascript");
-    echo "LoadAjax('cluster-status','$page?status=yes');";
+    echo "LoadAjaxSilent('cluster-status','$page?status=yes');";
     return true;
 }
 
+// Carte « derniere synchronisation » ; porte aussi le bouton geler/reactiver :
+// l'etat de la replication et sa commande se lisent au meme endroit.
 function package_statusv2():string{
     $tpl=new template_admin();
+    $page=CurrentPageName();
     $PowerDNSClusterClientStop=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterClientStop"));
 
-    $ClusterSlaveInfo=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterSlaveInfo"));
-    if (json_last_error()> JSON_ERROR_NONE) {
-        $html=$tpl->widget_h("gray","fas fa-database","-","{last_sync}");
-        return $tpl->_ENGINE_parse_body($html);
-    }
-
-    if(!$ClusterSlaveInfo->Status){
-        $html=$tpl->widget_h("red","fas fa-database","{error}",$ClusterSlaveInfo->Error);
-        return $tpl->_ENGINE_parse_body($html);
-    }
-
-
-    $ReplicTime=$ClusterSlaveInfo->ReplicTime;
-    if($ReplicTime==0){
-        $html=$tpl->widget_h("yellow","fas fa-database","-","{last_sync}");
-        return $tpl->_ENGINE_parse_body($html);
-    }
-
-
-
-    $time=$tpl->time_to_date($ReplicTime,true);
-    $Distance=distanceOfTimeInWords($ReplicTime,time());
-    if($PowerDNSClusterClientStop==1){
-        $html= $tpl->widget_h("gray","fas fa-database","$time","{last_sync} {cluster_replication_freezed}");
-        return $tpl->_ENGINE_parse_body($html);
-    }
-
-    if(property_exists($ClusterSlaveInfo,"PackageVersion")){
-        if(strlen($ClusterSlaveInfo->PackageVersion)>1){
-        $html= $tpl->widget_h("green","fas fa-database",
-            "<span style='font-size:22px'>v$ClusterSlaveInfo->PackageVersion</span>","{last_sync} $Distance");
-        return $tpl->_ENGINE_parse_body($html).unbound_client_status();
+    $btn=array();
+    $users=new usersMenus();
+    if($users->AsSystemAdministrator){
+        if($PowerDNSClusterClientStop==1){
+            $btn=array("name"=>"{enable_replication}","js"=>"Loadjs('$page?freeze=yes')","ico"=>ico_play);
+        }else{
+            $btn=array("name"=>"{freeze_replication}","js"=>"Loadjs('$page?freeze=yes')","ico"=>"fas fa-pause");
         }
     }
 
-    $html[]=$tpl->widget_h("green","fas fa-database","$time<br><small style='color:white;font-size:11px'>{since} $Distance</small>","{last_sync}");
+    $ClusterSlaveInfo=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterSlaveInfo"));
+    if (json_last_error()> JSON_ERROR_NONE || !is_object($ClusterSlaveInfo)) {
+        return $tpl->widget_h("gray",ico_database,"-","{last_sync}",$btn);
+    }
 
-    $html[]=unbound_client_status();
-    return $tpl->_ENGINE_parse_body($html);
+    if(!$ClusterSlaveInfo->Status){
+        return $tpl->widget_h("red",ico_database,"<span style='font-size:16px'>".htmlspecialchars((string)$ClusterSlaveInfo->Error)."</span>","{last_sync}: {error}",$btn);
+    }
+
+    $ReplicTime=intval($ClusterSlaveInfo->ReplicTime);
+    if($ReplicTime==0){
+        return $tpl->widget_h("yellow",ico_database,"-","{last_sync}",$btn);
+    }
+
+    $time=$tpl->time_to_date($ReplicTime,true);
+    $Distance=distanceOfTimeInWords($ReplicTime,time());
+    $version="";
+    if(property_exists($ClusterSlaveInfo,"PackageVersion") && strlen($ClusterSlaveInfo->PackageVersion)>1){
+        $version=" &middot; v".htmlspecialchars((string)$ClusterSlaveInfo->PackageVersion);
+    }
+    $detail="<br><small style='color:white;font-size:12px'>$time$version</small>";
+
+    if($PowerDNSClusterClientStop==1){
+        return $tpl->widget_h("gray",ico_database,"<span style='font-size:22px'>$Distance</span>$detail","{last_sync} &middot; {cluster_replication_freezed}",$btn);
+    }
+
+    // Le client interroge le maitre chaque minute et ne telecharge que lorsque la
+    // derniere replication a plus de « schedule » minutes (ClusterClient.PingMaster).
+    $schedule=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlaveSchedule"));
+    if($schedule<5){$schedule=15;}
+    $next=max(1,(int)ceil(($ReplicTime+$schedule*60-time())/60));
+    $detail.="<br><small style='color:white;font-size:12px'>{next_run}: &asymp; $next {minutes}</small>";
+
+    return $tpl->widget_h("green",ico_database,"<span style='font-size:22px'>$Distance</span>$detail","{last_sync}",$btn);
 }
 function unbound_client_status():string{
     $UnboundEnabled=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled");
@@ -404,20 +399,21 @@ function unbound_client_status():string{
     }
     $tpl=new template_admin();
     if(!file_exists("/etc/artica-postfix/UnboundCluster.json")){
-        return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
+        return $tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}");
     }
     $json=json_decode(file_get_contents("/etc/artica-postfix/UnboundCluster.json"),true);
     if(!is_array($json)){
-        return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}"));
+        return $tpl->widget_h("grey","fas fa-exclamation-triangle","-","{APP_UNBOUND} {cluster_package}");
     }
     if(!isset($json["Time"])){
-        return $tpl->_ENGINE_parse_body($tpl->widget_h("grey","fas fa-database","-","{APP_UNBOUND} {cluster_package}"));
+        return $tpl->widget_h("grey",ico_database,"-","{APP_UNBOUND} {cluster_package}");
     }
 
-    $Time=$json["Time"];
+    $Time=intval($json["Time"]);
     $title_time=$tpl->time_to_date($Time,true);
     $time=distanceOfTimeInWords($Time,time());
-    return $tpl->_ENGINE_parse_body($tpl->widget_h("green","fas fa-database","$Time<br><small style='color:white'>$time</small>","{cluster_package}: {APP_UNBOUND}<br>$title_time"));
+    // La valeur principale etait l'horodatage Unix brut (« 1790669568 »).
+    return $tpl->widget_h("green",ico_database,"<span style='font-size:22px'>$time</span><br><small style='color:white;font-size:12px'>$title_time</small>","{cluster_package}: {APP_UNBOUND}");
 
 
 }
@@ -442,9 +438,9 @@ function cluster_Status_haclient():string{
     return $tpl->widget_style1("navy-bg", ico_link,"{connected_to} $connected_to", "{linked}");
 }
 
+// Carte « liaison au maitre » : interroge le maitre (/status) a chaque rafraichissement.
+// Le temps affiche est celui de cette requete, mesure ici, pas une latence supposee.
 function cluster_Status():string{
-
-
     $tpl=new template_admin();
     $HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
     if($HaClusterClient==1){
@@ -454,59 +450,119 @@ function cluster_Status():string{
     $PowerDNSClusterSlaveCertificate = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterSlaveCertificate");
     $PowerDNSClusterMasterAddress=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterMasterAddress"));
     if(strlen($PowerDNSClusterMasterAddress)<3){
-        return $tpl->widget_style1("gray-bg", "fa-solid fa-wifi-slash", "{missing}", " {PostfixMasterServerIdentity}");
+        return $tpl->widget_h("gray",ico_link,"{missing}","{master_address}");
     }
     if(strlen($PowerDNSClusterSlaveCertificate)<10){
-        return $tpl->widget_style1("gray-bg", "fa-solid fa-wifi-slash", "{missing}", "{client_certificate}");
+        return $tpl->widget_h("gray",ico_link,"{missing}","{client_certificate}");
     }
 
-
+    $t0=microtime(true);
     $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/cluster/client/v2/status"),true);
+    $ms=round((microtime(true)-$t0)*1000);
     if(!is_array($data)){
-        return $tpl->widget_style1("bg-red", "fa-solid fa-wifi-slash", "{error}","{protocol_error}");
+        return $tpl->widget_h("red",ico_link,"{error}","{protocol_error}");
     }
 
     if( !$data["Status"]) {
         $error="{disconnected}";
-        if(preg_match("#tls:\s+(.+)#",$data["Error"],$re)){
-            $data["Error"]=$re[1];
+        $text=(string)($data["Error"] ?? "");
+        if(preg_match("#tls:\s+(.+)#",$text,$re)){
+            $text=$re[1];
             $error="{protocol_error}";
         }
-        return $tpl->widget_style1("bg-red", "fa-solid fa-wifi-slash", $data["Error"],$error);
+        return $tpl->widget_h("red",ico_link,"<span style='font-size:16px'>".htmlspecialchars($text)."</span>",$error);
     }
     if(!isset($data["Info"])){
-        return $tpl->widget_style1("bg-red", "fa-solid fa-wifi-slash", "{error}", "{protocol_error}");
+        return $tpl->widget_h("red",ico_link,"{error}","{protocol_error}");
     }
     $json2=json_decode($data["Info"],true);
-    return $tpl->widget_style1("navy-bg", ico_link,"{connected_to} {$json2["Hostname"]}", "{linked}");
+    if(!is_array($json2)){
+        return $tpl->widget_h("red",ico_link,"{error}","{protocol_error}");
+    }
+    // Le maitre peut repondre Status=false (licence, par exemple) avec un HTTP 200.
+    if(isset($json2["Status"]) && !$json2["Status"]){
+        return $tpl->widget_h("red",ico_link,"<span style='font-size:16px'>".htmlspecialchars((string)($json2["Error"] ?? ""))."</span>","{disconnected}");
+    }
+
+    $hostname=htmlspecialchars((string)($json2["Hostname"] ?? ""));
+    $lines=array();
+    $ver=trim((string)($json2["ArticaVer"] ?? ""));
+    if($ver<>""){
+        $sp=intval($json2["ServicePack"] ?? 0);
+        $hf=intval($json2["Hotfix"] ?? 0);
+        $v="Artica ".htmlspecialchars($ver);
+        if($sp>0){$v.=" SP$sp";}
+        if($hf>0){$v.=" &middot; hotfix $hf";}
+        $lines[]=$v;
+    }
+    $lines[]="{response_time}: $ms ms";
+    $cn=trim((string)($json2["client"]["CommonName"] ?? ""));
+    if($cn<>""){
+        $lines[]="{cluster_seen_as} ".htmlspecialchars($cn);
+    }
+    $small="";
+    foreach($lines as $l){
+        $small.="<br><small style='color:white;font-size:12px'>$l</small>";
+    }
+    return $tpl->widget_h("green",ico_link,"<span style='font-size:22px'>$hostname</span>$small","{connected_to}");
+}
+
+// Carte « certificat client » : emetteur et echeance reels du certificat importe.
+function cluster_certificate_card():string{
+    $HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
+    if($HaClusterClient==1){return "";}
+    $cert=cluster_client_certificate();
+    if(!isset($cert["name"]) || $cert["name"]==""){return "";}
+
+    $state="<span class='ccl-ok'>{valid}</span>";
+    if($cert["notafter"]>0){
+        $days=(int)floor(($cert["notafter"]-time())/86400);
+        if($days<0){
+            $state="<span class='ccl-bad'>{expired}</span>";
+        }elseif($days<30){
+            $state="<span class='ccl-warn'>{expire_soon}: {expire_in} $days {days}</span>";
+        }else{
+            $state="<span class='ccl-ok'>{expire_in} $days {days}</span>";
+        }
+    }
+    $issuer="";
+    if($cert["issuer"]<>""){
+        $issuer="<div class='ccl-sub'>{issuer}: ".htmlspecialchars($cert["issuer"])."</div>";
+    }
+    return "<div class='ccl-card'><div class='ccl-ico'><i class='".ico_certificate."'></i></div><div class='ccl-body'>"
+        ."<div class='ccl-title'>{client_certificate}</div>"
+        ."<div class='ccl-sub'>".htmlspecialchars($cert["name"])."</div>"
+        .$issuer
+        ."<div class='ccl-sub'>$state</div>"
+        ."</div></div>";
+}
+
+// Emise hors de _ENGINE_parse_body : le moteur lirait chaque regle CSS comme un {jeton}.
+function ccl_style():string{
+    if(isset($GLOBALS["CCL_STYLE"])){return "";}
+    $GLOBALS["CCL_STYLE"]=true;
+    return "<style>
+.ccl-card{display:flex;gap:14px;align-items:flex-start;background:#fff;border:1px solid #bcc9c6;border-radius:12px;padding:16px 18px;margin:10px 0}
+.ccl-ico{font-size:22px;line-height:1;color:#006a62;flex:0 0 auto;margin-top:2px}
+.ccl-body{min-width:0}
+.ccl-title{font-size:14px;font-weight:700;color:#111d23}
+.ccl-sub{font-size:13px;color:#3d4947;margin-top:4px;overflow-wrap:anywhere}
+.ccl-ok{color:#006a62;font-weight:600}
+.ccl-warn{color:#865300;font-weight:600}
+.ccl-bad{color:#ba1a1a;font-weight:600}
+</style>";
 }
 
 function status(){
    $tpl=new template_admin();
-   $page=CurrentPageName();
-   $PowerDNSClusterClientStop=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterClientStop"));
-
 
    if($GLOBALS["CLUSTER_PORT_FEATURE"]) {
        $html[]=cluster_Status();
    }
-
    $html[]=package_status();
-   $html[]="<div style='margin:20px'>";
+   $html[]=cluster_certificate_card();
+   $html[]=unbound_client_status();
 
-    if($PowerDNSClusterClientStop==1){
-
-        $bt=$tpl->button_autnonome("{enable_replication}",
-            "Loadjs('$page?freeze=yes')",ico_play,"AsSystemAdministrator",350,"btn-danger");
-
-    }else{
-        $bt=$tpl->button_autnonome("{freeze_replication}",
-            "Loadjs('$page?freeze=yes')", "fa-stop","AsSystemAdministrator",350,"btn-primary");
-
-    }
-    $html[]=$bt;
-    $html[]="</div>";
-
-    echo $tpl->_ENGINE_parse_body($html);
-    return false;
+   echo ccl_style().$tpl->_ENGINE_parse_body($html);
+   return false;
 }

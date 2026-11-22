@@ -1,19 +1,22 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.routing.ui.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-if(isset($_GET["route-move-js"])){route_move_js();exit;}
-if(isset($_GET["route-delete-js"])){route_delete_js();exit;}
+// Pentest 2026-11-04 : ID/ruleid etaient recopies sans encodage dans la page (XSS).
+foreach(array("ID","ruleid") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=intval($_GET[$xssk]);}}
+if(isset($_GET["route-move-js"])){rtui_legacy_guard("js");route_move_js();exit;}
+if(isset($_GET["route-delete-js"])){rtui_legacy_guard("js");route_delete_js();exit;}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["rule-js"])){rule_js();exit;}
-if(isset($_GET["rule-popup"])){rule_popup();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
+if(isset($_GET["rule-js"])){rtui_legacy_guard("js");rule_js();exit;}
+if(isset($_GET["rule-popup"])){rtui_legacy_guard("html");rule_popup();exit;}
+if(isset($_POST["ID"])){rtui_legacy_guard("post");rule_save();exit;}
 if(isset($_GET["export-js"])){export_rules_js();exit;}
-if(isset($_GET["import-js"])){import_rules_js();exit;}
+if(isset($_GET["import-js"])){rtui_legacy_guard("js");import_rules_js();exit;}
 if(isset($_GET["export-popup"])){export_rules_popup();exit;}
-if(isset($_GET["import-popup"])){import_rules_popup();exit;}
+if(isset($_GET["import-popup"])){rtui_legacy_guard("html");import_rules_popup();exit;}
 if(isset($_POST["ruleidexport"])){echo "ok";exit;}
-if(isset($_POST["ruleidimport"])){import_rules_save();exit;}
+if(isset($_POST["ruleidimport"])){rtui_legacy_guard("post");import_rules_save();exit;}
 start();
 
 function start():bool{
@@ -72,13 +75,14 @@ function rule_js(){
 function route_move_js(){
 	$tpl=new template_admin();
 	header("content-type: application/x-javascript");
-	$ID=$_GET["route-move-js"];
+	$ID=intval($_GET["route-move-js"]);
 	$dir=$_GET["dir"];
 	$q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM routing_rules_src WHERE ID='$ID'");
+	$ligne=$q->mysqli_fetch_array("SELECT * FROM routing_rules_src WHERE ID=$ID");
 
 
-	$zOrder=$ligne["zOrder"];
+	// Pentest 2026-11-04 : zOrder (relu en base) etait concatene dans la requete.
+	$zOrder=intval($ligne["zOrder"]);
 	if($dir=="up"){
 		$NewzOrder=$zOrder-1;
 	}else{
@@ -93,7 +97,7 @@ function route_move_js(){
 	$q->QUERY_SQL("UPDATE routing_rules_src SET zOrder='$NewzOrder' WHERE ID='$ID'");
 	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";}
 
-	$results=$q->QUERY_SQL("SELECT * FROM routing_rules_src WHERE ruleid={$_GET["ruleid"]} ORDER BY zOrder");
+	$results=$q->QUERY_SQL("SELECT * FROM routing_rules_src WHERE ruleid=".intval($_GET["ruleid"])." ORDER BY zOrder");
 	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";}
 	$c=0;
 	foreach ($results as $index=>$ligne){
@@ -101,7 +105,7 @@ function route_move_js(){
 		$q->QUERY_SQL("UPDATE routing_rules_src SET zOrder='$c' WHERE ID='{$ligne["ID"]}'");
 		if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";}
 	}
-    echo "LoadAjax('table-loader-iprule','fw.network.routing.php?table=yes');";
+    echo "LoadAjax('table-loader-iprule','fw.network.routing.legacy.php?table=yes');";
 
 }
 
@@ -109,10 +113,10 @@ function route_delete_js(){
 	header("content-type: application/x-javascript");
 	$q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
 	$tpl=new template_admin();
-	$q->QUERY_SQL("DELETE FROM routing_rules_src WHERE ID='{$_GET["route-delete-js"]}'");
+	$q->QUERY_SQL_PARAMS("DELETE FROM routing_rules_src WHERE ID=?",array(intval($_GET["route-delete-js"])));
 	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
 	echo "$('#{$_GET["md"]}').remove();\n";
-	echo "LoadAjax('table-loader-iprule','fw.network.routing.php?table=yes');";
+	echo "LoadAjax('table-loader-iprule','fw.network.routing.legacy.php?table=yes');";
 	
 }
 
@@ -173,7 +177,7 @@ function rule_popup(){
 	$js[]="dialogInstance2.close();";
     if(strlen($function)>2){$js[]="$function()";}
     if(strlen($function2)>2){$js[]="$function2()";}
-	$js[]="LoadAjax('table-loader-iprule','fw.network.routing.php?table=yes');";
+	$js[]="LoadAjax('table-loader-iprule','fw.network.routing.legacy.php?table=yes');";
 
 	
 	$html=$tpl->form_outside("", @implode("\n", $form),null,$btname,@implode(";", $js),"AsSystemAdministrator");
@@ -186,7 +190,10 @@ function rule_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	include_once(dirname(__FILE__)."/class.html.tools.inc");
-	$ID=$_POST["ID"];
+	$ID=intval($_POST["ID"]);
+	$nic=trim(strval($_POST["nic"] ?? ""));
+	// nic is only posted for ruleid 999999; empty is stored as before.
+	if($ID==0 && $nic!=="" && !preg_match('/^[A-Za-z0-9._:-]{1,32}$/',$nic)){echo $tpl->post_error("Invalid interface name");return false;}
 	$q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
     if($_POST["pattern"]=="*"){$_POST["pattern"]="0.0.0.0/0";}
     $_POST["pattern"]=$tpl->CLEAN_BAD_CHARSNET($_POST["pattern"]);
@@ -194,20 +201,17 @@ function rule_save(){
 
 
 	if($ID==0){
-		$md5=md5("{$_POST["nic"]}{$_POST["pattern"]}");
 		$sql="INSERT INTO routing_rules_src (`type`,`gateway`,`pattern`,`ruleid`,`nic`,`metric`,`zOrder`,`status`)
-		VALUES('{$_POST["stype"]}','{$_POST["gateway"]}','{$_POST["pattern"]}','{$_POST["ruleid"]}','{$_POST["nic"]}','{$_POST["metric"]}','{$_POST["zOrder"]}','1');";
+		VALUES(?,?,?,?,?,?,?,'1');";
+		$params=array(intval($_POST["stype"]),$_POST["gateway"],$_POST["pattern"],intval($_POST["ruleid"]),$nic,intval($_POST["metric"]),intval($_POST["zOrder"]));
 	}else{
-		$sql="UPDATE routing_rules_src SET `metric`='{$_POST["metric"]}', 
-		`zOrder`='{$_POST["zOrder"]}', `type`='{$_POST["stype"]}',
-		`pattern`='{$_POST["pattern"]}',
-		`gateway`='{$_POST["gateway"]}' WHERE `ID`='$ID'";
-	
+		$sql="UPDATE routing_rules_src SET `metric`=?, `zOrder`=?, `type`=?, `pattern`=?, `gateway`=? WHERE `ID`=?";
+		$params=array(intval($_POST["metric"]),intval($_POST["zOrder"]),intval($_POST["stype"]),$_POST["pattern"],$_POST["gateway"],$ID);
 	}
 
 	
 	
-	$q->QUERY_SQL($sql,"artica_backup");
+	$q->QUERY_SQL_PARAMS($sql,$params);
 	if(!$q->ok){echo $q->mysql_error;}
 }
 
@@ -220,7 +224,7 @@ function table(){
         $function=$_GET["function"];
     }
     $function2="";if(isset($_GET["function2"])){$function2=$_GET["function2"];}
-	$MAIN_ID=$_GET["table"];
+	$MAIN_ID=intval($_GET["table"]);
 	$type=$tpl->_ENGINE_parse_body("{type}");
 	$gateway=$tpl->_ENGINE_parse_body("{next_hope}");
 	$items=$tpl->_ENGINE_parse_body("{items}");
@@ -251,7 +255,8 @@ function table(){
 	$html[]="<tbody>";
 
 
-	$sql="SELECT *  FROM `routing_rules_src` WHERE ruleid='$MAIN_ID' ORDER BY zOrder";
+	$sql="SELECT *  FROM `routing_rules_src` WHERE ruleid=? ORDER BY zOrder";
+	$params=array($MAIN_ID);
 
     if(isset($_GET["search"])){
         $search=$_GET["search"];
@@ -259,12 +264,12 @@ function table(){
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $sql="SELECT *  FROM `routing_rules_src` WHERE ruleid='$MAIN_ID' 
-        AND ( pattern LIKE '$search' OR gateway LIKE '$search' ) ORDER BY zOrder";
-
+        $sql="SELECT *  FROM `routing_rules_src` WHERE ruleid=? 
+        AND ( pattern LIKE ? OR gateway LIKE ? ) ORDER BY zOrder";
+        $params=array($MAIN_ID,$search,$search);
     }
 
-	$results = $q->QUERY_SQL($sql);
+	$results = $q->QUERY_SQL_PARAMS($sql,$params);
 
 	$TRCLASS=null;
 	$types[1]=$tpl->_ENGINE_parse_body("{network_nic}");
@@ -379,7 +384,7 @@ function import_rules_popup(){
     $form[]=$tpl->field_hidden("ruleidimport", "{$_GET["ruleid"]}");
     $form[]=$tpl->field_textarea("routing_rules_src_import","{routing_rules}");
     $js[]="dialogInstance2.close();";
-    $js[]="LoadAjax('table-loader-iprule','fw.network.routing.php?table=yes');";
+    $js[]="LoadAjax('table-loader-iprule','fw.network.routing.legacy.php?table=yes');";
     $js[]="LoadAjaxSilent('sourcedest{$_GET["ruleid"]}','$page?table={$_GET["ruleid"]}');";
     $html=$tpl->form_outside("{import} {routing_rules} ", @implode("\n", $form),null,$btname,@implode("", $js),"AsSystemAdministrator");
     echo $html;
@@ -390,7 +395,7 @@ function import_rules_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     include_once(dirname(__FILE__)."/class.html.tools.inc");
-    $RULEID=$_POST["ruleidimport"];
+    $RULEID=intval($_POST["ruleidimport"]);
 
     if($_POST["pattern"]=="*"){$_POST["pattern"]="0.0.0.0/0";}
 
@@ -405,15 +410,19 @@ function import_rules_save(){
     foreach ($data as $rule)
     {
         $values = explode("|",$rule);
-        $count = $q->mysqli_fetch_array("SELECT COUNT(*) as count FROM routing_rules_src WHERE pattern='{$values[2]}'");
-        $nic= $q->mysqli_fetch_array("SELECT nic FROM routing_rules_src WHERE pattern='{$values[2]}'");
-        $currentNic = $q->mysqli_fetch_array("SELECT nic FROM routing_rules_src WHERE ruleid='{$RULEID}'");
+        $values = array_pad($values,6,"");
+        $r=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM routing_rules_src WHERE pattern=?",array($values[2]));
+        $count=$r[0] ?? array();
+        $r=$q->QUERY_SQL_PARAMS("SELECT nic FROM routing_rules_src WHERE pattern=?",array($values[2]));
+        $nic=$r[0] ?? array();
+        $r=$q->QUERY_SQL_PARAMS("SELECT nic FROM routing_rules_src WHERE ruleid=?",array($RULEID));
+        $currentNic=$r[0] ?? array();
         if(intval($count["count"]) > 0 ) {
             echo $tpl->post_error("{duplicate} {routing_rules} {$values[2]} in {$nic["nic"]}");return false;
         }
         $sql="INSERT INTO routing_rules_src (`ruleid`,`type`,`gateway`,`pattern`,`status`,`nic`,`metric`,`zOrder`)
-		VALUES('{$RULEID}','{$values[0]}','{$values[1]}','{$values[2]}','{$values[3]}','{$currentNic["nic"]}','{$values[4]}','{$values[5]}');";
-        $q->QUERY_SQL($sql);
+		VALUES(?,?,?,?,?,?,?,?);";
+        $q->QUERY_SQL_PARAMS($sql,array($RULEID,$values[0],$values[1],$values[2],$values[3],$currentNic["nic"] ?? "",$values[4],$values[5]));
         if(!$q->ok){
             echo $tpl->post_error($q->mysql_error);return;
 

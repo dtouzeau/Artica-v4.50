@@ -5,7 +5,6 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 $tpl=new template_admin();
 if(!$tpl->xPrivs()){exit();}
 if(isset($_GET["dynacls"])){dynacls();exit;}
-if(isset($_GET['app-status'])){app_status();exit;}
 if(isset($_GET["flot1"])){flot1();exit;}
 if(isset($_GET["flot2"])){flot2();exit;}
 if(isset($_GET["flot3"])){flot3();exit;}

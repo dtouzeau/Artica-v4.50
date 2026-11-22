@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 if(function_exists("posix_getuid")){if(posix_getuid()<>0){die("Cannot be used in web server mode\n\n");}}
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();

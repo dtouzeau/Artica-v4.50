@@ -4,6 +4,10 @@ include_once(dirname(__FILE__)."/ressources/class.dnsfilter.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : container et unit etaient recopies sans encodage dans la page (XSS).
+// container est aussi la cle de reglage relue : seules les cles DNSFILTERD_STATS_* sont admises.
+if(isset($_GET["container"])){$_GET["container"]=preg_match('/^DNSFILTERD_STATS_[A-Z0-9_]+$/',strval($_GET["container"]))?strval($_GET["container"]):"";}
+if(isset($_GET["unit"])){$_GET["unit"]=preg_replace('/[^a-z0-9_]/','',strval($_GET["unit"]));}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["hourly"])){PAGE_THIS_HOUR();exit;}
 if(isset($_GET["today"])){PAGE_TODAY();exit;}
@@ -299,7 +303,9 @@ function PAGE_THIS_HOUR(){
 	$html[]="<td valign='top' width=50%>";
 	
 	if(count($results)>1){
-		foreach ($results as $index=>$ligne){$PieData[$ligne["string"]]=$ligne["hits"];}
+		// Pentest 2026-11-04 : nom de domaine demande par un client DNS (donnee externe) injecte dans le JS du graphique highcharts sans encodage (XSS stockee).
+		// class.highcharts.inc ne neutralise que l'apostrophe : retirer ici les caracteres qui cassent une chaine JS ou ouvrent une balise.
+		foreach ($results as $index=>$ligne){$PieData[preg_replace('#[\\\\<>"\'`\x00-\x1f]#','',(string)$ligne["string"])]=$ligne["hits"];}
 		$sock->SaveConfigFile(serialize($PieData), "DNSFILTERD_STATS_FAMILYSITE_HOUR");
 		$html[]="<div id='DNSFILTERD_STATS_FAMILYSITE_HOUR' style='with:400px;height:400px'></div>";
 		$js[]="Loadjs('$page?familysite=yes&container=DNSFILTERD_STATS_FAMILYSITE_HOUR');";
@@ -333,7 +339,7 @@ function PAGE_THIS_HOUR(){
 	if(count($results)>1){
 		foreach ($results as $index=>$ligne){
 			VERBOSE("{$ligne["ipaddr"]} -> {$ligne["hits"]}", __LINE__);
-			$PieData[$ligne["ipaddr"]]=$ligne["hits"];}
+			$PieData[preg_replace('#[\\\\<>"\'`\x00-\x1f]#','',(string)$ligne["ipaddr"])]=$ligne["hits"];}
 			$sock->SaveConfigFile(serialize($PieData), "DNSFILTERD_STATS_IPADDR_HOUR");
 			$html[]="<div id='DNSFILTERD_STATS_IPADDR_HOUR' style='with:400px;height:400px'></div>";
 			$js[]="Loadjs('$page?ipaddr=yes&container=DNSFILTERD_STATS_IPADDR_HOUR');";
@@ -348,7 +354,7 @@ function PAGE_THIS_HOUR(){
 	if(count($results)>1){
 		foreach ($results as $index=>$ligne){
 			VERBOSE("{$ligne["ipaddr"]} -> {$ligne["hits"]}", __LINE__);
-			$PieData[$ligne["ipaddr"]]=$ligne["hits"];}
+			$PieData[preg_replace('#[\\\\<>"\'`\x00-\x1f]#','',(string)$ligne["ipaddr"])]=$ligne["hits"];}
 			$sock->SaveConfigFile(serialize($PieData), "DNSFILTERD_STATS_RULES_HOUR");
 			$html[]="<div id='DNSFILTERD_STATS_RULES_HOUR' style='with:400px;height:400px'></div>";
 			$js[]="Loadjs('$page?rules=yes&container=DNSFILTERD_STATS_RULES_HOUR');";
@@ -367,7 +373,7 @@ function GRAPH_FAMILY(){
 	$tpl=new templates();
 	$sock=new sockets();
 	$page=CurrentPageName();
-	$PieData=unserialize($sock->GET_INFO($_GET["container"]));
+	$PieData=unserialize($sock->GET_INFO($_GET["container"]),array("allowed_classes"=>false));
 	VERBOSE("{$_GET["container"]} -> ".count($PieData)." items", __LINE__);
 	
 	
@@ -384,7 +390,7 @@ function GRAPH_CATEGORY(){
 	$tpl=new templates();
 	$sock=new sockets();
 	$page=CurrentPageName();
-	$PieData=unserialize($sock->GET_INFO($_GET["container"]));
+	$PieData=unserialize($sock->GET_INFO($_GET["container"]),array("allowed_classes"=>false));
 	VERBOSE("{$_GET["container"]} -> ".count($PieData)." items", __LINE__);
 	$highcharts=new highcharts();
 	$highcharts->container=$_GET["container"];
@@ -399,7 +405,7 @@ function GRAPH_IPADDR(){
 	$tpl=new templates();
 	$sock=new sockets();
 	$page=CurrentPageName();
-	$PieData=unserialize($sock->GET_INFO($_GET["container"]));
+	$PieData=unserialize($sock->GET_INFO($_GET["container"]),array("allowed_classes"=>false));
 	VERBOSE("{$_GET["container"]} -> ".count($PieData)." items", __LINE__);
 	$highcharts=new highcharts();
 	$highcharts->container=$_GET["container"];
@@ -413,7 +419,7 @@ function GRAPH_RULES(){
 	$tpl=new templates();
 	$sock=new sockets();
 	$page=CurrentPageName();
-	$PieData=unserialize($sock->GET_INFO($_GET["container"]));
+	$PieData=unserialize($sock->GET_INFO($_GET["container"]),array("allowed_classes"=>false));
 	VERBOSE("{$_GET["container"]} -> ".count($PieData)." items", __LINE__);
 	$highcharts=new highcharts();
 	$highcharts->container=$_GET["container"];
@@ -427,7 +433,7 @@ function COURBE(){
 	$tpl=new templates();
 	$sock=new sockets();
 	$page=CurrentPageName();
-	$MAIN=unserialize($sock->GET_INFO($_GET["container"]));
+	$MAIN=unserialize($sock->GET_INFO($_GET["container"]),array("allowed_classes"=>false));
 	$title="{blocked_requests}";
 	$timetext="{time}";
 	

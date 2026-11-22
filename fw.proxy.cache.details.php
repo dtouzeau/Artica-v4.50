@@ -1,6 +1,12 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.os.system.tools.inc");
+// acls_api_get()/acls_api_send(): enveloppe {success,data,error} d'articarest.
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 $tpl=new template_admin();
 if(!$tpl->xPrivs()){exit();}
@@ -12,23 +18,66 @@ if(isset($_GET["statistics-urls"])){statistics_urls();exit;}
 if(isset($_GET["statistics-urls-table"])){statistics_urls_table();exit;}
 if(isset($_GET["statistics-popup"])){statistics_settings();exit;}
 if(isset($_GET["statistics-table-disabled"])){statistics_table_disabled();exit;}
-if(isset($_GET["delete-familysite"])){delete_familysite_js();}
-if(isset($_POST["delete-familysite"])){delete_familysite_perform();}
+// Ces deux lignes n'avaient PAS de "exit;": l'execution retombait sur page(),
+// qui ajoutait toute la page a la reponse. js_confirm_delete() traite une
+// reponse non vide comme une ERREUR: la boite de confirmation affichait donc la
+// page entiere et ne se fermait jamais.
+if(isset($_GET["delete-familysite"])){delete_familysite_js();exit;}
+if(isset($_POST["delete-familysite"])){delete_familysite_perform();exit;}
 if(isset($_GET["delete-uri"])){delete_uri();exit;}
 if(isset($_GET["delete-sitename"])){delete_sitename();exit;}
 if(isset($_POST["delete-sitename"])){delete_sitename_perform();exit;}
 page();
 
 
+/** Un jeton d'identifiant de ligne: c'est toujours un md5. */
+function pxcd_md($v):string{
+    return preg_replace('/[^a-f0-9]/','',(string)$v);
+}
+
+/**
+ * Lecture d'un des trois endpoints /proxy/cache/purge/* d'articarest.
+ *
+ * La table PostgreSQL "squidpurge" n'est creee que par le scan des caches
+ * (articarest StoredObjectsScan). Tant qu'il n'a jamais tourne, elle N'EXISTE PAS, et cette
+ * page l'interrogeait en direct: PostgreSQL repondait
+ * `relation "squidpurge" does not exist` et l'erreur SQL brute s'affichait a
+ * l'ecran. Le demon rend maintenant cet etat comme une DONNEE
+ * ("tableExists":false), ce qui permet de distinguer "jamais analyse" de
+ * "analyse, cache vide" -- deux reponses differentes dont une seule se corrige
+ * en cliquant sur {analyze_caches}.
+ *
+ * Rend array($tableExists, $rows). $rows est toujours un tableau.
+ */
+function pxcd_api_rows($path):array{
+    $data=acls_api_get($path);
+    if(!is_array($data)){
+        // Appel en echec (demon injoignable, route absente d'un binaire trop
+        // ancien): on ne peut PAS affirmer que le scan n'a pas tourne.
+        return array(true,array());
+    }
+    $exists=!empty($data["tableExists"]);
+    $rows=(isset($data["rows"]) && is_array($data["rows"]))?$data["rows"]:array();
+    return array($exists,$rows);
+}
+
+/** Le corps de tableau affiche quand il n'y a rien a montrer. */
+function pxcd_empty_row($colspan,$tableExists):string{
+    $text=$tableExists?"{no_data}":"{cache_not_analyzed}";
+    return "<tr><td colspan='$colspan'><div class='awc-empty'>$text</div></td></tr>";
+}
+
 function delete_familysite_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
+    // Le nom partait BRUT dans le titre de la boite de confirmation, qui est une
+    // chaine JavaScript, et $md brut dans le selecteur jQuery.
     $familysite=$_GET["delete-familysite"];
-    $md=$_GET["md"];
+    $md=pxcd_md($_GET["md"] ?? "");
 
     $jsafter="$('#$md').remove();";
 
-    $tpl->js_confirm_delete($familysite,"delete-familysite",$familysite,$jsafter);
+    $tpl->js_confirm_delete(htmlspecialchars($familysite),"delete-familysite",$familysite,$jsafter);
 
 }
 
@@ -36,35 +85,43 @@ function delete_sitename(){
     $sitename=$_GET["delete-sitename"];
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $md=$_GET["md"];
+    $md=pxcd_md($_GET["md"] ?? "");
     $jsafter="$('#$md').remove();";
-    $tpl->js_confirm_delete($sitename,"delete-sitename",$sitename,$jsafter);
+    $tpl->js_confirm_delete(htmlspecialchars($sitename),"delete-sitename",$sitename,$jsafter);
 }
 function delete_sitename_perform(){
-    $sock=new sockets();
-    $familysiteenc=urlencode($_POST["delete-sitename"]);
-    $sock->getFrameWork("squid2.php?purge-delete=$familysiteenc");
-    $q=new postgres_sql();
-    $q->QUERY_SQL("DELETE FROM squidpurge WHERE sitename='{$_POST["delete-sitename"]}'");
+    // Real purge of the objects: articarest POST /proxy/cache/purge/object (purge
+    // run without a shell; squid2.php?purge-delete pasted the name into one).
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=130;
+    list($ok,$err)=acls_api_send("POST","/proxy/cache/purge/object",array("site"=>(string)$_POST["delete-sitename"]));
+    if(!$ok){echo $err;return;}
+    // Contrat js_confirm_delete: on n'echo RIEN quand la suppression a reussi.
+    acls_api_send("DELETE","/proxy/cache/purge/site?sitename="
+        .urlencode((string)$_POST["delete-sitename"]));
 }
 function delete_uri(){
-    $uri=urlencode($_GET["delete-uri"]);
-    $domain=urlencode($_GET["domain"]);
-    $md=$_GET["md"];
-    $sock=new sockets();
-    $sock->getFrameWork("squid2.php?purge-deleteuri=$uri&domain=$domain");
-    $q=new postgres_sql();
-    $q->QUERY_SQL("DELETE FROM squidpurge WHERE path='{$_GET["delete-uri"]}' AND sitename='{$_GET["domain"]}'");
+    $md=pxcd_md($_GET["md"] ?? "");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=130;
+    list($ok,$err)=acls_api_send("POST","/proxy/cache/purge/object",
+        array("site"=>(string)$_GET["domain"],"path"=>(string)$_GET["delete-uri"]));
+    if(!$ok){
+        header("content-type: application/x-javascript");
+        echo "alert(".json_encode((string)$err).");";
+        return;
+    }
+    acls_api_send("DELETE","/proxy/cache/purge/url?sitename="
+        .urlencode((string)$_GET["domain"])."&path=".urlencode((string)$_GET["delete-uri"]));
     header("content-type: application/x-javascript");
     echo "$('#$md').remove();";
 
 }
 function delete_familysite_perform(){
-    $sock=new sockets();
-    $familysiteenc=urlencode($_POST["delete-familysite"]);
-    $sock->getFrameWork("squid2.php?purge-delete=$familysiteenc");
-    $q=new postgres_sql();
-    $q->QUERY_SQL("DELETE FROM squidpurge WHERE familysite='{$_POST["delete-familysite"]}'");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=130;
+    list($ok,$err)=acls_api_send("POST","/proxy/cache/purge/object",array("site"=>(string)$_POST["delete-familysite"]));
+    if(!$ok){echo $err;return;}
+    // Le nom partait BRUT dans le DELETE, sans meme un echappement.
+    acls_api_send("DELETE","/proxy/cache/purge/family?familysite="
+        .urlencode((string)$_POST["delete-familysite"]));
 }
 
 
@@ -87,6 +144,7 @@ function page(){
 <div class='ibox-content'>
 <div id='table-loader-stored-objects'></div>
 </div>
+</div>
 
 <script>
 LoadAjax('table-loader-stored-objects','$page?table-start=yes');
@@ -107,13 +165,14 @@ function table(){
     $tpl=new template_admin();
 
 
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/squid.purge.progress";
+    // articarest squid/proxy_caches_jobs.go StoredObjectsScan (port of exec.purge.php).
+    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/squid.purge.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/squid.purge.progress.log";
-    $ARRAY["CMD"]="squid2.php?stored-objects=yes";
+    $ARRAY["CMD"]="/proxy/caches/objects/scan";
     $ARRAY["TITLE"]="{analyze_caches}";
     $ARRAY["AFTER"]="LoadAjaxSilent('squid-purge-table','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-squidcaching-items')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-squidcaching-items')";
     $t=time();
 
     $html[]=$tpl->_ENGINE_parse_body("
@@ -125,209 +184,236 @@ function table(){
 			<div class=\"btn-group\" data-toggle=\"buttons\">
 			</div>");
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{websites}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{objects}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
+    list($tableExists,$apiRows)=pxcd_api_rows("/proxy/cache/purge/families");
 
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-    $TRCLASS=null;
-    $q=new postgres_sql();
-    $results=$q->QUERY_SQL("SELECT SUM(size) as size,COUNT(familysite) as hits,familysite FROM squidpurge GROUP BY familysite order by size desc");
-
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
+    $rows=array();
+    $totalSize=0;
+    foreach($apiRows as $r){
+        if(!is_array($r)){continue;}
+        // Les constructeurs de lignes attendent les noms de colonnes SQL
+        // historiques; on normalise ici plutot que de les reecrire.
+        $ligne=array(
+            "familysite" => (string)($r["familySite"] ?? ""),
+            "hits"       => intval($r["hits"] ?? 0),
+            "size"       => floatval($r["size"] ?? 0),
+        );
+        $totalSize=$totalSize+$ligne["size"];
+        $rows[]=pxcd_family_row($ligne,$page,$tpl);
     }
-    if($results) {
-        while ($ligne = pg_fetch_assoc($results)) {
-            if ($TRCLASS == "footable-odd") {
-                $TRCLASS = null;
-            } else {
-                $TRCLASS = "footable-odd";
-            }
-            $zmd5 = md5(serialize($ligne));
-            $familysite = $ligne["familysite"];
-            $size = FormatBytes($ligne["size"] / 1024);
-            $hits = FormatNumber($ligne["hits"]);
-            $familysiteenc = urlencode($familysite);
+    $shown=count($rows);
 
-            $familysite = $tpl->td_href($familysite, "{stored_objects}", "Loadjs('$page?statistics-domain=$familysiteenc')");
-
-
-            $delete = $tpl->icon_delete("Loadjs('$page?delete-familysite=$familysiteenc&md=$zmd5')", "AsProxyMonitor");
-
-
-            $html[] = "<tr class='$TRCLASS' id='$zmd5'>";
-            $html[] = "<td nowrap><i class=\"fas fa-globe\"></i>&nbsp;$familysite</td>";
-            $html[] = "<td style='width:1%' nowrap>$size</td>";
-            $html[] = "<td style='width:1%' nowrap>$hits</td>";
-            $html[] = "<td style='width:1%' nowrap>$delete</td>";
-            $html[] = "</tr>";
-
-        }
-        $html[] = "</tbody>";
-        $html[] = "<tfoot>";
-        $html[] = "<tr>";
-        $html[] = "<td colspan='4'>";
-        $html[] = "<ul class='pagination pull-right'></ul>";
-        $html[] = "</td>";
-        $html[] = "</tr>";
-
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{websites}</th>";
+    $html[]="<th class='center'>{objects}</th>";
+    $html[]="<th class='center'>{size}</th>";
+    $html[]="<th class='center'>{delete}</th>";
+    $html[]="</tr></thead><tbody id='pxcd-fam-rows'>";
+    if($shown==0){
+        $html[]=pxcd_empty_row(4,$tableExists);
+    }else{
+        $html[]=@implode("\n",$rows);
     }
-    $html[] = "</tfoot>";
-    $html[] = "</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $shown &middot; {size}: <b>".FormatBytes($totalSize/1024)."</b></span>";
+    $html[]="<span class='awc-pg' id='pxcd-fam-pager'></span>";
+    $html[]="</div></div></div>";
+
+    // Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"pxcd-fam-rows","pxcd-fam-pager");
 
 }
+
+// Pentest 2026-11-04 : noms de sites / chemins du cache (donnee externe) : htmlspecialchars UTF-8 rendait "" sur un octet Latin-1 (XSS stockee).
+/** Un domaine de rattachement et le volume qu'il occupe dans le cache. */
+function pxcd_family_row($ligne,$page,$tpl):string{
+    $familysite=(string)$ligne["familysite"];
+    $zmd5=md5(serialize($ligne));
+    $enc=urlencode($familysite);
+    // Le nom vient de la base et partait BRUT dans le HTML.
+    $link=$tpl->td_href("<span class='awc-name'>".req_html($familysite)."</span>",
+        "{stored_objects}","Loadjs('$page?statistics-domain=$enc')");
+
+    $h ="<tr id='$zmd5'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-globe'></i></span>";
+    $h.="<span>$link</span>";
+    $h.="</div></td>";
+    $h.="<td class='center'>".FormatNumber(intval($ligne["hits"]))."</td>";
+    $h.="<td class='center'><b>".FormatBytes($ligne["size"]/1024)."</b></td>";
+    $h.="<td class='center'><div class='awc-acts'>"
+        .$tpl->icon_delete("Loadjs('$page?delete-familysite=$enc&md=$zmd5')","AsProxyMonitor")
+        ."</div></td>";
+    $h.="</tr>";
+    return $h;
+}
+
 function statistics_urls(){
     $tpl=new template_admin();
     $page=CurrentPageName();
+    // Le domaine est ecrit dans le JavaScript d'ouverture de la modale.
     $domain=$_GET["statistics-urls"];
     $domainenc=urlencode($domain);
-    $tpl->js_dialog3("{stored_objects}: $domain", "$page?statistics-urls-table=$domainenc",990);
+    $title=addslashes(htmlspecialchars($domain));
+    $tpl->js_dialog3("{stored_objects}: $title", "$page?statistics-urls-table=$domainenc",990);
 
 }
 
 function statistics_urls_table(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $domain=$_GET["statistics-urls-table"];
-    $sql="SELECT size,path FROM squidpurge WHERE sitename='$domain' order by size desc LIMIT 250";
-    $idtable=md5($domain."urls");
-    $html[]="<table id='table-$idtable-items' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{urls}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
+    // Le nom de site partait BRUT dans le WHERE.
+    $domain=(string)$_GET["statistics-urls-table"];
+    list($tableExists,$apiRows)=pxcd_api_rows(
+        "/proxy/cache/purge/urls?sitename=".urlencode($domain));
 
-
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-
-    $q=new postgres_sql();
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
-    $TRCLASS=null;
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $zmd5=md5(serialize($ligne));
-        $path=$ligne["path"];
-        $size=$ligne["size"];
-        $size=FormatBytes($ligne["size"]/1024);
-        $strlen=strlen($path);
-        $pathenc=urlencode($path);
-
-        if($strlen>90){$path=$tpl->td_href(substr($path,0,87)."...",$path);}
-        $del=$tpl->icon_delete("Loadjs('$page?delete-uri=$pathenc&domain=$domain&md=$zmd5')","AsProxyMonitor");
-
-        $html[]="<tr class='$TRCLASS' id='$zmd5'>";
-        $html[]="<td nowrap>$path</td>";
-        $html[]="<td style='width:1%' nowrap>$size</td>";
-        $html[]="<td style='width:1%' nowrap>$del</td>";
-        $html[]="</tr>";
-
+    $rows=array();
+    $totalSize=0;
+    foreach($apiRows as $r){
+        if(!is_array($r)){continue;}
+        $ligne=array(
+            "path" => (string)($r["path"] ?? ""),
+            "size" => floatval($r["size"] ?? 0),
+        );
+        $totalSize=$totalSize+$ligne["size"];
+        $rows[]=pxcd_uri_row($ligne,$domain,$page,$tpl);
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$idtable-items').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
+    $shown=count($rows);
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $html=array();
+    $html[]="<div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{urls}</th>";
+    $html[]="<th class='center'>{size}</th>";
+    $html[]="<th class='center'>{delete}</th>";
+    $html[]="</tr></thead><tbody id='pxcd-uri-rows'>";
+    if($shown==0){
+        $html[]=pxcd_empty_row(3,$tableExists);
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $shown &middot; {size}: <b>".FormatBytes($totalSize/1024)."</b></span>";
+    $html[]="<span class='awc-pg' id='pxcd-uri-pager'></span>";
+    $html[]="</div></div>";
 
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"pxcd-uri-rows","pxcd-uri-pager");
 }
+
+/**
+ * Un objet stocke dans le cache.
+ *
+ * Le chemin etait tronque a 90 caracteres et enveloppe dans td_href() SANS
+ * troisieme argument: le lien n'avait donc aucun OnClick, il etait mort. Le
+ * chemin complet est desormais rendu, le conteneur .awc-scroll gerant le
+ * debordement.
+ */
+function pxcd_uri_row($ligne,$domain,$page,$tpl):string{
+    $zmd5=md5(serialize($ligne));
+    $path=(string)$ligne["path"];
+    $pathenc=urlencode($path);
+    $del=$tpl->icon_delete("Loadjs('$page?delete-uri=$pathenc&domain=".urlencode($domain)."&md=$zmd5')","AsProxyMonitor");
+
+    $h ="<tr id='$zmd5'>";
+    // Le chemin vient de la base et partait BRUT dans le HTML.
+    $h.="<td class='awc-mono' style='word-break:break-all'>".req_html($path)."</td>";
+    $h.="<td class='center'><b>".FormatBytes($ligne["size"]/1024)."</b></td>";
+    $h.="<td class='center'><div class='awc-acts'>$del</div></td>";
+    $h.="</tr>";
+    return $h;
+}
+
 function statistics_domain_table(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $domain=$_GET["statistics-domain-table"];
-    $sql="SELECT SUM(size) as size,COUNT(sitename) as hits,sitename FROM squidpurge WHERE familysite='$domain' GROUP BY sitename order by size desc ";
-    $idtable=md5($domain);
-    $html[]="<table id='table-$idtable-items' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{websites}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{objects}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
+    // Le domaine de rattachement partait BRUT dans le WHERE.
+    $domain=(string)$_GET["statistics-domain-table"];
+    list($tableExists,$apiRows)=pxcd_api_rows(
+        "/proxy/cache/purge/sites?familysite=".urlencode($domain));
 
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-
-    $q=new postgres_sql();
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
-    $TRCLASS=null;
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $zmd5=md5(serialize($ligne));
-        $sitename=$ligne["sitename"];
-        $size=FormatBytes($ligne["size"]/1024);
-        $hits=FormatNumber($ligne["hits"]);
-        $sitenameenc=urlencode($sitename);
-
-        $del=$tpl->icon_delete("Loadjs('$page?delete-sitename=$sitenameenc&md=$zmd5')","AsProxyMonitor");
-
-        $familysite=$tpl->td_href($sitename,"{stored_objects}","Loadjs('$page?statistics-urls=$sitename')");
-
-
-        $html[]="<tr class='$TRCLASS' id='$zmd5'>";
-        $html[]="<td nowrap>$familysite</td>";
-        $html[]="<td style='width:1%' nowrap>$size</td>";
-        $html[]="<td style='width:1%' nowrap>$hits</td>";
-        $html[]="<td style='width:1%' nowrap>$del</td>";
-        $html[]="</tr>";
-
+    $rows=array();
+    $totalSize=0;
+    foreach($apiRows as $r){
+        if(!is_array($r)){continue;}
+        $ligne=array(
+            "sitename" => (string)($r["siteName"] ?? ""),
+            "hits"     => intval($r["hits"] ?? 0),
+            "size"     => floatval($r["size"] ?? 0),
+        );
+        $totalSize=$totalSize+$ligne["size"];
+        $rows[]=pxcd_site_row($ligne,$page,$tpl);
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$idtable-items').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
+    $shown=count($rows);
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $html=array();
+    $html[]="<div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{websites}</th>";
+    $html[]="<th class='center'>{objects}</th>";
+    $html[]="<th class='center'>{size}</th>";
+    $html[]="<th class='center'>{delete}</th>";
+    $html[]="</tr></thead><tbody id='pxcd-site-rows'>";
+    if($shown==0){
+        $html[]=pxcd_empty_row(4,$tableExists);
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $shown &middot; {size}: <b>".FormatBytes($totalSize/1024)."</b></span>";
+    $html[]="<span class='awc-pg' id='pxcd-site-pager'></span>";
+    $html[]="</div></div>";
+
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"pxcd-site-rows","pxcd-site-pager");
 }
+
+/** Un site du domaine et le volume qu'il occupe dans le cache. */
+function pxcd_site_row($ligne,$page,$tpl):string{
+    $sitename=(string)$ligne["sitename"];
+    $zmd5=md5(serialize($ligne));
+    // Le nom partait NON ENCODE dans l'URL alors que la version encodee etait
+    // calculee juste a cote et servait uniquement au lien de suppression.
+    $enc=urlencode($sitename);
+    $link=$tpl->td_href("<span class='awc-name'>".req_html($sitename)."</span>",
+        "{stored_objects}","Loadjs('$page?statistics-urls=$enc')");
+    $del=$tpl->icon_delete("Loadjs('$page?delete-sitename=$enc&md=$zmd5')","AsProxyMonitor");
+
+    $h ="<tr id='$zmd5'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-globe'></i></span>";
+    $h.="<span>$link</span>";
+    $h.="</div></td>";
+    $h.="<td class='center'>".FormatNumber(intval($ligne["hits"]))."</td>";
+    $h.="<td class='center'><b>".FormatBytes($ligne["size"]/1024)."</b></td>";
+    $h.="<td class='center'><div class='awc-acts'>$del</div></td>";
+    $h.="</tr>";
+    return $h;
+}
+
 function statistics_domain(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $domain=$_GET["statistics-domain"];
     $domainenc=urlencode($domain);
-    $tpl->js_dialog1("{stored_objects}: $domain", "$page?statistics-domain-table=$domainenc");
+    $title=addslashes(htmlspecialchars($domain));
+    $tpl->js_dialog1("{stored_objects}: $title", "$page?statistics-domain-table=$domainenc");
 }
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}

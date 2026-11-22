@@ -127,7 +127,7 @@ events("{import_smtp_domains}:<strong>".count($GLOBALS[__FILE__]["SMTPDOMS"])."<
 if($success){
 	$sock=new sockets();
 	$usr=new usersMenus();
-	$sock->getFrameWork("cmd.php?postfix-transport-maps=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport");
 	
 	
 	if($usr->cyrus_imapd_installed){

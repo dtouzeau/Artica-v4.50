@@ -1,53 +1,47 @@
-<about_roundcube_engine>Define here settings about the lighttpd engine will serve RoundCube Webmail website</about_roundcube_engine>
+<about_roundcube_engine>Defina aqui as defini&#231;&#245;es do motor lighttpd que servir&#225; o site RoundCube Webmail</about_roundcube_engine>
 <additional_message_headers>Acrescentar cabeçalhos adicionais para mensagens enviadas</additional_message_headers>
-<APP_ROUNDCUBE3_PLUGINS_EXPLAIN>RoundCube Generation 3 offer new plugins generation.[br]Select in this list plugins you want to enable in the RoundCube front-end</APP_ROUNDCUBE3_PLUGINS_EXPLAIN>
-<archive>Move messages to a (user selectable) archive folder</archive>
-<artica_ldap_addr>Artica plugin: Add connection with the personal LDAP addressbook</artica_ldap_addr>
-<auto_create_user>Automatically create a new RoundCube user when log-in the first time</auto_create_user>
-<conf>Script configuration</conf>
-<confirm_rebuild>Warning, you select rebuild tables,all datas will be erased ...</confirm_rebuild>
-<database_attachments>database backed storage for temporary attachment file handling</database_attachments>
-<database_status>Tables status</database_status>
+<APP_ROUNDCUBE3_PLUGINS_EXPLAIN>O RoundCube Generation 3 oferece uma nova gera&#231;&#227;o de plugins.[br]Selecione nesta lista os plugins que pretende ativar no front-end do RoundCube</APP_ROUNDCUBE3_PLUGINS_EXPLAIN>
+<archive>Mover as mensagens para uma pasta de arquivo (selecion&#225;vel pelo utilizador)</archive>
+<artica_ldap_addr>Plugin Artica: Adicionar liga&#231;&#227;o com o livro de endere&#231;os pessoal LDAP</artica_ldap_addr>
+<auto_create_user>Criar automaticamente um novo utilizador RoundCube ao iniciar sess&#227;o pela primeira vez</auto_create_user>
+<conf>Configura&#231;&#227;o do script</conf>
+<confirm_rebuild>Aviso, selecionou reconstruir as tabelas, todos os dados ser&#227;o apagados ...</confirm_rebuild>
+<database_attachments>Armazenamento em base de dados para o tratamento de ficheiros tempor&#225;rios de anexos</database_attachments>
+<database_status>Estado das tabelas</database_status>
 <debug_level>Relat%C3%B3rio de erros do sistema</debug_level>
-<debug_logger>Enhanced logging for debugging purposes</debug_logger>
-<default_host>The IMAP server</default_host>
-<emoticons>Replace emoticons in plain text message body with real icons</emoticons>
-<enable_caching>Cache mailbox data</enable_caching>
-<example_addressbook>addressbook example</example_addressbook>
-<filesystem_attachments>
- This is a core plugin which provides basic, filesystem based attachment temporary file handling.[br]This includes storing
-attachments of messages currently being composed, writing attachments
-to disk when drafts with attachments are re-opened and writing
-attachments to disk for inline display in current html compositions.
-</filesystem_attachments>
-<flag_for_deletion>Flag the message for deletion (No Trash)</flag_for_deletion>
-<flag_for_deletion_text>When a Trash folder is not present and a message is deleted, flag the message for deletion rather than deleting it immediately.[br] Setting this to 
-false causes deleted messages to be permanantly removed if there is no Trash folder</flag_for_deletion_text>
+<debug_logger>Registo melhorado para fins de depura&#231;&#227;o</debug_logger>
+<default_host>O servidor IMAP</default_host>
+<emoticons>Substituir os emoticons no corpo das mensagens em texto simples por &#237;cones reais</emoticons>
+<enable_caching>Armazenar em cache os dados da caixa de correio</enable_caching>
+<example_addressbook>exemplo de livro de endere&#231;os</example_addressbook>
+<filesystem_attachments>Este &#233; um plugin principal que fornece o tratamento b&#225;sico, baseado no sistema de ficheiros, dos ficheiros tempor&#225;rios de anexos.[br]Isto inclui o armazenamento de anexos de mensagens em composi&#231;&#227;o, a escrita de anexos no disco quando rascunhos com anexos s&#227;o reabertos e a escrita de anexos no disco para apresenta&#231;&#227;o inline nas composi&#231;&#245;es html atuais.</filesystem_attachments>
+<flag_for_deletion>Marcar a mensagem para elimina&#231;&#227;o (sem Lixo)</flag_for_deletion>
+<flag_for_deletion_text>Quando n&#227;o existe uma pasta Lixo e uma mensagem &#233; eliminada, marcar a mensagem para elimina&#231;&#227;o em vez de a eliminar imediatamente.[br] Definir isto como false faz com que as mensagens eliminadas sejam removidas permanentemente se n&#227;o houver pasta Lixo</flag_for_deletion_text>
 <https_port>HTTPS Porto de escuta</https_port>
-<http_authentication>HTTP Basic Authentication</http_authentication>
+<http_authentication>Autentica&#231;&#227;o b&#225;sica HTTP</http_authentication>
 <lighttp_max_load_per_proc>N%C3%BAmero m%C3¡ximo de processos de espera em média por processo antes de um novo processo ser desovado</lighttp_max_load_per_proc>
-<lighttp_max_proc>The upper limit of the processes to start</lighttp_max_proc>
-<lighttp_min_proc>Sets the minimum processes to start</lighttp_min_proc>
-<locale_string>The default locale setting</locale_string>
-<managesieve>filters in Thunderbird's style</managesieve>
-<markasjunk>mark the selected message as Junk and move it to the Junk folder</markasjunk>
+<lighttp_max_proc>O limite superior dos processos a iniciar</lighttp_max_proc>
+<lighttp_min_proc>Define os processos m&#237;nimos a iniciar</lighttp_min_proc>
+<locale_string>A defini&#231;&#227;o de localidade predefinida</locale_string>
+<managesieve>Filtros ao estilo do Thunderbird</managesieve>
+<markasjunk>Marcar a mensagem selecionada como lixo e mov&#234;-la para a pasta de lixo</markasjunk>
 <mysql>Configuraç%C3µes MySQL</mysql>
-<new_user_dialog>Present identities settings dialog to new users</new_user_dialog>
-<PHP_FCGI_CHILDREN>The number of php-cgi processes per lightppd processes</PHP_FCGI_CHILDREN>
+<new_user_dialog>Apresentar a caixa de di&#225;logo de defini&#231;&#245;es de identidades aos novos utilizadores</new_user_dialog>
+<PHP_FCGI_CHILDREN>O n&#250;mero de processos php-cgi por processo lighttpd</PHP_FCGI_CHILDREN>
 <PHP_FCGI_MAX_REQUESTS>M%C3¡ximo de pedidos antes de reiniciar um processo filho</PHP_FCGI_MAX_REQUESTS>
-<product_name>Pages title</product_name>
+<product_name>T&#237;tulo das p&#225;ginas</product_name>
 <rebuild>Reconstruir</rebuild>
-<rlogs>RoundCube events</rlogs>
-<RoundCubeHTTPEngineEnabled>Enable Dedicated Web site</RoundCubeHTTPEngineEnabled>
-<RoundCubePath>RoundCube base path</RoundCubePath>
-<roundcube_ldap_directory>Access to LDAP Internal Addresses book</roundcube_ldap_directory>
-<roundcube_mysql_sources>Mysql scripts source path</roundcube_mysql_sources>
-<roundcube_web_folder>Web directory path</roundcube_web_folder>
-<show_additional_headers>Show additional message headers</show_additional_headers>
-<sieverules>filters in Thunderbird's style (advanced mode)</sieverules>
-<skip_deleted>Hide Deleted messages</skip_deleted>
-<squirrelmail_usercopy>Copy a new users identity and settings from a nearby Squirrelmail installation</squirrelmail_usercopy>
-<subscriptions_option>Enable or disable the use of imap subscriptions</subscriptions_option>
-<userinfo>Display account information</userinfo>
-<user_link>Artica menu link to RoundCube</user_link>
-<vcard_attachments>Detect VCard attachments and show a button to add them to address book</vcard_attachments>
+<rlogs>Eventos do RoundCube</rlogs>
+<RoundCubeHTTPEngineEnabled>Ativar site dedicado</RoundCubeHTTPEngineEnabled>
+<RoundCubePath>Caminho base do RoundCube</RoundCubePath>
+<roundcube_ldap_directory>Acesso ao livro de endere&#231;os interno LDAP</roundcube_ldap_directory>
+<roundcube_mysql_sources>Caminho de origem dos scripts Mysql</roundcube_mysql_sources>
+<roundcube_web_folder>Caminho do diret&#243;rio web</roundcube_web_folder>
+<show_additional_headers>Mostrar cabe&#231;alhos de mensagem adicionais</show_additional_headers>
+<sieverules>Filtros ao estilo do Thunderbird (modo avan&#231;ado)</sieverules>
+<skip_deleted>Ocultar as mensagens eliminadas</skip_deleted>
+<squirrelmail_usercopy>Copiar a identidade e as defini&#231;&#245;es de um novo utilizador a partir de uma instala&#231;&#227;o Squirrelmail pr&#243;xima</squirrelmail_usercopy>
+<subscriptions_option>Ativar ou desativar o uso de subscri&#231;&#245;es imap</subscriptions_option>
+<userinfo>Exibir as informa&#231;&#245;es da conta</userinfo>
+<user_link>Liga&#231;&#227;o do menu Artica para o RoundCube</user_link>
+<vcard_attachments>Detetar anexos VCard e mostrar um bot&#227;o para os adicionar ao livro de endere&#231;os</vcard_attachments>

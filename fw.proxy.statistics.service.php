@@ -6,8 +6,6 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(!defined("PROGRESS_DIR")){define("PROGRESS_DIR","/usr/share/artica-postfix/ressources/logs/web");}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["item-js"])){item_js();exit;}
-if(isset($_GET["item-popup"])){item_popup();exit;}
 if(isset($_POST["EnableStatsComRemoteSyslog"])){save();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["settings-js"])){settings_js();exit;}
@@ -62,19 +60,24 @@ function table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
 
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:240px;vertical-align: top'><div id='nc-status'></div></td>";
-    $html[]="<td style='width:100%;vertical-align: top'>";
+    // L'ancienne version disposait la vignette de service et le contenu dans un
+    // <table> de MISE EN PAGE (colonne gauche figee a 240px). En flex, le
+    // contenu reprend la largeur quand la fenetre retrecit.
+    $html[]="<div style='display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap'>";
+    $html[]="<div id='nc-status' style='flex:0 0 240px;max-width:100%'></div>";
+    $html[]="<div style='flex:1 1 380px;min-width:0'>";
     $html[]="<div id='main-top'></div>";
     $html[]="<div id='main-params'></div>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $js=$tpl->RefreshInterval_js("nc-status",$page,"status=yes");
+    $html[]="</div>";
+    $html[]="</div>";
 
-    $html[]="<script>$js;LoadAjaxSilent('main-params','$page?params=yes');</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // Bloc de script concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque corps d'accolade JavaScript pour un
+    // {token}.
+    $js=$tpl->RefreshInterval_js("nc-status",$page,"status=yes");
+    $script="<script>$js\nLoadAjaxSilent('main-params','$page?params=yes');</script>";
+
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
     return true;
 }
 function params_flat():bool{
@@ -141,34 +144,31 @@ function settings_popup(){
 function main_top():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $json=$_SESSION["STATSCOM_REMOTE_TOP"];
+    $json=$_SESSION["STATSCOM_REMOTE_TOP"] ?? null;
+    // property_exists() leve une TypeError si son premier argument n'est pas un
+    // objet -- ce qui arrive des que la reponse du daemon est illisible.
+    if(!is_object($json)){return true;}
     if(!$json->Status){
         if(!property_exists($json,"EnableRemote")){
             return true;
         }
     }
-    if($json->EnableRemote==0){
+    if(intval($json->EnableRemote ?? 0)==0){
         return true;
     }
 
-    $html[]="<table style='width:100%;margin-top:-10px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:50%;padding-left:15px'>";
-
-    if($json->RemoteCountFailed==0){
-        $html[]=$tpl->widget_h("green",ico_bug,0,"{errors}");
-    }else{
-        $html[]=$tpl->widget_h("yellow",ico_bug,$tpl->FormatNumber($json->RemoteCountFailed),"{errors}");
-    }
-    $html[]="</td>";
-    $html[]="<td style='width:50%;padding-left:15px'>";
-    if($json->RemoteCountSuccess==0){
-        $html[]=$tpl->widget_h("gray","fas fa-cloud-showers-heavy",0,"{connections}");
-    }else{
-        $html[]=$tpl->widget_h("green","fas fa-cloud-showers-heavy",$tpl->FormatNumber($json->RemoteCountSuccess),"{connections}");
-    }
-    $html[]="</tr>";
-    $html[]="</table>";
+    // Les deux vignettes tenaient dans une ligne de <table> de MISE EN PAGE, et
+    // la seconde cellule n'etait jamais refermee (</tr> sans </td>).
+    $failed=intval($json->RemoteCountFailed ?? 0);
+    $success=intval($json->RemoteCountSuccess ?? 0);
+    $html[]="<div style='display:flex;gap:15px;flex-wrap:wrap;align-items:stretch;margin-top:-10px'>";
+    $html[]=statscom_top_cell($failed==0
+        ? $tpl->widget_h("green",ico_bug,0,"{errors}")
+        : $tpl->widget_h("yellow",ico_bug,$tpl->FormatNumber($failed),"{errors}"));
+    $html[]=statscom_top_cell($success==0
+        ? $tpl->widget_h("gray","fas fa-cloud-showers-heavy",0,"{connections}")
+        : $tpl->widget_h("green","fas fa-cloud-showers-heavy",$tpl->FormatNumber($success),"{connections}"));
+    $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 
@@ -182,22 +182,38 @@ function status():bool{
 
     echo "<script>LoadAjaxSilent('main-top','$page?main-top=yes');</script>";
 
+    // json_decode() rend NULL quand le daemon ne repond pas: property_exists()
+    // leve alors une TypeError et la vignette d'etat disparait sans message.
+    if(!is_object($json)){
+        echo $tpl->widget_rouge("{unknown_error}","{error}");
+        return true;
+    }
+    // Le message d'erreur vient du daemon et partait BRUT dans le HTML.
+    $err="<small style='color:white'>".htmlspecialchars((string)($json->Error ?? ""))."</small>";
     if(!$json->Status){
         if(!property_exists($json,"EnableRemote")){
-            echo $tpl->widget_rouge("<small style='color:white'>$json->Error</small>","{error}");
+            echo $tpl->widget_rouge($err,"{error}");
             return true;
         }
     }
-    if($json->EnableRemote==0){
+    if(intval($json->EnableRemote ?? 0)==0){
         echo $tpl->widget_grey("{disabled}","{status}");
         return true;
     }
 
     if(!$json->Status){
-        echo $tpl->widget_rouge("<small style='color:white'>$json->Error</small>","{error}");
+        echo $tpl->widget_rouge($err,"{error}");
         return true;
     }
-    echo $tpl->widget_vert("$json->Server:$json->ServerPort OK","{status}");
+    echo $tpl->widget_vert(htmlspecialchars((string)($json->Server ?? "").":".(string)($json->ServerPort ?? ""))." OK","{status}");
     return true;
 
+}
+
+/**
+ * Une vignette de la bande d'etat StatsCom distant.
+ * Remplace les <td style='width:50%'> de l'ancien tableau de mise en page.
+ */
+function statscom_top_cell($widget):string{
+    return "<div style='flex:1 1 50%;min-width:240px;padding-left:15px'>$widget</div>";
 }

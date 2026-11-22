@@ -1,9 +1,9 @@
-<event>Row event</event>
-<LOG_DAY_LIMIT>Max days database storage</LOG_DAY_LIMIT>
-<row_color>Row color</row_color>
-<row_number>Rows number</row_number>
+<event>Evento della riga</event>
+<LOG_DAY_LIMIT>Giorni massimi di archiviazione nel database</LOG_DAY_LIMIT>
+<row_color>Colore della riga</row_color>
+<row_number>Numero di righe</row_number>
 <RTMMail>Monitoraggio SMTP in tempo reale</RTMMail>
-<RTMMail_TEXT>Display routing messages pass trough your mail server</RTMMail_TEXT>
-<RTM_PARAMETERS>Realtime monitor parameters</RTM_PARAMETERS>
-<RTM_PARAMETERS_TEXT>This section helps you to personnalize Realtime monitor parameters</RTM_PARAMETERS_TEXT>
-<text_color>Text color</text_color>
+<RTMMail_TEXT>Visualizza i messaggi di routing che attraversano il tuo server di posta</RTMMail_TEXT>
+<RTM_PARAMETERS>Parametri del monitor in tempo reale</RTM_PARAMETERS>
+<RTM_PARAMETERS_TEXT>Questa sezione ti aiuta a personalizzare i parametri del monitor in tempo reale</RTM_PARAMETERS_TEXT>
+<text_color>Colore del testo</text_color>

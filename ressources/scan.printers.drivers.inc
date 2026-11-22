@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 $GLOBAL_PRINTERS["SAMSUNG"]["Samsung ML-2550"]["French"]="/usr/share/ppd/splix/samsung/ml2550fr.ppd";
 $GLOBAL_PRINTERS["SAMSUNG"]["Samsung ML-3560"]["English"]="/usr/share/ppd/splix/samsung/ml3560.ppd";
 $GLOBAL_PRINTERS["SAMSUNG"]["Samsung CLP-500"]["English"]="/usr/share/ppd/splix/samsung/clp500.ppd";

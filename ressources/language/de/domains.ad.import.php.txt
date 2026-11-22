@@ -1,28 +1,27 @@
 <administrator>Administrator</administrator>
 <admin_dn>Konto des Administrators</admin_dn>
-<admin_dn_text>Give the Active Directory Administrator account and password.[br]Usually, the Administrator has "Administrator" name is stored in cn="Administrator,cn=Users,..."
-[br]You can give here the name of the Administrator or the full "DN" path
-[br]The suffix is the first branch of your Active Directory Branch.[br]Usually if your server is named has server.domain.tld,the suffix will be "dc=server,dc=domain,dc=tld"
-</admin_dn_text>
+<admin_dn_text>Geben Sie das Active Directory-Administratorkonto und das Passwort an.[br]Normalerweise hat der Administrator den Namen &quot;Administrator&quot; und ist in cn=&quot;Administrator,cn=Users,...&quot; gespeichert
+[br]Sie k&#246;nnen hier den Namen des Administrators oder den vollst&#228;ndigen &quot;DN&quot;-Pfad angeben
+[br]Das Suffix ist der erste Zweig Ihres Active Directory-Zweigs.[br]Wenn Ihr Server server.domain.tld hei&#223;t, lautet das Suffix normalerweise &quot;dc=server,dc=domain,dc=tld&quot;</admin_dn_text>
 <ad_server>Adresse des Active-Directory-Servers</ad_server>
-<ad_server_text>Give here the IP address or server name of your Active Directory/MS Exchange server</ad_server_text>
+<ad_server_text>Geben Sie hier die IP-Adresse oder den Servernamen Ihres Active Directory-/MS Exchange-Servers an</ad_server_text>
 <bdu>Falscher Benutzername oder Passwort</bdu>
 <cls>Keine Verbindung zum Active Directory-Server m%C3%B6glich</cls>
 <connected>Verbindung erfolgreich</connected>
-<err_unkown>Warning unable to logon with following</err_unkown>
-<failed>Connection Failed</failed>
-<iar>Insufficient access rights.</iar>
+<err_unkown>Warnung: Anmeldung mit Folgendem nicht m&#246;glich</err_unkown>
+<failed>Verbindung fehlgeschlagen</failed>
+<iar>Unzureichende Zugriffsrechte.</iar>
 <importation_completed>Importaufgabe abgeschlossen</importation_completed>
-<import_ad_title>Active Directory Members Importation</import_ad_title>
-<local_group>Select your local group</local_group>
-<local_group_text>Select in the list the Artica local group that will store your active directory users</local_group_text>
-<perform_importation>Perform the importation task</perform_importation>
-<remote_org>Select Remote organization</remote_org>
-<remote_org_text>Select the container that store users you want to import</remote_org_text>
-<restart_importation>Restart new importation</restart_importation>
+<import_ad_title>Import von Active Directory-Mitgliedern</import_ad_title>
+<local_group>W&#228;hlen Sie Ihre lokale Gruppe</local_group>
+<local_group_text>W&#228;hlen Sie in der Liste die lokale Artica-Gruppe, die Ihre Active Directory-Benutzer speichern wird</local_group_text>
+<perform_importation>Importaufgabe ausf&#252;hren</perform_importation>
+<remote_org>Remote-Organisation ausw&#228;hlen</remote_org>
+<remote_org_text>W&#228;hlen Sie den Container, der die zu importierenden Benutzer enth&#228;lt</remote_org_text>
+<restart_importation>Neuen Import neu starten</restart_importation>
 <server_name>Server-Adresse</server_name>
 <server_port>Abh%C3%B6render Port</server_port>
 <suffix>Active-Directory-Suffix</suffix>
-<ucl>Unable to connect to the LDAP server specified[br]please,verify if ldap daemon is running or the ldap server address</ucl>
-<unable_to_connect>Unable to connect to the Active Directory server specified</unable_to_connect>
+<ucl>Verbindung zum angegebenen LDAP-Server nicht m&#246;glich[br]Bitte &#252;berpr&#252;fen Sie, ob der LDAP-Daemon l&#228;uft oder die LDAP-Serveradresse</ucl>
+<unable_to_connect>Verbindung zum angegebenen Active Directory-Server nicht m&#246;glich</unable_to_connect>
 <users>Mitglieder</users>

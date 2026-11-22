@@ -33,7 +33,6 @@ if(isset($_GET["server-groups-link-perform"])){server_groups_link_perform();exit
 if(isset($_GET["start"])){table_start();exit;}
 if(isset($_GET["server-js"])){server_js();exit;}
 if(isset($_GET["server-tab"])){server_tabs();exit;}
-if(isset($_GET["add-popup"])){add_popup();exit;}
 if(isset($_GET["server-popup"])){server_popup();exit;}
 if(isset($_POST["id"])){server_save();exit;}
 if(isset($_GET["server-delete"])){server_delete();exit;}
@@ -66,10 +65,11 @@ function server_groups_link(){
 
 function server_groups_link_perform(){
     $page       = CurrentPageName();
-    $hostid     = $_GET["hostid"];
+    // Pentest 2026-11-04 : hostid/gpid/groupid etaient recopies sans encodage dans la page (XSS).
+    $hostid     = intval($_GET["hostid"]);
     $md         = $_GET["md"];
-    $gpid       = $_GET["server-groups-link-perform"];
-    $groupid    = $_GET["groupid"];
+    $gpid       = intval($_GET["server-groups-link-perform"]);
+    $groupid    = intval($_GET["groupid"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $q->QUERY_SQL("INSERT OR IGNORE INTO host_host_groups (host_id,host_group_id) VALUES ($hostid,$gpid)");
     if(!$q->ok){echo $q->mysql_error;return;}
@@ -84,9 +84,10 @@ function server_groups_link_perform(){
 }
 function host_link_perform(){
     $page       = CurrentPageName();
-    $userid     = $_GET["host-link-perform"];
+    // Pentest 2026-11-04 : host-link-perform/gpid etaient recopies sans encodage dans la page (XSS).
+    $userid     = intval($_GET["host-link-perform"]);
     $md         = $_GET["md"];
-    $gpid       = $_GET["gpid"];
+    $gpid       = intval($_GET["gpid"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $q->QUERY_SQL("INSERT INTO host_host_groups (host_id,host_group_id) VALUES ($userid,$gpid)");
     if(!$q->ok){echo $q->mysql_error;return;}
@@ -342,9 +343,11 @@ function server_delete(){
 
 function server_delete_real(){
     $q      =   new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
-    $q->QUERY_SQL("DELETE FROM hosts WHERE id='{$_POST["id"]}'");
-    $q->QUERY_SQL("DELETE FROM host_host_groups WHERE host_id='{$_POST["id"]}'");
-    $q->QUERY_SQL("DELETE FROM sessions WHERE host_id='{$_POST["id"]}'");
+    // Pentest 2026-11-04 : id etait concatene dans la requete.
+    $id     =   intval($_POST["id"]);
+    $q->QUERY_SQL("DELETE FROM hosts WHERE id='$id'");
+    $q->QUERY_SQL("DELETE FROM host_host_groups WHERE host_id='$id'");
+    $q->QUERY_SQL("DELETE FROM sessions WHERE host_id='$id'");
     if(!$q->ok){echo $q->mysql_error;}
 }
 
@@ -421,7 +424,8 @@ function server_save(){
     $tpl        = new template_admin();
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $tpl->CLEAN_POST();
-    $comment    = $q->sqlite_escape_string2($_POST["comment"]);
+    // Pentest 2026-11-04 : comment/name/url (HOST, USER, PASS, PORT) etaient concatenes dans la requete.
+    $comment    = $_POST["comment"];
     $name       = $_POST["name"];
     $id         = intval($_POST["id"]);
     $groupid    = intval($_POST["group"]);
@@ -466,11 +470,12 @@ function server_save(){
 
     $url=@implode("",$uris);
     if($id==0){
-        $q->QUERY_SQL("INSERT INTO hosts (comment,name,url,created_at,updated_at) VALUES ('$comment','$name','$url','$updated_at','$updated_at')");
+        $q->QUERY_SQL_PARAMS("INSERT INTO hosts (comment,name,url,created_at,updated_at) VALUES (?,?,?,?,?)",array($comment,$name,$url,$updated_at,$updated_at));
         if(!$q->ok){echo $q->mysql_error;}
 
         if($groupid>0){
-            $ligne=$q->mysqli_fetch_array("SELECT id FROM hosts WHERE url='$url'");
+            $rows=$q->QUERY_SQL_PARAMS("SELECT id FROM hosts WHERE url=?",array($url));
+            $ligne=isset($rows[0])?$rows[0]:array();
             $hostid=intval($ligne["id"]);
             $q->QUERY_SQL("INSERT INTO host_host_groups (host_id,host_group_id) VALUES ($hostid,$groupid)");
         }
@@ -478,13 +483,14 @@ function server_save(){
         return true;
     }
 
-    $q->QUERY_SQL("UPDATE hosts SET `comment`='$comment',`name`='$name',url='$url',updated_at='$updated_at' WHERE id='$id'");
+    $q->QUERY_SQL_PARAMS("UPDATE hosts SET `comment`=?,`name`=?,url=?,updated_at=? WHERE id=?",array($comment,$name,$url,$updated_at,$id));
     if(!$q->ok){echo $q->mysql_error;}
 
 }
 function server_fill(){
     $tpl        = new template_admin();
-    $id         = $_GET["fill"];
+    // Pentest 2026-11-04 : fill etait concatene dans la requete.
+    $id         = intval($_GET["fill"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $ligne      = $q->mysqli_fetch_array("SELECT * FROM hosts WHERE id='$id'");
     $name       = $ligne["name"];
@@ -552,7 +558,7 @@ function server_groups_table(){
             $TRCLASS = "footable-odd";
         }
         $md            = md5(serialize($ligne));
-        $host_group_id = $ligne["host_group_id"];
+        $host_group_id = intval($ligne["host_group_id"]);
         $ligne2        = $q->mysqli_fetch_array("SELECT name,comment FROM host_groups WHERE id=$host_group_id");
         $name          = $ligne2["name"];
         $comment       = $ligne2["comment"];

@@ -4,6 +4,9 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 include_once(dirname(__FILE__).'/ressources/class.ad-agent.inc');
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : id et ReturnBack etaient recopies sans encodage dans la page (XSS).
+if(isset($_GET["id"])){$_GET["id"]=preg_replace('#[^A-Za-z0-9_-]#','',(string)$_GET["id"]);}
+if(isset($_GET["ReturnBack"])){$_GET["ReturnBack"]=preg_replace('#[^A-Za-z0-9_.]#','',(string)$_GET["ReturnBack"]);}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["search"])){search();exit;}
 js();
@@ -108,7 +111,8 @@ function search(){
         $servers="Active Directory Agent API's";
 
         $html[]="<tr>";
-        $html[]="<td colspan='4'>{your_search_results} <strong>&laquo;$search&raquo;</strong>{$servers}: <span class='text-danger'>{no_data}</span></td>";
+        // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+        $html[]="<td colspan='4'>{your_search_results} <strong>&laquo;".req_html($search)."&raquo;</strong>{$servers}: <span class='text-danger'>{no_data}</span></td>";
         $html[]="</tr>";
         $html[]="</tbody>";
         $html[]="<tfoot>";
@@ -156,7 +160,7 @@ function search(){
                 alert('No ID: '+id);
                 return false;
         }
-        document.getElementById('$id').value=\"$ValueToSend\";
+        document.getElementById('$id').value=\"".req_js($ValueToSend)."\";
 			dialogInstance4.close();
 			NoSpinner();\n" . @implode("\n", $tpl->ICON_SCRIPTS) . "
 			}";
@@ -177,7 +181,7 @@ function search(){
 
         $html[]="<tr id='$trid'>";
         $html[]="<td class=\"center\" style='width:1%' nowrap><i class='far fa-users'></i></td>";
-        $html[]="<td nowrap>{$v["data"]["sAMAccountName"]}</span></td>";
+        $html[]="<td nowrap>".req_html($v["data"]["sAMAccountName"])."</span></td>";
         $html[]="<td nowrap>{$domain}</span></td>";
         $html[]="<td class=center style='width:1%' nowrap>$choose</center></span></td>";
         $html[]="</tr>";

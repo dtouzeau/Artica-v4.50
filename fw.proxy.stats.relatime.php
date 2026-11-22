@@ -4,6 +4,8 @@ include_once(dirname(__FILE__)."/ressources/class.logfile_daemon.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
@@ -21,21 +23,37 @@ function zoom_js(){
 	$tpl->js_dialog($title, "$page?zoom=yes&data=$data");
 }
 function zoom(){
+	$tpl=new template_admin();
+	// each() a ete SUPPRIMEE en PHP 8.0 (obsolete depuis 7.2): sur une appliance
+	// PHP 8 cette fonction s'arretait sur "Call to undefined function each()".
+	// unserializeb64() remplace unserialize(base64_decode(...)) sur une valeur
+	// venue de l'URL: elle rend un tableau vide au lieu d'instancier des objets.
+	$data=unserializeb64($_GET["data"]);
 
-	$data=unserialize(base64_decode($_GET["data"]));
-$html[]="<div class=ibox-content>";
-$html[]="<table class='table table table-bordered'>";
-	while (list ($key,$val) = each ($data)){
-
-		$html[]="<tr>
-		<td class=text-capitalize>$key:</td>
-		<td><strong>$val</strong></td>
-		</tr>";
-
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl awc-tbl-compact'><tbody>";
+	if(count($data)==0){
+		$html[]="<tr><td class='awc-empty'>{no_data}</td></tr>";
 	}
+	foreach($data as $key=>$val){
+		$html[]=stats_zoom_row($key,$val);
+	}
+	$html[]="</tbody></table></div></div></div>";
 
-	echo @implode("", $html)."</table></div>";
+	// La feuille est concatenee APRES l'analyse: la regex #{(.+?)}# de
+	// _ENGINE_parse_body prendrait chaque corps de regle CSS pour un {token}.
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("", $html));
 
+}
+
+/**
+ * Une ligne cle/valeur du detail d'une requete.
+ * Les deux cotes viennent du journal: ils sont echappes.
+ */
+function stats_zoom_row($key,$val):string{
+	return "<tr><td class='awc-kv-k'>".htmlspecialchars((string)$key)."</td>"
+		."<td><span class='awc-name'>".htmlspecialchars((string)$val)."</span></td></tr>";
 }
 function page(){
 	$page=CurrentPageName();
@@ -43,57 +61,57 @@ function page(){
 	$t=time();
 	if(!isset($_SESSION["STATS_SEARCH"])){$_SESSION["STATS_SEARCH"]="50 events";}
 	
-	$html="
-	<div class=\"row border-bottom white-bg dashboard-header\">
-		<div class=\"col-sm-8\"><h1 class=ng-binding>{realtime_requests}</h1></div>
-	</div>
-	<div class=\"row\"> 
-		<div class='ibox-content'>
-		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["STATS_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
-      		<span class=\"input-group-btn\">
-       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:ss$t();\">Go!</button>
-      	</span>
-     </div>
-    </div>
-</div>
-	<div class='row' id='spinner'>
-		<div id='progress-firehol-restart'></div>
-		<div  class='ibox-content'>
-		<div class='sk-spinner sk-spinner-wave'>
-			<div class='sk-rect1'></div>
-			<div class='sk-rect2'></div>
-			<div class='sk-rect3'></div>
-			<div class='sk-rect4'></div>
-			<div class='sk-rect5'></div>
-		</div>
-		
-		
-			<div id='table-loader'></div>
-		</div>
-	</div>
-	</div>
-	<script>
+	// La valeur de recherche revient de la session et repartait BRUTE dans un
+	// attribut value="..." : une valeur contenant un guillemet fermait
+	// l'attribut.
+	$searchvalue=htmlspecialchars((string)$_SESSION["STATS_SEARCH"],ENT_QUOTES);
+
+	$html=array();
+	$html[]="<div class=\"row border-bottom white-bg dashboard-header\">";
+	$html[]="<div class=\"col-sm-8\"><h1 class=ng-binding>{realtime_requests}</h1></div>";
+	$html[]="</div>";
+	$html[]=stats_search_bar($t,$searchvalue);
+	$html[]="<div id='table-loader'></div>";
+
+	// Bloc de script concatene APRES l'analyse: la regex #{(.+?)}# de
+	// _ENGINE_parse_body prendrait chaque corps d'accolade JavaScript pour un
+	// {token}.
+	$script="<script>
 		function Search$t(e){
-			if(!checkEnter(e) ){return;}
+			if(!checkEnter(e)){return;}
 			ss$t();
 		}
-		
 		function ss$t(){
 			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
 			LoadAjax('table-loader','$page?search='+ss);
 		}
-		
-		function Start$t(){
-			var ss=document.getElementById('search-this-$t').value;
-			ss$t();
-		}
-		Start$t();
+		ss$t();
 	</script>";
 
-	
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
 
+}
+
+/**
+ * Barre de recherche des requetes temps reel.
+ * Remplace l'ancien .input-group Bootstrap et le faux spinner sk-spinner-wave
+ * qui restait affiche en permanence: LoadAjax fournit deja son propre spinner.
+ */
+function stats_search_bar($t,$searchvalue):string{
+	$h ="<div class='awc-search'>";
+	$h.="<span class='awc-search-field'>";
+	$h.="<i class='fas fa-magnifying-glass awc-search-ico'></i>";
+	$h.="<input type='text' id='search-this-$t' value=\"$searchvalue\" placeholder='{search}' "
+		."OnKeyPress=\"Search$t(event);\">";
+	$h.="<button type='button' class='awc-search-clear' title='{clear}' "
+		."OnClick=\"document.getElementById('search-this-$t').value='';ss$t();\">"
+		."<i class='fas fa-xmark'></i></button>";
+	$h.="</span>";
+	$h.="<span class='awc-search-actions'>";
+	$h.="<button type='button' class='awc-btn' OnClick=\"ss$t();\">{search}</button>";
+	$h.="</span>";
+	$h.="</div>";
+	return $h;
 }
 
 function search(){
@@ -104,69 +122,65 @@ function search(){
 	
 	$MAIN=$tpl->format_search_protocol($_GET["search"]);
 	$sock=new sockets();
-	$sock->getFrameWork("squid.php?squidtail-real=yes&rp={$MAIN["MAX"]}&query=".urlencode($MAIN["TERM"])."&SearchString=");
-	$filename="/usr/share/artica-postfix/ressources/logs/squidtail.log.tmp";
+	// articarest /system/logfile/search/squidtail (remplace framework/squid.php?squidtail-real).
+	$logerror="";
+	$loglines=$tpl->logfile_search("squidtail",$MAIN,false,250,$logerror);
+	if($logerror<>""){
+		echo $tpl->div_error($logerror);
+		return;
+	}
 	
-	$categories=$tpl->javascript_parse_text("{categories}");
-	$ipaddr=$tpl->javascript_parse_text("{members}");
-	$error=$tpl->javascript_parse_text("{error}");
-	$sitename=$tpl->javascript_parse_text("{sitename}");
-	$autorefresh=$tpl->javascript_parse_text("{autorefresh}");
-	$hostnames=$tpl->javascript_parse_text("{hostnames}");
-	$options=$tpl->javascript_parse_text("{options}");
-	$all=$tpl->javascript_parse_text("{all}");
-	$back=$tpl->javascript_parse_text("{back}");
-	$destination=$tpl->javascript_parse_text("{destinations}");
-	$events=$tpl->_ENGINE_parse_body("{events}");
-	$zdate=$tpl->_ENGINE_parse_body("{zDate}");
-	$proto=$tpl->_ENGINE_parse_body("{proto}");
-	$uri=$tpl->_ENGINE_parse_body("{url}");
-	$duration=$tpl->_ENGINE_parse_body("{duration}");
-	$size=$tpl->_ENGINE_parse_body("{size}");
-	$unknown=$tpl->_ENGINE_parse_body("{unknown}");
-	$server=$tpl->javascript_parse_text("{server}");
-	$member=$tpl->_ENGINE_parse_body("{member}");
-	$html[]="
+	// Quatorze libelles traduits ({categories}, {sitename}, {hostnames}, ...) et
+	// quatre objets metier (squid_familysite, mysql_squid_builder, mysql_catz,
+	// IP) etaient construits ici sans jamais servir. Le pire etait
+	// mysql_squid_builder: une connexion MySQL ouverte a chaque rafraichissement
+	// pour rien.
+	// Cette fonction termine par un echo BRUT (pas de _ENGINE_parse_body): tout
+	// libelle doit donc etre traduit ici, sinon il s'affiche en {token} litteral.
+	$zdate_text=$tpl->_ENGINE_parse_body("{zDate}");
+	$server_text=$tpl->_ENGINE_parse_body("{server}");
+	$member_text=$tpl->_ENGINE_parse_body("{member}");
+	$status_text=$tpl->_ENGINE_parse_body("{status}");
+	$uri_text=$tpl->_ENGINE_parse_body("{url}");
+	$size_text=$tpl->_ENGINE_parse_body("{size}");
+	$showing_text=$tpl->_ENGINE_parse_body("{showing}");
+	$nodata_text=$tpl->_ENGINE_parse_body("{no_data}");
 
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>$zdate</th>
-        	<th>$server</th>
-        	<th>$member</th>
-            <th>$proto</th>
-            <th colspan=2>$uri</th>
-            <th>$size</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
-	
-	$data=explode("\n",@file_get_contents($filename));
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+	$html[]="<th>$zdate_text</th>";
+	$html[]="<th>$server_text</th>";
+	$html[]="<th>$member_text</th>";
+	$html[]="<th>$status_text</th>";
+	$html[]="<th>$uri_text</th>";
+	$html[]="<th class='center'>$size_text</th>";
+	$html[]="</tr></thead><tbody id='sr-rows'>";
+
+	$data=$loglines;
 	if(count($data)>3){$_SESSION["STATS_SEARCH"]=$_GET["search"];}
-	$zcat=new squid_familysite();
 	$logfileD=new logfile_daemon();
-	$q=new mysql_squid_builder();
-	$catz=new mysql_catz();
-	$IP=new IP();$IPClass=$IP;
-	$today=date("Y-m-d");
 	rsort($data);
-	$CATEGORIES=$MAIN["CATEGORIES"];
-	$DESTINATIONS=$MAIN["DESTINATIONS"];
-	$MyPage=CurrentPageName();
+	$CATEGORIES=$MAIN["CATEGORIES"] ?? null;
+	$c=0;
 
-	
 	foreach ($data as $line){
 		$xusers=array();
-		
-		$c++;
+
 		$re=explode(":::", $line);
-		
+		// La ligne est decoupee en 19 champs et l'ancienne version les lisait
+		// tous sans verifier: une ligne tronquee provoquait une cascade
+		// d'avertissements "Undefined array key" en PHP 8.
+		if(count($re)<19){continue;}
+		$c++;
+
 		if(preg_match("#^.*?\):\s+(.+)#", trim($re[0]),$rz)){$re[0]=$rz[1];}
-		
+
 		$color="black";
 		$mac=trim(strtolower($re[0]));
-		if($mac=="-"){$mac==null;}
+		// C'etait "$mac==null;" -- une COMPARAISON sans effet, pas une
+		// affectation. L'adresse n'etait donc pas neutralisee ici.
+		if($mac=="-"){$mac=null;}
 		$mac=str_replace("-", ":", $mac);
 		if($mac=="00:00:00:00:00:00"){$mac=null;}
 		$ipaddr=trim($re[1]);
@@ -273,42 +287,65 @@ function search(){
 		
 		$SquidCode=str_replace(":HIER_DIRECT","",$SquidCode);
 		
-		if($SIZE>1024){$size=FormatBytes($SIZE/1024);}else{$SIZE="$SIZE Bytes";}
-		$date=str_replace($today." ", "", $date);
+		// La branche "moins de 1 Ko" affectait $SIZE au lieu de $size: la
+		// cellule affichait donc le nombre d'octets NU, sans unite, pour toutes
+		// les requetes sous 1 Ko.
+		if($SIZE>1024){$size=FormatBytes($SIZE/1024);}else{$size="$SIZE Bytes";}
 
-		
 		$MAINUTI=$logfileD->parseURL($uri,$CATEGORIES,$proto);
 		$link=$MAINUTI["LINK"];
 		$uri=$MAINUTI["URL"];
-		
-		$html[]="<tr>
-				<td><span style='color:$color'>$logzdate</span></td>
-				<td><span style='color:$color'>$proxyname</span></td>
-				<td <span style='color:$color'>". @implode("&nbsp;|&nbsp;", $xusers)."</span></td>
-                <td><span style='color:$color'>{$SquidCode}/$code_error/$proto</span></td>  
-                <td><span style='color:$color'>$uri</span></td> 
-                <td><span style='color:$color'>$link</span></td>   
-                <td>{$size}</td>
-                </tr>";
-		
+
+		// Pentest 2026-11-04 : URL, proxy, membres, code (journal Squid) (donnee externe) affiche sans encodage (XSS stockee).
+		$link=$tpl->icon_link(1,"s_PopUpFull('".req_js($MAINUTI["GET_URL"])."','1024','900');");
+		$html[]=stats_request_row($color,array(
+			"date"    =>req_html($logzdate),
+			"server"  =>req_html($proxyname),
+			"members" =>req_html(@implode(" | ", $xusers)),
+			"status"  =>req_html("$SquidCode/$code_error/$proto"),
+			"url"     =>req_html($uri).$link,
+			"size"    =>req_html($size)));
+
 	}
-	$html[]="<tfoot>";
+	if($c==0){
+		$html[]="<tr><td colspan='6' class='awc-empty'>$nodata_text</td></tr>";
+	}
+
+	// L'ancienne version ouvrait le pied A L'INTERIEUR du corps du tableau puis
+	// refermait les deux dans le mauvais ordre, avec un colspan de 5 pour sept
+	// colonnes. Le pied awc est hors du tableau.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>$showing_text $c</span>";
+	$html[]="<span class='awc-pg' id='sr-pager'></span>";
+	$html[]="</div></div></div>";
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+	// awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+	echo awc_table_style().@implode("\n", $html).awc_pager_js(50,"sr-rows","sr-pager");
 	
-	$html[]="<tr>";
-	$html[]="<td colspan='5'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</tbody></table>";
-	//$html[]="<div style='font-size:10px'>".@file_get_contents("/usr/share/artica-postfix/ressources/logs/access.log.cmd")."</div>";
-	$html[]="
-	<script>
-		NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-		$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	echo @implode("\n", $html);
 	
 	
-	
+}
+
+/**
+ * Une requete du journal temps reel.
+ * L'ancienne version ecrivait "<td <span style=...>" pour la colonne des
+ * membres: le <span> devenait un attribut du <td> et son </span> restait
+ * orphelin. L'URL declarait par ailleurs un colspan=2 dans l'en-tete pour
+ * couvrir deux cellules distinctes (adresse et lien), ce qui n'est plus
+ * necessaire: les deux tiennent dans la meme cellule.
+ * $cells["url"] contient du HTML construit par parseURL(): il ne peut pas etre
+ * echappe ici.
+ */
+function stats_request_row($color,$cells):string{
+    $h ="<tr>";
+    $h.="<td class='awc-nowrap awc-mono' style='color:$color'>{$cells["date"]}</td>";
+    $h.="<td style='color:$color'>{$cells["server"]}</td>";
+    $h.="<td style='color:$color'>{$cells["members"]}</td>";
+    $h.="<td class='awc-nowrap' style='color:$color'>{$cells["status"]}</td>";
+    $h.="<td style='color:$color'>{$cells["url"]}</td>";
+    $h.="<td class='center awc-nowrap awc-mono' style='color:$color'>{$cells["size"]}</td>";
+    $h.="</tr>";
+    return $h;
 }

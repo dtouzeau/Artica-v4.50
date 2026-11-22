@@ -1,11 +1,8 @@
-<dkim_about>DKIM is an email authentication framework that addresses the widespread issue of email forgery,
-using cryptography to verify the domain of the sender.[br]
-It allows email providers to validate an emailâ€™s originating domain, making use of blacklists and whitelists more effective.
-[br]It also makes phishing attacks easier to detect by helping to identify abusive domains.</dkim_about>
-<On-BadSignature>Signature fails to validate</On-BadSignature>
-<On-DNSError>Transient DNS error is encountered</On-DNSError>
-<On-InternalError>Internal error of some kind is encountered</On-InternalError>
-<On-NoSignature>Message arrives unsigned</On-NoSignature>
-<On-Security>Message arrives containing properties that may be a security concern</On-Security>
-<On-SignatureMissing>Message is unsigned from a domain which advertises a "we sign everything" policy</On-SignatureMissing>
-<select_action>Selects the action to be taken when</select_action>
+<dkim_about>O DKIM é um mecanismo de autenticaç%C3£o de email que trata o problema comum da falsificaç%C3£o de mensagens, usando criptografia para verificar o dom%C3%ADnio do remetente.[br] Ele permite que provedores de email validem o dom%C3%ADnio de origem de uma mensagem, tornando mais eficaz o uso de listas negras e listas brancas.[br]Também facilita a detecç%C3£o de ataques de phishing ao ajudar a identificar dom%C3%ADnios abusivos.</dkim_about>
+<On-BadSignature>A assinatura falha na valida&#231;&#227;o</On-BadSignature>
+<On-DNSError>&#201; encontrado um erro DNS transit&#243;rio</On-DNSError>
+<On-InternalError>&#201; encontrado um erro interno de algum tipo</On-InternalError>
+<On-NoSignature>A mensagem chega sem assinatura</On-NoSignature>
+<On-Security>A mensagem chega contendo propriedades que podem ser uma preocupa&#231;&#227;o de seguran&#231;a</On-Security>
+<On-SignatureMissing>A mensagem n&#227;o est&#225; assinada de um dom&#237;nio que anuncia uma pol&#237;tica de &quot;assinamos tudo&quot;</On-SignatureMissing>
+<select_action>Seleciona a a&#231;&#227;o a ser tomada quando</select_action>

@@ -1,4 +1,5 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
@@ -6,15 +7,23 @@ include_once(dirname(__FILE__)."/ressources/class.user.inc");
 include_once(dirname(__FILE__)."/ressources/class.contacts.inc");
 include_once(dirname(__FILE__)."/ressources/class.external.ad.inc");
 include_once(dirname(__FILE__).'/ressources/class.ad-agent.inc');
+// Les repartiteurs ?enable-signature= et ?enable-firewall= appelaient
+// enable_signature() et enable_firewall(), qui ne sont definies NI dans ce
+// fichier NI ailleurs: les deux URL repondaient un fatal « Call to undefined
+// function ». La paire appartient a la famille Suricata (elle bascule une
+// signature dans suricata-rules.db et un drapeau dans suricata_sig) et n'a
+// rien a faire ici; seul fw.ids.rules.php produit reellement
+// « ?enable-signature= ».
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["enable-signature"])){enable_signature();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["new-js"])){new_js();exit;}
 if(isset($_GET["new-popup"])){new_popup();exit;}
 if(isset($_GET["new-organization"])){new_organization();exit;}
@@ -135,30 +144,26 @@ function new_member(){
 }
 
 function new_member_save(){
+    if(mbrsadagent_denied("create a directory member",array("AllowAddUsers","AsOrgAdmin"),intval($_POST["gpid"] ?? 0)>0)){return false;}
 
     foreach ($_POST as $num=>$ligne){
         $_POST[$num]=url_decode_special_tool($ligne);
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
-
-    $sql="CREATE TABLE IF NOT EXISTS `CreateUserQueue` ( `zMD5` TEXT PRIMARY KEY,`content` TEXT NOT NULL ) ";
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;}
-
     $tpl=new templates();
     $usersmenus=new usersMenus();
     if($usersmenus->ZARAFA_INSTALLED){$_POST["ByZarafa"]="yes";}
     $fulldata=base64_encode(serialize($_POST));
 
-    $md5=md5($fulldata);
-    $fulldata=mysql_escape_string2($fulldata);
-    $q->QUERY_SQL("INSERT OR IGNORE INTO `CreateUserQueue` (zMD5,`content`) VALUES ('$md5','$fulldata')","artica_backup");
-    if(!$q->ok){echo $q->mysql_error;}
+    $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/localadmins/create-user-queue",
+        array("content"=>$fulldata))),true);
+    if(!is_array($resp) || empty($resp["success"])){
+        echo is_array($resp)?strval($resp["error"] ?? "unknown error"):"daemon unreachable";
+    }
 }
 
 
 function new_group_save(){
+    if(mbrsadagent_denied("create a directory group",array("AllowAddGroup","AsOrgAdmin"))){return false;}
     $group=url_decode_special_tool($_POST["AddGroup"]);
     $ou=url_decode_special_tool($_POST["ou"]);
     if($ou==null){if($_SESSION["ou"]<>null){$ou=$_SESSION["ou"];}}
@@ -194,6 +199,7 @@ function new_group_save(){
 
 
 function new_organization_save(){
+    if(mbrsadagent_denied("create an organization",array("AsOrgAdmin"))){return false;}
     $usr=new usersMenus();
     $tpl=new templates();
     if($_POST["AddOU"]<>null){
@@ -210,8 +216,6 @@ function new_organization_save(){
         }
 
         $ldap->ldap_close();
-        $sock=new sockets();
-        $sock->getFrameWork("status.php?force-front-end=yes");
         return;
     }
 
@@ -224,6 +228,7 @@ function single_tab(){
     $tpl=new template_admin();
     $users=new usersMenus();
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array(0=>array());}
     $ligne=$ActiveDirectoryConnections[0];
     $array=array();
     if($users->AllowAddGroup OR $users->AllowAddUsers) {
@@ -265,6 +270,7 @@ function tabs_multi(){
 
     $MUNIN=false;
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
     $LockActiveDirectoryToKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LockActiveDirectoryToKerberos"));
     $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
     if($HaClusterClient==1){$LockActiveDirectoryToKerberos=1;}
@@ -285,17 +291,20 @@ function form_multi(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $t=time();
-    $connection_id=$_GET["connection-id"];
-    $dn=$_GET["dn"];
+    // Pentest 2026-11-04 : connection-id/dn etaient recopies sans encodage dans la page (XSS).
+    $connection_id=intval($_GET["connection-id"]);
+    $dnurl=req_url(isset($_GET["dn"])?$_GET["dn"]:"");
+    $dn=isset($_GET["dn"])?(string)$_GET["dn"]:"";
     $dn=str_replace("=", "_", $dn);
     $dn=str_replace(",", "_", $dn);
+    $dn=preg_replace('/[^A-Za-z0-9_]/','',$dn);
     $function="SearchInADLDAP{$dn}";
     $html[]="
 			
         <input type='hidden' id='ActiveDirectory-connection-type' value='0'>
 		<div class='ibox-content'>
 			<div class=\"input-group\">
-      			<input type=\"text\" id='search-$connection_id-$t' class=\"form-control\" value=\"{$_SESSION["MEMBERS_SEARCH"]}\" placeholder=\"{search}\"  OnKeyPress=\"{$function}$t(event);\">
+      			<input type=\"text\" id='search-$connection_id-$t' class=\"form-control\" value=\"".req_html($_SESSION["MEMBERS_SEARCH"])."\" placeholder=\"{search}\"  OnKeyPress=\"{$function}$t(event);\">
       			<span class=\"input-group-btn\">
        				 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"$function();\">Go!</button>
       			</span>
@@ -319,7 +328,7 @@ function form_multi(){
     function $function(){
         var type=document.getElementById('ActiveDirectory-connection-type').value;
         var ss=encodeURIComponent(document.getElementById('search-$connection_id-$t').value);
-        LoadAjax('table-loader-$connection_id-members','$page?table=yes&t=$t&search='+ss+'&type='+type+'&function=$function&connection-id=$connection_id&dn={$_GET["dn"]}');
+        LoadAjax('table-loader-$connection_id-members','$page?table=yes&t=$t&search='+ss+'&type='+type+'&function=$function&connection-id=$connection_id&dn=$dnurl');
     }
     $function();";
     $html[]="</script>";
@@ -353,6 +362,7 @@ function page_multi(){
 function page(){
     $EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
     $EnableExternalACLADAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableExternalACLADAgent"));
 
 
@@ -487,9 +497,10 @@ function table_ad_groups():bool{
     $html[]="</tbody>";
     $html[]="<tfoot>";
     $table_buttons=table_buttons();
-    $TINY_ARRAY["TITLE"]="{groups2}:&nbsp;$LDAP_SUFFIX";
+    // Pentest 2026-11-04 : dn/search etaient recopies sans encodage dans la page (XSS).
+    $TINY_ARRAY["TITLE"]="{groups2}:&nbsp;".req_html($LDAP_SUFFIX);
     $TINY_ARRAY["ICO"]="fad fa-users-class";
-    $TINY_ARRAY["EXPL"]="{search}: $stringtofind &nbsp;<strong><i class='fa-regular fa-users-between-lines'></i>&nbsp;$c {items}</strong>";
+    $TINY_ARRAY["EXPL"]="{search}: ".req_html($stringtofind)." &nbsp;<strong><i class='fa-regular fa-users-between-lines'></i>&nbsp;$c {items}</strong>";
     $TINY_ARRAY["BUTTONS"]=$table_buttons[0];
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
@@ -690,9 +701,10 @@ function table():bool{
 
     //
     $table_buttons=table_buttons();
-    $TINY_ARRAY["TITLE"]="{my_members}:&nbsp;$dn";
+    // Pentest 2026-11-04 : dn/search etaient recopies sans encodage dans la page (XSS).
+    $TINY_ARRAY["TITLE"]="{my_members}:&nbsp;".req_html($dn);
     $TINY_ARRAY["ICO"]="fad fa-users";
-    $TINY_ARRAY["EXPL"]="{search}: $stringtofind &nbsp;<strong><i class='fa-regular fa-users-between-lines'></i>&nbsp;$c {items}</strong>";
+    $TINY_ARRAY["EXPL"]="{search}: ".req_html($stringtofind)." &nbsp;<strong><i class='fa-regular fa-users-between-lines'></i>&nbsp;$c {items}</strong>";
     $TINY_ARRAY["BUTTONS"]=$table_buttons[0];
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
@@ -870,4 +882,20 @@ function BuildRequests($stringtofind){
 
 
     return "SELECT * FROM hostsnet WHERE ( ".@implode(" OR ", $OR).")$AND1 $ORDERBY $ORDERL LIMIT $LIMIT";
+}
+
+// Comptes et groupes de l'annuaire (creation, import, suppression) : controle COTE SERVEUR.
+// $roles : droits delegues admis (AllowAddUsers, AsOrgAdmin...). Mettre un membre DANS un groupe
+// ($group=true) exige AsSystemAdministrator : un groupe peut porter des privileges de la console,
+// un compte delegue s'en servait pour creer un compte administrateur. Rend true = REFUSE.
+function mbrsadagent_denied($what,$roles,$group=false,$post=true):bool{
+    $users=new usersMenus();
+    if($users->AsSystemAdministrator){return false;}
+    if(!$group){
+        foreach($roles as $r){ if(!empty($users->$r)){return false;} }
+    }
+    $tpl=new template_admin();
+    admin_tracks("Refused: $what (missing privilege)");
+    if($post){echo $tpl->post_error("{ERROR_NO_PRIVS}");}else{$tpl->js_error("{ERROR_NO_PRIVS}");}
+    return true;
 }

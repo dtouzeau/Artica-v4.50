@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
@@ -29,7 +32,8 @@ function zoom_js(){
 	$q=new postgres_sql();
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$id=$_GET["zoom-js"];
+	// Pentest 2026-11-04 : zoom-js etait concatene dans la requete.
+	$id=intval($_GET["zoom-js"]);
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM quarmsg WHERE id='$id'"));
 	$subject=$tpl->decode_mime_string($ligne["subject"]);
 
@@ -40,7 +44,8 @@ function zoom_js(){
 
 function delete_message_js(){
 	$tpl=new template_admin();
-	$id=$_GET["delete-message-js"];
+	// Pentest 2026-11-04 : delete-message-js etait concatene dans la requete.
+	$id=intval($_GET["delete-message-js"]);
 	$q=new postgres_sql();
 	$ligne=$q->mysqli_fetch_array("SELECT * FROM quarmsg WHERE id='$id'");
 	$zdate=$tpl->javascript_parse_text("{date}:")." ".$ligne["zdate"];
@@ -50,8 +55,10 @@ function delete_message_js(){
 }
 
 function whitelist_email_js(){
+    if(!fw_progress_page_priv("AsPostfixAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
-    $id=$_GET["whitelist-email"];
+    $id=fw_progress_seg($_GET["whitelist-email"] ?? "");
+    if($id===""){return fw_progress_bad_value("whitelist-email");}
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT mailfrom FROM quarmsg WHERE id='$id'");
 
@@ -61,15 +68,17 @@ function whitelist_email_js(){
     $ARRAY["TITLE"]="{resend} N.$id";
     $ARRAY["AFTER"]=null;
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=resend-progress-$id')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=resend-progress-$id')";
 
 
     $mailfrom=$tpl->javascript_parse_text("{whitelist} {from}:".$ligne["mailfrom"]." {and_resend_the_message}");
     $tpl->js_dialog_confirm_action("$mailfrom", "whitelist-email", $id,$jsrestart);
 }
 function whitelist_domain_js(){
+    if(!fw_progress_page_priv("AsPostfixAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
-    $id=$_GET["whitelist-domain"];
+    $id=fw_progress_seg($_GET["whitelist-domain"] ?? "");
+    if($id===""){return fw_progress_bad_value("whitelist-domain");}
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT mailfrom FROM quarmsg WHERE id='$id'");
 
@@ -79,7 +88,7 @@ function whitelist_domain_js(){
     $ARRAY["TITLE"]="{resend} N.$id";
     $ARRAY["AFTER"]=null;
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=resend-progress-$id')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=resend-progress-$id')";
 
     $trz=explode("@",$ligne["mailfrom"]);
     $ligne["mailfrom"]=$trz[1];
@@ -94,16 +103,19 @@ function delete_message(){
 	$q=new postgres_sql();
 	$tpl=new templates();
 	$q=new postgres_sql();
-	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM quarmsg WHERE id='{$_POST["delete-message"]}'"));
+	// Pentest 2026-11-04 : delete-message etait concatene dans la requete.
+	// msgmd5 vient de la base (donnees de messages externes) : quotes doublees (PostgreSQL, standard_conforming_strings).
+	$delid=intval($_POST["delete-message"]);
+	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM quarmsg WHERE id='$delid'"));
 	if(!$q->ok){echo $q->mysql_error;return;}
-	$msgmd5=$ligne["msgmd5"];
+	$msgmd5=str_replace("'","''",strval($ligne["msgmd5"]));
 	$mailfrom=$ligne["mailfrom"];
 	$mailto=$ligne["mailto"];
 	$msgid=$ligne["msgid"];
 	$subject=$tpl->decode_mime_string($ligne["subject"]);
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT contentid FROM quardata WHERE msgmd5='$msgmd5'"));
 	if(!$q->ok){echo $q->mysql_error;return;}
-	$contentid=$ligne["contentid"];
+	$contentid=intval($ligne["contentid"]);
 	
 	if($contentid>0){$q->QUERY_SQL("select lo_unlink($contentid)");}
 	$q->QUERY_SQL("DELETE FROM quardata WHERE msgmd5='$msgmd5'");
@@ -128,7 +140,8 @@ function delete_message(){
 }
 
 function html_message_js(){
-	$id=$_GET["htmlmessg-js"];
+	// Pentest 2026-11-04 : htmlmessg-js etait concatene dans la requete.
+	$id=intval($_GET["htmlmessg-js"]);
 	$q=new postgres_sql();
 	$tpl=new template_admin();
 	$page=CurrentPageName();
@@ -139,7 +152,8 @@ function html_message_js(){
 }
 function html_message_popup(){
 	$q=new postgres_sql();
-	$id=$_GET["htmlmess-popup"];
+	// Pentest 2026-11-04 : htmlmess-popup etait concatene dans la requete.
+	$id=intval($_GET["htmlmess-popup"]);
 	$tpl=new templates();
 	$page=CurrentPageName();
 	$resend=$tpl->javascript_parse_text("{resend}");
@@ -153,14 +167,19 @@ function html_message_popup(){
 
 	$data=str_ireplace("<!--X-Body-of-Message-->", "<!--X-Body-of-Message-->\n<div style='font-size:16px !important;width:98%' class=form>",$data);
 	$data=str_ireplace("<!--X-Body-of-Message-End-->", "<!--X-Body-of-Message-End-->\n</div>",$data);
-	echo "<div class='ibox-content'><div class=row>$data</div></div>";
+	// Pentest 2026-11-04 : corps HTML du message en quarantaine (donnee externe) affiche sans encodage (XSS stockee).
+	// Rendu dans une iframe sandbox (aucun script) : la mise en forme du message est conservee.
+	$srcdoc=req_html("<!DOCTYPE html><html><head><meta charset='utf-8'></head><body>".$data."</body></html>");
+	echo "<div class='ibox-content'><div class=row><iframe sandbox='' referrerpolicy='no-referrer' style='width:100%;height:75vh;border:0' srcdoc=\"$srcdoc\"></iframe></div></div>";
 
 }
 
 function resend_js(){
+    if(!fw_progress_page_priv("AsPostfixAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$id=$_GET["resend"];
+	$id=fw_progress_seg($_GET["resend"] ?? "");
+	if($id===""){return fw_progress_bad_value("resend");}
 	
 	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/mimedefang.resend.progress.$id";
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/mimedefang.resend.progress.$id.log";
@@ -168,7 +187,7 @@ function resend_js(){
 	$ARRAY["TITLE"]="{resend} N.$id";
 	$ARRAY["AFTER"]=null;
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=resend-progress-$id')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=resend-progress-$id')";
 	
 	
 	$tpl->js_confirm_execute("{resend} N.$id", "resend", $id,$jsrestart);
@@ -177,7 +196,8 @@ function resend_js(){
 
 
 function zoom_popup(){
-	$id=$_GET["zoom-popup"];
+	// Pentest 2026-11-04 : zoom-popup etait concatene dans la requete.
+	$id=intval($_GET["zoom-popup"]);
 	$q=new postgres_sql();
 	$tpl=new template_admin();
 	$page=CurrentPageName();
@@ -190,12 +210,16 @@ function zoom_popup(){
 		$elements = imap_mime_header_decode($ligne["subject"]);
 		if(isset($elements[0])){
 			if($elements[0]->text<>null){
-				$ligne["subject"]=htmlentities($elements[0]->text);
-				$ligne["subject"]=replace_accents($ligne["subject"]);
+				$ligne["subject"]=replace_accents($elements[0]->text);
 			}
 	
 		}
 	}
+	// Pentest 2026-11-04 : subject, mailfrom, mailto, msgmd5 (donnee externe) affiche sans encodage (XSS stockee).
+	$ligne["subject"]=req_html($ligne["subject"]);
+	$ligne["mailfrom"]=req_html($ligne["mailfrom"]);
+	$ligne["mailto"]=req_html($ligne["mailto"]);
+	$ligne["msgmd5"]=req_url($ligne["msgmd5"]);
 	$html[]="<div class='ibox-content'><div class=row><div id='resend-progress-$id'></div>";
 	$html[]="<div class='col-md-6'>";
 	$html[]="<H3 class='font-bold m-b-xs'>{$ligne["subject"]}</h3>";
@@ -230,21 +254,26 @@ function zoom_popup(){
 
 function whitelist_email(){
 
-    $id=$_POST["whitelist-email"];
+    // Pentest 2026-11-04 : whitelist-email etait concatene dans la requete.
+    $id=intval($_POST["whitelist-email"]);
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT mailfrom FROM quarmsg WHERE id='$id'");
     $pattern=$ligne["mailfrom"];
     $patternNone=str_replace("*@", "", $pattern);
+    // Pentest 2026-11-04 : mailfrom (en-tete du message) et uid etaient concatenes dans la requete.
+    $pattern=str_replace("'","''",strval($pattern));
+    $patternNone=str_replace("'","''",strval($patternNone));
     $tpl=new template_admin();
     $q=new postgres_sql();
     $q->QUERY_SQL("DELETE FROM miltergreylist_acls WHERE method='blacklist' AND pattern='$pattern'");
 
     $userid=$_SESSION["uid"];
     if($userid==-100){$userid="Manager";}
+    $userid=str_replace("'","''",strval($userid));
 
     $sql="SELECT id FROM miltergreylist_acls ORDER BY id desc LIMIT 1";
     $ligne=$q->mysqli_fetch_array($sql);
-    $lastid=$ligne["id"];
+    $lastid=intval($ligne["id"]);
     $lastid++;
 
     $q->QUERY_SQL("INSERT INTO miltergreylist_acls (id,zdate,method,type,pattern,description) VALUES($lastid,NOW(),'whitelist','from','$pattern','By $userid')");
@@ -255,27 +284,33 @@ function whitelist_email(){
     if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
 
     $sock=new sockets();
-    $sock->getFrameWork("postfix.php?smtpd-client-restrictions=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/smtpd/restrictions/0");
+
 }
 function whitelist_domain(){
 
-    $id=$_POST["whitelist-domain"];
+    // Pentest 2026-11-04 : whitelist-domain etait concatene dans la requete.
+    $id=intval($_POST["whitelist-domain"]);
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT mailfrom FROM quarmsg WHERE id='$id'");
     $tbl=explode("@",$ligne["mailfrom"]);
 
     $pattern="*@{$tbl[1]}";
     $patternNone=str_replace("*@", "", $pattern);
+    // Pentest 2026-11-04 : mailfrom (en-tete du message) et uid etaient concatenes dans la requete.
+    $pattern=str_replace("'","''",strval($pattern));
+    $patternNone=str_replace("'","''",strval($patternNone));
     $tpl=new template_admin();
     $q=new postgres_sql();
     $q->QUERY_SQL("DELETE FROM miltergreylist_acls WHERE method='blacklist' AND pattern='$pattern'");
 
     $userid=$_SESSION["uid"];
     if($userid==-100){$userid="Manager";}
+    $userid=str_replace("'","''",strval($userid));
 
     $sql="SELECT id FROM miltergreylist_acls ORDER BY id desc LIMIT 1";
     $ligne=$q->mysqli_fetch_array($sql);
-    $lastid=$ligne["id"];
+    $lastid=intval($ligne["id"]);
     $lastid++;
 
     $q->QUERY_SQL("INSERT INTO miltergreylist_acls (id,zdate,method,type,pattern,description) VALUES($lastid,NOW(),'whitelist','from','$pattern','By $userid')");
@@ -286,7 +321,7 @@ function whitelist_domain(){
     if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
 
     $sock=new sockets();
-    $sock->getFrameWork("postfix.php?smtpd-client-restrictions=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/smtpd/restrictions/0");
 }
 function table(){
 	$viarbl=null;
@@ -357,12 +392,8 @@ function search(){
 	
 	$sql="SELECT * FROM $table {$querys["Q"]} ORDER BY id DESC LIMIT $MAX";
 
-	if(isset($_GET["query2"])){
-		$query=base64_decode($_GET["query2"]);
-		if(preg_match("#tomail=#", $query)){$tomail_column=false;}
-		if(preg_match("#reason=#", $query)){$reason_column=false;}
-		$sql="SELECT * FROM $table $query ORDER BY id DESC LIMIT 250";
-	}
+	// Pentest 2026-11-04 : query2 (clause SQL brute en base64) etait concatene dans la requete.
+	// Aucune page ne produit ce parametre : il n'est plus accepte.
 
 	//zmd5,ip_addr,mailfrom,mailto,stime,hostname,whitelisted
 
@@ -401,7 +432,8 @@ function search(){
 		$id=$ligne["id"];
 		$msgid=$ligne["msgid"];
 		if($msgid==null){$msgid=$tpl->icon_nothing();}else{
-			$js_msgid="Loadjs('fw.postfix.transactions.php?second-query=".base64_encode("WHERE msgid='$msgid'")."&title=".urlencode("{see_messages_with}:$msgid")."')";
+			// Pentest 2026-11-04 : msgid etait concatene dans la clause second-query (desormais signee et echappee).
+			$js_msgid="Loadjs('fw.postfix.transactions.php?second-query=".signed_html_token("WHERE msgid='".pg_escape_string2($msgid)."'")."&title=".urlencode("{see_messages_with}:$msgid")."')";
 			$msgid=$tpl->td_href($msgid,"{see_messages_with}:$msgid",$js_msgid);
 			
 		}
@@ -411,10 +443,12 @@ function search(){
 			$elements = imap_mime_header_decode($ligne["subject"]);
 			if(isset($elements[0])){
 				if($elements[0]->text<>null){
-					$ligne["subject"]=htmlentities(replace_accents($elements[0]->text));
+					$ligne["subject"]=replace_accents($elements[0]->text);
 				}
 			}
 		}
+		// Pentest 2026-11-04 : subject (donnee externe) affiche sans encodage (XSS stockee).
+		$ligne["subject"]=req_html($ligne["subject"]);
 		
 		
 		$zdate=$tpl->td_href($zdate,"","Loadjs('$page?zoom-js=$id')");
@@ -454,17 +488,22 @@ function search(){
 	
 		$q=new postgres_sql();
 		$zmd5=$_GET["download"];
+		// Pentest 2026-11-04 : download etait concatene dans la requete (et dans le chemin de lo_export).
+		if(!preg_match("/^[A-Za-z0-9_-]{1,90}$/",strval($zmd5))){
+			header($_SERVER['SERVER_PROTOCOL'] . ' 400 Bad Request', true, 400);
+			die("DIE");
+		}
 		$sql="SELECT contentid FROM quardata WHERE msgmd5='$zmd5'";
 		if($GLOBALS["VERBOSE"]){echo "<hr>$sql<br>\n";}
 		$ligne=$q->mysqli_fetch_array($sql);
 	
 		if(!$q->ok){
-			if($GLOBALS["VERBOSE"]){echo "<hr>MySQL Error:".$q->mysql_error."<br>".die("DIE " .__FILE__." Line: ".__LINE__);}
+			if($GLOBALS["VERBOSE"]){echo "<hr>MySQL Error:".$q->mysql_error."<br>".die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 			header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
-			die("DIE " .__FILE__." Line: ".__LINE__);
+			die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 		}
 	
-		$contentid=$ligne["contentid"];
+		$contentid=intval($ligne["contentid"]);
 		if($GLOBALS["VERBOSE"]){echo "<hr>contentid:&laquo;$contentid&raquo;<br>";}
 		@mkdir("/usr/share/artica-postfix/ressources/conf/upload",0777,true);
 		@chmod("/usr/share/artica-postfix/ressources/conf/upload",0777);
@@ -480,7 +519,7 @@ function search(){
 		if(!$q->ok){
 			if($GLOBALS["VERBOSE"]){echo "<hr>MySQL Error:".$q->mysql_error."<br>";}
 			header($_SERVER['SERVER_PROTOCOL'] . ' 500 Internal Server Error', true, 500);
-			die("DIE " .__FILE__." Line: ".__LINE__);
+			die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 		}
 		if($GLOBALS["VERBOSE"]){echo "<hr>OK /usr/share/artica-postfix/ressources/conf/upload/$zmd5.gz<br>\n";}
 		if(!$GLOBALS["VERBOSE"]){

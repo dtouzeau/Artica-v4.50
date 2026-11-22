@@ -15,6 +15,8 @@ $usersmenus=new usersMenus();
 
 if($usersmenus->AsArticaAdministrator==false){header('location:users.index.php');exit;}
 
+// Pentest 2026-11-04 : aclid etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["aclid"])){$_GET["aclid"]=intval($_GET["aclid"]);}
 if(isset($_GET["start"])){table_start();exit;}
 if(isset($_GET["acl-js"])){acl_js();exit;}
 if(isset($_GET["acl-tabs"])){acl_tabs();exit;}
@@ -190,7 +192,8 @@ function acl_delete(){
 }
 
 function acl_delete_real(){
-    $aclid  =   $_POST["id"];
+    // Pentest 2026-11-04 : id etait concatene dans la requete.
+    $aclid  =   intval($_POST["id"]);
     $q      =   new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $q->QUERY_SQL("DELETE FROM acls WHERE id='$aclid'");
     if(!$q->ok){echo $q->mysql_error;return;}
@@ -237,7 +240,8 @@ function acl_save(){
     $tpl        = new template_admin();
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $tpl->CLEAN_POST();
-    $comment    = $q->sqlite_escape_string2($_POST["comment"]);
+    // Pentest 2026-11-04 : action etait concatene dans la requete.
+    $comment    = $_POST["comment"];
     $id         = intval($_POST["id"]);
     $created_at = date("Y-m-d H:i:s");
     $action     = $_POST["action"];
@@ -252,14 +256,14 @@ function acl_save(){
     }
 
     if($id==0){
-        $q->QUERY_SQL("INSERT INTO acls (created_at,updated_at,comment,`action`,weight) 
-        VALUES ('$created_at','$created_at','$comment','$action','$weight')");
+        $q->QUERY_SQL_PARAMS("INSERT INTO acls (created_at,updated_at,comment,`action`,weight) 
+        VALUES ('$created_at','$created_at',?,?,'$weight')",array($comment,$action));
         if(!$q->ok){echo $q->mysql_error_html(true);}
         return true;
     }
 
-    $sql="UPDATE acls SET `comment`='$comment',`action`='$action',weight='$weight',updated_at='$created_at' WHERE id='$id'";
-    $q->QUERY_SQL($sql);
+    $sql="UPDATE acls SET `comment`=?,`action`=?,weight='$weight',updated_at='$created_at' WHERE id='$id'";
+    $q->QUERY_SQL_PARAMS($sql,array($comment,$action));
     if(!$q->ok){echo $q->mysql_error."<hr>$sql";}
 
 }
@@ -269,7 +273,7 @@ function group_fill(){
     $q              = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $ligne          = $q->mysqli_fetch_array("SELECT * FROM acls WHERE id='$id'");
     $tpl            = new template_admin();
-    $ID             = $ligne["id"];
+    $ID             = intval($ligne["id"]);
     $md             = md5(serialize($ligne));
     $comment        = $ligne["comment"];
     $action         = $ligne["action"];
@@ -356,7 +360,7 @@ function users_table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $id             = $ligne["id"];
         $md             = md5(serialize($ligne));
-        $user_group_id  = $ligne["user_group_id"];
+        $user_group_id  = intval($ligne["user_group_id"]);
         $delete         = $tpl->icon_unlink("Loadjs('$page?users-unlink=$user_group_id&md=$md&aclid=$aclid')","AllowAddUsers");
         $ligne2         = $q->mysqli_fetch_array("SELECT name,comment FROM user_groups WHERE id=$user_group_id");
 
@@ -428,7 +432,7 @@ function hosts_table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $id             = $ligne["id"];
         $md             = md5(serialize($ligne));
-        $host_group_id  = $ligne["host_group_id"];
+        $host_group_id  = intval($ligne["host_group_id"]);
         $delete         = $tpl->icon_unlink("Loadjs('$page?hosts-unlink=$host_group_id&md=$md&aclid=$aclid')","AllowAddUsers");
         $ligne2         = $q->mysqli_fetch_array("SELECT name,comment FROM host_groups WHERE id=$host_group_id");
         if($host_group_id==1){
@@ -638,7 +642,7 @@ function table(){
     $TRCLASS=null;
     foreach ($results as $index=>$ligne){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $ID             = $ligne["id"];
+        $ID             = intval($ligne["id"]);
         $md             = md5(serialize($ligne));
         $comment        = $ligne["comment"];
         $action         = $ligne["action"];

@@ -1,6 +1,14 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 //$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["compile"])){compile_rules();exit;}
 if(isset($_GET["ruleid-tabs"])){ruleid_tabs();exit;}
@@ -14,14 +22,9 @@ if(isset($_GET["move-js"])){rule_move_js();exit;}
 if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["enable-signature"])){enable_signature();exit;}
 if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
 if(isset($_POST["subid"])){subrules_save();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 
 
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 if(isset($_GET["rule-params"])){ruleid_parameters();exit;}
 if(isset($_POST["rulename"])){ruleid_parameters_save();exit;}
 if(isset($_GET["subrules-start"])){subrules_start();exit;}
@@ -46,6 +49,9 @@ if(isset($_GET["builded-conf"])){builded_conf();exit;}
 if(isset($_GET["buildedconf-popup"])){builded_conf_popup();exit;}
 
 
+
+
+
 VERBOSE("Return page.?",__LINE__);
 page();
 
@@ -67,56 +73,59 @@ function compile_rules(){
 }
 function rule_move_js(){
     header("content-type: application/x-javascript");
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $tpl=new template_admin();
     $dir=$_GET["dir"];
     $aclid=intval($_GET["ruleid"]);
-    $results=$q->QUERY_SQL("SELECT zorder FROM mod_security_rules WHERE ID='$aclid'");
-    if(!$q->ok){
-        $tpl->js_error($q->mysql_error);
-        return;
-    }
-    $ligne=$results[0];
-    $zorder=intval($ligne["zorder"]);
+
+    $ligne=fetch_modsec_rule_by_id($aclid);
+    $zorder=isset($ligne["zorder"])?intval($ligne["zorder"]):0;
     echo "// Current order = $zorder\n";
 
     if($dir=="up"){
         $zorder=$zorder-1;
         if($zorder<0){$zorder=0;}
-    }
-    else{
+    }else{
         $zorder=$zorder+1;
     }
     echo "// New order = $zorder\n";
-    $q->QUERY_SQL("UPDATE mod_security_rules SET zorder='$zorder' WHERE id='$aclid'");
-    if(!$q->ok){$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "alert('$q->mysql_error');";return;}
 
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"update","table"=>"mod_security_rules",
+        "set"=>["zorder"=>$zorder],"where"=>["ID"=>$aclid]
+    ]);
 
-    if($dir=="up"){
-        $zorder2=$zorder+1;
-        if($zorder2<0){$zorder2=0;}
-        $sql="UPDATE mod_security_rules SET zorder=$zorder2 WHERE `id`<>'$aclid' AND zorder=$zorder";
-        $q->QUERY_SQL($sql);
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
+    // Shift sibling rows out of the now-occupied zorder. /nginx-db/exec
+    // doesn't support WHERE col<>?, so we list rows at $zorder via /query
+    // and update each one (skipping the moving rule).
+    $shift=($dir=="up")?$zorder+1:$zorder-1;
+    if($shift<0){$shift=0;}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/mod_security_rules/zorder/$zorder");
+    $data=json_decode($resp,true);
+    if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])){
+        foreach($data["rows"] as $r){
+            $rid=isset($r["ID"])?intval($r["ID"]):0;
+            if($rid===$aclid || $rid<=0){continue;}
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+                "action"=>"update","table"=>"mod_security_rules",
+                "set"=>["zorder"=>$shift],"where"=>["ID"=>$rid]
+            ]);
+        }
     }
-    if($dir=="down"){
-        $zorder2=$zorder-1;
-        if($zorder2<0){$zorder2=0;}
-        $sql="UPDATE mod_security_rules SET zorder=$zorder2 WHERE `id`<>'$aclid' AND zorder=$zorder";
-        $q->QUERY_SQL($sql);
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-    }
 
-
-    $c=0;
-    $results=$q->QUERY_SQL("SELECT ID FROM mod_security_rules ORDER BY zorder");
-    foreach ($results as $index=>$ligne){
-        $aclid=$ligne["ID"];
-        echo "// $aclid New order = $c";
-        $q->QUERY_SQL("UPDATE mod_security_rules SET zorder='$c' WHERE ID='$aclid'");
-        $c++;
+    // Compact gaps: 1..N renumber across all rules, by current zorder.
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/mod_security_rules?order=zorder");
+    $data=json_decode($resp,true);
+    if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])){
+        $c=0;
+        foreach($data["rows"] as $r){
+            $rid=isset($r["ID"])?intval($r["ID"]):0;
+            if($rid<=0){continue;}
+            echo "// $rid New order = $c";
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+                "action"=>"update","table"=>"mod_security_rules",
+                "set"=>["zorder"=>$c],"where"=>["ID"=>$rid]
+            ]);
+            $c++;
+        }
     }
 }
 function subrules_variable_js(){
@@ -127,11 +136,11 @@ function subrules_variable_js(){
 }
 function subrules_variable_add_table(){
     $subruleid=intval($_GET["subrules-variable-addtable"]);
-    $sql="SELECT variables FROM mod_security_patterns WHERE ID=$subruleid";
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $variables=unserialize(base64_decode($q->mysqli_fetch_array($sql)));
+    $row=fetch_modsec_pattern_by_id($subruleid);
+    $raw=isset($row["variables"])?strval($row["variables"]):"";
+    $variables=@unserialize(base64_decode($raw));
+    if(!is_array($variables)){$variables=array();}
     foreach ($variables as $variable){$ALREADY[$variable]=true;}
-
 }
 function builded_conf(){
     $page=CurrentPageName();
@@ -218,47 +227,50 @@ function ruleid_delete(){
     $tpl=new template_admin();
     $ruleid=intval($_GET["ruleid-delete"]);
     $md=$_GET["md"];
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM mod_security_rules WHERE ID='$ruleid'");
-    $NAT_TYPE_TEXT="{rulename}: {$ligne["rulename"]}";
+    $ligne=fetch_modsec_rule_by_id($ruleid);
+    $rulename=isset($ligne["rulename"])?$ligne["rulename"]:"#$ruleid";
+    $NAT_TYPE_TEXT="{rulename}: $rulename";
     $tpl->js_confirm_delete($NAT_TYPE_TEXT,"ruleid-delete",$ruleid,"$('#$md').remove()");
 }
 function ruleid_enable(){
     $tpl=new template_admin();
     $ID=intval($_GET["ruleid-enable"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename,enabled FROM mod_security_rules WHERE ID='$ID'");
-    $rulename=$ligne["rulename"];
-    if(intval($ligne["enabled"])==0){$enabled=1;}else{$enabled=0;}
-    $q->QUERY_SQL("UPDATE mod_security_rules SET enabled=$enabled WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->js_error_stop($q->mysql_error);return false;}
+    $ligne=fetch_modsec_rule_by_id($ID);
+    $rulename=isset($ligne["rulename"])?$ligne["rulename"]:"#$ID";
+    $current=isset($ligne["enabled"])?intval($ligne["enabled"]):0;
+    $enabled=($current==0)?1:0;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"update","table"=>"mod_security_rules",
+        "set"=>["enabled"=>$enabled],"where"=>["ID"=>$ID]
+    ]);
     admin_tracks("Change Web application Firewall #$ID $rulename to enabled=$enabled");
     return true;
 }
 function ruleid_delete_perform(){
     $ruleid=intval($_POST["ruleid-delete"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM mod_security_rules WHERE ID='$ruleid'");
-    $NAT_TYPE_TEXT="{$ligne["rulename"]}";
-    $q->QUERY_SQL("DELETE FROM  mod_security_patterns WHERE ruleid='$ruleid'");
-    if(!$q->ok){echo $q->mysql_error;return false;}
-    $q->QUERY_SQL("DELETE FROM mod_security_rules WHERE ID='$ruleid'");
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    $ligne=fetch_modsec_rule_by_id($ruleid);
+    $NAT_TYPE_TEXT=isset($ligne["rulename"])?$ligne["rulename"]:"#$ruleid";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"delete","table"=>"mod_security_patterns","where"=>["ruleid"=>$ruleid]
+    ]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"delete","table"=>"mod_security_rules","where"=>["ID"=>$ruleid]
+    ]);
     admin_tracks("Delete Web Application Firewall rule ID: $ruleid ($NAT_TYPE_TEXT)");
     return true;
 }
 
 function ruleid_js(){
 	$page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
 	$tpl=new template_admin();
 	$ruleid=intval($_GET["ruleid-js"]);
     $function=$_GET["function"];
     if($ruleid==0){
 		$NAT_TYPE_TEXT="{new_rule}";
 	}else{
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM mod_security_rules WHERE ID='$ruleid'");
-		$NAT_TYPE_TEXT="{rulename}: {$ligne["rulename"]}";
+		$ligne=fetch_modsec_rule_by_id($ruleid);
+		$rulename=isset($ligne["rulename"])?$ligne["rulename"]:"#$ruleid";
+		$NAT_TYPE_TEXT="{rulename}: $rulename";
 	}
 	$tpl->js_dialog1("$NAT_TYPE_TEXT","$page?ruleid-tabs=$ruleid&function=$function",1024);
 }
@@ -304,15 +316,8 @@ function ruleid_parameters(){
 
     $phases=phase_list();
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    if(!$q->FIELD_EXISTS("mod_security_rules","action")){
-        $q->QUERY_SQL("ALTER TABLE mod_security_rules ADD action TEXT");
-    }
-    if(!$q->FIELD_EXISTS("mod_security_rules","phase")){
-        $q->QUERY_SQL("ALTER TABLE mod_security_rules ADD phase INTEGER NOT NULL DEFAULT 1");
-    }
-
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM mod_security_rules WHERE ID='$ruleid'");
+    // Daemon owns the schema (action, phase added in nginxsites.FixTables).
+    $ligne=fetch_modsec_rule_by_id($ruleid);
     $form[]=$tpl->field_hidden("ruleid",$ruleid);
     $form[]=$tpl->field_choose_websites("siteid","{websites}",intval($ligne["siteid"]));
     $form[]=$tpl->field_array_hash($allow, "action", "nonull:{access}", $ligne["action"],true,null,false);
@@ -335,62 +340,66 @@ function ruleid_parameters(){
 
 }
 function ruleid_parameters_save():bool{
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $id=$_POST["ruleid"];
-    $phase=$_POST["phase"];
-    $_POST["siteid"]=intval($_POST["siteid"]);
-    if(!$q->FIELD_EXISTS("mod_security_rules","siteid")){
-        $q->QUERY_SQL("ALTER TABLE mod_security_rules ADD siteid INTEGER NOT NULL DEFAULT 0");
-    }
-    $_POST["description"]=$q->sqlite_escape_string2($_POST["description"]);
-    $_POST["rulename"]=$q->sqlite_escape_string2($_POST["rulename"]);
+    $id=intval($_POST["ruleid"]);
+    $phase=intval($_POST["phase"]);
+    $siteid=intval($_POST["siteid"]);
+    // Parameter values pass through the daemon's prepared-statement layer
+    // (/nginx-db/exec uses ? placeholders), so SQL escaping is unnecessary here.
+    $rulename=$_POST["rulename"];
+    $description=$_POST["description"];
+    $action=$_POST["action"];
 
     if($id==0){
-        $q->QUERY_SQL("INSERT INTO mod_security_rules (rulename,description,enabled,action,siteid,phase)
-        VALUES ('{$_POST["rulename"]}','{$_POST["description"]}',1,'{$_POST["action"]}','{$_POST["siteid"]}','$phase')");
-        if(!$q->ok){
-           echo $tpl->post_error($q->mysql_error);
-           return false;
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+            "action"=>"insert","table"=>"mod_security_rules",
+            "values"=>["rulename"=>$rulename,"description"=>$description,"enabled"=>1,
+                       "action"=>$action,"siteid"=>$siteid,"phase"=>$phase]
+        ]);
+        $data=json_decode($resp,true);
+        if(!is_array($data) || empty($data["Status"])){
+            $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"daemon unavailable";
+            echo $tpl->post_error($err);
+            return false;
         }
-        return admin_tracks("Create new Web Application Firewall rule {$_POST["rulename"]} {$_POST["action"]}");
-
+        return admin_tracks("Create new Web Application Firewall rule $rulename $action");
     }
 
-    $q->QUERY_SQL("UPDATE mod_security_rules SET rulename='{$_POST["rulename"]}',
-    description='{$_POST["description"]}', action='{$_POST["action"]}',siteid='{$_POST["siteid"]}',phase='$phase' WHERE ID=$id");
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-    }
-    return admin_tracks("Update Web Application Firewall rule {$_POST["rulename"]} {$_POST["action"]}");
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"update","table"=>"mod_security_rules",
+        "set"=>["rulename"=>$rulename,"description"=>$description,
+                "action"=>$action,"siteid"=>$siteid,"phase"=>$phase],
+        "where"=>["ID"=>$id]
+    ]);
+    return admin_tracks("Update Web Application Firewall rule $rulename $action");
 }
 function subrules_new(){
     $page=CurrentPageName();
-    $ruleid=$_GET["subrules-new"];
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
+    $ruleid=intval($_GET["subrules-new"]);
     $tpl=new template_admin();
 
-    $q->QUERY_SQL("INSERT INTO mod_security_patterns (ruleid,zorder,enabled) VALUES ($ruleid,0,1)");
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"insert","table"=>"mod_security_patterns",
+        "values"=>["ruleid"=>$ruleid,"zorder"=>0,"enabled"=>1]
+    ]);
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"daemon unavailable";
+        echo $tpl->post_error($err);
         return;
     }
 
     echo "LoadAjax('subrules-table','$page?subrules-table=$ruleid')";
-
 }
 function subrules_delete(){
     $tpl=new template_admin();
     $ID=intval($_GET["subrules-delete"]);
     $md=$_GET["md"];
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM mod_security_patterns WHERE ID='$ID'");
-    $id=$ligne["ID"];
-    $scope=$ligne["scope"];
-    $operator=$ligne["operator"];
-    $description=$ligne["description"];
+    $ligne=fetch_modsec_pattern_by_id($ID);
+    $scope=isset($ligne["scope"])?$ligne["scope"]:"";
+    $operator=isset($ligne["operator"])?$ligne["operator"]:"";
+    $description=isset($ligne["description"])?$ligne["description"]:"";
     if($description==null){$description="{unknown}";}
     if($operator==null){$operator="{unknown}";}
     $text="$scope $operator $description";
@@ -400,44 +409,36 @@ function subrules_delete(){
 }
 function subrules_delete_perform():bool{
     $ID=intval($_POST["subrules-delete"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM mod_security_patterns WHERE ID='$ID'");
-    $scope=$ligne["scope"];
-    $operator=$ligne["operator"];
-    $description=$ligne["description"];
+    $ligne=fetch_modsec_pattern_by_id($ID);
+    $scope=isset($ligne["scope"])?$ligne["scope"]:"";
+    $operator=isset($ligne["operator"])?$ligne["operator"]:"";
+    $description=isset($ligne["description"])?$ligne["description"]:"";
     if($description==null){$description="{unknown}";}
     if($operator==null){$operator="{unknown}";}
     $text="$scope $operator $description";
     $tpl=new template_admin();
     $text=$tpl->_ENGINE_parse_body($text);
-    $q->QUERY_SQL("DELETE FROM mod_security_patterns WHERE ID=$ID");
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-        return false;
-    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"delete","table"=>"mod_security_patterns","where"=>["ID"=>$ID]
+    ]);
    return  admin_tracks("Delete Web Application Firewall subrule #$ID $text");
 }
 
 function subrules_enable(){
     $tpl=new template_admin();
     $ID=intval($_GET["subrules-enable"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM mod_security_patterns WHERE ID='$ID'");
-    if($ligne["enabled"]==1){
-        $q->QUERY_SQL("UPDATE mod_security_patterns SET enabled=0 WHERE ID=$ID");
-        if(!$q->ok){
-            echo $tpl->post_error($q->mysql_error);
-            return false;
-        }
+    $ligne=fetch_modsec_pattern_by_id($ID);
+    $current=isset($ligne["enabled"])?intval($ligne["enabled"]):0;
+    $new=($current==1)?0:1;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"update","table"=>"mod_security_patterns",
+        "set"=>["enabled"=>$new],"where"=>["ID"=>$ID]
+    ]);
+    if($new==0){
         admin_tracks("Disable Web Application Firewall subrule #$ID");
-        return true;
+    }else{
+        admin_tracks("Enable Web Application Firewall subrule #$ID");
     }
-    $q->QUERY_SQL("UPDATE mod_security_patterns SET enabled=1 WHERE ID=$ID");
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
-        return false;
-    }
-    admin_tracks("Enable Web Application Firewall subrule #$ID");
     return true;
 }
 
@@ -445,20 +446,9 @@ function subrules_popup(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["subrules-popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM mod_security_patterns WHERE ID='$ID'");
-    if(!$q->FIELD_EXISTS("mod_security_patterns","scope")){
-        $q->QUERY_SQL("ALTER TABLE mod_security_patterns ADD `scope` NOT NULL DEFAULT 'QUERY_STRING'");
-    }
-    if(!$q->FIELD_EXISTS("mod_security_patterns","writelog")){
-        $q->QUERY_SQL("ALTER TABLE mod_security_patterns ADD `writelog` INTEGER NULL DEFAULT '0'");
-    }
-    if(!$q->FIELD_EXISTS("mod_security_patterns","negative")){
-        $q->QUERY_SQL("ALTER TABLE mod_security_patterns ADD `negative` INTEGER NULL DEFAULT '0'");
-    }
-    if(!$q->FIELD_EXISTS("mod_security_patterns","fields")){
-        $q->QUERY_SQL("ALTER TABLE mod_security_patterns ADD `fields` TEXT NULL");
-    }
+    // Daemon owns the schema (scope, writelog, negative, fields are added in
+    // nginxsites.FixTables).
+    $ligne=fetch_modsec_pattern_by_id($ID);
 
     $mainrule=$ligne["ruleid"];
     $js[]="LoadAjax('subrules-table','$page?subrules-table=$mainrule')";
@@ -496,21 +486,30 @@ function subrules_save(){
     $negative=intval($_POST["negative"]);
     $phase=intval($_POST["phase"]);
     $fields=trim($_POST["fields"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $explain=$q->sqlite_escape_string2($_POST["explain"]);
-    $sql="UPDATE mod_security_patterns SET enabled=$enabled, scope='$scope',operator='$operator',description='$description',negative='$negative',phase=$phase,fields='$fields', explain='$explain' WHERE ID=$ID";
-    $q->QUERY_SQL($sql);
+    $explain=isset($_POST["explain"])?$_POST["explain"]:"";
 
-    if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+        "action"=>"update","table"=>"mod_security_patterns",
+        "set"=>["enabled"=>$enabled,"scope"=>$scope,"operator"=>$operator,
+                "description"=>$description,"negative"=>$negative,
+                "phase"=>$phase,"fields"=>$fields,"explain"=>$explain],
+        "where"=>["ID"=>$ID]
+    ]);
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"daemon unavailable";
+        echo $tpl->post_error($err);
+        return false;
+    }
     admin_tracks("UPDATE Web application firewall rule #$ID enabled=$enabled $scope $operator $description");
     return true;
-
 }
 
 
 function enable_signature(){
 	$t=time();
-	$id=$_GET["enable-signature"];
+	// Pentest 2026-11-04 : enable-signature etait concatene dans la requete.
+	$id=intval($_GET["enable-signature"]);
 	$rulefile=$_GET["cat"];
 	$page=CurrentPageName();
 	$q=new postgres_sql();
@@ -543,7 +542,8 @@ return;
 
 function enable_firewall(){
 	$t=time();
-	$id=$_GET["enable-firewall"];
+	// Pentest 2026-11-04 : enable-firewall etait concatene dans la requete.
+	$id=intval($_GET["enable-firewall"]);
 	$rulefile=$_GET["cat"];
 	$page=CurrentPageName();
 	$q=new postgres_sql();
@@ -577,35 +577,8 @@ function enable_firewall(){
 function page(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sql="CREATE TABLE IF NOT EXISTS `mod_security_rules` (
-		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-		`zorder` INTEGER,
-		`enabled` INTEGER,
-        `siteid` INTEGER,
-		`rulename` TEXT,
-		`description` TEXT
-	)";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error("$q->mysql_error (".__LINE__.")");}
-
-    $sql="CREATE TABLE IF NOT EXISTS `mod_security_patterns` (
-		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-		`ruleid` INTEGER,
-		`zorder` INTEGER,
-		`enabled` INTEGER,
-		`variables` TEXT,
-		`operator` TEXT,
-		`phase` INTEGER,
-		`transformation` TEXT,
-		`action` TEXT,
-		`explain` TEXT,
-		`description` TEXT
-	)";
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error("$q->mysql_error (".__LINE__.")");}
-
+    // Daemon owns the schema for mod_security_rules and mod_security_patterns
+    // (created in nginxsites.FixTables at startup and after backup restore).
     $html=$tpl->page_header("{WAF_LEFT} {rules}",
         "fa fa-bars","{ModSecurityExplain}","$page?tabs=yes","web-firewall-rules","progress-waf-rules",false);
 
@@ -644,9 +617,7 @@ function subrules_table(){
     $html[]="</thead>";
     $html[]="<tbody>";
     $BROWSER_OPERATORS_POPUP=BROWSER_OPERATORS_POPUP();
-    $sql="SELECT * FROM mod_security_patterns WHERE ruleid=$ruleid ORDER BY zorder DESC LIMIT 250";
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $results=$q->QUERY_SQL($sql);
+    $results=fetch_modsec_patterns_by_ruleid($ruleid);
     $TRCLASS=null;
     $phase_list=phase_list();
     foreach ($results as $ligne){
@@ -753,24 +724,13 @@ function table(){
 	$jsAfter="LoadAjax('table-loader','$page?table=yes');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
 
-    $search=$_GET["search"];
-    $search="*$search*";
-    $search=str_replace("**","*",$search);
-    $search=str_replace("*","%",$search);
-
-    if(strpos("  $search","%")>0){
-
-        $sql="SELECT * FROM mod_security_rules WHERE ( (description LIKE '$search') OR (rulename LIKE '$search') ) ORDER BY zorder DESC";
-    }else{
-        $sql="SELECT * FROM mod_security_rules ORDER BY zorder DESC LIMIT 250";
-    }
+    $search=isset($_GET["search"])?strval($_GET["search"]):"";
 
     $allow[0]="<span class='label label-primary'>{allow}</span>";
     $allow[1]="<span class='label label-danger'>{deny}</span>";
     $phases=phase_list();
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$results=$q->QUERY_SQL($sql);
+    $results=fetch_modsec_rules_filtered($search);
 	$TRCLASS=null;
 
 	foreach ($results as $ligne){
@@ -786,9 +746,10 @@ function table(){
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td $prc1 nowrap>{$id}.</td>";
         if($siteid==0){$sitename="<div class='center'>*</div>";}else{
-            $sql = "SELECT servicename FROM nginx_services WHERE ID=$siteid";
-            $WebService=$q->mysqli_fetch_array($sql);
-            $sitename=$WebService["servicename"];
+            $sitename=fetch_nginx_servicename($siteid);
+            if(strlen($sitename)==0){$sitename="#$siteid";}
+            // Pentest 2026-11-04 : nom du site/description (donnee stockee) affiche sans encodage (XSS stockee).
+            $sitename=req_html($sitename);
         }
         $up=$tpl->icon_up("Loadjs('$page?move-js=yes&id=$id&dir=up&ruleid=$id')");
         $down=$tpl->icon_down("Loadjs('$page?move-js=yes&id=$id&dir=down&ruleid=$id')");
@@ -797,7 +758,7 @@ function table(){
         $html[]="<td $prc1 nowrap>$sitename</td>";
         $html[]="<td style='width:50%'>{$ligne["rulename"]} <sm
 >$phase</small></td>";
-		$html[]="<td style='width:50%' >{$ligne["description"]}</span></td>";
+		$html[]="<td style='width:50%' >".req_html($ligne["description"])."</span></td>";
 		$html[]="<td $prc1 class='center' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?ruleid-enable=$id')","signature-$id")."</td>";
         $html[]="<td $prc1 class='center' nowrap>$up&nbsp;$down</td>";
         $html[]="<td $prc1 class='center' nowrap>$delete</td>";
@@ -841,12 +802,14 @@ function table(){
 }
 function enable(){
 	
-	$filename=$_POST["filename"];
+	// Pentest 2026-11-04 : filename etait concatene dans la requete.
+	$filename=strval($_POST["filename"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM suricata_rules_packages WHERE rulefile='$filename'");
-	$enabled=intval($ligne["enabled"]);
+	$ligne=$q->QUERY_SQL_PARAMS("SELECT enabled FROM suricata_rules_packages WHERE rulefile=?",array($filename));
+	$ligne=(is_array($ligne) && isset($ligne[0]))?$ligne[0]:array();
+	$enabled=intval($ligne["enabled"] ?? 0);
 	if($enabled==0){$enabled=1;}else{$enabled=0;}
-	$q->QUERY_SQL("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile='$filename'");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile=?",array($filename));
 	if(!$q->ok){echo $q->mysql_error;}
 }
 

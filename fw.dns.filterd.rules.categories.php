@@ -1,4 +1,5 @@
 <?php
+// Post SP10 - 13/10/2026
 if(isset($_GET["VERBOSE"])){ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string','');ini_set('error_append_string','');}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string','');ini_set('error_append_string','');}
 
@@ -11,6 +12,8 @@ include_once('ressources/class.ActiveDirectory.inc');
 include_once('ressources/class.categories.inc');
 include_once("ressources/class.ldap-extern.inc");
 include_once(dirname(__FILE__)."/ressources/class.dnsfilter.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_GET["list"])){table();exit;}
 if(isset($_GET["category-add-js"])){categoy_add_js();exit;}
@@ -21,10 +24,23 @@ if(isset($_GET["category-del-js"])){category_del();exit;}
 
 page();
 
+/**
+ * Les trois valeurs que toutes les fonctions de cette page recoivent par l'URL.
+ *
+ * Elles partaient BRUTES dans des requetes SQL (dont un DELETE), dans des URL
+ * et dans des chaines JavaScript. Ce sont toutes des entiers: l'identifiant de
+ * regle, le mode (0 = liste noire, 1 = liste blanche) et l'identifiant de
+ * categorie.
+ */
+function dnscat_ruleid():int{ return intval($_GET["ID"] ?? 0); }
+function dnscat_modeblk():int{ return intval($_GET["modeblk"] ?? 0); }
+/** L'id de ligne a retirer du DOM: un md5, donc hexadecimal. */
+function dnscat_md():string{ return preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? "")); }
+
 function categoy_add_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$tpl->js_dialog2("{categories}", "$page?category-add=yes&ID={$_GET["ID"]}&modeblk={$_GET["modeblk"]}");
+	$tpl->js_dialog2("{categories}", "$page?category-add=yes&ID=".dnscat_ruleid()."&modeblk=".dnscat_modeblk());
 	
 	
 }
@@ -32,37 +48,37 @@ function categoy_add_js(){
 
 function category_del(){
 	header("content-type: application/x-javascript");
-	$category=$_GET["category-del-js"];
-	$page=CurrentPageName();
-	$ID=$_GET["ID"];
-	$modeblk=$_GET["modeblk"];
+	// Ces trois valeurs partaient BRUTES dans un DELETE.
+	$category=intval($_GET["category-del-js"] ?? 0);
+	$ID=dnscat_ruleid();
+	$modeblk=dnscat_modeblk();
+	$md=dnscat_md();
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$sql="DELETE FROM webfilter_blks WHERE category='$category' AND modeblk='$modeblk' AND webfilter_id='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	echo "$('#{$_GET["md"]}').remove();\n";
+	$q->QUERY_SQL("DELETE FROM webfilter_blks WHERE category='$category' AND modeblk='$modeblk' AND webfilter_id='$ID'");
+	if(!$q->ok){$tpl->js_error($q->mysql_error);return;}
+	if($md!==""){echo "$('#{$md}').remove();\n";}
 	echo "LoadAjax('table-loader-dnsfilterd-rules','fw.dns.filterd.rules.php?table=yes')";
 }
 
 function categoy_post(){
 	header("content-type: application/x-javascript");
-	$category=$_GET["category-post-js"];
-	$page=CurrentPageName();
-	$ID=$_GET["ID"];
-	$modeblk=$_GET["modeblk"];
+	// Memes trois valeurs, memes injections: SELECT puis INSERT.
+	$category=intval($_GET["category-post-js"] ?? 0);
+	$ID=dnscat_ruleid();
+	$modeblk=dnscat_modeblk();
+	$md=dnscat_md();
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$sql="SELECT ID FROM webfilter_blks WHERE category='$category' AND modeblk='$modeblk' AND webfilter_id='$ID'";
-	$ligne=$q->mysqli_fetch_array($sql);
-	if($ligne["ID"]>0){return;}
-	
-	$sql="INSERT OR IGNORE INTO webfilter_blks (webfilter_id,category,modeblk) VALUES ('$ID','{$category}','{$modeblk}')";
-	writelogs($sql,__FUNCTION__,__FILE__,__LINE__);
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	
-	echo "$('#{$_GET["md"]}').remove();\n";
+	$ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilter_blks WHERE category='$category' AND modeblk='$modeblk' AND webfilter_id='$ID'");
+	if(!is_array($ligne)){$ligne=array();}
+	if(intval($ligne["ID"] ?? 0)>0){return;}
+
+	$q->QUERY_SQL("INSERT OR IGNORE INTO webfilter_blks (webfilter_id,category,modeblk) VALUES ('$ID','$category','$modeblk')");
+	if(!$q->ok){$tpl->js_error($q->mysql_error);return;}
+	admin_tracks("DNS filtering rule $ID: added category $category (modeblk=$modeblk)");
+
+	if($md!==""){echo "$('#{$md}').remove();\n";}
 	echo "RefreshUfdbCategoriesList();\n";
 	echo "LoadAjax('table-loader-dnsfilterd-rules','fw.dns.filterd.rules.php?table=yes')";
 	
@@ -71,11 +87,14 @@ function categoy_post(){
 
 function page(){
 	$page=CurrentPageName();
+	// $_GET["ID"] et $_GET["modeblk"] partaient BRUTS dans cette chaine
+	// JavaScript: un "?ID=..." forge s'executait dans la session.
+	$ID=dnscat_ruleid();
+	$modeblk=dnscat_modeblk();
 	echo "<div id='ufdb-categories-list' style='margin-top:20px'></div>
 	<script>
 		function RefreshUfdbCategoriesList(){
-			LoadAjax('ufdb-categories-list','$page?list=yes&ID={$_GET["ID"]}&modeblk={$_GET["modeblk"]}');
-			
+			LoadAjax('ufdb-categories-list','$page?list=yes&ID=$ID&modeblk=$modeblk');
 		}
 		RefreshUfdbCategoriesList();
 	</script>	
@@ -89,10 +108,14 @@ function categoy_add(){
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
 	
-	$sql="SELECT `category` FROM webfilter_blks WHERE `webfilter_id`={$_GET["ID"]} AND modeblk={$_GET["modeblk"]}";
-	$results=$q->QUERY_SQL($sql);
-	
-	foreach ($results as $index=>$ligne){$cats[$ligne["category"]]=true;}
+	$ruleid=dnscat_ruleid();
+	$modeblk=dnscat_modeblk();
+	// Ces deux valeurs partaient BRUTES dans le WHERE.
+	$results=$q->QUERY_SQL("SELECT `category` FROM webfilter_blks WHERE `webfilter_id`=$ruleid AND modeblk=$modeblk");
+	if(!is_array($results)){$results=array();}
+
+	$cats=array();
+	foreach ($results as $ligne){$cats[$ligne["category"]]=true;}
 	
 	
 	$dans=new dansguardian_rules();
@@ -110,17 +133,16 @@ function categoy_add(){
 	}
 	
 	
-	$results = $q->QUERY_SQL($sql);
-	$compile=$tpl->_ENGINE_parse_body("{compile}");
 	$category=$tpl->_ENGINE_parse_body("{category}");
 	$description=$tpl->_ENGINE_parse_body("{description}");
+	// La requete etait executee DEUX FOIS, le premier resultat jete.
 	$results = $q->QUERY_SQL($sql);
-	
-	if(!$q->ok){echo $q->mysql_error;exit();}
+
+	if(!$q->ok){echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars((string)$q->mysql_error)));return;}
 	
 	$TRCLASS=null;
 	
-	$html[]="<table id='table-category-add-{$_GET["modeblk"]}' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=false class='text-capitalize' >&nbsp;</th>";
@@ -129,13 +151,13 @@ function categoy_add(){
 	$html[]="<th data-sortable=false>&nbsp;</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
-	
+	$html[]="<tbody id='dnscat-add-rows'>";
 
-	$TRCLASS=null;
+	$rows=array();
 	$users=new usersMenus();
 	
-	$UfdbMasterCache=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbMasterCache"));
+	$UfdbMasterCache=@unserialize((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbMasterCache"),array("allowed_classes"=>false));
+	if(!is_array($UfdbMasterCache)){$UfdbMasterCache=array();}
 	
 	while ($ligne = pg_fetch_assoc($results)) {
 		$category_id=$ligne["category_id"];
@@ -169,10 +191,12 @@ function categoy_add(){
 		$img="{$category_icon}";
 		$val=0;
 		$md=md5($ligne["categorykey"]);
-		$ligne['description']=utf8_encode($category_description);
-		$categorykey=urlencode($ligne["categorykey"]);
-		
-		$js="Loadjs('$page?category-post-js=$category_id&ID={$_GET["ID"]}&modeblk={$_GET["modeblk"]}&md=$md')";
+		// utf8_encode() convertit de l'ISO-8859-1 vers l'UTF-8, or la base est
+		// deja en UTF-8: il double-encodait les accents des descriptions. Il est
+		// de surcroit deprecie depuis PHP 8.2.
+		$ligne['description']=(string)$category_description;
+
+		$js="Loadjs('$page?category-post-js=".intval($category_id)."&ID=$ruleid&modeblk=$modeblk&md=$md')";
 		$button="<button class='btn btn-primary btn-xs' OnClick=\"javascript:$js\">{select}</button>";
 		if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
 			if($official_category==1){
@@ -183,32 +207,35 @@ function categoy_add(){
 		}
 		if($category_table_elements>0){$elements="<br><strong><small>".FormatNumber($category_table_elements)." {items}</small></strong>";}
 		
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:1%'><img src='$img'></td>";
-		$html[]="<td style='width:1%' nowrap>".$tpl->_ENGINE_parse_body($categoryname)."</td>";
-		$html[]="<td>".$tpl->_ENGINE_parse_body("{$ligne['description']} $license{$elements}")."</td>";
-		$html[]=$tpl->_ENGINE_parse_body("<td style='width:1%' nowrap>$button</td>");
-		$html[]="</tr>";
-	
-	}	
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-category-add-{$_GET["modeblk"]}').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
-$html[]="</script>";
-echo @implode("\n", $html);
-	
+		$rows[]="<tr id='$md'>"
+			."<td style='width:1%'><img src='".htmlspecialchars($img)."'></td>"
+			."<td style='width:1%' nowrap><span class='awc-name'>".$tpl->_ENGINE_parse_body($categoryname)."</span></td>"
+			."<td>".$tpl->_ENGINE_parse_body("{$ligne['description']} $license{$elements}")."</td>"
+			.$tpl->_ENGINE_parse_body("<td style='text-align:right' nowrap>$button</td>")
+			."</tr>";
+
+	}
+
+	$c=count($rows);
+	if($c==0){
+		$html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	// Le <tfoot> portait un pager footable qu'AUCUN init n'a jamais alimente sur
+	// cette page: un <ul class='pagination'> vide en pied de tableau.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $c {items}</span>";
+	$html[]="<span class='awc-pg' id='dnscat-add-pager'></span>";
+	$html[]="</div></div></div>";
+
+	$script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.$script
+		.awc_pager_js(50,"dnscat-add-rows","dnscat-add-pager");
+
 }
 
 function table(){
@@ -227,74 +254,69 @@ function table(){
 	
 	
 	
-	$sql="SELECT `category` FROM $tableProd WHERE `webfilter_id`={$_GET["ID"]} AND modeblk={$_GET["modeblk"]}";
-	$results = $q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);}
-	
+	$ruleid=dnscat_ruleid();
+	$modeblk=dnscat_modeblk();
+	// Ces deux valeurs partaient BRUTES dans le WHERE.
+	$results = $q->QUERY_SQL("SELECT `category` FROM $tableProd WHERE `webfilter_id`=$ruleid AND modeblk=$modeblk");
+	if(!$q->ok){
+		echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars((string)$q->mysql_error)));
+		return;
+	}
+	if(!is_array($results)){$results=array();}
 
-	$html[]=$tpl->_ENGINE_parse_body("
-	
+	$html=array();
+	$html[]="
 			<div class=\"btn-group\" data-toggle=\"buttons\">
-			<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?category-add-js=yes&ID={$_GET["ID"]}&modeblk={$_GET["modeblk"]}')\"><i class='fa fa-plus'></i> {add_categories} </label>
-			</div>
-				<div class=\"btn-group\" data-toggle=\"buttons\">
-			</div>
-			<table id='table-all-categories' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
-	
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=false class='text-capitalize' >&nbsp;</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$category</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$description}</th>";
-	$html[]="<th data-sortable=false>&nbsp;</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+			<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?category-add-js=yes&ID=$ruleid&modeblk=$modeblk')\"><i class='fa fa-plus'></i> {add_categories} </label>
+			</div>";
+	$html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
+	$html[]="<thead><tr>";
+	$html[]="<th style='width:1%'>&nbsp;</th>";
+	$html[]="<th>$category</th>";
+	$html[]="<th>$description</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='dnscat-rows'>";
+
 	$postgres=new postgres_sql();
-	$TRCLASS=null;
-	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+	$rows=array();
+	foreach ($results as $ligne){
 		$category_id=intval($ligne["category"]);
 		$ligne2=pg_fetch_array($postgres->QUERY_SQL("SELECT * FROM personal_categories WHERE category_id='$category_id'"));
-		$items=$ligne2["items"];
-		$categorykey=$category_id;
-		$category_description=$ligne2["category_description"];
-		$categoryname=$tpl->_ENGINE_parse_body($ligne2["categoryname"]);
-		$category_icon=$ligne2["category_icon"];
-		
-		
-		$DBTXT=array();
-		$database_items=null;
-		$img="img/{$ligne["picture"]}";
-		$val=0;
-		
-		$md=md5("{$category_id}{$_GET["ID"]}");
-		$ligne['description']=utf8_encode($tpl->_ENGINE_parse_body($category_description));
-		
-		$jsdel="Loadjs('$page?category-del-js=$categorykey&ID={$_GET["ID"]}&modeblk={$_GET["modeblk"]}&md=$md')";
-		
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:1%'><img src='$category_icon'></td>";
-		$html[]="<td>{$categoryname}</td>";
-		$html[]="<td>{$ligne['description']}</td>";
-		$html[]="<td>". $tpl->icon_delete($jsdel,"AsDnsAdministrator")."</td>";
-		$html[]="</tr>";
-		
+		if(!is_array($ligne2)){$ligne2=array();}
+		$categoryname=$tpl->_ENGINE_parse_body((string)($ligne2["categoryname"] ?? ""));
+		$category_icon=(string)($ligne2["category_icon"] ?? "");
+		// utf8_encode() double-encodait les accents (la base est deja en UTF-8)
+		// et est deprecie depuis PHP 8.2.
+		$descr=$tpl->_ENGINE_parse_body((string)($ligne2["category_description"] ?? ""));
+
+		$md=md5("{$category_id}{$ruleid}");
+		$jsdel="Loadjs('$page?category-del-js=$category_id&ID=$ruleid&modeblk=$modeblk&md=$md')";
+
+		$rows[]="<tr id='$md'>"
+			."<td style='width:1%'><img src='".htmlspecialchars($category_icon)."'></td>"
+			."<td><span class='awc-name'>$categoryname</span></td>"
+			."<td>$descr</td>"
+			."<td><div class='awc-acts'>".$tpl->icon_delete($jsdel,"AsDnsAdministrator")."</div></td>"
+			."</tr>";
+
 	}
-		
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-all-categories').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
-		echo @implode("\n", $html);
+	$c=count($rows);
+	if($c==0){
+		$html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	// Meme <tfoot> mort que dans categoy_add(): un pager footable sans init.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $c {items}</span>";
+	$html[]="<span class='awc-pg' id='dnscat-pager'></span>";
+	$html[]="</div></div></div>";
+
+	$script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.$script
+		.awc_pager_js(50,"dnscat-rows","dnscat-pager");
 }
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}

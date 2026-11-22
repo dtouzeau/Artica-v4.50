@@ -1,10 +1,8 @@
-<default_destination_recipient_limit>default destination recipient limit</default_destination_recipient_limit>
-<default_destination_recipient_limit_text>
-The default maximal number of recipients per message delivery.[br]
-This is the default limit for delivery via the lmtp, pipe, smtp and virtual delivery agents.[br]
-Setting this parameter to a value of 1 changes the meaning of the corresponding per-destination concurrency limit from concurrency per domain into concurrency per recipient
-</default_destination_recipient_limit_text>
-<smtpd_recipient_limit>smtpd recipient limit</smtpd_recipient_limit>
-<smtpd_recipient_limit_text>The maximal number of recipients that the Postfix SMTP server accepts per message delivery request</smtpd_recipient_limit_text>
-<virtual_mailbox_limit>Virtual mailbox limit</virtual_mailbox_limit>
-<virtual_mailbox_limit_text>The maximal size in bytes of an individual mailbox or maildir file, or zero (no limit).</virtual_mailbox_limit_text>
+<default_destination_recipient_limit>domy&#347;lny limit odbiorc&#243;w miejsca docelowego</default_destination_recipient_limit>
+<default_destination_recipient_limit_text>Domy&#347;lna maksymalna liczba odbiorc&#243;w na dostarczenie wiadomo&#347;ci.[br]
+Jest to domy&#347;lny limit dla dostarczania przez agent&#243;w dostarczania lmtp, pipe, smtp i virtual.[br]
+Ustawienie tego parametru na warto&#347;&#263; 1 zmienia znaczenie odpowiadaj&#261;cego limitu wsp&#243;&#322;bie&#380;no&#347;ci na miejsce docelowe ze wsp&#243;&#322;bie&#380;no&#347;ci na domen&#281; na wsp&#243;&#322;bie&#380;no&#347;&#263; na odbiorc&#281;</default_destination_recipient_limit_text>
+<smtpd_recipient_limit>limit odbiorc&#243;w smtpd</smtpd_recipient_limit>
+<smtpd_recipient_limit_text>Maksymalna liczba odbiorc&#243;w, kt&#243;r&#261; serwer SMTP Postfix akceptuje na &#380;&#261;danie dostarczenia wiadomo&#347;ci</smtpd_recipient_limit_text>
+<virtual_mailbox_limit>Limit wirtualnej skrzynki pocztowej</virtual_mailbox_limit>
+<virtual_mailbox_limit_text>Maksymalny rozmiar w bajtach pojedynczej skrzynki pocztowej lub pliku maildir, lub zero (bez limitu).</virtual_mailbox_limit_text>

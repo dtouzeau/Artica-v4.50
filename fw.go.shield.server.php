@@ -9,6 +9,11 @@ if(isset($_POST["TheShieldsCguard"])){cguard_settings_save();exit;}
 if(isset($_POST["KRSN_DEBUG"])){Save();exit;}
 if(isset($_POST["GoShieldSave"])){Save();exit;}
 if(isset($_POST["KsrnEnableAdverstising"])){Save();exit;}
+if(isset($_POST["GoShieldDisableDoHFallback"])){GoShieldDisableDoHFallback_save();exit;}
+if(isset($_GET["GoShieldDisableDoHFallback-js"])){GoShieldDisableDoHFallback_js();exit;}
+if(isset($_GET["GoShieldDisableDoHFallback-form"])){GoShieldDisableDoHFallback_form();exit;}
+
+
 
 if(isset($_GET["nrds-js"])){nrds_js();exit;}
 if(isset($_GET["nrds-popup"])){nrds_popup();exit;}
@@ -29,6 +34,7 @@ if(isset($_GET["section-cguard-js"])){cguard_js();exit;}
 if(isset($_GET["section-cguard-popup"])){cguard_settings();exit;}
 if(isset($_GET["section-shields-js"])){the_shields_js();exit;}
 if(isset($_GET["section-shields-popup"])){the_shields_popup();exit;}
+if(isset($_GET["refresh-status-all"])){RefreshAll();exit;}
 page();
 
 function clean_cache(){
@@ -130,7 +136,7 @@ function go_shield_form():bool{
     $TheShieldsCguard       = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TheShieldsCguard"));
     $SelfDisableHardCoded=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SelfDisableHardCoded"));
     if($Go_Shield_Server_Cache_Time==0){$Go_Shield_Server_Cache_Time=84600;}
-    if($Go_Shield_Server_DB_Size==0){$Go_Shield_Server_DB_Size=2048;}
+    if($Go_Shield_Server_DB_Size==0){$Go_Shield_Server_DB_Size=go_shield_default_cache_mb();}
     if($Go_Shield_Server_TimeOut==0){$Go_Shield_Server_TimeOut=5;}
     if($Go_Shield_Server_Max_Threads<5){$Go_Shield_Server_Max_Threads=5;}
     if($Go_Shield_Server_Max_Servers<1){$Go_Shield_Server_Max_Servers=2;}
@@ -324,6 +330,18 @@ function ksrn_form_server():bool{
     $Go_Shield_Server_Port = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Port"));
     $Go_Shield_Server_Debug = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Debug"));
     $Go_Shield_Server_Dns1=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Dns1"));
+    $Main=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/goshield/server/status"),true);
+
+    if(isset($Main["Config"])){
+        $MainConfig=json_decode($Main["Config"],true);
+    }
+    $Webredirect="";
+    if(isset($MainConfig["Webredirect"])){
+        $Webredirect=$MainConfig["Webredirect"];
+    }
+    if($Webredirect==""){
+        $Webredirect="{default}";
+    }
 
     if ($Go_Shield_Server_Addr==null){$Go_Shield_Server_Addr="127.0.0.1";}
     if($Go_Shield_Server_Port==0){$Go_Shield_Server_Port=3333;}
@@ -344,7 +362,7 @@ function ksrn_form_server():bool{
     $TheShieldsCguard       = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TheShieldsCguard"));
     $SelfDisableHardCoded=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SelfDisableHardCoded"));
     if($Go_Shield_Server_Cache_Time==0){$Go_Shield_Server_Cache_Time=84600;}
-    if($Go_Shield_Server_DB_Size==0){$Go_Shield_Server_DB_Size=2048;}
+    if($Go_Shield_Server_DB_Size==0){$Go_Shield_Server_DB_Size=go_shield_default_cache_mb();}
     if($Go_Shield_Server_TimeOut==0){$Go_Shield_Server_TimeOut=5;}
     if($Go_Shield_Server_Max_Threads<5){$Go_Shield_Server_Max_Threads=5;}
     if($Go_Shield_Server_Max_Servers<1){$Go_Shield_Server_Max_Servers=2;}
@@ -391,7 +409,9 @@ function ksrn_form_server():bool{
     $tpl->table_form_field_js("Loadjs('$page?go-shield-form-js=yes&section=listen')","AsDansGuardianAdministrator");
     $tpl->table_form_field_bool("{debug}",$Go_Shield_Server_Debug,ico_bug);
     $tpl->table_form_field_text("{listen_interface}","$Go_Shield_Server_Addr:$Go_Shield_Server_Port",ico_nic);
-
+    $tpl->table_form_field_js("");
+    $tpl->table_form_field_text("{redirect_url}","<small style='text-transform: none'>$Webredirect</small>",ico_arrow_right);
+    $tpl->table_form_field_js("Loadjs('$page?go-shield-form-js=yes&section=listen')","AsDansGuardianAdministrator");
 
     $UfdbguardSMTPNotifs=smtp_defaults();
     $ENABLED_SQUID_WATCHDOG=intval($UfdbguardSMTPNotifs["ENABLED_SQUID_WATCHDOG"]);
@@ -434,6 +454,18 @@ function ksrn_form_server():bool{
 
     }
 
+
+    $srvtxt="";
+    if(isset($Main["Config"])){
+        $Config=json_decode($Main["Config"],true);
+        if(isset($Config["resolvers"]) && is_array($Config["resolvers"])){
+            $srvtxt="<br><small style='color:#5C5C5C'>{using}: ".@implode(",",$Config["resolvers"])."</small>";
+        }
+    }
+
+
+
+
     $tpl->table_form_field_js("Loadjs('$page?go-shield-form-js=yes&section=dns')","AsDansGuardianAdministrator");
     if(strlen("$Go_Shield_Server_Dns1")>0 && $GoShieldUseSpecificDNS==1){
         $iface="";
@@ -443,12 +475,20 @@ function ksrn_form_server():bool{
             $iface=" <small>({outgoing_interface}: $GoShieldDNSOutgoingIface)</small>";
         }
 
-        $tpl->table_form_field_text("{dns_resolution}","$Go_Shield_Server_Dns1$iface",ico_server);
+        $tpl->table_form_field_text("{dns_resolution}","$Go_Shield_Server_Dns1$iface$srvtxt",ico_server);
 
 
 
     }else{
-        $tpl->table_form_field_text("{dns_resolution}","{default}",ico_server);
+        $tpl->table_form_field_text("{dns_resolution}","{default}$srvtxt",ico_server);
+    }
+
+    $tpl->table_form_field_js("Loadjs('$page?GoShieldDisableDoHFallback-js=yes')","AsDansGuardianAdministrator");
+    $GoShieldDisableDoHFallback=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldDisableDoHFallback"));
+    if($GoShieldDisableDoHFallback==0){
+        $tpl->table_form_field_bool("{use_doh_fallback}",1,ico_server);
+    }else{
+        $tpl->table_form_field_bool("{use_doh_fallback}",0,ico_server);
     }
 
 
@@ -516,7 +556,7 @@ function ksrn_form_server():bool{
     $tpl->table_form_field_text("{cache} {ttl}",$SelfGosShieldCacheNoCatzTTL." {hour}","fa-solid fa-timer");
 
 
-    echo $tpl->table_form_compile();
+    echo $tpl->table_form_compile(2);
     return true;
 }
 function nrds_js():bool{
@@ -583,6 +623,37 @@ function nrds_search(){
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
+function GoShieldDisableDoHFallback_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog5("{use_doh_fallback}","$page?GoShieldDisableDoHFallback-form=yes",550);
+}
+function GoShieldDisableDoHFallback_form():bool{
+    $GoShieldDisableDoHFallback=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldDisableDoHFallback"));
+    $enabled=1;
+    if($GoShieldDisableDoHFallback==1){
+        $enabled=0;
+    }
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $jsRestart      = "LoadAjaxSilent('go-shield-server-form-server','$page?go-shield-server-form-server=yes');dialogInstance5.close();";
+    echo $tpl->_ENGINE_parse_body($tpl->BigCircleCheckbox("GoShieldDisableDoHFallback",
+        "{use_doh_fallback}","{use_doh_fallback_explain}",
+        $enabled,
+        $jsRestart));
+    return true;
+}
+function GoShieldDisableDoHFallback_save():bool{
+    $enabled=1;
+    if(intval($_POST["GoShieldDisableDoHFallback"]==1)){
+        $enabled=0;
+    }
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("GoShieldDisableDoHFallback",$enabled);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/goshield/reconfigure");
+    return admin_tracks("Web-Filtering: Set DoH fallback to $enabled");
+}
+
+
 function go_shield_form_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -612,9 +683,25 @@ function table():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
 
+    $tiny=jstiny();
+
+    $js=$tpl->RefreshInterval_Loadjs("go-shield-server-status",$page,"refresh-status-all=yes");
+    // Premier remplissage IMMEDIAT. Les quatre <div> ci-dessous sont vides dans
+    // le HTML et n'etaient alimentes que par le minuteur de RefreshInterval_Loadjs
+    // -- dont le premier tick n'arrive qu'au bout de l'intervalle. L'onglet
+    // "Filtering service" s'ouvrait donc sur une page BLANCHE (titre et
+    // description mis a jour par jstiny(), corps vide), et le restait
+    // definitivement si le minuteur ne demarrait pas: aucune erreur, aucune
+    // requete reseau, indiscernable d'un service en panne. Rapporte comme tel
+    // par systemis.at (2026-08-31).
+    $jsnow="Loadjs('$page?refresh-status-all=yes');";
+
     $html="<table style='width:100%'>
 	<tr>
-	<td style='vertical-align:top;width:240px'><div id='go-shield-server-status' style='margin-top:15px'></div></td>
+	<td style='vertical-align:top;width:240px'>
+	    <div id='go-shield-server-status-left'></div>
+	    <div id='go-shield-server-status' style='margin-top:15px'></div>
+	</td>
 	<td	style='vertical-align:top;width:90%'>
 	    <div id='go-shield-server-top-status'></div>
 	    <div id='go-shield-server-form-server'></div>
@@ -622,8 +709,9 @@ function table():bool{
 	</tr>
 	</table>
 	<script>
-	    LoadAjaxSilent('go-shield-server-status','$page?go-shield-server-status=yes');
-	    LoadAjaxSilent('go-shield-server-form-server','$page?go-shield-server-form-server=yes');    
+	    $tiny
+	    $jsnow
+	    $js
 	</script>
 	";
     echo $tpl->_ENGINE_parse_body($html);
@@ -656,7 +744,6 @@ function emergency_enable():bool{
     admin_tracks("The Shields Emergency method was enabled");
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("ksrn.php?emergency=yes");
     header("content-type: application/x-javascript");
-    echo "LoadAjaxSilent('go-shield-server-status','$page?go-shield-server-status=yes');";
     return true;
 }
 function emergency_disable(){
@@ -665,7 +752,7 @@ function emergency_disable(){
     admin_tracks("The Shields Emergency method was Disable");
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("ksrn.php?emergency-disable=yes");
     header("content-type: application/x-javascript");
-    echo "LoadAjaxSilent('go-shield-server-status','$page?go-shield-server-status=yes');";
+
 
 }
 function top_buttons():string{
@@ -746,46 +833,26 @@ function status():bool{
     $Go_Shield_Server_Addr = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Addr");
     $Go_Shield_Server_Port = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Port"));
     $Go_Shield_Server_DB_Size=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_DB_Size"));
-    if($Go_Shield_Server_DB_Size==0){$Go_Shield_Server_DB_Size=2048;}
+    if($Go_Shield_Server_DB_Size==0){$Go_Shield_Server_DB_Size=go_shield_default_cache_mb();}
     if ($Go_Shield_Server_Addr==null){$Go_Shield_Server_Addr="127.0.0.1";}
     if($Go_Shield_Server_Port==0){$Go_Shield_Server_Port=3333;}
 
+
     $Go_Shield_Server_Use_Local_Categories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TheShieldsUseLocalCats"));
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("ksrn.php?go-shield-status=yes");
-
-
-
 
     if($Go_Shield_Server_Enable==1) {
-        $cURLConnection = curl_init();
 
-        curl_setopt($cURLConnection, CURLOPT_URL, "http://$Go_Shield_Server_Addr:$Go_Shield_Server_Port/db/len");
-        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        $Main=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/goshield/server/status"),true);
 
-        $resp = curl_exec($cURLConnection);
-        curl_close($cURLConnection);
-        $dblen = json_decode($resp,true);
-
-
-        $cURLConnection = curl_init();
-        curl_setopt($cURLConnection, CURLOPT_URL, "http://$Go_Shield_Server_Addr:$Go_Shield_Server_Port/db/stats");
-        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
-
-        $resp = curl_exec($cURLConnection);
-        curl_close($cURLConnection);
-        $dbstats = json_decode($resp,true);
-
+        if(!isset($Main["Stats"])){
+            echo $tpl->widget_rouge("{error}","{protocol_error} L.".__LINE__);
+            return false;
+        }
+        $dbstats=json_decode($Main["Stats"],true);
         $request = intval($dbstats["hits"])+intval($dbstats["misses"]);
-
-
-        $cURLConnection = curl_init();
-
-        curl_setopt($cURLConnection, CURLOPT_URL, "http://$Go_Shield_Server_Addr:$Go_Shield_Server_Port/db/capacity");
-        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
-
-        $resp = curl_exec($cURLConnection);
-        curl_close($cURLConnection);
-        $dbcapacity = json_decode($resp,true);
+        $dbcapacity = json_decode($Main["Capacity"],true);
+        $dblen= json_decode($Main["DBLen"],true);
+        $Config=json_decode($Main["Config"],true);
 
 
         $GO_SHIELD_SERVER_CACHE = $tpl->FormatNumber($dblen);
@@ -816,9 +883,7 @@ function status():bool{
                     ";
     }
 
-    echo "<div id='go-shield-server-status-left'></div>";
 
-    // $refresh="LoadAjaxSilent('go-shield-server-status','$page?go-shield-server-status=yes');";
 
     $go_shield_server_src=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GO_SHIELD_SERVER_SRC"));
     $go_shield_server_dst=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GO_SHIELD_SERVER_DST"));
@@ -834,32 +899,24 @@ function status():bool{
             echo $tpl->widget_jaune("{need_update_ksrn}", "{update2}", $btn);
         }
     }
-
-
-
-    $download_logs= $tpl->button_autnonome("{logfile}", "Loadjs('$page?logfile-js=yes')", "fas fa-eye","AsProxyMonitor","335");
-
     $stats=$tpl->_ENGINE_parse_body($stats);
     $html[]="<div style='margin-top:10px'>$stats</div>";
-    $html[]="<script>";
-    $html[]=jstiny();
-    $html[]="LoadAjaxSilent('all-go-shield-server-versions','fw.ksrn.client.php?all-go-shield-server-versions=yes');";
-    $html[]="LoadAjaxSilent('go-shield-server-top-status','$page?go-shield-server-top-status=yes');";
-    $html[]="LoadAjax('go-shield-server-status-left','$page?go-shield-server-status-left=yes');";
-    $html[]="function checkAndExecuteGoShieldStatus() {";
-    $html[]="\tvar element = document.getElementById('go-shield-server-status-left');";
-    $html[]="\tif (element) {";
-    $html[]="\t\tLoadAjaxSilent('go-shield-server-status-left','$page?go-shield-server-status-left=yes');";
-    $html[]="\treturn;";
-    $html[]="\t}";
-    $html[]="\tclearInterval(GoShieldIntervalID);";
-    $html[]="}";
-    $html[]="var GoShieldIntervalID = setInterval(checkAndExecuteGoShieldStatus, 3000);";
-    $html[]="</script>";
     echo @implode("\n",$html);
     return true;
 
 }
+
+function RefreshAll(){
+    $page=CurrentPageName();
+    header("content-type: application/x-javascript");
+    $html[]="LoadAjaxSilent('all-go-shield-server-versions','fw.ksrn.client.php?all-go-shield-server-versions=yes');";
+    $html[]="LoadAjaxSilent('go-shield-server-top-status','$page?go-shield-server-top-status=yes');";
+    $html[]="LoadAjaxSilent('go-shield-server-status','$page?go-shield-server-status=yes');";
+    $html[]="LoadAjaxSilent('go-shield-server-form-server','$page?go-shield-server-form-server=yes');";
+    $html[]="LoadAjaxSilent('go-shield-server-status-left','$page?go-shield-server-status-left=yes');";
+    echo @implode("\n",$html);
+}
+
 function go_shield_status_left():bool{
     $tpl            = new template_admin();
     $jsRestart      = restart_js();
@@ -883,6 +940,13 @@ function go_shield_status_left():bool{
         $ini->loadString($json->Info);
         echo  $tpl->_ENGINE_parse_body($tpl->SERVICE_STATUS($ini, "APP_GO_SHIELD_SERVER", $jsRestart));
     }
+    echo "<div style='margin-top:10px'>";
+    if(!isset($json->UfdbServer)){
+        echo $tpl->_ENGINE_parse_body("<span class='text-danger'>{protocol_error}</span>");
+    }else{
+        echo $tpl->_ENGINE_parse_body("<span class='font-bold text-muted' style='font-size:14px'>{protocol}: $json->UfdbServer</span>");
+    }
+    echo "</div>";
 
     return true;
 }
@@ -914,6 +978,10 @@ function go_shield_server_top_status(){
     $button["ico"]="fa-solid fa-headset";
     $button["name"] = "{online_help}";
     $button["js"] = "s_PopUp('https://wiki.articatech.com/en/filtering-service','1024','800')";
+
+
+
+
 
     $about=$tpl->widget_h("blue","fa-solid fa-square-info","Wiki","{online_help}: {KSRN_SERVER2}",$button);
 
@@ -998,27 +1066,22 @@ function Save(){
     $tpl->CLEAN_POST();
 
 
-    if(intval($_POST["GoogleSafeEnable"])==0){
-        $_POST["GoogleSafeEnable"]=1;
-
-    }else{
-        $_POST["GoogleSafeEnable"]=0;
+    // Les cases sont « activer » ; les jetons lus par Go Shield sont les coupe-circuits
+    // inverses (*Disable*). Avant, la valeur inversée était enregistrée sous le nom de la
+    // case (KsrnEnableAdverstising…), un jeton que personne ne lit : la case ne tenait pas.
+    foreach(array("GoogleSafeEnable"=>"GoogleSafeDisable","CloudFlareSafeEnabgle"=>"CloudFlareSafeDisable",
+                "KsrnEnableAdverstising"=>"KsrnDisableAdverstising") as $checkbox=>$token){
+        if(!isset($_POST[$checkbox])){continue;}
+        $_POST[$token]=(intval($_POST[$checkbox])==0)?1:0;
+        unset($_POST[$checkbox]);
     }
-
-    if(intval($_POST["CloudFlareSafeEnabgle"])==0){
-        $_POST["CloudFlareSafeEnabgle"]=1;
-    }else{
-        $_POST["CloudFlareSafeEnabgle"]=0;
-    }
-
-    if(intval($_POST["KsrnEnableAdverstising"])==0){
-        $_POST["KsrnEnableAdverstising"]=1;
-    }else{
-        $_POST["KsrnEnableAdverstising"]=0;
+    // La case est « activer » ; le jeton lu par Go Shield est le coupe-circuit inverse.
+    if(isset($_POST["KsrnEnableIDNHomograph"])){
+        $_POST["KsrnDisableIDNHomograph"]=(intval($_POST["KsrnEnableIDNHomograph"])==0)?1:0;
+        unset($_POST["KsrnEnableIDNHomograph"]);
     }
     $tpl->SAVE_POSTs();
-    $sock=new sockets();
-    $sock->REST_API("/goshield/reconfigure");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/goshield/reconfigure");
 
 }
 
@@ -1066,6 +1129,9 @@ function the_shields_popup():bool{
 
     $form[]         = $tpl->field_section("Threats Shield","{threats_shield_explain}");
     $form[]         = $tpl->field_checkbox("KsrnAllEnable","{KsrnAllEnable}",1,false,"{KsrnAllEnable}",true);
+    $KsrnEnableIDNHomograph = 1;
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KsrnDisableIDNHomograph"))==1){$KsrnEnableIDNHomograph=0;}
+    $form[]         = $tpl->field_checkbox("KsrnEnableIDNHomograph","{KsrnEnableIDNHomograph}",$KsrnEnableIDNHomograph,false,"{KsrnEnableIDNHomograph_explain}");
 
     $form[]         = $tpl->field_section("Privacy Shield","{privacy_shield_explain}");
     $form[]         = $tpl->field_checkbox("KsrnDisableGoogleAdServices","{allow}: Google Ad Services",$KsrnDisableGoogleAdServices);
@@ -1122,6 +1188,11 @@ function the_shields_settings($tpl){
         }else{
             $tpl->table_form_field_bool("Threats Shield", 0, ico_shield);
         }
+    }
+    if($KSRNEnable==1) {
+        $KsrnEnableIDNHomograph=1;
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KsrnDisableIDNHomograph"))==1){$KsrnEnableIDNHomograph=0;}
+        $tpl->table_form_field_bool("{KsrnEnableIDNHomograph}",$KsrnEnableIDNHomograph,ico_shield);
     }
 
 
@@ -1203,4 +1274,17 @@ function the_shields_license():string{
     }
     return "";
 
+}
+
+// Defaut du cache bigcache, calcule comme go-shield (server/cachesize.go) et articarest
+// (goshield.DefaultCacheMB) : 1/16 de la RAM, entre 256 et 2048 Mo.
+function go_shield_default_cache_mb():int{
+    $mb=0;
+    $meminfo=@file_get_contents("/proc/meminfo");
+    if(preg_match("/^MemTotal:\s+(\d+)\s+kB/m",(string)$meminfo,$m)){$mb=intval($m[1]/1024);}
+    if($mb<=0){return 2048;}
+    $mb=intval($mb/16);
+    if($mb<256){return 256;}
+    if($mb>2048){return 2048;}
+    return $mb;
 }

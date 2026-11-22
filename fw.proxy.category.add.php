@@ -6,7 +6,12 @@ include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
 include_once(dirname(__FILE__)."/ressources/class.ufdbguard-tools.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
+// Pentest 2026-11-04 : type/add etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["type"])){$_GET["type"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["type"]);}
+if(isset($_GET["add"])){$_GET["add"]=intval($_GET["add"]);}
 if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["add"])){add();exit;}
@@ -19,7 +24,8 @@ function js(){
     $value=$_GET["value"];
     $valueencoded=urlencode($value);
     $tpl=new template_admin();
-    $tpl->js_dialog9($value,"$page?start=yes&type=$type&value=$valueencoded");
+    // Pentest 2026-11-04 : value etait recopie sans encodage dans la page (XSS).
+    $tpl->js_dialog9(req_html(req_html($value)),"$page?start=yes&type=$type&value=$valueencoded");
 }
 
 function add(){
@@ -75,16 +81,17 @@ function search(){
     $value=$_GET["value"];
     $valueencoded=urlencode($value);
     $t=time();
-    $sql="SELECT * FROM personal_categories WHERE official_category='0' AND free_category=0 AND categoryname LIKE '$search' ORDER BY categoryname";
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $sql="SELECT * FROM personal_categories WHERE official_category='0' AND free_category=0 AND categoryname LIKE $1 ORDER BY categoryname";
     //$sql="SELECT * FROM webfilters_sqgroups ";
     VERBOSE($sql,__LINE__);
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,array($search));
     if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);}
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category} ($value)</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category} (".req_html($value).")</th>"; // Pentest 2026-11-04 : value etait recopie sans encodage dans la page (XSS).
     $html[]="<th data-sortable=true class='text-capitalize'>{description}</th>";
     $html[]="<th data-sortable=false></th>";
     $html[]="<th data-sortable=false></th>";
@@ -94,11 +101,7 @@ function search(){
     $TRCLASS=null;
     while ($ligne = pg_fetch_assoc($results)) {
         $enabled_text="&nbsp;";
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
+        $TRCLASS=null;
 
 
         $text_class = null;
@@ -130,10 +133,8 @@ function search(){
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table><script>NoSpinner();\n";
-    $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });
-</script>";
+    $html[]="</table></div></div></div>";
+    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }

@@ -1,118 +1,95 @@
-<bind-address>IP address to bind to</bind-address>
-<innodb_additional_mem_pool_size>INNODB additional memory pool size</innodb_additional_mem_pool_size>
-<innodb_additional_mem_pool_size_text>Stores the internal data structure.[br]
- Make sure it is big enough to store data about all your InnoDB tables (you will see warnings in the error log if the server is using OS memory instead).</innodb_additional_mem_pool_size_text>
-<innodb_buffer_pool_size>INNODB buffer pool size</innodb_buffer_pool_size>
-<innodb_buffer_pool_size_text>
-While the key buffer size is the variable to target for MyISAM tables, for InnoDB tables, it is innodb buffer pool size.[br]
-Again, you want this as high as possible to minimize slow disk usage.[br]
-On a dedicated MySQL server running InnoDB tables, you can set this up to 80% of the total available memory.</innodb_buffer_pool_size_text>
-<innodb_lock_wait_timeout>innodb lock wait timeout</innodb_lock_wait_timeout>
-<innodb_lock_wait_timeout_text>
-The timeout in seconds an InnoDB transaction may wait for a row lock before giving up.[br]
-The default value is 50 seconds.[br]
-A transaction that tries to access a row that is locked by another InnoDB transaction will hang for at most this many seconds before issuing the following error:
+<bind-address>Endere&#231;o IP ao qual vincular</bind-address>
+<innodb_additional_mem_pool_size>Tamanho do pool de mem&#243;ria adicional INNODB</innodb_additional_mem_pool_size>
+<innodb_additional_mem_pool_size_text>Armazena a estrutura de dados interna.[br]
+ Certifique-se de que &#233; grande o suficiente para armazenar dados sobre todas as suas tabelas InnoDB (voc&#234; ver&#225; avisos no log de erros se o servidor usar a mem&#243;ria do SO em vez disso).</innodb_additional_mem_pool_size_text>
+<innodb_buffer_pool_size>Tamanho do buffer pool INNODB</innodb_buffer_pool_size>
+<innodb_buffer_pool_size_text>Enquanto o tamanho do key buffer &#233; a vari&#225;vel a visar para tabelas MyISAM, para tabelas InnoDB &#233; o innodb buffer pool size.[br]
+Mais uma vez, voc&#234; quer isto o mais alto poss&#237;vel para minimizar o uso lento do disco.[br]
+Em um servidor MySQL dedicado a executar tabelas InnoDB, voc&#234; pode definir isto at&#233; 80% da mem&#243;ria total dispon&#237;vel.</innodb_buffer_pool_size_text>
+<innodb_lock_wait_timeout>Tempo limite de espera de bloqueio InnoDB</innodb_lock_wait_timeout>
+<innodb_lock_wait_timeout_text>O tempo limite em segundos que uma transa&#231;&#227;o InnoDB pode esperar por um bloqueio de linha antes de desistir.[br]
+O valor padr&#227;o &#233; 50 segundos.[br]
+Uma transa&#231;&#227;o que tenta acessar uma linha bloqueada por outra transa&#231;&#227;o InnoDB ficar&#225; suspensa no m&#225;ximo este n&#250;mero de segundos antes de emitir o seguinte erro:
 [b]ERROR 1205 (HY000): Lock wait timeout exceeded; try restarting transaction[/b]
-When a lock wait timeout occurs, the current statement is not executed.[br]
-The current transaction is not rolled back.[br] (Until MySQL 5.0.13 InnoDB rolled back the entire transaction if a lock wait timeout happened). 
-</innodb_lock_wait_timeout_text>
-<innodb_log_buffer_size>innodb log buffer size</innodb_log_buffer_size>
-<innodb_log_buffer_size_text>
-The size in bytes of the buffer that InnoDB uses to write to the log files on disk.[br]
-The default value is 1MB. Sensible values range from 1MB to 8MB.[br]
-A large log buffer enables large transactions to run without a need to write the log to disk before the transactions commit.[br]
-Thus, if you have big transactions, making the log buffer larger saves disk I/O. 
-</innodb_log_buffer_size_text>
-<innodb_log_file_size>innodb log file size</innodb_log_file_size>
-<innodb_log_file_size_text>
-The size in bytes of each log file in a log group.[br]
-The combined size of log files must be less than 4GB.[br]
-The default value is 5MB.[br]
-Sensible values range from 1MB to 1/N-th of the size of the buffer pool, where N is the number of log files in the group.[br]
-The larger the value, the less checkpoint flush activity is needed in the buffer pool, saving disk I/O. But larger log files also mean that recovery is slower in case of a crash.
-</innodb_log_file_size_text>
-<join_buffer_size>JOIN buffer size</join_buffer_size>
-<join_buffer_size_text>
-The size of the buffer that is used for plain index scans, range index scans, and joins that do not use indexes and thus perform full table scans.[br]
- Normally, the best way to get fast joins is to add indexes.[br]
-Increase the value of join_buffer_size to get a faster full join when adding indexes is not possible.[br]
-One join buffer is allocated for each full join between two tables.[br]
-For a complex join between several tables for which indexes are not used, multiple join buffers might be necessary.</join_buffer_size_text>
-<key_buffer>KEY buffer</key_buffer>
-<key_buffer_size>KEY buffer size</key_buffer_size>
-<key_buffer_size_text>Index blocks for MyISAM tables are buffered and are shared by all threads.[br]
-key_buffer_size is the size of the buffer used for index blocks.[br]
-The key buffer is also known as the key cache[br]
-You can increase the value to get better index handling for all reads and multiple writes;[br]
-on a system whose primary function is to run MySQL using the MyISAM storage engine, 25% of the machine's total memory is an acceptable value for this variable.[br]
- However, you should be aware that, if you make the value too large (for example, more than 50% of the machine's total memory), 
- your system might start to page and become extremely slow</key_buffer_size_text>
-<key_buffer_text>Set key_buffer to 5 - 50% of your RAM depending on how much you use MyISAM tables, but keep key_buffer_size + InnoDB buffer pool size under 80% of your RAM
-</key_buffer_text>
-<max_allowed_packet>MAX Allowed packet</max_allowed_packet>
-<max_allowed_packet_text>The maximum size of one packet or any generated/intermediate string</max_allowed_packet_text>
+Quando ocorre um tempo limite de espera de bloqueio, a instru&#231;&#227;o atual n&#227;o &#233; executada.[br]
+A transa&#231;&#227;o atual n&#227;o &#233; revertida.[br] (At&#233; o MySQL 5.0.13 o InnoDB revertia toda a transa&#231;&#227;o se ocorresse um tempo limite de espera de bloqueio).</innodb_lock_wait_timeout_text>
+<innodb_log_buffer_size>Tamanho do buffer de log InnoDB</innodb_log_buffer_size>
+<innodb_log_buffer_size_text>O tamanho em bytes do buffer que o InnoDB usa para escrever nos arquivos de log no disco.[br]
+O valor padr&#227;o &#233; 1MB. Valores razo&#225;veis variam de 1MB a 8MB.[br]
+Um buffer de log grande permite que transa&#231;&#245;es grandes sejam executadas sem necessidade de escrever o log no disco antes do commit das transa&#231;&#245;es.[br]
+Assim, se voc&#234; tiver transa&#231;&#245;es grandes, aumentar o buffer de log economiza I/O de disco.</innodb_log_buffer_size_text>
+<innodb_log_file_size>Tamanho do arquivo de log InnoDB</innodb_log_file_size>
+<innodb_log_file_size_text>O tamanho em bytes de cada arquivo de log em um grupo de logs.[br]
+O tamanho combinado dos arquivos de log deve ser inferior a 4GB.[br]
+O valor padr&#227;o &#233; 5MB.[br]
+Valores razo&#225;veis variam de 1MB a 1/N do tamanho do buffer pool, onde N &#233; o n&#250;mero de arquivos de log no grupo.[br]
+Quanto maior o valor, menos atividade de flush de checkpoint &#233; necess&#225;ria no buffer pool, economizando I/O de disco. Mas arquivos de log maiores tamb&#233;m significam que a recupera&#231;&#227;o &#233; mais lenta em caso de falha.</innodb_log_file_size_text>
+<join_buffer_size>Tamanho do buffer JOIN</join_buffer_size>
+<join_buffer_size_text>O tamanho do buffer usado para varreduras simples de &#237;ndice, varreduras de intervalo de &#237;ndice e jun&#231;&#245;es que n&#227;o usam &#237;ndices e, portanto, realizam varreduras completas de tabelas.[br]
+ Normalmente, a melhor forma de obter jun&#231;&#245;es r&#225;pidas &#233; adicionar &#237;ndices.[br]
+Aumente o valor de join_buffer_size para obter uma jun&#231;&#227;o completa mais r&#225;pida quando n&#227;o for poss&#237;vel adicionar &#237;ndices.[br]
+Um buffer de jun&#231;&#227;o &#233; alocado para cada jun&#231;&#227;o completa entre duas tabelas.[br]
+Para uma jun&#231;&#227;o complexa entre v&#225;rias tabelas para as quais n&#227;o s&#227;o usados &#237;ndices, podem ser necess&#225;rios m&#250;ltiplos buffers de jun&#231;&#227;o.</join_buffer_size_text>
+<key_buffer>Buffer KEY</key_buffer>
+<key_buffer_size>Tamanho do buffer KEY</key_buffer_size>
+<key_buffer_size_text>Os blocos de &#237;ndice das tabelas MyISAM s&#227;o colocados em buffer e compartilhados por todas as threads.[br]
+key_buffer_size &#233; o tamanho do buffer usado para os blocos de &#237;ndice.[br]
+O key buffer tamb&#233;m &#233; conhecido como key cache[br]
+Voc&#234; pode aumentar o valor para obter um melhor processamento de &#237;ndices para todas as leituras e m&#250;ltiplas escritas;[br]
+em um sistema cuja fun&#231;&#227;o principal &#233; executar o MySQL usando o motor de armazenamento MyISAM, 25% da mem&#243;ria total da m&#225;quina &#233; um valor aceit&#225;vel para esta vari&#225;vel.[br]
+ No entanto, voc&#234; deve estar ciente de que, se tornar o valor muito grande (por exemplo, mais de 50% da mem&#243;ria total da m&#225;quina), o seu sistema pode come&#231;ar a fazer paging e ficar extremamente lento.</key_buffer_size_text>
+<key_buffer_text>Defina key_buffer entre 5 e 50% da sua RAM dependendo de quanto voc&#234; usa tabelas MyISAM, mas mantenha key_buffer_size + tamanho do buffer pool InnoDB abaixo de 80% da sua RAM</key_buffer_text>
+<max_allowed_packet>Pacote m&#225;ximo permitido</max_allowed_packet>
+<max_allowed_packet_text>O tamanho m&#225;ximo de um pacote ou qualquer string gerada/intermedi&#225;ria</max_allowed_packet_text>
 <max_connections>Conex%C3µes m%C3¡ximas</max_connections>
-<max_connections_text>The number of simultaneous client connections allowed. By default, this is 151</max_connections_text>
-<myisam_sort_buffer_size>MyISAM SORT buffer size</myisam_sort_buffer_size>
-<myisam_sort_buffer_size_text>
-The size of the buffer that is allocated when sorting MyISAM indexes during a REPAIR TABLE or when creating indexes with CREATE INDEX or ALTER TABLE.
-</myisam_sort_buffer_size_text>
-<mysql_settings>Mysql parameters</mysql_settings>
-<net_buffer_length>NET buffer length</net_buffer_length>
-<net_buffer_length_text>The initial size of the buffer for client/server communication.</net_buffer_length_text>
-<query_cache_limit>QUERY cache limit</query_cache_limit>
-<query_cache_limit_text>Don't cache results that are larger than this number of bytes. The default value is 1MB</query_cache_limit_text>
-<query_cache_size>QUERY cache size</query_cache_size>
-<query_cache_size_text>The amount of memory allocated for caching query results.[br]
- The default value is 0, which disables the query cache.[br]
- The allowable values are multiples of 1024; other values are rounded down to the nearest multiple</query_cache_size_text>
-<read_buffer_size>READ buffer size</read_buffer_size>
-<read_buffer_size_text>Each thread that does a sequential scan allocates a buffer of this size (in bytes) for each table it scans.[br]
-If you do many sequential scans, you might want to increase this value, which defaults to 131072. The value of this variable should be a multiple of 4KB.[br]
-If it is set to a value that is not a multiple of 4KB, its value will be rounded down to the nearest multiple of 4KB.</read_buffer_size_text>
-<read_rnd_buffer_size>READ rnd buffer size</read_rnd_buffer_size>
-<read_rnd_buffer_size_text>Used after a sort, when reading rows in sorted order.[br]
- If you use many queries with ORDER BY, upping this can improve performance.[br]
- Remember that, unlike key buffer size and table cache, this buffer is allocated for each thread.[br]
-It defaults to the same size as the read buffer size, which defaults to 128KB.[br]
- A rule-of-thumb is to allocate 1KB for each 1MB of memory on the server, for example 3MB on a machine with 3GB memory.</read_rnd_buffer_size_text>
-<skip-external-locking>External locking</skip-external-locking>
-<skip-external-locking_text>
-External locking is the use of file system locking to manage contention for database tables by multiple processes.[br]
-External locking is used in situations where a single process such as the MySQL server cannot be assumed to be the only process that requires access to tables
-</skip-external-locking_text>
-<sort_buffer>SORT buffer</sort_buffer>
-<sort_buffer_size>SORT buffer size</sort_buffer_size>
-<sort_buffer_size_text>Each thread that needs to do a sort allocates a buffer of this size. Increase this value for faster ORDER BY or GROUP BY operations</sort_buffer_size_text>
-<sort_buffer_text>
-The sort_buffer is very useful for speeding up myisamchk operations (which is why it is set much higher for that purpose in the default configuration files), 
-but it can also be useful everyday when performing large numbers of sorts.[br]
-Successfully upped it to 9MB on a 3GB server running quite a few sorts.
-</sort_buffer_text>
-<table_cache>tmp TABLE size</table_cache>
-<table_cache>tmp TABLE size</table_cache>
-<table_open_cache>TABLE open cache</table_open_cache>
-<table_open_cache_text>The number of open tables for all threads.[br] Increasing this value increases the number of file descriptors that mysqld requires</table_open_cache_text>
-<thread_cache_size>THREAD Cache size</thread_cache_size>
-<thread_cache_size_text>How many threads the server should cache for reuse.[br]
- When a client disconnects, the client's threads are put in the cache if there are fewer than thread_cache_size threads there.[br]
-Requests for threads are satisfied by reusing threads taken from the cache if possible, and only when the cache is empty is a new thread created.[br]
-This variable can be increased to improve performance if you have a lot of new connections.[br]
-(Normally, this doesn't provide a notable performance improvement if you have a good thread implementation.)
-</thread_cache_size_text>
-<tmp_table_size>INNODB buffer pool size</tmp_table_size>
-<tmp_table_size_text>
-This variable determines the maximum size for a temporary table in memory.[br]
-If the table becomes too large, a MYISAM table is created on disk.[br]
-Try to avoid temporary tables by optimizing the queries where possible, 
-but where this is not possible, try to ensure temporary tables are always stored in memory.[br]
-Watching the processlist for queries with temporary tables that take too long to resolve can give you an early warning that 
-tmp table size needs to be upped.[br]
-Be aware that memory is also allocated per-thread.[br]
-An example where upping this worked for more was a server where upped this from 32MB (the default) to 64MB with immediate effect.[br]
-The quicker resolution of queries resulted in less threads being active at any one time, with all-round benefits for the server, and available memory.
-</tmp_table_size_text>
-<wait_timeout>Wait timeout</wait_timeout>
-<wait_timeout_text>The number of seconds the server waits for activity on a noninteractive connection before closing it.[br]
-This timeout applies only to TCP/IP and Unix socket file connections, not to connections made using named pipes, or shared memory. 
-</wait_timeout_text>
+<max_connections_text>O n&#250;mero de conex&#245;es de cliente simult&#226;neas permitidas. Por padr&#227;o, s&#227;o 151</max_connections_text>
+<myisam_sort_buffer_size>Tamanho do buffer SORT MyISAM</myisam_sort_buffer_size>
+<myisam_sort_buffer_size_text>O tamanho do buffer que &#233; alocado ao ordenar &#237;ndices MyISAM durante um REPAIR TABLE ou ao criar &#237;ndices com CREATE INDEX ou ALTER TABLE.</myisam_sort_buffer_size_text>
+<mysql_settings>Par&#226;metros do Mysql</mysql_settings>
+<net_buffer_length>Comprimento do buffer NET</net_buffer_length>
+<net_buffer_length_text>O tamanho inicial do buffer para a comunica&#231;&#227;o cliente/servidor.</net_buffer_length_text>
+<query_cache_limit>Limite do cache QUERY</query_cache_limit>
+<query_cache_limit_text>N&#227;o armazenar em cache resultados maiores do que este n&#250;mero de bytes. O valor padr&#227;o &#233; 1MB</query_cache_limit_text>
+<query_cache_size>Tamanho do cache QUERY</query_cache_size>
+<query_cache_size_text>A quantidade de mem&#243;ria alocada para o cache dos resultados das consultas.[br]
+ O valor padr&#227;o &#233; 0, o que desativa o cache de consultas.[br]
+ Os valores permitidos s&#227;o m&#250;ltiplos de 1024; outros valores s&#227;o arredondados para baixo para o m&#250;ltiplo mais pr&#243;ximo</query_cache_size_text>
+<read_buffer_size>Tamanho do buffer READ</read_buffer_size>
+<read_buffer_size_text>Cada thread que realiza uma varredura sequencial aloca um buffer deste tamanho (em bytes) para cada tabela que verifica.[br]
+Se voc&#234; realizar muitas varreduras sequenciais, talvez queira aumentar este valor, que por padr&#227;o &#233; 131072. O valor desta vari&#225;vel deve ser m&#250;ltiplo de 4KB.[br]
+Se for definido para um valor que n&#227;o &#233; m&#250;ltiplo de 4KB, seu valor ser&#225; arredondado para baixo para o m&#250;ltiplo de 4KB mais pr&#243;ximo.</read_buffer_size_text>
+<read_rnd_buffer_size>Tamanho do buffer READ rnd</read_rnd_buffer_size>
+<read_rnd_buffer_size_text>Usado ap&#243;s uma ordena&#231;&#227;o, ao ler linhas em ordem ordenada.[br]
+ Se voc&#234; usar muitas consultas com ORDER BY, aument&#225;-lo pode melhorar o desempenho.[br]
+ Lembre-se de que, ao contr&#225;rio de key buffer size e table cache, este buffer &#233; alocado para cada thread.[br]
+Por padr&#227;o tem o mesmo tamanho do read buffer size, que &#233; 128KB por padr&#227;o.[br]
+ Uma regra pr&#225;tica &#233; alocar 1KB para cada 1MB de mem&#243;ria no servidor, por exemplo 3MB em uma m&#225;quina com 3GB de mem&#243;ria.</read_rnd_buffer_size_text>
+<skip-external-locking>Bloqueio externo</skip-external-locking>
+<skip-external-locking_text>O bloqueio externo &#233; o uso do bloqueio do sistema de arquivos para gerenciar a conten&#231;&#227;o de tabelas do banco de dados por m&#250;ltiplos processos.[br]
+O bloqueio externo &#233; usado em situa&#231;&#245;es onde n&#227;o se pode assumir que um &#250;nico processo como o servidor MySQL seja o &#250;nico processo que requer acesso &#224;s tabelas</skip-external-locking_text>
+<sort_buffer>Buffer SORT</sort_buffer>
+<sort_buffer_size>Tamanho do buffer SORT</sort_buffer_size>
+<sort_buffer_size_text>Cada thread que precisa ordenar aloca um buffer deste tamanho. Aumente este valor para opera&#231;&#245;es ORDER BY ou GROUP BY mais r&#225;pidas</sort_buffer_size_text>
+<sort_buffer_text>O sort_buffer &#233; muito &#250;til para acelerar as opera&#231;&#245;es myisamchk (raz&#227;o pela qual est&#225; definido muito mais alto para esse fim nos arquivos de configura&#231;&#227;o padr&#227;o), mas tamb&#233;m pode ser &#250;til no dia a dia ao realizar grandes quantidades de ordena&#231;&#245;es.[br]
+Aumentado com sucesso para 9MB em um servidor de 3GB que executa bastantes ordena&#231;&#245;es.</sort_buffer_text>
+<table_cache>Tamanho de tmp TABLE</table_cache>
+<table_cache>Tamanho de tmp TABLE</table_cache>
+<table_open_cache>Cache de abertura de TABLE</table_open_cache>
+<table_open_cache_text>O n&#250;mero de tabelas abertas para todas as threads.[br] Aumentar este valor aumenta o n&#250;mero de descritores de arquivo que o mysqld requer</table_open_cache_text>
+<thread_cache_size>Tamanho da cache THREAD</thread_cache_size>
+<thread_cache_size_text>Quantas threads o servidor deve armazenar em cache para reutiliza&#231;&#227;o.[br]
+ Quando um cliente se desconecta, as threads do cliente s&#227;o colocadas na cache se houver menos de thread_cache_size threads l&#225;.[br]
+Os pedidos de threads s&#227;o satisfeitos reutilizando threads retiradas da cache, se poss&#237;vel, e apenas quando a cache est&#225; vazia &#233; criada uma nova thread.[br]
+Esta vari&#225;vel pode ser aumentada para melhorar o desempenho se voc&#234; tiver muitas novas conex&#245;es.[br]
+(Normalmente, isto n&#227;o proporciona uma melhoria de desempenho not&#225;vel se voc&#234; tiver uma boa implementa&#231;&#227;o de threads.)</thread_cache_size_text>
+<tmp_table_size>Tamanho do buffer pool INNODB</tmp_table_size>
+<tmp_table_size_text>Esta vari&#225;vel determina o tamanho m&#225;ximo de uma tabela tempor&#225;ria em mem&#243;ria.[br]
+Se a tabela ficar muito grande, &#233; criada uma tabela MYISAM no disco.[br]
+Tente evitar tabelas tempor&#225;rias otimizando as consultas sempre que poss&#237;vel, mas quando isso n&#227;o for poss&#237;vel, tente garantir que as tabelas tempor&#225;rias sejam sempre armazenadas em mem&#243;ria.[br]
+Observar a processlist por consultas com tabelas tempor&#225;rias que demoram muito a resolver pode dar a voc&#234; um aviso antecipado de que tmp table size precisa ser aumentado.[br]
+Esteja ciente de que a mem&#243;ria tamb&#233;m &#233; alocada por thread.[br]
+Um exemplo em que aument&#225;-lo funcionou melhor foi um servidor onde isto foi aumentado de 32MB (padr&#227;o) para 64MB com efeito imediato.[br]
+A resolu&#231;&#227;o mais r&#225;pida das consultas resultou em menos threads ativas em qualquer momento, com benef&#237;cios gerais para o servidor e a mem&#243;ria dispon&#237;vel.</tmp_table_size_text>
+<wait_timeout>Tempo limite de espera</wait_timeout>
+<wait_timeout_text>O n&#250;mero de segundos que o servidor espera por atividade em uma conex&#227;o n&#227;o interativa antes de fech&#225;-la.[br]
+Este tempo limite aplica-se apenas a conex&#245;es TCP/IP e arquivos de socket Unix, n&#227;o a conex&#245;es feitas usando pipes nomeados ou mem&#243;ria compartilhada.</wait_timeout_text>

@@ -1,11 +1,11 @@
-<add_nameserver>Add a name server</add_nameserver>
-<add_nameserver_text>Give IP address or hostname of your DNS server</add_nameserver_text>
-<add_search_domains>Add a search domain</add_search_domains>
-<add_search_domain_text>Give a domain name</add_search_domain_text>
-<nic_dns_search>Search list for host-name lookup</nic_dns_search>
-<nic_dns_search_text>The search list is normally determined from the local domain name; by default, it contains only the local domain name[br] This may be changed by listing the desired domain search path.[br]
-If you refer to another server just by its name without the domain added on, DNS on your client will append the server name 
-to each domain in this list and do an DNS lookup on each to get the remote servers%u2019 IP address.[br]
-This is a handy time saving feature to have so that you can refer to servers in the same domain by only their servername without having to specify the domain.
-[br][b]The first domain listed must be the home domain of your network and The search list is currently limited to six domains with a total of 256 characters.</nic_dns_search_text>
+<add_nameserver>Einen Nameserver hinzuf&#252;gen</add_nameserver>
+<add_nameserver_text>Geben Sie die IP-Adresse oder den Hostnamen Ihres DNS-Servers an</add_nameserver_text>
+<add_search_domains>Eine Suchdom&#228;ne hinzuf&#252;gen</add_search_domains>
+<add_search_domain_text>Geben Sie einen Dom&#228;nennamen an</add_search_domain_text>
+<nic_dns_search>Suchliste f&#252;r Hostnamen-Aufl&#246;sung</nic_dns_search>
+<nic_dns_search_text>Die Suchliste wird normalerweise aus dem lokalen Dom&#228;nennamen bestimmt; standardm&#228;&#223;ig enth&#228;lt sie nur den lokalen Dom&#228;nennamen[br] Dies kann durch Auflisten des gew&#252;nschten Dom&#228;nensuchpfads ge&#228;ndert werden.[br]
+Wenn Sie sich auf einen anderen Server nur &#252;ber seinen Namen ohne angeh&#228;ngte Dom&#228;ne beziehen, h&#228;ngt DNS auf Ihrem Client den Servernamen 
+an jede Dom&#228;ne in dieser Liste an und f&#252;hrt f&#252;r jede eine DNS-Abfrage durch, um die IP-Adresse der entfernten Server zu erhalten.[br]
+Dies ist eine praktische zeitsparende Funktion, mit der Sie sich auf Server in derselben Dom&#228;ne nur &#252;ber ihren Servernamen beziehen k&#246;nnen, ohne die Dom&#228;ne angeben zu m&#252;ssen.
+[br][b]Die zuerst aufgef&#252;hrte Dom&#228;ne muss die Heimatdom&#228;ne Ihres Netzwerks sein, und die Suchliste ist derzeit auf sechs Dom&#228;nen mit insgesamt 256 Zeichen begrenzt.</nic_dns_search_text>
 <nic_nameserver_text>IP-Adressen Ihrer DNS-Nameserver.[br]Die Resolver-Bibliothek fragt sie in der angegebenen Reihenfolge</nic_nameserver_text>

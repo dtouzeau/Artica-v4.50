@@ -14,6 +14,8 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["LoadAsnInfos"])){LoadAsnInfos();exit;}
 if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -417,25 +419,20 @@ function clients_table():bool{
         return intval($b->total ?? 0)-intval($a->total ?? 0);
     });
 
-    $html[]="<table id='table-$t' class='footable table table-stripped' data-page-size='100'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true data-type='text'>&nbsp;</th>";
-    $html[]="<th data-sortable=true data-type='text'>{ipaddr}</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>{requests}</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>Req/sec</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>HTTP 2xx</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>HTTP 3xx</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>HTTP 4xx</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>HTTP 5xx</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    $TRCLASS=null;
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{ipaddr}</th>";
+    $html[]="<th class='center'>{requests}</th>";
+    $html[]="<th class='center'>Req/sec</th>";
+    $html[]="<th class='center'>2xx</th>";
+    $html[]="<th class='center'>3xx</th>";
+    $html[]="<th class='center'>4xx</th>";
+    $html[]="<th class='center'>5xx</th>";
+    $html[]="</tr></thead><tbody id='areq-rows'>";
 
     $d=0;
     foreach($clients as $c){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $ip=htmlspecialchars($c->ip ?? 'unknown',ENT_QUOTES,'UTF-8');
         $total=$tpl->FormatNumber(intval($c->total ?? 0));
         $rps=number_format(floatval($c->req_per_sec ?? 0),1);
@@ -452,38 +449,33 @@ function clients_table():bool{
             }
         }
 
-        $badge2xx=$s2xx>0?"<span class='badge' style='background:#1ab394;color:#fff'>".$tpl->FormatNumber($s2xx)."</span>":"0";
-        $badge3xx=$s3xx>0?"<span class='badge' style='background:#23c6c8;color:#fff'>".$tpl->FormatNumber($s3xx)."</span>":"0";
-        $badge4xx=$s4xx>0?"<span class='badge' style='background:#f8ac59;color:#fff'>".$tpl->FormatNumber($s4xx)."</span>":"0";
-        $badge5xx=$s5xx>0?"<span class='badge' style='background:#ed5565;color:#fff'>".$tpl->FormatNumber($s5xx)."</span>":"0";
-
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td style='width:1%'><i class='".ico_member."'></i></td>";
-        $html[]="<td><strong>$ip</strong></td>";
-        $html[]="<td style='text-align:right'>$total</td>";
-        $html[]="<td style='text-align:right'>$rps</td>";
-        $html[]="<td style='text-align:right'>$badge2xx</td>";
-        $html[]="<td style='text-align:right'>$badge3xx</td>";
-        $html[]="<td style='text-align:right'>$badge4xx</td>";
-        $html[]="<td style='text-align:right'>$badge5xx</td>";
-        $html[]="</tr>";
+        $html[]="<tr>"
+            ."<td><div class='awc-ident'>"
+            ."<span class='awc-ico'><i class='".ico_member."'></i></span>"
+            ."<span class='awc-name awc-mono'>$ip</span>"
+            ."</div></td>"
+            ."<td class='center awc-nowrap awc-mono'>$total</td>"
+            ."<td class='center awc-nowrap awc-mono'>$rps</td>"
+            .nginx_status_bucket_cells($tpl,$s2xx,$s3xx,$s4xx,$s5xx)
+            ."</tr>";
         $d++;
         if($d>500){
             break;
         }
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot><tr><td colspan='8'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
-    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function(){\$('#table-$t').footable({";
-    $html[]="    \"filtering\":{\"enabled\":true},";
-    $html[]="    \"sorting\":{\"enabled\":true},";
-    $html[]="    \"paging\":{\"size\":{$GLOBALS["FOOTABLE_PSIZE"]}}";
-    $html[]="});});</script>";
+    // L'ancien pied -- une <ul class='pagination'> dans un <tfoot> -- etait rempli
+    // par footable; le pager awc vit en dehors du tableau.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} $d</span>"
+           ."<span class='awc-pg' id='areq-pager'></span></div>";
+    $html[]="</div></div>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>"
+        .awc_pager_js(100,"areq-rows","areq-pager");
     return true;
 }
 
@@ -775,24 +767,21 @@ function asn_table():bool{
     $html[]="<div class='ibox-title'><h5><i class='fas fa-table'></i> ASN {details}</h5></div>";
     $html[]="<div class='ibox-content'>";
 
-    $html[]="<table id='table-asn-$t' class='footable table table-stripped' data-page-size='100'>";
-    $html[]="<thead><tr>";
-    $html[]="<th data-sortable=true data-type='text'>ASN</th>";
-    $html[]="<th data-sortable=true data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=true data-type='text'>{country}</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>{requests}</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>IPs</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>2xx</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>3xx</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>4xx</th>";
-    $html[]="<th data-sortable=true data-type='number' style='text-align:right'>5xx</th>";
-    $html[]="</tr></thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>ASN</th>";
+    $html[]="<th class='center'>{country}</th>";
+    $html[]="<th class='center'>{requests}</th>";
+    $html[]="<th class='center'>IPs</th>";
+    $html[]="<th class='center'>2xx</th>";
+    $html[]="<th class='center'>3xx</th>";
+    $html[]="<th class='center'>4xx</th>";
+    $html[]="<th class='center'>5xx</th>";
+    $html[]="</tr></thead><tbody id='areqasn-rows'>";
 
-    $TRCLASS=null;
     $d=0;$z=0;
     foreach($asns as $a){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $asn=$a->asn ?? "";
         $total=intval($a->total_requests ?? 0);
@@ -812,10 +801,6 @@ function asn_table():bool{
             }
         }
 
-        $badge2xx=$s2xx>0?"<span class='badge' style='background:#1ab394;color:#fff'>".$tpl->FormatNumber($s2xx)."</span>":"0";
-        $badge3xx=$s3xx>0?"<span class='badge' style='background:#23c6c8;color:#fff'>".$tpl->FormatNumber($s3xx)."</span>":"0";
-        $badge4xx=$s4xx>0?"<span class='badge' style='background:#f8ac59;color:#fff'>".$tpl->FormatNumber($s4xx)."</span>":"0";
-        $badge5xx=$s5xx>0?"<span class='badge' style='background:#ed5565;color:#fff'>".$tpl->FormatNumber($s5xx)."</span>":"0";
         $ico_refres=ico_refresh_animate;
         $name="<span id='asname-$asn'><i class='$ico_refres'></i></span>";
         $country="<span id='ascountry-$asn'><i class='$ico_refres'></i></span>";
@@ -826,38 +811,53 @@ function asn_table():bool{
         }
 
 
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td nowrap><strong>AS$asn</strong></td>";
-        $html[]="<td>$name</td>";
-        $html[]="<td nowrap>$country</td>";
-        $html[]="<td style='text-align:right'>".$tpl->FormatNumber($total)."</td>";
-        $html[]="<td style='text-align:right'>".$tpl->FormatNumber($ips)."</td>";
-        $html[]="<td style='text-align:right'>$badge2xx</td>";
-        $html[]="<td style='text-align:right'>$badge3xx</td>";
-        $html[]="<td style='text-align:right'>$badge4xx</td>";
-        $html[]="<td style='text-align:right'>$badge5xx</td>";
-        $html[]="</tr>";
+        // La description de l'AS passe en sous-titre, ce qui libere une colonne.
+        $html[]="<tr>"
+            ."<td><div class='awc-ident'>"
+            ."<span class='awc-ico'><i class='fas fa-network-wired'></i></span>"
+            ."<span><div class='awc-name awc-mono'>AS".htmlspecialchars((string)$asn)."</div>"
+            ."<div class='awc-meta'>$name</div></span>"
+            ."</div></td>"
+            ."<td class='center awc-nowrap'>$country</td>"
+            ."<td class='center awc-nowrap awc-mono'>".$tpl->FormatNumber($total)."</td>"
+            ."<td class='center awc-nowrap awc-mono'>".$tpl->FormatNumber($ips)."</td>"
+            .nginx_status_bucket_cells($tpl,$s2xx,$s3xx,$s4xx,$s5xx)
+            ."</tr>";
         $d++;
         if($d>250){break;}
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot><tr><td colspan='9'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
-
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} $z</span>"
+           ."<span class='awc-pg' id='areqasn-pager'></span></div>";
+    $html[]="</div></div>";
     $html[]="</div></div>"; // ibox-content, ibox
 
-    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function(){\$('#table-asn-$t').footable({";
-    $html[]="    \"filtering\":{\"enabled\":true},";
-    $html[]="    \"sorting\":{\"enabled\":true},";
-    $html[]="    \"paging\":{\"size\":{$GLOBALS["FOOTABLE_PSIZE"]}}";
-    $html[]="});});
-    Loadjs('$page?LoadAsnInfos=yes');
-    </script>";
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n"
+        ."Loadjs('$page?LoadAsnInfos=yes');\n</script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .$script
+        .awc_pager_js(100,"areqasn-rows","areqasn-pager");
     return true;
+}
+
+/**
+ * Les quatre cellules de repartition des statuts HTTP.
+ * Les deux tableaux de cette page -- par client et par ASN -- recopiaient
+ * exactement les memes quatre lignes de construction de pastilles.
+ */
+function nginx_status_bucket_cells($tpl,$s2xx,$s3xx,$s4xx,$s5xx):string{
+    static $colors=array("#26a69a","#006a62","#865300","#ba1a1a");
+    $out="";
+    foreach(array($s2xx,$s3xx,$s4xx,$s5xx) as $i=>$v){
+        $v=intval($v);
+        $cell=$v>0 ? "<span class='awc-badge' style='background:".$colors[$i]."'>".$tpl->FormatNumber($v)."</span>"
+                   : "<span class='awc-muted'>0</span>";
+        $out.="<td class='center awc-nowrap'>$cell</td>";
+    }
+    return $out;
 }
 function fill_asn():bool{
     $asnq=explode(",",$_GET["fill-asn"]);

@@ -1,5 +1,4 @@
-<generate>Launch web pages generation</generate>
-<infos_awstats_must_generate>This problem is caused because there is no statistics or the awstats are not generated[br]
-You can generate it by command-line :[br]
-[blk][b]/usr/share/artica-postfix/bin/artica-install -awstats generate[/b][/blk]
-</infos_awstats_must_generate>
+<generate>Avvia la generazione delle pagine web</generate>
+<infos_awstats_must_generate>Questo problema &#232; causato dal fatto che non ci sono statistiche o gli awstats non sono generati[br]
+Puoi generarli da riga di comando:[br]
+[blk][b]/usr/share/artica-postfix/bin/artica-install -awstats generate[/b][/blk]</infos_awstats_must_generate>

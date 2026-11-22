@@ -2,8 +2,13 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
+// Pentest 2026-11-04 : www-tabs/siteid etaient recopies sans encodage dans la page (XSS). Ce sont des ID de site.
+foreach(array("www-tabs","siteid") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["download-build"])){download_js();exit;}
@@ -55,9 +60,10 @@ function www_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=$_GET["siteid"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ngixSock=new socksngix($ID);
+
+
+    $servicename=$ngixSock->GetServiceName();
     $tpl->js_dialog2("#$ID - $servicename -{debug}", "$page?popup=$ID",1200);
 }
 function popup(){
@@ -86,15 +92,12 @@ function search(){
     $data=explode("\n",@file_get_contents($RFile));
     krsort($data);
 
-    $html[]="<table id='table-webfilter-rules' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='number' style='width:1%'>{date}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>PID</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{event}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody class='tbody'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th class='center'>{date}</th>";
+    $html[]="<th class='center'>PID</th>";
+    $html[]="<th>{event}</th>";
+    $html[]="</tr></thead><tbody id='dbg-rows'>";
     foreach ($data as $line){
         $line=trim($line);
         if($line==null){continue;}
@@ -103,34 +106,23 @@ function search(){
         $pid=$re[4];
         $line=$re[5];
         $class=null;
-        $strlen=strlen($line);
         if(preg_match("#failed#i",$line)){$class="text-danger";}
-        $line=wordwrap($line,165,"<br>");
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap>$date</td>";
-        $html[]="<td style='width:1%' nowrap>$pid</td>";
-        $html[]="<td style='width:99%' class='$class' nowrap>$strlen:$line</td>";
-        $html[]="</tr>";
+        // La cellule affichait "$strlen:$line" -- la LONGUEUR de la ligne
+        // prefixee au message, reste de mise au point. Elle portait de plus un
+        // nowrap sur un texte deja coupe tous les 165 caracteres, ce qui
+        // annulait la coupure.
+        $line=wordwrap(htmlspecialchars($line),165,"<br>",true);
+        $html[]="<tr>"
+            ."<td class='center awc-nowrap awc-mono'>".htmlspecialchars($date)."</td>"
+            ."<td class='center awc-nowrap awc-mono'>".htmlspecialchars($pid)."</td>"
+            ."<td class='$class'>$line</td>"
+            ."</tr>";
     }
-    $html[]="</tbody>";
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='dbg-pager'></span></div>";
+    $html[]="</div></div>";
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .awc_pager_js(100,"dbg-rows","dbg-pager");
 }

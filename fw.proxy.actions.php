@@ -77,12 +77,12 @@ function popup(){
 	<td style='padding-left:10px'><div class='alert alert-info' style='height:89px'>{squid_logrotate_perform}</td>
 	</tr>";
 
-    $jsrreadonly=$tpl->framework_buildjs("squid2.php?readonly=yes",
+    $jsrreadonly=$tpl->framework_buildjs("/proxy/config/readonly/on",
         "squid.readonly.progress",
         "squid.readonly.progress.txt",
         "progress-action-restart","BootstrapDialog1.close();Loadjs('$page')"
     );
-    $jsrreadonlyoff=$tpl->framework_buildjs("squid2.php?readonly-off=yes",
+    $jsrreadonlyoff=$tpl->framework_buildjs("/proxy/config/readonly/off",
         "squid.readonly.progress",
         "squid.readonly.progress.txt",
         "progress-action-restart","BootstrapDialog1.close();Loadjs('$page')"

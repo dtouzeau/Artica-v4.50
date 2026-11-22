@@ -545,7 +545,7 @@ if(!is_dir('/usr/share/artica-postfix/ressources/logs/web')){@mkdir('/usr/share/
 		$NOOUT["SambaBrowse.php"]=true;
 		if(isset($NOOUT[$currentpage])){return;}
 		echo $text;
-		if($die){die("DIE " .__FILE__." Line: ".__LINE__);}
+		if($die){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 		
 	}
 	
@@ -850,7 +850,7 @@ if(!is_dir('/usr/share/artica-postfix/ressources/logs/web')){@mkdir('/usr/share/
 						$this->writeLogs("QUERY_SQL:".__LINE__.": DB:\"$database\" Error table {$re[1]} is crashed $errnum -> i will try to repair it, $called",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
 					}else{
 						$this->myisamchk($database,$re[2]);
-						die("DIE " .__FILE__." Line: ".__LINE__);	
+						die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");	
 					}
 				}
 				
@@ -1146,7 +1146,7 @@ function BackupTable($tablename,$database,$addons=array(),$zmd5=false,$endquery=
 			$table=$bc[0];
 			if($database=="squidlogs"){
 				$this->QUERY_SQL("DROP TABLE $table",$database);
-				die("DIE " .__FILE__." Line: ".__LINE__);
+				die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 			}
 		}
 	}
@@ -1800,35 +1800,11 @@ function BackupTable($tablename,$database,$addons=array(),$zmd5=false,$endquery=
 	}
 	
 	
+// Pentest 2026-11-04 (injection SQL) : l'ancienne version laissait passer un
+// antislash final, qui neutralisait l'apostrophe fermante de la chaine.
 function mysql_real_escape_string2($query){
-   $len=strlen($query);
-    $escapeCount=0;
-    $targetString='';
-    for($offset=0;$offset<$len;$offset++) {
-        switch($c=$query[$offset]) {
-            case "'":
-            // Escapes this quote only if its not preceded by an unescaped backslash
-                    if($escapeCount % 2 == 0) $targetString.="\\";
-                    $escapeCount=0;
-                    $targetString.=$c;
-                    break;
-            case '"':
-            // Escapes this quote only if its not preceded by an unescaped backslash
-                    if($escapeCount % 2 == 0) $targetString.="\\";
-                    $escapeCount=0;
-                    $targetString.=$c;
-                    break;
-            case '\\':
-                    $escapeCount++;
-                    $targetString.=$c;
-                    break;
-            default:
-                    $escapeCount=0;
-                    $targetString.=$c;
-        }
-    }
-    return $targetString;
-} 
+    return mysql_escape_string2((string)$query);
+}
 	private function is_socket($fpath){
 		$results=@stat($fpath);
 		if(!isset($results['mode'])){return false;}

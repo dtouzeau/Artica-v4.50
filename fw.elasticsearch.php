@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
@@ -30,7 +31,7 @@ function ClusterLists_popup(){
     $ARRAY["TITLE"]="{restart_service}";
     $ARRAY["AFTER"]="LoadAjaxTiny('elasticsearch-status','$page?status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-elasticsearch-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-elasticsearch-restart')";
 
     $ElasticSearchClusterLists=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ElasticSearchClusterLists"));
     $ElasticSearchClusterLists=str_replace(",","\n",$ElasticSearchClusterLists);
@@ -194,7 +195,7 @@ function table(){
 	$ARRAY["TITLE"]="{restart_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-elasticsearch-service','$page?tabs=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-elasticsearch-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-elasticsearch-restart')";
 	
 	$tpl->form_add_button("{join_a_cluster}","Loadjs('fw.elasticsearch.join.php')");
 
@@ -230,7 +231,7 @@ function status(){
 	$ARRAY["TITLE"]="{restart_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-elasticsearch-service','$page?tabs=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-elasticsearch-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-elasticsearch-restart')";
 	
 
 	

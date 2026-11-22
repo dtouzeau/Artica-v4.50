@@ -138,7 +138,7 @@ function install($filekey=0,$OS){
 	$tar=$unix->find_program("tar");
 	$ldconfig=$unix->find_program("ldconfig");
 
-	shell_exec("$tar xvf $tmpdir/$filename -C /");
+	shell_exec("$tar xvf $tmpdir/$filename --keep-directory-symlink --no-overwrite-dir -C /");
 	build_progress_idb("{installing} 1/1",96);
 	system("$php /usr/share/artica-postfix/exec.status.php --process1 --force >/dev/null");
 	system("$php /etc/init.d/artica-status restart --force");

@@ -6,10 +6,9 @@ if (!isset($GLOBALS["CLASS_SOCKETS"])) {
     }
     $GLOBALS["CLASS_SOCKETS"] = new sockets();
 }
+include_once(dirname(__FILE__) . "/ressources/class.statistics_appliance.inc");
+// parseURL(): family site and the category link of the INFO/LINK column.
 include_once(dirname(__FILE__) . "/ressources/class.logfile_daemon.inc");
-include_once(dirname(__FILE__) . "/ressources/class.squid.familysites.inc");
-include_once(dirname(__FILE__) . "/ressources/class.mysql.catz.inc");
-include_once(dirname(__FILE__) . "/ressources/class.tcpip.inc");
 $users = new usersMenus();
 if (!$users->AsProxyMonitor) {
     exit();
@@ -20,6 +19,10 @@ if (isset($_GET["verbose"])) {
     ini_set('error_reporting', E_ALL);
     ini_set('error_prepend_string', null);
     ini_set('error_append_string', null);
+}
+if (isset($_GET["build-page"])) {
+    build_page();
+    exit;
 }
 if (isset($_GET["search"])) {
     search();
@@ -36,410 +39,400 @@ if (isset($_GET["zoom"])) {
 
 page();
 
-function zoom_js()
-{
+// "&logfile=..." when the page reads another log than the default one.
+function haproxy_tail_logfile(): string{
+    $f = (string)($_GET["logfile"] ?? "");
+    return $f == "" ? "" : "&logfile=" . urlencode($f);
+}
+
+function page(){
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $html = $tpl->page_header("{realtime_requests}", "fas fa-list-ul", "{haproxy_realtime_requests_explain}",
+        "$page?build-page=yes" . haproxy_tail_logfile(), null, "progress-haproxy-tail", false, "table-haproxy-tail");
+    if (isset($_GET["main-page"])) {
+        $tpl = new template_admin("{realtime_requests}", $html);
+        echo $tpl->build_firewall();
+        return;
+    }
+    echo $tpl->_ENGINE_parse_body($html);
+}
+
+function build_page(){
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $html[] = "<div style='margin-top:10px'>";
+    $html[] = $tpl->search_block($page, "", "", "", haproxy_tail_logfile());
+    $html[] = "</div>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+}
+
+// Plain-text label of a HAProxy termination state (%ts), "" when unreadable.
+function haproxy_termination_label($flags): string{
+    $flags = (string)$flags;
+    if (strlen($flags) < 2) {
+        return "";
+    }
+    $pair = substr($flags, 0, 2);
+    $COMMON = array(
+        "--" => "Normal termination",
+        "CC" => "Client aborted before the connection was established",
+        "CD" => "Client aborted during data transfer",
+        "cD" => "Client timeout, no data exchanged",
+        "CH" => "Client aborted while waiting for the server response",
+        "cH" => "Client timeout while sending the request body",
+        "CQ" => "Client aborted while queued",
+        "CR" => "Client aborted before sending a complete request",
+        "cR" => "Client timeout before a complete request",
+        "CT" => "Client aborted while tarpitted",
+        "LR" => "Request handled locally by HAProxy",
+        "SC" => "Server refused the TCP connection",
+        "sC" => "Connection timeout to the server",
+        "SD" => "Server connection died during data transfer",
+        "sD" => "Server timeout, no data exchanged",
+        "SH" => "Server aborted before sending response headers",
+        "sH" => "Server timeout waiting for response headers",
+        "PC" => "Proxy refused the connection, limit reached",
+        "PD" => "Proxy blocked a malformed chunked message",
+        "PH" => "Proxy blocked an invalid server response",
+        "PR" => "Proxy blocked the request",
+        "PT" => "Proxy tarpitted the request",
+        "RC" => "A proxy resource was exhausted",
+        "DC" => "Session killed, server detected down",
+        "IC" => "Internal proxy error",
+    );
+    if (isset($COMMON[$pair])) {
+        return $COMMON[$pair];
+    }
+    $CAUSE = array("C" => "Client aborted", "S" => "Server aborted or refused",
+        "P" => "Blocked by the proxy", "L" => "Handled locally by HAProxy",
+        "R" => "Proxy resource exhausted", "I" => "Internal proxy error",
+        "D" => "Killed, server down", "U" => "Killed, backup released",
+        "K" => "Killed by an administrator", "c" => "Client timeout",
+        "s" => "Server timeout", "-" => "Normal");
+    $PHASE = array("R" => "waiting for the request", "Q" => "queued",
+        "C" => "connecting to the server", "H" => "waiting for response headers",
+        "D" => "data transfer", "L" => "sending the last data",
+        "T" => "tarpitted", "-" => "completed");
+    $c1 = substr($pair, 0, 1);
+    $c2 = substr($pair, 1, 1);
+    return ($CAUSE[$c1] ?? "State $c1") . " (" . ($PHASE[$c2] ?? "phase $c2") . ")";
+}
+
+// Termination state read back from a raw HAProxy log line, when the daemon row does
+// not carry it. The syslog header before "haproxy[<pid>]:" has no fixed length, so the
+// fields are counted from that marker. Two formats only differ by the timers field:
+//   TCP  : client:port [date] frontend backend/server Tw/Tc/Tt bytes <ts:2> ...
+//   HTTP : client:port [date] frontend backend/server TR/Tw/Tc/Tr/Ta code bytes cookie cookie <ts:4> ...
+// HASTATS lines use ":::" separators, labelled ("termination_state_with_cookie_status=")
+// or positional (field 14).
+function haproxy_tail_raw_termination($line): string{
+    if (!preg_match('#haproxy\[[0-9]+\]:\s*(.*)$#', (string)$line, $re)) {
+        return "";
+    }
+    $msg = trim($re[1]);
+    if (substr($msg, 0, 7) == "HASTATS") {
+        $P = explode(":::", $msg);
+        $term = "";
+        foreach ($P as $v) {
+            if (preg_match('#^termination_state_with_cookie_status=(.*)$#s', $v, $m)) {
+                $term = $m[1];
+            }
+        }
+        if ($term == "") {
+            $term = $P[14] ?? "";
+        }
+        $term = trim($term);
+        return preg_match('#^[-A-Za-z]{2,4}$#', $term) ? $term : "";
+    }
+    $F = preg_split("/[\s]+/", $msg);
+    if (count($F) < 7) {
+        return "";
+    }
+    if (count(explode("/", $F[4])) >= 5) {
+        return (isset($F[9]) && preg_match('#^[-A-Za-z]{4}$#', $F[9])) ? $F[9] : "";
+    }
+    return preg_match('#^[-A-Za-z]{2}$#', $F[6]) ? $F[6] : "";
+}
+
+// First non-empty property among $names: the daemon row shape is not fixed here.
+function haproxy_tail_field($e, $names): string{
+    foreach ($names as $n) {
+        if (isset($e->$n) && (string)$e->$n !== "") {
+            return (string)$e->$n;
+        }
+    }
+    return "";
+}
+
+// HTTP status as a badge: green for 2xx, amber for 3xx, orange for a 307, red from 400.
+function haproxy_tail_code(int $code): string{
+    if ($code == 0) {
+        return "<span class='awc-muted'>-</span>";
+    }
+    $class = "hpt-ok";
+    if ($code >= 300) {
+        $class = "hpt-redir";
+    }
+    if ($code == 307) {
+        $class = "hpt-warn";
+    }
+    if ($code >= 400) {
+        $class = "hpt-err";
+    }
+    return "<span class='awc-badge $class'>$code</span>";
+}
+
+// The termination state IS the status of a TCP session: flag, then its meaning.
+// "--" is a normal end, a first letter P means the Load-Balancer cut it itself.
+function haproxy_tail_termination($flags): string{
+    $pair = trim((string)substr((string)$flags, 0, 2));
+    if ($pair == "") {
+        return "<span class='awc-muted'>-</span>";
+    }
+    $class = "hpt-err";
+    if ($pair == "--") {
+        $class = "hpt-ok";
+    } elseif (substr($pair, 0, 1) == "P") {
+        $class = "hpt-block";
+    }
+    $h = "<span class='awc-badge $class' style='font-family:monospace'>" . htmlspecialchars($pair) . "</span>";
+    $label = haproxy_termination_label($flags);
+    if ($label != "") {
+        $h .= "<div class='awc-meta' style='white-space:normal;max-width:180px'>" . htmlspecialchars($label) . "</div>";
+    }
+    return $h;
+}
+
+function haproxy_tail_duration(int $ms): string{
+    if ($ms <= 0) {
+        return "<span class='awc-muted'>-</span>";
+    }
+    if ($ms < 1000) {
+        return "{$ms}ms";
+    }
+    return round($ms / 1000, 1) . "s";
+}
+
+function haproxy_tail_style(): string{
+    return "<style>
+.hpt-ok{background:#26a69a}
+.hpt-redir{background:#865300}
+.hpt-warn{background:#F59C44}
+.hpt-err{background:#ba1a1a}
+.hpt-block{background:#A01E1E}
+.hpt-url{word-break:break-all}
+.hpt-row-err .awc-name a,.hpt-row-err .awc-name{color:#ba1a1a}
+.hpt-row-block .awc-name a,.hpt-row-block .awc-name{color:#A01E1E}
+.hpt-cmd{font-size:10px;color:#6c7b6d;margin:6px 2px;word-break:break-all}
+</style>";
+}
+
+function zoom_js(){
     header("content-type: application/x-javascript");
     $tpl = new template_admin();
     $page = CurrentPageName();
-    $data = urlencode($_GET["data"]);
-    $title = $tpl->_ENGINE_parse_body("{realtime_requests}::ZOOM");
-    $tpl->js_dialog($title, "$page?zoom=yes&data=$data");
+    $data = urlencode((string)$_GET["data"]);
+    $tpl->js_dialog($tpl->_ENGINE_parse_body("{realtime_requests}::ZOOM"), "$page?zoom=yes&data=$data");
 }
 
-function zoom()
-{
-
-    $data = unserialize(base64_decode($_GET["data"]));
-    $html[] = "<div class=ibox-content>";
-    $html[] = "<table class='table table table-bordered'>";
-    while (list ($key, $val) = each($data)) {
-
-        $html[] = "<tr>
-		<td class=text-capitalize>$key:</td>
-		<td><strong>$val</strong></td>
-		</tr>";
-
+// Detail of one request, key on the left, value in bold. Values come from the raw
+// log, so they are escaped; the raw line reads in a fixed-width font.
+function zoom(){
+    $tpl = new template_admin();
+    $data = unserializeb64((string)$_GET["data"]);
+    $html[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[] = "<table class='awc-tbl awc-tbl-compact'><tbody>";
+    // Pentest 2026-11-04 : url/valeurs du journal (donnee externe) affiche sans encodage (XSS stockee).
+    foreach ($data as $key => $val) {
+        $val = req_html($val);
+        // An URL longer than 80 characters is cut, and opens; a CONNECT host:port is not an URL.
+        if ($key == "{url}" && preg_match("#^(http|ftp)s?://#", (string)$data[$key])) {
+            $url = (string)$data[$key];
+            $text = (strlen($url) > 80) ? substr($url, 0, 77) . "..." : $url;
+            $js = req_js($url);
+            $val = $tpl->td_href(req_html($text), req_html($url), "s_PopUp('$js',1024,768,'');");
+        }
+        if ($key == "Raw") {
+            $val = "<span style='font-family:monospace;font-size:12px;word-break:break-all'>$val</span>";
+        }
+        $html[] = "<tr><td class='awc-kv-k'>".req_html($key)."</td><td><span class='awc-name'>$val</span></td></tr>";
     }
-
-    echo @implode("", $html) . "</table></div>";
-
+    $html[] = "</tbody></table></div></div></div>";
+    // The stylesheet goes AFTER the parse: _ENGINE_parse_body would read CSS bodies as {tokens}.
+    echo awc_table_style() . $tpl->_ENGINE_parse_body(@implode("", $html));
 }
 
-function page()
-{
+function search(){
     $page = CurrentPageName();
     $tpl = new template_admin();
     $t = time();
-    if (!isset($_SESSION["LB_SEARCH"])) {
-        $_SESSION["LB_SEARCH"] = "50 events";
+    $function = preg_replace('/[^A-Za-z0-9_]/', '', (string)($_GET["function"] ?? ""));
+    // The search block sends an empty string on its first call: without a fallback
+    // format_search_protocol() sets no line limit.
+    $query = trim((string)($_GET["search"] ?? ""));
+    if ($query == "") {
+        $query = "50 events";
     }
-    if (isset($_GET["logfile"])) {
-        $addPLUS = "&logfile=" . urlencode($_GET["logfile"]);
-    }
+    $MAIN = $tpl->format_search_protocol($query);
+    $SearchString = (string)($_GET["SearchString"] ?? "");
+    $FinderList = (string)($_GET["FinderList"] ?? "");
 
-    $html = "
-	<div class=\"row border-bottom white-bg dashboard-header\">
-	<div class=\"col-sm-8\"><h1 class=ng-binding>{realtime_requests}</h1></div>
-	</div>
-	<div class=\"row\">
-	<div class='ibox-content'>
-	<div class=\"input-group\">
-	<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["LB_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
-	<span class=\"input-group-btn\">
-	<button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:ss$t();\">Go!</button>
-	</span>
-	</div>
-	</div>
-	</div>
-	<div class='row' id='spinner'>
-	<div id='progress-firehol-restart'></div>
-	<div  class='ibox-content'>
-	<div class='sk-spinner sk-spinner-wave'>
-	<div class='sk-rect1'></div>
-	<div class='sk-rect2'></div>
-	<div class='sk-rect3'></div>
-	<div class='sk-rect4'></div>
-	<div class='sk-rect5'></div>
-	</div>
-
-
-	<div id='table-loader'></div>
-	</div>
-	</div>
-	</div>
-	<script>
-	function Search$t(e){
-	if(!checkEnter(e) ){return;}
-	ss$t();
-}
-
-function ss$t(){
-		var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
-		LoadAjax('table-loader','$page?search='+ss+'$addPLUS');
-}
-
-		function Start$t(){
-		var ss=document.getElementById('search-this-$t').value;
-		ss$t();
-}
-		Start$t();
-		</script>";
-
-
-    echo $tpl->_ENGINE_parse_body($html);
-
-}
-
-function search()
-{
-    $time = null;
-    $sock = new sockets();
-    $tpl = new template_admin();
-    $max = 0;
-    $date = null;
-    $c = 0;
-    $addPLUS = null;
-    if (isset($_GET["logfile"])) {
-        $addPLUS = "&logfile=" . urlencode($_GET["logfile"]);
-    }
-    $MAIN = $tpl->format_search_protocol($_GET["search"]);
-    $sock = new sockets();
-    if (!isset($_GET["SearchString"])) {
-        $_GET["SearchString"] = null;
-    }
-    if (!isset($_GET["FinderList"])) {
-        $_GET["FinderList"] = null;
+    // The daemon runs the search and decodes each line (HaProxy.AccessRealRows),
+    // newest first: the page only renders.
+    $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/haproxy/access-real?rp=" . intval($MAIN["MAX"]) .
+        "&query=" . urlencode((string)$MAIN["TERM"]) . "&SearchString=" . urlencode($SearchString) .
+        "&FinderList=" . urlencode($FinderList) . haproxy_tail_logfile()));
+    $error = "";
+    $events = array();
+    if (!is_object($json)) {
+        $error = $GLOBALS["CLASS_SOCKETS"]->mysql_error;
+    } elseif (!$json->Status) {
+        $error = (string)$json->Error;
+    } elseif (is_array($json->Rows)) {
+        $events = $json->Rows;
     }
 
-    $sock->getFrameWork("haproxy.php?access-real=yes&rp={$MAIN["MAX"]}&query=" . urlencode($MAIN["TERM"]) . "&SearchString={$_GET["SearchString"]}&FinderList={$_GET["FinderList"]}$addPLUS");
-    $filename = "/usr/share/artica-postfix/ressources/logs/haproxy.log.tmp";
-    $ipaddr = $tpl->javascript_parse_text("{members}");
-    $destination = $tpl->javascript_parse_text("{destinations}");
-    $zdate = $tpl->_ENGINE_parse_body("{zDate}");
-    $proto = $tpl->_ENGINE_parse_body("{proto}");
-    $uri = $tpl->_ENGINE_parse_body("{url}");
-    $duration = $tpl->_ENGINE_parse_body("{duration}");
-    $size = $tpl->_ENGINE_parse_body("{size}");
-
-
-    $html[] = "
-
-	<table class=\"table table-hover\">
-	<thead>
-	<tr>
-	<th>$zdate</th>
-	<th>$ipaddr</th>
-	<th>&nbsp;</th>
-	<th>$proto</th>
-	<th>$uri</th>
-	<th>INFO/LINK</th>
-	<th>$destination</th>
-	<th>$size</th>
-	<th>$duration</th>
-	</tr>
-	</thead>
-	<tbody>
-	";
-
-    $data = explode("\n", @file_get_contents($filename));
-    $splunkfw = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SplunkForwarderEnabled"));
-
-    if (count($data) > 3) {
-        $_SESSION["LB_SEARCH"] = $_GET["search"];
-    }
-    rsort($data);
     $logfileD = new logfile_daemon();
-    $months = array("Jan" => "01", "Feb" => "02", "Mar" => "03", "Apr" => "04", "May" => "05", "Jun" => "06", "Jul" => "07", "Aug" => "08", "Sep" => "09", "Oct" => "10", "Nov" => "11", "Dec" => "12");
-    foreach ($data as $line) {
-        if($splunkfw==1){
-            $ArrayENC = array();
-            $URI_column = null;
-            $backend_column = null;
-            $duration_column = null;
-            $SERVICE_LOG = false;
-            $loupe = null;
-            $link = null;
-            $MAINUTI = null;
-            $PROTO = null;
-            $FAMILYSITE = null;
-            $URL = null;
-            $HTTP_CODE = 0;
-            $TR = preg_split("/[\s]+/", $line);
-
-
-            if (count($TR) < 5) {
-                continue;
-            }
-            $client = null;
-
-
-            if (preg_match("#^haproxy\[([0-9])+]#", $TR[4])) {
-                $SERVICE_LOG = true;
-            }
-
-            $stime = str_replace("[", "", $TR[6]);
-            $stime = str_replace("]", "", $stime);
-            $color = "#676A6C";
-            if (preg_match("#^(.+?):#", $TR[5], $re)) {
-                $client = $re[1];
-            }
-            if (preg_match("#^.*?\/(.+)#", $TR[8], $re)) {
-                $backend = $re[1];
-            }
-            $servicename = $TR[7];
-
-
-            if (!isset($TR[27])) {
-                $PROTO = "TCP/UDP";
-                if (intval($TR[10]) > 1024) {
-                    $size = FormatBytes($TR[10] / 1024);
-                } else {
-                    $size = "{$TR[10]} Bytes";
-                }
-            } else {
-                $HTTP_CODE = intval($TR[10]);
-                $PROTO = $TR[27];
-                $PROTO = str_replace('"', "", $PROTO);
-                $size = FormatBytes($TR[11] / 1024);
-            }
-
-            if (!isset($TR[28])) {
-                $link = $tpl->icon_nothing();
-                $URI = null;
-                $URI_column = "TCP &raquo;&raquo; $backend";;
-            } else {
-                $URI = $TR[28];
-                $MAINUTI = $logfileD->parseURL($URI, false, $PROTO, true);
-                $FAMILYSITE = $MAINUTI["FAMILYSITE"];
-                $URL = $MAINUTI["URL"];
-                if (filter_var('http://'.$FAMILYSITE, FILTER_VALIDATE_URL) === FALSE) {
-                    $PROTO = $TR[28];
-                    $PROTO = str_replace('"', "", $PROTO);
-                    $URI=$TR[29];
-                    $logfileD = new logfile_daemon();
-                    $MAINUTI = $logfileD->parseURL($URI, false, $PROTO, true);
-                    $FAMILYSITE = $MAINUTI["FAMILYSITE"];
-                }
-            }
-
-            $ztimes = explode("/", $TR[9]);
-            if (!isset($ztimes[3])) {
-                $ztimes[3] = 0;
-            }
-            $duration = (intval($ztimes[2]) + intval($ztimes[3]) + intval($ztimes[4]));
-
-            if (preg_match("#([0-9]+)\/([a-zA-Z]+)\/([0-9]+):([0-9:]+)#", $stime, $re)) {
-                $yime = $re[4];
-                $day = $re[1];
-                $month = $re[2];
-
-            }
-            if ($HTTP_CODE > 399) {
-                $color = "#D0080A";
-            }
-            if ($HTTP_CODE == 307) {
-                $color = "#F59C44";
-            }
-
-            if ($SERVICE_LOG) {
-                if (preg_match("#^(.*?)\s+([0-9]+)\s+([0-9:]+)\s+.*?haproxy\[([0-9]+)\]: Proxy\s+(.+?)\s+(.+)#", $line, $re)) {
-                    VERBOSE("MATCHES 2", __LINE__);
-                    $month = $re[1];
-                    $day = $re[2];
-                    $year = date("Y");
-                    $yime = $re[3];
-                    $client = "&nbsp;-&nbsp;";
-                    $HTTP_CODE = $re[4];
-                    $PROTO = "Service";
-                    $URI = null;
-                    $duration = 0;
-                    $servicename = $re[5];
-                    $URI_column = $re[6];
-                    $duration_column = $tpl->icon_nothing();
-                    $client = $tpl->icon_nothing();
-                    $size = 0;
-                }
-            }
-            if ($URI <> null) {
-                $URI_column = $tpl->td_href($FAMILYSITE, $URI, "s_PopUp('$URI',1024,768)");
-            }
-            if ($backend <> null) {
-                $backend_column = "$servicename/$backend";
-            } else {
-                $backend_column = "$servicename";
-            }
-            if ($duration > 0) {
-                $duration_column =round($duration/1000,1)."s";
-            }
-
-            if ($HTTP_CODE == 0) {
-                $HTTP_CODE = "&nbsp;";
-            }
-            if ($size == 0) {
-                $size = $tpl->icon_nothing();
-            }
+    $rows = array();
+    foreach ($events as $e) {
+        $code = intval($e->code);
+        $epoch = intval($e->epoch);
+        if ($epoch > 0) {
+            $clock = date("H:i:s", $epoch);
+            $when = $tpl->time_to_date($epoch);
+        } else {
+            // A message: the syslog stamp as written ("Oct 25 18:30:00").
+            $parts = preg_split("/\s+/", trim((string)$e->date));
+            $clock = (string)array_pop($parts);
+            $when = @implode(" ", $parts);
         }
-        else{
-            $ArrayENC           = array();
-            $URI_column         = null;
-            $backend_column     = null;
-            $duration_column    = null;
-            $SERVICE_LOG        = false;
-            $TR=preg_split("/[\s]+/", $line);
-            if(count($TR)<5){continue;}
-            $client=null;
-
-
-            if(preg_match("#^haproxy\[([0-9])+]#",$TR[4])){
-                $SERVICE_LOG=true;
-            }
-
-            $stime=str_replace("[", "", $TR[6]);
-            $stime=str_replace("]", "", $stime);
-            $color="#676A6C";
-
-            if(preg_match("#^(.+?):#", $TR[5],$re)){$client=$re[1];}
-            if(preg_match("#^.*?\/(.+)#", $TR[8],$re)){$backend=$re[1];}
-            $servicename=$TR[7];
-            $HTTP_CODE=intval($TR[10]);
-            $PROTO=$TR[17];
-            $PROTO=str_replace('"', "", $PROTO);
-            $URI=$TR[18];
-            $MAINUTI=$logfileD->parseURL($URI,false,$PROTO,true);
-            $FAMILYSITE=$MAINUTI["FAMILYSITE"];
-            $URL=$MAINUTI["URL"];
-            $ztimes=explode("/",$TR[9]);
-            $duration=intval($ztimes[0])+intval($ztimes[1])+intval($ztimes[2])+intval($ztimes[3]);
-            $size=FormatBytes(intval($TR[11])/1024);
-            if (!isset($TR[27])) {
-                $PROTO = "TCP/UDP";
-                if (intval($TR[10]) > 1024) {
-                    $size = FormatBytes($TR[10] / 1024);
-                } else {
-                    $size = "{$TR[10]} Bytes";
-                }
-            }
-            if(preg_match("#([0-9]+)\/([a-zA-Z]+)\/([0-9]+):([0-9:]+)#", $stime,$re)){
-                $yime=$re[4];
-                $day=$re[1];
-                $month=$re[2];
-
-            }
-            if($HTTP_CODE>399){$color="#D0080A";}
-            if($HTTP_CODE==307){$color="#F59C44";}
-
-            if($SERVICE_LOG){
-                if(preg_match("#^(.*?)\s+([0-9]+)\s+([0-9:]+)\s+.*?haproxy\[([0-9]+)\]: Proxy\s+(.+?)\s+(.+)#",$line,$re)){
-                    $month=$re[1];
-                    $day=$re[2];
-                    $year=date("Y");
-                    $yime=$re[3];
-                    $client="&nbsp;-&nbsp;";
-                    $HTTP_CODE=$re[4];
-                    $PROTO="Service";
-                    $URI=null;$duration=0;
-                    $servicename=$re[5];
-                    $URI_column=$re[6];
-                    $duration_column=$tpl->icon_nothing();
-                    $client=$tpl->icon_nothing();
-                    $size=0;
-                }
-            }
-
-
-
-
-            if($URI<>null){
-                $URI_column=$tpl->td_href($FAMILYSITE,$URI,"s_PopUp('$URI',1024,768)");
-            }
-            if($backend<>null){
-                $backend_column="$servicename/$backend";
-            }else{
-                $backend_column="$servicename";
-            }
-            if($duration>0) {
-                $duration_column="{$duration}ms";
-            }
-            if (!isset($TR[28])) {
-                $link = $tpl->icon_nothing();
-                $URI = null;
-                $URI_column = "TCP &raquo;&raquo; $backend";
-                $color="#676A6C";
-                $HTTP_CODE="";
-            }
-
-            if($size == 0){$size=$tpl->icon_nothing();}
+        $client = $e->client == "" ? "<span class='awc-muted'>-</span>" : htmlspecialchars((string)$e->client);
+        $method = (string)$e->method;
+        $url = (string)$e->url;
+        $raw = haproxy_tail_field($e, array("raw", "line"));
+        $term = haproxy_tail_field($e, array("termination", "ts", "termination_state"));
+        if ($term == "" && $raw != "") {
+            $term = haproxy_tail_raw_termination($raw);
         }
 
-        $html[] = "<tr>
-					<td style='width:1%' nowrap><span style='color:$color'>$month $day | $yime</span></td>
-					<td style='width:1%' nowrap><span style='color:$color'>$client</span></td>
-					<td style='width:1%' nowrap><span style='color:$color'>{$HTTP_CODE}</span></td>
-					<td style='width:1%' nowrap><span style='color:$color'>{$PROTO}</span></td>
-					<td><span style='color:$color'>$URI_column</span></td>
-					<td style='width:1%;' nowrapclass=center><center>{$loupe}&nbsp;&nbsp;{$link}</center></td>
-					<td style='width:1%' nowrap>$backend_column</td>
-					<td style='width:1%' nowrap><span style='color:$color'>{$size}</span></td>
-					<td style='width:1%' nowrap><span style='color:$color'>$duration_column</span></td>
-					</tr>";
+        $proto = (string)$e->proto;
+        $status = haproxy_tail_code($code);
+        $rowclass = "";
+        $link = "";
+        if ($e->message != "") {
+            $what = "<span class='awc-name'>" . htmlspecialchars((string)$e->message) . "</span>";
+        } elseif ($url != "") {
+            $label = $e->site != "" ? (string)$e->site : $url;
+            // A CONNECT carries host:port, not an URL: a popup on it would open an invalid address.
+            if ($method == "CONNECT") {
+                $what = "<span class='awc-name'><i class='fas fa-lock' style='opacity:.45'></i>&nbsp;" . htmlspecialchars($label) . "</span>";
+            } else {
+                $popup = htmlspecialchars("s_PopUp(" . json_encode($url) . ",1024,768)", ENT_QUOTES);
+                $what = "<span class='awc-name'><a href=\"javascript:blur();\" onclick=\"$popup\">" . htmlspecialchars($label) . "</a></span>";
+                // parseURL() only feeds the category link of the INFO/LINK column.
+                $MAINUTI = $logfileD->parseURL($url, false, $method, true);
+                if (is_array($MAINUTI) && isset($MAINUTI["LINK"])) {
+                    $link = (string)$MAINUTI["LINK"];
+                }
+            }
+            $what .= "<div class='awc-meta hpt-url'>" . htmlspecialchars($method . " " . $url) . "</div>";
+            if ($code >= 400) {
+                $rowclass = "hpt-row-err";
+            }
+        } else {
+            // A TCP session has no URL: its termination state takes the Status column.
+            $what = "<span class='awc-name'>TCP</span>";
+            $proto = "TCP";
+            $status = haproxy_tail_termination($term);
+            $pair = substr($term, 0, 2);
+            if ($pair != "" && $pair != "--") {
+                $rowclass = substr($pair, 0, 1) == "P" ? "hpt-row-block" : "hpt-row-err";
+            }
+        }
+        $destination = $e->service == "" ? "<span class='awc-muted'>-</span>" : htmlspecialchars((string)$e->service);
+        if ($e->server != "") {
+            $destination .= "<div class='awc-meta'>" . htmlspecialchars((string)$e->server) . "</div>";
+        }
+        $bytes = intval($e->bytes);
+        $size = $bytes > 0 ? ($bytes > 1024 ? FormatBytes($bytes / 1024) : "$bytes Bytes") : "<span class='awc-muted'>-</span>";
 
+        // Detail window: zoom() renders this array key by key; the raw line is joined,
+        // it is the one to read again when the decoding surprises.
+        $Z = array();
+        $Z["{zDate}"] = trim("$when $clock");
+        $Z["{client}"] = (string)$e->client;
+        $Z["{servicename}"] = (string)$e->service;
+        $Z["{backend}"] = (string)$e->server;
+        $Z["{mode}"] = $e->message != "" ? "Service" : ($url != "" ? "HTTP" : "TCP");
+        if ($e->message != "") {
+            $Z["{message}"] = (string)$e->message;
+        }
+        if ($url != "") {
+            $Z["{method}"] = $method;
+            $Z["{url}"] = $url;
+            $Z["{http_status_code}"] = $code;
+        }
+        $Z["{size}"] = "$bytes bytes";
+        $Z["{duration}"] = intval($e->latency) . " ms";
+        if ($term != "") {
+            $Z["Termination"] = $term . " - " . haproxy_termination_label($term);
+        }
+        if ($raw != "") {
+            $Z["Raw"] = $raw;
+        }
+        $info = $tpl->icon_loupe(1, "Loadjs('$page?zoom-js=yes&data=" . urlencode(base64_encode(serialize($Z))) . "')");
+        if ($link != "") {
+            $info .= "&nbsp;&nbsp;$link";
+        }
+
+        $r = array();
+        $r[] = "<tr" . ($rowclass != "" ? " class='$rowclass'" : "") . ">";
+        $r[] = "<td style='width:1%' nowrap><div class='awc-seen'>" . htmlspecialchars($clock) . "</div><div class='awc-seen-sub'>" . htmlspecialchars($when) . "</div></td>";
+        $r[] = "<td class='awc-mono' style='width:1%' nowrap>$client</td>";
+        $r[] = "<td class='center' style='width:1%' nowrap>$status</td>";
+        $r[] = "<td style='width:1%' nowrap><span class='awc-tag'>" . htmlspecialchars($proto) . "</span></td>";
+        $r[] = "<td style='width:99%'>$what</td>";
+        $r[] = "<td class='awc-mono' style='width:1%' nowrap>$destination</td>";
+        $r[] = "<td class='awc-mono' style='width:1%' nowrap>$size</td>";
+        $r[] = "<td class='awc-mono' style='width:1%' nowrap>" . haproxy_tail_duration(intval($e->latency)) . "</td>";
+        $r[] = "<td class='center' style='width:1%' nowrap>$info</td>";
+        $r[] = "</tr>";
+        $rows[] = @implode("", $r);
     }
-    $html[] = "<tfoot>";
 
-    $html[] = "<tr>";
-    $html[] = "<td colspan='9'>";
-    $html[] = "<ul class='pagination pull-right'></ul>";
-    $html[] = "</td>";
-    $html[] = "</tr>";
-    $html[] = "</tfoot>";
-    $html[] = "</tbody></table>";
-    $html[] = "<div style='font-size:10px'>" . @file_get_contents("/usr/share/artica-postfix/ressources/logs/haproxy.log.cmd") . "</div>";
-    $html[] = "
-					<script>
-		NoSpinner();\n" . @implode("\n", $tpl->ICON_SCRIPTS) . "
-		$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-    echo @implode("\n", $html);
+    $html[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[] = "<table class='awc-tbl'><thead><tr>";
+    $html[] = "<th>{zDate}</th><th>{members}</th><th class='center'>{status}</th><th>{proto}</th>";
+    $html[] = "<th>{url}</th><th>{destinations}</th><th>{size}</th><th>{duration}</th><th class='center'>INFO/LINK</th>";
+    $html[] = "</tr></thead><tbody id='awc-rows-$t'>";
+    if ($error != "") {
+        $html[] = "<tr><td colspan='9'><div class='awc-empty'>" . htmlspecialchars($error) . "</div></td></tr>";
+    } elseif (count($rows) == 0) {
+        $html[] = "<tr><td colspan='9'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }
+    // Rows carry log content (client URLs): kept out of _ENGINE_parse_body, which
+    // would read any {…} in a URL as a translation token.
+    $foot[] = "</tbody></table></div>";
+    $foot[] = "<div class='awc-foot'>";
+    $foot[] = "<span>" . count($rows) . " {items}</span>";
+    $foot[] = "<span class='awc-pg' id='awc-pager-$t'></span>";
+    $foot[] = "</div></div></div>";
+    // The command the search ran, when the daemon leaves it behind.
+    $cmd = trim((string)@file_get_contents("/usr/share/artica-postfix/ressources/logs/haproxy.log.cmd"));
+    $cmdline = $cmd != "" ? "<div class='hpt-cmd'>" . htmlspecialchars($cmd) . "</div>" : "";
 
+    $topbuttons = array();
+    $topbuttons[] = array("$function()", ico_refresh, "{refresh}");
+    $TINY = array();
+    $TINY["TITLE"] = "{realtime_requests}";
+    $TINY["ICO"] = "fas fa-list-ul";
+    $TINY["EXPL"] = "{haproxy_realtime_requests_explain}";
+    $TINY["BUTTONS"] = $tpl->table_buttons($topbuttons);
+    $tiny = "Loadjs('fw.progress.php?tiny-page=" . urlencode(base64_encode(serialize($TINY))) . "');";
 
+    $script = "<script>NoSpinner();\n" . $tpl->ICON_SCRIPTS_COMPILE() . "\n$tiny</script>";
+    echo awc_table_style() . haproxy_tail_style() . $tpl->_ENGINE_parse_body(@implode("\n", $html)) . @implode("\n", $rows) .
+        $tpl->_ENGINE_parse_body(@implode("\n", $foot)) . $cmdline . $script .
+        awc_pager_js($GLOBALS["FOOTABLE_PSIZE"], "awc-rows-$t", "awc-pager-$t");
 }

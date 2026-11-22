@@ -49,7 +49,6 @@ include_once(dirname(__FILE__).'/ressources/class.squid.ntlm.inc');
 include_once(dirname(__FILE__).'/ressources/class.http_access_defaults.inc');
 include_once(dirname(__FILE__).'/ressources/class.squid.acls.useragents.inc');
 include_once(dirname(__FILE__).'/ressources/class.tcp_outgoing_interface.inc');
-include_once(dirname(__FILE__)."/ressources/class.squid.ftp.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.common.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.tcp_outgoing_mark.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.http_reply_access.inc");
@@ -95,21 +94,16 @@ if(isset($argv[1])){
     if($argv[1]=="--articarest"){articarest();exit;}
     if($argv[1]=="--parents"){parents();exit;}
     if($argv[1]=="--auth"){Authentication();exit;}
-    if($argv[1]=="--update-adlap"){Authentication_update_adladp();exit;}
     if($argv[1]=="--nochek"){$GLOBALS["NOCHECK"]=true;$GLOBALS["NO_VERIF_ACLS"]=true;}
     if($argv[1]=="--no-caches"){deny_cache();exit();}
     if($argv[1]=="--plugins"){plugins();exit();}
     if($argv[1]=="--ports"){ports();exit();}
     if($argv[1]=="--chk-port"){CheckIptablesPorts(0);exit();}
     if($argv[1]=="--logging"){logging(0);exit();}
-       if($argv[1]=="--usersagents"){usersagents();exit();}
     if($argv[1]=="--identd-enable"){identd_enable();exit();}
     if($argv[1]=="--identd-disable"){identd_disable();exit();}
-    if($argv[1]=="--ntlmfake-disable"){ntlmfake_disable();exit();}
-    if($argv[1]=="--ntlmfake-enable"){ntlmfake_enable();exit();}
     if($argv[1]=="--missing"){missing_files();exit();}
     if($argv[1]=="--icap"){icap_silent();exit();}
-    if($argv[1]=="--icap-silent"){icap_silent();exit();}
     if($argv[1]=="--denys-sources"){DenyFromSources();exit();}
     if($argv[1]=="--parents-test"){parents_tests();exit();}
     if($argv[1]=="--common"){common(0,true);exit();}
@@ -126,22 +120,14 @@ if(isset($argv[1])){
     if($argv[1]=="--disable-hotspot"){disable_hotspot();exit();}
     if($argv[1]=="--http-access-default"){http_access_default(true);exit();}
     if($argv[1]=="--configure-cache"){configure_cache();exit();}
-    if($argv[1]=="--install-cache"){install_cache();exit();}
     if($argv[1]=="--enable-cache"){enable_cache();exit();}
-    if($argv[1]=="--disable-cache"){disable_cache();exit();}
-    if($argv[1]=="--enable-restful"){enable_restful();exit();}
-    if($argv[1]=="--disable-restful"){disable_restful();exit();}
     if($argv[1]=="--ufdbclient"){ufdbclient();exit();}
     if($argv[1]=="--outgoingaddr"){tcp_outgoing_address();exit();}
-    if($argv[1]=="--outgoingmark"){tcp_outgoing_mark();exit;}
-    if($argv[1]=="--reply-access"){http_reply_access();exit;}
     if($argv[1]=="--general"){build_general_config();exit;}
-    if($argv[1]=="--ftp"){squidftp();exit();}
     if($argv[1]=="--dns"){dns_tuning();exit();}
     if($argv[1]=="--cache-tweaks"){cache_tweaks();exit();}
     if($argv[1]=="--timeouts"){timeouts();exit();}
     if($argv[1]=="--mactouuid"){mactouuid();exit;}
-    if($argv[1]=="--uuidurgency"){mactouuid_remove();exit;}
     if($argv[1]=="--acls"){BuildAcls();exit;}
 
     $unix->ToSyslog("Unknown parameters [".str_replace(__FILE__,"",$GLOBALS["MAINCMD"])."] ",
@@ -283,16 +269,6 @@ function remove_limits():bool{
     return removelimits_online();
 }
 
-function mactouuid_remove(){
-    build_progress("{disable_emergency_mode}",10);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("MacToUidUrgency", 0);
-    $unix=new unix();
-    build_progress("{disable_emergency_mode}",90);
-    system("/usr/sbin/artica-phpfpm-service -rest-api /proxy/nohup/reload");
-    remove_limits();
-    build_progress("{disable_emergency_mode} {success}",100);
-}
-
 function mactouuid(){
     remove_limits();
     system("/usr/sbin/artica-phpfpm-service -rest-api /proxy/nohup/reload");
@@ -305,22 +281,6 @@ function identd_enable(){
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidExternLDAPAUTH", 0);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidStandardLDAPAuth", 0);
     xstart();
-}
-function ntlmfake_enable(){
-    build_progress("{enable_feature} {ntlm_fake_auth}...",10);
-    sleep(2);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UseNativeKerberosAuth", 0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidEnableIdentdService", 0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidExternLDAPAUTH", 0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidStandardLDAPAuth", 0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableFakeAuth", 1);
-    Authentication();
-}
-function ntlmfake_disable(){
-    build_progress("{disable_feature} {ntlm_fake_auth}...",10);
-    sleep(2);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableFakeAuth", 0);
-    Authentication();
 }
 function identd_disable(){
     build_progress("{disable}...",10);
@@ -343,63 +303,7 @@ function crc32Of($aclfile,$array=array()):array{
 
     return $array;
 }
-function icap_silent():bool{
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
 
-    if(is_file(PROGRESS_DIR."/squid-config-failed.tar.gz")){
-        @unlink("/usr/share/artica-postfix/ressources/logs/web/squid-config-failed.tar.gz");
-    }
-
-    build_progress("{building}",45);
-    $crcs=array();
-    $crcs=crc32Of("/etc/squid3/acls_center.conf",$crcs);
-    $crcs=crc32Of("/etc/squid3/icap.conf",$crcs);
-
-
-    $aclGen=new squid_acls();
-    $aclGen->Build_Acls(true);
-    @file_put_contents("/etc/squid3/acls_center.conf", @implode("\n",$aclGen->acls_array));
-
-    build_progress("{building}",50);
-
-    $icap=new icap();
-    $icap->build_services();
-
-    build_progress("{checking}",55);
-    $RELOADCHECK=false;
-    foreach ($crcs as $filename=>$crc){
-        $crc2=crc32_file($filename);
-        if($crc==$crc2){continue;}
-        $RELOADCHECK=true;
-    }
-
-    if(!$RELOADCHECK){
-        build_progress("{done} {no_change}",100);
-        return true;
-    }
-
-    $squid_checks=new squid_checks();
-    if(!$squid_checks->squid_parse()){
-        build_progress("{failed2}",110);
-        return false;
-    }
-    if(!$GLOBALS["NO_RELOAD"]) {
-        build_progress("{done} {reloading_proxy_service}", 95);
-        $squidbin = $unix->find_program("squid");
-        if (is_file($squidbin)) {
-            squid_admin_mysql(2, "{reloading_proxy_service} (" . __FUNCTION__ . ")", null, __FILE__, __LINE__);
-            system("/usr/sbin/artica-phpfpm-service -rest-api /proxy/nohup/reload");
-            cluster_mode();
-        }
-        build_progress("{done} {reloading_proxy_service}", 96);
-        system("$php /usr/share/artica-postfix/exec.squid.watchdog.php --icap");
-        system("$php /usr/share/artica-postfix/exec.squid.disable.php --syslog");
-    }
-
-    build_progress("{done} {reloading_proxy_service}",100);
-    return true;
-}
 
 function timeouts(){
     $unix=new unix();
@@ -407,38 +311,6 @@ function timeouts(){
     build_progress("{starting} {timeouts}",15);
     $sock=new sockets();
     $sock->REST_API("/proxy/config/timeouts/noreload");
-
-    $squid_checks=new squid_checks();
-
-    if(!$squid_checks->squid_parse()){
-        build_progress("{failed2}",110);
-        return;
-    }
-    if(!$GLOBALS["NO_RELOAD"]) {
-        build_progress("{done} {reloading_proxy_service}", 100);
-        $squidbin = $unix->find_program("squid");
-        if (is_file($squidbin)) {
-            squid_admin_mysql(2, "{reloading_proxy_service} (" . __FUNCTION__ . ")", null, __FILE__, __LINE__);
-            system("/usr/sbin/artica-phpfpm-service -rest-api /proxy/nohup/reload");
-            cluster_mode();
-        }
-    }
-
-
-}
-function squidftp(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    ini_set('display_errors', 1);	ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);
-
-
-    if(is_file("/usr/share/artica-postfix/ressources/logs/web/squid-config-failed.tar.gz")){
-        @unlink("/usr/share/artica-postfix/ressources/logs/web/squid-config-failed.tar.gz");
-    }
-    build_progress("{starting} {squid_ftp_user}",15);
-    $squid_ftp=new squid_ftp();
-    $squid_ftp->build();
-    build_progress("{starting} {squid_ftp_user}",50);
 
     $squid_checks=new squid_checks();
 
@@ -487,8 +359,6 @@ function build_general_config(){
     $GLOBALS["SQUIDBEE"]->access_logs();
 
     build_general_config_progress("{configuring}",90);
-    $squid_ftp=new squid_ftp();
-    $squid_ftp->build();
 
     build_general_config_progress("{scanning}...",95);
     $md5Stop=global_md5_dir();
@@ -685,8 +555,7 @@ function configure_cache(){
 
 
     build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",30);
-    $HyperCacheSquid=new HyperCacheSquid();
-    $HyperCacheSquid->build();
+    system("/usr/sbin/artica-phpfpm-service -proxy-build-storeid");
 
     squid_admin_mysql(1, "{restarting_proxy_service} (".__FUNCTION__.")", null,__FILE__,__LINE__);
     build_progress("{stopping_service}",50);
@@ -696,55 +565,6 @@ function configure_cache(){
     build_progress("{starting_service}",80);
     system("/usr/sbin/artica-phpfpm-service -start-proxy");
 
-}
-
-function install_cache(){
-    build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",15);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidCachesProxyEnabled", 1);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidDisableHyperCacheDedup", 0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HyperCacheStoreID", 1);
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    system("$php /usr/share/artica-postfix/exec.squid.verify.caches.php");
-    build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",20);
-
-    build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",30);
-    $HyperCacheSquid=new HyperCacheSquid();
-    $HyperCacheSquid->build();
-    system("/etc/init.d/squid reload");
-    build_progress("{PROXY_CACHE_FEATURE} {enable_feature} {done}",100);
-
-}
-function enable_restful_str($length, $keyspace = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'){
-    $pieces = array();
-    $max = mb_strlen($keyspace, '8bit') - 1;
-    for ($i = 0; $i < $length; ++$i) {
-        $pieces []= $keyspace[random_int(0, $max)];
-    }
-    return implode('', $pieces);
-}
-
-function enable_restful(){
-    build_progress("RESTFul API {enable_feature}",15);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SQUIDRESTFulEnabled", 1);
-
-    $SquidRestFulApi=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRestFulApi"));
-    echo "SquidRestFulApi = $SquidRestFulApi\n";
-    if(strlen($SquidRestFulApi)<32){
-        $kzy=enable_restful_str(32);
-        echo "SquidRestFulApi = $kzy\n";
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidRestFulApi",$kzy);
-    }else{
-        echo "SquidRestFulApi = $SquidRestFulApi\n";
-    }
-
-
-    build_progress("RESTFul API {enable_feature} {done}",100);
-}
-function disable_restful(){
-    build_progress("RESTFul API {disable_feature}",15);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SQUIDRESTFulEnabled", 0);
-    build_progress("RESTFul API {disable_feature} {done}",100);
 }
 
 function enable_cache(){
@@ -756,8 +576,7 @@ function enable_cache(){
     system("/usr/sbin/artica-phpfpm-service -proxy-build-caches");
 
     build_progress("{PROXY_CACHE_FEATURE} {enable_feature}",30);
-    $HyperCacheSquid=new HyperCacheSquid();
-    $HyperCacheSquid->build();
+    system("/usr/sbin/artica-phpfpm-service -proxy-build-storeid");
 
     squid_admin_mysql(1, "{restarting_proxy_service} (".__FUNCTION__.")", null,__FILE__,__LINE__);
     build_progress("{stopping_service}",50);
@@ -772,69 +591,11 @@ function enable_cache(){
 
 
 }
-function disable_cache(){
-    build_progress("{PROXY_CACHE_FEATURE} {disable_feature}",15);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidCachesProxyEnabled", 0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidDisableHyperCacheDedup", 1);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HyperCacheStoreID", 0);
-
-    build_progress("{PROXY_CACHE_FEATURE} {disable_feature}",20);
-
-
-    build_progress("{PROXY_CACHE_FEATURE} {disable_feature}",30);
-    $HyperCacheSquid=new HyperCacheSquid();
-    $HyperCacheSquid->build();
-
-
-    $caches=new SquidCacheCenter();
-    $caches->build();
-    squid_admin_mysql(1, "{restarting_proxy_service} (".__FUNCTION__.")", null,__FILE__,__LINE__);
-    build_progress("{stopping_service}",50);
-    system("/etc/init.d/squid stop");
-    build_progress("{stopping_service}",50);
-    system("/etc/init.d/squid stop");
-    build_progress("{starting_service}",80);
-    system("/usr/sbin/artica-phpfpm-service -start-proxy");
-    build_progress("{PROXY_CACHE_FEATURE} {disable_feature} {done}",100);
-}
-
-
-
 function disable_acls(){
     build_progress("{PROXY_ACLS} {disable_feature}",15);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SQUIDACLsEnabled", 0);
     xstart();
     build_progress("{done}",100);
-}
-
-function usersagents(){
-    $unix=new unix();
-    build_progress("{starting} UserAgents",15);
-    $b=new useragents();
-    build_progress("{starting} UserAgents",50);
-    $b->ACLS_ALL();
-    $squid_checks=new squid_checks();
-
-    if(!$squid_checks->squid_parse()){
-        build_progress("{failed2}",110);
-        return;
-    }
-
-    if(!$GLOBALS["NO_RELOAD"]) {
-        $squidbin = $unix->find_program("squid");
-        if (is_file($squidbin)) {
-            squid_admin_mysql(2, "{reloading_proxy_service} (" . __FUNCTION__ . ")", null, __FILE__, __LINE__);
-            $articarest = $unix->find_program("artica-phpfpm-service");
-            if (is_file($articarest)) {
-                system("$articarest -rest-api /proxy/nohup/reload");
-            } else{
-                system("$squidbin -k reconfigure");
-            }
-            cluster_mode();
-        }
-    }
-    build_progress("{done} {reloading_proxy_service}",100);
-
 }
 
 function http_reply_access(){
@@ -1160,11 +921,6 @@ function build_go_squid_auth_syslog(){
     }
 
 }
-function Authentication_update_adladp(){
-    $squid_ntlm=new squid_ntlm();
-    $squid_ntlm->ldap_auth_ad_update();
-
-}
 
 function Authentication(){
     $unix=new unix();
@@ -1289,8 +1045,8 @@ function parents():bool{
 
     $sock=new sockets();
     if($sock->isFirehol()){
-        system("$php /usr/share/artica-postfix/exec.firehol.php --reconfigure");
-
+        // Lot D : la reconstruction du pare-feu appartient au daemon (coalescée 6 s).
+        $sock->REST_API("/firewall/reconfigure/debounced");
     }
     build_progress("{done} {reloading_proxy_service}",100);
     cluster_mode();
@@ -1459,7 +1215,7 @@ function ports()
         if (!is_file("/etc/squid3/squid.conf")) {
             echo "* * * * /etc/squid3/squid.conf (No such file) * * * * *\n";
             build_progress("{starting} {reconfigure_proxy_service}", 30);
-            system("$php /usr/share/artica-postfix/exec.squid.php --build --force --noverifacls");
+            system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
             exit();
         }
     }
@@ -1525,10 +1281,8 @@ function ports()
         if($GLOBALS["FIREHOL"]) {
             $FireHolEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
             if ($FireHolEnable == 1) {
-                system("$php /usr/share/artica-postfix/exec.firehol.php --build");
-                if (is_file("/usr/sbin/firewall-builder.sh")) {
-                    system("/usr/sbin/firewall-builder.sh");
-                }
+                // Lot D : plus d'ancien constructeur PHP ni de script de règles.
+                $GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/reconfigure/debounced");
             }
         }
     }
@@ -1567,7 +1321,7 @@ function ports()
     build_progress("{done} {reloading_proxy_service}", 100);
 
 
-    system("$php /usr/share/artica-postfix/exec.squid.disable.php --monit");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/watchdog/monit"); // ex exec.squid.disable.php --monit
     if(!$GLOBALS["NO_RELOAD"]) {
         squid_admin_mysql(2, "{reloading_proxy_service} (" . __FUNCTION__ . ")", null, __FILE__, __LINE__);
         system("/usr/sbin/artica-phpfpm-service -rest-api /proxy/nohup/reload");
@@ -1718,7 +1472,7 @@ function cache_tweaks():bool{
     if($GLOBALS["MUST_RESTART"]){
         squid_admin_mysql(0, "Restart Proxy service to apply new settings (".__FUNCTION__.")", null,__FILE__,__LINE__);
         build_progress("{restarting_proxy_service}",70);
-        shell_exec("$php5 /usr/share/artica-postfix/exec.squid.disable.php --squid-service");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/watchdog/monit"); // ex exec.squid.disable.php --squid-service
         build_progress("{restarting}",85);
         $unix->go_exec_out("/usr/sbin/artica-phpfpm-service -stop-proxy");
         build_progress("{starting}",85);
@@ -1845,10 +1599,9 @@ function xstart(){
 
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     if($q->COUNT_ROWS("proxy_ports")==0){
-        build_progress("{starting} {ports_conversion}",12);
-        sleep(2);
+        // Le port par defaut (3128) est cree par le daemon Go
+        // (SquidListenPorts.checkPortConfigured) quand proxy_ports est vide.
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("IsPortsConverted", 0);
-        system("$php /usr/share/artica-postfix/exec.squid.php --ports-conversion");
         $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
         if($q->COUNT_ROWS("proxy_ports")>0){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("IsPortsConverted", 1);}
 
@@ -1859,10 +1612,10 @@ function xstart(){
 
 
     build_progress("{reconfigure} Building {watchdog}",16);
-    system("$php /usr/share/artica-postfix/exec.squid.disable.php --monit");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/watchdog/monit"); // ex exec.squid.disable.php --monit
 
     if(!is_file("/etc/squid3/squid.conf")){
-        system("$php /usr/share/artica-postfix/exec.squid.php --build --force --noverifacls");
+        system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
         exit();
     }
 
@@ -1871,10 +1624,9 @@ function xstart(){
 
 
 
-    system("$php /usr/share/artica-postfix/exec.squid.disable.php --monit");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/watchdog/monit"); // ex exec.squid.disable.php --monit
 
-    $HyperCacheSquid=new HyperCacheSquid();
-    $HyperCacheSquid->build();
+    system("/usr/sbin/artica-phpfpm-service -proxy-build-storeid");
 
 
     build_progress("{starting} {GLOBAL_ACCESS_CENTER} {authentication}",33);
@@ -1906,19 +1658,12 @@ function xstart(){
     $GLOBALS["BUILD_PROGRESS"]=60;
     $GLOBALS["SQUIDBEE"]->access_logs();
 
-    build_progress("{starting} {GLOBAL_ACCESS_CENTER} {squid_ftp_user}",70);
-    $squid_ftp=new squid_ftp();
-    $squid_ftp->build();
 
 
 
     build_progress("{starting} {GLOBAL_ACCESS_CENTER} {timeouts}",71);
     $sock=new sockets();
     $sock->REST_API("/proxy/config/timeouts/noreload");
-
-    build_progress("{starting} {GLOBAL_ACCESS_CENTER}",73);
-    $icap=new icap();
-    $icap->build_services();
 
     build_progress("{starting} Parent Proxies",74);
     system("/usr/sbin/artica-phpfpm-service -proxy-parents");

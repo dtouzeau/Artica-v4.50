@@ -1,6 +1,8 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 include_once(dirname(__FILE__)."/class.squid.acls.useragents.inc");
 include_once(dirname(__FILE__)."/class.squid.ntlm.inc");
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class http_access_defaults{
     private $SquidDisableAllFilters=0;
@@ -25,9 +27,9 @@ class http_access_defaults{
 
 
     function __construct(){
-        if(!is_file("/etc/artica-postfix/settings/Daemons/AllowWindowsUpdates")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowWindowsUpdates", 1);}
-        if(!is_file("/etc/artica-postfix/settings/Daemons/AllowAllNetworksInSquid")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowAllNetworksInSquid", 1);}
-        if(!is_file("/etc/artica-postfix/settings/Daemons/AllowSquidCompatibility")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowSquidCompatibility", 1);}
+        if(!artica_setting_exists("AllowWindowsUpdates")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowWindowsUpdates", 1);}
+        if(!artica_setting_exists("AllowAllNetworksInSquid")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowAllNetworksInSquid", 1);}
+        if(!artica_setting_exists("AllowSquidCompatibility")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowSquidCompatibility", 1);}
         $this->smartphones_port=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("smartphones_port"));
         $this->SquidDisableAllFilters=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableAllFilters"));
         $this->SquidUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidUrgency"));
@@ -98,8 +100,14 @@ class http_access_defaults{
         if(!$this->isSquid5){return "# auth_schemes(); Squid Proxy v$this->SquidVersion is not 5.x or above";}
         if($this->SquidUrgency==1){return "# auth_schemes(); Emergency = SquidUrgency";}
         $squid_acls_groups=new squid_acls_groups();
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $results=$q->QUERY_SQL("SELECT * FROM squid_auth_schemes_acls WHERE enabled=1 ORDER BY zorder");
+        // acls.db is API-only — list auth-schemes ACL rules via the acls backend (enabled only, zorder).
+        $as=acls_api_get("/proxy/auth-schemes/acls");
+        $results=array();
+        if(is_array($as)){foreach($as as $r){
+            if(!is_array($r)){continue;}
+            if(intval($r["enabled"] ?? 0)!=1){continue;}
+            $results[]=array("ID"=>intval($r["id"] ?? 0),"aclport"=>intval($r["aclPort"] ?? 0),"ztype"=>(string)($r["zType"] ?? ""),"rulename"=>(string)($r["ruleName"] ?? ""));
+        }}
         $aclsarray=array();
         foreach ($results as $index=>$ligne) {
             $aclport = $ligne["aclport"];
@@ -154,128 +162,31 @@ class http_access_defaults{
     public function http_access_deny_final(){
         shell_exec("/usr/sbin/artica-phpfpm-service -proxy-http-access-final");
     }
-    private function WHITELISTED_AUTH(){
-        $ipaddr_dest=array();
-        $destdomains=array();
-        $ipaddr=array();
-        $macs=array();
-        $annotate_transaction_white=null;
-        $SquidWhitelistAuthFrom=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidWhitelistAuthFrom"));
-        $SquidWhitelistAuthTo=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidWhitelistAuthTo"));
-        $IP=new IP();
+    // ---------------------------------------------------------------------
+    // WHITELISTED_AUTH() et StringToRegex() ont ete SUPPRIMEES (2026-09-14).
+    //
+    // C'etait du code mort : WHITELISTED_AUTH etait `private` et n'avait aucun
+    // appelant -- ni ici (build() delegue au daemon via http_access_deny_final()),
+    // ni ailleurs dans WebConsole -- et StringToRegex n'etait appelee que par
+    // elle. Mort, mais pas inoffensif : 130 lignes qui dupliquaient la
+    // generation du daemon, avec quatre file_put_contents sur les fichiers de
+    // PRODUCTION (/etc/squid3/SquidWhitelistAuth*.db). Les rebrancher aurait
+    // rouvert l'incident du 2026-09-14, car cette copie :
+    //
+    //   - produisait des regex INVALIDES que regcomp(3) refuse, donc un
+    //     « FATAL: Bungled » et un Squid qui ne demarre plus : « [ » n'etait
+    //     jamais echappe (x[.com -> x[\.com) et « * » seul ressortait tel quel ;
+    //   - DETRUISAIT les regex ecrites a la main par double echappement
+    //     ((track|stats)\.blabla\.(com|de)$ -> \(track\|stats\)\\.blabla…),
+    //     ce qui compile mais ne matche plus rien -- en silence ;
+    //   - declarait SquidWhitelistAuthFromMAC en « src » la ou le daemon ecrit
+    //     « arp », soit un fichier d'adresses MAC lu comme des adresses IP.
+    //
+    // Le generateur vivant est squid/http_access_final.go, cote daemon, avec sa
+    // validation a l'ecriture (squid/regexguard.go). Ne pas restaurer ceci :
+    // toute regeneration de ces fichiers passe par le daemon.
+    // ---------------------------------------------------------------------
 
-        $f[]="acl SquidWhitelistAuthFromNet src \"/etc/squid3/SquidWhitelistAuthFromNet.db\"";
-        $f[]="acl SquidWhitelistAuthToNet dst \"/etc/squid3/SquidWhitelistAuthToNet.db\"";
-        $f[]="acl SquidWhitelistAuthToDoms dstdom_regex -i \"/etc/squid3/SquidWhitelistAuthToDoms.db\"";
-        $f[]="acl SquidWhitelistAuthFromMAC src \"/etc/squid3/SquidWhitelistAuthFromMAC.db\"";
-        $f[] = "acl HotSpotDest dstdomain dummy.site";
-        $f[] = "acl HotSpotNets src 10.0.0.1";
-        $f[] = "acl MyMobilesPort localport 17";
-
-        @file_put_contents("/etc/squid3/SquidWhitelistAuthFromNet.db", "");
-        @file_put_contents("/etc/squid3/SquidWhitelistAuthToNet.db", "");
-        @file_put_contents("/etc/squid3/SquidWhitelistAuthToDoms.db", "");
-        @file_put_contents("/etc/squid3/SquidWhitelistAuthFromMAC.db", "");
-
-
-
-        $acls_merge[]="SquidWhitelistAuthFromNet";
-        $acls_merge[]="SquidWhitelistAuthToNet";
-        $acls_merge[]="SquidWhitelistAuthToDoms";
-        $acls_merge[]="SquidWhitelistAuthFromMAC";
-        $acls_merge[]="HotSpotNets";
-        $acls_merge[]="HotSpotDest";
-
-
-
-        if(is_array($SquidWhitelistAuthFrom)){
-            if(count($SquidWhitelistAuthFrom)>0){
-                foreach ($SquidWhitelistAuthFrom as $index=>$ligne){
-                    if($IP->isIPAddressOrRange($index)){$ipaddr[]=$index;continue;}
-                    if($IP->IsvalidMAC($index)){$macs[]=$index;continue;}
-                }
-            }
-        }
-        if(is_array($SquidWhitelistAuthTo)){
-            if(count($SquidWhitelistAuthTo)>0){
-                foreach ($SquidWhitelistAuthTo as $index=>$ligne){
-                    if($IP->isIPAddressOrRange($index)){$ipaddr_dest[]=$index;continue;}
-                    $destdomains[]=$index;
-                }
-            }
-        }
-
-        // NTLM WhiteList
-
-
-
-        if(count($ipaddr)>0){
-            $f[]="# WHITELISTED_AUTH: ".count($ipaddr)." <FROM> Network Elements";
-            @file_put_contents("/etc/squid3/SquidWhitelistAuthFromNet.db", @implode("\n", $ipaddr));
-        }
-        if(count($ipaddr_dest)>0) {
-            $f[] = "# WHITELISTED_AUTH: " . count($ipaddr_dest) . " <TO> Network Elements";
-            @file_put_contents("/etc/squid3/SquidWhitelistAuthToNet.db", @implode("\n", $ipaddr_dest));
-        }
-
-        if(count($destdomains)>0){
-            $f[]="# WHITELISTED_AUTH: ".count($destdomains)." domains";
-
-            foreach ($destdomains as $index=>$www){
-                $destdomains[$index]=$this->StringToRegex($www);
-            }
-
-            @file_put_contents("/etc/squid3/SquidWhitelistAuthToDoms.db", @implode("\n", $destdomains));
-
-        }
-        if(count($macs)>0){
-            $f[]="# WHITELISTED_AUTH: ".count($ipaddr)." MAC Elements";
-            @file_put_contents("/etc/squid3/SquidWhitelistAuthFromMAC.db", @implode("\n", $macs));
-        }
-
-        $f[]="acl GlobalNoAuth any-of ".@implode(" ",$acls_merge);
-
-        return @implode("\n", $f);
-    }
-    private function StringToRegex($pattern){
-        if(substr($pattern,0,1)=="^"){$pattern=trim(substr($pattern,1,strlen($pattern)));}
-        if(preg_match("#^regex:(.+)#", trim($pattern),$re)){return $re[1];}
-        $pattern=str_replace(".", "\.", $pattern);
-        $pattern=str_replace("(", "\(", $pattern);
-        $pattern=str_replace(")", "\)", $pattern);
-        $pattern=str_replace("+", "\+", $pattern);
-        $pattern=str_replace("|", "\|", $pattern);
-        $pattern=str_replace("{", "\{", $pattern);
-        $pattern=str_replace("}", "\}", $pattern);
-        $pattern=str_replace("?", "\?", $pattern);
-
-        $pattern=str_replace("http://", "^http://", $pattern);
-        $pattern=str_replace("https://", "^https://", $pattern);
-        $pattern=str_replace("ftp://", "^ftp://", $pattern);
-        $pattern=str_replace("ftps://", "^ftps://", $pattern);
-        if(substr($pattern,0,2)=="\."){
-            $pattern=substr($pattern,2,strlen($pattern));
-            $pattern="(^|\.)$pattern";
-        }
-
-        if(preg_match("#^\*-(.+)#",$pattern,$re)){
-            $pattern="-$re[1]";
-        }
-        if(preg_match("#^(.+?)\*$#",$pattern,$re)){
-            $pattern=$re[1];
-        }
-
-        if(preg_match("#^\*\\.(.+)#",$pattern,$re)){
-            $pattern="(^|\.){$re[1]}";
-        }
-
-        if(preg_match("#^\\*(.+)#",$pattern,$re)){
-            $pattern="(^|\.){$re[1]}";
-        }
-        $pattern=str_replace("(^|\.)\.", "(^|\.)", $pattern);
-
-        return $pattern;
-    }
 
 
 

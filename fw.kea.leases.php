@@ -1,18 +1,25 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 
+// Les repartiteurs ?enable-signature= et ?enable-firewall= appelaient
+// enable_signature() et enable_firewall(), qui ne sont definies NI dans ce
+// fichier NI ailleurs: les deux URL repondaient un fatal « Call to undefined
+// function ». La paire appartient a la famille Suricata (elle bascule une
+// signature dans suricata-rules.db et un drapeau dans suricata_sig) et n'a
+// rien a faire ici; seul fw.ids.rules.php produit reellement
+// « ?enable-signature= ».
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["top"])){top();exit;}
 if(isset($_GET["search"])){table();exit;}
-if(isset($_GET["enable-signature"])){enable_signature();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 js();
 
 
@@ -124,7 +131,9 @@ function table(){
         $MANU=$tpl->MacToVendor($ligne["mac"]);
         if($MANU<>null){$MANU=" ($MANU)";}
 
-        $ligne2=$q->mysqli_fetch_array("SELECT mac,fullhostname,proxyalias FROM hostsnet WHERE mac='{$ligne["mac"]}'");
+        // Pentest 2026-11-04 : la MAC du bail DHCP etait concatenee dans la requete.
+        $r2=$q->QUERY_SQL_PARAMS("SELECT mac,fullhostname,proxyalias FROM hostsnet WHERE mac=$1",array($ligne["mac"]));
+        $ligne2=$r2?@pg_fetch_assoc($r2):false;
         if(!$ligne2){
             echo $q->mysql_error;
         }
@@ -147,11 +156,13 @@ function table(){
 		
 	
 		
+		// Pentest 2026-11-04 : nom d'hote / MAC / adresse du bail DHCP (donnee externe) affiches sans encodage (XSS stockee).
+		$hostname_h=req_html($ligne["hostname"].$uid);$ipaddr_h=req_html($ligne["ipaddr"]);$mac_h=req_html($ligne["mac"].$MANU);
 		$html[]="<tr class='$TRCLASS'>";
         $html[]="<td style='width:1%'>$bton</td>";
-		$html[]="<td class=\"$text_class\"><strong>{$ligne["hostname"]}$uid</strong></td>";
-		$html[]="<td class=\"$text_class\" width='1%' nowrap>{$ligne["ipaddr"]}</a></td>";
-		$html[]="<td class=\"$text_class\"  width='1%' nowrap>$href{$ligne["mac"]}{$MANU}</a></td>";
+		$html[]="<td class=\"$text_class\"><strong>$hostname_h</strong></td>";
+		$html[]="<td class=\"$text_class\" width='1%' nowrap>$ipaddr_h</a></td>";
+		$html[]="<td class=\"$text_class\"  width='1%' nowrap>$href$mac_h</a></td>";
 		$html[]="<td class=\"$text_class\">$expire</td>";
 
 		

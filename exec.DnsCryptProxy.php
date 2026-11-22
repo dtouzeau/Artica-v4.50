@@ -59,7 +59,7 @@ function restart(){
 	
 	$php=$unix->LOCATE_PHP5_BIN();
 	build_progress(50,"{restarting_service} {APP_UNBOUND}");
-	system("$php /usr/share/artica-postfix/exec.unbound.php --reload");
+	(new sockets())->REST_API("/unbound/reconfigure");
 	build_progress_restart(100,"{starting_service} {success}");
 }
 
@@ -71,7 +71,7 @@ function uninstall(){
 	build_progress(10,"{uninstalling}");
 	remove_service("/etc/init.d/dnscrypt-proxy");
 	build_progress(50,"{uninstalling}");
-	system("$php /usr/share/artica-postfix/exec.unbound.php --restart");
+	system("/usr/sbin/artica-phpfpm-service -restart-unbound");
 	build_progress(80,"{uninstalling}");
 	@unlink("/etc/monit/conf.d/APP_DNSCRYPT_PROXY.monitrc");
 	@unlink("/var/log/dnscrypt-proxy/query.log");
@@ -111,7 +111,7 @@ function install(){
 	}
 	$php=$unix->LOCATE_PHP5_BIN();
 	build_progress(50,"{restarting_service} {APP_UNBOUND}");
-	system("$php /usr/share/artica-postfix/exec.unbound.php --reload");
+	(new sockets())->REST_API("/unbound/reconfigure");
 	build_progress(100,"{installing} {done}");
 	
 }

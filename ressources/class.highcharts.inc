@@ -27,6 +27,32 @@ class highcharts{
     public $height=0;
 	public $SQL_QUERY=null;
 
+	// Pentest 2026-11-04 : valeur inseree sans encodage (XSS).
+	// Titre (deja traduit) place dans une chaine JS '...' que Highcharts/Apex
+	// rendent en HTML : filtre HTML + antislash + apostrophe (js_title_safe).
+	private function hcT($s):string{
+		$s=(string)$s;
+		if(function_exists("js_title_safe")){return js_title_safe($s);}
+		return str_replace(array("\\","'","<",">","\r","\n"),array("\\\\","`","&lt;","&gt;","",""),$s);
+	}
+	// Libelle de donnee (categorie, serie, part de camembert) : texte encode HTML
+	// (les infobulles useHTML le relisent en HTML) puis encode pour une chaine JS.
+	private function hcL($s):string{
+		$s=htmlspecialchars((string)$s,ENT_QUOTES,"ISO-8859-1",false);
+		// Les \uXXXX produits par javascript_parse_text() restent des echappements JS.
+		if(function_exists("req_js")){return preg_replace('#\\\\x5cu([0-9A-Fa-f]{4})#','\\\\u$1',req_js($s));}
+		return str_replace(array("\\","'","\r","\n","<"),array("\\\\","\\'","","","\\x3c"),$s);
+	}
+
+	// Libelle Apex (categorie, serie, part) : Apex l'ecrit en texte SVG, donc une entite
+	// s'afficherait telle quelle (&amp;). Ses infobulles le relisent en HTML : on retire
+	// seulement < et >, ce qui empeche toute balise, puis on l'encode pour la chaine JS.
+	private function hcA($s):string{
+		$s=str_replace(array("<",">"),"",(string)$s);
+		if(function_exists("req_js")){return preg_replace('#\\\\x5cu([0-9A-Fa-f]{4})#','\\\\u$1',req_js($s));}
+		return str_replace(array("\\","'","\r","\n"),array("\\\\","\\'","",""),$s);
+	}
+
 	public function __construct($params=array()){
 		foreach ($params as $key=>$value){
 			$this->$key=$value;
@@ -47,7 +73,7 @@ class highcharts{
         if(count($this->xAxis)>0){
             foreach ($this->xAxis as $a=>$b){
                 if(strpos(" $b", "\"")>0){continue;}
-                $series[]="'$b'";
+                $series[]="'".$this->hcA($b)."'";
 
             }
             reset($this->xAxis);
@@ -59,7 +85,7 @@ class highcharts{
             foreach($this->datas as $xName=>$xData){
                 $XasisTitle=$tpl->javascript_parse_text($xName);
                 foreach ($xData as $key=>$value){
-                    if(!is_numeric($value)){$value="\"$b\"";}
+                    if(!is_numeric($value)){$value="'".$this->hcA($b)."'";}
                     $XasisData[]=$value;
                 }
             }
@@ -90,17 +116,17 @@ class highcharts{
         $charts[]="redrawOnParentResize: true";
         $charts[]="toolbar: { show: true }";
         $f[]="\tchart: { ".@implode(",\n\t",$charts)." },";
-        $f[]="\tseries: [{ name: '$this->yAxisTtitle', data: [".@implode(",",$XasisData)."] }],";
+        $f[]="\tseries: [{ name: '".$this->hcT($this->yAxisTtitle)."', data: [".@implode(",",$XasisData)."] }],";
         $f[] = "\tdataLabels: { enabled: false, },";
         $f[] = "\ttooltip: { shared: false },";
         $f[] = "\tstroke: { curve: 'smooth' },";
-        $f[] = "title: { text: '$this->Title', align: 'left'},";
+        $f[] = "title: { text: '".$this->hcT($this->Title)."', align: 'left'},";
         $f[] = "fill: { type: 'gradient', gradient: { shadeIntensity: 1, inverseColors: false, opacityFrom: 0.5, opacityTo: 0, stops: [0, 98, 100], gradientToColors: ['$this->AreaColor'], },},";
         $f[] = "colors: ['$this->AreaColor' ],";
         $f[]="\txaxis: {";
         $f[]="\t\tcategories: [".@implode(",",$series)."],";
         $f[]="\t\ttitle: {";
-        $f[]="\t\t\ttext: '$this->LegendSuffix',";
+        $f[]="\t\t\ttext: '".$this->hcT($this->LegendSuffix)."',";
         $f[]="\t\t\tstyle: { fontSize: '$this->AxisFontsize', fontWeight: 600 },";
         $f[]="\t\t\toffsetX: 4,";
         $f[]="\t\t\toffsetY: 4";
@@ -133,7 +159,7 @@ class highcharts{
 
         foreach ($this->PieDatas as $Labels=>$Nums){
             $XasisData[]=$Nums;
-            $YasisData[]="'$Labels'";
+            $YasisData[]="'".$this->hcA($Labels)."'";
         }
 
 
@@ -164,11 +190,11 @@ class highcharts{
         $f[] = "\tdataLabels: { enabled: false, },";
         $f[] = "\ttooltip: { shared: false },";
         $f[] = "\tstroke: { curve: 'smooth' },";
-        $f[] = "title: { text: '$this->Title', align: 'left'},";
+        $f[] = "title: { text: '".$this->hcT($this->Title)."', align: 'left'},";
         $f[]="\txaxis: {";
         $f[]="\t\tcategories: [".@implode(",",$series)."],";
         $f[]="\t\ttitle: {";
-        $f[]="\t\t\ttext: '$this->LegendSuffix',";
+        $f[]="\t\t\ttext: '".$this->hcT($this->LegendSuffix)."',";
         $f[]="\t\t\tstyle: { fontSize: '$this->AxisFontsize', fontWeight: 600 },";
         $f[]="\t\t\toffsetX: 4,";
         $f[]="\t\t\toffsetY: 4";
@@ -240,18 +266,19 @@ class highcharts{
 		$f[]="\t\t\tcredits: { enabled: false },";	
 			
 		$f[]="\t\t\ttitle: { ";
-		$f[]="\t\t\t\ttext: '$this->Title' ,";
+		$f[]="\t\t\t\ttext: '".$this->hcT($this->Title)."' ,";
 		$f[]="\t\t\t\tstyle:{	color: '#$borderColor', fontSize: '$this->TitleFontSize'}";
 		$f[]="\t\t\t},";
 
         if(!is_null($this->subtitle)) {
-            $this->subtitle = $tpl->_ENGINE_parse_body(str_replace("'", "\'", $this->subtitle));
+            // hcT() traite l'apostrophe : plus de \' qui serait double.
+            $this->subtitle = $tpl->_ENGINE_parse_body($this->subtitle);
         }
 		
 		if($this->subtitle<>null){
 		$f[]="\t\t\tsubtitle: {";
         $f[]="\t\t\t\tuseHTML:true,";
-        $f[]="\t\t\t\ttext: '$this->subtitle',";
+        $f[]="\t\t\t\ttext: '".$this->hcT($this->subtitle)."',";
         $f[]="\t\t\t\tstyle:{	color: '#$borderColor', fontSize: '".($this->TitleFontSize-2)."'}";
         $f[]="\t\t\t},";	
 		
@@ -268,10 +295,11 @@ class highcharts{
 			
 			if(count($this->xAxis)>0){
 			    foreach ($this->xAxis as $a=>$b){
-					if(strpos(" $b", "\"")>0){continue;}
-					if(!is_numeric($b)){$b="\"$b\"";
-					$this->xAxis[$a]=$b;
-					}
+					// Libelle deja entre guillemets par l'appelant : on le reprend tel quel
+					// (encode), un guillemet ailleurs ne referme plus le tableau JS.
+					if(is_numeric($b)){continue;}
+					if(preg_match('#^"(.*)"$#s',(string)$b,$qre)){$b=$qre[1];}
+					$this->xAxis[$a]="'".$this->hcL($b)."'";
 				}
 				reset($this->xAxis);
 				
@@ -284,7 +312,7 @@ class highcharts{
 			$f[]="\t\t\txAxis: {";
 			$f[]="\t\t\t\tcategories: [". @implode(",", $this->xAxis)."],";
 			$f[]="\t\t\t\ttitle: {";
-			$f[]="\t\t\t\t\ttext: '$this->xAxisTtitle',style:{	color: '#$borderColor', fontSize: '$this->AxisFontsize'}";
+			$f[]="\t\t\t\t\ttext: '".$this->hcT($this->xAxisTtitle)."',style:{	color: '#$borderColor', fontSize: '$this->AxisFontsize'}";
 			$f[]="\t\t\t},";
 			$f[]="\t\t\t\tlabels: {";
 			$f[]="\t\t\t\t\tenabled: $xlabels";
@@ -295,7 +323,7 @@ class highcharts{
 		if($this->ChartType=="areaspline" || $this->ChartType=="line"){
 			$f[]="\t\t\tyAxis: {";
 			$f[]="\t\t\t\ttitle: {";
-			$f[]="\t\t\t\t\ttext: '$this->yAxisTtitle',style:{	color: '#$borderColor', fontSize: '$this->AxisFontsize'}";
+			$f[]="\t\t\t\t\ttext: '".$this->hcT($this->yAxisTtitle)."',style:{	color: '#$borderColor', fontSize: '$this->AxisFontsize'}";
 			$f[]="\t\t\t}";
 			$f[]="\t\t},";
 		}
@@ -369,8 +397,8 @@ class highcharts{
 		
 	$f[]=" tooltip: {
 					useHTML: true,
-					headerFormat: '<center><strong style\"font-size:16px\">$this->LegendPrefix{point.key}</strong>&nbsp;',
-	                pointFormat: '<strong style\"font-size:16px\">{series.name}</strong> <b>{point.y:&nbsp;.0f}$this->LegendSuffix</b><br/>'
+					headerFormat: '<center><strong style\"font-size:16px\">".$this->hcT($this->LegendPrefix)."{point.key}</strong>&nbsp;',
+	                pointFormat: '<strong style\"font-size:16px\">{series.name}</strong> <b>{point.y:&nbsp;.0f}".$this->hcT($this->LegendSuffix)."</b><br/>'
 	            },
 	           ";	
 	$f[]=" legend: {
@@ -396,7 +424,7 @@ class highcharts{
 		foreach ($this->datas as $key =>$series){
             if(!is_array($series)){$series=array();}
 			$key=$tpl->javascript_parse_text($key);
-			$f[]="{name: '$key',";
+			$f[]="{name: '".$this->hcL($key)."',";
 			$f[]="data: [" .@implode(",", $series)."]";
 			$f[]="},";
 			
@@ -415,11 +443,12 @@ class highcharts{
         foreach ($this->PieDatas as $key =>$value){
 			$key=$tpl->javascript_parse_text($key);
 			$key=str_replace("'", "`", $key);
-			$P[]="\n\t['$key',   $value]";
+			if(!is_numeric($value)){$value=floatval($value);}
+			$P[]="\n\t['".$this->hcL($key)."',   $value]";
 		}
 		
 		$f[]="{type: 'pie',";
-		$f[]="name: '$this->PiePlotTitle',";
+		$f[]="name: '".$this->hcT($this->PiePlotTitle)."',";
 		$f[]="data: [";
 		$f[]=@implode(",", $P);
 		$f[]="]},";
@@ -483,10 +512,12 @@ class highcharts{
 		$value=$tpl->javascript_parse_text(@implode(" ", $c));
 		$onlionetext=str_replace("'", "`", $onlionetext);
 		$value=str_replace("'", "`", $value);
+		$value=$this->hcL($value);
+		$ztitle=$this->hcT($this->Title);
 		return "
 		document.getElementById('$this->container').style.height='auto';
 		document.getElementById('$this->container').style.width='auto';		
-		document.getElementById('$this->container').innerHTML='<p class=text-warning><strong>$this->Title</strong><br>$onlionetext <strong style=font-size:14px>$value</strong><br>$called</p>';";
+		document.getElementById('$this->container').innerHTML='<p class=text-warning><strong>$ztitle</strong><br>$onlionetext <strong style=font-size:14px>$value</strong><br>$called</p>';";
 		
 		
 	}
@@ -504,11 +535,13 @@ class highcharts{
 		$onlionetext=str_replace("'", "`", $onlionetext);
 		$this->SQL_QUERY=str_replace("\n", " ", $this->SQL_QUERY);
 		$this->SQL_QUERY=str_replace("'", "`", $this->SQL_QUERY);
+		$zsql=$this->hcL($this->SQL_QUERY);
+		$ztitle=$this->hcT($this->Title);
 		
 		return "
 		document.getElementById('$this->container').style.height='auto';
 		document.getElementById('$this->container').style.width='auto';		
-		document.getElementById('$this->container').innerHTML='<p class=text-warning><strong>$this->Title</strong><br>$onlionetext<br>$this->SQL_QUERY<br>$called</p>';
+		document.getElementById('$this->container').innerHTML='<p class=text-warning><strong>$ztitle</strong><br>$onlionetext<br>$zsql<br>$called</p>';
 		
 		";
 				

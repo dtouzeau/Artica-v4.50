@@ -1,16 +1,14 @@
-<add_alias>Add new original email</add_alias>
+<add_alias>Adicionar novo e-mail original</add_alias>
 <add_alias_text>Adicione o email original do seu ISP e as regras de fetchmail</add_alias_text>
 <click_on_add>Clique no bot&atilde;o adicionar</click_on_add>
 <fetchmail_add_rule>Nova conta</fetchmail_add_rule>
-<fetchmail_add_rule_text>Add new fetched account and receive mails into your mailbox</fetchmail_add_rule_text>
+<fetchmail_add_rule_text>Adicionar nova conta obtida e receber e-mails na sua caixa de correio</fetchmail_add_rule_text>
 <fetchmail_aliases>Fetchmail alias</fetchmail_aliases>
-<fetchmail_aliases_ask>Give the email address fetched by your rule (eg you@gmail.com or you@hotmail.com...)</fetchmail_aliases_ask>
-<fetchmail_aliases_text>
-During receiving mails from fetchmail operation, the mail server engine keep the original recipient address forwarded to your account.[br]
-For example, if you fetch mail from gmail account and your original address is user@gmail.com, the email address "user@gmail.com" is not translated to your local email address.[br]
-All mails saved in backup or saved in quarantine area are indexed by the original recipient.[br]
-[b]If you not fill this section, you will not be able to query correctly your quarantine/backup area[/b]. 
-</fetchmail_aliases_text>
+<fetchmail_aliases_ask>Indique o endere&#231;o de e-mail obtido pela sua regra (ex. you@gmail.com ou you@hotmail.com...)</fetchmail_aliases_ask>
+<fetchmail_aliases_text>Durante a rece&#231;&#227;o de e-mails atrav&#233;s da opera&#231;&#227;o fetchmail, o motor do servidor de correio mant&#233;m o endere&#231;o do destinat&#225;rio original reencaminhado para a sua conta.[br]
+Por exemplo, se obtiver correio de uma conta gmail e o seu endere&#231;o original for user@gmail.com, o endere&#231;o de e-mail &quot;user@gmail.com&quot; n&#227;o &#233; traduzido para o seu endere&#231;o de e-mail local.[br]
+Todos os e-mails guardados em c&#243;pia de seguran&#231;a ou na &#225;rea de quarentena s&#227;o indexados pelo destinat&#225;rio original.[br]
+[b]Se n&#227;o preencher esta sec&#231;&#227;o, n&#227;o poder&#225; consultar corretamente a sua &#225;rea de quarentena/c&#243;pia de seguran&#231;a[/b].</fetchmail_aliases_text>
 <fetchmail_modify_rules>Armazenamento de contas</fetchmail_modify_rules>
 <fetchmail_modify_rules_text>Exibir e editar as contas existentes</fetchmail_modify_rules_text>
 <fetch_delete_rule_confirm>Tem a certeza que pretende apagar esta regra ?</fetch_delete_rule_confirm>

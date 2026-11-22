@@ -1,14 +1,14 @@
-<backup_text>This area allows you to find old mails backuped[br]use the query form in order to found mails</backup_text>
-<dont_know>Don't know</dont_know>
-<mail_backup_lost>Mail source is lost</mail_backup_lost>
-<mail_backup_lost_text>The file source has been probably delete from Disk, you not able to resend this mail, only display it</mail_backup_lost_text>
-<q_from>I was sended</q_from>
-<q_to>I was recieved</q_to>
-<resend_mail>Resend this mail</resend_mail>
-<resend_mail_success>Success resend</resend_mail_success>
-<resend_mail_text>Resend this mail in original mode</resend_mail_text>
-<resend_mail_text_success>The command has been successfully sended to daemon, Check mailboxes</resend_mail_text_success>
-<search_messages_that>Search my messages that</search_messages_that>
-<with_body>With these words in body</with_body>
-<with_email>matching this email address</with_email>
-<with_subject>matching this subject</with_subject>
+<backup_text>Quest'area ti consente di trovare le vecchie email di cui &#232; stato eseguito il backup[br]usa il modulo di query per trovare le email</backup_text>
+<dont_know>Non si sa</dont_know>
+<mail_backup_lost>L'origine della mail &#232; persa</mail_backup_lost>
+<mail_backup_lost_text>Il file di origine &#232; stato probabilmente eliminato dal disco, non puoi reinviare questa email, solo visualizzarla</mail_backup_lost_text>
+<q_from>Ho inviato</q_from>
+<q_to>Ho ricevuto</q_to>
+<resend_mail>Reinvia questa email</resend_mail>
+<resend_mail_success>Reinvio riuscito</resend_mail_success>
+<resend_mail_text>Reinvia questa email in modalit&#224; originale</resend_mail_text>
+<resend_mail_text_success>Il comando &#232; stato inviato con successo al daemon, controlla le caselle di posta</resend_mail_text_success>
+<search_messages_that>Cerca i miei messaggi che</search_messages_that>
+<with_body>con queste parole nel corpo</with_body>
+<with_email>corrispondente a questo indirizzo email</with_email>
+<with_subject>corrispondente a questo oggetto</with_subject>

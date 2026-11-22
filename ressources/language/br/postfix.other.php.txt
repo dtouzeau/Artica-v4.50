@@ -1,10 +1,8 @@
-<enable_original_recipient>Original recipient (X-Original-To)</enable_original_recipient>
-<enable_original_recipient_text>
-Enable support for the [b]X-Original-To message header[/b].[br] This header is needed for multi-recipient mailboxes.[br]
-When this parameter is enabled, the cleanup daemon performs duplicate elimination on distinct pairs of (original recipient, rewritten recipient), 
-and generates non-empty original recipient queue file records.[br][br]
-When this parameter is disabled, the cleanup daemon performs duplicate elimination on the rewritten recipient address only, 
-and generates empty original recipient queue file records
-</enable_original_recipient_text>
-<undisclosed_recipients_header>Undisclosed Recipients Header</undisclosed_recipients_header>
-<undisclosed_recipients_header_text>Message header that the Postfix cleanup server inserts when a message contains no To: or Cc: message header.</undisclosed_recipients_header_text>
+<enable_original_recipient>Destinat&#225;rio original (X-Original-To)</enable_original_recipient>
+<enable_original_recipient_text>Habilitar o suporte para o [b]cabe&#231;alho de mensagem X-Original-To[/b].[br] Este cabe&#231;alho &#233; necess&#225;rio para caixas de correio com m&#250;ltiplos destinat&#225;rios.[br]
+Quando este par&#226;metro est&#225; habilitado, o daemon de cleanup realiza a elimina&#231;&#227;o de duplicados em pares distintos de (destinat&#225;rio original, destinat&#225;rio reescrito), 
+e gera registros de arquivo de fila de destinat&#225;rio original n&#227;o vazios.[br][br]
+Quando este par&#226;metro est&#225; desabilitado, o daemon de cleanup realiza a elimina&#231;&#227;o de duplicados apenas no endere&#231;o do destinat&#225;rio reescrito, 
+e gera registros de arquivo de fila de destinat&#225;rio original vazios</enable_original_recipient_text>
+<undisclosed_recipients_header>Cabe&#231;alho de destinat&#225;rios n&#227;o divulgados</undisclosed_recipients_header>
+<undisclosed_recipients_header_text>Cabe&#231;alho de mensagem que o servidor de cleanup do Postfix insere quando uma mensagem n&#227;o cont&#233;m um cabe&#231;alho To: ou Cc:.</undisclosed_recipients_header_text>

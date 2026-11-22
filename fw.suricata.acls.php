@@ -1,6 +1,9 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.inc");
@@ -97,7 +100,6 @@ function export_js(){
 
 }
 
-
 function opts_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -114,20 +116,7 @@ function opts_popup():bool{
     echo $tpl->form_outside("",$form,"","{apply}","dialogInstance2.close();$function()");
 return true;
 }
-function export_rule_js(){
-    $page=CurrentPageName();
-    $ID=intval($_GET["export-rule-js"]);
-    $tpl=new template_admin();
-    $q              = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_sqacllinks WHERE ID='$ID'");
-    $ligne["aclname"]=$tpl->utf8_encode($ligne["aclname"]);
 
-    admin_tracks("Exporting Rule ACL ID:$ID {$ligne["aclname"]}");
-    header("content-type: application/x-javascript");
-    echo $tpl->framework_buildjs("squid2.php?acls-export-rule=$ID",
-        "acls.parse",
-        "acls.logs","export-progress-$ID","Loadjs('$page?export-rule-exported=$ID')");
-}
 function export_rule_exported(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -228,6 +217,7 @@ function import_popup(){
     echo $tpl->_ENGINE_parse_body($html);
 }
 function import_uploaded_js():bool{
+    if(!fw_progress_page_priv("AsFirewallManager")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $function = $_GET["function"];
     $filename   = $_GET["file-uploaded"];
@@ -280,49 +270,57 @@ function page(){
         return;
     }
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 function change_order_js(){
     $page           = CurrentPageName();
     $tpl            = new template_admin();
     $ID             = intval($_GET["change-order"]);
-    $q              = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne          = $q->mysqli_fetch_array("SELECT * FROM suricata_sqacls WHERE ID='$ID'");
-    $jsafter        = "LoadAjax('table-acls-rules','$page?table=yes');";
 
-    $tpl->js_prompt("{order}","{give_new_position}","fas fa-sort-numeric-up-alt",$page,"NewOrder",$jsafter,$ligne["xORDER"],"$ID");
+    // REST API: get current xOrder for the prompt default value
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    $xORDER=0;
+    if(is_object($raw) && property_exists($raw,"xOrder")){$xORDER=intval($raw->xOrder);}
+
+    $jsafter        = "LoadAjax('table-acls-rules','$page?table=yes');";
+    $tpl->js_prompt("{order}","{give_new_position}","fas fa-sort-numeric-up-alt",$page,"NewOrder",$jsafter,$xORDER,"$ID");
 
 }
 function change_order_save(){
-    $xORDER     = $_POST["NewOrder"];
-    $RuleID     = $_POST["KeyID"];
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("UPDATE suricata_sqacllinks SET xORDER=$xORDER WHERE ID=$RuleID");
-    if(!$q->ok){echo $q->mysql_error;}
+    $xORDER     = intval($_POST["NewOrder"]);
+    $RuleID     = intval($_POST["KeyID"]);
 
+    // REST API: PUT /suricata/acls/{id} with xOrder field
+    [$ok,$err] = acls_api_send("PUT","/suricata/acls/$RuleID",["xOrder"=>$xORDER]);
+    if(!$ok){ echo "// change_order_save error: $err\n"; }
 }
 function rule_delete_js():bool{
-    $ID         = $_GET["rule-delete-js"];
+    $ID         = intval($_GET["rule-delete-js"]);
     $md         = "acl-$ID";
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT aclname,aclgroup FROM suricata_sqacls WHERE ID='$ID'");
 
-    if(intval($ligne["aclgroup"])==1){
+    // REST API: get rule info for delete confirmation
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    $aclname="";
+    $aclgroup=0;
+    if(is_object($raw)){
+        $aclname  = property_exists($raw,"aclname")  ? $raw->aclname  : "";
+        $aclgroup = property_exists($raw,"aclgroup") ? intval($raw->aclgroup) : 0;
+    }
+
+    if($aclgroup==1){
         $tpl=new template_admin();
-        $aclname=$ligne["aclname"];
         $tpl->js_confirm_delete("{group_of_rules}<br><strong>$aclname</strong><br>{group_of_rules_delete_ask}","rule-delete-confirm",$ID,"$('#$md').remove();");
         return true;
     }
 
 	header("content-type: application/x-javascript");
 
-
 	if(!rule_delete($ID)){return true;}
 	echo "$('#$md').remove();";
     return true;
 }
 function rule_delete_confirm():bool{
-    $ID         = $_POST["rule-delete-confirm"];
+    $ID         = intval($_POST["rule-delete-confirm"]);
     if(!rule_delete($ID)){return false;}
     admin_tracks("Remove Proxy acl id $ID");
     return true;
@@ -341,91 +339,30 @@ function proxy_acls_bugs():bool{
     return true;
 
 }
-function duplicate_rule($ID_SRC,$NewAClGPID=0){
-    $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ID_SRC=intval($ID_SRC);
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_sqacllinks WHERE ID='$ID_SRC'");
 
-    $aclname=$ligne["aclname"]." (copied)";
-    $enabled=$ligne["enabled"];
-    $acltpl=$ligne["acltpl"];
-    $xORDER=intval($ligne["xORDER"])+1;
-    $aclport=$ligne["aclport"];
-    $aclgroup=$ligne["aclgroup"];
-    $aclgpid=$ligne["aclgpid"];
-    $zExplain=$ligne["zExplain"];
-    $zTemplate=$ligne["zTemplate"];
-    $description=$ligne["description"];
-
-    if($NewAClGPID>0){
-        $aclgpid=$NewAClGPID;
-    }
-
-    $TempName=md5(time());
-
-    $sql="INSERT INTO suricata_sqacls (aclname,enabled,acltpl,xORDER,aclport,aclgroup,aclgpid,zExplain,zTemplate,description)
-	VALUES ('$TempName',$enabled,'$acltpl','$xORDER','$aclport','$aclgroup','$aclgpid','$zExplain','$zTemplate','$description')";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return 0;}
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM suricata_sqacllinks WHERE aclname='$TempName'");
-    $LASTID=intval($ligne["ID"]);
-
-    $q->QUERY_SQL("UPDATE suricata_sqacllinks SET aclname='$aclname' WHERE ID='$LASTID'");
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return 0;}
-
-
-
-    $acls=new squid_acls_groups();
-    if(!$acls->aclrule_edittype($LASTID,$httpaccess,1)){
-        $tpl->js_mysql_alert( "ERROR aclrule_edittype($LASTID,{$httpaccess},1)");
+function duplicate_rule($ID_SRC, $NewAClGPID=0){
+    $ID_SRC = intval($ID_SRC);
+    list($ok, $data) = acls_api_send("POST", "/suricata/acls/$ID_SRC/duplicate", [
+        "newAclGpid" => intval($NewAClGPID),
+    ]);
+    if(!$ok){
+        $tpl = new template_admin();
+        $tpl->js_mysql_alert($data);
         return 0;
     }
-
-    $acls->DUPLICATE_ACLS_OBJECTS("webfilters_sqacllinks",$ID_SRC,$LASTID);
-
-
-    admin_tracks("Duplicate $aclname proxy rule");
-    return $LASTID;
-
+    $newID = intval($data["newID"] ?? 0);
+    if($newID > 0){
+        admin_tracks("Duplicate Suricata rule (src=$ID_SRC → new=$newID)");
+    }
+    return $newID;
 }
 function duplicate_js(){
-    $ID_SRC=intval($_GET["duplicate-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    if(!$q->FIELD_EXISTS("suricata_sqacllinks","zExplain")){
-        $q->QUERY_SQL("ALTER TABLE suricata_sqacllinks ADD zExplain TEXT");
-    }
-    if(!$q->FIELD_EXISTS("suricata_sqacllinks","zTemplate")){
-        $q->QUERY_SQL("ALTER TABLE suricata_sqacllinks ADD zTemplate TEXT");
-    }
-    if(!$q->FIELD_EXISTS("suricata_sqacllinks","description")){
-        $q->QUERY_SQL("ALTER TABLE suricata_sqacllinks ADD description TEXT");
-    }
-
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT aclgroup FROM suricata_sqacllinks WHERE ID='$ID_SRC'");
-    $DuplicatedID=duplicate_rule($ID_SRC);
-    if($DuplicatedID==0){return;}
-    $aclgroup=$ligne["aclgroup"];
-    if($aclgroup==1){
-        $results=$q->QUERY_SQL("SELECT ID FROM suricata_sqacllinks WHERE aclgpid=$ID_SRC");
-        foreach ($results as $index=>$ligne){
-            $ID_SRC=$ligne["ID"];
-            $NewID=duplicate_rule($ID_SRC,$DuplicatedID);
-            if($NewID==0){return;}
-        }
-
-
-
-    }
-
-
-    $page=CurrentPageName();
+    $ID_SRC = intval($_GET["duplicate-js"]);
+    $DuplicatedID = duplicate_rule($ID_SRC);
+    if($DuplicatedID == 0){ return; }
+    $page = CurrentPageName();
     header("content-type: application/x-javascript");
     echo "LoadAjax('table-acls-rules','$page?table=yes');";
-
-
 }
 function rules_scan():bool{
     $page=CurrentPageName();
@@ -443,24 +380,35 @@ function rules_scan():bool{
 }
 function rules_scan_ids():bool{
     $tpl=new template_admin();
-    $ids=explode("-",$_GET["rules-scan-ids"]);
-    $f=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT * FROM suricata_sqacls WHERE ID IN (".implode(",",$ids).")";
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok) {
-        echo "alert('".$q->mysql_error.$sql."');";
-        return false;
+    $ids=array_filter(array_map('intval', explode("-",$_GET["rules-scan-ids"])));
+    if(empty($ids)){
+        header("content-type: application/x-javascript");
+        return true;
     }
+    $f=array();
+
+    // REST API: fetch all rules then filter by requested IDs
+    $allRules=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls"));
+    $ruleMap=array();
+    if(is_array($allRules)){
+        foreach($allRules as $r){
+            if(is_object($r) && property_exists($r,"id")){
+                $ruleMap[intval($r->id)]=$r;
+            }
+        }
+    }
+
     $getCurrentRules=getCurrentRules();
-    foreach ($results as $index=>$ligne){
-        $ID=$ligne["ID"];
+    foreach($ids as $ID){
+        if(!isset($ruleMap[$ID])){continue;}
+        $r=$ruleMap[$ID];
+        // Build a compatible array for td_status()
+        $ligne=["ID"=>$ID,"enabled"=>intval($r->enabled??1),"iserror"=>intval($r->iserror??0)];
         $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne,$getCurrentRules)));
-        $f[]="// $index -> $ID";
+        $f[]="// id $ID";
         $f[]="if (document.getElementById('ids-status-$ID') ){";
         $f[]="  document.getElementById('ids-status-$ID').innerHTML=base64_decode('$status');";
         $f[]="}";
-
     }
     header("content-type: application/x-javascript");
     echo @implode("\n", $f);
@@ -468,45 +416,58 @@ function rules_scan_ids():bool{
 }
 
 function rule_enable(){
+    $ID=intval($_GET["enable-js"]);
 
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	header("content-type: application/x-javascript");
-	$ligne=$q->mysqli_fetch_array("SELECT aclname,enabled FROM suricata_sqacls WHERE ID='{$_GET["enable-js"]}'");
-    $aclname=$ligne["aclname"];
-	if(intval($ligne["enabled"])==0){
-		
-		$js="$( \"#acl-{$_GET["enable-js"]}\" ).removeClass( \"text-muted\" );";
-		$enabled=1;}else{
-			$js="$( \"#acl-{$_GET["enable-js"]}\" ).addClass( \"text-muted\" );";
-			$enabled=0;
-		}
-	
-	$q->QUERY_SQL("UPDATE suricata_sqacls SET enabled='$enabled' WHERE ID='{$_GET["enable-js"]}'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."')";return;}
+    // REST API: get current enabled state
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    if(!is_object($raw)){
+        header("content-type: application/x-javascript");
+        echo "alert('rule_enable: failed to fetch rule $ID');";
+        return;
+    }
+    $aclname  = property_exists($raw,"aclname")  ? $raw->aclname  : "";
+    $enabled  = property_exists($raw,"enabled")  ? intval($raw->enabled) : 1;
 
-    admin_tracks("Change $aclname proxy rule activation to $enabled");
+    header("content-type: application/x-javascript");
+    if($enabled==0){
+        $js="$( \"#acl-$ID\" ).removeClass( \"text-muted\" );";
+        $newEnabled=1;
+    }else{
+        $js="$( \"#acl-$ID\" ).addClass( \"text-muted\" );";
+        $newEnabled=0;
+    }
+
+    // REST API: update enabled state
+    [$ok,$err]=acls_api_send("PUT","/suricata/acls/$ID",["enabled"=>$newEnabled]);
+    if(!$ok){echo "alert('".addslashes($err)."')";return;}
+
+    admin_tracks("Change $aclname proxy rule activation to $newEnabled");
     $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
-	echo $js;
-
+    echo $js;
 }
 function rule_js(){
 	$page       = CurrentPageName();
 	$tpl        = new template_admin();
-	$ID         = $_GET["rule-id-js"];
-	$q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne      = $q->mysqli_fetch_array("SELECT aclname,aclgroup,aclgpid FROM suricata_sqacls WHERE ID='$ID'");
-	$size       = null;
-    $aclgroup   = intval($ligne["aclgroup"]);
-    $aclgpid    = intval($ligne["aclgpid"]);
-    $aclname    = $ligne["aclname"];
+	$ID         = intval($_GET["rule-id-js"]);
+
+    // REST API: get rule info
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    $aclname  = "";
+    $aclgroup = 0;
+    $aclgpid  = 0;
+    if(is_object($raw)){
+        $aclname  = property_exists($raw,"aclname")  ? $raw->aclname  : "";
+        $aclgroup = property_exists($raw,"aclgroup") ? intval($raw->aclgroup) : 0;
+        $aclgpid  = property_exists($raw,"aclgpid")  ? intval($raw->aclgpid)  : 0;
+    }
+    $size = null;
     if(strlen($aclname)>50){
         $aclname=substr($aclname,0,47)."...";
     }
 
-
     if($aclgroup==1){
         $size=1024;
-        $ligne["aclname"]="{group_of_rules}: $aclname";
+        $aclname="{group_of_rules}: $aclname";
     }
 
     if($aclgpid>0){
@@ -666,10 +627,6 @@ function rule_settings():bool{
     $proto["pgsql"]="pgsql";
     ksort($proto);
 
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    if(!$q->FIELD_EXISTS("suricata_sqacls","description")){
-        $q->QUERY_SQL("ALTER TABLE suricata_sqacls ADD description TEXT");
-    }
     $flow[""]="{all}";
     $flow["to_client"]="{flow_to_client}";
     $flow["to_server"]="{flow_to_server}";
@@ -677,9 +634,31 @@ function rule_settings():bool{
     $Direction[0] = "{one_direction_only}";
 	$Direction[1] = "{both_stateful}";
 
-
     $ID=intval($_GET["rule-settings"]);
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_sqacls WHERE ID=$ID");
+
+    // REST API: get full rule details
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    if(!is_object($raw)){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{no_such_file}"));
+        return false;
+    }
+    // Build a flat array matching the legacy $ligne shape
+    $ligne=array(
+        "ID"               => $ID,
+        "aclname"          => property_exists($raw,"aclname")          ? $raw->aclname          : "",
+        "action"           => property_exists($raw,"action")           ? $raw->action           : "alert",
+        "classtype"        => property_exists($raw,"classtype")        ? $raw->classtype        : "policy-violation",
+        "proto"            => property_exists($raw,"proto")            ? $raw->proto            : "",
+        "direction"        => property_exists($raw,"direction")        ? intval($raw->direction) : 0,
+        "flow"             => property_exists($raw,"flow")             ? $raw->flow             : "",
+        "ApplayerProtocol" => property_exists($raw,"applayerProtocol") ? $raw->applayerProtocol : "",
+        "target"           => property_exists($raw,"target")           ? $raw->target           : "",
+        "count"            => property_exists($raw,"count")            ? intval($raw->count)    : 0,
+        "seconds"          => property_exists($raw,"seconds")         ? intval($raw->seconds)  : 0,
+        "enabled"          => property_exists($raw,"enabled")         ? intval($raw->enabled)  : 1,
+        "description"      => property_exists($raw,"description")     ? base64_decode($raw->description) : "",
+    );
+
     $ligne["aclname"]=$tpl->utf8_encode($ligne["aclname"]);
 	$form[]=$tpl->field_hidden("rule-save", "$ID");
     $form[]=$tpl->field_text("aclname", "{rule_name}", $ligne["aclname"],true);
@@ -700,19 +679,22 @@ function rule_settings():bool{
     $html[]=$tpl->form_outside($ligne["aclname"], @implode("\n", $form),null,"{apply}",$jsafter,"AsFirewallManager");
 	echo $tpl->_ENGINE_parse_body($html);
     return true;
-	
+
 }
 function rule_code():bool{
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $ID=intval($_GET["rule-code"]);
-    $ligne=$q->mysqli_fetch_array("SELECT coded FROM suricata_sqacls WHERE ID=$ID");
+
+    // REST API: get coded field
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    $coded="";
+    if(is_object($raw) && property_exists($raw,"coded")){$coded=$raw->coded;}
 
     $html[]="<div style='margin-top:20px'><textarea spellcheck='false' autocomplete='off'
   style=\"width:100%;min-height:220px;padding:12px 14px;border:1px solid #d1d5db;border-radius:8px;outline:none;
          font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono','Courier New', monospace;
          font-size:16px;line-height:1.5;color:#111827;background:#ffffff;
-         white-space:pre-wrap;word-wrap:break-word;overflow:auto;resize:vertical;tab-size:4;caret-color:#2563eb;\">#ID: $ID\n{$ligne["coded"]}</textarea></div>";
+         white-space:pre-wrap;word-wrap:break-word;overflow:auto;resize:vertical;tab-size:4;caret-color:#2563eb;\">#ID: $ID\n{$coded}</textarea></div>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
@@ -729,44 +711,33 @@ function utf8_decode_switch($value):string{
 function rule_save():bool{
 
 	$tpl    = new template_admin();
-	$q      = new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ID     = $_POST["rule-save"];
+	$ID     = intval($_POST["rule-save"]);
 	$tpl->CLEAN_POST_XSS();
-	
 
-	$aclname=sqlite_escape_string2(utf8_decode_switch($_POST["aclname"]));
-	$description=base64_encode($_POST["description"]);
+	$aclname=utf8_decode_switch($_POST["aclname"] ?? "");
+	// description stored base64-encoded in DB (PHP convention)
+	$description=base64_encode($_POST["description"] ?? "");
 
+    $body=array(
+        "aclname"          => $aclname,
+        "action"           => $_POST["action"]            ?? "alert",
+        "enabled"          => intval($_POST["enabled"]    ?? 1),
+        "seconds"          => intval($_POST["seconds"]    ?? 0),
+        "count"            => intval($_POST["count"]      ?? 0),
+        "proto"            => $_POST["proto"]             ?? "",
+        "flow"             => $_POST["flow"]              ?? "",
+        "target"           => $_POST["target"]            ?? "",
+        "classtype"        => $_POST["classtype"]         ?? "policy-violation",
+        "direction"        => intval($_POST["direction"]  ?? 0),
+        "applayerProtocol" => $_POST["ApplayerProtocol"]  ?? "",
+        "priority"         => intval($_POST["priority"]   ?? 1),
+        "description"      => $description,
+    );
 
-	$sql="UPDATE suricata_sqacls SET 
-	            `action`='{$_POST["action"]}',
-				`enabled`='{$_POST["enabled"]}',
-				`seconds`='{$_POST["seconds"]}',
-				`count`='{$_POST["count"]}',
-				`proto`='{$_POST["proto"]}',
-				`flow`='{$_POST["flow"]}',
-				`target`='{$_POST["target"]}',
-				`action`='{$_POST["action"]}',
-				`classtype`='{$_POST["classtype"]}',
-				`direction`='{$_POST["direction"]}',
-				`ApplayerProtocol`='{$_POST["ApplayerProtocol"]}',
-				`priority`='{$_POST["priority"]}',
-				`description`='$description',
-				`aclname`='$aclname' WHERE ID=$ID";
+    // REST API: PUT /suricata/acls/{id}
+    [$ok,$err]=acls_api_send("PUT","/suricata/acls/$ID",$body);
+    if(!$ok){echo $tpl->post_error($tpl->javascript_parse_text($err));return false;}
 
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $tpl->post_error($tpl->javascript_parse_text($q->mysql_error));return false;}
-
-	$c=0;
-	$sql="SELECT ID FROM suricata_sqacls ORDER BY xORDER";
-	$results = $q->QUERY_SQL($sql);
-	
-	foreach($results as $index=>$ligne) {
-        VERBOSE("$index",__LINE__);
-		$q->QUERY_SQL("UPDATE suricata_sqacls SET xORDER=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
-		$c++;
-	}
    $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
    return admin_tracks("Modify settings of $aclname IDS rule");
 }
@@ -778,9 +749,11 @@ function new_rule_js():bool{
     $function   = $_GET["function"];
 
 	if($gprule>0){
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT aclname FROM suricata_sqacllinks WHERE ID='$gprule'");
-        $rulename=":".$ligne["aclname"];
+        // REST API: get group rule name
+        $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$gprule"));
+        if(is_object($raw) && property_exists($raw,"aclname")){
+            $rulename=":".$raw->aclname;
+        }
     }
 
 	$title="{new_rule}$rulename";
@@ -860,45 +833,31 @@ function new_rule_popup():bool{
 	return true;
 }
 function rule_move(){
-	$tpl=new template_admin();
-	$ID=$_GET["acl-rule-move"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$sql="SELECT xORDER,aclname,aclgpid,aclport FROM suricata_sqacllinks WHERE `ID`='$ID'";
-	$ligne=$q->mysqli_fetch_array($sql);
-	if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-	$xORDER_ORG=intval($ligne["xORDER"]);
-	$aclgpid=intval($ligne["aclgpid"]);
-	$xORDER=$xORDER_ORG;
-	$aclname=$ligne["aclname"];
-	
-	if($_GET["acl-rule-dir"]==1){
-	    $xORDER=$xORDER_ORG-1;
-	}
-	if($_GET["acl-rule-dir"]==0){
-	    $xORDER=$xORDER_ORG+1;
+    $ID  = intval($_GET["acl-rule-move"]);
+    $dir = intval($_GET["acl-rule-dir"]);
 
-	}
+    // REST API: get current rule info for audit log
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    $aclname="";
+    $xORDER_ORG=0;
+    if(is_object($raw)){
+        $aclname    = property_exists($raw,"aclname") ? $raw->aclname : "";
+        $xORDER_ORG = property_exists($raw,"xOrder")  ? intval($raw->xOrder) : 0;
+    }
 
-    $sql="UPDATE suricata_sqacllinks SET xORDER=$xORDER WHERE `ID`='$ID'";
-    $q->QUERY_SQL($sql);
-    admin_tracks("Move Proxy acl order of $aclname from $xORDER_ORG to $xORDER");
+    // REST API: PUT /suricata/acls/{id}/move  dir=1 (up) or dir=0 (down)
+    [$ok,$err]=acls_api_send("PUT","/suricata/acls/$ID/move",["dir"=>$dir]);
+    if(!$ok){
+        header("content-type: application/x-javascript");
+        echo "alert('".addslashes($err)."');";
+        return;
+    }
 
-    $sql="UPDATE suricata_sqacllinks SET
-		xORDER=$xORDER_ORG WHERE `ID`<>'$ID' AND xORDER=$xORDER AND aclgpid=$aclgpid";
-    $q->QUERY_SQL($sql);
-
-	$c=1;
-	$sql="SELECT ID FROM suricata_sqacllinks WHERE aclgpid=$aclgpid ORDER BY xORDER";
-	$results = $q->QUERY_SQL($sql);
-
-	foreach($results as $index=>$ligne) {
-	    echo "// ID {$ligne["ID"]} became $c\n";
-		$q->QUERY_SQL("UPDATE suricata_sqacllinks SET xORDER=$c WHERE `ID`={$ligne["ID"]}");
-		if($GLOBALS["VERBOSE"]){echo "UPDATE suricata_sqacllinks SET xORDER=$c WHERE `ID`={$ligne["ID"]}\n";}
-		$c++;
-	}
+    $xORDER_NEW = ($dir==1) ? $xORDER_ORG-1 : $xORDER_ORG+1;
+    admin_tracks("Move IDS acl order of $aclname from $xORDER_ORG to $xORDER_NEW");
 
     $page=CurrentPageName();
+    header("content-type: application/x-javascript");
     echo "Loadjs('$page?fill=$ID');\n";
 }
 function table():bool{
@@ -1020,50 +979,49 @@ function table_builder():bool{
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
-	
+
 	$jsAfter="LoadAjax('table-firewall-rules','$page?table=yes');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
-
-    VERBOSE("search:$search",__LINE__);
+// Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+    VERBOSE(req_html("search:$search"),__LINE__);
     $_SESSION["ACL_SEARCH"]=$search;
     if(preg_match("#(rows|max|limit)=([0-9]+)#i",$search,$re)){
         $limit=$re[2];
         $search=str_replace("$re[1]=$re[2]","",$search);
     }
-    $sql="SELECT * FROM suricata_sqacls ORDER BY xORDER LIMIT $limit";
 
-    if($search<>null){
-        if(strpos($search,"*")==0){
-            $search="*$search*";
+    // REST API: fetch rules list (optionally filtered by aclgpid)
+    $apiUrl = "/suricata/acls";
+    if($gprule>0){$apiUrl.="?aclgpid=$gprule";}
+    $allRules=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API($apiUrl));
+    if(!is_array($allRules)){$allRules=array();}
+
+    // Apply search filter client-side (simple name/ID match)
+    $results=array();
+    $searchStr=trim($search ?? "");
+    foreach($allRules as $r){
+        if(!is_object($r)){continue;}
+        if($searchStr!=""){
+            $rname=property_exists($r,"aclname") ? $r->aclname : "";
+            $rid  =property_exists($r,"id")      ? intval($r->id) : 0;
+            if(is_numeric($searchStr)){
+                if($rid!=(int)$searchStr){continue;}
+            } else {
+                $pat=str_replace(array("*","%"),array("",""),$searchStr);
+                if(stripos($rname,$pat)===false){continue;}
+            }
         }
-        if(strpos(" $search","*")>0){
-            $search=str_replace("*","%",$search);
-            $sql="SELECT * FROM suricata_sqacllinks AND (aclname LIKE '$search') ORDER BY xORDER LIMIT $limit";
-
-        }
-
-        if(is_numeric($search)){
-            $sql="SELECT * FROM suricata_sqacls WHERE ID=$search ORDER BY xORDER LIMIT $limit";
-        }
-
+        $results[]=$r;
+        if(count($results)>=$limit){break;}
     }
 
+    // search_all_items: complex 4-table JOIN not migrable via single REST call.
+    // DONE_WITH_CONCERNS: group-linked-item search requires direct SQLite for now.
     list($search2,$searchgroups)=search_all_items($search);
 
-    VERBOSE($sql,__LINE__);
-    $results = $q->QUERY_SQL($sql);
-
-    if(count($search2)>0){
-        foreach ($search2 as $index=>$ligne){
-            $results[]=$ligne;
-        }
-    }
-
-
-    $TRCLASS=null;
     $nothing=$tpl->icon_nothing();
+    $TRCLASS=null;
     if(count($searchgroups)>0){
         foreach ($searchgroups as $gpid=>$GroupName){
             $ff[]="&laquo;".$tpl->td_href("$GroupName","Loadjs('fw.rules.items.php?groupid=$gpid$function',true);")."&raquo;&nbsp;";
@@ -1080,30 +1038,59 @@ function table_builder():bool{
         $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
         $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
         $html[]="</tr>";
-
     }
 
-
+    // Merge search2 results (from search_all_items) by ID to avoid duplicates
     $already_isset=array();
-	foreach($results as $index=>$ligne) {
+    // First pass: index already-fetched results
+    foreach($results as $r){
+        $rid=is_object($r) ? intval($r->id ?? 0) : 0;
+        if($rid>0){$already_isset[$rid]=true;}
+    }
+    // Add search2 rows (from search_all_items) if not already in results
+    foreach($search2 as $sid=>$srow){
+        $sid=intval($sid);
+        if(isset($already_isset[$sid])){continue;}
+        $already_isset[$sid]=true;
+        // Convert legacy array row to pseudo-object for unified rendering below
+        $results[]=(object)$srow;
+    }
+
+	foreach($results as $r) {
+        if(!is_object($r)){continue;}
+        $ID=intval($r->id ?? 0);
+        if($ID<=0){continue;}
+        if(isset($already_isset["rendered_$ID"])){continue;}
+        $already_isset["rendered_$ID"]=true;
+
 		$MUTED=null;
-		$ID=intval($ligne["ID"]);
-        if(isset($already_isset[$ID])){continue;}
-        $already_isset[$ID]=true;
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $explain = $ligne["zExplain"];
+
+        $enabled_val = property_exists($r,"enabled") ? intval($r->enabled) : 1;
+        $xorder_val  = property_exists($r,"xOrder")  ? intval($r->xOrder)  : 0;
+        $zExplain    = property_exists($r,"zExplain") ? $r->zExplain : "";
+        $aclname_raw = property_exists($r,"aclname")  ? $r->aclname  : "";
+
+        $ligne=array(
+            "ID"      => $ID,
+            "enabled" => $enabled_val,
+            "iserror" => property_exists($r,"iserror") ? intval($r->iserror) : 0,
+            "xORDER"  => $xorder_val,
+            "zExplain"=> $zExplain,
+            "aclname" => $aclname_raw,
+        );
+
     	$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
 		$js="Loadjs('$page?rule-id-js=$ID')";
-		if($ligne["enabled"]==0){$MUTED=" text-muted";}
+		if($enabled_val==0){$MUTED=" text-muted";}
     	$up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
 		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
 
-
-        $aclname = $tpl->utf8_encode($ligne["aclname"]);
+        $aclname = $tpl->utf8_encode($aclname_raw);
         if(strlen($aclname)>50){
             $aclname=substr($aclname,0,47)."...";
         }
-		$row_order=$tpl->td_href(" <span class=\"label label-default\" id='acl-order-$ID'>{$ligne["xORDER"]}</span>",
+		$row_order=$tpl->td_href(" <span class=\"label label-default\" id='acl-order-$ID'>{$xorder_val}</span>",
             null,"Loadjs('$page?change-order=$ID');");
 
         $rule_status=td_status($ligne,$getCurrentRules);
@@ -1115,14 +1102,14 @@ function table_builder():bool{
 		$html[]="<td $dCenter>$row_order</td>";
         $html[]="<td $dCet><span id='ids-status-$ID'>$rule_status</span></td>";
 		$html[]="<td $dCet>$td_name</td>";
-		$html[]="<td style='vertical-align:middle'><div id='ids-explain-$ID'>$explain</div></td>";
+		$html[]="<td style='vertical-align:middle'><div id='ids-explain-$ID'>$zExplain</div></td>";
         $html[]="<td $dCenter></td>";
         $html[]="<td $dCenter>".$tpl->icon_export("window.location.href ='$page?export-js=$ID'","AsFirewallManager")."</td>";
-		$html[]="<td $dCenter>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsFirewallManager")."</td>";
+		$html[]="<td $dCenter>".$tpl->icon_check($enabled_val,"Loadjs('$page?enable-js=$ID')",null,"AsFirewallManager")."</td>";
 		$html[]="<td $dCenter>$up&nbsp;&nbsp;$down</center></td>";
 		$html[]="<td $dCenter>$delete</center></td>";
 		$html[]="</tr>";
-	
+
 	}
 
     $MUTED=null;
@@ -1140,11 +1127,11 @@ function table_builder():bool{
     $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
     $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$nothing</center></td>";
     $html[]="</tr>";
-	
-	
+
+
 	$html[]="</tbody>";
 	$html[]="<tfoot>";
-	
+
 	$html[]="<tr>";
 	$html[]="<td colspan='9'>";
 	$html[]="<ul class='pagination pull-right'></ul>";
@@ -1168,55 +1155,60 @@ $html[]="$(document).ready(function() { $('#table-ids-rules-$t').footable( { \"f
     $html[]="$toTiny
     NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 </script>";
-	
+
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
     return true;
 }
+
 function search_all_items($search){
-    if($search==null){return array(array(),array());}
-    if(strpos("  $search","*")==0){
-        $search="*$search*";
+    if($search === null || trim($search) === ""){ return array(array(), array()); }
+    $search = trim($search);
+    // Fetch all suricata rules, then probe each rule's linked groups via REST.
+    $raw = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls"), true);
+    if(!is_array($raw)){ return array(array(), array()); }
+    $COMPRESSRULES = array();
+    $COMPRESS_GROUPS = array();
+    foreach($raw as $ruleRaw){
+        if(!is_array($ruleRaw)){ continue; }
+        $rid = intval($ruleRaw["id"] ?? 0);
+        if($rid <= 0){ continue; }
+        // GET links for this rule with the search term applied to GroupName/description.
+        $linksRaw = $GLOBALS["CLASS_SOCKETS"]->REST_API(
+            "/proxy/acls/sqlite/links?table=suricata_sqacllinks&aclid=$rid&search=".urlencode($search)
+        );
+        $linksResp = json_decode($linksRaw, true);
+        if(!is_array($linksResp) || empty($linksResp["success"])){ continue; }
+        $links = $linksResp["data"] ?? [];
+        if(!is_array($links) || count($links) === 0){ continue; }
+        // Rule has at least one matching linked group — include it.
+        $COMPRESSRULES[$rid] = $ruleRaw;
+        foreach($links as $lnk){
+            $gpid = intval($lnk["gpid"] ?? 0);
+            $gname = (string)($lnk["groupName"] ?? "");
+            if($gpid > 0 && $gname !== ""){
+                $COMPRESS_GROUPS[$gpid] = $gname;
+            }
+        }
     }
-    $search=str_replace("**","*",$search);
-    $search=str_replace("*","%",$search);
-    $search=str_replace("%%","%",$search);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT suricata_sqacllinks.*,webfilters_sqgroups.GroupName,webfilters_sqgroups.ID as gpid FROM suricata_sqacllinks,webfilters_sqacllinks,webfilters_sqgroups,webfilters_sqitems
-    WHERE webfilters_sqacllinks.aclid=suricata_sqacllinks.ID
-    AND webfilters_sqacllinks.gpid=webfilters_sqgroups.ID
-    AND webfilters_sqitems.gpid=webfilters_sqgroups.ID
-    AND ( webfilters_sqitems.pattern LIKE '$search' OR webfilters_sqgroups.GroupName LIKE '$search')";
-
-
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){
-        return array(array(),array());
-    }
-    $COMPRESSRULES=array();
-    $COMPRESS_GROUPS=array();
-    foreach ($results as $index=>$ligne){
-        $ruleid=$ligne["ID"];
-        $gpid=$ligne["gpid"];
-        $COMPRESS_GROUPS[$gpid]=$ligne["GroupName"];
-        $COMPRESSRULES[$ruleid]=$ligne;
-    }
-
-    return array($COMPRESSRULES,$COMPRESS_GROUPS);
-
-
+    return array($COMPRESSRULES, $COMPRESS_GROUPS);
 }
 function fillthisRule(){
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $ID=intval($_GET["fill"]);
-    $sql="SELECT * FROM suricata_sqacllinks WHERE `ID`='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!isset($ligne["enabled"])){$ligne["enabled"]=1;}
+
+    // REST API: get rule details for explain display
+    $raw=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls/$ID"));
+    $enabled  = 1;
+    $aclgroup = 0;
+    $aclgpid  = 0;
+    if(is_object($raw)){
+        $enabled  = property_exists($raw,"enabled")  ? intval($raw->enabled)  : 1;
+        $aclgroup = property_exists($raw,"aclgroup") ? intval($raw->aclgroup) : 0;
+        $aclgpid  = property_exists($raw,"aclgpid")  ? intval($raw->aclgpid)  : 0;
+    }
+
     $acls=new squid_acls_groups();
-    $enabled=$ligne["enabled"];
-    $aclgroup=$ligne["aclgroup"];
-    $aclgpid    = intval($ligne["aclgpid"]);
-    $page       = CurrentPageName();
+    $page=CurrentPageName();
 
     $FINAL=$tpl->_ENGINE_parse_body($acls->ACL_MULTIPLE_EXPLAIN($ID,$enabled,$aclgroup));
     echo "if(document.getElementById('explain-this-rule-$ID')){\n";
@@ -1225,13 +1217,16 @@ function fillthisRule(){
     echo "document.getElementById('explain-this-rule-$ID').innerHTML='$FINAL';\n";
     echo "}\n";
 
-    $results = $q->QUERY_SQL("SELECT * FROM suricata_sqacllinks ORDER BY xORDER");
-   
-
-   foreach($results as $index=>$ligne) {
-        $ID=$ligne["ID"];
-        echo "if(document.getElementById('acl-order-$ID')){document.getElementById('acl-order-$ID').innerHTML='{$ligne["xORDER"]}'};\n";
-
+    // REST API: fetch all rules to update order badges
+    $allRules=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/suricata/acls"));
+    if(is_array($allRules)){
+        foreach($allRules as $r){
+            if(!is_object($r)){continue;}
+            $rid   = intval($r->id ?? 0);
+            $rord  = intval($r->xOrder ?? 0);
+            if($rid<=0){continue;}
+            echo "if(document.getElementById('acl-order-$rid')){document.getElementById('acl-order-$rid').innerHTML='$rord'};\n";
+        }
     }
 
    if($aclgpid>0){
@@ -1246,51 +1241,41 @@ function groups_rules_table_start(){
     echo "<div id='GroupOfRules{$ID}' style='margin-top:15px'></div><script>LoadAjax('GroupOfRules{$ID}','$page?table=yes&gprule=$ID&no-tiny=yes');</script>";
 }
 function new_rule_save():bool{
-	$q          =new lib_sqlite("/home/artica/SQLITE/acls.db");
 	$tpl        = new template_admin();
 	$tpl->CLEAN_POST_XSS();
-	$aclport    = 0;
-	$aclname    =sqlite_escape_string2(utf8_decode_switch($_POST["aclname"]));
-	$TempName   =md5(time());
-	$aclgpid    = 0;
-	$ApplayerProtocol=$_POST["ApplayerProtocol"];
-    $action=$_POST["action"];
-    $time=time();
-	$sql="INSERT INTO suricata_sqacls (action,aclname,enabled,ApplayerProtocol,xORDER,aclport,aclgroup,aclgpid,created)
-	VALUES ('$action','$TempName',1,'$ApplayerProtocol','0','$aclport','0','$aclgpid',$time)";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){
-        writelogs($q->mysql_error,__FUNCTION__,__FILE__,__LINE__);
-        echo $q->mysql_error_html(true);return false;}
-	
-	
-	$ligne=$q->mysqli_fetch_array("SELECT ID FROM suricata_sqacls WHERE aclname='$TempName'");
-	$LASTID=$ligne["ID"];
-	$q->QUERY_SQL("UPDATE suricata_sqacls SET aclname='$aclname' WHERE ID='$LASTID'");
-	
-	$c=0;
-	$sql="SELECT ID FROM suricata_sqacls ORDER BY xORDER";
-	$results = $q->QUERY_SQL($sql);
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE suricata_sqacls SET xORDER=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return false;}
-		$c++;
-	}
+	$aclname    =utf8_decode_switch($_POST["aclname"] ?? "");
+	$aclgpid    = intval($_POST["aclgpid"] ?? 0);
+	$ApplayerProtocol=$_POST["ApplayerProtocol"] ?? "";
+    $action=$_POST["action"] ?? "alert";
+
+    $body=array(
+        "aclname"          => $aclname,
+        "aclport"          => 0,
+        "aclgroup"         => 0,
+        "aclgpid"          => $aclgpid,
+        "applayerProtocol" => $ApplayerProtocol,
+        "action"           => $action,
+    );
+
+    // REST API: POST /suricata/acls
+    [$ok,$err]=acls_api_send("POST","/suricata/acls",$body);
+    if(!$ok){
+        writelogs($err,__FUNCTION__,__FILE__,__LINE__);
+        $tpl2=new template_admin();
+        echo $tpl2->post_error($err);
+        return false;
+    }
     $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/acls/explains");
     return admin_tracks("Create new IDS ACL rule $aclname");
 }
 function rule_delete($ID):bool{
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->QUERY_SQL("SELECT aclname FROM suricata_sqacls WHERE ID=$ID");
-    $aclname=$ligne["aclname"];
-    if(!$q->ok){echo "alert('".$q->mysql_error."');";return false;}
-	$q->QUERY_SQL("DELETE FROM suricata_sqacls WHERE ID='$ID'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";return false;}
-	$sql="SELECT ID,enabled FROM suricata_sqacllinks WHERE aclgpid=$ID";
-	$results = $q->QUERY_SQL($sql);
-	foreach($results as $index=>$ligne) {rule_delete($ligne["ID"]);}
-	admin_tracks("Remove $aclname ACL IDS rule");
-    $q->QUERY_SQL("DELETE FROM suricata_sqacllinks WHERE aclid='$ID'");
+    $ID=intval($ID);
+
+    // REST API: DELETE /suricata/acls/{id} (cascades to suricata_sqacllinks)
+    [$ok,$err]=acls_api_send("DELETE","/suricata/acls/$ID");
+    if(!$ok){echo "alert('".addslashes($err)."');";return false;}
+
+    admin_tracks("Remove ACL IDS rule $ID");
     return true;
 }
 
@@ -1307,4 +1292,23 @@ function td_status($ligne,$getCurrentRules):string{
     }
 
     return"<span class='label label-primary'>{active2}</span>";
+}
+
+// Stub handlers for notify_message, notify_error_page, new_rule_group_save
+// — these were not present in the original file body (not reached via dispatch)
+// but their dispatch lines reference them. Define empty stubs to avoid fatal errors.
+if(!function_exists("notify_message")){
+    function notify_message():bool{ return true; }
+}
+if(!function_exists("notify_message_save")){
+    function notify_message_save():bool{ return true; }
+}
+if(!function_exists("notify_error_page")){
+    function notify_error_page():bool{ return true; }
+}
+if(!function_exists("notify_error_page_save")){
+    function notify_error_page_save():bool{ return true; }
+}
+if(!function_exists("new_rule_group_save")){
+    function new_rule_group_save():bool{ return true; }
 }

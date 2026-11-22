@@ -1,10 +1,8 @@
-<default_destination_recipient_limit>default destination recipient limit</default_destination_recipient_limit>
-<default_destination_recipient_limit_text>
-The default maximal number of recipients per message delivery.[br]
-This is the default limit for delivery via the lmtp, pipe, smtp and virtual delivery agents.[br]
-Setting this parameter to a value of 1 changes the meaning of the corresponding per-destination concurrency limit from concurrency per domain into concurrency per recipient
-</default_destination_recipient_limit_text>
-<smtpd_recipient_limit>smtpd recipient limit</smtpd_recipient_limit>
-<smtpd_recipient_limit_text>The maximal number of recipients that the Postfix SMTP server accepts per message delivery request</smtpd_recipient_limit_text>
-<virtual_mailbox_limit>Virtual mailbox limit</virtual_mailbox_limit>
-<virtual_mailbox_limit_text>The maximal size in bytes of an individual mailbox or maildir file, or zero (no limit).</virtual_mailbox_limit_text>
+<default_destination_recipient_limit>limite destinatari di destinazione predefinito</default_destination_recipient_limit>
+<default_destination_recipient_limit_text>Il numero massimo predefinito di destinatari per consegna del messaggio.[br]
+Questo &#232; il limite predefinito per la consegna tramite gli agenti di consegna lmtp, pipe, smtp e virtual.[br]
+Impostando questo parametro a un valore di 1 cambia il significato del corrispondente limite di concorrenza per destinazione da concorrenza per dominio a concorrenza per destinatario</default_destination_recipient_limit_text>
+<smtpd_recipient_limit>limite destinatari smtpd</smtpd_recipient_limit>
+<smtpd_recipient_limit_text>Il numero massimo di destinatari che il server SMTP di Postfix accetta per richiesta di consegna del messaggio</smtpd_recipient_limit_text>
+<virtual_mailbox_limit>Limite della casella di posta virtuale</virtual_mailbox_limit>
+<virtual_mailbox_limit_text>La dimensione massima in byte di una singola casella di posta o file maildir, o zero (nessun limite).</virtual_mailbox_limit_text>

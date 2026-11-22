@@ -1,25 +1,25 @@
-<ADDRESSBOOK>Address Book</ADDRESSBOOK>
-<ADDRESSBOOK_TEXT>Store your contacts addres on this server and ensure you can query them everywhere</ADDRESSBOOK_TEXT>
-<AntiSpam_parameters>Your anti-spam settings</AntiSpam_parameters>
-<AntiSpam_parameters_text>Personnalize your anti-spam settings according your needs</AntiSpam_parameters_text>
-<calendar>Web Calendar</calendar>
-<dotclear_user_intro>Manager your DotClear personal Blog</dotclear_user_intro>
+<ADDRESSBOOK>Ksi&#261;&#380;ka adresowa</ADDRESSBOOK>
+<ADDRESSBOOK_TEXT>Przechowuj adresy kontakt&#243;w na tym serwerze i upewnij si&#281;, &#380;e mo&#380;esz je odpytywa&#263; wsz&#281;dzie</ADDRESSBOOK_TEXT>
+<AntiSpam_parameters>Twoje ustawienia antyspamowe</AntiSpam_parameters>
+<AntiSpam_parameters_text>Spersonalizuj ustawienia antyspamowe wed&#322;ug swoich potrzeb</AntiSpam_parameters_text>
+<calendar>Kalendarz web</calendar>
+<dotclear_user_intro>Zarz&#261;dzaj swoim osobistym blogiem DotClear</dotclear_user_intro>
 <emailing>eMailing</emailing>
-<mailbox_rules>mailbox rules</mailbox_rules>
-<menu_account_text>Your account settings</menu_account_text>
-<menu_backup_text>Search messages in your backup storage</menu_backup_text>
-<menu_calendar_text>Access to your web groupware calendar, use the same account to login</menu_calendar_text>
-<menu_fetchmail_text>Import your mails from an ISP or other server</menu_fetchmail_text>
-<menu_messaging_text>Manage your mail server and all securites settings</menu_messaging_text>
-<menu_openvpn_text>Display informations about your Virtual Private Network</menu_openvpn_text>
-<menu_organizations_text>Manage users & Organizations</menu_organizations_text>
-<menu_OUT_OF_OFFICE_text>Enable auto-reply from in response to incoming e-mails, based on your Status (Away, Out of Office, Vacation, custom Status)</menu_OUT_OF_OFFICE_text>
-<menu_quarantine_text>See Your anti-spam and antivirus quarantine</menu_quarantine_text>
-<menu_share_text>Share your local folders over the network</menu_share_text>
-<menu_sieve_text>Manage your mailbox rules</menu_sieve_text>
-<menu_statistic_text>See your mailbox statistics</menu_statistic_text>
-<menu_system_text>Manage your system</menu_system_text>
-<menu_webmail_text>Access to your mailbox</menu_webmail_text>
-<menu_web_proxy_text>Manage your Internet Proxy Squid</menu_web_proxy_text>
-<YOUR_ADDRESSBOOK>Fill your personal Address Book</YOUR_ADDRESSBOOK>
-<YOUR_ADDRESSBOOK_TEXT>Store your contacts addresses on this server and ensure you can query them everywhere</YOUR_ADDRESSBOOK_TEXT>
+<mailbox_rules>regu&#322;y skrzynki pocztowej</mailbox_rules>
+<menu_account_text>Ustawienia Twojego konta</menu_account_text>
+<menu_backup_text>Wyszukaj wiadomo&#347;ci w magazynie kopii zapasowej</menu_backup_text>
+<menu_calendar_text>Dost&#281;p do kalendarza groupware web, u&#380;yj tego samego konta do logowania</menu_calendar_text>
+<menu_fetchmail_text>Importuj swoje wiadomo&#347;ci od ISP lub innego serwera</menu_fetchmail_text>
+<menu_messaging_text>Zarz&#261;dzaj serwerem poczty i wszystkimi ustawieniami bezpiecze&#324;stwa</menu_messaging_text>
+<menu_openvpn_text>Wy&#347;wietl informacje o swojej wirtualnej sieci prywatnej</menu_openvpn_text>
+<menu_organizations_text>Zarz&#261;dzaj u&#380;ytkownikami i organizacjami</menu_organizations_text>
+<menu_OUT_OF_OFFICE_text>W&#322;&#261;cz automatyczn&#261; odpowied&#378; na przychodz&#261;ce e-maile w oparciu o Tw&#243;j status (Nieobecny, Poza biurem, Urlop, status niestandardowy)</menu_OUT_OF_OFFICE_text>
+<menu_quarantine_text>Zobacz swoj&#261; kwarantann&#281; antyspamow&#261; i antywirusow&#261;</menu_quarantine_text>
+<menu_share_text>Udost&#281;pniaj swoje lokalne foldery w sieci</menu_share_text>
+<menu_sieve_text>Zarz&#261;dzaj regu&#322;ami skrzynki pocztowej</menu_sieve_text>
+<menu_statistic_text>Zobacz statystyki swojej skrzynki pocztowej</menu_statistic_text>
+<menu_system_text>Zarz&#261;dzaj swoim systemem</menu_system_text>
+<menu_webmail_text>Dost&#281;p do skrzynki pocztowej</menu_webmail_text>
+<menu_web_proxy_text>Zarz&#261;dzaj swoim proxy internetowym Squid</menu_web_proxy_text>
+<YOUR_ADDRESSBOOK>Wype&#322;nij swoj&#261; osobist&#261; ksi&#261;&#380;k&#281; adresow&#261;</YOUR_ADDRESSBOOK>
+<YOUR_ADDRESSBOOK_TEXT>Przechowuj adresy kontakt&#243;w na tym serwerze i upewnij si&#281;, &#380;e mo&#380;esz je odpytywa&#263; wsz&#281;dzie</YOUR_ADDRESSBOOK_TEXT>

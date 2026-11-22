@@ -104,7 +104,7 @@ function xstart():bool{
 	
 	//Vérification du smtp_sender_restriction.
     $php=$unix->LOCATE_PHP5_BIN();
-    shell_exec("/usr/sbin/artica-phpfpm-service -smtpd-restrictions -instanceid {$GLOBALS["POSTFIX_INSTANCE_ID"]}");
+    shell_exec("/usr/local/sbin/artica-postfix -smtpd-restrictions -instanceid {$GLOBALS["POSTFIX_INSTANCE_ID"]}");
 
 	// A LA FIN
     smtp_tls_policy_maps($GLOBALS["POSTFIX_INSTANCE_ID"]);
@@ -202,11 +202,6 @@ function reload():bool{
 	$php=$unix->LOCATE_PHP5_BIN();
 	if($GLOBALS["NORELOAD"]){ build_progress(100,"{building} {success}"); return false; }
 	build_progress(95,"{building} master.cf...");
-
-    if(is_file("/etc/init.d/artica-milter")){
-        system("$php /usr/share/artica-postfix/exec.artica-milter.php --monit");
-    }
-
 	system("$php /usr/share/artica-postfix/exec.postfix.maincf.php --ssl-none --instance-id={$GLOBALS["POSTFIX_INSTANCE_ID"]}");
 	build_progress(95,"{reloading}...");
 	$unix->POSTFIX_RELOAD($GLOBALS["POSTFIX_INSTANCE_ID"]);

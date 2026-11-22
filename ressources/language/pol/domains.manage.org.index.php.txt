@@ -1,15 +1,15 @@
-<ad_import>ActiveDirectory Importation</ad_import>
-<ad_import_text>Import your Windows 2003 AD users into this organization</ad_import_text>
-<default_language>Default language used by end-user frontends</default_language>
-<duplicate_to_remote_server>Duplicate this organization to a remote server</duplicate_to_remote_server>
-<filter_backup_rules>Define rules that allow to backup each email your server receive</filter_backup_rules>
-<global_quarantine_rules_text>Define the global quarantine settings</global_quarantine_rules_text>
-<manage_your_roundcube_text>Define your webmail settings with RoundCube</manage_your_roundcube_text>
-<manage_your_sugarcrm_text>Manage you SugarCRM website</manage_your_sugarcrm_text>
-<ORG_SETTINGS>Organization Parameters</ORG_SETTINGS>
-<ORG_SETTINGS_TEXT>Change organization name, move this organization...</ORG_SETTINGS_TEXT>
+<ad_import>Import ActiveDirectory</ad_import>
+<ad_import_text>Zaimportuj u&#380;ytkownik&#243;w AD systemu Windows 2003 do tej organizacji</ad_import_text>
+<default_language>Domy&#347;lny j&#281;zyk u&#380;ywany przez interfejsy u&#380;ytkownika ko&#324;cowego</default_language>
+<duplicate_to_remote_server>Zduplikuj t&#281; organizacj&#281; na zdalny serwer</duplicate_to_remote_server>
+<filter_backup_rules>Zdefiniuj regu&#322;y umo&#380;liwiaj&#261;ce tworzenie kopii zapasowej ka&#380;dej wiadomo&#347;ci odbieranej przez serwer</filter_backup_rules>
+<global_quarantine_rules_text>Zdefiniuj globalne ustawienia kwarantanny</global_quarantine_rules_text>
+<manage_your_roundcube_text>Zdefiniuj ustawienia poczty webowej za pomoc&#261; RoundCube</manage_your_roundcube_text>
+<manage_your_sugarcrm_text>Zarz&#261;dzaj swoj&#261; witryn&#261; SugarCRM</manage_your_sugarcrm_text>
+<ORG_SETTINGS>Parametry organizacji</ORG_SETTINGS>
+<ORG_SETTINGS_TEXT>Zmie&#324; nazw&#281; organizacji, przenie&#347; t&#281; organizacj&#281;...</ORG_SETTINGS_TEXT>
 <REMOTE_ARTICA_PASSWORD>Has%C5%82o do Artica Manager</REMOTE_ARTICA_PASSWORD>
 <REMOTE_ARTICA_SERVER>IP/nazwa zdalnego serwera Artica</REMOTE_ARTICA_SERVER>
 <REMOTE_ARTICA_SERVER_PORT>Zdalny serwer Artica Port SSL</REMOTE_ARTICA_SERVER_PORT>
 <REMOTE_ARTICA_USERNAME>Nazwa u%C5%BCytkownika administratora</REMOTE_ARTICA_USERNAME>
-<rename_org>Rename this organization to</rename_org>
+<rename_org>Zmie&#324; nazw&#281; tej organizacji na</rename_org>

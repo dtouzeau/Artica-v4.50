@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Network Listeners (TCP/UDP sockets) for a single remote agent.
  * Shows listening ports grouped by network interface, with process info.
@@ -9,7 +11,7 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 if (!isset($GLOBALS["CLASS_SOCKETS"])) { $GLOBALS["CLASS_SOCKETS"] = new sockets(); }
 $users = new usersMenus();
-if (!$users->AsSystemAdministrator) { exit(); }
+if (!meta_node_admin($users)) { exit(); }
 
 if (isset($_GET["search"]))     { netstats_list(); exit; }
 if (isset($_GET["flat"]))       { netstats_flat(); exit; }
@@ -65,12 +67,13 @@ function sort_groups(array $groups): array {
         elseif ($iface === 'lo') $lo[] = $g;
         else                     $named[] = $g;
     }
-    usort($named, fn($a, $b) => strcmp($a->interface ?? '', $b->interface ?? ''));
+    // Plancher PHP 7.3: pas de fonction flechee (elle casse tout le fichier).
+    usort($named, function($a, $b){ return strcmp($a->interface ?? '', $b->interface ?? ''); });
     return array_merge($wildcard, $named, $lo);
 }
 
 function sort_sockets(array $sockets): array {
-    usort($sockets, fn($a, $b) => ($a->local_port ?? 0) <=> ($b->local_port ?? 0));
+    usort($sockets, function($a, $b){ return ($a->local_port ?? 0) <=> ($b->local_port ?? 0); });
     return $sockets;
 }
 
@@ -215,10 +218,10 @@ function netstats_flat(): void {
             $all[] = $s;
         }
     }
-    usort($all, fn($a, $b) => ($a->local_port ?? 0) <=> ($b->local_port ?? 0));
+    usort($all, function($a, $b){ return ($a->local_port ?? 0) <=> ($b->local_port ?? 0); });
 
     $h = [];
-    $h[] = "<table id='table-$t' class='footable table table-striped' data-page-size='100'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "<thead><tr>";
     $h[] = "  <th data-sortable='true' data-type='text'>{interface}</th>";
     $h[] = "  <th data-sortable='true' data-type='text'>{protocol}</th>";
@@ -227,24 +230,22 @@ function netstats_flat(): void {
     $h[] = "  <th data-sortable='true' data-type='number'>PID</th>";
     $h[] = "  <th data-sortable='true' data-type='text'>{process}</th>";
     $h[] = "  <th>{command}</th>";
-    $h[] = "</tr></thead><tbody>";
+    $h[] = "</tr></thead><tbody id='ntnetst-rows'>";
 
     $TRCLASS = null;
     foreach ($all as $s) {
-        if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+        $TRCLASS=null;
         $h[] = "<tr class='$TRCLASS'>" . socket_cells($s, true) . "</tr>";
     }
 
     $h[] = "</tbody>";
-    $h[] = "<tfoot><tr><td colspan='7'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $h[] = "</table>";
-    $h[] = "<script>NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS);
-    $h[] = "\$(document).ready(function(){ \$('#table-$t').footable({";
-    $h[] = "  \"filtering\":{\"enabled\":true},\"sorting\":{\"enabled\":true},";
-    $h[] = "  \"paging\":{\"size\":" . ($GLOBALS["FOOTABLE_PSIZE"] ?? 100) . "}";
-    $h[] = "}); });</script>";
+    $h[] = "</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='ntnetst-pager'></span></div></div></div>";
+    $h[] = "<script>NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS) . "</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    // Pagination reprise de FooTable (jamais initialise depuis le passage awc-*).
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n", $h))
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"] ?? 100,"ntnetst-rows","ntnetst-pager");
 }
 
 // ── Render helpers ───────────────────────────────────────────────────────────
@@ -262,7 +263,7 @@ function render_sockets_table(array $sockets, string $iface): string {
         return "<p style='padding:15px;color:#999'><i>{no_data}</i></p>";
     }
     $h = [];
-    $h[] = "<table class='table table-condensed' style='margin:0'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "<thead><tr>";
     $h[] = "  <th style='width:1%'>{protocol}</th>";
     $h[] = "  <th style='width:1%'>{port}</th>";
@@ -274,10 +275,10 @@ function render_sockets_table(array $sockets, string $iface): string {
 
     $TRCLASS = null;
     foreach ($sockets as $s) {
-        if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+        $TRCLASS=null;
         $h[] = "<tr class='$TRCLASS'>" . socket_cells($s, false) . "</tr>";
     }
-    $h[] = "</tbody></table>";
+    $h[] = "</tbody></table></div></div></div>";
     return implode("\n", $h);
 }
 
@@ -316,10 +317,10 @@ function socket_cells(object $s, bool $showIface): string {
         $c[] = "<td nowrap><i class='" . iface_icon($iface) . "'></i> " . iface_display($iface) . "</td>";
     }
     $c[] = "<td nowrap>" . proto_badge($proto) . "</td>";
-    $c[] = "<td nowrap><strong style='font-family:monospace;font-size:14px'>$port</strong>$warning</td>";
+    $c[] = "<td nowrap><strong style='font-size:14px'>$port</strong>$warning</td>";
     $c[] = "<td nowrap><span style='font-family:monospace'>$addr</span></td>";
     $c[] = "<td nowrap>$pidCell</td>";
     $c[] = "<td nowrap>$pnameCell</td>";
-    $c[] = "<td><span style='font-family:monospace;font-size:11px' title='$cmdline'>$cmdShort</span></td>";
+    $c[] = "<td><span style='font-size:11px' title='$cmdline'>$cmdShort</span></td>";
     return implode("\n", $c);
 }

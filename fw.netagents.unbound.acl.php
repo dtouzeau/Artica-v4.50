@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Access Control rules CRUD for Unbound on a single remote agent.
  * Operates on the `access_control` array of the full UnboundConfig JSON blob.
@@ -10,7 +12,7 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 if (!isset($GLOBALS["CLASS_SOCKETS"])) { $GLOBALS["CLASS_SOCKETS"] = new sockets(); }
 $users = new usersMenus();
-if (!$users->AsSystemAdministrator) { exit(); }
+if (!meta_node_admin($users)) { exit(); }
 
 if(isset($_GET["delete-js"])){acl_delete_js();exit;}
 if (isset($_GET["acl-add-js"]))    { acl_add_js();    exit; }
@@ -142,7 +144,7 @@ function acl_search(): void {
     $search=$_GET["search"];
     $search=str_replace("*",".*?",$search);
 
-    $h[] = "<table class='table table-striped' id='acl-table-$id'><tbody>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'><tbody>";
     foreach ($rules as $i => $rule) {
         $cidr   = htmlspecialchars($rule->cidr ?? '');
         $action = htmlspecialchars($rule->action ?? '');
@@ -163,7 +165,7 @@ function acl_search(): void {
         $md=md5(serialize($rule));
         $cidrEnc=urlencode($cidr);
         $deleteJs = "Loadjs('$page?delete-js=$id&id=$i&md=$md&val=$cidrEnc')";
-        $delBtn   = $tpl->icon_delete($deleteJs, "AsSystemAdministrator");
+        $delBtn   = $tpl->icon_delete($deleteJs, "AsMetaAdmin");
 
         $h[] = "<tr draggable='true' data-idx='$i' class='acl-row-$id' id='$md'"
              . " ondragstart='aclDragStart_$id(event)' ondragover='aclDragOver_$id(event)'"
@@ -174,14 +176,14 @@ function acl_search(): void {
         $h[] = "  <td style='width:1%'>$delBtn</td>";
         $h[] = "</tr>";
     }
-    $h[] = "</tbody></table>";
+    $h[] = "</tbody></table></div></div></div>";
 
     $h[] = "<script>";
     $h[]="LoadAjax('acl-buttons-$id','$page?acl-buttons=yes&id=$id&function=$function');";
     $h[] = "NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS);
     $h[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 
 // ── Form ─────────────────────────────────────────────────────────────────────

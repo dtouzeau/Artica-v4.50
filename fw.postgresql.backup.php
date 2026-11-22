@@ -1,8 +1,14 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.postgres.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : restore-backup-js/restore-confirm-js/restore-confirm-popup/down/delete-js/id etaient recopies sans encodage dans la page (XSS).
+foreach(array("restore-backup-js","restore-confirm-js","restore-confirm-popup","down","delete-js") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=intval($_GET[$xssk]);}}
+if(isset($_GET["id"])){$_GET["id"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["id"]);}
 if(isset($_POST["none"])){exit;}
 if(isset($_POST["PostgreSQLFTPEnable"])){backup_ftp_save();exit;}
 if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
@@ -84,6 +90,7 @@ function backup_parameters_popup():bool{
     return true;
 }
 function backup_restore_confirm_popup(){
+    if(!fw_progress_page_priv("AsDatabaseAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $ID=$_GET["restore-confirm-popup"];
     $q=new lib_sqlite("/home/artica/SQLITE_TEMP/pg_tables.db");
@@ -202,6 +209,7 @@ function backup_import_popup(){
 
 }
 function file_uploaded():bool{
+    if(!fw_progress_page_priv("AsDatabaseAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl = new template_admin();
     $page=CurrentPageName();
     $file = $_GET["file-uploaded"];
@@ -281,9 +289,9 @@ function delete_table_js(){
 	
 }
 
-function delete_table(){
-	$sock=new sockets();
-	$sock->getFrameWork("postgres.php?backup-delete={$_POST["delete"]}");
+function delete_table():bool{
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/postgresql/delete-backup/".intval($_POST["delete"]));
+    return true;
 }
 
 function start(){
@@ -291,6 +299,48 @@ function start(){
     echo "<div id='backup-postgresql-db'></div><script>LoadAjax('backup-postgresql-db','$page?table=yes')</script>";
 
 }
+/**
+ * Une sauvegarde: identite a gauche (nom du fichier, identifiant en sous-titre),
+ * puis la date de production, le volume, et les trois actions.
+ *
+ * La cle de tri du <tr> est l'horodatage brut: la date affichee est localisee et
+ * ne se compare pas -- "12 fevrier" contre "3 mars" trie a l'envers en lexical.
+ */
+function pgb_row($tpl,$ligne):string{
+	$page=CurrentPageName();
+	$ID=intval($ligne["ID"]);
+	$filename=basename($ligne["filename"]);
+	$md=md5(serialize($ligne));
+	$zdate=intval($ligne["zdate"]);
+	$total_bytes=FormatBytes($ligne["filesize"]/1024);
+	$date=$tpl->time_to_date($zdate,true);
+
+	// Les icon_*() rendraient des boutons Bootstrap au milieu des actions plates du
+	// tableau awc; on conserve leur controle de privilege (IsSecurity) et on rend
+	// les liens au dessin de la table.
+	$acts=array();
+	$acts[]="<a class='awc-act awc-act-go' title='{restore}' href=\"javascript:blur();\" "
+		."onclick=\"Loadjs('$page?restore-backup-js=$ID')\"><i class='fas fa-file-export'></i></a>";
+	$acts[]="<a class='awc-act' title='{download}' href=\"javascript:blur();\" "
+		."onclick=\"document.location.href='$page?down=$ID'\"><i class='fas fa-download'></i></a>";
+	if($tpl->IsSecurity("AsSystemAdministrator")){
+		$acts[]="<a class='awc-act awc-act-danger' title='{delete}' href=\"javascript:blur();\" "
+			."onclick=\"Loadjs('$page?delete-js=$ID&id=$md')\"><i class='fas fa-trash-can'></i></a>";
+	}
+
+	$h ="<tr id='$md' data-sort='$zdate'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fas fa-file-zipper'></i></span>";
+	$h.="<span><span class='awc-name'>".htmlspecialchars($filename)."</span>";
+	$h.="<div class='awc-meta'>ID: $ID</div>";
+	$h.="</span></div></td>";
+	$h.="<td class='awc-mono' style='width:1%' nowrap>".htmlspecialchars($date)."</td>";
+	$h.="<td style='width:1%' nowrap><span class='awc-seen'>$total_bytes</span></td>";
+	$h.="<td style='width:1%'><div class='awc-acts'>".@implode("",$acts)."</div></td>";
+	$h.="</tr>";
+	return $h;
+}
+
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -304,85 +354,66 @@ function page(){
 
     $q->QUERY_SQL($sql);
 
-	$html[]="<table id='table-postgrsql-tables' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{filename}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{restore}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{download}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-
-
-    $topbuttons[] = array("Loadjs('$page?start-backup=yes');", ico_save, "{backup_database}");
-    $topbuttons[] = array("Loadjs('$page?backup-import-js=yes');", ico_save, "{import_backup}");
-    $topbuttons[] = array("Loadjs('$page?backup-parameters-js=yes');", ico_params, "{parameters}");
-    $topbuttons[] = array("Loadjs('$page?backup-ftp-js=yes');", ico_save, "{ftp_backup}");
-
-    $version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARTICA_POSTGRESQL_VERSION");
-    $TINY_ARRAY["TITLE"]="PostgreSQL $version &raquo;&raquo; {backup}";
-    $TINY_ARRAY["ICO"]=ico_database;
-    $TINY_ARRAY["EXPL"]="{PostgreSQL_explain}";
-    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
-    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-
-	
-	$FORCE_FILTER=null;
-	$total=0;
-	
-	
-	
 	$sql="SELECT * FROM backup ORDER BY zdate DESC";
 	$results=$q->QUERY_SQL($sql);
 	if(!$q->ok){
 		echo $tpl->_ENGINE_parse_body($tpl->FATAL_ERROR_SHOW_128($q->mysql_error));
 		exit();
 	}
-	$TRCLASS=null;
+
+	$rows=array();
+	$totalbytes=0;
 	foreach ($results as $index=>$ligne){
-		$filename=$ligne["filename"];
-		$ID=$ligne["ID"];
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$total_bytes=FormatBytes($ligne["filesize"]/1024);
-        $date=$tpl->time_to_date($ligne["zdate"],true);
-		$md=md5(serialize($ligne));
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td>$date</td>";
-        $html[]="<td>$filename</td>";
-        $html[]="<td style='width:1%' nowrap>$total_bytes</td>";
-
-        $html[]="<td style='width:1%' class='center-block' nowrap>
-".$tpl->icon_export("Loadjs('$page?restore-backup-js=$ID')"). "</td>";
-
-        $html[]="<td style='width:1%' class='center-block' nowrap>
-".$tpl->icon_download("direct:$page?down=$ID"). "</td>";
-
-		$html[]="<td class='center-block' style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-js=$ID&id=$md')","AsSystemAdministrator")."</td>";
-		$html[]="</tr>";
-	
-	
+		$totalbytes=$totalbytes+floatval($ligne["filesize"]);
+		$rows[]=pgb_row($tpl,$ligne);
 	}
+	$total=count($rows);
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='5'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-postgrsql-tables').footable( { 	\"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	$jstiny
-	</script>";	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	$html=array();
+	// FooTable fournissait sa propre boite de filtre; le tableau awc ne l'embarque
+	// pas, la barre la remplace (meme dessin que search_block, filtrage navigateur).
+	$html[]=awc_search_bar("pgb-search");
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{filename}</th>";
+	$html[]="<th style='width:1%' nowrap id='pgb-th-date'>{date} <span id='pgb-th-date-arrow'></span></th>";
+	$html[]="<th style='width:1%' nowrap>{size}</th>";
+	$html[]="<th style='width:1%' nowrap>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pgb-rows'>";
+	if($total==0){
+		$html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $total / $total {backup} &mdash; ".FormatBytes($totalbytes/1024)."</span>";
+	$html[]="<span class='awc-pg' id='pgb-pager'></span>";
+	$html[]="</div></div></div>";
+
+    $topbuttons=array();
+    $topbuttons[] = array("Loadjs('$page?start-backup=yes');", ico_save, "{backup_database}");
+    $topbuttons[] = array("Loadjs('$page?backup-import-js=yes');", ico_save, "{import_backup}");
+    $topbuttons[] = array("Loadjs('$page?backup-parameters-js=yes');", ico_params, "{parameters}");
+    $topbuttons[] = array("Loadjs('$page?backup-ftp-js=yes');", ico_save, "{ftp_backup}");
+
+    $version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARTICA_POSTGRESQL_VERSION");
+    $TINY_ARRAY=array();
+    $TINY_ARRAY["TITLE"]="PostgreSQL $version &raquo;&raquo; {backup}";
+    $TINY_ARRAY["ICO"]=ico_database;
+    $TINY_ARRAY["EXPL"]="{PostgreSQL_explain}";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+	// Feuille et scripts concatenes AUTOUR du parsing: la regex #{(.+?)}# de
+	// _ENGINE_parse_body lit chaque corps de regle CSS et chaque bloc JS comme un jeton.
+	// Ordre impose: pager d'abord (il publie tb.__awcRedraw), puis tri, puis filtre.
+	$foot="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$jstiny</script>";
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.awc_pager_js(50,"pgb-rows","pgb-pager")
+		.awc_sort_js("pgb-th-date","pgb-rows","desc")
+		.awc_filter_js("pgb-search","pgb-rows","pgb-pager")
+		.$foot;
 
 }
-function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}

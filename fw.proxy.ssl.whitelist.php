@@ -1,5 +1,15 @@
 <?php
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// Verrou Artica Meta (politique sslproxy) : entrees Meta en lecture seule
+include_once(dirname(__FILE__)."/ressources/class.sslproxy.meta.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
 $GLOBALS["GroupType"]["src"]="{src_addr}";
 $GLOBALS["GroupType"]["dst"]="{dst_addr}";
@@ -21,20 +31,23 @@ page();
 
 function delete_js(){
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT pattern FROM ssl_whitelist WHERE ID='{$_GET["delete-js"]}'");
-    $md5=$_GET["md5"];
-    $tpl->js_confirm_delete($ligne["pattern"],"delete",$_GET["delete-js"],"$('#{$md5}').remove();");
+    $ID=intval($_GET["delete-js"]);
+    if(sslproxy_meta_row("ssl_whitelist",$ID)){sslproxy_meta_refuse_js();return;}
+    // Pentest 2026-11-04 : md5 etait recopie sans encodage dans la page (XSS).
+    $md5=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["md5"] ?? ""));
+    $ligne=acls_api_get("/proxy/ssl/whitelist/$ID");
+    $pattern=is_array($ligne) ? ($ligne["pattern"] ?? $ID) : $ID;
+    $tpl->js_confirm_delete($pattern,"delete",$ID,"$('#{$md5}').remove();");
 }
 
 function delete(){
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ID=$_POST["delete"];
-    $ligne=$q->mysqli_fetch_array("SELECT pattern FROM ssl_whitelist WHERE ID='{$_GET["delete-js"]}'");
-    $pattern=$ligne["pattern"];
+    $ID=intval($_POST["delete"]);
+    if(sslproxy_meta_row("ssl_whitelist",$ID)){sslproxy_meta_refuse_text();return;}
+    $ligne=acls_api_get("/proxy/ssl/whitelist/$ID");
+    $pattern=is_array($ligne) ? ($ligne["pattern"] ?? $ID) : $ID;
 
-    $q->QUERY_SQL("DELETE FROM ssl_whitelist WHERE ID=$ID");
-    if(!$q->ok){echo $q->mysql_error;return;}
+    list($ok,$err)=acls_api_send("DELETE","/proxy/ssl/whitelist/$ID");
+    if(!$ok){echo $err;return;}
     admin_tracks("Removed $pattern from ssl whitelist");
 
 }
@@ -42,12 +55,12 @@ function Save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     include_once('ressources/class.tcpip.inc');
-    $ID=$_POST["ID"];
+    $ID=intval($_POST["ID"]);
+    if(sslproxy_meta_row("ssl_whitelist",$ID)){sslproxy_meta_refuse_post();return;}
     $pattern=trim($_POST["pattern"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $description=$q->sqlite_escape_string2($_POST["description"]);
+    $description=$_POST["description"];
     $ztype=$_POST["ztype"];
-    $enabled=$_POST["enabled"];
+    $enabled=intval($_POST["enabled"]);
     $f=array();
     $admtrck=array();
 
@@ -91,13 +104,11 @@ function Save(){
             if(substr($line,0,1)=="."){$line=substr($line, 1,strlen($line));}
             $lib->saveKey("isWhite:$line",true,300);
 
-            $item=$q->sqlite_escape_string2($item);
-            $f[]="('$zDate','$ztype','$item',1,'$description')";
+            list($ok,$err)=acls_api_send("POST","/proxy/ssl/whitelist",["pattern"=>$item,"description"=>$description,"ztype"=>$ztype]);
+            if(!$ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($err));return;}
 
 
         }
-        $q->QUERY_SQL("INSERT INTO ssl_whitelist (zDate,ztype,pattern,enabled,description) VALUES ".@implode(",", $f));
-        if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
         admin_tracks("Added in ssl whitelist ".@implode(",",$admtrck));
         return;
 
@@ -126,14 +137,10 @@ function Save(){
 
 
 
-
-    $pattern=$q->sqlite_escape_string2($pattern);
-    $q->QUERY_SQL("UPDATE ssl_whitelist SET pattern='$pattern',enabled='$enabled',description='$description' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    list($ok,$err)=acls_api_send("PUT","/proxy/ssl/whitelist/$ID",["pattern"=>$pattern,"description"=>$description]);
+    if(!$ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($err));return;}
 
     admin_tracks("Edited ssl whitelist $pattern");
-    $sock=new sockets();
-    $sock->getFrameWork("squid2.php?testTheWhiteLists=yes");
 
 
 
@@ -193,23 +200,20 @@ function page():bool{
 
 }
 function switch_perform(){
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
-    $ID=$_GET["switch-js"];
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM ssl_whitelist WHERE ID='$ID'");
-    if($ligne["enabled"]==1){
-        $q->QUERY_SQL("UPDATE ssl_whitelist SET enabled=0 WHERE ID=$ID");
-
-    }else{
-        $q->QUERY_SQL("UPDATE ssl_whitelist SET enabled=1 WHERE ID=$ID");
-    }
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";}
+    $ID=intval($_GET["switch-js"]);
+    if(sslproxy_meta_row("ssl_whitelist",$ID)){echo "alert(".json_encode(sslproxy_meta_text()).");";return;}
+    $ligne=acls_api_get("/proxy/ssl/whitelist/$ID");
+    if(!is_array($ligne)){echo "alert('".addslashes("Error fetching record $ID")."');";return;}
+    $newEnabled=($ligne["enabled"]==1)?0:1;
+    list($ok,$err)=acls_api_send("PUT","/proxy/ssl/whitelist/$ID",["enabled"=>$newEnabled]);
+    if(!$ok){echo "alert('".$tpl->javascript_parse_text($err)."');";}
 }
 
 function config_popup_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $tpl->js_dialog("{config}", "$page?config-popup=yes");
+    $tpl->js_dialog("{configuration}", "$page?config-popup=yes");
 
 }
 
@@ -219,11 +223,12 @@ function popup_js(){
     $ID=intval($_GET["ID"]);
     $title=$tpl->javascript_parse_text("{new_item}");
     if($ID>0){
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT ztype,pattern FROM ssl_whitelist WHERE ID='$ID'");
-        $ztype=$GLOBALS["GroupType"][$ligne["ztype"]];
-        $pattern=$ligne["pattern"];
-        $title="$ztype: $pattern";
+        $ligne=acls_api_get("/proxy/ssl/whitelist/$ID");
+        if(is_array($ligne)){
+            $ztype=$GLOBALS["GroupType"][$ligne["zType"]] ?? $ligne["zType"];
+            $pattern=$ligne["pattern"];
+            $title="$ztype: $pattern";
+        }
     }
 
     $tpl->js_dialog($title, "$page?popup=yes&ID=$ID");
@@ -242,46 +247,55 @@ function popup(){
 
     if($ID>0){
         $buttonname="{apply}";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM ssl_whitelist WHERE ID='$ID'");
-        $ztype=$GLOBALS["GroupType"][$ligne["ztype"]];
-        $pattern=$ligne["pattern"];
-        $title="$ztype: $pattern";
+        $ligne=acls_api_get("/proxy/ssl/whitelist/$ID");
+        if(is_array($ligne)){
+            $ztype=$GLOBALS["GroupType"][$ligne["zType"]] ?? $ligne["zType"];
+            $pattern=$ligne["pattern"];
+            $title="$ztype: $pattern";
+        }
     }
+
+
+    if(sslproxy_meta_row("ssl_whitelist",$ID)){sslproxy_meta_lock_form($tpl);}
 
 
     $form[]=$tpl->field_hidden("ID", $ID);
     $form[]=$tpl->field_checkbox("enabled","{enabled}",$ligne["enabled"]);
     if($ID==0){
         $close="BootstrapDialog1.close()";
-        $form[]=$tpl->field_array_hash($GLOBALS["GroupType"], "ztype", "{type}",null, true,"ChangeExplain$t()");
+        $form[]=$tpl->field_array_hash($GLOBALS["GroupType"], "ztype", "{type}",null, true,null,"ChangeExplain$t");
         $idtemp=$tpl->id_temp;
     }else{
-        $form[]=$tpl->field_hidden("ztype", $ligne["ztype"]);
-        $js="LoadAjaxSilent('div-description-$t','$page?GroupType={$ligne["ztype"]}');";
+        $form[]=$tpl->field_hidden("ztype", $ligne["zType"] ?? "");
+        // En modification, l'aide du type est deja passee a form_outside (ExplainThis plus bas).
     }
     if($ID>0){
         $form[]=$tpl->field_text("pattern", "{pattern}", $ligne["pattern"],true);
     }else{
         $form[]=$tpl->field_textareacode("pattern", "{pattern}", null);
     }
-    $form[]=$tpl->field_text("description", "{description}", $ligne["description"]);
+    $form[]=$tpl->field_text("description", "{description}", $ligne["description"] ?? "");
 
     $jsafter="LoadAjax('table-loader','$page?table=yes');";
 
-    $html[]=$tpl->form_outside($title,@implode("\n",$form), ExplainThis($ligne["ztype"]),$buttonname,"$jsafter;$close");
+    // Aide du type choisi (ajout): ChangeExplain la charge dans ce bloc. Elle visait
+    // un #form-explain que form_outside n'emet pas: l'aide ne s'affichait jamais.
+    if($ID==0){
+        $html[]="<div id='wl-explain-$t'></div>";
+    }
+    $html[]=$tpl->form_outside($title,@implode("\n",$form), ExplainThis($ligne["zType"] ?? null),$buttonname,"$jsafter;$close");
 
 
 
     $html[]="<script>";
     $html[]="
 function ChangeExplain$t(){
-	
+
 	if(!document.getElementById('$idtemp')){alert('$idtemp!!');return;}
 	var GroupType=document.getElementById('$idtemp').value;
 	if(GroupType.length==0){return;}
-	LoadAjaxSilent('form-explain','$page?GroupType='+GroupType);
-	
+	LoadAjaxSilent('wl-explain-$t','$page?GroupType='+encodeURIComponent(GroupType));
+
 }";
     $html[]="$js";
     $html[]="</script>";
@@ -292,7 +306,6 @@ function ChangeExplain$t(){
 
 
 function rules_list(){
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $page=CurrentPageName();
     $type=$tpl->_ENGINE_parse_body("{type}");
@@ -309,40 +322,42 @@ function rules_list(){
 
 
     $add="Loadjs('$page?popup-js=yes&ID=0');";
+    $html[]=sslproxy_meta_banner($tpl,"ssl_whitelist","{sslproxy_meta_whitelist_explain}");
     $html[]=$tpl->_ENGINE_parse_body("
-			<table id='proxywbl-list-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
+			<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>");
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$date</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$type</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$items</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$description</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false></th>";
+    $html[]="<th>$date</th>";
+    $html[]="<th>$type</th>";
+    $html[]="<th>$items</th>";
+    $html[]="<th>$description</th>";
+    $html[]="<th></th>";
+    $html[]="<th></th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='sslwbl-rows'>";
     $TRCLASS=null;
 
-    $sql="SELECT * FROM ssl_whitelist ORDER by zDate DESC";
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);return;}
+    $results=acls_api_get("/proxy/ssl/whitelist");
+    if(!is_array($results)){echo "<tr><td colspan='6' class='awc-empty'>Error fetching whitelist</td></tr>"
+        ."</tbody></table></div></div></div>";return;}
 
 
     foreach ($results as $index=>$ligne) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $ligne["md5"]=md5(serialize($ligne));
-        $ligne["ztype"]=$tpl->javascript_parse_text($GLOBALS["GroupType"][$ligne["ztype"]]);
+        $ligne["zType"]=$tpl->javascript_parse_text($GLOBALS["GroupType"][$ligne["zType"]] ?? $ligne["zType"]);
         $ligne["description"]=$tpl->_ENGINE_parse_body($ligne["description"]);
 
-        $js="Loadjs('$page?popup-js=yes&ID={$ligne["ID"]}')";
-        $enabled=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?switch-js={$ligne["ID"]}')");
-        $delete=$tpl->icon_delete("Loadjs('$page?delete-js={$ligne["ID"]}&md5={$ligne["md5"]}')");
+        $js="Loadjs('$page?popup-js=yes&ID={$ligne["id"]}')";
+        $wsec=sslproxy_meta_sec(sslproxy_meta_row("ssl_whitelist",$ligne["id"]));
+        $enabled=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?switch-js={$ligne["id"]}')",null,$wsec);
+        $delete=$tpl->icon_delete("Loadjs('$page?delete-js={$ligne["id"]}&md5={$ligne["md5"]}')",$wsec);
         $html[]="<tr class='$TRCLASS' id='{$ligne["md5"]}'>";
         $html[]="<td style='width:1%' nowrap>{$ligne["zDate"]}</td>";
-        $html[]="<td style='width:1%' nowrap><a href=\"javascript:blur();\" OnClick=\"$js\" style='font-weight:bold;' nowrap>{$ligne["ztype"]}</span></td>";
-        $html[]="<td style='width:1%' nowrap><a href=\"javascript:blur();\" OnClick=\"$js\" style='font-weight:bold;'>{$ligne["pattern"]}</span></td>";
+        $html[]="<td style='width:1%' nowrap><a href=\"javascript:blur();\" OnClick=\"$js\" style='font-weight:bold;' nowrap>{$ligne["zType"]}</span></td>";
+        $html[]="<td style='width:1%' nowrap><a href=\"javascript:blur();\" OnClick=\"$js\" style='font-weight:bold;'>{$ligne["pattern"]}</span>".sslproxy_meta_badge("ssl_whitelist",$ligne["id"])."</td>";
         $html[]="<td style='width:80%' nowrap>{$ligne["description"]}</td>";
         $html[]="<td class='center' style='width:1%'>$enabled</td>";
         $html[]="<td class='center' style='width:1%'>$delete</td>";
@@ -350,29 +365,15 @@ function rules_list(){
 
     }
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='6'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+        $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='sslwbl-pager'></span></div></div></div>";
     $html[]="<script>";
     $html[]="NoSpinner();";
     $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('#proxywbl-list-rules').footable( { \"filtering\": {";
-    $html[]="\"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\":";
-    $html[]="{$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
-
-
-
-    $buttons="			<div class=\"btn-group\" data-toggle=\"buttons\">
+        $buttons="			<div class=\"btn-group\" data-toggle=\"buttons\">
 			<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>
 			<label class=\"btn btn btn-info\" OnClick=\"$jsrestart\"><i class='fa fa-save'></i> {apply} </label>
 			<label class=\"btn btn btn-warning\" OnClick=\"Loadjs('$page?config-popup-js=yes')\">
-				<i class='fa fa-code'></i> {config} </label>
+				<i class='fa fa-code'></i> {configuration} </label>
 			</div>";
 
     $TINY_ARRAY["TITLE"]="{ssl_protocol}&nbsp;&raquo;&nbsp;{ssl_whitelist}";
@@ -386,7 +387,9 @@ function rules_list(){
 
     $html[]=$jstiny;
     $html[]="</script>";
-    echo @implode("\n", $html);
+    echo awc_table_style()
+	    .@implode("\n", $html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"sslwbl-rows","sslwbl-pager");
 }
 function ExplainThis($tata=null):string{
     if($tata<>null){$_GET["GroupType"]=$tata;}

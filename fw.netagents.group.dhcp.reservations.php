@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DHCP reservations for an agent group.
  * Shows all reservations across all agents with server-side pagination + filtering,
@@ -106,7 +108,7 @@ function gres_page(): void {
 
     $h[] = gres_list_js($id, $page);
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 
 // ── JSON data endpoint ────────────────────────────────────────────────────────
@@ -131,7 +133,8 @@ function gres_data(): void {
         'search' => $search,
         'ip'     => $ip,
         'agent'  => $agent,
-    ], fn($v) => $v !== '' && $v !== 0));
+    // Plancher PHP 7.3: pas de fonction flechee (elle casse tout le fichier).
+    ], function($v){ return $v !== '' && $v !== 0; }));
 
     $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/dhcp/group/$id/reservations?$qs"));
     if (!is_object($json) || (isset($json->Status) && !$json->Status)) {
@@ -149,7 +152,7 @@ function gres_data(): void {
     $rows    = [];
     $TRCLASS = null;
     foreach ($reservations as $r) {
-        if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+        $TRCLASS=null;
         $rid     = htmlspecialchars($r->id       ?? '');
         $rname   = htmlspecialchars($r->name     ?? '');
         $mac     = htmlspecialchars($r->mac      ?? '');
@@ -372,7 +375,7 @@ function gres_push(): void {
     $h[] = "</div>";
 
     if (!empty($results)) {
-        $h[] = "<table class='table table-striped table-condensed'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "  <thead><tr style='background:#f5f5f5'>";
         $h[] = "    <th style='width:1%'></th><th>{hostname}</th><th>{status}</th>";
         $h[] = "  </tr></thead><tbody>";
@@ -390,7 +393,7 @@ function gres_push(): void {
             }
             $h[] = "    <tr><td>$ico</td><td><strong>$hostname</strong></td><td>$cell</td></tr>";
         }
-        $h[] = "  </tbody></table>";
+        $h[] = "  </tbody></table></div></div></div>";
     }
 
     // Refresh the list after a successful push

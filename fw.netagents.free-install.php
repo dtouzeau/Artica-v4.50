@@ -1,4 +1,11 @@
 <?php
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * FreeSetup package installer popup.
  *
@@ -25,8 +32,6 @@ if (isset($_GET["popup"]))      { popup();         exit; }
 if (isset($_POST["push"]))      { push_handler();  exit; }
 if (isset($_GET["push_status"])) { push_status();  exit; }
 if (isset($_POST["hostname"]))  { save();          exit; }
-if (isset($_GET["syslog-point"])){ syslog_point(); exit; }
-if (isset($_GET["syslog-search"])){ syslog_search(); exit; }
 if (isset($_GET["search"]))     { search();        exit; }
 js();
 
@@ -93,7 +98,7 @@ function popup(): bool {
     $h[] = "  &nbsp;&mdash; <small>Debian $debver</small>";
     $h[] = "</div>";
 
-    $h[] = "<table class='table table-striped table-condensed'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "  <thead><tr style='background:#f5f5f5'>";
     $h[] = "    <th>{filename}</th>";
     $h[] = "    <th style='width:90px'>{version}</th>";
@@ -117,7 +122,7 @@ function popup(): bool {
         $fnameAttr = htmlspecialchars(json_encode($fname),     ENT_QUOTES);
         $lpathAttr = htmlspecialchars(json_encode($localPath), ENT_QUOTES);
         $h[] = "    <tr>";
-        $h[] = "      <td><span style='font-family:monospace;font-size:12px'>$fname</span></td>";
+        $h[] = "      <td><span style='font-size:12px'>$fname</span></td>";
         $h[] = "      <td>$version</td>";
         $h[] = "      <td><small>$sizeHuman</small></td>";
         $h[] = "      <td><button class='btn btn-xs btn-primary' onclick=\"FPushInstall_$id($fnameAttr,$lpathAttr)\">";
@@ -126,10 +131,10 @@ function popup(): bool {
         $h[] = "    </tr>";
     }
 
-    $h[] = "  </tbody></table>";
+    $h[] = "  </tbody></table></div></div></div>";
     $h[] = popup_js($id, $page, $product);
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     return true;
 }
 

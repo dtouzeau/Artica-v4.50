@@ -1,4 +1,4 @@
-<network_hardware_infos>Hardware informations</network_hardware_infos>
+<network_hardware_infos>Informaci&#243;n de hardware</network_hardware_infos>
 <network_hardware_infos_text>Mostrar informaci%C3%B3n de hardware de sus tarjetas de red</network_hardware_infos_text>
-<proc_hardware_infos>CPU Hardware informations</proc_hardware_infos>
-<proc_hardware_infos_text>Display your CPU Informations</proc_hardware_infos_text>
+<proc_hardware_infos>Informaci&#243;n de hardware de la CPU</proc_hardware_infos>
+<proc_hardware_infos_text>Mostrar la informaci&#243;n de su CPU</proc_hardware_infos_text>

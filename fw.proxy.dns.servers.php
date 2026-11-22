@@ -21,23 +21,16 @@ function page():bool{
 
     $Interval=$tpl->RefreshInterval_js("proxy-dns-left-status",$page,"proxy-dns-left-status=yes");
 
-    $html="<table style='width:100%'>
-        <tr>
-        <td colspan='2'>
-            <div id='top-status'></div>
-        </td>
-        </tr>
-        
-         <tr>
-            <td style='vertical-align:top;width:336px'><div id='proxy-dns-left-status'></div></td>
-            <td style='vertical-align:top'><div id='right-status'></div></td>
-        </tr>
-        </table>
-        <script>".js_reload()."
-        $Interval
-        </script>
-        
-        ";
+    // L'ancienne version disposait ces trois zones dans un <table> de MISE EN
+    // PAGE (colonne gauche figee a 336px, colspan=2 pour la banniere). En flex,
+    // la colonne droite reprend la largeur quand la fenetre retrecit au lieu de
+    // deborder.
+    $html ="<div id='top-status'></div>";
+    $html.="<div style='display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap'>";
+    $html.="<div id='proxy-dns-left-status' style='flex:0 0 336px;max-width:100%'></div>";
+    $html.="<div id='right-status' style='flex:1 1 380px;min-width:0'></div>";
+    $html.="</div>";
+    $html.="<script>".js_reload().";$Interval</script>";
 echo $html;
 return true;
 }
@@ -68,16 +61,20 @@ function top_status():bool{
 
 
 
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:20%'>$widget_intro</td>";
+    // La bande de vignettes etait une ligne de <table> avec des cellules a
+    // width:20%: au-dela de cinq serveurs DNS les vignettes s'ecrasaient. Le
+    // flex les fait passer a la ligne tout seul.
+    $html=array();
+    $html[]="<div style='display:flex;gap:5px;flex-wrap:wrap;align-items:stretch'>";
+
 
     if (HaClusterProxyUseUnbound()==1){
-        $html=HaClusterProxyUseUnbound_servers($html);
-        $html[]="</tr>";
-        $html[]="</table>";
+        $html=HaClusterProxyUseUnbound_servers($html,$widget_intro);
+        $html[]="</div>";
         echo $tpl->_ENGINE_parse_body($html);
         return true;
+    }else{
+        $html[]=dns_widget_cell($widget_intro);
     }
 
 
@@ -86,28 +83,38 @@ function top_status():bool{
         echo $tpl->div_error("Decoding: ".json_last_error_msg());
         return false;
     }
-    if(!$json->Status){
-        echo $tpl->div_error($json->Error);
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        // property_exists() plus bas leve une TypeError si $json->Info est null
+        // (reponse illisible ou daemon absent).
+        echo $tpl->div_error(is_object($json) && isset($json->Error)?$json->Error:"{unknown_error}");
         return false;
     }
-    if(property_exists($json->Info,"dnsNameservers")){
+    if(isset($json->Info) && is_object($json->Info) && property_exists($json->Info,"dnsNameservers")){
         foreach($json->Info->dnsNameservers as $Nameserver=>$error){
             $bg="green";
             if(strlen($error)>1){
                 $bg="yellow";
             }
-            $SquidNameServer1=$tpl->widget_h( $bg,"fas fa-server",$Nameserver,"{primary_dns}",$error,"minheight:119px");
-            $html[]="<td style='padding-left:5px;width:20%'>$SquidNameServer1</td>";
+            $html[]=dns_widget_cell($tpl->widget_h($bg,"fas fa-server",$Nameserver,"{primary_dns}",$error,"minheight:119px"));
 
         }
 
     }
 
 
-    $html[]="</tr>";
-    $html[]="</table>";
+    $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);
     return true;
+}
+
+/**
+ * Une vignette de la bande d'etat DNS.
+ * Remplace les <td style='padding-left:5px;width:20%'> de l'ancien tableau de
+ * mise en page: la vignette occupe un cinquieme de la largeur mais ne descend
+ * jamais sous 200px, donc elle passe a la ligne au lieu de s'ecraser.
+ */
+function dns_widget_cell($widget):string{
+    return "<div style='flex:1 1 20%;min-width:200px'>$widget</div>";
 }
 
 function js_reload():string{
@@ -182,7 +189,7 @@ function parameters_proxy():bool{
     echo $tpl->_ENGINE_parse_body($tpl->table_form_compile());
 
     $TINY_ARRAY["TITLE"]="{dns_settings}";
-    $TINY_ARRAY["ICO"]="fas fa-database";
+    $TINY_ARRAY["ICO"]=ico_database;
     $TINY_ARRAY["EXPL"]="{dns_settings_proxy_explain}";
     $TINY_ARRAY["BUTTONS"]=null;
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
@@ -240,30 +247,28 @@ function parameters(){
 
 }
 
-function HaClusterProxyUseUnbound_servers($html=array()):array{
+function HaClusterProxyUseUnbound_servers($html=array(),$widget_intro=null):array{
     $tpl=new template_admin();
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/dns/backend/lb"));
 
-    if(!$json->Status) {
-        $html[]="<td style='padding-left:5px;width:20%'>";
-        $html[]=$tpl->div_error($json->Error);
-        $html[]="</td>";
-        return $html;
+    // property_exists() leve une TypeError si son premier argument n'est pas un
+    // objet -- ce qui arrive des que la reponse est illisible.
+    $err="";
+    if(!is_object($json)){ $err="{unknown_error}"; }
+    elseif(!isset($json->Status) || !$json->Status){ $err=isset($json->Error)?$json->Error:"{unknown_error}"; }
+    elseif(!property_exists($json,"Data") || !is_object($json->Data)){ $err="No Data Struct."; }
+    elseif(!property_exists($json->Data,"servers")){ $err="No servers Struct."; }
 
-    }
-    if(!property_exists($json, "Data")){
-        $html[]="<td style='padding-left:5px;width:20%'>";
-        $html[]=$tpl->div_error("No Data Struct.");
-        $html[]="</td>";
-        return $html;
-    }
-    if(!property_exists($json->Data, "servers")){
-        $html[]="<td style='padding-left:5px;width:20%'>";
-        $html[]=$tpl->div_error("No servers Struct.");
-        $html[]="</td>";
+    if($err<>""){
+        // Les quatre branches d'erreur repetaient le meme bloc de trois cellules.
+        $html[]=dns_widget_cell($widget_intro);
+        $html[]=dns_widget_cell($tpl->div_error($err));
         return $html;
     }
 
+    // La coupure manuelle de ligne tous les trois serveurs (</tr><tr>) n'a plus
+    // lieu d'etre: flex-wrap replie la bande tout seul.
+    $html[]=dns_widget_cell($widget_intro);
     foreach($json->Data->servers as $index=>$jsArray){
         $bg="green";
         if($jsArray->state <> "up"){
@@ -271,8 +276,7 @@ function HaClusterProxyUseUnbound_servers($html=array()):array{
         }
         $Addr=$jsArray->name;
         $queries=$tpl->FormatNumber($jsArray->queries);
-        $SquidNameServer1=$tpl->widget_h( $bg,"fas fa-server",$queries,$Addr,"minheight:119px");
-        $html[]="<td id=$index style='padding-left:5px;width:20%'>$SquidNameServer1</td>";
+        $html[]=dns_widget_cell($tpl->widget_h($bg,"fas fa-server",$queries,$Addr,"minheight:119px"));
 
     }
     return $html;
@@ -319,7 +323,7 @@ function left_status_hacluster():bool{
         "HaClusterBackendDNS.progress.txt",
         "proxydns-progress"
     );
-
+    $html[]="<div id='widget-status-intro'></div>";
     if(!$json->Status){
         $html[]=$tpl->widget_rouge($json->Error,"{error}");
     }else{
@@ -331,7 +335,7 @@ function left_status_hacluster():bool{
 
      $TitleTiny="{dns_settings}";
     $TINY_ARRAY["TITLE"]=$TitleTiny;
-    $TINY_ARRAY["ICO"]="fas fa-database";
+    $TINY_ARRAY["ICO"]=ico_database;
     $TINY_ARRAY["EXPL"]="{dns_settings_proxy_explain}";
     $TINY_ARRAY["BUTTONS"]="";
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
@@ -356,23 +360,17 @@ function left_status():bool{
     $TitleTiny="{dns_settings}";
     $btns[] = "<div class=\"btn-group\" data-toggle=\"buttons\">";
 
-    $jsbut=$tpl->framework_buildjs(
-            "squid2.php?proxy-lb-install=yes",
-            "proxydns.progress",
-            "proxydns.log",
-            "top-status",
-            $jsreload);
-
-        $button["name"]="{install2}";
-        $button["js"]=$jsbut;
-        $html[]=$tpl->widget_h("gray","far fa-times-circle","{disabled}","{load_balancer}",$button);
+    // Le bouton {install2} lancait framework/squid2.php?proxy-lb-install, qui ne
+    // faisait que DESINSTALLER l'ancien equilibreur DNS local (squid-dns) : la
+    // fonction n'existe plus, seul le chemin HaCluster reste (left_status_hacluster).
+    $html[]=$tpl->widget_h("gray","far fa-times-circle","{disabled}","{load_balancer}");
 
 
 
     $btns[] = "</div>";
 
     $TINY_ARRAY["TITLE"]=$TitleTiny;
-    $TINY_ARRAY["ICO"]="fas fa-database";
+    $TINY_ARRAY["ICO"]=ico_database;
     $TINY_ARRAY["EXPL"]="{dns_settings_proxy_explain}";
     $TINY_ARRAY["BUTTONS"]=@implode("",$btns);
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";

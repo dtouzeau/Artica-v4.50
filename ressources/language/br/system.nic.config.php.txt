@@ -1,16 +1,16 @@
-<AddDNSServer>Give IP Address of your new DNS Server</AddDNSServer>
+<AddDNSServer>Indique o endere&#231;o IP do seu novo servidor DNS</AddDNSServer>
 <apply_network>Aplicar configuraç%C3£o de rede</apply_network>
-<apply_network_text>Save your settings and apply these configurations to the server</apply_network_text>
-<change>Change settings</change>
-<ChangeHostName>Give the full name of your server</ChangeHostName>
-<DeleteDNS>Are you sure deleting this DNS Server ?</DeleteDNS>
+<apply_network_text>Salve as suas configura&#231;&#245;es e aplique estas configura&#231;&#245;es ao servidor</apply_network_text>
+<change>Alterar configura&#231;&#245;es</change>
+<ChangeHostName>Indique o nome completo do seu servidor</ChangeHostName>
+<DeleteDNS>Tem certeza de que deseja excluir este servidor DNS ?</DeleteDNS>
 <nameserver>Servidor DNS</nameserver>
-<network_about>This area help you about network configuration and how to configure network services[br]This is where you configure how your system is connected to the network</network_about>
-<network_style>Network system</network_style>
-<not_allowed>Not allowed to change settings</not_allowed>
+<network_about>Esta &#225;rea ajuda voc&#234; sobre a configura&#231;&#227;o de rede e como configurar os servi&#231;os de rede[br]&#201; aqui que voc&#234; configura como o seu sistema est&#225; conectado &#224; rede</network_about>
+<network_style>Sistema de rede</network_style>
+<not_allowed>N&#227;o &#233; permitido alterar as configura&#231;&#245;es</not_allowed>
 <primary_dns>Servidor DNS prim%C3¡rio</primary_dns>
 <proto>proto</proto>
 <secondary_dns>Servidor DNS secund%C3¡rio</secondary_dns>
-<show_config_file_text>Read the configuration generated for your Operating system before apply settings</show_config_file_text>
+<show_config_file_text>Leia a configura&#231;&#227;o gerada para o seu sistema operacional antes de aplicar as configura&#231;&#245;es</show_config_file_text>
 <use_dhcp>Obter o endereço IP automaticamente</use_dhcp>
-<warning_wireless_nic>Artica didn't support wireless parameters, this feature is disabled</warning_wireless_nic>
+<warning_wireless_nic>O Artica n&#227;o suporta par&#226;metros sem fio, este recurso est&#225; desabilitado</warning_wireless_nic>

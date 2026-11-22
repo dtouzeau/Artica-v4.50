@@ -1,11 +1,15 @@
 <?php
 if(isset($_SESSION["uid"])){header("content-type: application/x-javascript");echo "document.location.href='logoff.php'";exit();}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_search_bar() / awc_pager_js() / awc_sort_js() /
+// awc_filter_js(): le kit des tableaux d'entites. L'include doit rester au
+// PREMIER NIVEAU -- glisse dans le bootstrap "if(!class_exists('sockets'))" il
+// ne s'executerait jamais (class.template-admin.inc a deja charge la classe) et
+// la page mourrait sur "Call to undefined function awc_table_style()".
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $tpl=new template_admin();if(!$tpl->xPrivs()){exit();}
 
 if(isset($_GET["popup"])){popup();exit;}
-if(isset($_POST["www"])){test();exit;}
-if(isset($_GET["results"])){results();exit;}
 js();
 
 function js(){
@@ -17,11 +21,9 @@ function js(){
 function popup() {
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$t=time();
 
 	$UfdbUsedDatabases=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbUsedDatabases"));
     if(!is_array($UfdbUsedDatabases)){$UfdbUsedDatabases=array();}
-    $TRCLASS=null;
     if(!isset($UfdbUsedDatabases["INSTALLED"])){
         $UfdbUsedDatabases["INSTALLED"]=array();
     }
@@ -33,202 +35,85 @@ function popup() {
     $MISSING=$UfdbUsedDatabases["MISSING"];
     if(!is_array($MISSING)){$MISSING=array();}
     if(!is_array($INSTALLED)){$INSTALLED=array();}
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]=awc_search_bar("ufdbdb-search","{search}");
+
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{database}/{categories}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
+    $html[]="<th>{database}/{categories}</th>";
+    // L'entete de taille est cliquable (awc_sort_js), d'ou son id. La fleche est
+    // un <span> ORDINAIRE: Font Awesome tourne en mode SVG+JS et remplace tout
+    // <i class='fa'> par un <svg> dont on ne peut plus ecrire l'innerHTML.
+    $html[]="<th id='ufdbdb-th-size' class='awc-nowrap'>{size} <span id='ufdbdb-th-size-arrow'></span></th>";
+    $html[]="<th class='awc-nowrap'>{status}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ufdbdb-rows'>";
 
     $catz=new mysql_catz();
+    $COUNT_MISSING=0;
+    $COUNT_INSTALLED=0;
 
-
+    // Les manquantes d'abord: c'est ce sur quoi l'administrateur doit agir.
     foreach ($MISSING as $category_id=>$none){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $COUNT_MISSING++;
         $md=md5(serialize($category_id));
-        $html[]="<tr class='$TRCLASS' id='$md'>";
         $category_name=$catz->CategoryIntToStr($category_id);
-        $html[]="<td class='text-danger'><strong>$category_name ($category_id)</strong></td>";
-        $html[]="<td width='1%' nowrap class='text-danger'>0</td>";
-        $html[]="<td class='text-danger' width='1%' nowrap><i class=\"fas fa-times\"></i></td>";
+        // data-sort est obligatoire meme ici: awc_sort_js() IGNORE une ligne qui
+        // n'en porte pas, elle resterait figee pendant que les autres bougent.
+        $html[]="<tr id='$md' data-sort='0'>";
+        $html[]="<td><div class='awc-ident'>"
+               ."<span class='awc-ico awc-ico-off'><i class='fas fa-triangle-exclamation'></i></span>"
+               ."<span class='awc-name awc-name-off'>$category_name"
+               ."<span class='awc-muted'>&nbsp;($category_id)</span></span></div></td>";
+        $html[]="<td class='awc-nowrap awc-mono awc-muted'>-</td>";
+        $html[]="<td class='awc-nowrap'><span class='awc-badge awc-badge-alert'>{not_installed}</span></td>";
+        $html[]="</tr>";
     }
 
     foreach ($INSTALLED as $index=>$array){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        if(!is_array($array)){continue;}
+        $COUNT_INSTALLED++;
         $md=md5(serialize($array));
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $category_id=$array["DB"];
+        $category_id=isset($array["DB"])?$array["DB"]:0;
         $category_name=$catz->CategoryIntToStr($category_id);
-        $size=FormatBytes($array["SIZE"]/1024);
-        $html[]="<td><strong>$category_name</strong></td>";
-        $html[]="<td width='1%' nowrap>$size</td>";
-        $html[]="<td width='1%' nowrap><i class=\"fas fa-check\"></i></td>";
+        $bytes=isset($array["SIZE"])?floatval($array["SIZE"]):0;
+        $size=FormatBytes($bytes/1024);
+        $html[]="<tr id='$md' data-sort='".sprintf('%.0f',$bytes)."'>";
+        $html[]="<td><div class='awc-ident'>"
+               ."<span class='awc-ico'><i class='fas fa-database'></i></span>"
+               ."<span class='awc-name'>$category_name</span></div></td>";
+        $html[]="<td class='awc-nowrap awc-mono'>$size</td>";
+        $html[]="<td class='awc-nowrap'><span class='awc-badge awc-badge-on'>{installed}</span></td>";
+        $html[]="</tr>";
+    }
 
+    if(($COUNT_MISSING+$COUNT_INSTALLED)==0){
+        $html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";
     }
 
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
+    $html[]="</table></div>";
 
-    echo $tpl->_ENGINE_parse_body($html);
-}
+    $foot=$tpl->FormatNumber($COUNT_INSTALLED)." {installed}";
+    if($COUNT_MISSING>0){
+        $foot.="&nbsp;&middot;&nbsp;<span class='text-danger'>"
+              .$tpl->FormatNumber($COUNT_MISSING)." {not_installed}</span>";
+    }
+    $html[]="<div class='awc-foot'><span>$foot</span>"
+           ."<span class='awc-pg' id='ufdbdb-pager'></span></div>";
+    $html[]="</div></div>";
+    // Le <script> n'etait JAMAIS referme dans la version FooTable.
+    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
-function results(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$tpl->js_display_results($_SESSION["UFDB_TESTS_RESULTS"], $_SESSION["UFDB_TESTS_TRUE"]);
-	
-}
-
-
-function test(){
-	$tpl=new template_admin();
-	$tpl->CLEAN_POST();
-	$www=$_POST["test"];
-	$q=new mysql_squid_builder();
-	$ipaddr=$_POST["ipaddr"];
-	$user=$_POST["user"];
-	$www=$_POST["www"];
-	$_SESSION["UFDBT"]["IP"]=$ipaddr;
-	$_SESSION["UFDBT"]["USER"]=$user;
-	$_SESSION["UFDBT"]["WWW"]=$www;
-	if($user==null){$user="-";}
-	if($ipaddr==null){$ipaddr="-";}
-	$sock=new sockets();
-	$datas=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ufdbguardConfig")));
-	$UseRemoteUfdbguardService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteUfdbguardService"));
-
-
-	if(!isset($datas["remote_port"])){$datas["remote_port"]=3977;}
-	if(!isset($datas["remote_server"])){$datas["remote_server"]=null;}
-	if(!isset($datas["listen_addr"])){$datas["listen_addr"]="127.0.0.1";}
-	if(!isset($datas["listen_port"])){$datas["listen_port"]="3977";}
-	if(!isset($datas["tcpsockets"])){$datas["tcpsockets"]=1;}
-	if(!isset($datas["url_rewrite_children_concurrency"])){$datas["url_rewrite_children_concurrency"]=2;}
-	if(!isset($datas["url_rewrite_children_startup"])){$datas["url_rewrite_children_startup"]=5;}
-	if(!isset($datas["url_rewrite_children_idle"])){$datas["url_rewrite_children_idle"]=5;}
-	if(!is_numeric($datas["listen_port"])){$datas["listen_port"]="3977";}
-	if(!is_numeric($datas["tcpsockets"])){$datas["tcpsockets"]=1;}
-	if(!is_numeric($datas["remote_port"])){$datas["remote_port"]=3977;}
-	if(is_file("/etc/artica-postfix/UFDB_NO_SOCKETS")){$datas["tcpsockets"]=1;}
-
-	if($datas["remote_port"]==null){$UseRemoteUfdbguardService=0;}
-	if($datas["listen_addr"]==null){$datas["listen_addr"]="127.0.0.1";}
-	if($datas["listen_addr"]=="all"){$datas["listen_addr"]="127.0.0.1";}
-	$address=null;
-
-
-	if($UseRemoteUfdbguardService==1){
-		if(trim($datas["remote_server"]==null)){$datas["remote_server"]="127.0.0.1";}
-		$address="-S {$datas["remote_server"]} -p {$datas["remote_port"]} ";
-
-	}
-
-
-	if($address==null){
-		if($datas["tcpsockets"]==1){
-			$address="-S {$datas["listen_addr"]} -p {$datas["listen_port"]} ";
-				
-		}else{
-			$address="-S 127.0.0.1 -p {$datas["listen_port"]} ";
-		}
-	}
-	if($address==null){echo "<strong style='color:#d32d2d'>Cannot determine address</strong>\n";return;}
-
-	$cmdline="$address $www $ipaddr $user";
-	$cmdline=urlencode(base64_encode($cmdline));
-	$datas=base64_decode($sock->getFrameWork("squid.php?ufdbclient=$cmdline"));
-
-	if(preg_match("#^http.*#", $www)){
-		$url_www=parse_url($www);
-		$url_host=$url_www["host"];
-	}else{
-		$url_host=$www;
-	}
-
-	$tpl=new template_admin();
-	$title_pass=$tpl->_ENGINE_parse_body("{access_to_internet}");
-	$redirected=$tpl->_ENGINE_parse_body("<strong class='text-danger'>{redirected}/{denied}</strong>");
-	$datas=trim($datas);
-	if($datas=="OK"){$datas=null;}
-
-	if(trim($datas)==null){
-
-		$catz=new mysql_catz();
-		$category_id=$catz->GET_CATEGORIES($url_host);
-		if($category_id>0){$category_text="<br>".$tpl->_ENGINE_parse_body($tpl->CategoryidToName($category_id));}
-		
-		$_SESSION["UFDB_TESTS_TRUE"]=false;
-		$_SESSION["UFDB_TESTS_RESULTS"]="<H1>$title_pass<H1>$category_text";
-		
-
-		return;}
-
-
-
-
-	$HTTP_CODE="{http_status_code}: 302<br>";
-	if(preg_match('#status=([0-9]+)\s+url="(.*?)"#', $datas,$re)){$datas=$re[2];$HTTP_CODE="{http_status_code}: {$re[1]}<br>";}
-	$url=parse_url($datas);
-	if(!is_numeric($url["port"])){$url["port"]=80;}
-
-	$f[]="<h1>";
-	$f[]="$redirected</H1>";
-	$f[]="<h3 class='font-bold no-margins'>{$url["scheme"]}://{$url["host"]}:{$url["port"]}</h3>";
-
-
-	$queries=explode("&",$url["query"]);
-
-	while (list ($num, $line) = each ($queries)){
-		if(preg_match("#(.+?)=(.+)#", $line,$re)){$array[$re[1]]=$re[2];}
-	}
-
-	$f[]="<small>". $tpl->_ENGINE_parse_body($HTTP_CODE)."</small><br>";
-
-
-	if($array["targetgroup"]=="none"){
-		$catz=new mysql_catz();
-		$category_id=$catz->GET_CATEGORIES($url_host);
-		if($category_id>0){$category=$tpl->CategoryidToName($category_id);}
-		if($category==null){$array["targetgroup"]="{ufdb_none} - {unknown}";}else{$array["targetgroup"]="{ufdb_none} - $category";}
-
-	}
-	if(preg_match("#^P([0-9]+)#", $array["targetgroup"],$re)){
-		$array["targetgroup"]=$tpl->CategoryidToName($array["targetgroup"]);
-	}
-
-	if($url["path"] == "/ufdbguardd.php"){
-			if(isset($array["rule-id"])){
-			$sql="SELECT * FROM webfilter_rules WHERE ID={$array["rule-id"]}";
-			$ligne=mysqli_fetch_array($q->QUERY_SQL($sql));
-			$f[]="<small>".  $tpl->_ENGINE_parse_body("{rulename}: <strong>{$ligne["rulename"]} - {$array["clientgroup"]}</strong></small><br>");
-			}
-		if(isset($array["clientaddr"])){
-		$f[]="<small>".   $tpl->_ENGINE_parse_body("{address}: {$array["clientaddr"]}</small><br>");
-			}
-		if(isset($array["clientuser"])){
-		$f[]="<small>".   $tpl->_ENGINE_parse_body("{member}: {$array["clientuser"]}</small><br>");
-			}
-		if(isset($array["targetgroup"])){
-		$f[]="<small>".   $tpl->_ENGINE_parse_body("{category}: <strong>{$array["targetgroup"]}</strong></small><br>");
-			}
-	}
-
-	$f[]="";
-	$_SESSION["UFDB_TESTS_TRUE"]=true;
-	$_SESSION["UFDB_TESTS_RESULTS"]=@implode("\n", $f);
-
+    // CSS et JS se concatenent AUTOUR de _ENGINE_parse_body(): sa regex
+    // #{(.+?)}# lirait chaque corps de regle CSS et chaque bloc JS comme un
+    // {token}. Ordre impose: pager, puis tri (il rend la main par
+    // tb.__awcRedraw), puis filtre.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"ufdbdb-rows","ufdbdb-pager")
+        .awc_sort_js("ufdbdb-th-size","ufdbdb-rows","desc")
+        .awc_filter_js("ufdbdb-search","ufdbdb-rows","ufdbdb-pager");
 }

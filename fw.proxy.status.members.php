@@ -158,7 +158,7 @@ function users_week(){
 
 function users_day(){
 
-	$MAIN=unserialize($_GET["data"]);
+	$MAIN=unserialize($_GET["data"], ['allowed_classes' => false]); // browser input: block PHP object injection
 	$tpl=new templates();
 	$page=CurrentPageName();
 	$title="{members}/{this_day}";
@@ -180,7 +180,7 @@ function users_day(){
 
 function users_hours(){
 	
-	$MAIN=unserialize($_GET["data"]);
+	$MAIN=unserialize($_GET["data"], ['allowed_classes' => false]); // browser input: block PHP object injection
 	$tpl=new templates();
 	$page=CurrentPageName();
 	$title="{members}/{this_hour}";

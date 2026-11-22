@@ -8,7 +8,6 @@ include_once(dirname(__FILE__)."/ressources/class.familysites.inc");
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["delete"])){delete();exit;}
-if(isset($_GET["accept"])){accept();exit;}
 if(isset($_GET["empty-js"])){empty_js();exit;}
 if(isset($_POST["empty"])){empty_table();exit;}
 
@@ -38,7 +37,9 @@ function delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM webfilters_usersasks WHERE `zmd5`='$md5'");
+	// Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+	$results=$q->QUERY_SQL_PARAMS("SELECT * FROM webfilters_usersasks WHERE `zmd5`=?",array((string)$md5));
+	$ligne=(is_array($results) && isset($results[0]))?$results[0]:array();
 	$uid=$ligne["uid"];
 	$ipaddr=$ligne["ipaddr"];
 	$www=$ligne["sitename"];
@@ -49,7 +50,8 @@ function delete_js(){
 function delete(){
 	$md5=$_POST["delete"];
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	$q->QUERY_SQL("DELETE FROM webfilters_usersasks WHERE `zmd5`='$md5'");
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM webfilters_usersasks WHERE `zmd5`=?",array((string)$md5));
 	if(!$q->ok){echo $q->mysql_error;return;}
     admin_tracks("Remove unblock ticket $md5");
 }
@@ -76,37 +78,41 @@ function table(){
 
     $sql="SELECT * FROM webfilterev ORDER BY zDate LIMIT 500";
 
-	$search=$_GET["search"];
+	$search=(string)($_GET["search"] ?? "");
+	$params=array();
     if(strlen($search)>1){
         $search="*$search*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
         $sql="SELECT * FROM webfilterev WHERE (
-            (domain LIKE '$search') OR 
-            (categoryname LIKE '$search') OR
-            (clientaddr LIKE '$search') OR
-            (clientname LIKE '$search') OR
-            (clientuser LIKE '$search') OR
-            (webrulename LIKE '$search') )
+            (domain LIKE $1) OR 
+            (categoryname LIKE $1) OR
+            (clientaddr LIKE $1) OR
+            (clientname LIKE $1) OR
+            (clientuser LIKE $1) OR
+            (webrulename LIKE $1) )
             ORDER BY zDate LIMIT 500";
+        // Pentest 2026-11-04 : search etait concatene dans la requete.
+        $params=array($search);
 
     }
 	
 	$q=new postgres_sql();
 
-	$results=$q->QUERY_SQL($sql);
+	if(count($params)>0){$results=$q->QUERY_SQL_PARAMS($sql,$params);}else{$results=$q->QUERY_SQL($sql);}
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
 	$s="style='width:1%' nowrap";
 	$TRCLASS=null;
     while($ligne=@pg_fetch_assoc($results)){
-		$domain=$ligne["domain"];
+		// Pentest 2026-11-04 : domaine/client/categorie/regle (donnee externe) affiche sans encodage (XSS stockee).
+		$domain=req_html($ligne["domain"]);
 		$time=strtotime($ligne["zdate"]);
-		$categoryname=$ligne["categoryname"];
-        $webrulename=$ligne["webrulename"];
-		$clientaddr=$ligne["clientaddr"];
-        $clientname=$ligne["clientname"];
-        $clientuser=$ligne["clientuser"];
+		$categoryname=req_html($ligne["categoryname"]);
+        $webrulename=req_html($ligne["webrulename"]);
+		$clientaddr=req_html($ligne["clientaddr"]);
+        $clientname=req_html($ligne["clientname"]);
+        $clientuser=req_html($ligne["clientuser"]);
         $zmd5=md5(serialize($ligne));
         $zDate=$tpl->time_to_date($time,true);
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}

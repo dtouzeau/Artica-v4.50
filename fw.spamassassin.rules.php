@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -9,6 +12,9 @@ $GLOBALS["RULES_TYPE"]["uri"]="{spam_uri_item}";
 $GLOBALS["RULES_TYPE"]["header"]="{spam_header_item}";
 
 
+// Pentest 2026-11-04 : ruleid/meta-rule-enable/subrules-enable/subruleid etaient recopies sans encodage dans la page (XSS).
+foreach(array("ruleid","meta-rule-enable","subrules-enable") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=intval($_GET[$xssk]);}}
+foreach(array("ruleid","subruleid") as $xssk){if(isset($_POST[$xssk])){$_POST[$xssk]=intval($_POST[$xssk]);}}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["meta-rule-js"])){meta_rule_js();exit;}
 if(isset($_GET["meta-rule-popup"])){meta_rule_popup();exit;}
@@ -100,12 +106,9 @@ function subrules_js(){
 	
 }
 
-function subrules_popup(){
-
-
-
-
-}
+// Une ebauche vide de subrules_popup() restait ici alors que la vraie
+// implementation est declaree plus bas: PHP refusait la seconde declaration
+// ("Cannot redeclare subrules_popup()") et la page entiere etait fatale.
 
 function meta_rule_tabs(){
 	$ID=intval($_GET["meta-rule-tabs"]);
@@ -235,16 +238,19 @@ function subrules_save(){
 
 	$pattern=base64_encode($_POST["pattern"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
+	// Pentest 2026-11-04 : ruletype/header etaient concatenes dans la requete.
+	$ID=intval($ID);
+	$ruleid=intval($ruleid);
 	if($ID==0){
 		$sql="INSERT INTO sub_rules (meta_id,ruletype,enabled,header,pattern)
-		VALUES('$ruleid','$ruletype','1','$header','$pattern')";
-		$q->QUERY_SQL($sql);
+		VALUES(?,?,'1',?,?)";
+		$q->QUERY_SQL_PARAMS($sql,array($ruleid,$ruletype,$header,$pattern));
 		if(!$q->ok){echo $q->mysql_error;}
 		return;
 	}
 	
-	$sql="UPDATE sub_rules SET ruletype='$ruletype', header='$header',pattern='$pattern' WHERE ID=$ID";
-	$q->QUERY_SQL($sql);
+	$sql="UPDATE sub_rules SET ruletype=?, header=?,pattern=? WHERE ID=$ID";
+	$q->QUERY_SQL_PARAMS($sql,array($ruletype,$header,$pattern));
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -334,22 +340,25 @@ function meta_rule_save(){
 	
 	$rulename=strtoupper($rulename);
 	
-	$_POST["describe"]=$q->sqlite_escape_string2($_POST["describe"]);
+	// Pentest 2026-11-04 : describe/finalscore/calculation etaient concatenes dans la requete.
+	$describe=strval($_POST["describe"]);
+	$finalscore=intval($_POST["finalscore"]);
+	$calculationv=intval($_POST["calculation"]);
 	
 	if($ID==0){
 		$sql="INSERT INTO meta_rules (rulename,describe,finalscore,calculation,enabled) 
-		VALUES ('$rulename','{$_POST["describe"]}','{$_POST["finalscore"]}','{$_POST["calculation"]}',1)";
-		$q->QUERY_SQL($sql);
+		VALUES (?,?,?,?,1)";
+		$q->QUERY_SQL_PARAMS($sql,array($rulename,$describe,$finalscore,$calculationv));
 		if(!$q->ok){echo $q->mysql_error;return;}
 		$_SESSION["SPAMASSID"]=$q->last_id;
 		return;
 	}
 	
-	$sql="UPDATE meta_rules SET rulename='$rulename', 
-	describe='{$_POST["describe"]}',
-	finalscore='{$_POST["finalscore"]}',
-	calculation='{$_POST["calculation"]}' WHERE ID=$ID";
-	$q->QUERY_SQL($sql);
+	$sql="UPDATE meta_rules SET rulename=?, 
+	describe=?,
+	finalscore=?,
+	calculation=? WHERE ID=$ID";
+	$q->QUERY_SQL_PARAMS($sql,array($rulename,$describe,$finalscore,$calculationv));
 	if(!$q->ok){echo $q->mysql_error;return;}
 	
 }
@@ -404,7 +413,8 @@ function subrules_table(){
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td><strong>". $tpl->td_href($TypeText,null,"Loadjs('$page?subrule-js={$ligne['ID']}&ruleid=$ruleid')")."</strong>";
-		$html[]="<td>$pattern</td>";
+		// Pentest 2026-11-04 : pattern/describe (donnee externe) affiche sans encodage (XSS stockee).
+		$html[]="<td>".req_html($pattern)."</td>";
 		$html[]="<td width=1% class='center' nowrap>". $tpl->icon_check($ligne["enabled"],"Loadjs('$page?subrules-enable=$ID')",null,"AsPostfixAdministrator")."</center></td>";
 		$html[]="<td width=1% class='center' nowrap>". $tpl->icon_delete("Loadjs('$page?subrules-delete={$ligne['ID']}&md=$md')","AsPostfixAdministrator")."</center></td>";
 		$html[]="</tr>";
@@ -450,7 +460,7 @@ function table(){
 	$ARRAY["CMD"]="milter-spamass.php?urls-database=yess";
 	$ARRAY["TITLE"]="{building_rules}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=spammassassin-table-progress');";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=spammassassin-table-progress');";
 	
 
 	$add="Loadjs('$page?meta-rule-js=0')";
@@ -517,6 +527,7 @@ function table(){
 function EXPLAIN_SUBRULES($ID){
 	$page=CurrentPageName();
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
+	$ID=intval($ID);
 	$sql="SELECT * FROM `sub_rules` WHERE meta_id=$ID AND enabled=1 ORDER BY ID DESC";
 	$tpl=new template_admin();
 	$results=$q->QUERY_SQL($sql);
@@ -543,7 +554,8 @@ function EXPLAIN_THIS($ligne){
 	$EXPLAIN_SUBRULES=EXPLAIN_SUBRULES($ligne["ID"]);
 	
 	if(count($EXPLAIN_SUBRULES)==0){
-		return "{$ligne["describe"]}<br><small>{do_nothing} ({no_rule})</small>";
+		// Pentest 2026-11-04 : pattern/describe (donnee externe) affiche sans encodage (XSS stockee).
+		return req_html($ligne["describe"])."<br><small>{do_nothing} ({no_rule})</small>";
 		
 	}
 	
@@ -557,7 +569,7 @@ function EXPLAIN_THIS($ligne){
 	if($block_with_required_score==0){$block_with_required_score=15;}
 	
 	if($ligne["describe"]<>null){
-		$f[]="{$ligne["describe"]}";
+		$f[]=req_html($ligne["describe"]);
 	}
 	
 	$f[]="<small>{for_elements}: ".@implode(", ", $EXPLAIN_SUBRULES);

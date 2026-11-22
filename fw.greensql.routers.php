@@ -7,6 +7,8 @@ include_once(dirname(__FILE__)."/ressources/class.mysql.greensql.inc");
 
 
 if(isset($_POST["dbpid"])){dbpid_save();exit;}
+// Pentest 2026-11-04 : proxyid-tabs, proxyid-databases, proxyid-databases-list, proxyid et dbpid-popup etaient recopies sans encodage dans la page (XSS).
+foreach (array("proxyid-tabs","proxyid-databases","proxyid-databases-list","proxyid","dbpid-popup") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=intval($_GET[$xk]);}}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["proxyid-js"])){proxyid_js();exit;}
@@ -124,7 +126,8 @@ function dbpid_delete(){
 
 
 function proxyid_popup(){
-	$proxyid=$_GET["proxyid-popup"];
+	// Pentest 2026-11-04 : proxyid-popup etait concatene dans la requete.
+	$proxyid=intval($_GET["proxyid-popup"]);
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ligne=array();
@@ -175,6 +178,24 @@ function proxyid_save(){
 		echo "Local IP has wrong IP address format.<br/>\n";
 	}
 	
+	// Pentest 2026-11-04 : frontend_ip, backend_ip, ports, dbtype et proxyid etaient concatenes dans la requete.
+	// green_sql (MySQL) n'offre pas de requete parametree : validation stricte de chaque valeur.
+	if(!filter_var($_POST['frontend_ip'],FILTER_VALIDATE_IP)){
+		echo "Local IP has wrong IP address format.<br/>\n";
+		return;
+	}
+	if(!filter_var($_POST['backend_ip'],FILTER_VALIDATE_IP)){
+		echo "Remote IP has wrong IP address format.<br/>\n";
+		return;
+	}
+	if(!in_array($_POST['dbtype'],array("mysql","pgsql"),true)){
+		echo "Invalid database type.<br/>\n";
+		return;
+	}
+	$_POST['frontend_port']=intval($_POST['frontend_port']);
+	$_POST['backend_port']=intval($_POST['backend_port']);
+	$_POST['proxyid']=intval($_POST['proxyid']);
+
 	if($_POST["proxyid"]==0){
 		$sql = "SELECT proxyid from proxy WHERE frontend_ip = '{$_POST['frontend_ip']}' AND frontend_port = ".$_POST['frontend_port'];
 		$ligne=mysqli_fetch_array($q->QUERY_SQL($sql));
@@ -383,7 +404,8 @@ function proxyid_databases_list(){
 	$tpl=new template_admin();
 	$sock=new sockets();
 	$q=new green_sql();
-	$proxyid=$_GET["proxyid-databases-list"];
+	// Pentest 2026-11-04 : proxyid-databases-list etait concatene dans la requete.
+	$proxyid=intval($_GET["proxyid-databases-list"]);
 	
 	$html[]="<div class='row' style='text-align:left;padding-left:10px'><div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:10px;text-align:left'>";
 	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?dbpid-js=0&proxid=$proxyid');\">
@@ -452,8 +474,9 @@ function proxyid_databases_list(){
 
 function dbpid_popup(){
 	$q=new green_sql();
-	$proxyid=$_GET["proxyid"];
-	$dbpid=$_GET["dbpid-popup"];
+	// Pentest 2026-11-04 : proxyid et dbpid-popup etaient concatenes dans la requete.
+	$proxyid=intval($_GET["proxyid"]);
+	$dbpid=intval($_GET["dbpid-popup"]);
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ligne=array();
@@ -536,7 +559,8 @@ function get_db_modes(){
 
 
 function dbpid_save(){
-	$dbpid=$_POST["dbpid"];
+	// Pentest 2026-11-04 : dbpid et proxyid etaient concatenes dans la requete.
+	$dbpid=intval($_POST["dbpid"]);
 	$db['create_perm'] = intval(trim($_POST['create_perm']));
 	$db['drop_perm']   = intval(trim($_POST['drop_perm']));
 	$db['alter_perm']  = intval(trim($_POST['alter_perm']));
@@ -603,7 +627,7 @@ function dbpid_save(){
 		return;
 	}
 	
-	$fields["proxyid"]=$_POST['proxyid'];
+	$fields["proxyid"]=intval($_POST['proxyid']);
 	$fields["db_name"]=$db['db_name'];
 	$fields["perms"]=$db['perms'];
 	$fields["status"]=$block_mode;

@@ -1,11 +1,11 @@
-<about>This feature allows you to automatically share USB devices when you plug them on this computer</about>
-<add_shared_disk>If click on it, you will automatically share this USB device in your network</add_shared_disk>
-<available_disks>available disks</available_disks>
-<folder_properties>Share and folder properties</folder_properties>
-<off_time>OFF time</off_time>
-<off_time_text>If set a time (eg 17:00) artica will umount automatically the device in order to allows you unplug it</off_time_text>
-<remove_usb_connection>Remove this device from Sharing list</remove_usb_connection>
-<SAMBA_USB_SHARE>Samba USB Devices Sharing</SAMBA_USB_SHARE>
-<selected_devices>Selected devices</selected_devices>
-<shared_name>Shared name</shared_name>
+<about>Ta funkcja umo&#380;liwia automatyczne udost&#281;pnianie urz&#261;dze&#324; USB po pod&#322;&#261;czeniu ich do tego komputera</about>
+<add_shared_disk>Po klikni&#281;ciu automatycznie udost&#281;pnisz to urz&#261;dzenie USB w swojej sieci</add_shared_disk>
+<available_disks>dost&#281;pne dyski</available_disks>
+<folder_properties>W&#322;a&#347;ciwo&#347;ci udzia&#322;u i folderu</folder_properties>
+<off_time>Godzina wy&#322;&#261;czenia</off_time>
+<off_time_text>Je&#347;li ustawisz godzin&#281; (np. 17:00), artica automatycznie odmontuje urz&#261;dzenie, aby umo&#380;liwi&#263; jego od&#322;&#261;czenie</off_time_text>
+<remove_usb_connection>Usu&#324; to urz&#261;dzenie z listy udost&#281;pniania</remove_usb_connection>
+<SAMBA_USB_SHARE>Udost&#281;pnianie urz&#261;dze&#324; USB Samba</SAMBA_USB_SHARE>
+<selected_devices>Wybrane urz&#261;dzenia</selected_devices>
+<shared_name>Nazwa udost&#281;pniona</shared_name>
 <uuid>Identyfikator urz%C4%85dzenia</uuid>

@@ -155,7 +155,7 @@ function search(){
 	foreach ($data as $line){
 		$line=trim($line);
 		if(!preg_match("/^(.*?)\s+[0-9]+\s+\[(.+?)\]\s+(.+?)$/", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
+			echo "<strong style='color:red'>".req_html($line)."</strong><br>"; 
 			continue;
         }
 		$date="{$re[1]}";
@@ -163,7 +163,8 @@ function search(){
 		$FTime=date("Y-m-d H:i:s",$xtime);
 		$curDate=date("Y-m-d");
 		$FTime=trim(str_replace($curDate, "", $FTime));
-		$line=$re[3];
+		// Pentest 2026-11-04 : ligne de journal MySQL (donnee externe) affiche sans encodage (XSS stockee).
+		$line=req_html($re[3]);
 
 		
 		
@@ -178,7 +179,7 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/mysql.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/mysql.syslog.pattern"))."</i></div>";
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
 	

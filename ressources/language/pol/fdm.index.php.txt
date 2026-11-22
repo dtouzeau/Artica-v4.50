@@ -1,12 +1,10 @@
-<fetchrule>Fetching rule </fetchrule>
-<folder_to_fetch>Remote folder to fetch</folder_to_fetch>
-<keep>Leave messages on server</keep>
-<no-apop>Disable APOP</no-apop>
-<no-apop_text>
-fdm will attempt to use APOP to obscure the password, if the server offers it.[br]
-If the server advertises itself as supporting APOP but subsequently refuses
-to accept it,[br]fdm will not retry with a cleartext password.[br] Disable APOP by enabling this checkbox
-</no-apop_text>
-<server_name>Remote mailbox server</server_name>
+<fetchrule>Regu&#322;a pobierania</fetchrule>
+<folder_to_fetch>Zdalny folder do pobrania</folder_to_fetch>
+<keep>Pozostaw wiadomo&#347;ci na serwerze</keep>
+<no-apop>Wy&#322;&#261;cz APOP</no-apop>
+<no-apop_text>fdm spr&#243;buje u&#380;y&#263; APOP do ukrycia has&#322;a, je&#347;li serwer to oferuje.[br]
+Je&#347;li serwer og&#322;asza si&#281; jako obs&#322;uguj&#261;cy APOP, ale nast&#281;pnie odmawia
+jego zaakceptowania,[br]fdm nie ponowi pr&#243;by z has&#322;em w postaci zwyk&#322;ego tekstu.[br] Wy&#322;&#261;cz APOP, zaznaczaj&#261;c to pole</no-apop_text>
+<server_name>Zdalny serwer skrzynek pocztowych</server_name>
 <server_port>Zdalny port</server_port>
-<server_type>Server type</server_type>
+<server_type>Typ serwera</server_type>

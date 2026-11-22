@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 if(isset($_GET["verbose"])){ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',"");ini_set('error_append_string',"<br>\n");$GLOBALS["VERBOSE"]=true;$GLOBALS["DEBUG_PROCESS"]=true;$GLOBALS["VERBOSE_SYSLOG"]=true;}
 if(isset($argv)){if(preg_match("#--verbose#",implode(" ",$argv))){$GLOBALS["VERBOSE"]=true;}}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
@@ -66,7 +67,9 @@ function enable_js(){
 }
 
 function delete_js(){
-    $ID=$_GET["siteid"];
+    if(!fw_progress_page_priv("AsWebMaster|AsSystemWebMaster")){return false;}   // task link signed for this session: built only for whom may run it
+    // Pentest 2026-11-04 : siteid etait recopie sans encodage dans la page (XSS).
+    $ID=intval($_GET["siteid"]);
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
     $ligne=$q->mysqli_fetch_array("SELECT hostname FROM wp_sites WHERE ID=$ID");
@@ -89,11 +92,12 @@ function delete_perform(){
 }
 
 function file_uploaded(){
+    if(!fw_progress_page_priv("AsWebMaster|AsSystemWebMaster")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl = new template_admin();
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
     $file=$_GET["file-uploaded"];
-    $siteid=$_GET["siteid"];
+    $siteid=intval($_GET["siteid"]);
     $filename=base64_encode($file);
     $service_reconfigure=$tpl->framework_buildjs("wordpress.php?templates-install=$siteid&filename=$filename",
         "wordpress.single-install.$siteid",
@@ -139,10 +143,10 @@ function table(){
         $md=md5(serialize($main));
         $delete=$tpl->icon_delete("Loadjs('$page?delete-js=$name&siteid=$ID')");
         if($status==0) {
-            $enable=$tpl->button_inline("{disabled}","Loadjs('$page?enable-js=$name&siteid=$ID&md=$md')",
-                "fa-solid fa-circle",null,0,"btn-default");
+            // Interrupteur : seule l'activation existe, l'etat actif est donc en lecture seule.
+            $enable=$tpl->inline_switch("{disabled}",false,"Loadjs('$page?enable-js=$name&siteid=$ID&md=$md')");
         }else{
-            $enable=$tpl->button_inline("{enabled}","blur()","fa-solid fa-circle-check");
+            $enable=$tpl->inline_switch("{enabled}",true);
             $delete="&nbsp;";
         }
 

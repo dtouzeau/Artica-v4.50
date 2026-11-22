@@ -37,6 +37,7 @@ function popup():bool{
 
     $h   = [];
     $h[] = "<div id='rename-result-$id' style='margin-bottom:8px'></div>";
+    if (is_object($status)) { $h[] = netagent_stale_banner($status->cached_at ?? ""); }
 
 
     // ── Physical hostname ────────────────────────────────────────────────────
@@ -72,7 +73,12 @@ function popup():bool{
     $h[] = "<script>";
     $h[] = "$('#rename-btn-$id').on('click',function(){";
     $h[] = "  var lbl=$.trim($('#rename-label-$id').val());";
-    $h[] = "  if(!lbl){alert('{hostname}');return;}";
+    // Le texte est prepare POUR le JavaScript: une boite d'alerte affiche la
+    // chaine litteralement, entites comprises. javascript_parse_text() resout le
+    // jeton, html_entity_decode() rend l'apostrophe et les accents, addslashes()
+    // echappe ce qui doit l'etre. Meme motif que RefreshIntervalI18n().
+    $lblHost=addslashes(html_entity_decode($tpl->javascript_parse_text("{hostname}"),ENT_QUOTES,"UTF-8"));
+    $h[] = "  if(!lbl){alert('$lblHost');return;}";
     $h[] = "  var btn=$(this);";
     $h[] = "  btn.prop('disabled',true).find('i').attr('class','fas fa-spinner fa-spin');";
     $h[] = "  $.post('$page',{";

@@ -2516,7 +2516,6 @@ amplify-com-mktg.imgix.net
 amplify-imp.outbrain.com
 amplify.outbrain.com
 amplifypixel.outbrain.com
-amplitude.com
 ampmetrics.techcrunch.com
 amprtc.media.net
 ampugi334f.com
@@ -7921,7 +7920,6 @@ gertesaevided.xyz
 geshopimg.logsss.com
 gestern-nacht-im-taxi.de
 get.adolf.tv
-get.amplitude.com
 get.civicscience.com
 get.cryptobrowser.site
 get.tutoads.tv
@@ -8971,7 +8969,6 @@ infinityid.condenastdigital.com
 influ2.com
 influencers.tapinfluence.com
 info.adacado.com
-info.amplitude.com
 info.evidon.com
 info.kinoclub77.ru
 info.marugroup.net
@@ -11446,7 +11443,6 @@ ownandthaiho.biz
 owneriq.net
 owneriq.net.edgekey.net
 ownlocal.com
-ownpage.fr
 ox-bio.com
 ox-d.slader.servedbyopenx.com
 ox-delivery-prod-europe-west2.openx.net
@@ -13094,7 +13090,6 @@ refpasrasw.world
 refraintupaiid.com
 reg.biv.sony.tv
 reginasfreyr.com
-regionconfig.amplitude.com
 register.appsflyer.com
 register.collector.scopely.io
 register.xmpush.xiaomi.com
@@ -18434,7 +18429,6 @@ amplify-com-mktg.imgix.net
 amplify-imp.outbrain.com
 amplify.outbrain.com
 amplifypixel.outbrain.com
-amplitude.com
 ampmetrics.techcrunch.com
 amprtc.media.net
 ams1-ib.adnxs.com
@@ -18686,7 +18680,6 @@ api.yieldlove-ad-serving.net
 api.zcoup.com
 api16-access-gcp.pangle.io
 api16-access-sg.pangle.io
-api2.amplitude.com
 api2.appsflyer.com
 api2.batmobi.net
 api2.branch.io
@@ -20711,7 +20704,6 @@ indus.iad-01.braze.com
 inferna.iad-03.braze.com
 influencers.tapinfluence.com
 info.adacado.com
-info.amplitude.com
 info.evidon.com
 info.startappservice.com
 info.static.startappservice.com
@@ -21926,7 +21918,6 @@ redfast.com
 redintelligence.net
 redirect.appleads-trk.com
 referrer.disqus.com
-regionconfig.amplitude.com
 register.appsflyer.com
 register.collector.scopely.io
 registration.gimbal.com

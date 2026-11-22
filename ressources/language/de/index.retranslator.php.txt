@@ -1,15 +1,15 @@
-<available_components>Available components saved</available_components>
-<available_products_to_be_updated>Available products to add & update</available_products_to_be_updated>
-<components>Components</components>
-<http_engine>HTTP service</http_engine>
+<available_components>Verf&#252;gbare gespeicherte Komponenten</available_components>
+<available_products_to_be_updated>Verf&#252;gbare Produkte zum Hinzuf&#252;gen und Aktualisieren</available_products_to_be_updated>
+<components>Komponenten</components>
+<http_engine>HTTP-Dienst</http_engine>
 <proxy_settings>Proxy-Einstellungen</proxy_settings>
-<RetranslatorCronMinutes>Get Kaspersky Pattern databases each</RetranslatorCronMinutes>
-<RetranslatorEnabled>Enable get Kaspersky Pattern databases</RetranslatorEnabled>
-<RetranslatorHttpdEnabled>Enable HTTP service</RetranslatorHttpdEnabled>
-<RetranslatorHttpdPort>HTTP service listen port</RetranslatorHttpdPort>
-<RetranslatorProxyAddress>Specifies a proxy to be used for downloads</RetranslatorProxyAddress>
-<RetranslatorRegionSettings>Preferred servers list region</RetranslatorRegionSettings>
-<RetranslatorReportLevel>Defines how detailed the report entries should be</RetranslatorReportLevel>
+<RetranslatorCronMinutes>Kaspersky-Pattern-Datenbanken abrufen alle</RetranslatorCronMinutes>
+<RetranslatorEnabled>Abrufen der Kaspersky-Pattern-Datenbanken aktivieren</RetranslatorEnabled>
+<RetranslatorHttpdEnabled>HTTP-Dienst aktivieren</RetranslatorHttpdEnabled>
+<RetranslatorHttpdPort>HTTP-Dienst-Lausch-Port</RetranslatorHttpdPort>
+<RetranslatorProxyAddress>Gibt einen f&#252;r Downloads zu verwendenden Proxy an</RetranslatorProxyAddress>
+<RetranslatorRegionSettings>Region der bevorzugten Serverliste</RetranslatorRegionSettings>
+<RetranslatorReportLevel>Definiert, wie detailliert die Berichtseintr&#228;ge sein sollen</RetranslatorReportLevel>
 <RetranslatorReportLevel_text>Die Detailstufen sind:[br]
 [ul][br]
 [li][b]0[/b]- Nur schwerwiegende Fehler melden. Es werden nur die Fehler gemeldet, die zu einem Programm[br]
@@ -34,27 +34,22 @@ Beachten Sie, dass die Gesamtmenge der Aktivit%C3%A4tsinformationen recht gro%C3
 diese Stufe, wenn Sie Fehler im Produkt melden. Vergessen Sie nicht,[br]
 danach auszuschalten. Debug-Meldungen sind in der Protokolldatei mit einem 'D' gekennzeichnet.[/li]
 [/ul]</RetranslatorReportLevel_text>
-<RetranslatorUpdateServerUrl>Specific source</RetranslatorUpdateServerUrl>
-<RetranslatorUpdateServerUrl_text>
-Specifies a custom URL from where to download the updates.[br]
-[br]URL ca be:
+<RetranslatorUpdateServerUrl>Spezifische Quelle</RetranslatorUpdateServerUrl>
+<RetranslatorUpdateServerUrl_text>Gibt eine benutzerdefinierte URL an, von der die Updates heruntergeladen werden.[br]
+[br]Die URL kann sein:
 [ul]
-[li]http://location/ - to use HTTP protocol;[/li]
-[li]ftp://location/  - to use FTP protocol;[/li]
-[li]/local/path      - to use a local path.[/li]
-[/ul]
-</RetranslatorUpdateServerUrl_text>
-<RetranslatorUseProxy>Work only through the proxy</RetranslatorUseProxy>
-<RetranslatorUseUpdateServerUrl>Use a specific source</RetranslatorUseUpdateServerUrl>
-<RetranslatorUseUpdateServerUrlOnly>Use only this source</RetranslatorUseUpdateServerUrlOnly>
-<RetranslatorUseUpdateServerUrlOnly_text>If used, but the update fails, the updater continues by trying the servers in its default list.[br]
-If this setting is set to "yes" (the (value assumed if not otherwise specified),[br]
-keepup2date will not fall-back if is not usable, and stop trying other servers.
-</RetranslatorUseUpdateServerUrlOnly_text>
-<RetranslatorUseUpdateServerUrl_text>
-perform an update from the specified Url.[br] If that fails, then it uses the default list of servers
-</RetranslatorUseUpdateServerUrl_text>
-<retranslator_engine>Kaspersky Retranslator Engine</retranslator_engine>
-<sources_settings>Sources settings</sources_settings>
-<Update_sites_info>Update sites info</Update_sites_info>
-<Update_sites_info_title>Update sites info (URL and regions)</Update_sites_info_title>
+[li]http://location/ - um das HTTP-Protokoll zu verwenden;[/li]
+[li]ftp://location/ - um das FTP-Protokoll zu verwenden;[/li]
+[li]/local/path - um einen lokalen Pfad zu verwenden.[/li]
+[/ul]</RetranslatorUpdateServerUrl_text>
+<RetranslatorUseProxy>Nur &#252;ber den Proxy arbeiten</RetranslatorUseProxy>
+<RetranslatorUseUpdateServerUrl>Eine bestimmte Quelle verwenden</RetranslatorUseUpdateServerUrl>
+<RetranslatorUseUpdateServerUrlOnly>Nur diese Quelle verwenden</RetranslatorUseUpdateServerUrlOnly>
+<RetranslatorUseUpdateServerUrlOnly_text>Wenn verwendet, aber das Update fehlschl&#228;gt, f&#228;hrt der Updater fort, indem er die Server in seiner Standardliste ausprobiert.[br]
+Wenn diese Einstellung auf &quot;yes&quot; gesetzt ist (der Wert, der angenommen wird, wenn nicht anders angegeben),[br]
+f&#252;hrt keepup2date kein Fallback durch, wenn sie nicht verwendbar ist, und h&#246;rt auf, andere Server auszuprobieren.</RetranslatorUseUpdateServerUrlOnly_text>
+<RetranslatorUseUpdateServerUrl_text>Ein Update von der angegebenen URL durchf&#252;hren.[br] Wenn dies fehlschl&#228;gt, wird die Standardliste der Server verwendet</RetranslatorUseUpdateServerUrl_text>
+<retranslator_engine>Kaspersky-Retranslator-Engine</retranslator_engine>
+<sources_settings>Quelleneinstellungen</sources_settings>
+<Update_sites_info>Site-Informationen aktualisieren</Update_sites_info>
+<Update_sites_info_title>Site-Informationen aktualisieren (URL und Regionen)</Update_sites_info_title>

@@ -96,10 +96,11 @@ function search(){
         }
 
         $c++;
+        // Pentest 2026-11-04 : session/evenement du journal (donnee externe) affiche sans encodage (XSS stockee).
         $html[]="<tr>
-				<td width='1%' class='$class' nowrap>$session_id</td>
-				<td width='1%' class='$class' nowrap>{$re[2]}</td> 
-				<td width='99%' class='$class'><strong>{$re[3]}</strong></td>  
+				<td width='1%' class='$class' nowrap>".req_html($session_id)."</td>
+				<td width='1%' class='$class' nowrap>".req_html($re[2])."</td> 
+				<td width='99%' class='$class'><strong>".req_html($re[3])."</strong></td>  
                 </tr>";
 
         $t2=time();

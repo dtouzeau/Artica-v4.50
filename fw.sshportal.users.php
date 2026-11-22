@@ -26,7 +26,6 @@ if(isset($_GET["users-groups-link-perform"])){users_groups_link_perform();exit;}
 if(isset($_GET["start"])){table_start();exit;}
 if(isset($_GET["user-js"])){user_js();exit;}
 if(isset($_GET["user-tabs"])){user_tabs();exit;}
-if(isset($_GET["add-popup"])){add_popup();exit;}
 if(isset($_GET["user-popup"])){user_popup();exit;}
 if(isset($_POST["id"])){user_save();exit;}
 if(isset($_GET["user-delete"])){user_delete();exit;}
@@ -51,9 +50,10 @@ function member_link_js(){
 }
 function member_link_perform(){
     $page       = CurrentPageName();
-    $userid     = $_GET["member-link-perform"];
+    // Pentest 2026-11-04 : member-link-perform/gpid etaient recopies sans encodage dans la page (XSS).
+    $userid     = intval($_GET["member-link-perform"]);
     $md         = $_GET["md"];
-    $gpid       = $_GET["gpid"];
+    $gpid       = intval($_GET["gpid"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $q->QUERY_SQL("INSERT INTO user_user_groups (user_id,user_group_id) VALUES ($userid,$gpid)");
     if(!$q->ok){echo $q->mysql_error;return;}
@@ -126,7 +126,8 @@ function member_link_table(){
 //<i class="fas fa-link"></i>
         $gps=array();
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-user'></i>&nbsp;$username <small>$comment</small></td>";
+        // Pentest 2026-11-04 : nom/commentaire/email (base sshportal) affiches sans encodage (XSS stockee).
+        $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-user'></i>&nbsp;".req_html($username)." <small>".req_html($comment)."</small></td>";
         $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?member-link-perform=$ID&md=$md&gpid=$gpid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
@@ -224,10 +225,11 @@ function users_groups_link(){
 }
 function users_groups_link_perform(){
     $page       = CurrentPageName();
-    $userid     = $_GET["userid"];
+    // Pentest 2026-11-04 : userid/users-groups-link-perform/groupid etaient recopies sans encodage dans la page (XSS).
+    $userid     = intval($_GET["userid"]);
     $md         = $_GET["md"];
-    $gpid       = $_GET["users-groups-link-perform"];
-    $groupid    = $_GET["groupid"];
+    $gpid       = intval($_GET["users-groups-link-perform"]);
+    $groupid    = intval($_GET["groupid"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $q->QUERY_SQL("INSERT OR IGNORE INTO user_user_groups (user_id,user_group_id) VALUES ($userid,$gpid)");
     if(!$q->ok){echo $q->mysql_error;return;}
@@ -281,7 +283,8 @@ function users_groups_link_table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-users'></i>&nbsp;$name <small>$comment</small></td>";
+        // Pentest 2026-11-04 : nom/commentaire/email (base sshportal) affiches sans encodage (XSS stockee).
+        $html[]="<td class=\"\" width='100%' nowrap><i class='fa fa-users'></i>&nbsp;".req_html($name)." <small>".req_html($comment)."</small></td>";
         $html[]="<td class=\"\" style='width:1%' nowrap>".$tpl->button_autnonome("{link}","Loadjs('$page?users-groups-link-perform=$id&md=$md&userid=$userid&groupid=$groupid')","fas fa-link","AllowAddUsers",0,"btn-primary","small") ."</td>";
         $html[]="</tr>";
 
@@ -354,8 +357,9 @@ function users_groups_table(){
 
 
         $html[] = "<tr class='$TRCLASS' id='$md'>";
-        $html[] = "<td class=\"\" width='1%' nowrap><i class='fas fa-server'></i>&nbsp;<strong>$name</strong></td>";
-        $html[] = "<td class=\"\">$comment</td>";
+        // Pentest 2026-11-04 : nom/commentaire/email (base sshportal) affiches sans encodage (XSS stockee).
+        $html[] = "<td class=\"\" width='1%' nowrap><i class='fas fa-server'></i>&nbsp;<strong>".req_html($name)."</strong></td>";
+        $html[] = "<td class=\"\">".req_html($comment)."</td>";
         $html[] = "<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[] = "</tr>";
 
@@ -405,10 +409,12 @@ function user_delete(){
 
 function user_delete_real(){
     $q      =   new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
-    $q->QUERY_SQL("DELETE FROM users WHERE id='{$_POST["id"]}'");
-    $q->QUERY_SQL("DELETE FROM user_user_groups WHERE user_id='{$_POST["id"]}'");
-    $q->QUERY_SQL("DELETE FROM user_keys WHERE user_id='{$_POST["id"]}'");
-    $q->QUERY_SQL("DELETE FROM sessions WHERE user_id='{$_POST["id"]}'");
+    // Pentest 2026-11-04 : id etait concatene dans la requete.
+    $id     =   intval($_POST["id"]);
+    $q->QUERY_SQL("DELETE FROM users WHERE id='$id'");
+    $q->QUERY_SQL("DELETE FROM user_user_groups WHERE user_id='$id'");
+    $q->QUERY_SQL("DELETE FROM user_keys WHERE user_id='$id'");
+    $q->QUERY_SQL("DELETE FROM sessions WHERE user_id='$id'");
     if(!$q->ok){echo $q->mysql_error;}
 }
 
@@ -472,7 +478,8 @@ function user_save(){
     $tpl        = new template_admin();
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $tpl->CLEAN_POST();
-    $comment    = $q->sqlite_escape_string2($_POST["comment"]);
+    // Pentest 2026-11-04 : comment, name et email etaient concatenes dans la requete.
+    $comment    = (string)$_POST["comment"];
     $name       = $_POST["name"];
     $email      = $_POST["email"];
     $id         = intval($_POST["id"]);
@@ -511,7 +518,7 @@ function user_save(){
 
     if($id==0){
         $invite_token=generateRandomString();
-        $q->QUERY_SQL("INSERT INTO users (comment,name,email,invite_token,created_at,updated_at) VALUES ('$comment','$name','$email','$invite_token','$created_at','$created_at')");
+        $q->QUERY_SQL_PARAMS("INSERT INTO users (comment,name,email,invite_token,created_at,updated_at) VALUES (?,?,?,?,?,?)",array($comment,$name,$email,$invite_token,$created_at,$created_at));
         if(!$q->ok){echo $q->mysql_error;return;}
 
         if($groupid>0){
@@ -524,12 +531,13 @@ function user_save(){
         return true;
     }
 
-    $q->QUERY_SQL("UPDATE users SET `comment`='$comment',`name`='$name',email='$email',updated_at='$created_at' WHERE id='$id'");
+    $q->QUERY_SQL_PARAMS("UPDATE users SET `comment`=?,`name`=?,email=?,updated_at=? WHERE id=?",array($comment,$name,$email,$created_at,$id));
     if(!$q->ok){echo $q->mysql_error;return;}
 
 }
 function user_fill(){
-    $id         = $_GET["fill"];
+    // Pentest 2026-11-04 : fill etait concatene dans la requete.
+    $id         = intval($_GET["fill"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $ligne      = $q->mysqli_fetch_array("SELECT * FROM users WHERE id='$id'");
     $name       = $ligne["name"];
@@ -537,7 +545,11 @@ function user_fill(){
     $email      = $ligne["email"];
     $invite_token = $ligne["invite_token"];
 
-    $comment=str_replace("'","\'",$comment);
+    // Pentest 2026-11-04 : nom/commentaire/email (base sshportal) affiches sans encodage (XSS stockee).
+    $name=req_js(req_html($name));
+    $email=req_js(req_html($email));
+    $comment=req_js(req_html($comment));
+    $invite_token=req_js(req_html($invite_token));
     header("content-type: application/x-javascript");
     $f[]="if( document.getElementById('$id-gname') ){";
     $f[]="document.getElementById('$id-uname').innerHTML='$name';";
@@ -622,9 +634,10 @@ function table(){
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td class=\"\" width='1%' nowrap>$status</td>";
         $html[]="<td class=\"\" nowrap><i class='fas fa-user'></i>&nbsp;".$tpl->td_href("<span id='$ID-uname'>$name</span>","{click_to_edit}",$js)."</td>";
-        $html[]="<td class=\"\" nowrap><i class='fas fa-envelope'></i>&nbsp;<span id='$ID-email'>$email</span></td>";
-        $html[]="<td class=\"\" width='1%' nowrap><i class='fas fa-anchor'></i>&nbsp;<span id='$ID-invite'>invite:$invite_token</span></td>";
-        $html[]="<td class=\"\"><span id='$ID-ucomment'>$comment</span></td>";
+        // Pentest 2026-11-04 : nom/commentaire/email (base sshportal) affiches sans encodage (XSS stockee).
+        $html[]="<td class=\"\" nowrap><i class='fas fa-envelope'></i>&nbsp;<span id='$ID-email'>".req_html($email)."</span></td>";
+        $html[]="<td class=\"\" width='1%' nowrap><i class='fas fa-anchor'></i>&nbsp;<span id='$ID-invite'>invite:".req_html($invite_token)."</span></td>";
+        $html[]="<td class=\"\"><span id='$ID-ucomment'>".req_html($comment)."</span></td>";
 
         $html[]="<td class=\"center\" style='width:1%' nowrap>$delete</td>";
         $html[]="</tr>";

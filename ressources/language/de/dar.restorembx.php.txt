@@ -1,6 +1,5 @@
-<DarRestoreMBX_perform>Do you want to perform this operation? The mailbox will be erased from the defined backup container</DarRestoreMBX_perform>
-<external_resource_choose_text>Choose the external resource used to backup the mailbox datas</external_resource_choose_text>
-<restore_mailbox>Restore mailboxes</restore_mailbox>
-<restore_mailbox_ask_user>This operation will recover your current mailbox with a backuped mailbox.[br]Define here the user mailbox you want to restore.
-</restore_mailbox_ask_user>
-<restore_mailbox_text>Parse backup containers and restore mailboxes by selecting a defined date</restore_mailbox_text>
+<DarRestoreMBX_perform>M&#246;chten Sie diesen Vorgang durchf&#252;hren? Das Postfach wird aus dem definierten Sicherungscontainer gel&#246;scht</DarRestoreMBX_perform>
+<external_resource_choose_text>W&#228;hlen Sie die externe Ressource, die zum Sichern der Postfachdaten verwendet wurde</external_resource_choose_text>
+<restore_mailbox>Postf&#228;cher wiederherstellen</restore_mailbox>
+<restore_mailbox_ask_user>Dieser Vorgang stellt Ihr aktuelles Postfach mit einem gesicherten Postfach wieder her.[br]Legen Sie hier das Benutzerpostfach fest, das Sie wiederherstellen m&#246;chten.</restore_mailbox_ask_user>
+<restore_mailbox_text>Sicherungscontainer analysieren und Postf&#228;cher durch Auswahl eines festgelegten Datums wiederherstellen</restore_mailbox_text>

@@ -1,7 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["search"])){search();exit;}
 page();
 
@@ -9,58 +11,33 @@ page();
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$t=time();
-	if(!isset($_SESSION["HACLUSTER_BACKENDS_SEARCH"])){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]="50 events";}
-	
-	$html="
-
-	<div class=\"row\"> 
-		<div class='ibox-content'>
-		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["HACLUSTER_BACKENDS_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
-      		<span class=\"input-group-btn\">
-       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
-      	    </span>
-     </div>
-    </div>
-</div>
-	<div class='row'><div id='progress-firehol-restart'></div>
-	<div class='ibox-content'>
-
-	<div id='table-loader'></div>
-
-	</div>
-	</div>
-	<script>
-	$.address.state('/');
-	$.address.value('/hacluster-backend-events');
-		function Search$t(e){";
-
-    $html=$html."if(!checkEnter(e) ){return;}
-			ss$t();
-		}
-		
-		function ss$t(){
-			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
-			LoadAjax('table-loader','$page?search='+ss);
-		}
-		
-		function Start$t(){
-			var ss=document.getElementById('search-this-$t').value;
-			ss$t();
-			
-		}
-		Start$t();
-	</script>";
+	$html=$tpl->page_header(
+		"{backends_events}",
+		ico_eye,
+		"{hacluster_backends_events_explain}",
+		"$page?start=yes",
+		"hacluster-backend-events",
+		"progress-firehol-restart",false,
+		"table-hacluster-backend-events"
+	);
 
 	if(isset($_GET["main-page"])){
-		$tpl=new template_admin("{APP_HACLUSTER}",$html);
+		$tpl=new template_admin("{APP_HACLUSTER} {backends_events}",$html);
 		echo $tpl->build_firewall();
 		return;
 	}
-	
 	echo $tpl->_ENGINE_parse_body($html);
+}
 
+function start():bool{
+	$page=CurrentPageName();
+	$tpl=new template_admin();
+	$html=array();
+	$html[]="<div style='margin-top:10px'>";
+	$html[]=$tpl->search_block($page,"","","","");
+	$html[]="</div>";
+	echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+	return true;
 }
 
 function search():bool{
@@ -85,22 +62,8 @@ function search():bool{
         return false;
     }
 
-	$date_text=$tpl->_ENGINE_parse_body("{date}");
-	$events=$tpl->_ENGINE_parse_body("{events}");
-	$html[]="
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>$date_text</th>
-        	<th>PID</th>
-        	<th>{backend}</th>
-        	<th>$events</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
-
-
+	$rows=array();
+	if(!isset($json->Logs) || !is_array($json->Logs)){ $json->Logs=array(); }
 	if(count($json->Logs)>3){$_SESSION["HACLUSTER_BACKENDS_SEARCH"]=$_GET["search"];}
 
     $tpl=new template_admin();
@@ -108,7 +71,7 @@ function search():bool{
     foreach ($json->Logs as $line){
 		$line=trim($line);
 		if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+)\s+(.+?)\s+hacluster-client\[([0-9]+)\]:(.+)#", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>";
+			VERBOSE("unparsable: $line",__LINE__);
 			continue;}
 
 		$xtime=strtotime($re[1] ." ".$re[2]." ".$re[3]);
@@ -117,7 +80,9 @@ function search():bool{
 		$FTime=trim(str_replace($curDate, "", $FTime));
 		$hostname=$re[4];
 		$pid=$re[5];
-		$line=trim($re[6]);
+		// Pentest 2026-11-04 : ligne syslog hacluster-client (donnee externe) affichee sans encodage (XSS stockee).
+		// Encodee AVANT la decoration : les marqueurs remplaces ensuite ne contiennent ni < > & ni quote.
+		$line=req_html(trim($re[6]));
         $label=null;
         $label_class="label-default";
 
@@ -201,24 +166,54 @@ function search():bool{
         
         $line=str_replace("[HACLIENT]:","<span class='label $label_class'>HaCluster Client</span>&nbsp;",$line);
         $line=str_replace("[HaCluster Client]:","<span class='label $label_class'>HaCluster Client</span>&nbsp;",$line);
-        $line=str_replace("[exec.go.shield.server.php}]:","<span class='label $label_class'>Go Web-filtering</span>&nbsp;",$line);
         $line=str_replace("HaClusterTool.go","",$line);
         $line=str_replace("ClusterClient.go","",$line);
-        $line=str_replace("[exec.arpscan.php}]:","<span class='label $label_class'>ARP Scanner</span>&nbsp;",$line);
 		$line=$tpl->_ENGINE_parse_body($line);
-		$html[]="<tr>
-				<td style='width:1%' nowrap>$FTime</td>
-				<td style='width:1%' nowrap>$pid</td>
-				<td style='width:1%' nowrap>{$hostname}</td>
-				<td>$label$line</td>
-				</tr>";
-		
+		$rows[]=hacluster_backend_event_row($FTime,$pid,$hostname,$label.$line);
 	}
-	
-	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/hacluster-clients.syslog.query")."</i></div>";
-	echo $tpl->_ENGINE_parse_body($html);
+
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+	$html[]="<th class='awc-nowrap' style='width:1%'>{date}</th>";
+	$html[]="<th class='awc-nowrap' style='width:1%'>PID</th>";
+	$html[]="<th class='awc-nowrap' style='width:1%'>{backend}</th>";
+	$html[]="<th>{events}</th>";
+	$html[]="</tr></thead><tbody id='awc-rows'>";
+	if(count($rows)==0){ $html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>"; }
+	else { $html[]=implode("\n",$rows); }
+	$html[]="</tbody></table></div>";
+	$query=trim((string)@file_get_contents(PROGRESS_DIR."/hacluster-clients.syslog.query"));
+	$html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span>";
+	if($query!==""){ $html[]="<span class='awc-muted' style='font-style:italic'>".req_html($query)."</span>"; }
+	$html[]="<span class='awc-pg' id='awc-pager'></span></div>";
+	$html[]="</div></div>";
+
+	// TINY : titre + boutons, emis en DERNIER, apres le tableau (skill §2, §7d)
+	$page=CurrentPageName();
+	$topbuttons=array();
+	$topbuttons[]=array("LoadAjax('table-hacluster-backend-events','$page?start=yes')",ico_refresh,"{refresh}");
+	$TINY=array();
+	$TINY["TITLE"]="{APP_HACLUSTER}&nbsp;&raquo;&nbsp;{backends_events}";
+	$TINY["ICO"]=ico_eye;
+	$TINY["EXPL"]="{hacluster_backends_events_explain}";
+	$TINY["URL"]="hacluster-backend-events";
+	$TINY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+	$tiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY)))."');";
+
+	// CSS, scripts et pager concatenes AUTOUR du parse, jamais dedans (skill §17 regle 1)
+	$js="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$tiny</script>";
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$js.awc_pager_js(50);
 	return true;
-	
-	
+}
+
+// une ligne du journal (skill §13b) : $line est deja du HTML construit (et parse) par search()
+function hacluster_backend_event_row(string $FTime,string $pid,string $hostname,string $line):string{
+	$h ="<tr>";
+	$h.="<td class='awc-nowrap awc-mono'>".req_html($FTime)."</td>";
+	$h.="<td class='awc-nowrap awc-mono'>".req_html($pid)."</td>";
+	$h.="<td class='awc-nowrap'><div class='awc-chip'><span class='awc-chip-ico'><i class='fas fa-server'></i></span><span class='awc-seen'>".req_html($hostname)."</span></div></td>";
+	$h.="<td>$line</td>";
+	$h.="</tr>";
+	return $h;
 }

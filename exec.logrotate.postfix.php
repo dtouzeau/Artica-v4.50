@@ -82,8 +82,7 @@ function postfix_rotate(){
 	
 	$BackupSquidLogsUseNas=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupSquidLogsUseNas"));
 	if($BackupSquidLogsUseNas==1){
-		$php=$unix->LOCATE_PHP5_BIN();
-		shell_exec("$php /usr/share/artica-postfix/exec.squid.rotate.php --backup-to-nas-mail");
+		$GLOBALS["CLASS_SOCKETS"]->REST_API("/logrotate/movenas");
 	}
 	convert3xlogs();
 	recover_temporary_logs();

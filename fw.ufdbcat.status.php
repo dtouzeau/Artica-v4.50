@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.os.system.tools.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -75,16 +76,10 @@ function app_status(){
 		
 	}
 			
-	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ufdbcat.restart.progress";
-	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/ufdbcat.log";
-	$ARRAY["CMD"]="squid.php?ufdbcat-restart=yes";
-	$ARRAY["TITLE"]="{APP_UFDBCAT} {restarting_service}";
-	$ARRAY["AFTER"]="LoadAjax('app-status','$page?app-status=yes');";
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-firehol-restart')";
-	$html[]="";	
-	$button=$tpl->button_autnonome("{restart}", $jsRestart, "fas fa-sync-alt");
-	$button="<div style='margin-top:30px'>$button</div>";
+	// Le bouton {restart} appelait framework/squid.php?ufdbcat-restart, entree
+	// qui n'a jamais existe ; ufdbcat n'est plus pilote par le daemon.
+	$html[]="";
+	$button="";
 	
 	if($ARRAY["running"]==0){
 		

@@ -6,12 +6,9 @@ if(isset($_POST["log-sink-confirm"])){exit;}
 if(isset($_POST["RsyslogInterface"])){save();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_GET["top-status"])){top_status();exit;}
 if(isset($_GET["install-log-sink-js"])){log_sink_install_ask();exit;}
 if(isset($_GET["logs-sink-install"])){log_sink_install();exit;}
 if(isset($_GET["logs-sink-uninstall"])){log_sink_uninstall();exit;}
-if(isset($_GET["disable-ssl-ask"])){disable_ssl_ask();exit;}
-if(isset($_POST["disable-ssl"])){disable_ssl_confirm();exit;}
 if(isset($_GET["download-ca"])){download_ca();exit;}
 if(isset($_GET["main-form-js"])){main_form_js();exit;}
 if(isset($_GET["main-form-popup"])){main_form_popup();exit;}
@@ -125,12 +122,7 @@ function ServiceStatus():string{
     $ini->loadString($json->Info);
 
 
-    $json=json_decode($sock->REST_API("/dns/collector/status"));
-    $bsiniCollector=new Bs_IniHandler();
-    $bsiniCollector->loadString($json->Info);
-    $jsRestartCollector=$tpl->framework_buildjs("/dns/collector/restart","dns-collector.progress",
-        "dns-collector.log",
-        "progress-syslod-restart","LoadAjaxSilent('syslog-status','$page?syslogd-status=yes');");
+
 
     $ActAsASyslogServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActAsASyslogServer"));
     if($ActAsASyslogServer==0){
@@ -138,7 +130,7 @@ function ServiceStatus():string{
     }
 
     $final[]=$tpl->SERVICE_STATUS($ini, "APP_RSYSLOG",$jsrestart);
-    $final[]=$tpl->SERVICE_STATUS($bsiniCollector, "APP_DNS_COLLECTOR",$jsRestartCollector);
+
 
     return $tpl->_ENGINE_parse_body($final);
 }

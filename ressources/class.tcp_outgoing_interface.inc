@@ -1,5 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/class.tcpip.inc");
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 class tcp_outgoing_interface{
 	private $nicerror=null;
 	
@@ -39,7 +40,6 @@ class tcp_outgoing_interface{
 		return @implode("\n", $conf);
 	}
 	private function tcp_outgoing_address_new(){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 		$unix=new unix();
         $zInterfaces=array();
         $IPs=array();
@@ -51,7 +51,10 @@ class tcp_outgoing_interface{
         }
 
 
-		$results=$q->QUERY_SQL("SELECT * FROM squid_outgoingaddr_acls WHERE enabled=1 ORDER BY zorder");
+		// acls.db is API-only — enabled squid_outgoingaddr_acls via the acls backend.
+		$raw=acls_api_get("/proxy/outgoing-addr/acls");
+		$results=array();
+		if(is_array($raw)){foreach($raw as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"]??0)!=1){continue;}$results[]=array("aclid"=>intval($rr["id"]??0),"rulename"=>(string)($rr["ruleName"]??""),"eth"=>(string)($rr["eth"]??""),"interface"=>(string)($rr["interface"]??""));}}
 		$squid_acls_groups=new squid_acls_groups();
 		$conf=array();
 		foreach ($results as $index=>$ligne){

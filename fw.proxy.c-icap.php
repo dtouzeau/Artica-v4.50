@@ -1,11 +1,11 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["clamav-widget"])){clamav_widget();exit;}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["explainthis"])){explainthis();exit;}
 if(isset($_POST["MinSpareThreads"])){Save();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -107,29 +107,50 @@ function error_page(){
 
 
 
+/**
+ * Une rangee de tuiles d'etat.
+ *
+ * Elles tenaient dans un tableau de mise en page a trois cellules figees a 33%,
+ * imbrique dans un second tableau dont la premiere colonne valait 15% et la
+ * seconde 95% -- un total de 110% qui forcait le debordement. widget_h est
+ * fluide (voir CLAUDE.md): on ne lui impose qu'une base de repli.
+ */
+function cicap_tiles_row($tiles):string{
+    $cells=array();
+    foreach($tiles as $t){
+        if(trim((string)$t)===""){continue;}
+        $cells[]="<div style='flex:1 1 300px;min-width:0'>$t</div>";
+    }
+    if(count($cells)==0){return "";}
+    return "<div style='display:flex;flex-wrap:wrap;gap:10px;align-items:stretch;margin-bottom:10px'>"
+        .@implode("",$cells)."</div>";
+}
+
 function main_status(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $sock=new sockets();
 
+    // REST_API() rend null quand le daemon ne repond pas: chaque acces qui suit
+    // portait alors sur null (quatre avertissements, puis "Attempt to read
+    // property on null" sous PHP 8).
     $json=json_decode($sock->REST_API("/cicap/info"));
-    $USED_SERVERS=$json->Info->UsedServers;
-    $FREE_SERVERS=$json->Info->free_servers;
-    $BYTES_IN=intval($json->Info->bytes_in);
-    $BYTES_OUT=intval($json->Info->bytes_out);
-    $REQUESTS=$json->Info->requests;
-    $REQUESTS=$tpl->FormatNumber($REQUESTS);
+    $info=(is_object($json) && isset($json->Info) && is_object($json->Info))?$json->Info:new stdClass();
+    $USED_SERVERS=intval($info->UsedServers ?? 0);
+    $FREE_SERVERS=intval($info->free_servers ?? 0);
+    $BYTES_IN=intval($info->bytes_in ?? 0);
+    $REQUESTS=$tpl->FormatNumber(intval($info->requests ?? 0));
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM c_icap_services WHERE ID=1");
     $CICAP_IN_DB=intval($ligne["enabled"]);
 
-    $html[]="<table style='width:100%;margin-top:20px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:15%;padding-left:15px;vertical-align: top'>";
+    // Mise en page en flex: les deux cellules valaient 15% et 95%.
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;margin-top:20px'>";
+    $html[]="<div style='flex:0 0 auto'>";
     $html[]="<div id='c-icap-status2'></div>";
     $html[]=$tpl->button_autnonome("{refresh}", "LoadAjax('cicap-main-status-start','$page?main-status=yes')", "fas fa-sync-alt",null,335);
-    $html[]="</td>";
-    $html[]="<td style='width:95%;padding-left:15px;vertical-align: top'>";
+    $html[]="</div>";
+    $html[]="<div style='flex:1 1 640px;min-width:0'>";
 
 
     $REQUEST_STATUS=$tpl->widget_h("green","fas fa-tachometer-alt-average",$REQUESTS,"{requests}");
@@ -152,22 +173,11 @@ function main_status(){
 
     $html[]="<div id='cicapclam-status'></div>";
     $html[]="<div id='sandbox-status'></div>";
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:33%;vertical-align: top'>";
-    $html[]=$REQUEST_STATUS;
-    $html[]="</td>";
-    $html[]="<td style='width:33%;vertical-align: top;padding-left:10px'>";
-    $html[]=$USED_SERVERS_STATUS;
-    $html[]="</td>";
-    $html[]="<td style='width:33%;vertical-align: top;padding-left:10px'>";
-    $html[]=$BYTES_IN_STATUS;
-    $html[]="</td>";
-    $html[]="</tr>";
+    $html[]=cicap_tiles_row(array($REQUEST_STATUS,$USED_SERVERS_STATUS,$BYTES_IN_STATUS));
     $EnableClamavInCiCap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableClamavInCiCap"));
     if($EnableClamavInCiCap==1){
-        $html[]="<tr>";
-        $html[]="<td style='width:33%;vertical-align: top'>";
+        // Un "<tr>" et un "<td>" d'ouverture restaient ici, sans fermeture ni
+        // tableau englobant depuis le passage en flex.
         $qpos=new postgres_sql();
         $threatsNum=$qpos->COUNT_ROWS_LOW("webfilter");
         if($threatsNum>0){
@@ -176,8 +186,13 @@ function main_status(){
         }else{
             $THREATS=$tpl->widget_h("grey","fa-solid fa-virus-slash","{$threatsNum}","{threats}",);
         }
+        // unserialize() rend false quand le reglage est vide (c'est le cas tant
+        // que clamconf n'a pas tourne): l'acces qui suit portait alors sur un
+        // booleen. La cle porte reellement des accolades -- c'est celle
+        // qu'ecrit ClamTools.go, pas une faute de frappe.
         $ClamAVSignatures=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClamAVSignatures"));
-        $NumberOfSignatures=intval($ClamAVSignatures["{NumberOfSignatures}"]);
+        if(!is_array($ClamAVSignatures)){$ClamAVSignatures=array();}
+        $NumberOfSignatures=intval($ClamAVSignatures["{NumberOfSignatures}"] ?? 0);
         if($NumberOfSignatures>0){
             $NumberOfSignatures=$tpl->FormatNumber($NumberOfSignatures);
             $SIG=$tpl->widget_h("green","fa-solid fa-flask-vial","{$NumberOfSignatures}","{signatures}");
@@ -194,22 +209,8 @@ function main_status(){
             $CLAM_VER=$tpl->widget_h("grey","fab fa-medrt","??","{version}",);
         }
 
-        $html[]="<tr>";
-        $html[]="<td style='width:33%;vertical-align: top'>";
-        $html[]=$THREATS;
-        $html[]="</td>";
-        $html[]="<td style='width:33%;vertical-align: top;padding-left:10px'>";
-        $html[]=$SIG;
-        $html[]="</td>";
-        $html[]="<td style='width:33%;vertical-align: top;padding-left:10px'>";
-        $html[]=$CLAM_VER;
-        $html[]="</td>";
-        $html[]="</tr>";
+        $html[]=cicap_tiles_row(array($THREATS,$SIG,$CLAM_VER));
     }
-
-
-
-    $html[]="</table>";
 
     $jsrestart=$tpl->framework_buildjs("/cicap/restart",
         "c-icap.restart.progress","c-icap.restart.log","progress-c-icap-restart",
@@ -227,10 +228,8 @@ function main_status(){
         $html[]="</div>";
     }
 
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    ;
+    $html[]="</div>";
+    $html[]="</div>";
 
     $html[]="<script>";
 
@@ -270,7 +269,7 @@ function clamav_widget(){
     $page=CurrentPageName();
     $leftbarr="LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');";
     $jsinstallClamav=$tpl->framework_buildjs(
-        "cicap.php?install-clamav=yes",
+        "/cicap/clamav/install",
         "cicap.install.progress",
         "cicap.install.log",
         "progress-c-icap-restart",
@@ -278,7 +277,7 @@ function clamav_widget(){
     );
 
     $jsuninstallClamav=$tpl->framework_buildjs(
-        "cicap.php?uninstall-clamav=yes",
+        "/cicap/clamav/uninstall",
         "cicap.install.progress",
         "cicap.install.log",
         "progress-c-icap-restart",
@@ -388,17 +387,6 @@ function table(){
     $ips[null]="{all}";
     $ips["127.0.0.1"]="127.0.0.1";
 
-    $notifyVirHTTPServer=false;
-    if($ci->main_array["CONF"]["ViralatorMode"]==1){
-        if(preg_match('#https://(.*?)/exec#',$ci->main_array["CONF"]["VirHTTPServer"],$re)){
-            if(trim($re[1])==null){$notifyVirHTTPServer=true;}
-            if(trim($re[1])=="127.0.0.1"){$notifyVirHTTPServer=true;}
-            if(trim($re[1])=="localhost"){$notifyVirHTTPServer=true;}
-        }}
-
-    if($notifyVirHTTPServer==true){
-        $color="color:#d32d2d;font-weight:bolder";
-    }
 
 
     for($i=1;$i<13;$i++){
@@ -429,9 +417,6 @@ function table(){
     $form[]=$tpl->field_numeric("MaxCICAPWorkSize","{max_tempdir_size} (MB)",$MaxCICAPWorkSize,false,"{max_tempdir_size_explain}");
     $form[]=$tpl->field_checkbox("CicapNotifyViruses","{be_alerted_on_viruses}",$CicapNotifyViruses,false,"{be_alerted_on_viruses_text}");
     $form[]=$tpl->field_checkbox("IcapForwardSSL","{transfert_ssl_data}",$IcapForwardSSL,false,"");
-    $form[]=$tpl->field_checkbox("ViralatorMode","{ViralatorMode}",$ci->main_array["CONF"]["ViralatorMode"],false,"{ViralatorMode_text}");
-    $form[]=$tpl->field_browse_directory("VirSaveDir", "{VirSaveDir}", $ci->main_array["CONF"]["VirSaveDir"],'{VirSaveDir_text}');
-    $form[]=$tpl->field_text("VirHTTPServer", "{VirHTTPServer}", $ci->main_array["CONF"]["VirHTTPServer"],true,"{VirHTTPServer_text}");
 
 
     $form[]=$tpl->field_section("{http_antivirus_for_proxy}");
@@ -460,19 +445,16 @@ function table(){
 
 
 
-    $form[]=$tpl->field_browse_directory("ClamavTemporaryDirectory", "{temp_dir}", $ClamavTemporaryDirectory,'{temp_dir}');
+    $form[]=$tpl->field_browse_directory("ClamavTemporaryDirectory", "{temp_dir}", $ClamavTemporaryDirectory,null,false,'{temp_dir}');
 
 
-    $html[]="<table style='width:100%;margin-top:20px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:15%;padding-left:15px;vertical-align: top'>";
-    $html[]="<div id='c-icap-status'></div>";
-    $html[]="</td>";
-    $html[]="<td style='width:85%;vertical-align: top'>";
+    // Mise en page en flex: la tuile d'etat etait figee a 15% de la largeur.
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;margin-top:20px'>";
+    $html[]="<div style='flex:0 0 auto'><div id='c-icap-status'></div></div>";
+    $html[]="<div style='flex:1 1 520px;min-width:0'>";
     $html[]=$tpl->form_outside("{icap_service} ({listen_port} 1345)", @implode("\n", $form),"{daemon_settings_text}","{apply}",$jsCompile,$security);
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    $html[]="</div>";
+    $html[]="</div>";
 
     $TINY_ARRAY["TITLE"]="{SERVICE_WEBAVEX} {parameters}";
     $TINY_ARRAY["ICO"]="fas fa-tachometer-alt";
@@ -511,7 +493,7 @@ function Save(){
         if($ci->EnableClamavInCiCap<>$_POST["EnableClamavInCiCap"]){
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableClamavInCiCap",$_POST["EnableClamavInCiCap"]);
             $reconfigure_squid=true;
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?icap-silent=yes");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/icap");
         }
     }
     if(isset($_POST["EnableSquidGuardInCiCAP"])){
@@ -543,7 +525,7 @@ function Save(){
     }
 
     if($reconfigure_squid){
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?icap-silent=yes");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/icap");
 
     }
 

@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
@@ -96,20 +99,22 @@ function wizard_step_2(){
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
     $html[]="<td><strong>HTTP:</strong>";
-    $html[]="<td><strong>http://{$_SESSION["WIZARD_HOSTNAME"]}:{$_SESSION["WIZARD_HTTP_PORT"]}</strong>";
+    // Pentest 2026-11-04 : nom d'hote/ports de l'assistant (donnee externe) affiche sans encodage (XSS stockee).
+    $html[]="<td><strong>http://".req_html($_SESSION["WIZARD_HOSTNAME"]).":".req_html($_SESSION["WIZARD_HTTP_PORT"])."</strong>";
     $html[]="</tr>";
     $html[]="<td><strong>HTTPs:</strong>";
-    $html[]="<td><strong>https://{$_SESSION["WIZARD_HOSTNAME"]}:{$_SESSION["WIZARD_SSL_PORT"]}</strong>";
+    $html[]="<td><strong>https://".req_html($_SESSION["WIZARD_HOSTNAME"]).":".req_html($_SESSION["WIZARD_SSL_PORT"])."</strong>";
     $html[]="</tr>";
     $html[]="</table>";
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ufdberror.compile.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/ufdberror.compile.log";
-    $ARRAY["CMD"]="ufdbguard.php?wizardxbfpage=yes";
+    $ARRAY["CMD"]="/system/wizards/weberror-page";   // articarest wizards module
+    $ARRAY["PRIV"]="AsDansGuardianAdministrator|AsSquidAdministrator";
     $ARRAY["TITLE"]="{webfiltering_error_page}";
     $ARRAY["AFTER"]="LoadAjax('webpage-error-status','$page?table2=yes');dialogInstance1.close();";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=wizard-webfiltering-progress')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=wizard-webfiltering-progress')";
     $html[]="<script>$jsrestart</script>";
     echo $tpl->_ENGINE_parse_body($html);
 
@@ -149,13 +154,15 @@ function table2(){
 	if($SquidGuardWebExternalUri==null){$SquidGuardWebExternalUri="http://articatech.net/block.html";}
 	if($SquidGuardWebExternalUriSSL==null){$SquidGuardWebExternalUriSSL="articatech.net/block.html";}
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $results=$q->QUERY_SQL("SELECT * FROM nginx_services WHERE type=6 AND enabled=1 ORDER BY zorder");
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/type/6");
+    $data=json_decode($resp,true);
+    $results=(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])) ? $data["rows"] : [];
+    usort($results,function($a,$b){return intval(isset($a["zorder"])?$a["zorder"]:0) - intval(isset($b["zorder"])?$b["zorder"]:0);});
 
+    $MAINS=array();
     foreach ($results as $index=>$ligne){
-        $servicename=$ligne["servicename"];
-        $ID=$ligne["ID"];
-        $MAINS[$ID]=$servicename;
+        if(intval(isset($ligne["enabled"])?$ligne["enabled"]:0)!==1){continue;}
+        $MAINS[$ligne["ID"]]=$ligne["servicename"];
     }
 
     $form[] = $tpl->field_section("{main_settings}", "");

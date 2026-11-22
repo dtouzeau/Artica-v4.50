@@ -1229,7 +1229,7 @@ Vous pouvez ajouter des privil&egrave;ges de groupe afin d'autoriser certains ut
 <db_method>M&eacute;thode de base de donn&eacute;es</db_method>
 <debug>Mode verbeux</debug>
 <debug_mode>Mode verbeux</debug_mode>
-<december>D&eacute;cembre</december>
+<december>D&#233;cembre</december>
 <DecodeShortURLs>V&eacute;rification des liens courts</DecodeShortURLs>
 <DecodeShortURLs_explain>Beaucoup de r&eacute;seaux sociaux et m&ecirc;me des programmes de messagerie n'autorisent pas r&eacute;ception de liens web longs.
 Les spammeurs on donc modifi&eacute; leur comportement en utilisant des services qui permettent de raccourcir les liens web dans le contenu de leur spams afin de contourner les interdictions.[br]Ce plugin d&eacute;tecte ce comportement</DecodeShortURLs_explain>
@@ -3472,7 +3472,7 @@ Ces r&egrave;gles v&eacute;rifient l'adresse TCP/IP des serveurs/clients distant
 Vous pouvez activer la fonctionnalit&eacute; RBL RHSBL afin d'&eacute;viter les spams</SectionSecurityRulesExplain>
 <SectionSecurityRulesExplainTitle>Section de r&egrave;gles de s&eacute;curit&eacute;</SectionSecurityRulesExplainTitle>
 <Secure_channel_TLS>Tunnel s&eacute;curis&eacute; TLS</Secure_channel_TLS>
-<security_access>S&eacute;curit&eacute; d`acc&egrave;s</security_access>
+<security_access>S&#233;curit&#233; d'acc&#232;s</security_access>
 <security_analyze>Analyse de s&eacute;curit&eacute;</security_analyze>
 <security_classes>Classes de restrictions de sécurité</security_classes>
 <SECURITY_MODULES>Modules de s&eacute;curit&eacute;</SECURITY_MODULES>
@@ -4347,7 +4347,7 @@ Si il est en rouge, vous allez devoir maintenir la base des utilisateurs.[br]Cet
 <tune_squid_performances>Performances syst&egrave;me et Proxy</tune_squid_performances>
 <tune_squid_performances_explain>Vous trouverez ici des astuces et conseils afin d'am&eacute;liorer les performances de votre service de Proxy.[br]Si vous &ecirc;tes d'accord, Cliquez sur Appliquer</tune_squid_performances_explain>
 <tune_squid_performances_text>V&eacute;rifiez si les param&egrave;tres de votre syst&egrave;me et du proxy Squid on &eacute;t&eacute;s d&eacute;finis pour acc&eacute;l&eacute;rer les performances.</tune_squid_performances_text>
-<type>type</type>
+<type>Type</type>
 <UDS_enabled>Activer UDS</UDS_enabled>
 <uid>Identifiant unique</uid>
 <umount>d&eacute;connecter</umount>

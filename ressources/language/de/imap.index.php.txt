@@ -1,1 +1,1 @@
-<Inbox>Inbox</Inbox>
+<Inbox>Posteingang</Inbox>

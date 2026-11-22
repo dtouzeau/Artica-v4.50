@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DHCP static host reservations management for a single remote agent.
  * Provides add / edit / delete. "Assign from lease" pre-fills the form
@@ -110,7 +112,7 @@ function res_table():bool{
         return true;
     }
 
-        $h[] = "    <table class='table table-stripped' data-page-size='50'>";
+        $h[] = "    <div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "      <thead><tr>";
         $h[] = "        <th data-sortable='true' data-type='text'>ID</th>";
         $h[] = "        <th data-sortable='true' data-type='text'>{hostname}</th>";
@@ -124,7 +126,7 @@ function res_table():bool{
         foreach ($rsvs as $r) {
             if (!is_object($r)) continue;
             $zid=md5(serialize($r));
-            if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+            $TRCLASS=null;
             $rid      = htmlspecialchars($r->id       ?? '');
             $rname    = htmlspecialchars($r->name     ?? $rid);
             $rmac     = htmlspecialchars($r->mac      ?? '');
@@ -143,18 +145,18 @@ function res_table():bool{
             $h[] = "        <td>$rip</td>";
             $h[] = "        <td><small>$rscope</small></td>";
             $h[] = "        <td style='white-space:nowrap'>";
-            $h[] = "          " . $tpl->icon_edit_field($editJs, "AsSystemAdministrator");
-            $h[] = "          " . $tpl->icon_delete($delJs, "AsSystemAdministrator");
+            $h[] = "          " . $tpl->icon_edit_field($editJs, "AsMetaAdmin");
+            $h[] = "          " . $tpl->icon_delete($delJs, "AsMetaAdmin");
             $h[] = "        </td>";
             $h[] = "      </tr>";
         }
         $h[] = "      </tbody>";
         $h[] = "      <tfoot><tr><td colspan='6'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-        $h[] = "    </table>";
+        $h[] = "    </table></div></div></div>";
         $h[] = "    <script>NoSpinner();" . implode("\n", $tpl->ICON_SCRIPTS);
         $h[] = "    </script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     return true;
 }
 

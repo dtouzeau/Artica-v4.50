@@ -129,7 +129,8 @@ function dns_create_request_form():string{
 
     $form=array();
     $form[]=$tpl->field_hidden("CreateDNSRequest",1);
-    $form[]=$tpl->field_text("Domain","{domain}","",true,"e.g., example.com");
+    $form[]=$tpl->field_text("Domain","{domain}","",true,"e.g., example.com, www.example.com");
+    $form[]="<div class='text-muted' style='margin:-6px 0 8px 0;font-size:12px;'>{letsencrypt_san_hosts_explain}</div>";
     $form[]=$tpl->field_email("Email","{email}","",true,"admin@example.com");
 
     $dns_providers_list=dns_providers_list();
@@ -196,42 +197,40 @@ function dns_create_request_saved():bool{
     $html[] = "<div class='panel-heading'><h4>{dns_record_instructions}</h4></div>";
     $html[] = "<div class='panel-body'>";
 
-    $html[] = "<p><strong>{step} 1:</strong> {create_txt_record_in_dns}</p>";
-    $html[] = "<table class='table table-bordered'>";
-    $html[] = "<tr><th>{record_type}</th><td><code>TXT</code></td></tr>";
-    $html[] = "<tr><th>{record_name}</th><td><code>$task->txt_record_name</code></td></tr>";
-    $html[] = "<tr><th>{record_value}</th><td><code style='word-break:break-all;'>$task->txt_record_value</code></td></tr>";
-    $html[] = "<tr><th>TTL</th><td><code>300</code> ({or_default})</td></tr>";
-    $html[] = "</table>";
-
-    $html[] = "<p><strong>{step} 2:</strong> {wait_dns_propagation}</p>";
-    $html[] = "<p class='text-muted'>{dns_propagation_time}</p>";
-
-    $html[] = "<p><strong>{step} 3:</strong> {verify_dns_record} <span id='vvf-$taskId'></span></p>";
-    $html[] = "<pre>dig +short TXT $task->txt_record_name</pre>";
-
-    $html[] = "<p><strong>{step} 4:</strong> {confirm_and_get_certificate}</p>";
+    $automated = isset($task->automated) && $task->automated;
+    if($automated){
+        $html[] = "<div class='alert alert-success'>Automated DNS provider: the required TXT record(s) are published and validated automatically — no manual action is required. Just wait for the certificate to be issued.</div>";
+    } else {
+        $html[] = "<p><strong>{step} 1:</strong> {create_txt_record_in_dns}</p>";
+        $html[] = "<p><strong>{step} 2:</strong> {wait_dns_propagation} <span class='text-muted'>({dns_propagation_time})</span></p>";
+        $html[] = "<p><strong>{step} 3:</strong> {confirm_and_get_certificate}</p>";
+        if(isset($task->challenge_total) && intval($task->challenge_total) > 1){
+            $html[] = "<div class='alert alert-info'>This certificate covers ".intval($task->challenge_total)." hosts. DNS-01 requires one TXT record per host: publish and confirm each one in turn — the next record appears after each confirmation.</div>";
+        }
+    }
     $html[] = "</div>";
     $html[] = "</div>";
 
-    // Task status area
+    // Live task status area: shows the current host's TXT record, the X/Y progress
+    // and the confirm button. It is the single source of truth and polls itself.
     $html[] = "<div id='dns-task-status-$taskId'>";
     $html[] = dns_task_status_html($taskId, $task);
     $html[] = "</div>";
 
     // Buttons
-
-    $topbuttons[] = array("Loadjs('$page?confirm-dns=$taskId')", ico_ok, "{confirm_dns_created}");
     $topbuttons[] = array("Loadjs('$page?CancelTask1=$taskId')", ico_trash, "{cancel}");
     $topbuttons[] = array("LoadAjaxSilent('dns-create-request-start','$page?new-request-form=yes');", ico_plus, "{new_request}");
-
 
     $html[] = "<div style='margin-top:15px;'>";
     $html[] = $tpl->table_buttons($topbuttons);
     $html[] = "</div>";
-    $js=$tpl->RefreshInterval_js("vvf-$taskId",$page,"verify-task-id=$taskId");
-    $html[] = "<script>$js</script>";
-    //
+
+    // Kick off polling so each host's TXT record is revealed in sequence.
+    $html[] = "<script>
+    setTimeout(function(){
+        LoadAjax('dns-task-status-$taskId', '$page?task-status=$taskId');
+    }, 5000);
+    </script>";
 
     echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -319,6 +318,7 @@ function dns_create_request(){
 
 function dns_task_status_html($taskId, $task):string{
     $tpl = new template_admin();
+    $page = CurrentPageName();
 
     $statusLabels = array(
         "pending" => "<span class='label label-warning'>{pending}</span>",
@@ -333,18 +333,42 @@ function dns_task_status_html($taskId, $task):string{
     $status = isset($task->status) ? $task->status : "pending";
     $statusLabel = isset($statusLabels[$status]) ? $statusLabels[$status] : "<span class='label label-default'>$status</span>";
 
+    // SAN host list + per-host challenge progress
+    $domainsList = $task->domain;
+    if(isset($task->domains) && is_array($task->domains) && count($task->domains) > 0){
+        $domainsList = implode(", ", $task->domains);
+    }
+    $total = isset($task->challenge_total) ? intval($task->challenge_total) : 1;
+    $index = isset($task->challenge_index) ? intval($task->challenge_index) : 0;
+
     $html = array();
     $html[] = "<div class='well'>";
     $html[] = "<strong>Task ID:</strong> {$taskId}<br>";
-    $html[] = "<strong>{domain}:</strong> {$task->domain}<br>";
+    $html[] = "<strong>{domain}:</strong> {$domainsList}<br>";
     $html[] = "<strong>{status}:</strong> $statusLabel<br>";
 
     if(isset($task->error) && strlen($task->error) > 0){
         $html[] = "<div class='alert alert-danger' style='margin-top:10px;'>{$task->error}</div>";
     }
 
+    // While pending we are waiting for THIS host's TXT record to be published.
+    // For a SAN certificate each host is revealed and confirmed in turn.
+    $txtValue = isset($task->txt_record_value) ? $task->txt_record_value : "";
+    $hasRecord = $txtValue !== "" && strpos($txtValue, "[") === false;
+    if($status == "pending" && $hasRecord){
+        if($total > 1){
+            $html[] = "<div class='alert alert-info' style='margin-top:10px;'>SAN certificate — TXT record <strong>$index / $total</strong>. Publish this record, then confirm; the next host's record will appear.</div>";
+        }
+        $html[] = "<table class='table table-bordered' style='margin-top:10px;'>";
+        $html[] = "<tr><th>{record_type}</th><td><code>TXT</code></td></tr>";
+        $html[] = "<tr><th>{record_name}</th><td><code>{$task->txt_record_name}</code></td></tr>";
+        $html[] = "<tr><th>{record_value}</th><td><code style='word-break:break-all;'>{$txtValue}</code></td></tr>";
+        $html[] = "</table>";
+        $html[] = "<pre>dig +short TXT {$task->txt_record_name}</pre>";
+        $html[] = "<button class='btn btn-primary btn-sm' onclick=\"LoadAjax('dns-task-status-$taskId','$page?confirm-dns=$taskId')\">{confirm_dns_created}</button>";
+    }
+
     if($status == "completed" && isset($task->has_certificate) && $task->has_certificate){
-        $page = CurrentPageName();
         $html[] = "<div class='alert alert-success' style='margin-top:10px;'>";
         $html[] = "{certificate_ready}<br>";
         $html[] = "<a href='$page?download-cert=$taskId' class='btn btn-success btn-sm' target='_blank'>{download_certificate}</a>";
@@ -414,9 +438,11 @@ function dns_task_status():bool{
     $task = $json->task;
     echo dns_task_status_html($taskId, $task);
 
-    // Continue polling if still processing
+    // Continue polling while the task is still active. "pending" is included so
+    // that, for a SAN certificate, the UI auto-reveals the next host's TXT record
+    // as soon as lego advances to it after the previous host is confirmed.
     $status = isset($task->status) ? $task->status : "";
-    if($status == "verifying" || $status == "processing"){
+    if($status == "pending" || $status == "verifying" || $status == "processing"){
         echo "<script>
         setTimeout(function(){
             LoadAjax('dns-task-status-{$taskId}', '$page?task-status=$taskId');
@@ -518,7 +544,7 @@ function dns_tasks_table():bool{
         "cancelled" => "<span class='label label-default'>{cancelled}</span>"
     );
 
-    $html[] = "<table class='table table-bordered table-striped'>";
+    $html[] = "<table class='table table-stripped'>";
     $html[] = "<thead><tr>";
     $html[] = "<th>ID</th>";
     $html[] = "<th>{domain}</th>";
@@ -1102,7 +1128,7 @@ function renewal_results_tab():bool{
         "pending" => "<span class='label label-warning'>{pending}</span>"
     );
 
-    $html[] = "<table class='table table-bordered table-striped'>";
+    $html[] = "<table class='table table-stripped'>";
     $html[] = "<thead><tr>";
     $html[] = "<th>{domain}</th>";
     $html[] = "<th>{status}</th>";
@@ -1170,7 +1196,7 @@ function expiring_certs_tab():bool{
     $thresholdDays = isset($json->threshold_days) ? $json->threshold_days : 90;
     $html[] = "<p><strong>{certificates_expiring_within}:</strong> " . $thresholdDays . " {days}</p>";
 
-    $html[] = "<table class='table table-bordered table-striped'>";
+    $html[] = "<table class='table table-stripped'>";
     $html[] = "<thead><tr>";
     $html[] = "<th>{domain}</th>";
     $html[] = "<th>{email}</th>";

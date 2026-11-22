@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
@@ -138,7 +141,8 @@ function lookup_progress():bool{
 }
 function lookup_results():bool{
     $tpl=new template_admin();
-    $ipddr=$_GET["lookup-results"];
+    // Pentest 2026-11-04 : lookup-results etait recopie sans encodage dans la page (XSS).
+    $ipddr=preg_replace('#[^A-Za-z0-9.:_-]#','',(string)$_GET["lookup-results"]);
     $Fname="/usr/share/artica-postfix/ressources/logs/web/$ipddr.json";
     if(!file_exists($Fname)){
         echo $tpl->_ENGINE_parse_body($tpl->div_error("{error} $ipddr.json {no_such_file}"));
@@ -158,6 +162,8 @@ function lookup_results():bool{
         $description=$lookup->description;
         $date=$lookup->date;
         $src=$lookup->src;
+        // Pentest 2026-11-04 : src (reponse REST) etait concatene dans la requete.
+        $src=intval($src);
         $ligne=$q->mysqli_fetch_array("SELECT description FROM rbl_sources WHERE id=$src");
         $database=$ligne["description"];
         $f[]=$tpl->div_explain("DB: $src||<div style='font-size:18px'>{found} {database} <strong>$database</strong> (<i style='font-size: 12px'>$description</i>) {created} $date</div>");
@@ -270,7 +276,7 @@ function settings_popup():bool{
     $ARRAY["TITLE"]="{APP_RBLDNSD} {restarting_service}";
     $ARRAY["AFTER"]="LoadAjax('rbldnsd-status','$page?service-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-rbldnsd-restart')";
+    $jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-rbldnsd-restart')";
     echo $tpl->form_outside("",$form,null,"{apply}","dialogInstance2.close();LoadAjax('status-build','$page?status-build=yes');$jsRestart");
     return true;
 }
@@ -484,8 +490,8 @@ function top_status():bool{
     $RBLDNSD_COMPILE_TIME=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RBLDNSD_COMPILE_TIME");
 
     $xtime=$tpl->time_to_date($RBLDNSD_COMPILE_TIME,true);
-    $RBLDNSD_BLCK_COUNT=$tpl->widget_h("green","fas fa-database",$tpl->FormatNumber($RBLDNSD_BLCK_COUNT)."<div style='font-size:10px'>$xtime</div>","{blacklist} {items}");
-    $RBLDNSD_WHITE_COUNT=$tpl->widget_h("green","fas fa-database",$tpl->FormatNumber($RBLDNSD_WHITE_COUNT)."<div style='font-size:10px'>$xtime</div>","{whitelist} {items}");
+    $RBLDNSD_BLCK_COUNT=$tpl->widget_h("green",ico_database,$tpl->FormatNumber($RBLDNSD_BLCK_COUNT)."<div style='font-size:10px'>$xtime</div>","{blacklist} {items}");
+    $RBLDNSD_WHITE_COUNT=$tpl->widget_h("green",ico_database,$tpl->FormatNumber($RBLDNSD_WHITE_COUNT)."<div style='font-size:10px'>$xtime</div>","{whitelist} {items}");
 
 
     $html[]="<table style='width:100%;margin-top:-13px'>";

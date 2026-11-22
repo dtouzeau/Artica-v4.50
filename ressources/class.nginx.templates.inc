@@ -42,7 +42,7 @@ class nginx_templates{
                                 "<style type='text/css'>$style_css</style>",$data);
 
             $inlinestyle="<style type=\"text/css\">
-                body { color: #676a6c;font-family: 'Helvetica Neue','lato','Trebuchet MS', 'Helvetica', sans-serif; font-size: 14px; line-height: 1.42857143;margin: 0;overflow-x: hidden;}
+                body { color: #676a6c;font-size: 14px; line-height: 1.42857143;margin: 0;overflow-x: hidden;}
                  html, body { height: 100%; }
                  * { -webkit-box-sizing: border-box; -moz-box-sizing: border-box; box-sizing: border-box; }
 .gray-bg, .bg-muted { background-color: #f3f3f4; }

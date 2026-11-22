@@ -5,7 +5,6 @@ include_once(dirname(__FILE__).'/ressources/class.ccurl.inc');
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["tabs"])){tabs();exit;}
-if(isset($_GET["status"])){global_status();exit;}
 page();
 
 function page(){

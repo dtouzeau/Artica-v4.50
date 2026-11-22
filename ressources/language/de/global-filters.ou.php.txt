@@ -1,8 +1,8 @@
 <ArticaDenyNoMXRecords>Kein MX-Datensatz</ArticaDenyNoMXRecords>
-<ArticaDenyNoMXRecords_text>Artica-policy will check if the sender domain as a real MX record in the DNS server, In this case, you can reject messages in the connection </ArticaDenyNoMXRecords_text>
-<ArticaFakedMailFrom>Faked Sender addresses</ArticaFakedMailFrom>
-<ArticaFakedMailFrom_text>Sometimes, the sender address didn't reflect the real sender address used to communicate with the server.
- In this case, you can perform operation[br]Delete the eMail, put it into user quarantine[br]for disable this feature,
-  just select pass method.</ArticaFakedMailFrom_text>
-<trust_users>Trust Organization users</trust_users>
-<trust_users_text>If checked local senders user are white listed and consider has trusted users</trust_users_text>
+<ArticaDenyNoMXRecords_text>Artica-policy pr&#252;ft, ob die Absenderdom&#228;ne einen echten MX-Eintrag im DNS-Server hat. In diesem Fall k&#246;nnen Sie Nachrichten in der Verbindung ablehnen</ArticaDenyNoMXRecords_text>
+<ArticaFakedMailFrom>Gef&#228;lschte Absenderadressen</ArticaFakedMailFrom>
+<ArticaFakedMailFrom_text>Manchmal spiegelt die Absenderadresse nicht die tats&#228;chliche Absenderadresse wider, die f&#252;r die Kommunikation mit dem Server verwendet wird.
+ In diesem Fall k&#246;nnen Sie einen Vorgang durchf&#252;hren[br]E-Mail l&#246;schen, in die Benutzerquarant&#228;ne stellen[br]um diese Funktion zu deaktivieren,
+  w&#228;hlen Sie einfach die Methode &quot;pass&quot;.</ArticaFakedMailFrom_text>
+<trust_users>Organisationsbenutzern vertrauen</trust_users>
+<trust_users_text>Wenn aktiviert, werden lokale Absenderbenutzer auf die Whitelist gesetzt und als vertrauensw&#252;rdige Benutzer betrachtet</trust_users_text>

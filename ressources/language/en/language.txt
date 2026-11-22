@@ -414,7 +414,7 @@ Policyd-weight caches the most frequent client/sender combinations (SPAM as well
 <APP_RSYNC_SERVER_LOG_TEXT>Display events of your storage server</APP_RSYNC_SERVER_LOG_TEXT>
 <APP_RSYNC_SERVER_TEXT>Configure this server to receive backup from others servers</APP_RSYNC_SERVER_TEXT>
 <APP_RSYNC_STUNNEL>SSL Tunnel</APP_RSYNC_STUNNEL>
-<APP_SAMBA>Samba Shares Engine</APP_SAMBA>
+<APP_SAMBA>Shares Engine</APP_SAMBA>
 <APP_SAMBA_NMBD>Samba Resolution Daemon</APP_SAMBA_NMBD>
 <APP_SAMBA_SMBD>Samba TCP/IP Daemon</APP_SAMBA_SMBD>
 <APP_SAMBA_WINBIND>Samba Winbind Daemon</APP_SAMBA_WINBIND>
@@ -1668,7 +1668,7 @@ The message delivery transport name is the first field in the entry in the maste
 <local_domains_table>SMTP Local domains</local_domains_table>
 <locked>Locked</locked>
 <log>Log</log>
-<logging>logging</logging>
+<logging>Logging</logging>
 <login>Login</login>
 <login_name>Login name</login_name>
 <logoff>Log out</logoff>
@@ -4442,7 +4442,7 @@ user in any domain, depending on how the cache is used.[br] Some ftp servers als
 <ftp_passive_explain>If your firewall does not allow Squid to use passive connections, then turn off this option</ftp_passive_explain>
 <ftp_list_width>List width</ftp_list_width>
 <ftp_passive>PASSIVE Mode</ftp_passive>
-<local_database>local_database</local_database>
+<local_database>Local database</local_database>
 <remote_database>Remote database</remote_database>
 <SQUID_DISABLED>Squid is disabled</SQUID_DISABLED>
 <SQUID_DISABLED_TEXT>Squid is currently disabled, click here if you want to re-enable it</SQUID_DISABLED_TEXT>

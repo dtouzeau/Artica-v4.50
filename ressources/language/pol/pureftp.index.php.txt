@@ -1,50 +1,44 @@
-<AnonymousBandwidth>Anonymous Bandwidth</AnonymousBandwidth>
+<AnonymousBandwidth>Przepustowo&#347;&#263; anonimowa</AnonymousBandwidth>
 <AnonymousBandwidth_text>Max szeroko%u015B%u0107 pasma dla u%u017Cytkownika anonimowego w KB/s</AnonymousBandwidth_text>
-<AnonymousCanCreateDirs>Anonymous Can Create Dirs</AnonymousCanCreateDirs>
-<AnonymousCanCreateDirs_text>Are anonymous users allowed to create new directories ?</AnonymousCanCreateDirs_text>
-<AnonymousCantUpload>Anonymous Can't Upload</AnonymousCantUpload>
-<AnonymousCantUpload_text>Disallow anonymous users to upload new files (unchecked = upload is allowed)</AnonymousCantUpload_text>
-<AntiWarez>Anti Warez</AntiWarez>
-<AntiWarez_text>Disallow downloading of files owned by "ftp", ie. files that were uploaded but not validated by a local admin.</AntiWarez_text>
-<AutoRename>Auto-rename</AutoRename>
-<AutoRename_text>Never overwrite files. When a file whoose name already exist is uploaded, it get automatically renamed to file.1, file.2, file.3, ...</AutoRename_text>
-<BrokenClientsCompatibility>Compatibility hacks for broken clients</BrokenClientsCompatibility>
-<BrokenClientsCompatibility_text>
-Users might have trouble connecting through Internet Explorer.[br]
-This is because IE, among others, tries to connect anonymously and may not give pure-ftpd the proper chance to request a username and password.
-[br]One can, change from no to yes.[br]
-This might or might not work, it seems to depend upon what version of IE that someone is using.</BrokenClientsCompatibility_text>
-<DisplayDotFiles>Display Dot Files</DisplayDotFiles>
-<DisplayDotFiles_text>List dot-files even when the client doesn't send "-a".</DisplayDotFiles_text>
-<DontResolve>Don't Resolve</DontResolve>
-<DontResolve_text>
-Don't resolve host names in log files.[br]
-Logs are less verbose, but it uses less bandwidth.
-[br]Set this to enabled on very busy servers or if you don't have a working DNS.
-</DontResolve_text>
-<enable_pureftpd>Enable FTP on this server</enable_pureftpd>
-<enable_pureftpd_text>If you uncheck this, the serivce will be turned off and there is no FTP service running</enable_pureftpd_text>
-<LimitRecursion>Limit Recursion</LimitRecursion>
-<LimitRecursion_text> 'ls' recursion limits. The [b]first argument[/b] is the maximum number of files to be displayed.[br]
-The [b]second one[/b] is the max subdirectories depth
-</LimitRecursion_text>
-<MaxClientsNumber>Max Clients Number</MaxClientsNumber>
-<MaxClientsNumber_text>Maximum number of simultaneous users</MaxClientsNumber_text>
-<MaxClientsPerIP>Max Clients Per IP</MaxClientsPerIP>
-<MaxClientsPerIP_text>Maximum number of sim clients with the same IP address</MaxClientsPerIP_text>
-<MaxDiskUsage>Max Disk Usage %</MaxDiskUsage>
-<MaxDiskUsage_text>This option is useful with servers where anonymous upload is allowed. [br]
-As /var/ftp is in /var, it save some space and protect the log files.[br]
-When the partition is more that X percent full,new uploads are disallowed.</MaxDiskUsage_text>
-<MaxIdleTime>Max Idle Time</MaxIdleTime>
-<MaxIdleTime_text>Maximum idle time in minutes (default = 15 minutes)</MaxIdleTime_text>
-<MaxLoad_text>If the system is more loaded than the following value,anonymous users aren't allowed to download.</MaxLoad_text>
+<AnonymousCanCreateDirs>Anonimowi mog&#261; tworzy&#263; katalogi</AnonymousCanCreateDirs>
+<AnonymousCanCreateDirs_text>Czy anonimowi u&#380;ytkownicy mog&#261; tworzy&#263; nowe katalogi?</AnonymousCanCreateDirs_text>
+<AnonymousCantUpload>Anonimowi nie mog&#261; przesy&#322;a&#263;</AnonymousCantUpload>
+<AnonymousCantUpload_text>Zabro&#324; anonimowym u&#380;ytkownikom przesy&#322;ania nowych plik&#243;w (odznaczone = przesy&#322;anie dozwolone)</AnonymousCantUpload_text>
+<AntiWarez>Anty-Warez</AntiWarez>
+<AntiWarez_text>Zabro&#324; pobierania plik&#243;w nale&#380;&#261;cych do &quot;ftp&quot;, tzn. plik&#243;w, kt&#243;re zosta&#322;y przes&#322;ane, ale nie zatwierdzone przez lokalnego administratora.</AntiWarez_text>
+<AutoRename>Automatyczna zmiana nazwy</AutoRename>
+<AutoRename_text>Nigdy nie nadpisuj plik&#243;w. Gdy przesy&#322;any jest plik o ju&#380; istniej&#261;cej nazwie, jest automatycznie zmieniany na file.1, file.2, file.3, ...</AutoRename_text>
+<BrokenClientsCompatibility>Poprawki zgodno&#347;ci dla wadliwych klient&#243;w</BrokenClientsCompatibility>
+<BrokenClientsCompatibility_text>U&#380;ytkownicy mog&#261; mie&#263; problemy z po&#322;&#261;czeniem przez Internet Explorer.[br]
+Dzieje si&#281; tak, poniewa&#380; IE, mi&#281;dzy innymi, pr&#243;buje po&#322;&#261;czy&#263; si&#281; anonimowo i mo&#380;e nie da&#263; pure-ftpd odpowiedniej mo&#380;liwo&#347;ci za&#380;&#261;dania nazwy u&#380;ytkownika i has&#322;a.
+[br]Mo&#380;na zmieni&#263; z nie na tak.[br]
+Mo&#380;e to dzia&#322;a&#263; lub nie, wydaje si&#281; to zale&#380;e&#263; od u&#380;ywanej wersji IE.</BrokenClientsCompatibility_text>
+<DisplayDotFiles>Wy&#347;wietl pliki z kropk&#261;</DisplayDotFiles>
+<DisplayDotFiles_text>Wy&#347;wietlaj pliki z kropk&#261; nawet gdy klient nie wysy&#322;a &quot;-a&quot;.</DisplayDotFiles_text>
+<DontResolve>Nie rozwi&#261;zuj</DontResolve>
+<DontResolve_text>Nie rozwi&#261;zuj nazw host&#243;w w plikach dziennika.[br]
+Dzienniki s&#261; mniej szczeg&#243;&#322;owe, ale zu&#380;ywaj&#261; mniej przepustowo&#347;ci.
+[br]W&#322;&#261;cz to na bardzo obci&#261;&#380;onych serwerach lub je&#347;li nie masz dzia&#322;aj&#261;cego DNS.</DontResolve_text>
+<enable_pureftpd>W&#322;&#261;cz FTP na tym serwerze</enable_pureftpd>
+<enable_pureftpd_text>Je&#347;li odznaczysz t&#281; opcj&#281;, us&#322;uga zostanie wy&#322;&#261;czona i nie b&#281;dzie dzia&#322;a&#263; &#380;adna us&#322;uga FTP</enable_pureftpd_text>
+<LimitRecursion>Ogranicz rekurencj&#281;</LimitRecursion>
+<LimitRecursion_text>Limity rekurencji 'ls'. [b]Pierwszy argument[/b] to maksymalna liczba plik&#243;w do wy&#347;wietlenia.[br]
+[b]Drugi[/b] to maksymalna g&#322;&#281;boko&#347;&#263; podkatalog&#243;w</LimitRecursion_text>
+<MaxClientsNumber>Maks. liczba klient&#243;w</MaxClientsNumber>
+<MaxClientsNumber_text>Maksymalna liczba jednoczesnych u&#380;ytkownik&#243;w</MaxClientsNumber_text>
+<MaxClientsPerIP>Maks. klient&#243;w na IP</MaxClientsPerIP>
+<MaxClientsPerIP_text>Maksymalna liczba jednoczesnych klient&#243;w z tym samym adresem IP</MaxClientsPerIP_text>
+<MaxDiskUsage>Maks. wykorzystanie dysku %</MaxDiskUsage>
+<MaxDiskUsage_text>Ta opcja jest przydatna na serwerach, gdzie dozwolone jest anonimowe przesy&#322;anie. [br]
+Poniewa&#380; /var/ftp znajduje si&#281; w /var, oszcz&#281;dza miejsce i chroni pliki dziennika.[br]
+Gdy partycja jest zape&#322;niona w ponad X procentach, nowe przesy&#322;anie jest zabronione.</MaxDiskUsage_text>
+<MaxIdleTime>Maks. czas bezczynno&#347;ci</MaxIdleTime>
+<MaxIdleTime_text>Maksymalny czas bezczynno&#347;ci w minutach (domy&#347;lnie = 15 minut)</MaxIdleTime_text>
+<MaxLoad_text>Je&#347;li system jest bardziej obci&#261;&#380;ony ni&#380; poni&#380;sza warto&#347;&#263;, u&#380;ytkownicy anonimowi nie mog&#261; pobiera&#263;.</MaxLoad_text>
 <Max_Load>Maksymalne obci%C4%85%C5%BCenie</Max_Load>
-<NoAnonymous>No Anonymous</NoAnonymous>
-<NoAnonymous_text>Disallow anonymous connections. Only allow authenticated users.</NoAnonymous_text>
-<ProhibitDotFilesRead>Prohibit Dot Files Read</ProhibitDotFilesRead>
-<ProhibitDotFilesRead_text>Prohibit *reading* of files beginning with a dot (.history, .ssh...)</ProhibitDotFilesRead_text>
-<ProhibitDotFilesWrite>Prohibit Dot Files Write</ProhibitDotFilesWrite>
-<ProhibitDotFilesWrite_text>
-Users can't delete/write files beginning with a dot ('.') even if they own them.
-</ProhibitDotFilesWrite_text>
+<NoAnonymous>Bez anonimowych</NoAnonymous>
+<NoAnonymous_text>Zabro&#324; po&#322;&#261;cze&#324; anonimowych. Zezwalaj tylko uwierzytelnionym u&#380;ytkownikom.</NoAnonymous_text>
+<ProhibitDotFilesRead>Zabro&#324; odczytu plik&#243;w z kropk&#261;</ProhibitDotFilesRead>
+<ProhibitDotFilesRead_text>Zabro&#324; *odczytu* plik&#243;w zaczynaj&#261;cych si&#281; od kropki (.history, .ssh...)</ProhibitDotFilesRead_text>
+<ProhibitDotFilesWrite>Zabro&#324; zapisu plik&#243;w z kropk&#261;</ProhibitDotFilesWrite>
+<ProhibitDotFilesWrite_text>U&#380;ytkownicy nie mog&#261; usuwa&#263;/zapisywa&#263; plik&#243;w zaczynaj&#261;cych si&#281; od kropki ('.') nawet je&#347;li s&#261; ich w&#322;a&#347;cicielami.</ProhibitDotFilesWrite_text>

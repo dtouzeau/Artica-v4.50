@@ -1,12 +1,17 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-include_once("/usr/share/artica-postfix/ressources/class.mysql.catz.inc");
 $users=new usersMenus();if(!$users->AsSquidAdministrator){$users->pageDie();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_POST["HotSpotRedirectUI"])){Save();exit;}
 if(isset($_GET["events-form"])){events_form();exit;}
 if(isset($_GET["events-search"])){events_search();exit;}
 if(isset($_GET["search"])){table();exit;}
+if(isset($_GET["export"])){export_download();exit;}
+if(isset($_GET["export-progress"])){export_progress_download();exit;}
+if(isset($_GET["import-open"])){import_open();exit;}
+if(isset($_GET["import-popup"])){import_popup();exit;}
+if(isset($_POST["import"])){import_perform();exit;}
 if(isset($_GET["form"])){form();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["enable-feature"])){enable_feature();exit;}
@@ -19,7 +24,49 @@ if(isset($_POST["start-schedule"])){start_schedule_save();exit;}
 if(isset($_GET["edit"])){edit_js();exit;}
 if(isset($_GET["edit-popup"])){edit_popup();exit;}
 if(isset($_POST["ID"])){edit_save();exit;}
+if(isset($_GET["ask-js"])){ask_js();exit;}
+if(isset($_GET["ask-popup"])){ask_popup();exit;}
+if(isset($_GET["ask-disable"])){ask_disable();exit;}
+if(isset($_GET["ask-enable"])){ask_enable();exit;}
 page();
+function ask_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog6("{improve_website_categorization}","$page?ask-popup=true",650);
+}
+function ask_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $bton=$tpl->button_autnonome("{enable_feature}","Loadjs('$page?ask-enable=yes')",ico_cd,128);
+    $btonoff=$tpl->button_autnonome("{cancel}","Loadjs('$page?ask-disable=yes')", ico_exit,128);
+    $html[]="<table style='margin-top:10px;width:100%'>";
+    $html[]="<tr>";
+    $html[]="<td style='width:50%'>$btonoff</td>";
+    $html[]="<td style='width:50%;padding-left:10px'>$bton</td>";
+    $html[]="</tr>";
+    $html[]="</table>";
+    $div=@implode("",$html);
+    $f=$tpl->div_explain("{improve_website_categorization}||{improve_website_categorization3}$div");
+    echo $f;
+    return true;
+}
+function ask_disable():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("GoShieldNotCategorizedSeen",1);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("GoShieldNotCategorized", 0);
+    header("content-type: application/x-javascript");
+    echo "dialogInstance6.close();";
+    return admin_tracks("Refused sent not-categorized to Artica Cloud");
+}
+function ask_enable():bool{
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("GoShieldNotCategorizedSeen",1);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("GoShieldNotCategorized", 1);
+    header("content-type: application/x-javascript");
+    echo "dialogInstance6.close();";
+    return admin_tracks("Accepted sent not-categorized to Artica Cloud");
+}
+
 function page():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -65,13 +112,11 @@ function events_form():bool{
     echo "</div>";
     return true;
 }
-
 function enable_feature():bool{
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("GoShieldNotCategorized",1);
     $function=$_GET["function"];
     header("content-type: application/x-javascript");
     echo "$function();";
-
     return true;
 }
 function disable_feature():bool{
@@ -165,10 +210,10 @@ function events_search():bool{
         }
 
         $html[]="<tr>
-				<td width=1% class='$color' nowrap>$FTime</td>
-				<td width=1% class='$color' nowrap >$pid</td>
-				<td width=1% class='$color' nowrap >$type</td>
-				<td width=99% class='$color' nowrap><span class='$color'>$events</span></td>
+				<td style='width:1%' class='$color' nowrap>$FTime</td>
+				<td style='width:1%' class='$color' nowrap >$pid</td>
+				<td style='width:1%' class='$color' nowrap >$type</td>
+				<td style='width:99%' class='$color' nowrap><span class='$color'>$events</span></td>
 				</tr>";
 
     }
@@ -177,13 +222,13 @@ function events_search():bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
-
 function table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $function=$_GET["function"];
+    $function=preg_replace("/[^a-zA-Z0-9_]/","",$_GET["function"]);
     $search=$_GET["search"];
-    $q=new lib_sqlite("/home/artica/SQLITE/uncategorized.db");
+    $order=(isset($_GET["order"]) && $_GET["order"]=="asc")?"asc":((isset($_GET["order"]) && $_GET["order"]=="desc")?"desc":"");
+    $divid=isset($_GET["div-id"])?preg_replace("/[^a-zA-Z0-9_-]/","",$_GET["div-id"]):"";
     $GoShieldNotCategorized=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldNotCategorized"));
     $LIC=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
     if (!$LIC) {
@@ -220,43 +265,34 @@ function table():bool{
     $html[]="</thead>";
     $html[]="<tbody>";
 
-   $ligne=$q->mysqli_fetch_array("SELECT count(host) as tcount FROM domains WHERE category=0");
-   if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    $count=$tpl->FormatNumber($ligne["tcount"]);
-
-    $sql="CREATE TABLE IF NOT EXISTS `domains` (
-		  `host` TEXT PRIMARY KEY,
-		  `created` INTEGER NOT NULL DEFAULT 0,
-          `category` INTEGER NOT NULL DEFAULT 0,
-          `pushed` INTEGER NOT NULL DEFAULT 0,
-          `categorized` INTEGER NOT NULL DEFAULT 0 )";
-
-    $q->QUERY_SQL($sql);
-    $countMax=$tpl->FormatNumber($q->COUNT_ROWS("domains"));
-
-    if($search<>null){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
-        $search_text=" WHERE host LIKE '$search'";
+    $uri="/categories/uncategorized/list";
+    $params=array();
+    if($search<>null){$params[]="search=".urlencode($search);}
+    if($order<>null){$params[]="order=".urlencode($order);}
+    if(count($params)>0){$uri.="?".@implode("&",$params);}
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API($uri));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        $err=(is_object($json) && isset($json->Error) && $json->Error<>null) ? $json->Error : "{error}";
+        echo $tpl->FATAL_ERROR_SHOW_128($err);
+        return true;
     }
+    $count=$tpl->FormatNumber(intval($json->CountCat0 ?? 0));
+    $countMax=$tpl->FormatNumber(intval($json->CountTotal ?? 0));
 
-    $results=$q->QUERY_SQL("SELECT * FROM domains$search_text ORDER BY category ASC,created DESC,categorized ASC LIMIT 500");
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);}
+    $results=(isset($json->Rows) && is_array($json->Rows)) ? $json->Rows : array();
     $TRCLASS=null;
     $earch=ico_earth;
-    $Qcl=new mysql_catz();
     foreach ($results as $index=>$ligne){
         $md=md5(serialize($ligne));
-        $host=$ligne["host"];
-        $created=$ligne["created"];
-        $category=$ligne["category"];
+        $host=htmlspecialchars($ligne->host,ENT_QUOTES,"UTF-8");
+        $created=intval($ligne->created);
+        $category=intval($ligne->category);
         $category_text="{unknown}";
         $categorized_text="-";
-        $categorized=$ligne["categorized"];
+        $categorized=intval($ligne->categorized);
         $categorized_distance=null;
         if($category>0){
-            $category_text=$Qcl->CategoryIntToStr($category);
+            $category_text=htmlspecialchars($ligne->category_name,ENT_QUOTES,"UTF-8");
 
         }
 
@@ -272,7 +308,7 @@ function table():bool{
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%' nowrap>$ico</td>";
         $html[]="<td style='width:1%' nowrap>$created</td>";
-        $html[]="<td width=99%>$host</td>";
+        $html[]="<td style='width:99%'>$host</td>";
         $html[]="<td style='width:1%' nowrap>$category_text</td>";
         $html[]="<td style='width:1%' nowrap>$categorized_text$categorized_distance</td>";
         $html[]="</tr>";
@@ -290,7 +326,28 @@ function table():bool{
         "$function()"
     );
 
+    $export=$tpl->framework_buildjs("/categories/uncategorized/launch",
+        "not-categorized.progress",
+        "not-categorized.progress.log",
+        "progress-uncategorized-div-restart",
+        "document.location.href='$page?export-progress=yes'"
+    );
+
+    $topbuttons[]=array($export,ico_export,"{export}");
     $topbuttons[]=array($launch,ico_run,"{analyze}");
+
+
+    if($divid<>null){
+        $searchEnc=urlencode($search);
+        $nextOrder=($order=="asc")?"desc":"asc";
+        if($nextOrder=="asc"){$sortIco="fa-solid fa-arrow-down-short-wide";$sortLabel="{oldest_first}";}
+        else{$sortIco="fa-solid fa-arrow-up-wide-short";$sortLabel="{newest_first}";}
+        $sortJs="LoadAjaxTiny('$divid','$page?search=$searchEnc&function=$function&div-id=$divid&order=$nextOrder');";
+        $topbuttons[]=array($sortJs,$sortIco,$sortLabel);
+    }
+
+    $topbuttons[]=array("document.location.href='$page?export=yes'",ico_download,"{export}");
+    $topbuttons[]=array("Loadjs('$page?import-open=yes&function=$function')",ico_upload,"{import}");
 
     $topbuttons[]=array("Loadjs('$page?disable-feature=yes&function=$function');",
         ico_trash,"{disabled_feature}");
@@ -311,4 +368,109 @@ function table():bool{
 
     echo $tpl->_ENGINE_parse_body($html);
     return true;
+}
+function export_progress_download():bool{
+    @ini_set("display_errors",0);
+    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/uncategorized/export/get"),true);
+    @ob_clean();
+    $body=$data["content"];
+    header("Content-Type: application/text");
+    header("Content-Disposition: attachment; filename=\"export.txt\"");
+    header("Content-Length: ".strlen($body));
+    header("Cache-Control: no-cache, must-revalidate");
+    echo $body;
+    ob_end_flush();
+    return true;
+}
+function export_download(){
+    @ini_set("display_errors",0);
+    if(!function_exists("curl_init")){header("HTTP/1.1 500 Internal Server Error");echo "curl not available";return;}
+    $socket="/usr/share/artica-postfix/bin/run/articarest.sock";
+    $ch=curl_init();
+    curl_setopt($ch,CURLOPT_URL,"http://localhost/categories/uncategorized/export");
+    curl_setopt($ch,CURLOPT_UNIX_SOCKET_PATH,$socket);
+    curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+    curl_setopt($ch,CURLOPT_TIMEOUT,300);
+    $body=curl_exec($ch);
+    $code=intval(curl_getinfo($ch,CURLINFO_HTTP_CODE));
+    curl_close($ch);
+    if($body===false || $code!=200){
+        header("HTTP/1.1 ".($code?:500)." Error");
+        echo "Export error (HTTP $code)";
+        return;
+    }
+    $filename="uncategorized-".date("Y-m-d-His").".json.gz";
+    @ob_clean();
+    header("Content-Type: application/gzip");
+    header("Content-Disposition: attachment; filename=\"$filename\"");
+    header("Content-Length: ".strlen($body));
+    header("Cache-Control: no-cache, must-revalidate");
+    echo $body;
+}
+
+function import_open(){
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $function=preg_replace("/[^a-zA-Z0-9_]/","",$_GET["function"]);
+    $tpl->js_dialog1("{import_uncategorized}","$page?import-popup=yes&function=$function",540);
+}
+
+function import_popup(){
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $function=preg_replace("/[^a-zA-Z0-9_]/","",$_GET["function"]);
+    $t=time();
+    $html=array();
+    $html[]="<div style='width:98%;padding:10px'>";
+    $html[]="<div class='text-info' style='margin-bottom:15px'>{import_uncategorized_explain}</div>";
+    $html[]="<form id='import-frm-$t' enctype='multipart/form-data'>";
+    $html[]="<input type='hidden' name='import' value='yes'>";
+    $html[]="<input type='file' name='importfile' accept='.gz' class='form-control' style='margin-bottom:15px'>";
+    $html[]="<center><button type='button' class='btn btn-primary' onclick='ImportUncat$t()'><i class='".ico_upload."'></i> {import}</button></center>";
+    $html[]="</form>";
+    $html[]="<div id='import-res-$t' style='margin-top:15px'></div>";
+    $html[]="</div>";
+    echo $tpl->_ENGINE_parse_body($html);
+    echo "<script>
+function ImportUncat$t(){
+    var frm=document.getElementById('import-frm-$t');
+    var fileInput=frm.querySelector('input[type=file]');
+    if(!fileInput.files.length){return;}
+    var fd=new FormData(frm);
+    document.getElementById('import-res-$t').innerHTML=\"<div class='text-center'><i class='fa fa-spinner fa-spin fa-2x'></i></div>\";
+    $.ajax({url:'$page',type:'POST',data:fd,processData:false,contentType:false,
+        success:function(r){document.getElementById('import-res-$t').innerHTML=r;if(typeof window['$function']==='function'){window['$function']();}},
+        error:function(){document.getElementById('import-res-$t').innerHTML=\"<div class='alert alert-danger'>Error</div>\";}
+    });
+}
+</script>";
+}
+
+function import_perform(){
+    $tpl=new template_admin();
+    if(!isset($_FILES["importfile"]) || !isset($_FILES["importfile"]["tmp_name"]) || intval($_FILES["importfile"]["error"])!=0){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{select_a_file}"));
+        return;
+    }
+    if(intval($_FILES["importfile"]["size"])==0){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{select_a_file}"));
+        return;
+    }
+    $binary=@file_get_contents($_FILES["importfile"]["tmp_name"]);
+    if($binary===false || strlen($binary)==0){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}"));
+        return;
+    }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_BINARY("/categories/uncategorized/import",$binary));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        $err=(is_object($json) && isset($json->Error) && $json->Error<>null)?$json->Error:"{error}";
+        echo $tpl->_ENGINE_parse_body($tpl->div_error($err));
+        return;
+    }
+    $inserted=intval($json->Inserted ?? 0);
+    $skipped=intval($json->Skipped ?? 0);
+    $total=intval($json->Total ?? 0);
+    admin_tracks("Imported uncategorized websites: $inserted added, $skipped skipped");
+    $msg="{import_done} - $inserted {added}, $skipped {skipped} / $total {total}";
+    echo $tpl->_ENGINE_parse_body($tpl->div_success($msg));
 }

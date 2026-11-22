@@ -312,21 +312,10 @@ class status{
 
 
     public function squid_get_current_users_count(){
-        $sock=new sockets();
-        $count=0;
-        $RTTSIZEARRAY=unserialize(base64_decode($sock->getFrameWork("squid.php?currentusersize=yes")));
-        if(count($RTTSIZEARRAY["UID"])>0){
-            return count($RTTSIZEARRAY["UID"]);
-        }
-
-        if($count==0){
-            if(count($RTTSIZEARRAY["IP"])>0){
-                return count($RTTSIZEARRAY["IP"]);
-            }
-        }
-        if($count==0){
-            return 0;
-        }
+        // Lisait <ArticaLogDir>/squid-RTTSize/<AAAAMMJJHH> via framework/squid.php ;
+        // plus rien n'ecrit ce fichier (et count() sur l'echec d'unserialize
+        // etait fatal en PHP 8).
+        return 0;
 
     }
 

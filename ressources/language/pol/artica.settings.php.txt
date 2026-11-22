@@ -1,157 +1,140 @@
-<accounts_text>Change the Global Administrator username and password and LDAP Database branch</accounts_text>
+<accounts_text>Zmie&#324; nazw&#281; u&#380;ytkownika i has&#322;o administratora globalnego oraz ga&#322;&#261;&#378; bazy danych LDAP</accounts_text>
 <account_settings>Konta administrator&oacute;w</account_settings>
-<add_recipient>Add a new recipient</add_recipient>
-<add_recipient_text>Add a new email address in order to receive email messages</add_recipient_text>
+<add_recipient>Dodaj nowego odbiorc&#281;</add_recipient>
+<add_recipient_text>Dodaj nowy adres e-mail, aby otrzymywa&#263; wiadomo&#347;ci e-mail</add_recipient_text>
 <advanced_settings>Zaawansowane ustawienia</advanced_settings>
 <all_modules>Wszystkie modu%u0142y</all_modules>
 <ArticaMaxLogsSize>Maksymalny rozmiar k%C5%82%C3%B3d</ArticaMaxLogsSize>
-<ArticaMaxLogsSize_text>Set the max size of logs files that artica will found when parsing the /var/log directories.[br]
-If a log file exceed this size, artica process will delete it automatically to not increase your disk size.
-</ArticaMaxLogsSize_text>
-<ArticaMaxTempLogFilesDay>Max Logs files Days</ArticaMaxTempLogFilesDay>
-<ArticaMaxTempLogFilesDay_text>Set the number of days live for logs files</ArticaMaxTempLogFilesDay_text>
+<ArticaMaxLogsSize_text>Ustaw maksymalny rozmiar plik&#243;w dziennika, kt&#243;re artica znajdzie podczas analizy katalog&#243;w /var/log.[br]
+Je&#347;li plik dziennika przekroczy ten rozmiar, proces artica usunie go automatycznie, aby nie zwi&#281;ksza&#263; przestrzeni dyskowej.</ArticaMaxLogsSize_text>
+<ArticaMaxTempLogFilesDay>Maks. dni plik&#243;w dziennika</ArticaMaxTempLogFilesDay>
+<ArticaMaxTempLogFilesDay_text>Ustaw liczb&#281; dni &#380;ycia plik&#243;w dziennika</ArticaMaxTempLogFilesDay_text>
 <ArticaProxyServerEnabled>U%C5%BCywanie globalnego proxy HTTP</ArticaProxyServerEnabled>
 <ArticaProxyServerName>Serwer proxy</ArticaProxyServerName>
 <ArticaProxyServerPort>Port serwera proxy</ArticaProxyServerPort>
 <ArticaProxyServerUsername>Nazwa u%C5%BCytkownika</ArticaProxyServerUsername>
 <ArticaProxyServerUserPassword>Has%C5%82o</ArticaProxyServerUserPassword>
-<ArticaWebRootURI>Link to artica web site</ArticaWebRootURI>
-<ArticaWebRootURI_text>This link will be used for reports sended to yours users in order to provide release mails features from SMTP notifications</ArticaWebRootURI_text>
-<ARTICA_FILTER_MAXSUBQUEUE>Max queue processes</ARTICA_FILTER_MAXSUBQUEUE>
-<ARTICA_FILTER_MAXSUBQUEUE_TEXT>To check and release all mails into the artica-filter queue, and depends of your server load, you 
-can increase or decrease the number of process that check files into the queue[br][b]each process will release 10 mails before die.[/b]</ARTICA_FILTER_MAXSUBQUEUE_TEXT>
-<ARTICA_FILTER_QUEUE_PATH>Artica-filter queue path</ARTICA_FILTER_QUEUE_PATH>
-<ARTICA_FILTER_QUEUE_PATH_TEXT>When postfix send mails to artica content filter,the artica-filter process save eMails received in a folder before check policies,depends on your emails, flow, set this value to a correct disk size</ARTICA_FILTER_QUEUE_PATH_TEXT>
-<artica_smtp_performances>SMTP Performances</artica_smtp_performances>
-<artica_smtp_performances_text>This section allow you to disable or enables services on your SMTP Postfix gateway.[br]
-Disable services growth SMTP flow performances but it reduce email security too.</artica_smtp_performances_text>
-<artica_version>Artica version</artica_version>
-<change_ldap_server_settings>Change settings on slapd.conf</change_ldap_server_settings>
-<change_ldap_server_settings_text>If the LDAP server is installed on the same machine,[br]These settings will be changed to the OpenLDAP server configuration file</change_ldap_server_settings_text>
-<CPU_ALARM>CPU overload notification</CPU_ALARM>
+<ArticaWebRootURI>Link do witryny web artica</ArticaWebRootURI>
+<ArticaWebRootURI_text>Ten link b&#281;dzie u&#380;ywany do raport&#243;w wysy&#322;anych do u&#380;ytkownik&#243;w w celu udost&#281;pnienia funkcji zwalniania wiadomo&#347;ci z powiadomie&#324; SMTP</ArticaWebRootURI_text>
+<ARTICA_FILTER_MAXSUBQUEUE>Maks. procesy kolejki</ARTICA_FILTER_MAXSUBQUEUE>
+<ARTICA_FILTER_MAXSUBQUEUE_TEXT>Aby sprawdzi&#263; i zwolni&#263; wszystkie wiadomo&#347;ci w kolejce artica-filter, w zale&#380;no&#347;ci od obci&#261;&#380;enia serwera mo&#380;esz zwi&#281;kszy&#263; lub zmniejszy&#263; liczb&#281; proces&#243;w sprawdzaj&#261;cych pliki w kolejce[br][b]ka&#380;dy proces zwolni 10 wiadomo&#347;ci przed zako&#324;czeniem.[/b]</ARTICA_FILTER_MAXSUBQUEUE_TEXT>
+<ARTICA_FILTER_QUEUE_PATH>&#346;cie&#380;ka kolejki artica-filter</ARTICA_FILTER_QUEUE_PATH>
+<ARTICA_FILTER_QUEUE_PATH_TEXT>Gdy postfix wysy&#322;a wiadomo&#347;ci do filtra tre&#347;ci artica, proces artica-filter zapisuje otrzymane wiadomo&#347;ci w folderze przed sprawdzeniem zasad; w zale&#380;no&#347;ci od wiadomo&#347;ci i ruchu ustaw t&#281; warto&#347;&#263; na w&#322;a&#347;ciwy rozmiar dysku</ARTICA_FILTER_QUEUE_PATH_TEXT>
+<artica_smtp_performances>Wydajno&#347;&#263; SMTP</artica_smtp_performances>
+<artica_smtp_performances_text>Ta sekcja umo&#380;liwia wy&#322;&#261;czanie lub w&#322;&#261;czanie us&#322;ug na bramie SMTP Postfix.[br]
+Wy&#322;&#261;czenie us&#322;ug zwi&#281;ksza wydajno&#347;&#263; przep&#322;ywu SMTP, ale zmniejsza r&#243;wnie&#380; bezpiecze&#324;stwo poczty.</artica_smtp_performances_text>
+<artica_version>Wersja Artica</artica_version>
+<change_ldap_server_settings>Zmie&#324; ustawienia w slapd.conf</change_ldap_server_settings>
+<change_ldap_server_settings_text>Je&#347;li serwer LDAP jest zainstalowany na tej samej maszynie,[br]te ustawienia zostan&#261; zmienione w pliku konfiguracyjnym serwera OpenLDAP</change_ldap_server_settings_text>
+<CPU_ALARM>Powiadomienie o przeci&#261;&#380;eniu procesora</CPU_ALARM>
 <email_database>Baza danych emaili</email_database>
-<EnableSyslogMysql>Enable Syslog injection</EnableSyslogMysql>
-<EnableSyslogMysql_text>
-This option allows artica to parse syslog and insert all events into Mysql database.[br]
-This feature enable the syslog query section in Administrator index page.
-</EnableSyslogMysql_text>
-<events_table_count>Mysql Events Rows number</events_table_count>
-<global_admin_account>Global administrator account</global_admin_account>
-<global_admin_confirm>Are you sure to change the administrator account, this operation will change the LDAP server superuser and apply all changes according the LDAP access of all modules</global_admin_confirm>
-<global_paths>Global paths</global_paths>
+<EnableSyslogMysql>W&#322;&#261;cz wstrzykiwanie syslog</EnableSyslogMysql>
+<EnableSyslogMysql_text>Ta opcja umo&#380;liwia artica analiz&#281; syslog i wstawianie wszystkich zdarze&#324; do bazy danych Mysql.[br]
+Ta funkcja w&#322;&#261;cza sekcj&#281; zapyta&#324; syslog na stronie indeksu Administratora.</EnableSyslogMysql_text>
+<events_table_count>Liczba wierszy zdarze&#324; Mysql</events_table_count>
+<global_admin_account>Globalne konto administratora</global_admin_account>
+<global_admin_confirm>Czy na pewno chcesz zmieni&#263; konto administratora? Ta operacja zmieni superu&#380;ytkownika serwera LDAP i zastosuje wszystkie zmiany zgodnie z dost&#281;pem LDAP wszystkich modu&#322;&#243;w</global_admin_confirm>
+<global_paths>&#346;cie&#380;ki globalne</global_paths>
 <global_proxy>Globalna konfiguracja proxy</global_proxy>
-<https_port>Listen HTTPS port</https_port>
-<http_proxy>HTTP proxy</http_proxy>
-<http_proxy_text>Give HTTP proxy parameters to connect trough internet for downloading updates</http_proxy_text>
-<index_ldap>Index your ldap server</index_ldap>
-<index_ldap_text>This operation will stop your LDAP server and starting index attributes operation.[br]
-During this time, the LDAP server will be not available...
-</index_ldap_text>
-<infos>Global information</infos>
-<ldap_cache_size>number of entries maintain in memory</ldap_cache_size>
-<ldap_configure_bdbd>Configuring the LDAP BDB subsystem</ldap_configure_bdbd>
-<ldap_parameters>LDAP Server Parameters</ldap_parameters>
-<ldap_performances>LDAP server performances</ldap_performances>
-<ldap_performances_text>Configuring the LDAP BDB subsystem and performances related parameters</ldap_performances_text>
+<https_port>Nas&#322;uchuj portu HTTPS</https_port>
+<http_proxy>Proxy HTTP</http_proxy>
+<http_proxy_text>Podaj parametry proxy HTTP, aby po&#322;&#261;czy&#263; si&#281; z internetem w celu pobierania aktualizacji</http_proxy_text>
+<index_ldap>Zindeksuj sw&#243;j serwer LDAP</index_ldap>
+<index_ldap_text>Ta operacja zatrzyma serwer LDAP i rozpocznie indeksowanie atrybut&#243;w.[br]
+W tym czasie serwer LDAP b&#281;dzie niedost&#281;pny...</index_ldap_text>
+<infos>Informacje globalne</infos>
+<ldap_cache_size>Liczba wpis&#243;w przechowywanych w pami&#281;ci</ldap_cache_size>
+<ldap_configure_bdbd>Konfiguracja podsystemu BDB LDAP</ldap_configure_bdbd>
+<ldap_parameters>Parametry serwera LDAP</ldap_parameters>
+<ldap_performances>Wydajno&#347;&#263; serwera LDAP</ldap_performances>
+<ldap_performances_text>Konfiguracja podsystemu BDB LDAP i parametr&#243;w zwi&#261;zanych z wydajno&#347;ci&#261;</ldap_performances_text>
 <ldap_port>Port serwera LDAP</ldap_port>
-<ldap_server>LDAP Server name</ldap_server>
+<ldap_server>Nazwa serwera LDAP</ldap_server>
 <ldap_suffix>Sufiks LDAP</ldap_suffix>
-<LighttpdUseLdap>Enable Pop-Up Authentication</LighttpdUseLdap>
-<LighttpdUseLdap_text>Artica allows you to way to authenticate users:
+<LighttpdUseLdap>W&#322;&#261;cz uwierzytelnianie pop-up</LighttpdUseLdap>
+<LighttpdUseLdap_text>Artica oferuje spos&#243;b uwierzytelniania u&#380;ytkownik&#243;w:
 [ul]
-[li]Form Authentication in the logon page (by default)[/li]
-[li]Pop-Up authentication.[/li][/ul]
-Pop-Up authentication enable lighttpd engine web server to parse the LDAP database in order to check users accounts.</LighttpdUseLdap_text>
-<lighttp_max_load_per_proc>Maximum number of waiting processes on average per process before a new process is spawned</lighttp_max_load_per_proc>
-<lighttp_max_proc>The upper limit of the processes to start</lighttp_max_proc>
-<lighttp_min_proc>Sets the minimum processes to start</lighttp_min_proc>
+[li]Uwierzytelnianie formularzem na stronie logowania (domy&#347;lnie)[/li]
+[li]Uwierzytelnianie pop-up.[/li][/ul]
+Uwierzytelnianie pop-up umo&#380;liwia silnikowi serwera web lighttpd analiz&#281; bazy danych LDAP w celu sprawdzenia kont u&#380;ytkownik&#243;w.</LighttpdUseLdap_text>
+<lighttp_max_load_per_proc>Maksymalna &#347;rednia liczba oczekuj&#261;cych proces&#243;w na proces przed uruchomieniem nowego</lighttp_max_load_per_proc>
+<lighttp_max_proc>G&#243;rny limit proces&#243;w do uruchomienia</lighttp_max_proc>
+<lighttp_min_proc>Ustawia minimaln&#261; liczb&#281; proces&#243;w do uruchomienia</lighttp_min_proc>
 <local_database_size>Rozmiar lokalnej bazy danych</local_database_size>
-<logs_cleaning>Logs cleaning</logs_cleaning>
-<logs_cleaning_text>Define limits for the logs files</logs_cleaning_text>
-<modules_0>
-This feature [b]include[/b] all filters, anti-spam,antivirus and all features provided by artica  :[br]
+<logs_cleaning>Czyszczenie dziennik&#243;w</logs_cleaning>
+<logs_cleaning_text>Zdefiniuj limity dla plik&#243;w dziennika</logs_cleaning_text>
+<modules_0>Ta funkcja [b]obejmuje[/b] wszystkie filtry, antyspam, antywirus i wszystkie funkcje zapewniane przez artica:[br]
 [ul]
 [li]Spam URI Realtime Blacklist[/li]
-[li]Deny Countries[/li]
-[li]Others filters rules[/li]
-[li]Forbidden attachments[/li]
-[li]Realtime Blackhole Lists rules[/li]
-[li]Domains Black List[/li]
-[li]Quarantine management[/li]
-[li]HTML Size Manager[/li]
-[li]Anti-spam[/li]
-[li]Antivirus[/li]
-[/ul]
-</modules_0>
-<modules_1>
-This feature disable all artica filters such as  :[br]
+[li]Blokowanie kraj&#243;w[/li]
+[li]Inne regu&#322;y filtr&#243;w[/li]
+[li]Zabronione za&#322;&#261;czniki[/li]
+[li]Regu&#322;y Realtime Blackhole Lists[/li]
+[li]Czarna lista domen[/li]
+[li]Zarz&#261;dzanie kwarantann&#261;[/li]
+[li]Mened&#380;er rozmiaru HTML[/li]
+[li]Antyspam[/li]
+[li]Antywirus[/li]
+[/ul]</modules_0>
+<modules_1>Ta funkcja wy&#322;&#261;cza wszystkie filtry artica, takie jak:[br]
 [ul]
 [li]Spam URI Realtime Blacklist[/li]
-[li]Deny Countries[/li]
-[li]Others filters rules[/li]
-[li]Forbidden attachments[/li]
-[li]Realtime Blackhole Lists rules[/li]
-[li]Domains Black List[/li]
-[li]Quarantine management[/li]
-[li]HTML Size Manager[/li]
+[li]Blokowanie kraj&#243;w[/li]
+[li]Inne regu&#322;y filtr&#243;w[/li]
+[li]Zabronione za&#322;&#261;czniki[/li]
+[li]Regu&#322;y Realtime Blackhole Lists[/li]
+[li]Czarna lista domen[/li]
+[li]Zarz&#261;dzanie kwarantann&#261;[/li]
+[li]Mened&#380;er rozmiaru HTML[/li]
 [/ul]
-[br][b]Antivirus and antispam keep enabled...[/b]
-</modules_1>
-<modules_2>
-This feature disable all artica services [b]and[/b] antivirus third-party.[br]
-[b]In this configuration only Postfix and anti-spam are enabled[/b]
-</modules_2>
-<modules_3>
-This feature is the best if you want to have a strong relay server that process many messages per second, in this case Postfix is cleaned of all security addons[br]
-</modules_3>
-<MysqlMaxEventsLogs>Max syslogs events</MysqlMaxEventsLogs>
-<MysqlMaxEventsLogs_text>Artica will store all syslog informations on your MYSQL Database, it depends on your server[br]
-but for better performances you need to define a maximum number of rows stored in database (default 200 000)</MysqlMaxEventsLogs_text>
-<mysqlpass>Mysql account password</mysqlpass>
-<mysqlroot>Mysql account</mysqlroot>
-<mysqlroot_text>Can create database, insert, update, reach root account...</mysqlroot_text>
-<mysql_settings>MySQL settings</mysql_settings>
-<mysql_settings_text>Change the Mysql password, define the behavior of mysql database storage & max events</mysql_settings_text>
-<nothing_to_change>Nothing to change</nothing_to_change>
-<notification_context>Define here which notification you want to be receive</notification_context>
+[br][b]Antywirus i antyspam pozostaj&#261; w&#322;&#261;czone...[/b]</modules_1>
+<modules_2>Ta funkcja wy&#322;&#261;cza wszystkie us&#322;ugi artica [b]oraz[/b] antywirusy innych firm.[br]
+[b]W tej konfiguracji w&#322;&#261;czone s&#261; tylko Postfix i anty-spam[/b]</modules_2>
+<modules_3>Ta funkcja jest najlepsza, je&#347;li chcesz mie&#263; wydajny serwer przeka&#378;nikowy przetwarzaj&#261;cy wiele wiadomo&#347;ci na sekund&#281;; w tym przypadku Postfix jest oczyszczony ze wszystkich dodatk&#243;w bezpiecze&#324;stwa[br]</modules_3>
+<MysqlMaxEventsLogs>Maks. zdarzenia syslog</MysqlMaxEventsLogs>
+<MysqlMaxEventsLogs_text>Artica b&#281;dzie przechowywa&#263; wszystkie informacje syslog w bazie danych MYSQL, zale&#380;y to od serwera[br]
+ale dla lepszej wydajno&#347;ci musisz zdefiniowa&#263; maksymaln&#261; liczb&#281; wierszy przechowywanych w bazie danych (domy&#347;lnie 200 000)</MysqlMaxEventsLogs_text>
+<mysqlpass>Has&#322;o konta Mysql</mysqlpass>
+<mysqlroot>Konto Mysql</mysqlroot>
+<mysqlroot_text>Mo&#380;e tworzy&#263; bazy danych, wstawia&#263;, aktualizowa&#263;, uzyska&#263; dost&#281;p do konta root...</mysqlroot_text>
+<mysql_settings>Ustawienia MySQL</mysql_settings>
+<mysql_settings_text>Zmie&#324; has&#322;o Mysql, zdefiniuj zachowanie przechowywania bazy danych mysql i maks. zdarzenia</mysql_settings_text>
+<nothing_to_change>Nic do zmiany</nothing_to_change>
+<notification_context>Zdefiniuj tutaj, kt&#243;re powiadomienie chcesz otrzymywa&#263;</notification_context>
 <PHP_FCGI_CHILDREN>Liczba proces%C3%B3w potomnych na demona</PHP_FCGI_CHILDREN>
 <PHP_FCGI_MAX_REQUESTS>Maksymalna liczba %C5%BC%C4%85da%C5%84 przed ponownym uruchomieniem procesu podrz%C4%99dnego</PHP_FCGI_MAX_REQUESTS>
-<PostfixQueueEnabled>Enable notifications when SMTP queues reach limit</PostfixQueueEnabled>
-<PostfixQueueMaxMails>Maximal mails number in postfix queue</PostfixQueueMaxMails>
-<rbl_cache_database>RBLs cache database</rbl_cache_database>
-<sa-learn>Anti-spam learning</sa-learn>
-<services_enabled>Enabled services</services_enabled>
-<set_cachesize>database cache</set_cachesize>
-<set_cachesize_text>You can increase LDAP server performance by adjusting the BDB backend 
-cache size to be at or near the size of your data set.[br]
-This is subject to the limit of 4 GB for 32 bit and 10 TB for 64 bit, and the amount of RAM you have.[br]
-The size of the data set is the sum of the Berkeley DataBase (BDB) files
-</set_cachesize_text>
+<PostfixQueueEnabled>W&#322;&#261;cz powiadomienia, gdy kolejki SMTP osi&#261;gn&#261; limit</PostfixQueueEnabled>
+<PostfixQueueMaxMails>Maksymalna liczba wiadomo&#347;ci w kolejce postfix</PostfixQueueMaxMails>
+<rbl_cache_database>Baza danych pami&#281;ci podr&#281;cznej RBL</rbl_cache_database>
+<sa-learn>Uczenie si&#281; anty-spamu</sa-learn>
+<services_enabled>W&#322;&#261;czone us&#322;ugi</services_enabled>
+<set_cachesize>Pami&#281;&#263; podr&#281;czna bazy danych</set_cachesize>
+<set_cachesize_text>Mo&#380;esz zwi&#281;kszy&#263; wydajno&#347;&#263; serwera LDAP, dostosowuj&#261;c rozmiar pami&#281;ci podr&#281;cznej backendu BDB tak, aby by&#322; r&#243;wny lub bliski rozmiarowi zbioru danych.[br]
+Podlega to limitowi 4 GB dla 32 bit&#243;w i 10 TB dla 64 bit&#243;w oraz ilo&#347;ci posiadanej pami&#281;ci RAM.[br]
+Rozmiar zbioru danych to suma plik&#243;w Berkeley DataBase (BDB)</set_cachesize_text>
 <size>Rozmiar</size>
 <smtp_auth_passwd>Has%C5%82o</smtp_auth_passwd>
 <smtp_auth_user>Nazwa u%C5%BCytkownika</smtp_auth_user>
 <smtp_dest>Tw%C3%B3j adres e-mail</smtp_dest>
 <smtp_enabled>W%C5%82%C4%85cz powiadomienia SMTP</smtp_enabled>
-<smtp_notifications>email notifications</smtp_notifications>
-<SMTP_NOTIFICATIONS_ADD_CC>Give the eMail address that will receive mail notifications</SMTP_NOTIFICATIONS_ADD_CC>
-<smtp_notifications_text>Be informed of system dysfunctions or mandatories scheduled tasks[br]
-do not use artica server has the main mail server[br]If it's not working you will be not be able to receive notifications
-[br]If your server requires authentification, fill fields about AUTH
-</smtp_notifications_text>
+<smtp_notifications>Powiadomienia e-mail</smtp_notifications>
+<SMTP_NOTIFICATIONS_ADD_CC>Podaj adres e-mail, kt&#243;ry b&#281;dzie otrzymywa&#263; powiadomienia e-mail</SMTP_NOTIFICATIONS_ADD_CC>
+<smtp_notifications_text>B&#261;d&#378; informowany o awariach systemu lub obowi&#261;zkowych zaplanowanych zadaniach[br]
+nie u&#380;ywaj serwera artica jako g&#322;&#243;wnego serwera poczty[br]Je&#347;li nie dzia&#322;a, nie b&#281;dziesz m&#243;g&#322; otrzymywa&#263; powiadomie&#324;
+[br]Je&#347;li serwer wymaga uwierzytelnienia, wype&#322;nij pola dotycz&#261;ce AUTH</smtp_notifications_text>
 <smtp_sender>Adres poczty nadawcy</smtp_sender>
 <smtp_server_name>Nazwa serwera eMail</smtp_server_name>
-<smtp_server_port>Mail server port</smtp_server_port>
-<sql_database>MySQL Database</sql_database>
-<SystemCPUAlarmPourc>when reach % cpu used</SystemCPUAlarmPourc>
+<smtp_server_port>Port serwera poczty</smtp_server_port>
+<sql_database>Baza danych MySQL</sql_database>
+<SystemCPUAlarmPourc>gdy osi&#261;gnie % u&#380;ytego procesora</SystemCPUAlarmPourc>
 <tls_enabled>W%C5%82%C4%85cz obs%C5%82ug%C4%99 TLS</tls_enabled>
-<UseDNSMasq>Recommended to use Dnsmasq</UseDNSMasq>
+<UseDNSMasq>Zalecane u&#380;ycie Dnsmasq</UseDNSMasq>
 <UseDNSMasq_text></UseDNSMasq_text>
-<use_apache>Use apache instead lighttpd</use_apache>
-<use_apache_text>By default, artica use lighttpd as the web server engine to provide web-interface, you can use Apache server instead.[br]
-Enable this option will shutdown lighttpd and start apache has the main web server engine.
-</use_apache_text>
+<use_apache>U&#380;yj apache zamiast lighttpd</use_apache>
+<use_apache_text>Domy&#347;lnie artica u&#380;ywa lighttpd jako silnika serwera web do udost&#281;pniania interfejsu web; zamiast tego mo&#380;esz u&#380;y&#263; serwera Apache.[br]
+W&#322;&#261;czenie tej opcji wy&#322;&#261;czy lighttpd i uruchomi Apache jako g&#322;&#243;wny silnik serwera web.</use_apache_text>
 <web_interface_settings>Ustawienia interfejsu internetowego</web_interface_settings>
 <web_interface_settings_text>Zmiana parametr%C3%B3w i wydajno%C5%9Bci g%C5%82%C3%B3wnego interfejsu internetowego HTTP Engine</web_interface_settings_text>
-<without_antispam_module>Disable anti-spam</without_antispam_module>
-<without_antivirus>Disable antivirus</without_antivirus>
-<without_artica_modules>Disable artica modules</without_artica_modules>
+<without_antispam_module>Wy&#322;&#261;cz anty-spam</without_antispam_module>
+<without_antivirus>Wy&#322;&#261;cz antywirus</without_antivirus>
+<without_artica_modules>Wy&#322;&#261;cz modu&#322;y artica</without_artica_modules>

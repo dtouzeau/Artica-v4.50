@@ -1,28 +1,38 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : scriptname/method/eth/filename/line etaient recopies sans encodage dans la page (XSS).
+if(isset($_GET["scriptname"])){$_GET["scriptname"]=preg_replace('/[^A-Za-z0-9_.,-]/','',strval($_GET["scriptname"]));}
+if(isset($_GET["method"])){$_GET["method"]=preg_replace('/[^A-Za-z0-9_-]/','',strval($_GET["method"]));}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',strval($_GET["eth"]));}
+if(isset($_GET["filename"])){$_GET["filename"]=preg_replace('/[^A-Za-z0-9_.\/-]/','',strval($_GET["filename"]));}
+if(isset($_GET["line"])){$_GET["line"]=intval($_GET["line"]);}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["trackadmin"])){search_admin();exit;}
 if(isset($_GET["search-admin"])){search_admins();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["ShowID-js"])){ShowID_js();exit;}
 if(isset($_GET["ShowID"])){ShowID();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["remove-events"])){remove_events_js();exit;}
 if(isset($_GET["empty-js"])){empty_js();exit;}
 if(isset($_POST["empty"])){empty_table();exit;}
-if(isset($_GET["smtp-js"])){smtp_js();exit;}
 if(isset($_GET["delete"])){delete_js();exit;}
-if(isset($_POST["ENABLED_SQUID_WATCHDOG"])){smtp_save();exit;}
 if(isset($_POST["remove-events"])){remove_events_perform();exit;}
 if(isset($_GET["sys-events"])){search_system();exit;}
 if(isset($_GET["sys-events-block"])){search_system_block();exit;}
-if(isset($_GET["button-fw-system-watchdog"])){echo base64_decode($_GET["button-fw-system-watchdog"]);exit;}
+// Pentest 2026-11-04 M-01 : seuls les boutons signes par la page sont renvoyes.
+if(isset($_GET["function"])){$_GET["function"]=preg_replace('/[^A-Za-z0-9_]/','',strval($_GET["function"]));}
+if(isset($_GET["button-fw-system-watchdog"])){signed_html_echo($_GET["button-fw-system-watchdog"]);exit;}
 js();
 function js(){
     $users=new usersMenus();
@@ -100,15 +110,18 @@ function empty_table(){
 function ShowID(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$sql="SELECT * FROM webconsole_events WHERE ID={$_GET["ShowID"]}";
+	// Pentest 2026-11-04 : ShowID etait concatene dans la requete.
+	$ShowID=intval($_GET["ShowID"]);
+	$sql="SELECT * FROM webconsole_events WHERE ID=$ShowID";
 	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
 	$ligne=$q->mysqli_fetch_array($sql);
-	$content=$tpl->_ENGINE_parse_body($ligne["content"]);
+	// Pentest 2026-11-04 : content/filename (donnee externe) affiches sans encodage (XSS stockee).
+	$content=$tpl->_ENGINE_parse_body(req_html($ligne["content"]));
 	$content=nl2br($content);
 	echo "<p>$content</p>";
 
-	$filename=$ligne["filename"];
-	$line=$ligne["line"];
+	$filename=req_url($ligne["filename"]);
+	$line=intval($ligne["line"]);
     $html[]="<div style='margin-top:10px' id='progress-remove-event'></div>";
 	$html[]="<div style='text-align:right;margin-top:10px'>";
 
@@ -141,7 +154,8 @@ function remove_events_perform(){
     $filename=$tt[0];
     $line=intval($tt[1]);
 
-    $q->QUERY_SQL("DELETE FROM webconsole_events WHERE filename='$filename' AND line='$line'");
+    // Pentest 2026-11-04 : filename etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM webconsole_events WHERE filename=? AND line=?",array($filename,$line));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/frontend/notifications");
     admin_tracks("Removed all system events with $filename filename and line $line");
 
@@ -183,7 +197,7 @@ function search_admin(){
     }
 
     $html[]="<div style='margin-top:15px'>";
-    $html[]=$tpl->search_block($page,"sqlite:/home/artica/SQLITE/admins.db","admintracks","table-sysadmin","&search-admin=yes$scriptanme$method");
+    $html[]=$tpl->search_block($page,null,null,"table-sysadmin","&search-admin=yes$scriptanme$method");
     $html[]="<div id='table-sysadmin'></div>";
     $html[]="</div>";
     $html[]="<script>LoadAjaxSilent('button-fw-system-watchdog','$page?button-fw-system-watchdog=');</script>";
@@ -208,14 +222,36 @@ if(isset($_GET["main-page"])){
 echo $tpl->_ENGINE_parse_body($html);
 }
 
+/**
+ * Extracts the legacy "NNN events" / "limit NNN" / "max NNN" row-count
+ * directives from a search string (same regexes as query_pattern()) and
+ * returns array(cleaned search text, max). Filtering itself now runs in
+ * articarest GET /localadmins/admintracks.
+ */
+function admintracks_search_params($search){
+    $search=trim(strtolower($search));
+    $max=200;
+    if(preg_match("#([0-9]+)(\s+|=)events#i",$search,$re)){
+        $search=trim(str_ireplace("{$re[1]}{$re[2]}events","",$search));
+        $max=intval($re[1]);
+    }
+    if(preg_match("#limit(\s+|=)([0-9]+)#i",$search,$re)){
+        $search=trim(str_ireplace("limit{$re[1]}{$re[2]}","",$search));
+        $max=intval($re[2]);
+    }
+    if(preg_match("#max(\s+|=)([0-9]+)#i",$search,$re)){
+        $search=trim(str_ireplace("max{$re[1]}{$re[2]}","",$search));
+        $max=intval($re[2]);
+    }
+    if($max<1){$max=200;}
+    if($max>1500){$max=1500;}
+    return array($search,$max);
+}
+
 function search_admins(){
 
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
-    $eth_sql=null;
-    $token=null;
-    $class=null;
     $method=$_GET["method"];
     $t=$_GET["t"];
     if(!is_numeric($t)){$t=time();}
@@ -227,21 +263,17 @@ function search_admins(){
     $html[]="<thead>";
     $html[]="<tr>";
 
-
-
-    $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
-    $search=$tpl->query_pattern(trim(strtolower($_GET["search"])));
-
-
-    if(intval($search["MAX"])>1500){$search["MAX"]=1500;}
-
-
-    $sql="SELECT *  FROM admintracks {$search["Q"]} ORDER BY time DESC LIMIT {$search["MAX"]}";
-
-
-
-
-    $results=$q->QUERY_SQL($sql);
+    list($searchText,$max)=admintracks_search_params(strval($_GET["search"] ?? ""));
+    $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API(
+        "/localadmins/admintracks?search=".urlencode($searchText)."&max=$max")),true);
+    $results=array();
+    $apierror=null;
+    if(!is_array($resp) || empty($resp["success"])){
+        $apierror=is_array($resp)?strval($resp["error"] ?? "unknown error"):"daemon unreachable";
+    }else{
+        $results=is_array($resp["data"] ?? null)?$resp["data"]:array();
+    }
+    $sql="search: $searchText (max $max)";
 
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$date</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{member}</th>";
@@ -250,9 +282,9 @@ function search_admins(){
     $html[]="</thead>";
     $html[]="<tbody>";
 
-   if(!$q->ok){
+   if($apierror!==null){
 
-        echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+        echo "<div class='alert alert-danger'>".req_html($apierror)."<br><strong><span style='font-family:monospace'>".req_html(strval($_GET["search"]))."</span></strong></div>";
     }
 
 
@@ -264,9 +296,10 @@ function search_admins(){
         $zdate=$tpl->time_to_date($ligne["time"],true);
         //time,username,ipaddr,operation
 
-        $username=$ligne["username"];
-        $ipaddr=$ligne["ipaddr"];
-        $text=$tpl->_ENGINE_parse_body($ligne["operation"]);
+        // Pentest 2026-11-04 : username/ipaddr/operation (donnee externe) affiches sans encodage (XSS stockee).
+        $username=req_html($ligne["username"]);
+        $ipaddr=req_html($ligne["ipaddr"]);
+        $text=$tpl->_ENGINE_parse_body(req_html($ligne["operation"]));
 
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$zdate</td>";
@@ -286,7 +319,7 @@ function search_admins(){
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table><div><i>$sql</i></div>";
+    $html[]="</table><div><i>".req_html($sql)."</i></div>";
     $html[]="
 	<script>
 	
@@ -338,7 +371,7 @@ function table(){
     $topbuttons[]=array("Loadjs('$page?empty-js=yes&function={$_GET["function"]}')",ico_trash,"{empty}");
     $buttons=$tpl->table_buttons($topbuttons);
 
-    $buttons_encoded=urlencode(base64_encode($buttons));
+    $buttons_encoded=signed_html_token($buttons);
     $users=new usersMenus();
     if(!$users->AsSystemAdministrator){
         $buttons_encoded=null;
@@ -406,11 +439,15 @@ function table(){
 
     }
 	
+	// Pentest 2026-11-04 : scriptname etait concatene dans la requete.
+	$sqlParams=array();
 	if($_GET["scriptname"]<>null){
-		$WHERE="WHERE filename='{$_GET["scriptname"]}'";
+		$WHERE="WHERE filename=?";
+		$sqlParams=array($_GET["scriptname"]);
 		if(strpos($_GET["scriptname"], ",")>0){
 			$scripts=explode(",",$_GET["scriptname"]);
-			foreach ($scripts as $ffile){$OR[]="(filename='{$ffile}')";}
+			$sqlParams=array();
+			foreach ($scripts as $ffile){$OR[]="(filename=?)";$sqlParams[]=$ffile;}
 			$WHERE="WHERE (".@implode(" OR ", $OR).")";
 		}
 		
@@ -419,7 +456,7 @@ function table(){
 	}
 	
 	
-	$results=$q->QUERY_SQL($sql);
+	$results=$q->QUERY_SQL_PARAMS($sql,$sqlParams);
 	
 
 	
@@ -437,7 +474,8 @@ function table(){
 	
 	if(!$q->ok){
 		
-		echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+		// Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+		echo "<div class='alert alert-danger'>".req_html($q->mysql_error)."<br><strong><code>".req_html($_GET["search"])."</code></strong><br><strong><code>".req_html($sql)."</code></strong></div>";
 	}
 	
 	$severityCL[0]="label-danger";
@@ -454,7 +492,9 @@ function table(){
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$text_class=null;
 		$id=md5(serialize($ligne));
-        $ID=$ligne["ID"];
+        // Pentest 2026-11-04 : subject (donnee externe) affiche sans encodage (XSS stockee).
+        $ID=intval($ligne["ID"]);
+		$ligne["ID"]=$ID;
 		$zdate=$tpl->time_to_date($ligne["zDate"],true);
 		$severity_class=$severityCL[$ligne["severity"]];
 		$js="Loadjs('$page?ShowID-js={$ligne["ID"]}&function={$_GET["function"]}')";
@@ -467,7 +507,7 @@ function table(){
 		
 		
 		
-		$text=$link.$tpl->_ENGINE_parse_body($ligne["subject"]."</a></span>");
+		$text=$link.$tpl->_ENGINE_parse_body(req_html($ligne["subject"])."</a></span>");
 		if(strpos(" ".$ligne["filename"], "/")>0){$ligne["filename"]=basename($ligne["filename"]);}
 
         $del=$tpl->icon_delete("Loadjs('$page?delete=$ID&md=$id')");

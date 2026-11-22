@@ -31,17 +31,6 @@ function js():bool{
 	return $tpl->js_dialog6("{certificates} >> {import} {private_key}", "$page?popup=yes$Addon","650");
 	
 }
-function GetDatabase(){
-    $db="/home/artica/SQLITE/certificates.db";
-    if(isset($_SESSION["HARMPID"])){
-        $gpid=intval($_SESSION["HARMPID"]);
-        if($gpid>0){
-            $db="/home/artica/SQLITE/certificates.$gpid.db";
-        }
-    }
-    return $db;
-}
-
 function popup(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
@@ -94,13 +83,18 @@ function file_uploaded(){
         $data = "-----BEGIN PRIVATE KEY-----{$re[1]}-----END PRIVATE KEY-----\n";
     }
 
-    $sql="SELECT `crt`,`SquidCert`,`UsePrivKeyCrt`,`UseGodaddy`  FROM sslcertificates WHERE ID='$ID'";
-    $q=new lib_sqlite(GetDatabase());
-    $ligne=$q->mysqli_fetch_array($sql);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $row=$cdb->getById(intval($ID));
+    if(!is_object($row)){
+        $tpl->js_error("Certificate $ID not found: $cdb->lastError");
+        return;
+    }
+    $ligne=(array)$row;
 
     $field="crt";
-    if($ligne["UsePrivKeyCrt"]==0){$field="SquidCert";}
-    $ligne[$field]=str_replace("\\n", "\n", $ligne[$field]);
+    if(intval($ligne["UsePrivKeyCrt"] ?? 0)==0){$field="SquidCert";}
+    $ligne[$field]=str_replace("\\n", "\n", $ligne[$field] ?? "");
 
     if(!$ENCRYPTED) {
         $result = openssl_x509_check_private_key($ligne[$field], $data);
@@ -110,9 +104,10 @@ function file_uploaded(){
         }
     }
 
-    $data=$q->sqlite_escape_string2($data);
-
-    $q->QUERY_SQL("UPDATE sslcertificates SET privkey='$data',Squidkey='$data' WHERE ID=$ID");
+    if(!$cdb->update(intval($ID), ["privkey"=>$data, "Squidkey"=>$data])){
+        $tpl->js_error("UPDATE failed: $cdb->lastError");
+        return;
+    }
     header("content-type: application/x-javascript");
     echo "dialogInstance6.close();\n";
     echo "LoadAjax('DIVKEY{$ID}','fw.certificates-center.php?certificate-privkey2=$ID');\n";
@@ -139,23 +134,13 @@ function ImportSubCertificates($data){
         return;
     }
 
-    if(isset($array["issuer"]["O"])){
-        $WHERE[]="organizationName='{$array["issuer"]["O"]}'";
-    }
-    if(isset($array["issuer"]["OU"])){
-        $WHERE[]="OrganizationalUnit='{$array["issuer"]["OU"]}'";
-    }
-    if(isset($array["issuer"]["CN"])){
-        $WHERE[]="commonName='{$array["issuer"]["CN"]}'";
-    }
-    if(isset($array["issuer"]["emailAddress"])){
-        $WHERE[]="emailAddress='{$array["issuer"]["emailAddress"]}'";
-    }
-
-
-
-    $q=new lib_sqlite(GetDatabase());
-    if(!$q->FIELD_EXISTS("sslcertificates","subjectKeyIdentifier")){$q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectKeyIdentifier TEXT NULL");}
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $issuerMatch=[];
+    if(isset($array["issuer"]["O"])){$issuerMatch["OrganizationName"]=$array["issuer"]["O"];}
+    if(isset($array["issuer"]["OU"])){$issuerMatch["OrganizationalUnit"]=$array["issuer"]["OU"];}
+    if(isset($array["issuer"]["CN"])){$issuerMatch["CommonName"]=$array["issuer"]["CN"];}
+    if(isset($array["issuer"]["emailAddress"])){$issuerMatch["emailAddress"]=$array["issuer"]["emailAddress"];}
 
     if(isset($array["subject"]["C"])){$CountryName=$array["subject"]["C"];}
     if(isset($array["subject"]["O"])){$OrganizationName=$array["subject"]["O"];}
@@ -182,33 +167,44 @@ function ImportSubCertificates($data){
 
 
 
-    if(count($WHERE)>0) {
-        $sqla = "SELECT ID FROM sslcertificates WHERE " . @implode(" AND ", $WHERE);
-        $ligne = $q->mysqli_fetch_array($sqla);
-        writelogs("$CommonName Search $sqla = '{$ligne["ID"]}'", __FUNCTION__, __FILE__, __LINE__);
-        $certid = intval($ligne["ID"]);
-        if(!$q->ok){
-            writelogs("$q->mysql_error", __FUNCTION__, __FILE__, __LINE__);
+    if(count($issuerMatch)>0){
+        $searchKey=(string)($issuerMatch["CommonName"] ?? $issuerMatch["OrganizationName"] ?? "");
+        foreach($cdb->listAll($searchKey) as $r){
+            $hit=true;
+            foreach($issuerMatch as $col=>$want){
+                if((string)($r->$col ?? "")!==(string)$want){$hit=false; break;}
+            }
+            if($hit){$certid=intval($r->ID); break;}
         }
+        writelogs("$CommonName Search match=".json_encode($issuerMatch)." certid=$certid",__FUNCTION__,__FILE__,__LINE__);
     }
 
     if($certid>0){
-        $UsePrivKeyCrt=1;
-        $levelenc=2048;
-        $p12Data='';
-        $csrData='';
-        $key_data='';
-        $certificate_data=base64_encode($data);
-        $CertificateCenterCSRMD=null;
-        $sql="INSERT INTO subcertificates (certid,UsePrivKeyCrt,Certype,levelenc,countryName,
-    stateOrProvinceName,localityName,organizationName,organizationalUnitName,commonName,emailAddress,
-    pks12,csr,srca,crt,subjectAltName,subjectAltName1,subjectAltName2,CertificateCenterCSR,DateTo,DateFrom)
-    VALUES ($certid,$UsePrivKeyCrt,1,$levelenc,'$CountryName','$stateOrProvinceName','$localityName','$OrganizationName',
-    '$OrganizationalUnit','$CommonName','$emailAddress','$p12Data','$csrData','$key_data','$certificate_data','$subjectAltName', 
-    '$subjectAltName1','$subjectAltName2','$CertificateCenterCSRMD',$validTo_time_t,$validFrom_time_t)";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){
-            $tpl->js_error($q->mysql_error);
+        $newId=$cdb->subInsert([
+            "certid"=>$certid,
+            "UsePrivKeyCrt"=>1,
+            "Certype"=>1,
+            "levelenc"=>2048,
+            "countryName"=>$CountryName,
+            "stateOrProvinceName"=>$stateOrProvinceName,
+            "localityName"=>$localityName,
+            "organizationName"=>$OrganizationName,
+            "organizationalUnitName"=>$OrganizationalUnit,
+            "commonName"=>$CommonName,
+            "emailAddress"=>$emailAddress,
+            "pks12"=>"",
+            "csr"=>"",
+            "srca"=>"",
+            "crt"=>base64_encode($data),
+            "subjectAltName"=>$subjectAltName ?? "",
+            "subjectAltName1"=>$subjectAltName1 ?? "",
+            "subjectAltName2"=>$subjectAltName2 ?? "",
+            "CertificateCenterCSR"=>"",
+            "DateTo"=>$validTo_time_t,
+            "DateFrom"=>$validFrom_time_t,
+        ]);
+        if($newId<=0){
+            $tpl->js_error($cdb->lastError);
             return false;
         }
 
@@ -218,38 +214,33 @@ function ImportSubCertificates($data){
         return true;
     }
 
-    $certificate_data=$q->sqlite_escape_string2($data);
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM sslcertificates WHERE CommonName='$CommonName'");
-    if(intval($ligne["ID"])>0){
+    [$exists, $existsId]=$cdb->exists($CommonName);
+    if($exists){
         $tpl->js_error("$CommonName {already_exists}");
         return;
     }
 
-    $sql="INSERT INTO sslcertificates (CommonName,UsePrivKeyCrt,privkey,bundle,crt,SquidCert,Squidkey,stateOrProvinceName,localityName,OrganizationName,OrganizationalUnit,AsRoot,Generated,DateFrom,DateTo,emailAddress,CountryName,subjectKeyIdentifier,Generated)";
-
-    $f[]="'$CommonName'";
-    $f[]="'1'";
-    $f[]="''";
-    $f[]="''";
-    $f[]="'$certificate_data'";
-    $f[]="'$certificate_data'";
-    $f[]="''";
-    $f[]="'$stateOrProvinceName'";
-    $f[]="'$localityName'";
-    $f[]="'$OrganizationName'";
-    $f[]="'$OrganizationalUnit'";
-    $f[]="'0'";
-    $f[]="'1'";
-    $f[]="'$validFrom_time'";
-    $f[]="'$validTo_time'";
-    $f[]="'$emailAddress'";
-    $f[]="'$CountryName'";
-    $f[]="''";
-    $f[]="'1'";
-
-    $q->QUERY_SQL($sql." VALUES (".@implode(",",$f).")");
-    if(!$q->ok){$tpl->js_error($q->mysql_error);return;}
+    $newId=$cdb->insert([
+        "CommonName"=>$CommonName,
+        "UsePrivKeyCrt"=>"1",
+        "privkey"=>"",
+        "bundle"=>"",
+        "crt"=>$data,
+        "SquidCert"=>$data,
+        "Squidkey"=>"",
+        "stateOrProvinceName"=>$stateOrProvinceName,
+        "localityName"=>$localityName,
+        "OrganizationName"=>$OrganizationName,
+        "OrganizationalUnit"=>$OrganizationalUnit,
+        "AsRoot"=>"0",
+        "Generated"=>"1",
+        "DateFrom"=>$validFrom_time,
+        "DateTo"=>$validTo_time,
+        "emailAddress"=>$emailAddress,
+        "CountryName"=>$CountryName,
+        "subjectKeyIdentifier"=>"",
+    ]);
+    if($newId<=0){$tpl->js_error($cdb->lastError);return;}
 
     header("content-type: application/x-javascript");
     echo "dialogInstance6.close();\n";
@@ -295,41 +286,36 @@ function ImportCA($data){
     $validTo_time=date("Y-m-d H:i:s",$validTo_time_t);
     writelogs("$CommonName subjectKeyIdentifier='$subjectKeyIdentifier'",__FUNCTION__,__FILE__,__LINE__);
 
-    $sql="INSERT INTO sslcertificates (CommonName,UsePrivKeyCrt,privkey,bundle,crt,SquidCert,Squidkey,stateOrProvinceName,localityName,OrganizationName,OrganizationalUnit,AsRoot,Generated,DateFrom,DateTo,emailAddress,CountryName,subjectKeyIdentifier)";
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
 
-    if(!$q->FIELD_EXISTS("sslcertificates","subjectKeyIdentifier")){$q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectKeyIdentifier TEXT NULL");}
-
-
-    $certificate_data=$q->sqlite_escape_string2($data);
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM sslcertificates WHERE CommonName='$CommonName'");
-    if(intval($ligne["ID"])>0){
+    [$exists, $existsId]=$cdb->exists($CommonName);
+    if($exists){
         $tpl->js_error("$CommonName {already_exists}");
         return;
     }
 
-    $f[]="'$CommonName'";
-    $f[]="'1'";
-    $f[]="''";
-    $f[]="''";
-    $f[]="'$certificate_data'";
-    $f[]="'$certificate_data'";
-    $f[]="''";
-    $f[]="'$stateOrProvinceName'";
-    $f[]="'$localityName'";
-    $f[]="'$OrganizationName'";
-    $f[]="'$OrganizationalUnit'";
-    $f[]="'1'";
-    $f[]="'1'";
-    $f[]="'$validFrom_time'";
-    $f[]="'$validTo_time'";
-    $f[]="'$emailAddress'";
-    $f[]="'$CountryName'";
-    $f[]="'$subjectKeyIdentifier'";
-
-    $q->QUERY_SQL($sql." VALUES (".@implode(",",$f).")");
-    if(!$q->ok){$tpl->js_error($q->mysql_error);return;}
+    $newId=$cdb->insert([
+        "CommonName"=>$CommonName,
+        "UsePrivKeyCrt"=>"1",
+        "privkey"=>"",
+        "bundle"=>"",
+        "crt"=>$data,
+        "SquidCert"=>$data,
+        "Squidkey"=>"",
+        "stateOrProvinceName"=>$stateOrProvinceName,
+        "localityName"=>$localityName,
+        "OrganizationName"=>$OrganizationName,
+        "OrganizationalUnit"=>$OrganizationalUnit,
+        "AsRoot"=>"1",
+        "Generated"=>"1",
+        "DateFrom"=>$validFrom_time,
+        "DateTo"=>$validTo_time,
+        "emailAddress"=>$emailAddress,
+        "CountryName"=>$CountryName,
+        "subjectKeyIdentifier"=>$subjectKeyIdentifier,
+    ]);
+    if($newId<=0){$tpl->js_error($cdb->lastError);return;}
 
     header("content-type: application/x-javascript");
     echo "dialogInstance6.close();\n";

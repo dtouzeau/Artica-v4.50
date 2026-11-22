@@ -10,11 +10,11 @@ $GLOBALS["MAIN_TITLE"]["proxy_users"]="{APP_PROXY} {members}";
 
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $tpl=new template_admin();if(!$tpl->xPrivs()){exit();}
+// Pentest 2026-11-04 : img/popup/popup2/period formaient un chemin de fichier (sonde is_file par ../) et etaient recopies dans la page (XSS).
+foreach(array("img","popup","popup2","period") as $rrdk){if(isset($_GET[$rrdk])){$_GET[$rrdk]=preg_replace('/[^A-Za-z0-9_.-]/','',(string)$_GET[$rrdk]);if(strpos($_GET[$rrdk],"..")!==false){$_GET[$rrdk]="";}}}
 if(isset($_GET["popup"])){popup_start();exit;}
 if(isset($_GET["popup2"])){popup();exit;}
-if(isset($_POST["dhclient_mac"])){tests();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
-if(isset($_GET["results-popup"])){results_popup();exit;}
 if(isset($_GET["popup-latency"])){popup_latency();exit;}
 if(isset($_GET["popup-explain-load"])){popup_load();exit;}
 if(isset($_GET["ct-chart"])){ct_chart_render();exit;}
@@ -33,6 +33,9 @@ function js():bool{
     if(isset($_GET["iface"])){
         $iface=$_GET["iface"];
         return $tpl->js_dialog6("{interface}: ".$iface, "$page?iface-popup=$iface",1200);
+    }
+    if($img=="nf_conntrack_count"){
+        $title=$tpl->_ENGINE_parse_body("{APP_CONNTRACKD}");
     }
 
 	return $tpl->js_dialog6($title, "$page?tabs=$img$flat",1200);
@@ -159,7 +162,7 @@ function iface_chart_render(){
     $res=$isAggregate?($points[0]->period ?? $range):$range;
 
     $h=array();
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[]="";
 
     // ── RX/TX Average bandwidth chart ──
     $uid1='if-bw-'.uniqid();
@@ -217,69 +220,11 @@ function iface_chart_render(){
     $h[]="<script>NoSpinner();</script>";
     echo $tpl->_ENGINE_parse_body(implode("\n",$h));
 }
-function nf_conntrack_count(){
-    $tpl=new template_admin();
-    $page=CurrentPageName();
+function nf_conntrack_count():bool{
+    echo "<div id='nf-contract-count'></div>";
+    echo "<script>LoadAjax('nf-contract-count','fw.conntrackd.php')</script>";
+    return true;
 
-    // Current values
-    $latestJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/conntrack/latest"));
-    $curCount='—'; $curMax='—'; $curPct='—'; $pctColor='#676a6c';
-    if(is_object($latestJson) && !empty($latestJson->success) && is_object($latestJson->data)){
-        $d=$latestJson->data;
-        $curCount=number_format(intval($d->count));
-        $curMax=number_format(intval($d->max));
-        $pct=intval($d->percentage);
-        $curPct="$pct%";
-        if($pct<50) $pctColor='#1ab394';
-        elseif($pct<80) $pctColor='#f8ac59';
-        else $pctColor='#ed5565';
-    }
-
-    $h=array();
-    // Summary widgets
-    $h[]="<div class='row' style='margin:10px 0 15px'>";
-    $h[]="<div class='col-md-4'><div style='background:#1c84c6;color:#fff;padding:12px 15px;border-radius:4px;text-align:center'>";
-    $h[]="<div style='font-size:22px;font-weight:700'>$curCount</div>";
-    $h[]="<div style='font-size:11px'><i class='fas fa-link'></i> {connections}</div></div></div>";
-    $h[]="<div class='col-md-4'><div style='background:#34495e;color:#fff;padding:12px 15px;border-radius:4px;text-align:center'>";
-    $h[]="<div style='font-size:22px;font-weight:700'>$curMax</div>";
-    $h[]="<div style='font-size:11px'><i class='fas fa-database'></i> nf_conntrack_max</div></div></div>";
-    $h[]="<div class='col-md-4'><div style='background:$pctColor;color:#fff;padding:12px 15px;border-radius:4px;text-align:center'>";
-    $h[]="<div style='font-size:22px;font-weight:700'>$curPct</div>";
-    $h[]="<div style='font-size:11px'><i class='fas fa-percentage'></i> {percentage}</div></div></div>";
-    $h[]="</div>";
-
-    // Range buttons
-    $ranges=array("1h"=>"{last_hour}","6h"=>"6h","24h"=>"24h","7d"=>"7d","30d"=>"30d","90d"=>"90d");
-    $h[]="<div style='margin-bottom:15px'>";
-    $h[]="  <div class='btn-group' id='ct-range-btns'>";
-    foreach($ranges as $val=>$label){
-        $active=($val==='24h')?' active':'';
-        $h[]="    <button class='btn btn-sm btn-default$active' onclick=\"CtRange('$val',this)\">$label</button>";
-    }
-    $h[]="  </div>";
-    $h[]="  <button class='btn btn-sm btn-primary' style='margin-left:10px' onclick=\"CtRefresh();\">";
-    $h[]="    <i class='fas fa-sync-alt'></i> {refresh}</button>";
-    $h[]="</div>";
-
-    // Chart area
-    $h[]="<div id='ct-chart-area'></div>";
-
-    // JS controller
-    $h[]="<script>";
-    $h[]="var _ctRange='24h';";
-    $h[]="function CtRange(r,btn){";
-    $h[]="  _ctRange=r;";
-    $h[]="  \$('#ct-range-btns .btn').removeClass('active');";
-    $h[]="  \$(btn).addClass('active');";
-    $h[]="  CtRefresh();";
-    $h[]="};";
-    $h[]="function CtRefresh(){";
-    $h[]="  LoadAjax('ct-chart-area','$page?ct-chart=yes&range='+_ctRange);";
-    $h[]="};";
-    $h[]="CtRefresh();";
-    $h[]="</script>";
-    echo $tpl->_ENGINE_parse_body(implode("\n",$h));
 }
 
 function _ct_date_format($range){
@@ -326,7 +271,7 @@ function ct_chart_render(){
     $pr=$isAggregate?'2':'1';
 
     $h=array();
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[]="";
 
     // ── Connection count chart ──
     $uid1='ct-count-'.uniqid();

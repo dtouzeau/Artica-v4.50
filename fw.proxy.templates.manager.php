@@ -1,6 +1,11 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.templates.manager.inc");
+// Pentest 2026-11-04 : view, css, template-js, template-export et delete-js etaient recopies sans encodage dans la page (XSS).
+foreach (array("view","css","template-export") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=is_numeric($_GET[$xk])?intval($_GET[$xk]):1;}}
+foreach (array("template-js","delete-js") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=intval($_GET[$xk]);}}
 
 if(isset($_GET["main-page"])){main_page();exit;}
 
@@ -192,10 +197,9 @@ function body_save(){
 	if(!$templates_manager->ok){echo $templates_manager->mysql_error_html;}
 }
 function table(){
-	
+
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
 
     $jsApply=$tpl->framework_buildjs("/proxy/templates",
         "squid.templates.single.progress","squid.templates.single.log","progress-pxtempl-restart");
@@ -204,80 +208,37 @@ function table(){
     $topbuttons[] = array("Loadjs('fw.proxy.templates.manager.files.php');", "fas fa-images", "{file_manager}");
     $topbuttons[] = array("Loadjs('fw.proxy.templates.upload.php');", ico_download, "{import_template}");
     $topbuttons[] = array($jsApply, ico_save, "{build_templates}");
-	
-	
-	$html[]="<table id='table-template-manager' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{template_name}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>CSS</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>HEAD</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>BODY</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{view2}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{export}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	$MyPage=CurrentPageName();
-	$TRCLASS=null;
-	$sql="SELECT *  FROM `templates_manager`";
-	$results = $q->QUERY_SQL($sql);
-	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$zmd5=md5(serialize($ligne));
-		$ID=$ligne["ID"];
-		$TemplateName=$tpl->utf8_encode($ligne["TemplateName"]);
-		if(trim($TemplateName)==null){$TemplateName="Unknown Template";}
-		
-		$btcss="<button class='btn btn-primary btn-xs' type='button' 
-		OnClick=\"Loadjs('$page?css-js=$ID');\">{modify} CSS</button>";
-		
-		$bthead="<button class='btn btn-primary btn-xs' type='button'
-		OnClick=\"Loadjs('$page?head-js=$ID');\">{modify} HEAD</button>";
 
-		$btbody="<button class='btn btn-primary btn-xs' type='button'
-		OnClick=\"Loadjs('$page?body-js=$ID');\">{modify} BODY</button>";
-
-		$btview="<button class='btn btn-primary btn-xs' type='button'
-		OnClick=\"s_PopUpFull('$page?view=$ID',1024,768)\">{view2}</button>";
-		
-		if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
-			$btcss=$tpl->icon_nothing();
-			$bthead=$tpl->icon_nothing();
-			$btbody=$tpl->icon_nothing();
-		}
-		
-		
-		
-		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
-		$html[]="<td style='width:1%' nowrap>$ID</td>";
-		$html[]="<td nowrap>".$tpl->td_href($TemplateName,null,"Loadjs('$page?template-js=$ID')")."</td>";
-		$html[]="<td style='width:1%' nowrap>$btcss</td>";
-		$html[]="<td style='width:1%' nowrap>$bthead</td>";
-		$html[]="<td style='width:1%' nowrap>$btbody</td>";
-		$html[]="<td style='width:1%' nowrap>$btview</td>";
-		$html[]="<td style='width:1%' class='center' nowrap>".$tpl->icon_download("direct:$page?template-export=$ID")."</center></td>";
-		$html[]="<td style='width:1%' class='center' nowrap>".$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$zmd5')","AsSquidAdministrator")."</center></td>";
-		$html[]="<td style='width:1%' nowrap>$btcss</td>";
-		$html[]="<td style='width:1%' nowrap>$btcss</td>";
-		$html[]="<td></td>";
-		$html[]="</tr>";
-		
-		
+	$CORP=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
+	// proxy.db est lu par le daemon : la console n'ouvre plus la base.
+	list($listed,$results)=templates_manager_api("GET","/proxy/templates-manager");
+	if(!$listed){
+		echo $tpl->div_error(strval($results));
+		return;
 	}
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='9'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$rows=array();
+	foreach ((is_array($results)?$results:array()) as $ligne){
+		$rows[]=pxtpl_row(array("ID"=>$ligne["id"] ?? 0,"TemplateName"=>$ligne["templateName"] ?? ""),$page,$CORP,$tpl);
+	}
+	$shown=count($rows);
+
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{template_name}</th>";
+	$html[]="<th class='center'>{modify}</th>";
+	$html[]="<th class='center'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pxtpl-rows'>";
+	if($shown==0){
+		$html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown</span>";
+	$html[]="<span class='awc-pg' id='pxtpl-pager'></span>";
+	$html[]="</div></div></div>";
 
     $TINY_ARRAY["TITLE"]="{WEB_ERROR_PAGE}: {template_manager}";
     $TINY_ARRAY["ICO"]="fad fa-page-break";
@@ -286,25 +247,79 @@ function table(){
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
+	// Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+	// _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+	$script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n$jstiny\n</script>";
 
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-template-manager').footable( {\"filtering\": {\"enabled\": true },\"sorting\": {\"enabled\": true } } ) });
-	$jstiny
-	</script>";
-	
-	echo $tpl->_ENGINE_parse_body($html);
-	
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.$script
+		.awc_pager_js(50,"pxtpl-rows","pxtpl-pager");
 }
 
+/**
+ * Un modele de page d'erreur. La ligne emettait ONZE cellules pour HUIT
+ * en-tetes: le bouton CSS etait repete deux fois de plus en fin de ligne, suivi
+ * d'une cellule vide, et deux cellules portaient un "</center>" sans ouvrant.
+ * Le decalage poussait les colonnes hors de l'en-tete. Les trois boutons
+ * d'edition tiennent maintenant une seule colonne, l'identifiant passe en
+ * sous-titre du nom.
+ */
+function pxtpl_row($ligne,$page,$CORP,$tpl):string{
+	$zmd5=md5(serialize($ligne));
+	$ID=intval($ligne["ID"]);
+	// Deja en UTF-8 (JSON du daemon).
+	$TemplateName=strval($ligne["TemplateName"]);
+	if(trim($TemplateName)==""){$TemplateName="{unknown}";}
+
+	$edit="";
+	if($CORP){
+		$edit =pxtpl_edit_button($page,$ID,"css-js","CSS");
+		$edit.=pxtpl_edit_button($page,$ID,"head-js","HEAD");
+		$edit.=pxtpl_edit_button($page,$ID,"body-js","BODY");
+	}else{
+		$edit="<span class='awc-none'>&mdash;</span>";
+	}
+
+	$view=$tpl->td_href("<i class='fas fa-eye'></i>","{view2}","s_PopUpFull('$page?view=$ID',1024,768)");
+	$export=$tpl->icon_download("direct:$page?template-export=$ID");
+	$delete=$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$zmd5')","AsSquidAdministrator");
+
+	$h ="<tr id='$zmd5'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fad fa-page-break'></i></span>";
+	$h.="<span><span class='awc-name'>";
+	$h.=$tpl->td_href(htmlspecialchars((string)$TemplateName),null,"Loadjs('$page?template-js=$ID')")."</span>";
+	$h.="<div class='awc-meta awc-mono'>#$ID</div></span>";
+	$h.="</div></td>";
+	$h.="<td class='center'><div class='awc-chips' style='justify-content:center'>$edit</div></td>";
+	$h.="<td class='center'><div class='awc-acts'><span class='awc-act'>$view</span>$export$delete</div></td>";
+	$h.="</tr>";
+	return $h;
+}
+
+/** Un bouton d'edition d'une des trois parties du modele. */
+function pxtpl_edit_button($page,$ID,$action,$label):string{
+	return "<a href=\"javascript:blur();\" class='awc-btn' style='padding:4px 9px;font-size:11px' "
+		."OnClick=\"Loadjs('$page?$action=$ID');\">$label</a>";
+}
+
+/**
+ * L'apercu d'un modele de page d'erreur.
+ *
+ * Les deux tableaux du corps ci-dessous font partie de l'ARTEFACT PREVISUALISE,
+ * pas de l'interface: ils sont rendus avec la feuille de style du modele du
+ * client pour montrer a quoi ressemblera la page de blocage. Les habiller en
+ * tableau d'entites ferait mentir l'apercu -- il montrerait le style de la
+ * console au lieu de celui du modele. Ils restent donc inchanges.
+ */
 function  view_template(){
     $footer=null;
 	$page=CurrentPageName();
 	$tpl=new templates_manager($_GET["view"]);
 
 	$jquery="\n\n<script type=\"text/javascript\" language=\"javascript\" src=\"/js/jquery-1.8.3.js\"></script>\n<script type=\"text/javascript\" language=\"javascript\" src=\"/js/jquery-ui-1.8.22.custom.min.js\"></script>";
-	$css="<link href=\"/$page?css={$_GET["view"]}\" rel=\"stylesheet\"  type=\"text/css\"/>";
+	$css="<link href=\"/$page?css=".intval($_GET["view"])."\" rel=\"stylesheet\"  type=\"text/css\"/>";
 
     $parser=new templates_objects();
     $tpl->headContent=$parser->ParseContent($tpl->headContent);
@@ -426,37 +441,35 @@ function v4css(){
 
 function expose_file(){
 
-    $filename=$_GET["filename"];
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $sql="SELECT *  FROM `templates_files` WHERE filename='$filename'";
-    $ligne = $q->mysqli_fetch_array($sql);
-    $contentfile=$ligne["contentfile"];
-    $contenttype=$ligne["contenttype"];
-    $contentsize=$ligne["contentsize"];
-    $content=base64_decode($contentfile);
-
+    // Le nom allait tel quel dans la requete SQL.
+    $ligne=templates_manager_file(strval($_GET["filename"]));
+    if(count($ligne)==0){header("HTTP/1.1 404 Not Found");return;}
+    $content=base64_decode(strval($ligne["contentFile"] ?? ""));
+    $contenttype=strval($ligne["contentType"] ?? "");
+    if(!preg_match('#^[A-Za-z0-9.+-]+/[A-Za-z0-9.+-]+$#',$contenttype)){$contenttype="application/octet-stream";}
 
     header("Content-type: $contenttype");
-    header("Content-Length: $contentsize");
+    header("Content-Length: ".strlen($content));
     echo $content;
 }
 
 function view_css(){
 	header("Content-type: text/css");
-    echo "/*!\n*Template id: {$_GET["css"]}\n*/\n";
+    echo "/*!\n*Template id: ".intval($_GET["css"])."\n*/\n"; // Pentest 2026-11-04 : identifiant numerique
 
 	$tpl=new templates_manager($_GET["css"]);
 	$data=$tpl->CssContent;
 	
 	$Dirname=PROGRESS_DIR."/ViewTemplates";
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
 	@mkdir($Dirname);
 	
 	if(preg_match_all("#\[file=(.*?)\]#is", $data, $re)){
 		foreach ($re[1] as $num=>$filename){
-			$sql="SELECT *  FROM `templates_files` WHERE filename='$filename'";
-			$ligne = $q->mysqli_fetch_array($sql);
-			$fdata=base64_decode($ligne["contentfile"]);
+			// [file=...] vient du contenu du modele : ni requete construite, ni chemin.
+			$filename=basename(trim(strval($filename)));
+			if($filename=="" || $filename=="." || $filename==".."){continue;}
+			$ligne=templates_manager_file($filename);
+			$fdata=base64_decode(strval($ligne["contentFile"] ?? ""));
 			@file_put_contents("$Dirname/$filename", $fdata);
 			if($GLOBALS["VERBOSE"]){echo "#preg_match_all.$num {$filename} -> [file={$filename}]\n";}
 			$data=str_replace("[file={$filename}]", "ressources/logs/web/ViewTemplates/{$filename}", $data);
@@ -505,12 +518,18 @@ function TEMPLATE_EXPORT(){
 	}
 
 
-	@chdir($Dirname);
-	system("cd $Dirname");
-	$TemplateName=str_replace(" ", "", $TemplateName);
+	// Pentest 2026-11-04 : le nom du modele (saisi en console, lu en base)
+	// allait tel quel dans un shell_exec. Nom de fichier reduit a un
+	// identifiant, arguments passes par escapeshellarg().
+	$TemplateName=preg_replace('#[^A-Za-z0-9_.-]#', "", str_replace(" ", "", $TemplateName));
+	$TemplateName=ltrim($TemplateName,".-");
+	if($TemplateName==""){$TemplateName="template";}
 	$compressfile=PROGRESS_DIR."/$TemplateName.tar.gz";
-	shell_exec("/bin/tar -czf  $compressfile *");
-	shell_exec("/bin/rm -rf $Dirname");
+	// Memes noms de membres qu'avec l'ancien "tar *" (sans ./), attendus a l'import.
+	$members="";
+	foreach(scandir($Dirname) as $m){if($m=="."||$m==".."){continue;}$members.=" ".escapeshellarg($m);}
+	exec("/bin/tar -czf ".escapeshellarg($compressfile)." -C ".escapeshellarg($Dirname)." --$members 2>&1");
+	exec("/bin/rm -rf ".escapeshellarg($Dirname));
 
 	$fsize=@filesize($compressfile);
 
@@ -531,19 +550,19 @@ function TEMPLATE_EXPORT(){
 }
 function TEMPLATE_EXPORT_SavePic($fileSource,$BaseDir){
 
-	if(trim($fileSource)==null){return;}
+	// [file=...] vient du contenu du modele : pas de chemin, pas d'apostrophe.
+	$fileSource=basename(trim(strval($fileSource)));
+	if($fileSource=="" || $fileSource=="." || $fileSource==".."){return;}
 	$template_path="$BaseDir/files";
 	@mkdir($template_path,0755,true);
 
 	if(is_file("$template_path/$fileSource")){return;}
 
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM templates_files WHERE filename='$fileSource'");
+	$ligne=templates_manager_file($fileSource);
+	if(count($ligne)==0){return;}
 
-	$contentfile=$ligne["contentfile"];
-	$contenttype=$ligne["contenttype"];
-	$contentsize=$ligne["contentsize"];
-	$content=base64_decode($contentfile);
+	$contenttype=strval($ligne["contentType"] ?? "");
+	$content=base64_decode(strval($ligne["contentFile"] ?? ""));
 
 	if($contenttype=="text/css"){
 		if(preg_match_all("#\[file=(.*?)\]#s", $content, $re)){

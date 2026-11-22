@@ -1,2 +1,2 @@
 <folders_statistics>Estad%C3%ADsticas de las carpetas</folders_statistics>
-<parameters_text>You can modify/add folders you want to see in the statistics pie</parameters_text>
+<parameters_text>Puede modificar/a&#241;adir carpetas que quiera ver en el gr&#225;fico circular de estad&#237;sticas</parameters_text>

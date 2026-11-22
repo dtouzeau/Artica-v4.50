@@ -1,3 +1,3 @@
-<SendMailingToOrgs_text>Order have been sended to the daemon, eMailing operation will run in background mode in few seconds</SendMailingToOrgs_text>
-<send_to_all_users>Notify your users</send_to_all_users>
-<send_to_all_users_text>Send a notification to all users of your organizations</send_to_all_users_text>
+<SendMailingToOrgs_text>A ordem foi enviada ao daemon, a opera&#231;&#227;o de envio de e-mails ser&#225; executada em modo de segundo plano em poucos segundos</SendMailingToOrgs_text>
+<send_to_all_users>Notificar os seus usu&#225;rios</send_to_all_users>
+<send_to_all_users_text>Enviar uma notifica&#231;&#227;o a todos os usu&#225;rios das suas organiza&#231;&#245;es</send_to_all_users_text>

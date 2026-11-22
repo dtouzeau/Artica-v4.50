@@ -97,13 +97,14 @@ function search(){
 		$ACTION=null;
 		$FF=false;
 		if(!preg_match("#^\[(.+?)\]\s+(.+?)\s+(.+)#", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
+			// Pentest 2026-11-04 : ligne de journal (donnee externe) affichee sans encodage (XSS stockee).
+			echo "<strong style='color:red'>".req_html($line)."</strong><br>"; 
 			continue;}
 		
-		$date="{$re[1]}";
+		$date=req_html($re[1]);
 		
-		$service=$re[2];
-		$line=$re[3];
+		$service=req_html($re[2]);
+		$line=req_html($re[3]);
 
 		if(preg_match("#(Failed password|Invalid user|user unknown)#i", $line)){
 			$line="<span class='text-danger'>$line</span>";
@@ -129,7 +130,7 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/greensql.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/greensql.syslog.pattern"))."</i></div>";
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
 	

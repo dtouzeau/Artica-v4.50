@@ -15,8 +15,6 @@ if(isset($_GET["newwebsite-js"])){newwebsite_js();exit;}
 if(isset($_GET["newwebsite-popup"])){newwebsite_popup();exit;}
 if(isset($_GET["domainGroups-search"])){domainGroups_search();exit;}
 if(isset($_GET["domainGroups"])){domainGroups();exit;}
-if(isset($_GET["domainGroups-tabs"])){domainGroups_tabs();exit;}
-if(isset($_GET["domainGroups-popup"])){domainGroups_popup();exit;}
 
 if(isset($_POST["websiteid"])){website_save();exit;}
 if(isset($_GET["website-delete"])){website_delete();exit;}
@@ -181,7 +179,8 @@ function newwebsite_save():bool{
     $websiteid=0;
 
     $zmd5=md5("$sitename$websiteid$groupid".time());
-    $q->QUERY_SQL("INSERT INTO domains (sitename,zmd5,rootdir,enabled) VALUES ('$sitename','$zmd5','',1)");
+    // Pentest 2026-11-04 : sitename etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("INSERT INTO domains (sitename,zmd5,rootdir,enabled) VALUES (?,?,'',1)",array($sitename,$zmd5));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -266,12 +265,13 @@ function website_save():bool{
         $sitename=$matches[1];
     }
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
-    $sql="UPDATE domains SET sitename='$sitename',enabled=$enabled,
-                   rootdir='$rootdir', 
-                   certificate='$certificate' WHERE ID=$websiteid";
+    // Pentest 2026-11-04 : sitename/rootdir/certificate etait concatene dans la requete.
+    $sql="UPDATE domains SET sitename=?,enabled=$enabled,
+                   rootdir=?, 
+                   certificate=? WHERE ID=$websiteid";
 
     if($websiteid>0){
-        $q->QUERY_SQL($sql);
+        $q->QUERY_SQL_PARAMS($sql,array($sitename,$rootdir,$certificate));
         if(!$q->ok){
             echo $tpl->post_error($q->mysql_error);
             return false;
@@ -294,9 +294,9 @@ function website_save():bool{
     }
 
     $zmd5=md5("$sitename$websiteid$groupid$rootdir");
-    $sql="INSERT INTO domains (sitename,zmd5,rootdir,enabled) VALUES ('$sitename','$zmd5','$rootdir',$enabled)";
+    $sql="INSERT INTO domains (sitename,zmd5,rootdir,enabled) VALUES (?,?,?,$enabled)";
 
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,array($sitename,$zmd5,$rootdir));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -496,19 +496,20 @@ function backend_save():bool{
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
     $sql="UPDATE backends SET 
                     enabled=$enabled,
-                    backendname='$backendname',
+                    backendname=?,
                     isDisconnected=$isDisconnected,
                     listen_port=$listen_port,
                     bweight=$bweight,
                     ssl=$ssl,
                     h2=$h2,
                     proxyproto=$proxyproto,
-                    listen_ip='$listen_ip'
+                    listen_ip=?
                     WHERE ID=$ID";
     if($ID==0){
-        $sql="INSERT INTO backends (enabled,backendname,isDisconnected,listen_port,bweight,proxyproto,listen_ip,ssl,h2) VALUES($enabled,'$backendname',$isDisconnected,$listen_port,$bweight,$proxyproto,'$listen_ip',$ssl,$h2)";
+        $sql="INSERT INTO backends (enabled,backendname,isDisconnected,listen_port,bweight,proxyproto,listen_ip,ssl,h2) VALUES($enabled,?,$isDisconnected,$listen_port,$bweight,$proxyproto,?,$ssl,$h2)";
     }
-    $q->QUERY_SQL($sql);
+    // Pentest 2026-11-04 : backendname/listen_ip etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS($sql,array($backendname,$listen_ip));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -531,9 +532,10 @@ function search():bool{
         $search = str_replace("**", "*", $search);
         $search = str_replace("**", "*", $search);
         $search = str_replace("*","%",$search);
-        $sql="SELECT ID,sitename,certificate FROM domains WHERE sitename LIKE '%$search%' ORDER BY sitename LIMIT $LIMIT";
+        $sql="SELECT ID,sitename,certificate FROM domains WHERE sitename LIKE ? ORDER BY sitename LIMIT $LIMIT";
     }
-    $results=$q->QUERY_SQL($sql);
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS($sql,$search<>null?array("%$search%"):array());
     if(!$q->ok){echo $tpl->div_error($q->mysql_error."<br>".$sql);}
     $t=time();
     $html[]="<table class=\"table table-hover\" id='ReversePulse$t'>
@@ -609,7 +611,7 @@ function ArrayConnectors($domainid):string{
     $Y=array();
     foreach($Z as $BackendID=>$NONE) {
         VERBOSE("Backend:$BackendID",__LINE__);
-        $results=$q->QUERY_SQL("SELECT connectors.ID,connectors.servicename FROM connectors,connectors_backends WHERE connectors_backends.connectorid=connectors.ID AND connectors_backends.backendid=$BackendID");
+        $results=$q->QUERY_SQL("SELECT connectors.ID,connectors.servicename FROM connectors,connectors_backends WHERE connectors_backends.connectorid=connectors.ID AND connectors_backends.backendid=".intval($BackendID));
         foreach($results as $index=>$ligne) {
             $ID = $ligne["ID"];
             $servicename=$ligne["servicename"];
@@ -635,7 +637,7 @@ function ArrayBackends($domainid):array{
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
     $GLOBALS["T"][$domainid]=array();
     foreach($Z as $ID=>$GroupName){
-        $results=$q->QUERY_SQL("SELECT backends.ID,backends.backendname FROM backends,linkbackends WHERE linkbackends.backendid=backends.ID AND linkbackends.groupid=$ID");
+        $results=$q->QUERY_SQL("SELECT backends.ID,backends.backendname FROM backends,linkbackends WHERE linkbackends.backendid=backends.ID AND linkbackends.groupid=".intval($ID));
         foreach($results as $index=>$ligne) {
             $ID = $ligne["ID"];
             $backendname=$ligne["backendname"];
@@ -664,7 +666,7 @@ function ArrayGroups($domainid):array{
         return $GLOBALS["Z"][$domainid];
     }
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
-    $results=$q->QUERY_SQL("SELECT domgroups.ID,domgroups.GroupName FROM domgroups,linkgroups WHERE domgroups.ID=linkgroups.groupid AND linkgroups.domainid=$domainid");
+    $results=$q->QUERY_SQL("SELECT domgroups.ID,domgroups.GroupName FROM domgroups,linkgroups WHERE domgroups.ID=linkgroups.groupid AND linkgroups.domainid=".intval($domainid));
     $Z=array();
     if(!$q->ok){
         $GLOBALS["Z"][$domainid]=array();
@@ -698,22 +700,19 @@ function GetCertificateLink($CommonName):string{
     if(strlen($CommonName)<2){
         return "";
     }
-    $qCert=new lib_sqlite("/home/artica/SQLITE/certificates.db");
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
     $tpl=new template_admin();
     $ico=ico_certificate;
 
     if(preg_match("#SUB:([0-9]+)#",$CommonName,$re)){
-        $Ligne=$qCert->mysqli_fetch_array("SELECT ID,commonName FROM subcertificates WHERE ID='$re[1]'");
-        $commonName=$Ligne["commonName"];
+        $sub=$cdb->subGetById(intval($re[1]));
+        $commonName=is_object($sub)?(string)($sub->commonName ?? ""):"";
         return $tpl->td_href("<i class='$ico'></i>&nbsp;$commonName","","Loadjs('fw.certificates-center.php?show-server-certificate=$re[1]')");
     }
 
-
-
-    $Ligne=$qCert->mysqli_fetch_array("SELECT ID,CommonName FROM sslcertificates WHERE CommonName='$CommonName'");
-    $CertName=$Ligne["CommonName"];
-    $CertNameEnc=urlencode($CertName);
-    $certificateid=intval($Ligne["ID"]);
+    [$exists,$certificateid]=$cdb->exists($CommonName);
+    $CertNameEnc=urlencode($CommonName);
     return $tpl->td_href("<i class='$ico'></i>&nbsp;$CommonName","","Loadjs('fw.certificates-center.php?certificate-js=$CertNameEnc&ID=$certificateid')");
 
 }
@@ -803,6 +802,7 @@ function td_domains($ligne){
     return $tpl->_ENGINE_parse_body($f);
 }
 function CountOfDomains($groupid):int {
+    $groupid=intval($groupid);
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
     $sql="SELECT domains.enabled FROM domains,linkgroups 
             WHERE linkgroups.groupid=$groupid AND
@@ -818,6 +818,7 @@ function CountOfDomains($groupid):int {
     return $c;
 }
 function domainGroups_domains($groupid):array{
+    $groupid=intval($groupid);
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
     $sql="SELECT sitename FROM domains,linkgroups 
             WHERE linkgroups.groupid=$groupid AND
@@ -915,10 +916,11 @@ function domainGroups_search(){
             WHERE
                 linkbackends.groupid=domgroups.ID AND
                 linkbackends.backendid=$backendid
-                AND domgroups.GroupName LIKE '$search'
+                AND domgroups.GroupName LIKE ?
             ORDER BY domgroups.GroupName";
     }
-    $results=$q->QUERY_SQL($sql);
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS($sql,$search<>null?array($search):array());
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
     $width1="style='width:1%' nowrap";
@@ -987,12 +989,15 @@ function websites_search():bool{
 	<tbody>
 ";
     $ANDS="";
+    $ANDSPARAMS=array();
     if($search<>null) {
         $search = "*$search*";
         $search = str_replace("**", "*", $search);
         $search = str_replace("**", "*", $search);
         $search = str_replace("*","%",$search);
-        $ANDS="AND (domains.sitename LIKE '$search%' OR domains.rootdir LIKE '$search%')";
+        // Pentest 2026-11-04 : search etait concatene dans la requete.
+        $ANDS="AND (domains.sitename LIKE ? OR domains.rootdir LIKE ?)";
+        $ANDSPARAMS=array("$search%","$search%");
     }
 
     $sql="SELECT domains.ID,domains.rootdir,
@@ -1002,7 +1007,7 @@ function websites_search():bool{
                         ORDER BY sitename LIMIT $LIMIT";
 
 
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,$ANDSPARAMS);
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
     $width1="style='width:1%' nowrap";

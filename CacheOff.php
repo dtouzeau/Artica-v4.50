@@ -26,8 +26,6 @@ if(function_exists("apc_clear_cache")){
 	apc_clear_cache();
 }
 		if(!isset($_SESSION["detected_lang"])){$_SESSION["detected_lang"]=$_COOKIE["artica-language"];}			
-		$sock=new sockets();
-		$sock->getFrameWork("squid.php?clean-catz-cache=yes");
 	echo "\n";
 	$cc=0;
 	foreach ($_SESSION as $num=>$val){

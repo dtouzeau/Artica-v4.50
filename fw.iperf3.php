@@ -4,11 +4,9 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["popup-main"])){popup_main();exit;}
 if(isset($_GET["form-service-popup"])){form_service_popup();exit;}
 if(isset($_GET["form-service-js"])){form_service_js();exit;}
 if(isset($_GET["flat"])){flat_config();exit;}
-if(isset($_GET["popup-rule"])){rule_popup();exit;}
 if(isset($_GET["jstiny"])){jsTiny();exit;}
 page();
 

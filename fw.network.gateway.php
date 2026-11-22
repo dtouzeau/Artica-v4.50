@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -29,7 +32,7 @@ function popup(){
 
 
 
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-network-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-network-restart')";
 	$EnableArticaAsGateway=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaAsGateway"));
 	
 	$form[]=$tpl->field_checkbox("EnableArticaAsGateway","{ARTICA_AS_GATEWAY}",$EnableArticaAsGateway,"{ARTICA_AS_GATEWAY_EXPLAIN}");
@@ -43,6 +46,12 @@ function popup(){
 function save(){
 	$sock=new sockets();
 	$sock->SET_INFO("EnableArticaAsGateway", $_POST["EnableArticaAsGateway"]);
+	// Ecrire la cle ne suffit pas : c'est sysctl.Build() qui recalcule le
+	// verdict MustBeAgateway et regenere /etc/sysctl.conf. Sans cet appel,
+	// fw.network.interfaces.php (qui declenche bien /system/sysctl sur son
+	// propre bouton) et cette page ecrivaient la MEME cle avec deux effets
+	// differents -- ici, le reglage etait enregistre sans jamais etre applique.
+	$sock->REST_API("/system/sysctl");
 }
 
 function after_js(){

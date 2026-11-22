@@ -1,6 +1,7 @@
 <?php
 
 include_once(dirname(__FILE__)."/class.external.ad.inc");
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 class squid_acls_quotas_time{
 	private $ruleid=0;
 	
@@ -18,8 +19,11 @@ class squid_acls_quotas_time{
 		if(!is_numeric($ruleid)){$ruleid=0;}
 		if($ruleid==0){$ruleid=$this->ruleid;}
 		if($ruleid==0){$this->Output("Rule $ruleid not acceptable");return false;}
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT QuotaType,enabled FROM ext_time_quota_acl WHERE ID=$ruleid"));
+		// acls.db is API-only — time-quota rule via the acls backend.
+		$ligne=acls_api_get("/proxy/time-quota/acls/".intval($ruleid));
+		if(!is_array($ligne)){$ligne=array();}
+		$ligne["enabled"]=intval($ligne["enabled"] ?? 0);
+		$ligne["QuotaType"]=(string)($ligne["quotaType"] ?? "");
 		if($ligne["enabled"]==0){
 			$this->Output("Rule $ruleid not enabled");
 			return false;
@@ -60,11 +64,12 @@ class squid_acls_quotas_time{
 	}	
 	
 	private function GetavailableRulesNumber($ruleid){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT ID FROM ext_time_quota_acl_rules WHERE ruleid='$ruleid' AND enabled=1";
-		$results = $q->QUERY_SQL($sql,'artica_backup');
+		// acls.db is API-only — enabled quota sub-rules via the acls backend.
+		$results = acls_api_get("/proxy/time-quota/acl-rules?ruleid=".intval($ruleid));
+		if(!is_array($results)){$results=array();}
+		foreach($results as $ri=>$rr){$results[$ri]["ID"]=intval($rr["id"] ?? 0);}
 		if(count($results)==0){
-			$this->Output("$sql return no data");
+			$this->Output("quota rules for ruleid $ruleid return no data");
 			return 0;}
 		$c=0;
 		foreach ($results as $index=>$ligne){
@@ -79,9 +84,9 @@ class squid_acls_quotas_time{
 	}
 	
 	private function GetavailableGroupesNumber($quotaid){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT groupid FROM ext_time_quota_acl_link WHERE ruleid='$quotaid' AND enabled=1";
-		$results = $q->QUERY_SQL($sql);
+		// acls.db is API-only — enabled group links via the acls backend.
+		$results = acls_api_get("/proxy/time-quota/acl-links?ruleid=".intval($quotaid));
+		if(!is_array($results)){$results=array();}
 		if(count($results)==0){return 0;}
 		return count($results);
 		
@@ -109,9 +114,10 @@ class squid_acls_quotas_time{
 		if(!is_file($binary)){
 			echo "Starting......: ".date("H:i:s")." [ACL]: Quotas Time: ext_time_quota_acl, no such binary\n";
 			return;}
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT * FROM ext_time_quota_acl WHERE enabled=1";
-		$results = $q->QUERY_SQL($sql,'artica_backup');
+		// acls.db is API-only — enabled time-quota rules via the acls backend.
+		$results = acls_api_get("/proxy/time-quota/acls");
+		if(!is_array($results)){$results=array();}
+		foreach($results as $ri=>$rr){$results[$ri]["ID"]=intval($rr["id"] ?? 0);$results[$ri]["QuotaType"]=(string)($rr["quotaType"] ?? "");$results[$ri]["TTL"]=intval($rr["ttl"] ?? 60);}
 		$line=array();
 		if(count($results)==0){
 			echo "Starting......: ".date("H:i:s")." [ACL]: Quotas Time: ext_time_quota_acl, no enabled main rules\n";
@@ -141,11 +147,12 @@ class squid_acls_quotas_time{
 	}
 	
 	private function buildconf($ruleid,$QuotaType){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 		$path="/etc/squid3/time_quota$ruleid.conf";
 		$this->Output("Path: `$path`");
-		$sql="SELECT * FROM ext_time_quota_acl_rules WHERE ruleid='$ruleid' AND enabled=1";
-		$results = $q->QUERY_SQL($sql,'artica_backup');
+		// acls.db is API-only — enabled quota sub-rules via the acls backend.
+		$results = acls_api_get("/proxy/time-quota/acl-rules?ruleid=".intval($ruleid));
+		if(!is_array($results)){$results=array();}
+		foreach($results as $ri=>$rr){$results[$ri]["ID"]=intval($rr["id"] ?? 0);}
 		if(count($results)==0){@file_put_contents($path, "\n");return;}
 		$c=0;
 		$items=array();
@@ -163,9 +170,10 @@ class squid_acls_quotas_time{
 		@chmod($path,0755);
 		@chown($path,"squid");
 		@chgrp($path, "squid");
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT groupid FROM ext_time_quota_acl_link WHERE ruleid='$ruleid' AND enabled=1";
-		$results = $q->QUERY_SQL($sql);
+		// acls.db is API-only — enabled group links via the acls backend.
+		$linkIds = acls_api_get("/proxy/time-quota/acl-links?ruleid=".intval($ruleid));
+		$results=array();
+		if(is_array($linkIds)){foreach($linkIds as $g){$results[]=array("groupid"=>intval($g));}}
 		if(count($results)==0){return;}
 		$items=array();
 		foreach ($results as $index=>$ligne){
@@ -178,24 +186,22 @@ class squid_acls_quotas_time{
 	}
 	
 	private function GetGroupType($gpid){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$ligne=$q->mysqli_fetch_array("SELECT GroupType FROM webfilters_sqgroups WHERE ID='$gpid'");
-		return $ligne["GroupType"];
+		// acls.db is API-only — group type via the acls backend.
+		$grp=acls_api_get("/proxy/acls/sqlite/group/".intval($gpid));
+		return is_array($grp)?(string)($grp["groupType"] ?? ""):"";
 	}
 	private function GetGroupGroupName($gpid){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$ligne=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$gpid'");
-		return $ligne["GroupName"];
+		// acls.db is API-only — group name via the acls backend.
+		$grp=acls_api_get("/proxy/acls/sqlite/group/".intval($gpid));
+		return is_array($grp)?(string)($grp["groupName"] ?? ""):"";
 	}	
 	
 	
 	
 	
 	private function buildItems($gpid,$period,$QuotaType){
-		$sql="SELECT * FROM webfilters_sqitems WHERE enabled=1 AND gpid=$gpid";
 		$c=0;
 		$f=array();
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 		$already=array();
 		$MASTERDOMAINAL=array();
 		
@@ -218,8 +224,11 @@ class squid_acls_quotas_time{
 			}
 		}
 		
-		$results = $q->QUERY_SQL($sql);
-		$this->Output("buildItems: $sql -> ($GroupType) ".count($results)." items");
+		// acls.db is API-only — enabled group items via the acls backend.
+		$itemsApi = acls_api_get("/proxy/acls/sqlite/items?gpid=".intval($gpid));
+		$results=array();
+		if(is_array($itemsApi)){foreach($itemsApi as $it){if(is_array($it) && intval($it["enabled"] ?? 0)==1){$results[]=$it;}}}
+		$this->Output("buildItems: items gpid=$gpid -> ($GroupType) ".count($results)." items");
 				
 		
 		foreach ($results as $index=>$ligne){

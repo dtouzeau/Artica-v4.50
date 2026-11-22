@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 if(!isset($GLOBALS["AS_ROOT"])){if(posix_getuid()==0){$GLOBALS["AS_ROOT"]=true;}}
 if(isset($_SESSION["TIMEZONES"])){if(function_exists("getLocalTimezone")){@date_default_timezone_set($_SESSION["TIMEZONES"]);}}
 if(isset($GLOBALS["TIMEZONES"])){if(function_exists("getLocalTimezone")){@date_default_timezone_set($GLOBALS["TIMEZONES"]);}}
@@ -227,7 +229,31 @@ class mysql_pdns{
 		}
 	}
 
+    /**
+     * Nettoie un terme de recherche avant qu'il rejoigne une clause LIKE.
+     *
+     * search_sql() assemble ses requetes par CONCATENATION: le terme partait
+     * tel quel entre apostrophes, et une simple quote suffisait a detourner la
+     * requete. La connexion mysqli n'est ouverte que dans QUERY_SQL(), donc
+     * mysqli_real_escape_string() n'est pas disponible ici -- on filtre sur ce
+     * qu'un enregistrement DNS peut contenir (nom, type, donnee), ce qui ne
+     * laisse passer ni apostrophe, ni antislash, ni point-virgule.
+     */
+    private function search_clean($v):string{
+        // Liste NOIRE et non blanche, deliberement: la recherche accepte une
+        // syntaxe ("type=AAAA", des jokers, des espaces) qu'une liste blanche
+        // de caracteres casserait. A l'interieur d'un litteral '...', seuls
+        // l'apostrophe et l'antislash permettent d'en sortir; le guillemet,
+        // l'accent grave et le point-virgule sont retires par prudence.
+        return str_replace(array("'","\"","\\","`",";"),"",(string)$v);
+    }
+    /** Un type d'enregistrement DNS: A, AAAA, CNAME, TXT, SRV... */
+    private function search_clean_type($v):string{
+        return preg_replace('#[^A-Z0-9]#','',strtoupper((string)$v));
+    }
+
 	public function search_sql($search=null,$domain_id=0){
+        $search=$this->search_clean($search);
         $table="( SELECT records.*,domains.name as domain FROM records,domains WHERE records.domain_id=domains.id ) as t";
         $sql="SELECT * FROM $table LIMIT 0,100";
         $name_search2=null;
@@ -235,6 +261,7 @@ class mysql_pdns{
         $domain_query=null;
         $NF=false;
 
+        $domain_id=intval($domain_id);
         if($domain_id>0){
             $domain_query=" AND domain_id=$domain_id";
             $sql="SELECT * FROM $table WHERE domain_id=$domain_id LIMIT 0,100";
@@ -249,8 +276,8 @@ class mysql_pdns{
             }
 
             if(preg_match("#^(.*?)(\s|where|and)+type[\s|=]+(.+?)($|\s+)#i",$search,$re)) {
-                $search = trim($re[1]);
-                $search_type = strtoupper($re[3]);
+                $search = $this->search_clean(trim($re[1]));
+                $search_type = $this->search_clean_type($re[3]);
                 $NF = true;
             }
 
@@ -258,7 +285,7 @@ class mysql_pdns{
                 VERBOSE("preg_match1 [$search] not found",__LINE__);
                 if(preg_match("#^type[\s|=]+(.+?)($|\s+)#i",trim($search),$re)){
                     $search="%";
-                    $search_type=strtoupper($re[1]);
+                    $search_type=$this->search_clean_type($re[1]);
                     $NF = true;
                 }else{
                     VERBOSE("preg_match2 [$search] not found",__LINE__);

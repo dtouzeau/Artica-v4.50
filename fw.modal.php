@@ -1,6 +1,10 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
+// Pentest 2026-11-04 : cette modale decodait title, subtitle, jsafter, js et
+// defaultvalue depuis l'URL et les executait ou les affichait tels quels (XSS
+// reflechi par simple lien). Aucune page ne l'appelle plus : on ne sert plus rien.
+exit;
 $ScriptPage=CurrentPageName();
 $page=basename(__FILE__);
 $title=base64_decode($_GET["title"]);

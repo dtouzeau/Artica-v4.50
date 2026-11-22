@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/class.ldap.inc");
 include_once(dirname(__FILE__)."/class.maincf.multi.inc");
 include_once(dirname(__FILE__)."/class.mysql.inc");;
@@ -112,7 +114,7 @@ function SaveToLdap(){
 	$sock->SaveConfigFile(base64_encode($this->BuildConfig()),"GreyListConf");	
 	$sock=new sockets();
 	$sock->getFrameWork("cmd.php?milter-greylist-reconfigure=yes&hostname=$this->hostname&ou=".base64_encode($this->ou));
-	$sock->getFrameWork("postfix.php?smtpd-client-restrictions=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/smtpd/restrictions/0");
 	// --smtpd-client-restrictions
 	
 }

@@ -1,21 +1,22 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["parameters"])){parameters();exit;}
-if(isset($_GET["ShowID-js"])){ShowID_js();exit;}
-if(isset($_GET["ShowID"])){ShowID();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["empty-js"])){empty_js();exit;}
-if(isset($_POST["empty"])){empty_table();exit;}
 if(isset($_POST["PostfixActiveDirectory"])){Save();exit;}
 if(isset($_GET["saslauthd-config"])){parameters_flat();exit;}
 if(isset($_GET["saslauthd-status"])){saslauthd_status();exit;}
+if(isset($_GET["saslauthd-restart"])){saslauthd_restart();exit;}
 if(isset($_GET["params-js"])){parameters_js();exit;}
 if(isset($_GET["params-popup"])){parameters_popup();exit;}
 
@@ -56,17 +57,17 @@ function Save(){
     $tpl->SAVE_POSTs();
     $sock=new sockets();
     $instanceid=intval($_POST["instanceid"]);
-    $sock->REST_API("/postfix/sasl/$instanceid");
+    $sock->REST_API_POSTFIX("/postfix/sasl/$instanceid");
 }
 
 function parameters(){
     $page=CurrentPageName();
-    $html[]="<table style='width:90%;margin:10px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:340px' valign='top'><div id='saslauthd-status'></div></td>";
-    $html[]="<td style='width:95%' valign='top'><div id='saslauthd-config'></div></td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    // Mise en page en flex: la cellule de gauche etait figee a 340px alors que la
+    // tuile de service qu'elle recoit en mesure 335 plus ses marges.
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;margin:10px;width:90%'>";
+    $html[]="<div style='flex:0 0 auto'><div id='saslauthd-status'></div></div>";
+    $html[]="<div style='flex:1 1 420px;min-width:0'><div id='saslauthd-config'></div></div>";
+    $html[]="</div>";
     $html[]="<script>";
     $html[]="LoadAjaxSilent('saslauthd-config','$page?saslauthd-config=yes');";
     $html[]="</script>";
@@ -77,15 +78,29 @@ function saslauthd_status(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $ini=new Bs_IniHandler();
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork('saslauthd.php?status=yes');
+    // Données riches (mémoire/uptime) rafraîchies par le cron du sous-système de statut.
     $ini->loadFile(PROGRESS_DIR."/APP_SASLAUTHD.status");
 
-    $restart_js=$tpl->framework_buildjs("saslauthd.php?restart=yes","saslauth.progress","saslauth.log",
-        "postfix-ad-progress","LoadAjaxSilent('saslauthd-status','$page?saslauthd-status=yes');"
-    );
+    // État "running" lu EN DIRECT depuis le démon Go (postfix/saslauthd) — il fait autorité.
+    // Plus aucun passage par framework/saslauthd.php.
+    $st=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/saslauthd/status"),true);
+    if(isset($ini->_params["SASLAUTHD"]) && isset($st["status"])){
+        $ini->_params["SASLAUTHD"]["running"]=($st["status"]=="running")?1:0;
+    }
+
+    // Bouton "redémarrer" → appel direct au démon Go (/postfix/saslauthd/restart).
+    $restart_js="Loadjs('$page?saslauthd-restart=yes')";
 
     echo $tpl->SERVICE_STATUS($ini, "SASLAUTHD",$restart_js);
 
+}
+
+function saslauthd_restart(){
+    header("content-type: application/x-javascript");
+    $page=CurrentPageName();
+    // Redémarrage direct via le démon Go (asynchrone côté démon : go Restart()).
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/saslauthd/restart");
+    echo "LoadAjaxSilent('saslauthd-status','$page?saslauthd-status=yes');";
 }
 
 function parameters_js(){
@@ -120,6 +135,7 @@ function parameters_flat(){
     }else{
 
         $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(!is_array($ActiveDirectoryConnections)){$ActiveDirectoryConnections=array();}
 
         foreach ($ActiveDirectoryConnections as $index=>$ligne) {

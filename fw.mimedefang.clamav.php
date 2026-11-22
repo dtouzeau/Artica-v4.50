@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 
 $GLOBALS["ACTIONSAV"][0]="{block_attachments_and_pass}";
 $GLOBALS["ACTIONSAV"][1]="{save_message_in_quarantine}";
@@ -9,6 +10,9 @@ $GLOBALS["ACTIONSAV"][3]="{do_nothing}";
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
+// Pentest 2026-11-04 : delete-rule-js, rule-js, popup (md5) et eth etaient recopies sans encodage dans la page (XSS).
+foreach (array("delete-rule-js","rule-js","popup") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^A-Za-z0-9]#','',(string)$_GET[$xk]);}}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('#[^A-Za-z0-9_.:@-]#','',(string)$_GET["eth"]);}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["rule-js"])){rule_js();exit;}
@@ -70,7 +74,9 @@ function rule_delete_js(){
 	$tpl=new template_admin();
 	$md5=$_GET["delete-rule-js"];
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_antivirus WHERE zmd5='$md5'");
+	// Pentest 2026-11-04 : md5 etait concatene dans la requete.
+	$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_antivirus WHERE zmd5=?",array($md5));
+	$ligne=isset($r[0]) ? $r[0] : array();
 	$mailfrom=$ligne["mailfrom"];
 	$mailto=$ligne["mailto"];
 	$type=$ligne["type"];
@@ -81,7 +87,8 @@ function rule_delete_js(){
 function rule_delete_perform(){
 	$md5=$_POST["delete"];
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$q->QUERY_SQL("DELETE FROM mimedefang_antivirus WHERE zmd5='$md5'");
+	// Pentest 2026-11-04 : md5 etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM mimedefang_antivirus WHERE zmd5=?",array($md5));
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -94,7 +101,9 @@ function rule_js(){
 	
 	if($md5<>null){
 		$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_antivirus WHERE zmd5='$md5'");
+		// Pentest 2026-11-04 : md5 etait concatene dans la requete.
+		$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_antivirus WHERE zmd5=?",array($md5));
+		$ligne=isset($r[0]) ? $r[0] : array();
 		$mailfrom=$ligne["mailfrom"];
 		$mailto=$ligne["mailto"];
 		$type=$ligne["type"];
@@ -112,27 +121,31 @@ function rule_save(){
 	$tpl->CLEAN_POST();
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
 	$zmd5=$_POST["zmd5"];
+	// Pentest 2026-11-04 : zmd5, mailfrom, mailto et ztype etaient concatenes dans la requete.
+	if($zmd5<>null && !preg_match("/^[a-f0-9]{32}$/",$zmd5)){echo "Invalid rule identifier\n";return;}
 	if($zmd5==null){
 		$zmd5=md5($_POST["mailfrom"].$_POST["mailto"]);
-		$ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_antivirus WHERE zmd5='$zmd5'");
-		if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
-		$q->QUERY_SQL("INSERT INTO mimedefang_antivirus(zmd5,mailfrom,mailto,`type`) VALUES ('$zmd5','{$_POST["mailfrom"]}','{$_POST["mailto"]}','{$_POST["ztype"]}')");
+		$r=$q->QUERY_SQL_PARAMS("SELECT zmd5 FROM mimedefang_antivirus WHERE zmd5=?",array($zmd5));
+		$ligne=isset($r[0]) ? $r[0] : array();
+		if(isset($ligne["zmd5"]) && $ligne["zmd5"]<>null){echo /* Pentest 2026-11-04 : mailfrom/mailto etaient recopies sans encodage dans la page (XSS). */ req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
+		$q->QUERY_SQL_PARAMS("INSERT INTO mimedefang_antivirus(zmd5,mailfrom,mailto,`type`) VALUES (?,?,?,?)",array($zmd5,$_POST["mailfrom"],$_POST["mailto"],$_POST["ztype"]));
 		if(!$q->ok){echo $q->mysql_error;}
 		return;
 	}
 	
 	$new_zmd5=md5($_POST["mailfrom"].$_POST["mailto"]);
 	if($new_zmd5==$zmd5){
-		$q->QUERY_SQL("UPDATE mimedefang_antivirus SET `type`='{$_POST["ztype"]}' WHERE zmd5='$zmd5'");
+		$q->QUERY_SQL_PARAMS("UPDATE mimedefang_antivirus SET `type`=? WHERE zmd5=?",array($_POST["ztype"],$zmd5));
 		if(!$q->ok){echo $q->mysql_error;}
 		return;
 	}
 	
-	$ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_antivirus WHERE zmd5='$new_zmd5'");
-	if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
+	$r=$q->QUERY_SQL_PARAMS("SELECT zmd5 FROM mimedefang_antivirus WHERE zmd5=?",array($new_zmd5));
+	$ligne=isset($r[0]) ? $r[0] : array();
+	if(isset($ligne["zmd5"]) && $ligne["zmd5"]<>null){echo /* Pentest 2026-11-04 : mailfrom/mailto etaient recopies sans encodage dans la page (XSS). */ req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
 	
-	$q->QUERY_SQL("DELETE FROM mimedefang_antivirus WHERE zmd5='$zmd5'");
-	$q->QUERY_SQL("INSERT INTO mimedefang_antivirus(zmd5,mailfrom,mailto,`type`) VALUES ('$new_zmd5','{$_POST["mailfrom"]}','{$_POST["mailto"]}','{$_POST["ztype"]}')");
+	$q->QUERY_SQL_PARAMS("DELETE FROM mimedefang_antivirus WHERE zmd5=?",array($zmd5));
+	$q->QUERY_SQL_PARAMS("INSERT INTO mimedefang_antivirus(zmd5,mailfrom,mailto,`type`) VALUES (?,?,?,?)",array($new_zmd5,$_POST["mailfrom"],$_POST["mailto"],$_POST["ztype"]));
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -148,7 +161,9 @@ function popup(){
 	if($md5<>null){
 		$bt="{apply}";
 		$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_antivirus WHERE zmd5='$md5'");
+		// Pentest 2026-11-04 : md5 etait concatene dans la requete.
+		$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_antivirus WHERE zmd5=?",array($md5));
+		$ligne=isset($r[0]) ? $r[0] : array();
 		$mailfrom=$ligne["mailfrom"];
 		$mailto=$ligne["mailto"];
 		$type=$ligne["type"];
@@ -189,7 +204,7 @@ function table(){
 	$prgress=base64_encode(serialize($ARRAY));
 	$add="Loadjs('$page?rule-js=',true);";
 	
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedf-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedf-restart')";
 	
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
 	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>";

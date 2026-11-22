@@ -60,14 +60,20 @@ if (!$GLOBALS["FORCE"]) {
         exit();
     }
 }
-
+function prefixLic(){
+    $pref="https://licensing.artica.center";
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("USE_LIC_DEV_CENTER"))==0){
+        return $pref;
+    }
+    return "https://dev.license.artica.systems";
+}
 function ktrial($noprgress=false):bool{
     $unix       = new unix();
     $licexpir   = base64_decode("e2xpY2Vuc2VfZXhwaXJlZH0=");
     $MsgFCCS    = base64_decode("RmFpbGVkIHRvIGNvbnRhY3QgY2xvdWQgc2VydmVy");
     $cmdADD     = null;
     $kcloudCur  = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO(kcloudSyskey));
-
+    $pref = prefixLic();
     if ($GLOBALS["CLASS_SOCKETS"]->CORP_GOLD()) {
         $kInfos["status"] = "{gold_license}";
         $kInfos["expire"] = 0;
@@ -93,7 +99,7 @@ function ktrial($noprgress=false):bool{
         $SERVER_INFO["observations"]=$GLOBALS["observations"];
 
 
-        $curl = new ccurl("https://licensing.artica.center/api/k/trial", false, null);
+        $curl = new ccurl("$pref/api/k/trial", false, null);
         $curl->parms["X-API-KEY"] = $SERVER_INFO["X-API-KEY"];
         $curl->parms["SERVER_INFO"] = base64_encode(serialize($SERVER_INFO));
         $curl->NoLocalProxy();
@@ -238,7 +244,7 @@ function ktrial($noprgress=false):bool{
         if (!isset($SERVER_INFO["X-API-KEY"])) {
             $SERVER_INFO["X-API-KEY"]=null;
         }
-        $curl = new ccurl("https://licensing.artica.center/api/k/trial", false, null);
+        $curl = new ccurl("$pref/api/k/trial", false, null);
         $curl->parms["X-API-KEY"] = "a00fb634db1c52fd72fc4aa077028de0";
         $curl->parms["SERVER_INFO"] = base64_encode(serialize($SERVER_INFO));
         $curl->NoLocalProxy();
@@ -418,7 +424,7 @@ function kinfo($noprgress=false):bool{
     $kcloudCur  = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO(kcloudSyskey));
     $cmdADD     = null;
     $KSRNEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KSRNEnable"));
-
+    $pref       = prefixLic();
     if($KSRNEnable==0){
         $unix->Popuplate_cron_delete("ksrn-stats");
         return false;
@@ -457,7 +463,7 @@ function kinfo($noprgress=false):bool{
         if (!isset($SERVER_INFO["X-API-KEY"])) {
             $SERVER_INFO["X-API-KEY"]=null;
         }
-        $curl = new ccurl("https://licensing.artica.center/api/k/info", false, null);
+        $curl = new ccurl("$pref/api/k/info", false, null);
         $curl->parms["X-API-KEY"] = $SERVER_INFO["X-API-KEY"];
         $curl->parms["SERVER_INFO"] = base64_encode(serialize($SERVER_INFO));
         $curl->NoLocalProxy();
@@ -606,7 +612,7 @@ function kinfo($noprgress=false):bool{
         if (!isset($SERVER_INFO["X-API-KEY"])) {
             $SERVER_INFO["X-API-KEY"]=null;
         }
-        $curl = new ccurl("https://licensing.artica.center/api/k/info", false, null);
+        $curl = new ccurl("$pref/api/k/info", false, null);
         $curl->parms["X-API-KEY"] = "a00fb634db1c52fd72fc4aa077028de0";
         $curl->parms["SERVER_INFO"] = base64_encode(serialize($SERVER_INFO));
         $curl->NoLocalProxy();

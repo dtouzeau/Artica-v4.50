@@ -2,6 +2,11 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_POST["SynoBackupIPaddr"])){SaveSettings();exit;}
+if(isset($_POST["syno-dkms"])){dkms_save();exit;}
+if(isset($_GET["server-js"])){server_js();exit;}
+if(isset($_GET["server-popup"])){server_popup();exit;}
+if(isset($_GET["dkms-js"])){dkms_js();exit;}
+if(isset($_GET["dkms-popup"])){dkms_popup();exit;}
 if(isset($_POST["RDPProxyAuthookDebug"])){video_params_save();exit;}
 if(isset($_POST["SynoBackupUserName"])){signin_save();exit;}
 if(isset($_GET["signin-js"])){signin_js();exit;}
@@ -58,10 +63,18 @@ function signin_popup(){
 }
 
 function settings():bool{
+    $page=CurrentPageName();
     $tpl=new template_admin();
     $SynoBackupIPaddr = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SynoBackupIPaddr"));
-    $form[]=$tpl->field_text("SynoBackupIPaddr","Synology {remote_server_name}",$SynoBackupIPaddr);
-    echo $tpl->form_outside("",$form,null,"{apply}", "","AsSystemAdministrator");
+    $AllowDKMS = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SynoBackupAllowDKMS"));
+    if($SynoBackupIPaddr==""){$SynoBackupIPaddr="{none}";}
+
+    $tpl->table_form_field_js("Loadjs('$page?server-js=yes')");
+    $tpl->table_form_field_text("Synology {remote_server_name}",$SynoBackupIPaddr,ico_server);
+    $tpl->table_form_field_js("Loadjs('$page?dkms-js=yes')");
+    $tpl->table_form_field_bool("{synobackup_allow_dkms}||{synobackup_allow_dkms_short}",$AllowDKMS,ico_cpu);
+    $html[]="<div style='margin-top:10px'>".$tpl->table_form_compile()."</div>";
+
     $jshelp="s_PopUpFull('https://wiki.articatech.com/en/system/backup/synology',1024,768,'Wiki')";
     $topbuttons[]=array($jshelp,"fas fa-question-circle","Wiki");
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
@@ -70,8 +83,68 @@ function settings():bool{
     $TINY_ARRAY["EXPL"]="{APP_SYNO_BACKUP_ABOUT}";
     $TINY_ARRAY["URL"]="snapshots";
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-    echo "<script>$headsjs</script>";
+    $html[]="<script>$headsjs</script>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
     return true;
+}
+
+function server_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog2("Synology {remote_server_name}","$page?server-popup=yes",650);
+}
+
+function server_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $SynoBackupIPaddr = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SynoBackupIPaddr"));
+    $form[]=$tpl->field_text("SynoBackupIPaddr","Synology {remote_server_name}",$SynoBackupIPaddr);
+    $html[]=$tpl->div_explain("Synology {remote_server_name}||{synobackup_server_explain}");
+    $html[]=$tpl->form_outside("",$form,"","{apply}",
+        "dialogInstance2.close();LoadAjaxSilent('synology-config','$page?settings=yes');","AsSystemAdministrator");
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+
+function dkms_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog2("{synobackup_allow_dkms}","$page?dkms-popup=yes",650);
+}
+
+function dkms_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $AllowDKMS = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SynoBackupAllowDKMS"));
+    $after="if(String(resp).indexOf('jserror:')===0){ctrl.input.checked=!ctrl.input.checked;"
+        ."swal({title:'Oops...',text:'<strong>'+String(resp).substring(8)+'</strong>',html:true,type:'error'});}"
+        ."LoadAjaxSilent('synology-config','$page?settings=yes');";
+    echo $tpl->_ENGINE_parse_body($tpl->div_explain("{synobackup_allow_dkms}||{synobackup_allow_dkms_explain}"))
+        .$tpl->BigCircleCheckbox("syno-dkms:1|SynoBackupAllowDKMS","{synobackup_allow_dkms}",
+            "{synobackup_allow_dkms_short}",$AllowDKMS,$after,"AsSystemAdministrator");
+    return true;
+}
+
+function dkms_save(){
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    if(!isset($_POST["SynoBackupAllowDKMS"])){
+        echo $tpl->post_error("{missing} SynoBackupAllowDKMS");
+        return;
+    }
+    $value=intval($_POST["SynoBackupAllowDKMS"])==1?1:0;
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API("/syno/dkms/allow/$value");
+    $json=json_decode((string)$resp);
+    if(!is_object($json)){
+        $raw=trim(str_replace(array("'","\\"),array(" "," "),(string)$resp));
+        echo $tpl->post_error($raw==""?"{error}":substr($raw,0,300));
+        return;
+    }
+    if(!$json->Status){
+        echo $tpl->post_error((string)$json->Error);
+        return;
+    }
+    admin_tracks("Synology Active Backup for Business: agent driver compilation ".($value==1?"allowed":"denied"));
 }
 
 function SaveSettings(){
@@ -239,7 +312,8 @@ function widgets():bool{
         $btn["ico"]=ico_exit;
         $btn["js"] = "Loadjs('$page?disconnect=yes');";
         $state=$STATUS["SERVICE_STATUS"];
-        $state="<small style='color:white'>$state</small>";
+        // Pentest 2026-11-04 : etat du service et URL du portail (donnee externe) affiches sans encodage (XSS stockee).
+        $state="<small style='color:white'>".req_html($state)."</small>";
         $Connected_status= $tpl->widget_h("green", "fas fa-link", $state,
             "{service_status}",$btn);
     }
@@ -248,7 +322,7 @@ function widgets():bool{
         if($STATUS["RESTORE"]<>null) {
             $btn["name"] = "Restore portal";
             $btn["ico"] = "fas fa-external-link-alt";
-            $btn["js"] = "s_PopUpFull('{$STATUS["RESTORE"]}','1024','900');";
+            $btn["js"] = "s_PopUpFull('".req_js($STATUS["RESTORE"])."','1024','900');";
         }
         $status_addr = $tpl->widget_h("grey", "fa-thumbs-down", "{not_used}", "{last_backup}",$btn);
 
@@ -256,7 +330,7 @@ function widgets():bool{
         if($STATUS["RESTORE"]<>null) {
             $btn["name"] = "Restore portal";
             $btn["ico"] = ico_import;
-            $btn["js"] = "s_PopUpFull('{$STATUS["RESTORE"]}','1024','900');";
+            $btn["js"] = "s_PopUpFull('".req_js($STATUS["RESTORE"])."','1024','900');";
         }
         $stime=strtotime($STATUS["LAST_BACKUP"]);
         $last=distanceOfTimeInWords($stime,time());

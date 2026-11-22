@@ -24,7 +24,8 @@ if($idfrom>0){
 	foreach ($zFields as $Field){
 		if($Field=="ID"){continue;}
 		$Newfields[]="`$Field`";
-		$values[]="'".$ligne[$Field]."'";
+		// Pentest 2026-11-04 : les valeurs de la regle copiee (groupname...) etaient concatenees dans la requete.
+		$values[]="'".sqlite_escape_string2((string)$ligne[$Field])."'";
 		
 	}
 	
@@ -36,14 +37,14 @@ if($idfrom>0){
 		return;
 	}
 	
-	$newruleid=$q->last_id;
-	$q->QUERY_SQL("UPDATE webfilter_rules SET groupname='$newname' WHERE ID='$newruleid'");
+	$newruleid=intval($q->last_id);
+	$q->QUERY_SQL_PARAMS("UPDATE webfilter_rules SET groupname=? WHERE ID=?",array($newname,$newruleid));
 	
 	$sql="SELECT * FROM webfilter_blks WHERE webfilter_id=$idfrom";
 	$results=$q->QUERY_SQL($sql);
 	foreach ($results as $index=>$ligne){
 		$category=intval($ligne["category"]);
-		$q->QUERY_SQL("INSERT OR IGNORE INTO webfilter_blks (webfilter_id,	modeblk,category) VALUES('$newruleid','{$ligne["modeblk"]}','$category')");
+		$q->QUERY_SQL_PARAMS("INSERT OR IGNORE INTO webfilter_blks (webfilter_id,	modeblk,category) VALUES(?,?,?)",array($newruleid,(string)$ligne["modeblk"],$category));
 		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 	
 	}
@@ -51,7 +52,7 @@ if($idfrom>0){
 	$results=$q->QUERY_SQL($sql);
 	foreach ($results as $index=>$ligne){
 		$ipaddr=trim($ligne["ipaddr"]);
-		$q->QUERY_SQL("INSERT OR IGNORE INTO webfilter_ipsources (ruleid,	ipaddr) VALUES('$newruleid','$ipaddr')");
+		$q->QUERY_SQL_PARAMS("INSERT OR IGNORE INTO webfilter_ipsources (ruleid,	ipaddr) VALUES(?,?)",array($newruleid,$ipaddr));
 		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 	
 	}
@@ -66,7 +67,8 @@ $zFields=$q->FIELDS_LIST_FOR_QUERY("webfilter_rules");
 foreach ($zFields as $Field){
 	if($Field=="ID"){continue;}
 	$Newfields[]="`$Field`";
-	$values[]="'".$ligne[$Field]."'";
+	// Pentest 2026-11-04 : les valeurs de la regle par defaut etaient concatenees dans la requete.
+	$values[]="'".sqlite_escape_string2((string)$ligne[$Field])."'";
 
 }
 $sql="INSERT INTO webfilter_rules (".@implode(",", $Newfields).") VALUES (".@implode(",", $values).")";
@@ -82,7 +84,7 @@ $sql="SELECT * FROM webfilter_blks WHERE webfilter_id=$idfrom";
 $results=$q->QUERY_SQL($sql);
 foreach ($results as $index=>$ligne){
 	$category=intval($ligne["category"]);
-	$q->QUERY_SQL("INSERT OR IGNORE INTO webfilter_blks (webfilter_id,	modeblk,category) VALUES('$newruleid','{$ligne["modeblk"]}','$category')");
+	$q->QUERY_SQL_PARAMS("INSERT OR IGNORE INTO webfilter_blks (webfilter_id,	modeblk,category) VALUES(?,?,?)",array($newruleid,(string)$ligne["modeblk"],$category));
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
 }

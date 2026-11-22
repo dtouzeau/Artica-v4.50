@@ -1,10 +1,20 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.categories.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
+// Pentest 2026-11-04 : pinger-ids/ufdb/js-export/js-export2/filltable/gpid/external-sources-*/jrows/field etait recopie sans encodage dans la page (XSS).
+// Identifiants entiers, listes d'entiers separes par "-", md5 d'URL, base64, nom de colonne connu.
+foreach(array("js-export","js-export2","filltable","gpid") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
+foreach(array("pinger-ids","ufdb") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^0-9-]/','',(string)$_GET[$k]);}}
+foreach(array("external-sources-edit","external-sources-popup","external-sources-enable","external-sources-remove") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9]/','',(string)$_GET[$k]);}}
+if(isset($_GET["jrows"])){$_GET["jrows"]=preg_replace('#[^A-Za-z0-9+/= ]#','',(string)$_GET["jrows"]);}
+if(isset($_GET["field"]) && !in_array($_GET["field"],array("categoryname","category_description","items"),true)){$_GET["field"]="categoryname";}
 if(isset($_GET["remote-categories-service-tabs"])){remote_categories_service_tabs();exit;}
 if(isset($_GET["remote-categories-service"])){remote_categories_service_js();exit;}
 if(isset($_GET["remote-categories-service-popup"])){remote_categories_service_popup();exit;}
@@ -127,149 +137,109 @@ function pinger():bool{
     return true;
 }
 
-function pinger2_client():string{
-    $EnableRemoteCategoriesServices=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRemoteCategoriesServices"));
-    if($EnableRemoteCategoriesServices==0){
-        return "";
-    }
-    $RemoteCategoriesServiceError=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceError");
-    if(strlen($RemoteCategoriesServiceError)>2){
-        $tpl=new template_admin();
-        $text=base64_encode($tpl->_ENGINE_parse_body("<div class='text-info' style='margin-top:-10px'><strong>{error}</strong>:&nbsp;$RemoteCategoriesServiceError</div>"));
-        echo "$('#categories-text-infos').html(base64_decode('$text'));\n";
-        return "";
-    }
-    return "";
-}
-
+// Bande de compilation au-dessus du tableau : progression dnscatz, ou erreur du serveur distant.
+// Une chaine vide efface la bande.
 function pinger2_global_status():string{
+    $tpl=new template_admin();
+    $html="";
     $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
     if($EnableLocalUfdbCatService==0){
-        return pinger2_client();
+        $EnableRemoteCategoriesServices=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRemoteCategoriesServices"));
+        if($EnableRemoteCategoriesServices==1){
+            $err=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceError"));
+            if(strlen($err)>2){$html=ufct_strip_remote($err);}
+        }
+    }else{
+        $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API_DNSCATZ("/compile-progress"),true);
+        if(is_array($json)){$html=ufct_strip($json);}
     }
-    $tpl=new template_admin();
-
-
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_DNSCATZ("/compile-progress"),true);
-    if(!isset($json["progress"])) { return "";}
-        $progress = intval($json["progress"]);
-        if ($progress == 0) {
-            return "";
-        }
-        if (isset($json["error"])) {
-            if (strlen($json["error"]) > 3) {
-                $completed_at = $tpl->time_to_date($tpl->GoToTimestamp($json["completed_at"]), true);
-                $err = base64_encode($tpl->div_error("$completed_at||{$json["error"]}"));
-                echo "$('#progress-ppcategories-restart').html(base64_decode('$err'));\n";
-            }
-        }
-
-        if($progress==100){
-            $duration_ms=round(intval($json["duration_ms"])/1000,2);
-            $completed_at=$tpl->time_to_date($tpl->GoToTimestamp($json["completed_at"]), true);
-            $text=base64_encode($tpl->_ENGINE_parse_body("<div class='text-info' style='margin-top:-10px'><strong>100%</strong>:&nbsp;{compilation_done}, {completed_at}: $completed_at ({$duration_ms}s)</div>"));
-            echo "$('#categories-text-infos').html(base64_decode('$text'));\n";
-        }
-        if( ($progress<100) && ($progress>0) ){
-            $ico=ico_refresh_animate;
-            $text=base64_encode($tpl->_ENGINE_parse_body("<i class='$ico'></i>&nbsp;$progress%"));
-            echo "$('#categories-text-infos').html(base64_decode('$text'));\n";
-        }
-
-    return "";
+    $t="";
+    if($html<>""){$t=base64_encode($tpl->_ENGINE_parse_body($html));}
+    return "if(document.getElementById('ufct-strip')){ $('#ufct-strip').html('$t'.length?base64_decode('$t'):''); }";
 }
-function pinger2():bool{
+
+function pinger2_set(string $id,string $html):string{
     $tpl=new template_admin();
+    $t=base64_encode($tpl->_ENGINE_parse_body($html));
+    return "$('#$id').html(base64_decode('$t'));\n";
+}
+
+function pinger2():bool{
+    header("content-type: application/x-javascript");
     echo pinger2_global_status()."\n";
-    $sock=new sockets();
+    $sock=$GLOBALS["CLASS_SOCKETS"];
     $DNSCATZREMOTE=array();
     $DNSCATZSTATUS=array();
-    $DumpRemoteCategories=json_decode($sock->GET_INFO("DumpRemoteCategories"),true);
     $LOCAL_CATEGORIES=array();
+    $active=ufct_pill("ok","{active2}");
+    $notCompiled=ufct_pill("warn","{not_compiled}");
 
-    if ( (json_last_error()> JSON_ERROR_NONE) OR !is_array($DumpRemoteCategories))  {
-        $DumpRemoteCategories=array();
-    }
-    if(count($DumpRemoteCategories)>0){
+    $DumpRemoteCategories=json_decode((string)$sock->GET_INFO("DumpRemoteCategories"),true);
+    if(is_array($DumpRemoteCategories)){
         foreach ($DumpRemoteCategories as $ligne){
-            $DNSCATZREMOTE[$ligne["category_id"]]=true;
+            if(isset($ligne["category_id"])){$DNSCATZREMOTE[intval($ligne["category_id"])]=true;}
         }
     }
 
-    if(isset($_GET["ufdb"])){
-        $ufdbs=explode("-",$_GET["ufdb"]);
-        VERBOSE("UFDB -> ". count($ufdbs));
-        if( count($ufdbs)>0 ) {
-            VERBOSE("UFDB -> {$_GET["ufdb"]} --> ".count($ufdbs)." -> /categories/locales",__LINE__);
-            $LocalCatz=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/locales"),true);
-
-            if(isset($LocalCatz["Categories"])){
-                foreach ($LocalCatz["Categories"] as $cat){
-                    $LOCAL_CATEGORIES[$cat["category_id"]]=$cat["compiledate"];
-                }
-            }
-            foreach ($ufdbs as $category_id) {
-                $idSpan = "dnscatz-ufdb-$category_id";
-                $Updted="dnscatz-updated-$category_id";
-
-                if(isset($LOCAL_CATEGORIES[$category_id])){
-                    $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
-                    echo "$('#$idSpan').html(base64_decode('$t'));\n";
-                    $TimeCompiles=distanceOfTimeInWords($LOCAL_CATEGORIES[$category_id],time(),true);
-                    $t = base64_encode($tpl->_ENGINE_parse_body("<small>{updated2}: $TimeCompiles</small>"));
-                    echo "$('#$Updted').html(base64_decode('$t'));\n";
-                    continue;
-                }
-                VERBOSE("\$LOCAL_CATEGORIES[$category_id] not found",__LINE__);
-
-
-                if(isset($DNSCATZREMOTE[$category_id])){
-                    $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
-                    echo "$('#$idSpan').html(base64_decode('$t'));\n";
-                    continue;
-                }
-                $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-warning'>{not_compiled}</span>"));
-                echo "$('#$idSpan').html(base64_decode('$t'));\n";
+    $ufdbs=array();
+    if(isset($_GET["ufdb"]) && $_GET["ufdb"]<>""){$ufdbs=explode("-",$_GET["ufdb"]);}
+    if(count($ufdbs)>0){
+        $LocalCatz=json_decode((string)$sock->REST_API("/categories/locales"),true);
+        if(isset($LocalCatz["Categories"]) && is_array($LocalCatz["Categories"])){
+            foreach ($LocalCatz["Categories"] as $cat){
+                $LOCAL_CATEGORIES[intval($cat["category_id"])]=intval($cat["compiledate"]);
             }
         }
-    }
-
-    $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
-    if($EnableLocalUfdbCatService==1) {
-        $data = json_decode($sock->REST_API_DNSCATZ("/export/status"), true);
-        if (isset($data["categories"])) {
-            foreach ($data["categories"] as $cat) {
-                $category_id = $cat["category_id"];
-                $domain_count = $cat["domain_count"];
-                $DNSCATZSTATUS[$category_id] = $domain_count;
+        foreach ($ufdbs as $category_id){
+            $category_id=intval($category_id);
+            if($category_id==0){continue;}
+            if(isset($LOCAL_CATEGORIES[$category_id])){
+                echo pinger2_set("dnscatz-ufdb-$category_id",$active);
+                $sub="";
+                if($LOCAL_CATEGORIES[$category_id]>0){
+                    $sub="{updated2}: ".distanceOfTimeInWords($LOCAL_CATEGORIES[$category_id],time(),true);
+                }
+                echo pinger2_set("dnscatz-updated-$category_id",$sub);
+                continue;
             }
-        }
-    }
-
-    $tb=explode("-",$_GET["pinger-ids"]);
-    if( count($tb)>0 ) {
-        foreach ($tb as $category_id) {
-            $idSpan = "dnscatz-status-$category_id";
-
+            echo pinger2_set("dnscatz-updated-$category_id","");
             if(isset($DNSCATZREMOTE[$category_id])){
-                $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>"));
-                echo "$('#$idSpan').html(base64_decode('$t'));\n";
+                echo pinger2_set("dnscatz-ufdb-$category_id",$active);
                 continue;
             }
-
-            if (!isset($DNSCATZSTATUS[$category_id])) {
-                $t = base64_encode($tpl->_ENGINE_parse_body("<span class='label label-warning'>{not_compiled}</span>"));
-                echo "$('#$idSpan').html(base64_decode('$t'));\n";
-                continue;
-            }
-            $icoDNS = "<span class='label label-primary'>{active2}</span>";
-            $t = base64_encode($tpl->_ENGINE_parse_body($icoDNS));
-            echo "$('#$idSpan').html(base64_decode('$t'));\n";
+            echo pinger2_set("dnscatz-ufdb-$category_id",$notCompiled);
         }
+    }
+
+    if(intval($sock->GET_INFO("EnableLocalUfdbCatService"))==1){
+        $data=json_decode((string)$sock->REST_API_DNSCATZ("/export/status"),true);
+        if(isset($data["categories"]) && is_array($data["categories"])){
+            foreach ($data["categories"] as $cat){
+                $DNSCATZSTATUS[intval($cat["category_id"])]=intval($cat["domain_count"] ?? 0);
+            }
+        }
+    }
+
+    $tb=array();
+    if(isset($_GET["pinger-ids"]) && $_GET["pinger-ids"]<>""){$tb=explode("-",$_GET["pinger-ids"]);}
+    foreach ($tb as $category_id){
+        $category_id=intval($category_id);
+        if($category_id==0){continue;}
+        if(isset($DNSCATZREMOTE[$category_id])){
+            echo pinger2_set("dnscatz-status-$category_id",$active);
+            echo pinger2_set("dnscatz-dnssub-$category_id","");
+            continue;
+        }
+        if(!isset($DNSCATZSTATUS[$category_id])){
+            echo pinger2_set("dnscatz-status-$category_id",$notCompiled);
+            echo pinger2_set("dnscatz-dnssub-$category_id","");
+            continue;
+        }
+        echo pinger2_set("dnscatz-status-$category_id",$active);
+        echo pinger2_set("dnscatz-dnssub-$category_id",str_replace(" ","&thinsp;",numberFormat($DNSCATZSTATUS[$category_id],0,""," "))." {domains}");
     }
     return true;
 }
-
 
 function compile_dns_api():bool{
     $tpl=new template_admin();
@@ -328,7 +298,8 @@ function page():bool{
 function table_start():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    echo "<div style='margin-top:10px'>&nbsp;</div>";
+    // Hote de la bande de compilation, rempli par le pinger du tableau.
+    echo "<div id='ufct-strip' role='status' aria-live='polite' style='margin-top:10px'></div>";
     echo $tpl->search_block($page,null,null,null,"&table=yes");
     return true;
 
@@ -355,12 +326,17 @@ function all_categories_perso():bool{
     $tpl=new template_admin();
     $q=new postgres_sql();
     $sql="SELECT * FROM personal_categories WHERE official_category=0 AND free_category=0 order by categoryname";
-    $html[]="<table style='margin-top:10px' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
+    // Ces deux fonctions fermaient un <thead> et un <tr> qu'elles n'ouvraient
+    // JAMAIS: le lexer comptait 4 <thead> pour 6 </thead> dans ce fichier.
+    $html[]="<thead><tr>";
     $html[]="<th data-sortable=true class='text-capitalize'>{ID}</th>";
     $html[]="<th data-sortable=true class='text-capitalize'>{categories}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ufcp-rows'>";
+    // Position de depart des lignes, pour le comptage du pied.
+    $__rows=count($html);
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){
@@ -372,11 +348,7 @@ function all_categories_perso():bool{
 
 
     while ($ligne = pg_fetch_assoc($results)) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
+        $TRCLASS=null;
         $category_id = $ligne["category_id"];
         $categoryname = $ligne["categoryname"];
         $text_category = $tpl->_ENGINE_parse_body($ligne["category_description"]);
@@ -387,12 +359,18 @@ function all_categories_perso():bool{
 
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-
-    echo $tpl->_ENGINE_parse_body($html);
+    // Le <tfoot> portait un pager footable qu'AUCUN init n'alimente sur cette
+    // page: un pied de tableau vide. Il est remplace par le pied awc et son
+    // pager cote client. Le nombre de lignes est compte sur les fragments
+    // ajoutes depuis l'ouverture du <tbody>, ce qui evite de toucher a la
+    // boucle de chaque tableau.
+    $__c=0; foreach(array_slice($html,$__rows) as $__f){$__c+=substr_count($__f,"<tr");}
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $__c {items}</span>";
+    $html[]="<span class='awc-pg' id='ufcp-pager'></span>";
+    $html[]="</div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html).awc_pager_js(50,"ufcp-rows","ufcp-pager");
     return true;
 }
 function all_categories_officials():bool{
@@ -400,12 +378,17 @@ function all_categories_officials():bool{
     $tpl=new template_admin();
     $q=new postgres_sql();
     $sql="SELECT * FROM personal_categories WHERE official_category=1 AND free_category=0 order by categoryname";
-    $html[]="<table style='margin-top:10px' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
+    // Ces deux fonctions fermaient un <thead> et un <tr> qu'elles n'ouvraient
+    // JAMAIS: le lexer comptait 4 <thead> pour 6 </thead> dans ce fichier.
+    $html[]="<thead><tr>";
     $html[]="<th data-sortable=true class='text-capitalize'>{ID}</th>";
     $html[]="<th data-sortable=true class='text-capitalize'>{categories}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ufco-rows'>";
+    // Position de depart des lignes, pour le comptage du pied.
+    $__rows=count($html);
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){
@@ -417,11 +400,7 @@ function all_categories_officials():bool{
 
 
     while ($ligne = pg_fetch_assoc($results)) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
+        $TRCLASS=null;
         $category_id = $ligne["category_id"];
         $categoryname = $ligne["categoryname"];
         if(preg_match("#^reserved#i", $categoryname)){
@@ -435,12 +414,18 @@ function all_categories_officials():bool{
 
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-
-    echo $tpl->_ENGINE_parse_body($html);
+    // Le <tfoot> portait un pager footable qu'AUCUN init n'alimente sur cette
+    // page: un pied de tableau vide. Il est remplace par le pied awc et son
+    // pager cote client. Le nombre de lignes est compte sur les fragments
+    // ajoutes depuis l'ouverture du <tbody>, ce qui evite de toucher a la
+    // boucle de chaque tableau.
+    $__c=0; foreach(array_slice($html,$__rows) as $__f){$__c+=substr_count($__f,"<tr");}
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $__c {items}</span>";
+    $html[]="<span class='awc-pg' id='ufco-pager'></span>";
+    $html[]="</div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html).awc_pager_js(50,"ufco-rows","ufco-pager");
     return true;
 
 }
@@ -523,6 +508,10 @@ function dnscatz_compile_single():bool{
     if(!isset($json["category_id"])){
         return $tpl->js_error("Protocol error");
     }
+    // dnscatz ne compile que la zone DNS. La base de filtrage web (domains.ufdb),
+    // la seule que les proxys telechargent, n etait jamais reconstruite : les
+    // sites ajoutes n arrivaient jamais sur les proxys.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/category/compile/$id");
     if(isset($json["message"])){
         admin_tracks("Category service: Compile category id #$id");
         return $tpl->js_ok($json["message"]);
@@ -532,50 +521,40 @@ function dnscatz_compile_single():bool{
 }
 
 function js_export_perform(){
+    if(!fw_progress_page_priv("AsDansGuardianAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $page=CurrentPageName();
     $tpl=new template_admin();
     $catz=new mysql_catz();
-    $categoryid=$_GET["js-export-perform"];
+    $categoryid=intval($_GET["js-export-perform"]);
     $catname=$catz->CategoryIntToStr($categoryid);
 
 
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/categorize.$categoryid.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/categorize.$categoryid.logs.txt";
-    $ARRAY["CMD"]="categories.php?categorize-export=$categoryid";
+    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/categorize.$categoryid.progress";
+    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/categorize.$categoryid.logs.txt";
+    $ARRAY["CMD"]="/categories/export/$categoryid";
     $ARRAY["TITLE"]="{export} ".$catz->CategoryIntToStr($categoryid);
     $ARRAY["AFTER"]="LoadAjax('download-js-export-$categoryid','$page?js-export-download=$categoryid');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsafter="Loadjs('fw.progress.php?content=$prgress&mainid=progress-js-export-$categoryid')";
+    $jsafter="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-js-export-$categoryid')";
 
 
     $html[]="<H2>{export}: $catname</H2>";
     $html[]="<div id='progress-js-export-$categoryid'></div>";
     $html[]="<div id='download-js-export-$categoryid'></div>";
-    $html[]="<script>";
-    $html[]=$jsafter;
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // $jsafter vient de framework_buildjs(): il porte des accolades, donc il ne
+    // doit pas traverser _ENGINE_parse_body().
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html))."<script>$jsafter</script>";
 }
 function js_export_download(){
     $tpl=new template_admin();
-    $category_id=$_GET["js-export-download"];
+    $category_id=intval($_GET["js-export-download"]);
     $catz=new mysql_catz();
     $catname=$catz->CategoryIntToStr($category_id);
-    $file_path="/usr/share/artica-postfix/ressources/logs/$category_id.gz";
+    $file_path=PROGRESS_DIR."/category-$category_id.gz";
 
     if(!is_file($file_path)){
         $html[]="
-                <div class=\"widget style1 red-bg\">
-                    <div class=\"row\">
-                        <div class=\"col-xs-4\">
-                            <i class=\"fas fa-exclamation fa-5x\"></i>
-                        </div>
-                        <div class=\"col-xs-8 text-right\">
-                            <span> {failed} </span>
-                            <h2 class=\"font-bold\">$catname Error!</h2>
-                        </div>
-                    </div>
-                </div>
+                ".$tpl->widget_style1("red-bg","fas fa-exclamation","{failed}","$catname Error!")."
             ";
 
         echo $tpl->_ENGINE_parse_body($html);
@@ -585,18 +564,8 @@ function js_export_download(){
     // <i class="fas fa-file-archive"></i>
     $filesize=FormatBytes(@filesize($file_path)/1024);
 
-    $html[]="<a href='ressources/logs/$category_id.gz'>
-                <div class=\"widget style1 navy-bg\">
-                    <div class=\"row\">
-                        <div class=\"col-xs-4\">
-                            <i class=\"fas fa-file-archive fa-5x\"></i>
-                        </div>
-                        <div class=\"col-xs-8 text-right\">
-                            <span> $catname </span>
-                            <h2 class=\"font-bold\">$category_id.gz <small style='color:white'>($filesize)</small></h2>
-                        </div>
-                    </div>
-                </div></a>
+    $html[]="<a href='ressources/logs/web/category-$category_id.gz'>
+                ".$tpl->widget_style1("navy-bg","fas fa-file-archive","$catname","$category_id.gz <small>($filesize)</small>")."</a>
             ";
 
     echo $tpl->_ENGINE_parse_body($html);
@@ -604,8 +573,10 @@ function js_export_download(){
 
 }
 function jrows_data(){
-    $data= unserialize(base64_decode($_GET["jrows-data"]));
-    echo "<textarea style='width:100%;min-height:512px'>".@implode("\n",$data)."</textarea>";
+    $data= unserialize(base64_decode($_GET["jrows-data"]),array("allowed_classes"=>false));
+    // Pentest 2026-11-04 : jrows-data etait recopie sans encodage dans la page (XSS).
+    if(!is_array($data)){$data=array();}
+    echo "<textarea style='width:100%;min-height:512px'>".req_html(@implode("\n",$data))."</textarea>";
 }
 function delete_site(){
     header("content-type: application/x-javascript");
@@ -622,10 +593,11 @@ function delete_site(){
     }
 
     $ligne=pg_fetch_array($q->QUERY_SQL("SELECT categorytable FROM personal_categories WHERE category_id='$category_id'"));
-    $table=$ligne["categorytable"];
+    // Pentest 2026-11-04 : delete-pattern etait concatene dans la requete.
+    $table=preg_replace('/[^A-Za-z0-9_]/','',strval($ligne["categorytable"]));
 
 
-    $q->QUERY_SQL("DELETE FROM $table WHERE sitename='$sitename'");
+    $q->QUERY_SQL_PARAMS("DELETE FROM $table WHERE sitename=$1",array($sitename));
     admin_tracks("Remove $sitename FROM $table category $category_id");
     if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/category/flush/$category_id");
@@ -649,7 +621,7 @@ function category_remove_all():bool{
     $ARRAY["TITLE"]="{remove_all_categories}";
     $ARRAY["AFTER"]="$function";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-ppcategories-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ppcategories-restart')";
     return $tpl->js_confirm_delete("{remove_all_categories}", "none", "yes",$jsrestart);
 }
 function category_js(){
@@ -688,7 +660,8 @@ function category_items_add_js(){
 }
 function category_delete():bool{
     $tpl=new template_admin();
-    $categorykey=$_GET["category-delete"];
+    // Pentest 2026-11-04 : category-delete etait recopie sans encodage dans la page (XSS).
+    $categorykey=intval($_GET["category-delete"]);
     $function=null;
     if(isset($_GET["function"])){
         $function=$_GET["function"]."()";
@@ -786,16 +759,17 @@ function category_popup():bool{
 }
 function category_orders_save(){
     $tpl=new template_admin();
-    $category_id=$_POST["category-orders"];
+    // Pentest 2026-11-04 : category-orders/blacklist/whitelist/nocache/parent etaient concatenes dans la requete.
+    $category_id=intval($_POST["category-orders"]);
     $q=new postgres_sql();
 
-    $q->QUERY_SQL("UPDATE personal_categories SET 
-    blacklist='{$_POST["blacklist"]}',
-    whitelist='{$_POST["whitelist"]}',
-    nocache='{$_POST["nocache"]}',
-    parent='{$_POST["parent"]}' WHERE category_id=$category_id");
+    $q->QUERY_SQL_PARAMS("UPDATE personal_categories SET 
+    blacklist=$1,
+    whitelist=$2,
+    nocache=$3,
+    parent=$4 WHERE category_id=$category_id",array(strval($_POST["blacklist"]),strval($_POST["whitelist"]),strval($_POST["nocache"]),strval($_POST["parent"])));
 
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return;}
     admin_tracks("Updated category ACLs $category_id");
 }
 function category_orders():bool{
@@ -995,7 +969,7 @@ function remote_categories_service_js():bool{
     $tpl->CLUSTER_CLI   = true;
     $page=CurrentPageName();
     return $tpl->js_dialog2("{use_remote_categories_services}",
-        "$page?remote-categories-service-tabs=yes$function",550);
+        "$page?remote-categories-service-tabs=yes$function",650);
 }
 function remote_category_js():bool{
     $function=null;
@@ -1346,7 +1320,13 @@ function category_save():bool{
     $tpl->CLEAN_POST();
     $_POST["category_description"]=str_replace("'","`",$_POST["category_description"]);
 
-    $sql="UPDATE personal_categories SET categoryname='{$_POST["categorykey"]}', category_description='{$_POST["category_description"]}', PublicMode='{$_POST["PublicMode"]}' WHERE category_id='{$_POST["category_id"]}'";
+    // Pentest 2026-11-04 : categorykey, PublicMode et category_id etaient concatenes dans la requete.
+    // PostgreSQL (standard_conforming_strings) : doubler la quote suffit dans un litteral '...'.
+    $categorykey=str_replace("'","''",strval($_POST["categorykey"]));
+    $category_description=str_replace("'","''",strval($_POST["category_description"]));
+    $PublicMode=intval($_POST["PublicMode"]);
+    $category_id=intval($_POST["category_id"]);
+    $sql="UPDATE personal_categories SET categoryname='$categorykey', category_description='$category_description', PublicMode='$PublicMode' WHERE category_id='$category_id'";
     $q=new postgres_sql();
     $q->QUERY_SQL($sql);
     if(!$q->ok){echo $q->mysql_error;return false;}
@@ -1369,7 +1349,8 @@ function category_items_delete_sql_perform():bool{
 
     $q=new postgres_sql();
     $ligne=pg_fetch_array($q->QUERY_SQL("SELECT categorytable FROM personal_categories WHERE category_id='$category_id'"));
-    $table=$ligne["categorytable"];
+    // Pentest 2026-11-04 : la recherche (CATEGORY_SEARCH) etait concatenee dans la requete.
+    $table=preg_replace('/[^A-Za-z0-9_]/','',strval($ligne["categorytable"]));
     $sql=null;
 
     if(preg_match("#(limit)(\s+|=|)([0-9]+)#i", $search,$re)){
@@ -1380,14 +1361,14 @@ function category_items_delete_sql_perform():bool{
 
     if(preg_match("#regex:(.+)#", $search,$re)){
         $search=trim($re[1]);
-        $sql="DELETE from $table WHERE sitename ~* '$search'";
+        $sql="DELETE from $table WHERE sitename ~* $1";
     }
 
     if($sql==null){
         if($search==null){$search="*";}
         if(strpos(" $search ", "*")>0){
             $search=str_replace("*", "%", $search);
-            $sql="DELETE from $table WHERE sitename LIKE '$search'";
+            $sql="DELETE from $table WHERE sitename LIKE $1";
         }
     }
 
@@ -1396,7 +1377,7 @@ function category_items_delete_sql_perform():bool{
         return false;
     }
 
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,array($search));
     if(!$q->ok){echo $q->mysql_error;return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/category/flush/$category_id");
     return true;
@@ -1493,18 +1474,20 @@ function category_security(){
     $results=$q->QUERY_SQL("SELECT * FROM personal_categories_privs WHERE category_id='$category_id'");
 
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize'>{privileges}</th>";
     $html[]="<th data-sortable=false>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ufcs-rows'>";
+    // Position de depart des lignes, pour le comptage du pied.
+    $__rows=count($html);
     $TRCLASS=null;
 
     while ($ligne = pg_fetch_assoc($results)) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md=md5(serialize($ligne));
         $dngroup=$ligne["dngroup"];
         $id=$ligne["id"];
@@ -1518,22 +1501,24 @@ function category_security(){
         $html[]="</tr>";
 
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='2'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });
-	</script>";
+    // Le <tfoot> portait un pager footable qu'AUCUN init n'alimente sur cette
+    // page. Le nombre de lignes est compte sur les fragments ajoutes depuis
+    // l'ouverture du <tbody>, ce qui evite de toucher a la boucle.
+    $__c=0; foreach(array_slice($html,$__rows) as $__f){$__c+=substr_count($__f,"<tr");}
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $__c {items}</span>";
+    $html[]="<span class='awc-pg' id='ufcs-pager'></span>";
+    $html[]="</div></div></div>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    // Le <script> partait dans $html, donc dans _ENGINE_parse_body(), dont la
+    // regex #{(.+?)}# lit toute accolade JavaScript comme un {token}.
+    $script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"ufcs-rows","ufcs-pager");
 }
 function delete_privs(){
     $md=$_GET["md"];
@@ -1564,7 +1549,7 @@ function category_step1(){
         if($ManageOfficialsCategories==1){$sql="SELECT * FROM personal_categories order by categoryname";}
         $results=$q->QUERY_SQL($sql);
         while ($ligne = pg_fetch_assoc($results)) {
-            if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+            $TRCLASS=null;
             $category_id=$ligne["category_id"];
             $categoryname=$ligne["categoryname"];
             if(preg_match("#reserved#", $categoryname)){continue;}
@@ -1586,7 +1571,8 @@ function category_items_table(){
     if($category_id==0){return;}
     $q=new postgres_sql();
     $ligne=pg_fetch_array($q->QUERY_SQL("SELECT categorytable,meta FROM personal_categories WHERE category_id='$category_id'"));
-    $table=$ligne["categorytable"];
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $table=preg_replace('/[^A-Za-z0-9_]/','',strval($ligne["categorytable"]));
     $meta=intval($ligne["meta"]);
     $search=trim($_GET["search"]);
     $search=$q->SearchAntiXSS($search);
@@ -1606,9 +1592,10 @@ function category_items_table(){
     }
     if(preg_match("#(limit)(\s+|=|)([0-9]+)#i", $search,$re)){
         $search=str_replace("$re[1]$re[2]$re[3]", "", $search);
-        $LIMIT=$re[3];
+        $LIMIT=intval($re[3]);
     }
-    $html[]="<table id='table-persocats-items' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $sqlparams=array();
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 
     if(!$q->TABLE_EXISTS($table)){$q->CREATE_CATEGORY_TABLE($table);}
 
@@ -1619,41 +1606,46 @@ function category_items_table(){
         $sql=null;
         if(preg_match("#regex:(.+)#i", $search,$re)){
             $search=trim($re[1]);
-            $sql="SELECT sitename from $table WHERE sitename ~* '$search'$ORDER FETCH FIRST $LIMIT ROWS ONLY;";
+            $sql="SELECT sitename from $table WHERE sitename ~* $1$ORDER FETCH FIRST $LIMIT ROWS ONLY;";
+            $sqlparams=array($search);
         }
 
         if($sql==null){
             if(strpos(" $search ", "*")>0){
                 $search=trim(str_replace("*", "%", $search));
-                $sql="SELECT sitename from $table WHERE sitename LIKE '$search'$ORDER FETCH FIRST $LIMIT ROWS ONLY;";
+                $sql="SELECT sitename from $table WHERE sitename LIKE $1$ORDER FETCH FIRST $LIMIT ROWS ONLY;";
+                $sqlparams=array($search);
             }
         }
 
         if($sql==null){
             $search=trim($search);
-            $sql="SELECT sitename from $table WHERE sitename='$search'$ORDER FETCH FIRST $LIMIT ROWS ONLY;";
+            $sql="SELECT sitename from $table WHERE sitename=$1$ORDER FETCH FIRST $LIMIT ROWS ONLY;";
+            $sqlparams=array($search);
 
         }
     }
 
-    $results=$q->QUERY_SQL($sql);
+    $results=count($sqlparams)>0?$q->QUERY_SQL_PARAMS($sql,$sqlparams):$q->QUERY_SQL($sql);
     $zrows=array();
     $ROWS=array();
 
     if(!$q->ok){
-        echo "<div class='alert alert-danger' style='margin-top:10px'>$q->mysql_error<br><strong>$sql</strong></div>
+        // Pentest 2026-11-04 : la requete (avec la recherche saisie) n'est plus renvoyee au navigateur.
+        $sqlErr=htmlspecialchars($q->mysql_error,ENT_QUOTES);
+        echo "<div class='alert alert-danger' style='margin-top:10px'>$sqlErr</div>
         <script>$jsbuttons</script>";
         return;
     }
 
     if(pg_num_rows($results)==0){
-        echo $tpl->_ENGINE_parse_body("<div class='alert alert-danger' style='margin-top:10px'><H2>{no_data}</H2><strong>$sql</strong></div> <script>$jsbuttons</script>");
+        echo $tpl->_ENGINE_parse_body("<div class='alert alert-danger' style='margin-top:10px'><H2>{no_data}</H2><strong>".htmlspecialchars($sql,ENT_QUOTES)."</strong></div> <script>$jsbuttons</script>");
         return;
     }
     $num=0;
     $TRCLASS=null;
     while ($ligne = pg_fetch_assoc($results)) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $num++;
         $pattern=$ligne["sitename"];
         $text_class=null;
@@ -1683,29 +1675,32 @@ function category_items_table(){
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=false>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{websites} ".$tpl->td_href("{search}:&nbsp;&nbsp;&laquo;&nbsp;$search&nbsp;&raquo;","{raw_format}",$jrows)."</th>";
+    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{websites} ".$tpl->td_href("{search}:&nbsp;&nbsp;&laquo;&nbsp;".req_html($search)."&nbsp;&raquo;","{raw_format}",$jrows)."</th>";
     $html[]="<th data-sortable=false>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ufci-rows'>";
+    // Position de depart des lignes, pour le comptage du pied.
+    $__rows=count($html);
     $html[]=@implode("\n", $ROWS);
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="<small></small>";
-	$html[]="<script>";
-    $html[]=$jsbuttons;
-    $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-persocats-items').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
+    // Le <tfoot> portait un pager footable qu'AUCUN init n'alimente sur cette
+    // page. Le nombre de lignes est compte sur les fragments ajoutes depuis
+    // l'ouverture du <tbody>, ce qui evite de toucher a la boucle.
+    $__c=0; foreach(array_slice($html,$__rows) as $__f){$__c+=substr_count($__f,"<tr");}
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $__c {items}</span>";
+    $html[]="<span class='awc-pg' id='ufci-pager'></span>";
+    $html[]="</div></div></div>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    // $jsbuttons vient de RefreshInterval_js(): il porte des accolades, donc il
+    // ne doit pas traverser l'analyse.
+    $script="<script>\n".$jsbuttons."\nNoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"ufci-rows","ufci-pager");
 
 
 }
@@ -1754,7 +1749,9 @@ function td_content():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $category_id=intval($_GET["td-content"]);
-    $field=$_GET["field"];
+    // Pentest 2026-11-04 : field (nom de colonne) etait concatene dans la requete.
+    $field=strval($_GET["field"]);
+    if(!in_array($field,array("items","categoryname","category_description"),true)){return false;}
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT categorytable,$field FROM personal_categories WHERE category_id=$category_id");
     if(!$q->ok){echo "ERROR!";return false;}
@@ -1880,7 +1877,7 @@ function external_sources_table(){
 
     $SOURCES_TABLE=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoriesExternalSources"));
     $html[]=$bbtn;
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{source}</th>";
@@ -1890,7 +1887,9 @@ function external_sources_table(){
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ufce-rows'>";
+    // Position de depart des lignes, pour le comptage du pied.
+    $__rows=count($html);
 
     $DivsRun=array();
     $TRCLASS=null;
@@ -1899,7 +1898,7 @@ function external_sources_table(){
    foreach ($DATAS as $md5url=>$ligne){
        $c++;
         if($md5url==null){$md5url=time()+$c;}
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $URL=$ligne["URL"];
         $TIME=intval($ligne["TIMESTAMP"]);
         if(!isset($ligne["ERROR"])){$ligne["ERROR"]=null;}
@@ -1951,23 +1950,22 @@ function external_sources_table(){
 
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='5'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    // Le <tfoot> portait un pager footable qu'AUCUN init n'alimente sur cette
+    // page. Le nombre de lignes est compte sur les fragments ajoutes depuis
+    // l'ouverture du <tbody>, ce qui evite de toucher a la boucle.
+    $__c=0; foreach(array_slice($html,$__rows) as $__f){$__c+=substr_count($__f,"<tr");}
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $__c {items}</span>";
+    $html[]="<span class='awc-pg' id='ufce-pager'></span>";
+    $html[]="</div></div></div>";
 
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });
-	</script>";
+    $script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n",$DivsRun).@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$DivsRun).@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"ufce-rows","ufce-pager");
 
 }
 function external_sources_enable():bool{
@@ -2040,368 +2038,521 @@ function isRPZ(){
     return false;
 }
 
-function table(){
-    $tpl                        = new template_admin();
-    $tpl->CLUSTER_CLI           = True;
-    $page                       = CurrentPageName();
-    $users                      = new usersMenus();
-    $function                   = $_GET["function"];
-    $topbuttons                 = array();
-    $DNSCATZSTATUS=array();
-    $RPZSTATUS=array();
-    $ManageOfficialsCategories  = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ManageOfficialsCategories"));
-    $HideOfficialsCategory      = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideOfficialsCategory"));
-    $PowerDNSEnableClusterSlave = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
-    $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
-    $UseRemoteCategoriesService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteCategoriesService"));
+// Hote du tableau des categories (maquette stitch_ufdb_categories).
+// Un widget = une fonction : contexte, requete, en-tete, ligne, cellules, vide, bande, TINY, style, JS.
+function ufct_context():array{
+    $sock=$GLOBALS["CLASS_SOCKETS"];
+    $users=new usersMenus();
+    $c=array();
+    $c["page"]=CurrentPageName();
+    $c["function"]=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
+    $c["admin"]=(bool)$users->AsDansGuardianAdministrator;
+    $c["manage"]=intval($sock->GET_INFO("ManageOfficialsCategories"));
+    $c["hide"]=intval($sock->GET_INFO("HideOfficialsCategory"));
+    if($c["manage"]==1){$c["hide"]=0;}
+    $c["slave"]=intval($sock->GET_INFO("PowerDNSEnableClusterSlave"));
+    $c["local"]=intval($sock->GET_INFO("EnableLocalUfdbCatService"));
+    $c["useremote"]=intval($sock->GET_INFO("UseRemoteCategoriesService"));
+    $c["remoteenabled"]=intval($sock->GET_INFO("EnableRemoteCategoriesServices"));
+    $c["rpzcol"]=isRPZ();
+    $c["ufdbcol"]=isUfdb();
+    $c["dnscol"]=$c["local"]==1;
+    $sources=@unserialize(base64_decode((string)$sock->GET_INFO("CategoriesExternalSources")));
+    $c["sources"]=is_array($sources)?$sources:array();
+    $current=@unserialize((string)$sock->GET_INFO("UfdbMasterCache"));
+    $c["current"]=is_array($current)?$current:array();
+    return $c;
+}
 
-
-
-    $LabelRCat="";
-
-    if ($UseRemoteCategoriesService == 1) {
-        $LabelRCat=" (On)";
-    }
-
-    $COLUMNUFDB=isUfdb();
-    $RPZCOLUMN=isRPZ();
-    $DNSCATZSTATUS=array();
-
-    $search=trim($_GET["search"]);
-    if($search<>null) {
-        if(!is_numeric($search)) {
-            $search="*$search*";
-            $search = str_replace("**", "*", $search);
-            $search = str_replace("**", "*", $search);
-            $search = str_replace("*", "%", $search);
-        }
-    }
-
-    if($ManageOfficialsCategories==1){$HideOfficialsCategory=0;}
+// La clause WHERE etait concatenee APRES le ORDER BY dans deux variantes sur trois :
+// toute recherche finissait en erreur SQL, sauf avec les categories officielles masquees.
+function ufct_query(array $c,string $search,string &$error){
+    $error="";
     $q=new postgres_sql();
-    $q->QUERY_SQL("UPDATE personal_categories SET remotecatz=0 WHERE serviceid=0");
-    $pp=new categories();
-    $pp->initialize();
-    $add="Loadjs('$page?category-js=&function=$function',true);";
-
-    $jsCompile=$tpl->framework_buildjs(
-        "/category/all/compile",
-        "ufdbcat.compile.all.progress","ufdbcat.compile.all.log",
-        "progress-ppcategories-restart"
-    );
-
-    $jsRemoveAll="Loadjs('$page?remove-all=yes&function=$function')";
-
-    if($EnableLocalUfdbCatService==1){
-        $jsCompile="Loadjs('$page?compile-dns-api=yes&function=$function')";
-    }
-
-
-
-    if($users->AsDansGuardianAdministrator){
-        if($PowerDNSEnableClusterSlave==0){
-            $topbuttons[] = array($add, "fad fa-books-medical", "{new_category}");
+    $where=array();
+    if($c["hide"]==1){$where[]="official_category=0 AND free_category=0";}
+    if($search<>""){
+        if(is_numeric($search)){
+            $where[]="category_id=".intval($search);
+        }else{
+            $s="%".trim(str_replace("*","%",$search),"%")."%";
+            $s=pg_escape_string2($q->SearchAntiXSS($s));
+            $where[]="categoryname ILIKE '$s'";
         }
+    }
+    $sql="SELECT * FROM personal_categories";
+    if(count($where)>0){$sql.=" WHERE ".implode(" AND ",$where);}
+    $sql.=" ORDER BY categoryname";
+    $results=$q->QUERY_SQL($sql);
+    if(!$q->ok){$error=$q->mysql_error;return false;}
+    return $results;
+}
 
+function ufct_colcount(array $c):int{
+    $n=4;
+    if($c["ufdbcol"]){$n++;}
+    if($c["dnscol"]){$n++;}
+    if($c["rpzcol"]){$n++;}
+    return $n;
+}
 
-        $topbuttons[] = array($jsCompile, ico_save, "{compile_all}");
-        $topbuttons[] = array("Loadjs('$page?remote-categories-service=yes&function=$function')", ico_clouds, "{category_server}$LabelRCat");
-        $UseRemoteCategoriesService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteCategoriesService"));
-        $EnableRemoteCategoriesServices=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRemoteCategoriesServices"));
+function ufct_thead(array $c):string{
+    $h=array();
+    $h[]="<thead><tr>";
+    $h[]="<th class='ufct-c-cat' scope='col'>{category}</th>";
+    $h[]="<th class='ufct-c-num' scope='col'>{items}</th>";
+    if($c["ufdbcol"]){$h[]="<th class='ufct-c-st' scope='col'>Proxy</th>";}
+    if($c["dnscol"]){$h[]="<th class='ufct-c-st' scope='col'>DNS</th>";}
+    if($c["rpzcol"]){$h[]="<th class='ufct-c-rpz' scope='col'>RPZ</th>";}
+    $h[]="<th class='ufct-c-created' scope='col'>{created}</th>";
+    $h[]="<th class='ufct-c-act' scope='col'>{ufct_col_actions}</th>";
+    $h[]="</tr></thead>";
+    return implode("",$h);
+}
 
+function ufct_pill(string $state,string $label):string{
+    $ico=array("ok"=>"fa-solid fa-circle-check","warn"=>"fa-solid fa-triangle-exclamation","off"=>"fa-solid fa-circle-minus");
+    if(!isset($ico[$state])){$state="off";}
+    return "<span class='ufct-pill ufct-pill-$state'><i class='{$ico[$state]}' aria-hidden='true'></i>$label</span>";
+}
 
+// Etat inconnu tant que le pinger n'est pas passe : une barre neutre, pas un spinner.
+function ufct_skeleton():string{
+    return "<span class='ufct-skel' aria-hidden='true'></span>";
+}
 
+function ufct_icon(array $l,bool $remote,bool $meta):string{
+    if($meta){return "<span class='ufct-ico ufct-ico-meta' aria-hidden='true'><i class='fa-solid fa-download'></i></span>";}
+    if($remote){return "<span class='ufct-ico ufct-ico-remote' aria-hidden='true'><i class='fa-solid fa-cloud'></i></span>";}
+    $src=trim((string)($l["category_icon"] ?? ""));
+    if($src==""){return "<span class='ufct-ico' aria-hidden='true'><i class='fa-solid fa-folder'></i></span>";}
+    return "<span class='ufct-ico' aria-hidden='true'><img src='".htmlspecialchars($src,ENT_QUOTES)."' alt=''></span>";
+}
 
-        if($UseRemoteCategoriesService==0) {
-            if ($EnableRemoteCategoriesServices == 1) {
-                $jsSync = "Loadjs('$page?synchronize-dns-api=yes&function=$function')";
-                $topbuttons[] = array($jsSync, ico_refresh, "{fetch_categories}");
+function ufct_chip(bool $official,bool $free,bool $remote,bool $meta):string{
+    $def=array();
+    if($meta){$def=array("meta","fa-solid fa-download","{ufct_type_meta}");}
+    elseif($remote){$def=array("remote","fa-solid fa-cloud","{ufct_type_remote}");}
+    elseif($official){$def=array("official","fa-solid fa-shield-halved","{ufct_type_official}");}
+    elseif($free){$def=array("free","fa-solid fa-gift","{ufct_type_free}");}
+    if(count($def)==0){return "";}
+    return "<span class='ufct-chip ufct-chip-{$def[0]}'><i class='{$def[1]}' aria-hidden='true'></i>{$def[2]}</span>";
+}
+
+function ufct_remote_host(int $serviceid):string{
+    static $cache=array();
+    if($serviceid==0){return "";}
+    if(isset($cache[$serviceid])){return $cache[$serviceid];}
+    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
+    $s=$q->mysqli_fetch_array("SELECT hostname,port FROM categories_services WHERE ID=$serviceid");
+    $host="";
+    if(is_array($s) && trim((string)($s["hostname"] ?? ""))<>""){
+        $host=trim($s["hostname"]).":".intval($s["port"] ?? 0);
+    }
+    $cache[$serviceid]=$host;
+    return $host;
+}
+
+function ufct_cell_category(array $l,array $c,array $t):string{
+    $id=intval($l["category_id"]);
+    $name=htmlspecialchars((string)$l["categoryname"],ENT_QUOTES,"UTF-8");
+    // Les descriptions officielles sont des {tokens} : les traduire AVANT d'echapper, sinon
+    // une apostrophe de la traduction casserait l'attribut title.
+    $tpl=new template_admin();
+    $desc=htmlspecialchars(strip_tags($tpl->_ENGINE_parse_body((string)$l["category_description"])),ENT_QUOTES,"UTF-8",false);
+    $descLine=$desc;
+    if($t["remote"]){
+        $host=ufct_remote_host(intval($l["serviceid"] ?? 0));
+        if($host<>""){
+            $descLine="<span class='ufct-mono'>".htmlspecialchars($host,ENT_QUOTES)."</span> &middot; $desc";
+        }
+    }
+    $src="";
+    if(isset($c["sources"][$id]) && is_array($c["sources"][$id]) && count($c["sources"][$id])>0){
+        $src="<span class='ufct-src' title=\"{ufct_external_source}\" aria-label=\"{ufct_external_source}\"><i class='fa-solid fa-file-import' aria-hidden='true'></i></span>";
+    }
+    $chip=ufct_chip($t["official"],$t["free"],$t["remote"],$t["meta"]);
+    $h=array();
+    $h[]="<td class='ufct-c-cat'><div class='ufct-cat'>".ufct_icon($l,$t["remote"],$t["meta"]);
+    $h[]="<div class='ufct-cat-txt'><div class='ufct-cat-l1'>$chip$src";
+    $h[]="<a href='javascript:void(0)' class='ufct-name' id='category_name_$id' title=\"{click_to_edit}\" onclick=\"{$t["edit"]}\">$name</a></div>";
+    $h[]="<div class='ufct-desc' id='category_text_$id' title='$desc'>$descLine</div></div></div></td>";
+    return implode("",$h);
+}
+
+function ufct_cell_proxy(int $id):string{
+    return "<td class='ufct-c-st'><span id='dnscatz-ufdb-$id'>".ufct_skeleton()."</span><div class='ufct-sub' id='dnscatz-updated-$id'></div></td>";
+}
+
+function ufct_cell_dns(int $id):string{
+    return "<td class='ufct-c-st'><span id='dnscatz-status-$id'>".ufct_skeleton()."</span><div class='ufct-sub' id='dnscatz-dnssub-$id'></div></td>";
+}
+
+// L'ancienne colonne affichait « Not compiled » pour toute categorie RPZ : aucun etat
+// de compilation RPZ n'est lu. On montre ce qui est reel, le drapeau rpz de la categorie.
+function ufct_cell_rpz(array $l):string{
+    if(intval($l["rpz"] ?? 0)==1){return "<td class='ufct-c-rpz'>".ufct_pill("ok","{enabled}")."</td>";}
+    return "<td class='ufct-c-rpz'>".ufct_pill("off","{inactive2}")."</td>";
+}
+
+function ufct_cell_actions(int $id,string $name,array $f):string{
+    $label=htmlspecialchars($name,ENT_QUOTES,"UTF-8");
+    $out=array();
+    if($f["add"]<>""){
+        $out[]="<button type='button' class='ufct-add' title=\"{ufct_add_websites}\" onclick=\"{$f["add"]}\"><i class='fa-solid fa-plus' aria-hidden='true'></i>{add}</button>";
+    }
+    if($f["compile"]<>""){
+        $out[]="<button type='button' class='ufct-ib' title=\"{ufct_compile_category}\" aria-label=\"{ufct_compile_category} $label\" onclick=\"{$f["compile"]}\"><i class='fa-solid fa-download' aria-hidden='true'></i></button>";
+    }
+    $items=array();
+    if($f["import"]<>""){
+        $items[]="<button type='button' role='menuitem' onclick=\"UfctMenuClose();{$f["import"]}\"><i class='fa-solid fa-file-import' aria-hidden='true'></i>{ufct_import}</button>";
+    }
+    if($f["export"]<>""){
+        $items[]="<button type='button' role='menuitem' onclick=\"UfctMenuClose();{$f["export"]}\"><i class='fa-solid fa-file-export' aria-hidden='true'></i>{export}</button>";
+    }
+    if($f["delete"]<>""){
+        if(count($items)>0){$items[]="<hr>";}
+        $items[]="<button type='button' role='menuitem' class='ufct-danger' onclick=\"UfctMenuClose();{$f["delete"]}\"><i class='fa-solid fa-trash' aria-hidden='true'></i>{ufct_delete}</button>";
+    }
+    if(count($items)==0){
+        $out[]="<button type='button' class='ufct-ib ufct-kebab' disabled title=\"{ufct_readonly}\" aria-label=\"{ufct_readonly}\"><i class='fa-solid fa-ellipsis-vertical' aria-hidden='true'></i></button>";
+    }else{
+        $out[]="<button type='button' class='ufct-ib ufct-kebab' aria-haspopup='menu' aria-expanded='false' aria-label=\"{ufct_more_actions} $label\" onclick=\"UfctMenu(this,'ufct-m-$id')\"><i class='fa-solid fa-ellipsis-vertical' aria-hidden='true'></i></button>";
+        $out[]="<div class='ufct-menu' id='ufct-m-$id' role='menu' hidden>".implode("",$items)."</div>";
+    }
+    return "<td class='ufct-c-act'><div class='ufct-act'>".implode("",$out)."</div></td>";
+}
+
+// Ce que chaque ligne autorise : reprend a l'identique les regles de l'ancien tableau.
+function ufct_row_actions(array $l,array $c,array $t):array{
+    $id=intval($l["category_id"]);
+    $page=$c["page"];
+    $fn=$c["function"];
+    $tpl=new template_admin();
+    $add=$c["admin"];$import=$c["admin"];$compile=$c["admin"];$export=$c["admin"];$delete=$c["admin"];
+    if($t["official"]){
+        $delete=false;
+        if($c["manage"]==0){$add=false;$import=false;$compile=false;}
+    }
+    if($t["free"]){$delete=false;$add=false;$import=false;$compile=false;}
+    if($c["slave"]==1){$add=false;$import=false;}
+    if($t["remote"]){$add=false;$import=false;$compile=false;$export=false;$delete=false;}
+    if($t["meta"]){$add=false;$import=false;$compile=false;$export=false;}
+    if($c["useremote"]==1){$add=false;$import=false;$compile=false;$export=false;$delete=false;}
+
+    $f=array("add"=>"","import"=>"","compile"=>"","export"=>"","delete"=>"");
+    if($add){
+        $cname=urlencode((string)$l["categoryname"]);
+        $f["add"]="Loadjs('fw.ufdb.categorize.php?category_requested=$id&cname=$cname&function=$fn')";
+    }
+    if($import){$f["import"]="Loadjs('fw.ufdb.categorize.php?js-import=$id&function=$fn')";}
+    if($export){$f["export"]="Loadjs('$page?js-export=$id&function=$fn')";}
+    if($delete){$f["delete"]="Loadjs('$page?category-delete=$id&function=$fn')";}
+    if($compile){
+        if($c["local"]==1){
+            $f["compile"]="Loadjs('$page?dnscatz-compile-single=$id')";
+        }else{
+            $after="";
+            if($fn<>""){$after="$fn()";}
+            $f["compile"]=$tpl->framework_buildjs("/category/compile/$id",
+                "ufdbcat.compile.progress","ufdbcat.compile.txt","progress-ppcategories-restart",$after);
+        }
+    }
+    return $f;
+}
+
+function ufct_row(array $l,array $c):string{
+    $id=intval($l["category_id"]);
+    $page=$c["page"];
+    $fn=$c["function"];
+    $t=array();
+    $t["official"]=intval($l["official_category"] ?? 0)==1;
+    $t["free"]=intval($l["free_category"] ?? 0)==1;
+    // Une ligne « distante » sans service d'origine est locale (meme regle que la normalisation Go).
+    $t["remote"]=intval($l["remotecatz"] ?? 0)==1 && intval($l["serviceid"] ?? 0)>0;
+    $t["meta"]=intval($l["meta"] ?? 0)==1;
+    $t["edit"]="Loadjs('$page?category-js=$id&function=$fn')";
+    if($t["remote"]){$t["edit"]="Loadjs('$page?category-dns-js=$id&function=$fn')";}
+    if($t["meta"]){$t["edit"]="Loadjs('$page?category-http-js=$id&function=$fn')";}
+
+    $items=intval($l["items"] ?? 0);
+    if($t["free"] && isset($c["current"][$id]["items"])){$items=intval($c["current"][$id]["items"]);}
+    $created=intval($l["created"] ?? 0);
+    $createdText="<span class='ufct-muted'>&mdash;</span>";
+    if($created>0){$createdText=date("Y-m-d",$created);}
+
+    $h=array();
+    $h[]="<tr>";
+    $h[]=ufct_cell_category($l,$c,$t);
+    $h[]="<td class='ufct-c-num'><span id='category_items_$id'>".str_replace(" ","&thinsp;",numberFormat($items,0,""," "))."</span></td>";
+    if($c["ufdbcol"]){$h[]=ufct_cell_proxy($id);}
+    if($c["dnscol"]){$h[]=ufct_cell_dns($id);}
+    if($c["rpzcol"]){$h[]=ufct_cell_rpz($l);}
+    $h[]="<td class='ufct-c-created'>$createdText</td>";
+    $h[]=ufct_cell_actions($id,(string)$l["categoryname"],ufct_row_actions($l,$c,$t));
+    $h[]="</tr>";
+    return implode("",$h);
+}
+
+function ufct_empty(array $c,string $search):string{
+    $cols=ufct_colcount($c);
+    if($search<>""){
+        $s=htmlspecialchars($search,ENT_QUOTES,"UTF-8");
+        return "<tr class='ufct-empty-row'><td colspan='$cols'><div class='ufct-empty'><i class='fa-solid fa-magnifying-glass' aria-hidden='true'></i><div>{ufct_empty_search} <strong>$s</strong></div></div></td></tr>";
+    }
+    $btn="";
+    if($c["admin"] && $c["slave"]==0){
+        $btn="<button type='button' class='ufct-primary' onclick=\"Loadjs('{$c["page"]}?category-js=&function={$c["function"]}',true);\"><i class='fa-solid fa-plus' aria-hidden='true'></i>{new_category}</button>";
+    }
+    return "<tr class='ufct-empty-row'><td colspan='$cols'><div class='ufct-empty'><i class='fa-solid fa-books' aria-hidden='true'></i><div>{ufct_empty_title}</div>$btn</div></td></tr>";
+}
+
+// Bande de compilation (dnscatz /compile-progress) : vide tant qu'aucune compilation n'a tourne.
+function ufct_strip(array $json):string{
+    $tpl=new template_admin();
+    $progress=intval($json["progress"] ?? 0);
+    if($progress<=0){return "";}
+    $when="";
+    if(!empty($json["completed_at"])){$when=$tpl->time_to_date($tpl->GoToTimestamp($json["completed_at"]),true);}
+    $err=trim((string)($json["error"] ?? ""));
+    if(strlen($err)>3){
+        $sub=htmlspecialchars($err,ENT_QUOTES,"UTF-8");
+        if($when<>""){$sub="$when &middot; $sub";}
+        return "<div class='ufct-strip ufct-strip-err'><i class='fa-solid fa-circle-exclamation' aria-hidden='true'></i><b>{ufct_error}</b><span class='ufct-strip-sub'>$sub</span></div>";
+    }
+    if($progress>=100){
+        $sec=round(intval($json["duration_ms"] ?? 0)/1000,1);
+        return "<div class='ufct-strip ufct-strip-ok'><i class='fa-solid fa-circle-check' aria-hidden='true'></i><b>{compilation_done}</b><span class='ufct-strip-sub'>&middot; {completed_at}: $when ({$sec}s)</span></div>";
+    }
+    return "<div class='ufct-strip ufct-strip-run'><i class='fa-solid fa-rotate fa-spin' aria-hidden='true'></i><b>{compiling}&hellip; $progress%</b><span class='ufct-bar' role='progressbar' aria-valuemin='0' aria-valuemax='100' aria-valuenow='$progress'><span style='width:$progress%'></span></span></div>";
+}
+
+// Erreur du serveur de categories distant (RemoteCategoriesServiceError).
+function ufct_strip_remote(string $err):string{
+    $sub=htmlspecialchars($err,ENT_QUOTES,"UTF-8");
+    return "<div class='ufct-strip ufct-strip-err'><i class='fa-solid fa-circle-exclamation' aria-hidden='true'></i><b>{category_server}: {ufct_error}</b><span class='ufct-strip-sub'>$sub</span></div>";
+}
+
+function ufct_tiny(array $c):string{
+    $tpl=new template_admin();
+    $page=$c["page"];
+    $function=$c["function"];
+    $topbuttons=array();
+    $LabelRCat="";
+    if($c["useremote"]==1){$LabelRCat=" (On)";}
+    $jsCompile=$tpl->framework_buildjs("/category/all/compile",
+        "ufdbcat.compile.all.progress","ufdbcat.compile.all.log","progress-ppcategories-restart");
+    if($c["local"]==1){$jsCompile="Loadjs('$page?compile-dns-api=yes&function=$function')";}
+    if($c["admin"]){
+        if($c["slave"]==0){
+            $topbuttons[]=array("Loadjs('$page?category-js=&function=$function',true);","fad fa-books-medical","{new_category}");
+        }
+        $topbuttons[]=array($jsCompile,ico_save,"{compile_all}");
+        $topbuttons[]=array("Loadjs('$page?remote-categories-service=yes&function=$function')",ico_clouds,"{category_server}$LabelRCat");
+        if($c["useremote"]==0){
+            if($c["remoteenabled"]==1){
+                $topbuttons[]=array("Loadjs('$page?synchronize-dns-api=yes&function=$function')",ico_refresh,"{fetch_categories}");
             }
         }else{
-            $jsSync = "Loadjs('$page?synchronize-remote-categories=yes&function=$function')";
-            $topbuttons[] = array($jsSync, ico_refresh, "{synchronize}");
+            $topbuttons[]=array("Loadjs('$page?synchronize-remote-categories=yes&function=$function')",ico_refresh,"{ufct_synchronize}");
         }
-        $topbuttons[] = array("Loadjs('$page?all-categories-js=yes')", ico_list, "{all_categories}");
-
-
-        if($UseRemoteCategoriesService==0) {
-            $topbuttons[] = array($jsRemoveAll, ico_trash, "{remove_all_categories}");
-        }
-    }
-    $t=time();
-    $html[]="<table id='table-persocats-list' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=false>&nbsp;</th>";
-     if($RPZCOLUMN) {
-        $html[] = "<th data-sortable=false>RPZ</th>";
-     }
-    if($EnableLocalUfdbCatService==1) {
-        $html[] = "<th data-sortable=false>DNS</th>";
-    }
-    if($COLUMNUFDB) {
-        $html[] = "<th data-sortable=false>PROXY</th>";
-    }
-    $html[]="<th data-sortable=true class='text-capitalize'>{categories}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{created}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{items}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{add}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    if(!isset($_GET["gpid"])){$_GET["gpid"]=0;}
-    $jsAfter="LoadAjax('table-loader','$page?table=yes&gpid={$_GET["gpid"]}');";
-    $GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-    $q=new postgres_sql();
-    $WHERE=null;
-    $WHERE2=null;
-    if($search<>null){
-        $search=$q->SearchAntiXSS($search);
-        $WHEREA="(categoryname LIKE '$search')";
-        if(is_numeric($search)){
-            $WHEREA="category_id='$search'";
-        }
-        $WHERE=" WHERE $WHEREA";
-        $WHERE2=" AND $WHEREA";
-    }
-
-    $sql="SELECT * FROM personal_categories order by categoryname $WHERE";
-
-    VERBOSE("ManageOfficialsCategories=$ManageOfficialsCategories HideOfficialsCategory=$HideOfficialsCategory",__LINE__);
-
-    if($HideOfficialsCategory==1){
-        $sql="SELECT * FROM personal_categories WHERE official_category=0 AND free_category=0 $WHERE2 order by categoryname";
-    }
-
-    if($ManageOfficialsCategories==1){$sql="SELECT * FROM personal_categories $WHERE order by categoryname";}
-    VERBOSE("$sql",__LINE__);
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo "<div class='alert alert-danger'>$q->mysql_error<br>$sql</div>";
-        return;
-    }
-
-    $TRCLASS=null;
-    $CategoryRPZ=0;
-    $SOURCES=base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoriesExternalSources"));
-    $SOURCES_TABLE=unserialize($SOURCES);
-    if(!$SOURCES_TABLE){
-        $SOURCES_TABLE=array();
-    }
-
-    $CURRENT=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbMasterCache"));
-    $EnableLocalUfdbCatService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalUfdbCatService"));
-    $CategoryServiceRPZEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategoryServiceRPZEnabled"));
-    if($EnableLocalUfdbCatService==1){
-        if($CategoryServiceRPZEnabled==1){
-            $CategoryRPZ=1;
+        $topbuttons[]=array("Loadjs('$page?all-categories-js=yes')",ico_list,"{all_categories}");
+        // Page PLEINE, jamais en dialogue : son TINY reecrirait l'en-tete de cette page.
+        $topbuttons[]=array("document.location.href='/categories-console';",ico_microsoft,"{categories_windows_console}");
+        if($c["useremote"]==0){
+            $topbuttons[]=array("Loadjs('$page?remove-all=yes&function=$function')",ico_trash,"{remove_all_categories}");
         }
     }
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $category_id=$ligne["category_id"];
-        if($ManageOfficialsCategories==0){if($category_id>5000){continue;}}
-        $categoryname=$ligne["categoryname"];
-        $categoryname_enc=urlencode($categoryname);
-        $items=$ligne["items"];
-        $text_category=$tpl->_ENGINE_parse_body($ligne["category_description"]);
-        $itemsEncTxt=numberFormat($items,0,""," ");
-        $delete=$tpl->icon_delete("Loadjs('$page?category-delete=$category_id&function=$function')");
-        $category_icon="<img src='{$ligne["category_icon"]}'>";
-        $official_category=$ligne["official_category"];
-        $free_category=$ligne["free_category"];
-        $remotecatz=intval($ligne["remotecatz"]);
-        $serviceid=intval($ligne["serviceid"]);
-        $created=intval($ligne["created"]);
-        $meta=intval($ligne["meta"]);
-        $icolabel="";
-        $icolabel2="";
-        $refreshIco="<div class='center'><i class='".ico_refresh_animate."'></i></div>";
-        $icoRPZ="<span class='label label-default'>{inactive2}</span>";
-        $icoDNS=$refreshIco;
-        $icoProxy=$refreshIco;
-
-        $source_ico=null;
-        if(!isset($SOURCES_TABLE[$category_id])){
-            $SOURCES_TABLE[$category_id]=array();
-        }
-
-        if(count($SOURCES_TABLE[$category_id])>0){
-            $source_ico="<i class='fa-solid fa-file-import' style='color:#1AB394'></i>&nbsp;";
-        }
-
-        $button=$tpl->button_autnonome("{add}",
-            "Loadjs('fw.ufdb.categorize.php?category_requested=$category_id&cname=$categoryname_enc&function=$function')",
-            "fas fa-plus","AsDansGuardianAdministrator",0,"btn-primary","small");
-
-        $button_import=$tpl->button_autnonome("{import}",
-            "Loadjs('fw.ufdb.categorize.php?js-import=$category_id&function=$function')",
-            "fas fa-file-import","AsDansGuardianAdministrator",0,"btn-info","small");
-
-        $button_export=$tpl->button_autnonome("{export}",
-            "Loadjs('$page?js-export=$category_id&function=$function')",
-            "fas fa-file-export","AsDansGuardianAdministrator",0,"btn-warning","small");
-
-        $jsCompile=$tpl->framework_buildjs("/category/compile/$category_id",
-            "ufdbcat.compile.progress","ufdbcat.compile.txt",
-            "progress-ppcategories-restart","$function()");
-
-        if($EnableLocalUfdbCatService==1){
-            $jsCompile="Loadjs('$page?dnscatz-compile-single=$category_id')";
-
-        }
-        $button_compile=$tpl->button_autnonome("{compile2}",$jsCompile,
-            "fas fa-download","AsDansGuardianAdministrator",0,"btn-success","small");
-
-
-        if($official_category==1){
-            $delete=$tpl->icon_nothing();
-            if($ManageOfficialsCategories==0){
-                $button="&nbsp;";
-                $button_import="&nbsp;";
-                $button_compile="&nbsp;";
-            }
-        }
-        if($free_category==1){
-            $items=$CURRENT[$category_id]["items"];
-            $itemsEncTxt=numberFormat($items,0,""," ");
-            $delete=$tpl->icon_nothing();
-            $button="&nbsp;";
-            $button_import="&nbsp;";
-            $button_compile="&nbsp;";
-        }
-
-        if(!$users->AsDansGuardianAdministrator) {
-            $delete=$tpl->icon_nothing();
-            if(!isset($_SESSION["MANAGE_CATEGORIES"][$category_id])){continue;}
-
-        }
-
-        if($PowerDNSEnableClusterSlave==1){
-            $button=$tpl->icon_nothing();
-            $button_import=$tpl->icon_nothing();
-        }
-
-        $category_link=$tpl->td_href($categoryname,"{click_to_edit}","Loadjs('$page?category-js=$category_id&function=$function')");
-
-        if($remotecatz==1){
-            $button="&nbsp;";
-            $button_import="&nbsp;";
-            $button_export="&nbsp;";
-            $button_compile="&nbsp;";
-            $delete=$tpl->icon_nothing();
-            $category_link=$tpl->td_href($categoryname,"","Loadjs('$page?category-dns-js=$category_id&function=$function')");
-            $q2=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-            $sline=$q2->mysqli_fetch_array("SELECT * FROM categories_services WHERE ID=$serviceid");
-            $port=$sline["port"];
-            $hostname=$sline["hostname"];
-            $category_icon="<img src='img/20-import.png'>";
-            $items=$ligne["items"];
-            $text_category=$tpl->_ENGINE_parse_body($ligne["category_description"]);
-            $itemsEncTxt=numberFormat($items,0,""," ");
-            if($hostname<>null){$text_category=$text_category." ($hostname:$port)";}
-        }
-
-        if($meta==1){
-            $category_icon="<i class='fa fa-2x fa-download' style='color:#1ab394'></i>";
-            $button="&nbsp;";
-            $button_import="&nbsp;";
-            $button_export="&nbsp;";
-            $button_compile="&nbsp;";
-            $category_link=$tpl->td_href($categoryname,"","Loadjs('$page?category-http-js=$category_id&function=$function')");
-            $items=intval($ligne["items"]);
-            $text_category=$tpl->_ENGINE_parse_body($ligne["category_description"]);
-            $itemsEncTxt=numberFormat($items,0,""," ");
-        }
-
-        if($EnableLocalUfdbCatService==1){
-            if($remotecatz==0) {
-
-                if (isset($DNSCATZSTATUS[$category_id])) {
-                    $icoDNS = "<span class='label label-primary'>{active2}</span>";
-                }
-            }else{
-                $icoDNS="&nbsp;";
-            }
-        }
-
-        $created_text=$tpl->icon_nothing();
-        if($created>0){
-            $created_text=$tpl->time_to_date($created);
-        }
-        if($CategoryRPZ==1){
-            if($ligne["rpz"]==1){
-                if(!isset($RPZSTATUS[$category_id])){
-                $icoRPZ="<span class='label label-warning'>{not_compiled}</span>";
-                }else{
-                    $icoRPZ="<span class='label label-primary'>{active2}</span>";
-                }
-            }
-        }
-
-
-        $sid=$category_id;
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td style='width:1%'>$category_icon</td>";
-        if($RPZCOLUMN) {
-              $html[] = "<td style='width:1%'>$icoRPZ</td>";
-        }
-        if($EnableLocalUfdbCatService==1) {
-            $html[] = "<td style='width:1%'><span id='dnscatz-status-$category_id'>$icoDNS</span></td>";
-        }
-        if($COLUMNUFDB) {
-            $html[] = "<td style='width:1%'><span id='dnscatz-ufdb-$category_id'>$icoProxy</span></td>";
-        }
-        if($UseRemoteCategoriesService==1) {
-            $button="&nbsp;";
-            $delete="&nbsp;";
-            $button_compile="&nbsp;";
-            $button_import="&nbsp;";
-            $button_export="&nbsp;";
-        }
-
-
-        $html[]="<td nowrap style='width:20%'>$source_ico<strong id='category_name_$sid'>$category_link</strong></td>";
-        $html[]="<td style='width:80%'><span id='category_text_$sid'>$icolabel$icolabel2$text_category</span></td>";
-        $html[]="<td style='vertical-align:middle;width=1%' nowrap>$created_text<div id='dnscatz-updated-$category_id'></div></div></td>";
-        $html[]="<td style='vertical-align:middle;width=1%;text-align:right' nowrap><span id='category_items_$sid'>$itemsEncTxt</span></td>";
-        $html[]="<td style='vertical-align:middle;width=1%' class='center'>$button_compile</td>";
-        $html[]="<td style='vertical-align:middle;width=1%' class='center'>$button_import</td>";
-        $html[]="<td style='vertical-align:middle;width=1%' class='center'>$button_export</td>";
-        $html[]="<td style='vertical-align:middle;width=1%' class='center'>$button</td>";
-        $html[]="<td style='vertical-align:middle;width=1%' class='center'>$delete</td>";
-        $html[]="</tr>";
-
-    }
-
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-
-
+    $TINY_ARRAY=array();
     $TINY_ARRAY["TITLE"]="{your_categories}";
     $TINY_ARRAY["ICO"]="fad fa-books";
     $TINY_ARRAY["EXPL"]="{personal_categories_explain}";
     $TINY_ARRAY["BUTTONS"]=$tpl->th_buttons($topbuttons);
-    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+    return "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+}
 
+function ufct_colors():array{
+    $c=array("accent"=>"#10b981","dark"=>"#0d7a6e","soft"=>"rgba(16,185,129,.12)");
+    if(function_exists("brand_ui_accents") && function_exists("brand_palette")){
+        $a=brand_ui_accents(brand_palette());
+        if(!empty($a["accent"])){$c["accent"]=$a["accent"];}
+        if(!empty($a["accent_dark"])){$c["dark"]=$a["accent_dark"];}
+        if(!empty($a["accent_soft"])){$c["soft"]=$a["accent_soft"];}
+    }
+    return $c;
+}
+
+// CSS de la page : concatenee HORS de _ENGINE_parse_body().
+function ufct_style():string{
+    $c=ufct_colors();
+    $css=<<<'CSS'
+<style>
+.ufct-strip{box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:48px;padding:10px 16px;border-radius:8px;border:1px solid;font-size:13px;margin:0 0 12px}
+.ufct-strip b{font-weight:600}
+.ufct-strip-ok{background:#e7f6f0;border-color:#bfe6d4;color:#127a52}
+.ufct-strip-run{background:#eef4fb;border-color:#cddff3;color:#1f4f82}
+.ufct-strip-err{background:#fdecea;border-color:#f5c6c0;color:#b3261e}
+.ufct-strip-sub{color:#4b5563}
+.ufct-strip-err .ufct-strip-sub{color:#7a2e26}
+.ufct-bar{display:block;width:200px;height:6px;margin-left:auto;background:#fff;border:1px solid #cddff3;border-radius:999px;overflow:hidden}
+.ufct-bar>span{display:block;height:100%;background:__ACC__;transition:width .15s}
+table.ufct-tbl{width:100%}
+table.ufct-tbl>thead>tr>th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#5f6b7a;font-weight:600;white-space:nowrap;padding:10px 12px}
+table.ufct-tbl>tbody>tr>td{vertical-align:middle;padding:8px 12px;height:56px;font-size:14px;color:#1f2933}
+table.ufct-tbl>tbody>tr:hover>td{background:#f7f9fb}
+table.ufct-tbl .ufct-c-cat{width:34%;max-width:0}
+table.ufct-tbl .ufct-c-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;width:1%}
+table.ufct-tbl .ufct-c-st{white-space:nowrap;width:1%}
+table.ufct-tbl .ufct-c-rpz{white-space:nowrap;width:1%}
+table.ufct-tbl .ufct-c-created{white-space:nowrap;width:1%}
+table.ufct-tbl>tbody>tr>td.ufct-c-created{color:#5f6b7a;font-size:13px;font-variant-numeric:tabular-nums}
+table.ufct-tbl .ufct-c-act{text-align:right;white-space:nowrap;width:1%}
+.ufct-cat{display:flex;align-items:center;gap:12px;min-width:0}
+.ufct-ico{flex:0 0 32px;width:32px;height:32px;border-radius:8px;border:1px solid #e3e8ee;background:#f5f7f9;display:inline-flex;align-items:center;justify-content:center;color:#5f6b7a;font-size:14px;overflow:hidden}
+.ufct-ico img{max-width:20px;max-height:20px}
+.ufct-ico-remote{background:#eaf2fd;border-color:#cddff3;color:#1d5fb4}
+.ufct-ico-meta{background:__SOFT__;border-color:transparent;color:__DARK__}
+.ufct-cat-txt{min-width:0;flex:1 1 auto}
+.ufct-cat-l1{display:flex;align-items:center;gap:6px;min-width:0}
+.ufct-name{font-weight:600;color:#1f2933;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ufct-name:hover,.ufct-name:focus{color:__DARK__;text-decoration:underline}
+.ufct-desc{font-size:13px;color:#5f6b7a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ufct-mono{font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:12.5px;color:#374151}
+.ufct-muted{color:#9aa4af}
+.ufct-src{color:#5f6b7a;font-size:12px;display:inline-flex}
+.ufct-chip{display:inline-flex;align-items:center;gap:4px;flex:0 0 auto;padding:1px 6px;border:1px solid #d5dbe2;border-radius:4px;font-size:12px;line-height:16px;color:#374151;background:#fff}
+.ufct-chip-remote{border-color:#cddff3;color:#1d5fb4;background:#f3f8fe}
+.ufct-chip-meta{border-color:transparent;color:__DARK__;background:__SOFT__}
+.ufct-pill{display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;line-height:18px;white-space:nowrap}
+.ufct-pill-ok{background:#e7f6f0;color:#127a52}
+.ufct-pill-warn{background:#fff4dc;color:#8a5a00}
+.ufct-pill-off{background:#f1f3f5;color:#4b5563}
+.ufct-sub{font-size:12px;color:#5f6b7a;margin-top:3px;white-space:nowrap}
+.ufct-sub:empty{display:none}
+.ufct-skel{display:inline-block;width:76px;height:20px;border-radius:999px;background:linear-gradient(90deg,#eef1f4 0%,#f7f9fb 50%,#eef1f4 100%);background-size:200% 100%;animation:ufctsk 1.2s ease-in-out infinite;vertical-align:middle}
+@keyframes ufctsk{0%{background-position:100% 0}100%{background-position:-100% 0}}
+.ufct-act{display:inline-flex;align-items:center;justify-content:flex-end;gap:4px}
+.ufct-add{display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;color:__DARK__;font-weight:600;font-size:13px;padding:5px 9px;border-radius:6px;cursor:pointer}
+.ufct-add:hover{background:__SOFT__}
+.ufct-ib{width:30px;height:30px;border:0;background:transparent;border-radius:6px;color:#5f6b7a;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:13px}
+.ufct-ib:hover{background:#eef1f4;color:#1f2933}
+.ufct-ib[disabled]{opacity:.35;cursor:not-allowed;background:transparent}
+.ufct-add:focus-visible,.ufct-ib:focus-visible,.ufct-name:focus-visible,.ufct-menu button:focus-visible,.ufct-primary:focus-visible{outline:2px solid __ACC__;outline-offset:2px}
+.ufct-menu{position:fixed;z-index:3000;min-width:170px;background:#fff;border:1px solid #e3e8ee;border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.14);padding:4px 0;text-align:left}
+.ufct-menu[hidden]{display:none}
+.ufct-menu button{display:flex;width:100%;align-items:center;gap:9px;border:0;background:transparent;padding:7px 14px;font-size:13px;color:#1f2933;cursor:pointer;text-align:left}
+.ufct-menu button:hover,.ufct-menu button:focus{background:#f3f5f7}
+.ufct-menu .ufct-danger{color:#b3261e;font-weight:600}
+.ufct-menu hr{margin:4px 0;border:0;border-top:1px solid #e3e8ee}
+.ufct-empty{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 16px;color:#5f6b7a;font-size:14px}
+.ufct-empty>i,.ufct-empty>svg{font-size:36px;color:#9aa4af}
+.ufct-primary{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:6px;background:__ACC__;color:#fff;font-weight:600;font-size:13px;padding:7px 14px;cursor:pointer}
+@media (max-width:1200px){.ufct-c-created{display:none}}
+@media (max-width:1060px){.ufct-c-rpz{display:none}}
+@media (prefers-reduced-motion:reduce){.ufct-skel{animation:none}.ufct-bar>span{transition:none}}
+</style>
+CSS;
+    return str_replace(array("__ACC__","__DARK__","__SOFT__"),array($c["accent"],$c["dark"],$c["soft"]),$css);
+}
+
+// Menu d'actions par ligne : position fixe pour sortir du conteneur defilant du tableau.
+function ufct_js():string{
+    return <<<'JS'
+<script>
+(function(){
+ if(window.UfctMenu){return;}
+ window.UfctMenuClose=function(){
+  jQuery('.ufct-menu').attr('hidden','hidden');
+  jQuery('.ufct-kebab[aria-expanded=true]').attr('aria-expanded','false');
+ };
+ window.UfctMenu=function(btn,id){
+  var m=document.getElementById(id); if(!m){return;}
+  var wasOpen=!m.hasAttribute('hidden');
+  UfctMenuClose(); if(wasOpen){return;}
+  m.removeAttribute('hidden');
+  var r=btn.getBoundingClientRect(), w=m.offsetWidth, h=m.offsetHeight;
+  var top=r.bottom+4; if(top+h>window.innerHeight-8){top=Math.max(8,r.top-h-4);}
+  var left=r.right-w; if(left<8){left=8;}
+  m.style.top=top+'px'; m.style.left=left+'px';
+  btn.setAttribute('aria-expanded','true');
+  var f=m.querySelector('button'); if(f){f.focus();}
+ };
+ document.addEventListener('click',function(e){
+  if(!jQuery(e.target).closest('.ufct-menu,.ufct-kebab').length){UfctMenuClose();}
+ },true);
+ window.addEventListener('scroll',function(e){
+  if(jQuery(e.target).closest && jQuery(e.target).closest('.ufct-menu').length){return;}
+  UfctMenuClose();
+ },true);
+ document.addEventListener('keydown',function(e){
+  var m=jQuery('.ufct-menu:not([hidden])')[0]; if(!m){return;}
+  if(e.key==='Escape'){
+   var b=jQuery('.ufct-kebab[aria-expanded=true]')[0]; UfctMenuClose(); if(b){b.focus();} e.preventDefault(); return;
+  }
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+   var it=jQuery(m).find('button').toArray(); if(!it.length){return;}
+   var i=it.indexOf(document.activeElement);
+   i=(e.key==='ArrowDown')?(i+1)%it.length:(i<=0?it.length-1:i-1);
+   it[i].focus(); e.preventDefault();
+  }
+ });
+})();
+</script>
+JS;
+}
+
+function table(){
+    $tpl=new template_admin();
+    $tpl->CLUSTER_CLI=True;
+    $c=ufct_context();
+    $page=$c["page"];
+    $search=trim((string)($_GET["search"] ?? ""));
+
+    // Plus d'ecriture a l'affichage : remotecatz est normalise par articarest
+    // (categories.PatchTable au demarrage, et a l'ecriture de la synchro distante).
+    $pp=new categories();
+    $pp->initialize();
+    if(!isset($_GET["gpid"])){$_GET["gpid"]=0;}
+    $GLOBALS["jsAfterEnc"]=base64_encode("LoadAjax('table-loader','$page?table=yes&gpid={$_GET["gpid"]}');");
+
+    $error="";
+    $results=ufct_query($c,$search,$error);
+    if($error<>""){
+        echo "<div class='alert alert-danger'>".htmlspecialchars($error,ENT_QUOTES,"UTF-8")."</div>";
+        return;
+    }
+
+    $rows=array();
+    while($l=pg_fetch_assoc($results)){
+        $id=intval($l["category_id"]);
+        if($c["manage"]==0 && $id>5000){continue;}
+        if(!$c["admin"] && !isset($_SESSION["MANAGE_CATEGORIES"][$id])){continue;}
+        $rows[]=ufct_row($l,$c);
+    }
+
+    $html=array();
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table id='table-persocats-list' class='awc-tbl ufct-tbl'>";
+    $html[]=ufct_thead($c);
+    $html[]="<tbody id='ufct-rows'>";
+    if(count($rows)==0){
+        $html[]=ufct_empty($c,$search);
+    }else{
+        $html[]=implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span><span class='awc-pg' id='ufct-pager'></span></div>";
+    $html[]="</div></div>";
+
+    $jstiny=ufct_tiny($c);
     $Pinger=$tpl->RefreshInterval_Loadjs("table-persocats-list",$page,"pinger=yes");
+    // $Pinger porte des accolades : le bloc est concatene APRES l'analyse.
+    $script="<script>\n$Pinger\nNoSpinner();\n$jstiny\n</script>";
 
-
-    $html[]="
-	<script>
-	$Pinger
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$jstiny
-	</script>";
-
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+    echo ufct_style().awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n",$html))
+        .$script
+        .awc_pager_js(50,"ufct-rows","ufct-pager")
+        .ufct_js();
 }

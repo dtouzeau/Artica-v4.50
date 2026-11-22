@@ -1,94 +1,35 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 include_once(dirname(__FILE__)."/ressources/class.tasks.inc");
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
+// Pentest 2026-11-04 E-02/M-02 : TaskType est un entier, partout.
+$_GET["TaskType"]=intval($_GET["TaskType"] ?? 0);
+// Pentest 2026-11-04 : ShowID/filename/line/eth/t etaient recopies sans encodage dans la page (XSS).
+foreach(array("ShowID","ShowID-js","line") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}
+}
+if(isset($_GET["filename"])){$_GET["filename"]=preg_replace('#[^A-Za-z0-9_./-]#','',(string)$_GET["filename"]);}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
+if(isset($_GET["t"])){$_GET["t"]=intval($_GET["t"]);}
+// Pentest 2026-11-04 : function finit dans du JavaScript (nom de fonction JS uniquement).
+if(isset($_GET["function"])){$_GET["function"]=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["function"]);}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["ShowID-js"])){ShowID_js();exit;}
-if(isset($_GET["ShowID"])){ShowID();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["remove-events"])){remove_events_js();exit;}
-if(isset($_GET["empty-js"])){empty_js();exit;}
-if(isset($_POST["empty"])){empty_table();exit;}
-if(isset($_POST["remove-events"])){remove_events_perform();exit;}
 page();
 
-function ShowID_js(){
-	
-	$id=$_GET["ShowID-js"];
-	if(!is_numeric($id)){
-	
-		return;
-	
-	}$tpl=new template_admin();
-	$page=CurrentPageName();
-	$sql="SELECT subject FROM squid_admin_mysql WHERE ID=$id";
-	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
-	$ligne=$q->mysqli_fetch_array($sql);
-	$subject=$tpl->javascript_parse_text($ligne["subject"]);
-	$tpl->js_dialog($subject, "$page?ShowID=$id&function={$_GET["function"]}");
-	
-}
-function empty_js(){
-	$tpl=new template_admin();
-	$title="{system_events}";
-	$tpl->js_confirm_empty($title,"empty","yes","{$_GET["function"]}();");
-	
-}
-
-function empty_table(){
-	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
-	$q->QUERY_SQL("DROP TABLE squid_admin_mysql");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/frontend/notifications");
-	
-}
-
-function ShowID(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$sql="SELECT * FROM squid_admin_mysql WHERE ID={$_GET["ShowID"]}";
-	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
-	$ligne=$q->mysqli_fetch_array($sql);
-	$content=$tpl->_ENGINE_parse_body($ligne["content"]);
-	$content=nl2br($content);
-	echo "<p>$content</p>";
-
-	$filename=$ligne["filename"];
-	$line=$ligne["line"];
-	$html[]="<div style='text-align:right;margin-top:10px'>";
-	$html[]=$tpl->button_autnonome("{remove_all_same}","Loadjs('$page?remove-events=yes&filename=$filename&line=$line&function={$_GET["function"]}');",
-        "fas fa-trash-alt","AsSystemAdministrator",0,"btn-danger");
-	$html[]="</div>";
-	echo $tpl->_ENGINE_parse_body($html);
-
-}
-function remove_events_js(){
-    $filename=$_GET["filename"];
-    $line=$_GET["line"];
-    $tpl=new template_admin();
-    $funcadd=null;
-
-    if($_GET["function"]<>null){
-        $funcadd="{$_GET["function"]}();";
-    }
-
-    $tpl->js_confirm_empty("{remove_all_same} $filename ($line)","remove-events","$filename;$line",
-        "BootstrapDialog1.close();{$funcadd}");
-}
-function remove_events_perform(){
-    $q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
-    $tt=explode(";",$_POST["remove-events"]);
-    $filename=$tt[0];
-    $line=intval($tt[1]);
-
-    $q->QUERY_SQL("DELETE FROM squid_admin_mysql WHERE filename='$filename' AND line='$line'");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/frontend/notifications");
-
-}
+// ShowID/empty/remove-events retires (2026-11-11) : ils lisaient, vidaient (DROP
+// TABLE) ou purgeaient squid_admin_mysql de system_events.db en connexion
+// directe, alors que cette page affiche schedule_events.db et ne les appelle
+// jamais. Restes d'une copie de la page des evenements systeme.
 
 function page(){
 	$page=CurrentPageName();
@@ -137,28 +78,23 @@ function table(){
 	$html[]="<tr>";
 
 
-	$search=trim($_GET["search"]);
-	$_SESSION["SYSEVS_SEARCH"]=trim(strtolower($search));
-    $searchsql=null;
-	if($search<>null) {
-        $search = "*$search*";
-        $search = str_replace("***", "*", $search);
-        $search = str_replace("**", "*", $search);
-        $search = str_replace("*", "%", $search);
-        $search = str_replace("%%", "%", $search);
+	$search=trim((string)($_GET["search"] ?? ""));
+	$_SESSION["SYSEVS_SEARCH"]=strtolower($search);
 
-        $searchsql=" AND (subject LIKE '$search')";
-    }
+	// Lecture par le daemon (SystemTasks, schedule_events.db) : il cree la base
+	// si elle manque et lie la recherche en parametre. Plus de lib_sqlite ici.
+	$TaskType=intval($_GET["TaskType"]);
+	$json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/tasks/events?type=$TaskType&limit=500&search=".urlencode($search)));
+	$results=array();
+	$rest_error="";
+	if(!$json || !property_exists($json,"success") || !$json->success){
+		$rest_error=($json && property_exists($json,"error"))?(string)$json->error:"{error} articarest";
+	}elseif(is_array($json->data)){
+		foreach($json->data as $ev){
+			$results[]=array("ID"=>intval($ev->ID),"severity"=>intval($ev->severity),"zdate"=>intval($ev->zdate),"subject"=>(string)$ev->subject);
+		}
+	}
 
-    $q=new lib_sqlite("/home/artica/SQLITE/schedule_events.db");
-
-	
-	$sql="SELECT ID,prio as severity,zdate,subject FROM events WHERE TaskType={$_GET["TaskType"]}{$searchsql} ORDER BY zdate DESC LIMIT 500";
-	
-	$results=$q->QUERY_SQL($sql);
-	
-
-	
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$date</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$events</th>";
 	$html[]="</tr>";
@@ -170,9 +106,8 @@ function table(){
 	
 
 	
-	if(!$q->ok){
-		
-		echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+	if($rest_error<>""){
+		echo "<div class='alert alert-danger'>".htmlspecialchars($rest_error,ENT_QUOTES)."</div>";
 	}
 	
 	$severityCL[0]="label-danger";
@@ -196,7 +131,8 @@ function table(){
 
 		$html[]="<tr class='$TRCLASS' id='$id'>";
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap><div class='label $severity_class' style='font-size:13px;padding:10px;width:100%' >$zdate</a></div></td>";
-		$html[]="<td class=\"$text_class\">{$subject}</td>";
+		// Pentest 2026-11-04 : sujet de l'evenement (donnee externe) affiche sans encodage (XSS stockee).
+		$html[]="<td class=\"$text_class\">".html_safe_fragment($subject)."</td>";
 		$html[]="</tr>";
 		
 
@@ -211,7 +147,7 @@ function table(){
 	$html[]="</td>";
 	$html[]="</tr>";
 	$html[]="</tfoot>";
-	$html[]="</table><div><i>$sql</i></div>";
+	$html[]="</table>";
 
     $title="{events}";
     $explain="{system_events}";

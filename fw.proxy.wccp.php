@@ -8,7 +8,6 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 
 if(isset($_GET["parameters"])){parameters();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_GET["parameters-table"])){parameters_table();exit;}
 if(isset($_GET["parameters-flat"])){parameters_flat();exit;}
 if(isset($_POST["WCCP_HTTP_PORT"])){saveall();exit;}
 if(isset($_POST["WCCP_ASA_ADDR"])){saveRestart();exit;}
@@ -29,7 +28,7 @@ function saveall(){
         $WCCP_ASA_USE = intval($_POST["WCCP_ASA_USE"]);
         if ($WCCP_ASA_USE == 1) {
             if ($WCCP_ASA_ADDR == $WCCP_ASA_ROUTER) {
-                echo "jserror:" . $tpl->javascript_parse_text("{WCCP_ASA_ROUTER_ERR1}");
+                echo (new template_admin())->post_error("" . $tpl->javascript_parse_text("{WCCP_ASA_ROUTER_ERR1}"));
             }
         }
     }
@@ -180,6 +179,17 @@ function parameters_flat():bool{
     $SquidWCCPEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidWCCPEnabled"));
 
 
+    // Exclusion mutuelle avec l'integration FortiGate (memes ports 35025/35026) : le
+    // commutateur enregistre SquidWCCPEnabled=1 avant que /proxy/wccp/install refuse,
+    // il n'est donc pas propose tant que l'integration est active.
+    $TProxyFortiEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TProxyFortiEnable"));
+    if($TProxyFortiEnable==1 && $SquidWCCPEnabled==0){
+        $html[]=$tpl->div_warning("{wccp_fortigate_active_blocked}");
+        echo $tpl->_ENGINE_parse_body($html);
+        echo "<script>$jstiny</script>";
+        return true;
+    }
+
     if($SquidWCCPEnabled==0){
         $after=$tpl->framework_buildjs("/proxy/wccp/install",
         "squid.wccp.progress",
@@ -205,6 +215,11 @@ function parameters_flat():bool{
     $WCCP_ASA_USE=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_ASA_USE"));
     $WCCP_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WCCP_VERSION"));
 
+    if($TProxyFortiEnable==1){
+        // Etat herite incoherent (les deux actifs) : on le signale, le commutateur
+        // reste pour pouvoir desactiver cet ancien mode.
+        $html[]=$tpl->div_warning("{wccp_fortigate_active_blocked}");
+    }
     $html[]=$tpl->BigCircleCheckbox("SquidWCCPEnabled","{WCCP_NAME}","{feature_enabled}",1,$after);
 
     $tpl->table_form_section("{router}");
@@ -367,11 +382,12 @@ function connected_port_save(){
 		$tpl=new template_admin();
 		$tpl->CLEAN_POST();
 		
-		$ID=$_POST["SaveConnectedPort"];
+		// Pentest 2026-11-04 : ID/ipaddr/xnote/PortName/enabled/outgoing_addr/UseSSL/sslcertificate/nic etaient concatenes dans la requete.
+		$ID=intval($_POST["SaveConnectedPort"]);
 		$ipaddr=$_POST["ipaddr"];
 		$port=intval($_POST["port"]);
-		$xnote=mysql_escape_string2($_POST["xnote"]);
-		$PortName=mysql_escape_string2($_POST["PortName"]);
+		$xnote=strval($_POST["xnote"]);
+		$PortName=strval($_POST["PortName"]);
 		$enabled=$_POST["enabled"];
 		$transparent=intval($_POST["transparent"]);
 		$TProxy=intval($_POST["TProxy"]);
@@ -528,7 +544,7 @@ function connected_port_save(){
 		$is_nat=intval($_POST["is_nat"]);
 		$zMD5=md5(serialize($_POST));
 		$sqladd="INSERT INTO proxy_ports (WANPROXY_PORT,WANPROXY,FTP,ICP,Parent,WCCP,is_nat,nic,ipaddr,port,xnote,enabled,transparent,TProxy,outgoing_addr,PortName,UseSSL,sslcertificate,NoAuth,MIKROTIK_PORT,FTP_TRANSPARENT,SOCKS,ProxyProtocol,NoCache,NoFilter,zMD5,AuthForced,AuthPort,NoHotspot)
-		VALUES ('$WANPROXY_PORT','$WANPROXY','$FTP','$ICP','$Parent','$WCCP','$is_nat','$nic','$ipaddr','$port','$xnote','$enabled','$transparent','$TProxy','$outgoing_addr','$PortName','$UseSSL','$sslcertificate',$NoAuth,'$MIKROTIK_PORT','$FTP_TRANSPARENT','$SOCKS','$ProxyProtocol',$NoCache,$NoFilter,'$zMD5',0,0,0)";
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,0,0)";
 	
 	
 		$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
@@ -543,7 +559,7 @@ function connected_port_save(){
 	
 		if($ID==0){
 	
-			$sql="SELECT ID,PortName FROM proxy_ports WHERE port='$port'";
+			$sql="SELECT ID,PortName FROM proxy_ports WHERE port='".intval($port)."'";
 			$ligne=$q->mysqli_fetch_array($sql);
 			$ID=intval($ligne["ID"]);
 	
@@ -556,31 +572,33 @@ function connected_port_save(){
 		}
 	
 	
+		$sqladd_params=array($WANPROXY_PORT,$WANPROXY,$FTP,$ICP,$Parent,$WCCP,$is_nat,$nic,$ipaddr,$port,$xnote,$enabled,$transparent,$TProxy,$outgoing_addr,$PortName,$UseSSL,$sslcertificate,$NoAuth,$MIKROTIK_PORT,$FTP_TRANSPARENT,$SOCKS,$ProxyProtocol,$NoCache,$NoFilter,$zMD5);
 		$sqledit="UPDATE proxy_ports SET
-		WANPROXY_PORT='$WANPROXY_PORT',
-		FTP_TRANSPARENT='$FTP_TRANSPARENT',
-		WANPROXY='$WANPROXY',
-		FTP='$FTP',
-		ICP='$ICP',
-		Parent='$Parent',
-		TProxy='$TProxy',
-		WCCP='$WCCP',
-		is_nat='$is_nat',
-		transparent='$transparent',
-		ipaddr='$ipaddr',
-		port='$port',
-		nic='$nic',
-		xnote='$xnote',
-		MIKROTIK_PORT='$MIKROTIK_PORT',
-		enabled='$enabled',nic='$nic',`is_nat`='$is_nat',
-		outgoing_addr='$outgoing_addr',
-		PortName='$PortName',
-		SOCKS='$SOCKS',
-		UseSSL='$UseSSL',
-		sslcertificate='$sslcertificate',
-		ProxyProtocol='$ProxyProtocol',
-		`NoAuth`='$NoAuth', `NoCache`='$NoCache', `NoFilter`='$NoFilter',`NoHotspot`='0'
-		WHERE ID=$ID";
+		WANPROXY_PORT=?,
+		FTP_TRANSPARENT=?,
+		WANPROXY=?,
+		FTP=?,
+		ICP=?,
+		Parent=?,
+		TProxy=?,
+		WCCP=?,
+		is_nat=?,
+		transparent=?,
+		ipaddr=?,
+		port=?,
+		nic=?,
+		xnote=?,
+		MIKROTIK_PORT=?,
+		enabled=?,nic=?,`is_nat`=?,
+		outgoing_addr=?,
+		PortName=?,
+		SOCKS=?,
+		UseSSL=?,
+		sslcertificate=?,
+		ProxyProtocol=?,
+		`NoAuth`=?, `NoCache`=?, `NoFilter`=?,`NoHotspot`='0'
+		WHERE ID=?";
+		$sqledit_params=array($WANPROXY_PORT,$FTP_TRANSPARENT,$WANPROXY,$FTP,$ICP,$Parent,$TProxy,$WCCP,$is_nat,$transparent,$ipaddr,$port,$nic,$xnote,$MIKROTIK_PORT,$enabled,$nic,$is_nat,$outgoing_addr,$PortName,$SOCKS,$UseSSL,$sslcertificate,$ProxyProtocol,$NoAuth,$NoCache,$NoFilter,intval($ID));
 	
 	
 		
@@ -601,7 +619,10 @@ function connected_port_save(){
 	
 	
 	
-		if($ID>0){$q->QUERY_SQL($sqledit);}else{$q->QUERY_SQL($sqladd);}
+		// valeurs nulles (nic, outgoing_addr, sslcertificate...) : '' comme avant, pas NULL.
+		$sqladd_params=array_map('strval',$sqladd_params);
+		$sqledit_params=array_map('strval',$sqledit_params);
+		if($ID>0){$q->QUERY_SQL_PARAMS($sqledit,$sqledit_params);}else{$q->QUERY_SQL_PARAMS($sqladd,$sqladd_params);}
 		if(!$q->ok){echo $q->mysql_error;}else{echo $q->last_id;}
 		CheckPointers();
 	
@@ -624,8 +645,6 @@ function connected_port_save(){
 		$sock=new sockets();
 		if($ligne["tcount"]>0){$sock->SET_INFO("ServiceFTPEnabled", 1);}else{$sock->SET_INFO("ServiceFTPEnabled", 0); }
 	
-		$sock=new sockets();
-		$sock->getFrameWork("ftp-proxy.php?reconfigure-silent=yes");
 	
 	}	
 

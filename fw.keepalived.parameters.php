@@ -1,4 +1,7 @@
 <?php
+// Failover (keepalived) parameters, laid out like fw.haproxy.status.php:
+// feature cards, service actions, last operation, service status and a
+// parameters card edited in a dialog. Everything goes through articarest.
 include_once(dirname(__FILE__) . "/ressources/class.template-admin.inc");
 if (!isset($GLOBALS["CLASS_SOCKETS"])) {
     if (!class_exists("sockets")) {
@@ -6,7 +9,6 @@ if (!isset($GLOBALS["CLASS_SOCKETS"])) {
     }
     $GLOBALS["CLASS_SOCKETS"] = new sockets();
 }
-include_once(dirname(__FILE__) . "/ressources/class.keepalived.inc");
 $users = new usersMenus();
 if (!$users->AsVPNManager) {
     exit();
@@ -32,6 +34,18 @@ if (isset($_GET["keepalived-status"])) {
     keepalived_status();
     exit;
 }
+if (isset($_GET["flat-config"])) {
+    flat_config();
+    exit;
+}
+if (isset($_GET["config-js"])) {
+    config_js();
+    exit;
+}
+if (isset($_GET["config-popup"])) {
+    config_popup();
+    exit;
+}
 if (isset($_POST["keepalived-global-def"])) {
     keepalived_save_global_def();
     exit;
@@ -41,79 +55,45 @@ if (isset($_GET["build-progress"])) {
     exit;
 }
 page();
+
+// Kept for callers that still load it: reconfigure, then redraw the page.
 function build_progress()
 {
-    $page = CurrentPageName();
-    $tpl = new template_admin();
-    $sock = new sockets();
-    $ARRAY["PROGRESS_FILE"] = PROGRESS_DIR . "/keepalived.progress";
-    $ARRAY["LOG_FILE"] = PROGRESS_DIR . "/keepalived.log";
-    $ARRAY["CMD"] = "keepalived.php?reconfigure=yes";
-    $ARRAY["TITLE"] = "{APP_KEEPALIVED} {restarting_service}";
-    //$ARRAY["AFTER"]="LoadAjaxSilent('keepalived-status','$page?keepalived-status=yes');";
-    $prgress = base64_encode(serialize($ARRAY));
-    $jsrestart = "Loadjs('fw.progress.php?content=$prgress&mainid=progress-firehol-restart')";
-
-    echo $jsrestart;
+    echo keepalived_jsaction("/keepalived/reconfigure");
 }
 
-function keepalived_status()
+// Every action reports into keepalived.progress (articarest), and at 100% the
+// whole block is redrawn: status, last operation and parameters.
+function keepalived_jsaction($route): string
 {
-    $page = CurrentPageName();
-
-
-    $sock = new sockets();
-    $sock->getFrameWork("keepalived.php?status=yes");
-    $bsini = new Bs_IniHandler("/usr/share/artica-postfix/ressources/logs/web/keepalived.status");
     $tpl = new template_admin();
-
-
-    $ARRAY["PROGRESS_FILE"] = PROGRESS_DIR . "/keepalived.progress";
-    $ARRAY["LOG_FILE"] = PROGRESS_DIR . "/keepalived.log";
-    $ARRAY["CMD"] = "keepalived.php?restart=yes";
-    $ARRAY["TITLE"] = "{APP_KEEPALIVED} {restarting_service}";
-    $ARRAY["AFTER"] = "LoadAjaxSilent('keepalived-status','$page?keepalived-status=yes');";
-    $prgress = base64_encode(serialize($ARRAY));
-    $jsRestart = "Loadjs('fw.progress.php?content=$prgress&mainid=progress-firehol-restart')";
-
-    $final[] = $tpl->SERVICE_STATUS($bsini, "APP_KEEPALIVED", $jsRestart);
-
-    VERBOSE(count($final) . " row", __LINE__);
-    echo $tpl->_ENGINE_parse_body($final);
-
+    $page = CurrentPageName();
+    return $tpl->framework_buildjs($route, "keepalived.progress", "keepalived.log",
+        "progress-firehol-restart", "LoadAjax('table-loader','$page?main=yes');");
 }
 
 function page()
 {
     $page = CurrentPageName();
     $tpl = new template_admin();
-    $KEEPALIVED_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_VERSION");
+    $KEEPALIVED_VERSION = htmlspecialchars((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_VERSION"));
     $about = $tpl->_ENGINE_parse_body("{keepalived_what_is}");
     $about = str_replace("#Keepalived#", "<a href=\"https://www.keepalived.org\" target='_NEW' style='text-decoration:underline;font-weight:bold'>Keepalived</a>", $about);
-    $btn=$tpl->button_inline("{online_help}","s_PopUp('https://wiki.articatech.com/en/artica-failover-service','1024','800')","fa-solid fa-headset",null,null,"btn-blue");
-
+    $btn = $tpl->button_inline("{online_help}", "s_PopUp('https://wiki.articatech.com/en/artica-failover-service','1024','800')", "fa-solid fa-headset", null, null, "btn-blue");
 
     $html = "
 	<div class=\"row border-bottom white-bg dashboard-header\">
 	<div class=\"col-sm-12\"><h1 class=ng-binding>{APP_KEEPALIVED} v$KEEPALIVED_VERSION</h1><p>$about</p>$btn</div>
-	
 	</div>
-
-
-
 	<div class='row'><div id='progress-firehol-restart'></div>
-	<div class='ibox-content'>
-
+	<div class='ibox-content' style='background:#f8fafc'>
 	<div id='table-loader'></div>
-
 	</div>
 	</div>
 	<script>
 	$.address.state('/');
-	$.address.value('/failover-parameters');	
-	
+	$.address.value('/failover-parameters');
 	LoadAjax('table-loader','$page?main=yes');
-
 	</script>";
 
     $tpl = new templates();
@@ -123,95 +103,169 @@ function page()
         return;
     }
     echo $tpl->_ENGINE_parse_body($html);
+}
 
+function kast_style(): string
+{
+    return "<style>
+.kas-acts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.kas-act{display:flex;align-items:center;justify-content:center;gap:10px;height:48px;border-radius:12px;font-size:14px;font-weight:600;color:#fff!important;text-decoration:none!important;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.08);transition:background .15s}
+.kas-act-teal{background:#0f766e}.kas-act-teal:hover{background:#115e59}
+.kas-act-red{background:#e11d48}.kas-act-red:hover{background:#be123c}
+.kas-act-amber{background:#d97706}.kas-act-amber:hover{background:#b45309}
+.kas-last{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;padding:10px 16px;border-radius:12px}
+.kas-last-ok{background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46}
+.kas-last-err{background:#fff1f2;border:1px solid #fecdd3;color:#9f1239}
+.kas-last-run{background:#f1f5f9;border:1px solid #e2e8f0;color:#334155}
+.kas-last-time{font-size:11px;opacity:.8;white-space:nowrap}
+.kas-cols{display:grid;grid-template-columns:350px minmax(0,1fr);gap:24px;margin-top:24px;align-items:start}
+.kas-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:24px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.kas-card-head{padding-bottom:16px;border-bottom:1px solid #f1f5f9;margin-bottom:6px}
+.kas-card-title{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#0f172a;display:flex;align-items:center;gap:8px}
+.kas-card-title i{color:#0d9488}
+.kas-card-sub{font-size:12px;color:#64748b;margin-top:3px}
+@media(max-width:1100px){.kas-acts{grid-template-columns:repeat(2,minmax(0,1fr))}.kas-cols{grid-template-columns:1fr}}
+@media(max-width:600px){.kas-acts{grid-template-columns:1fr}}
+</style>";
+}
+
+// The last start/stop/restart/reload/reconfigure result, read from the
+// progress file articarest writes (notifs.BuildProgress): a serialized
+// {POURC, TEXT}.
+function kast_last_operation(): string
+{
+    $path = PROGRESS_DIR . "/keepalived.progress";
+    if (!is_file($path)) {
+        return "";
+    }
+    $a = @unserialize((string)@file_get_contents($path), array("allowed_classes" => false));
+    if (!is_array($a) || !isset($a["POURC"])) {
+        return "";
+    }
+    $pourc = intval($a["POURC"]);
+    $text = htmlspecialchars((string)($a["TEXT"] ?? ""));
+    $class = "kas-last-run";
+    $ico = "fas fa-spinner";
+    if ($pourc == 100) {
+        $class = "kas-last-ok";
+        $ico = "fas fa-circle-check";
+    }
+    if ($pourc > 100) {
+        $class = "kas-last-err";
+        $ico = "fas fa-circle-exclamation";
+    }
+    $tpl = new template_admin();
+    $when = $tpl->time_to_date(filemtime($path), true);
+    return "<div class='kas-last $class'><span><i class='$ico'></i>&nbsp;&nbsp;<strong>{lbst_last_operation}:</strong> $text</span>" .
+        "<span class='kas-last-time'>" . htmlspecialchars($when) . "</span></div>";
+}
+
+// The service state, from articarest (/keepalived/status). Drawn with the
+// page, then refreshed every 30 s by RefreshInterval_js().
+function keepalived_status_html(): string
+{
+    $tpl = new template_admin();
+    $json = json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/keepalived/status"));
+    if (json_last_error() > JSON_ERROR_NONE || !is_object($json)) {
+        return $tpl->_ENGINE_parse_body($tpl->widget_rouge("Decoding data " . json_last_error(), "{error}"));
+    }
+    if (!$json->Status) {
+        return $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars((string)$json->Error)));
+    }
+    $ini = new Bs_IniHandler();
+    $ini->loadString((string)($json->Info ?? ""));
+    return $tpl->SERVICE_STATUS($ini, "APP_KEEPALIVED", keepalived_jsaction("/keepalived/restart"));
+}
+
+function keepalived_status()
+{
+    echo keepalived_status_html();
 }
 
 function main()
 {
     $tpl = new template_admin();
     $page = CurrentPageName();
-    $keepalive_global_settings = new keepalived_global_settings();
 
-    if ($keepalive_global_settings->log_retation_time == 0) {
-        $keepalive_global_settings->log_retation_time = 15;
-    }
-    if ($keepalive_global_settings->smtp_connect_timeout == 0) {
-        $keepalive_global_settings->smtp_connect_timeout = 30;
-    }
-    $form[] = $tpl->field_hidden("keepalived-global-def", '1');
-    //$form[]=$tpl->field_section("{LOG_STRONGSWAN}","{LOG_STRONGSWAN_EXPLAIN}");
-    $form[] = $tpl->field_checkbox("keepalived_log_detail", "{debug_mode}", $keepalive_global_settings->log_detail, false, null);
+    $jsrestart = keepalived_jsaction("/keepalived/restart");
+    $jsreload = keepalived_jsaction("/keepalived/reload");
+    $jsstop = keepalived_jsaction("/keepalived/stop");
+    $jsstart = keepalived_jsaction("/keepalived/start");
 
-//    $form[]=$tpl->field_checkbox("APP_KEEPALIVED_ENABLE_smtp","{enable} SMTP {notifications}",$keepalive_global_settings->enable_smtp,"keepalived_smtp_server,keepalived_smtp_connect_timeout,keepalived_notification_email,keepalived_notification_email_from",null);
-//    $form[] = $tpl->field_text("keepalived_smtp_server", "SMTP {server}", $keepalive_global_settings->smtp_server);
-//    $form[] = $tpl->field_numeric("keepalived_smtp_connect_timeout", "SMTP {timeout}", $keepalive_global_settings->smtp_connect_timeout);
-//    $form[] = $tpl->field_textarea("keepalived_notification_email", "{to}", $keepalive_global_settings->notification_email);
-//    $form[] = $tpl->field_text("keepalived_notification_email_from", "{from}", $keepalive_global_settings->notification_email_from);
-//
-//
-//    $form[]=$tpl->field_section("{LOG_STRONGSWAN}","{LOG_STRONGSWAN_EXPLAIN}");
-//
-//    $form[]=$tpl->field_numeric("keepalived_log_retation_time","{retention_time} (Days)",$keepalive_global_settings->log_retation_time,"{retention_time_text}");
-//    $form[] = $tpl->field_checkbox("keepalived_send_logs_by_syslog", "{send_syslog_logs}", $keepalive_global_settings->send_logs_by_syslog, "keepalived_do_not_store_log_locally,keepalived_remote_syslog_server,keepalived_remote_syslog_syslog_port,keepalived_syslog_tcp_ip,keepalived_syslog_ssl,keepalived_sylog_certificate");
-//
-//    $form[] = $tpl->field_checkbox("keepalived_do_not_store_log_locally", "{not_store_log_locally}", $keepalive_global_settings->keepalived_do_not_store_log_locally);
-//    $form[] = $tpl->field_ipv4("keepalived_remote_syslog_server", "{remote_syslog_server}", $keepalive_global_settings->remote_syslog_server);
-//    $form[] = $tpl->field_numeric("keepalived_remote_syslog_syslog_port", "{listen_port}", $keepalive_global_settings->remote_syslog_syslog_port);
-//    $form[] = $tpl->field_checkbox("keepalived_syslog_tcp_ip", "{enable_tcpsockets}", $keepalive_global_settings->syslog_tcp_ip);
-//    $form[] = $tpl->field_checkbox("keepalived_syslog_ssl", "{useSSL}", $keepalive_global_settings->syslog_ssl);
-//    $form[] = $tpl->field_certificate("keepalived_sylog_certificate", "{certificate}", $keepalive_global_settings->sylog_certificate);
+    $html[] = "<div class='kas-acts'>";
+    $html[] = "<a class='kas-act kas-act-teal' href=\"javascript:blur();\" OnClick=\"$jsrestart\"><i class='fas fa-rotate'></i> {restart}</a>";
+    $html[] = "<a class='kas-act kas-act-teal' href=\"javascript:blur();\" OnClick=\"$jsreload\"><i class='fas fa-bolt' style='color:#fcd34d'></i> {reload}</a>";
+    $html[] = "<a class='kas-act kas-act-red' href=\"javascript:blur();\" OnClick=\"$jsstop\"><i class='fas fa-circle-stop'></i> {stop_service}</a>";
+    $html[] = "<a class='kas-act kas-act-amber' href=\"javascript:blur();\" OnClick=\"$jsstart\"><i class='fas fa-circle-play'></i> {start_service}</a>";
+    $html[] = "</div>";
+    $html[] = kast_last_operation();
 
+    $html[] = "<div class='kas-cols'>";
+    $html[] = "<div id='keepalived-status'>" . keepalived_status_html() . "</div>";
+    $html[] = "<div class='kas-card'><div class='kas-card-head'>" .
+        "<div class='kas-card-title'><i class='fas fa-sliders'></i> {parameters}</div>" .
+        "</div>" .
+        "<div id='keepalived-flat-config'></div></div>";
+    $html[] = "</div>";
 
-    $tpl->FORM_IN_ARRAY = false;
-    $jsAfter2 = "Loadjs('$page?build-progress=yes')";
-    //$myform=$tpl->form_outside("{general_settings}", @implode("\n", $form),"{keepalived_whatis}","{save}",$jsAfter2);
-    $myform = $tpl->form_outside("{LOG_STRONGSWAN}", @implode("\n", $form), "{LOG_STRONGSWAN_EXPLAIN}", "{save}", $jsAfter2);
-    $html[] = "<table style='width:100%'>
-	<tr>
-		<td style='vertical-align:top;width:240px'><div id='keepalived-status' style='margin-top:15px'></div></td>
-		<td	style='vertical-align:top;width:90%'>$myform</td>
-	</tr>
-	</table>
-	<script>LoadAjaxSilent('keepalived-status','$page?keepalived-status=yes');</script>	
-	";
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    // Every 30 s: each pass asks articarest for the status again.
+    $html[] = "<script>" . $tpl->RefreshInterval_js("keepalived-status", $page, "keepalived-status=yes", 30) .
+        "\nLoadAjaxSilent('keepalived-flat-config','$page?flat-config=yes');</script>";
+    echo kast_style() . $tpl->_ENGINE_parse_body(@implode("\n", $html));
 }
 
-function keepalived_save_global_def()
+// The log level comes from articarest (GET /keepalived/parameters).
+function keepalived_log_detail(): int
+{
+    $json = json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/keepalived/parameters"), true);
+    return is_array($json) ? intval($json["log_detail"] ?? 0) : 0;
+}
+
+function flat_config()
+{
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $tpl->table_form_field_js("Loadjs('$page?config-js=yes')", "AsVPNManager");
+    $tpl->table_form_field_bool("{debug_mode}", keepalived_log_detail(), ico_bug);
+    echo $tpl->table_form_compile();
+}
+
+function config_js()
+{
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $tpl->js_dialog2("{parameters}", "$page?config-popup=yes", 650);
+}
+
+function config_popup()
+{
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+
+    $form[] = $tpl->field_hidden("keepalived-global-def", '1');
+    $form[] = $tpl->field_checkbox("keepalived_log_detail", "{debug_mode}", keepalived_log_detail(), false, null);
+
+    // On success: close, then follow the reconfigure in the progress bar. At
+    // 100% the whole block is redrawn, parameters card included.
+    $jsafter = "dialogInstance2.close();" . keepalived_jsaction("/keepalived/reconfigure");
+
+    $html[] = $tpl->form_outside("", $form, "", "{apply}", $jsafter, "AsVPNManager", true);
+    echo $tpl->_ENGINE_parse_body($html);
+}
+
+function keepalived_save_global_def(): bool
 {
     $tpl = new template_admin();
     $tpl->CLEAN_POST();
-//    if($_POST["APP_KEEPALIVED_ENABLE_smtp"]==1){
-//        if(empty($_POST["keepalived_smtp_server"])){
-//            echo "jserror:Empty SMTP Server";
-//            return false;
-//        }
-//        if(empty($_POST["keepalived_smtp_connect_timeout"])){
-//            $_POST["keepalived_smtp_connect_timeout"]=30;
-//        }
-//        if(empty($_POST["keepalived_notification_email"])){
-//            echo "jserror:Empty Recipients (to)";
-//            return false;
-//        }
-//        if(empty($_POST["keepalived_notification_email_from"])){
-//            echo "jserror:Empty Sender (from)";
-//            return false;
-//        }
-//    }
-    $keepalived_global_settings = new keepalived_global_settings();
-    $keepalived_global_settings->log_detail = intval($_POST["keepalived_log_detail"]);
-//    $keepalived_global_settings->enable_smtp=intval($_POST["APP_KEEPALIVED_ENABLE_smtp"]);
-//    $keepalived_global_settings->smtp_server=$_POST["keepalived_smtp_server"];
-//    $keepalived_global_settings->smtp_connect_timeout=intval($_POST["keepalived_smtp_connect_timeout"]);
-//    $keepalived_global_settings->notification_email=$_POST["keepalived_notification_email"];
-//    $keepalived_global_settings->notification_email_from=$_POST["keepalived_notification_email_from"];
-//    $keepalived_global_settings->log_retation_time=intval($_POST["keepalived_log_retation_time"]);
-//    $keepalived_global_settings->send_logs_by_syslog=intval($_POST["keepalived_send_logs_by_syslog"]);
-//    $keepalived_global_settings->do_not_store_log_locally=intval($_POST["keepalived_do_not_store_log_locally"]);
-//    $keepalived_global_settings->remote_syslog_server=$_POST["keepalived_remote_syslog_server"];
-//    $keepalived_global_settings->remote_syslog_syslog_port=intval($_POST["keepalived_remote_syslog_syslog_port"]);
-//    $keepalived_global_settings->syslog_tcp_ip=intval($_POST["keepalived_syslog_tcp_ip"]);
-//    $keepalived_global_settings->syslog_ssl=intval($_POST["keepalived_syslog_ssl"]);
-//    $keepalived_global_settings->sylog_certificate=$_POST["keepalived_sylog_certificate"];
-    $keepalived_global_settings->save();
+    // articarest enregistre le niveau et redemarre keepalived (-D est un argument
+    // de la ligne de commande, un reload ne l'applique pas).
+    $raw = $GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/keepalived/parameters/save",
+        array("log_detail" => (string)intval($_POST["keepalived_log_detail"])));
+    $json = json_decode((string)$raw, true);
+    if (!is_array($json) || empty($json["Status"])) {
+        $error = is_array($json) ? ($json["Error"] ?? $json["error"] ?? "") : trim((string)$raw);
+        echo $tpl->post_error($error == "" ? "articarest: no answer" : $error);
+        return false;
+    }
+    return true;
 }

@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 $GLOBALS["redirtypes"][0]="{ngix_rwfl_redirect}";
 $GLOBALS["redirtypes"][1]="{ngix_rwfl_permanent}";
 $GLOBALS["redirtypes"][2]="{inside_redirection}";
@@ -16,7 +19,11 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once(
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 include_once(dirname(__FILE__).'/ressources/class.elasticssearch.inc');
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : eth etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["start-rules"])){start_rules();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -181,7 +188,7 @@ function rule_delete_js(){
     return true;
 }
 function rule_delete_confirm():bool{
-    $ID         = $_POST["rule-delete-confirm"];
+    $ID         = intval($_POST["rule-delete-confirm"]);
     $q=new lib_sqlite("/home/artica/SQLITE/backup-local.db");
     $ligne=$q->mysqli_fetch_array("SELECT rulename FROM categories_backup WHERE ID='$ID'");
     $title="{$ligne["rulename"]}";
@@ -237,7 +244,7 @@ function rule_move(){
 
     foreach($results as $index=>$ligne) {
         echo "// ID {$ligne["ID"]} became $c\n";
-        $q->QUERY_SQL("UPDATE categories_backup SET zorder=$c WHERE `ID`={$ligne["ID"]}");
+        $q->QUERY_SQL("UPDATE categories_backup SET zorder=$c WHERE `ID`=".intval($ligne["ID"]));
         $c++;
     }
     admin_tracks("Move Web error page rule order of $aclname from $xORDER_ORG to $xORDER");
@@ -251,10 +258,15 @@ function rule_save(){
     unset($_POST["rule-save"]);
 
 
+    // Pentest 2026-11-04 : les cles et valeurs de $_POST etaient concatenees dans la requete.
+    $PARAMS=array();
     reset($_POST);foreach ($_POST as $key=>$val){
-        $EDIT[]="`$key`='$val'";
+        $key=preg_replace('/[^A-Za-z0-9_]/','',strval($key));
+        if($key==""){continue;}
+        $EDIT[]="`$key`=?";
         $ADDFIELD[]="`$key`";
-        $ADDVALS[]="'$val'";
+        $ADDVALS[]="?";
+        $PARAMS[]=strval($val);
 
     }
 
@@ -267,7 +279,7 @@ function rule_save(){
     }
 
     $q=new lib_sqlite("/home/artica/SQLITE/backup-local.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$PARAMS);
     if(!$q->ok){
         $tpl->post_error($q->mysql_error);
         return false;
@@ -317,14 +329,14 @@ function table(){
     $ARRAY["TITLE"]="{unlock}::{apply}";
     $prgress=base64_encode(serialize($ARRAY));
 
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-weberrorules-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-weberrorules-restart')";
 
     $html[] = "<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:20px'>";
     $html[] = "<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>";
 
     $html[] = "</div>";
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true data-type='text'>{description}</th>";
@@ -333,7 +345,7 @@ function table(){
     $html[]="<th data-sortable=false>{delete}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ufdbbk-rows'>";
 
     $jsAfter="LoadAjax('table-loader-webhttp-rules','$page?table=yes&eth={$_GET["eth"]}');";
     $GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
@@ -346,7 +358,7 @@ function table(){
     $c=0;
     foreach ($results as $index=>$ligne){
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md=md5(serialize($ligne));
         $host=$ligne["host"];
         $ID=$ligne["ID"];
@@ -388,7 +400,7 @@ function table(){
     }
 
     if($c==0) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $html[] = "<tr class='$TRCLASS' id='null'>";
         $html[] = "<td><H3>{default}</H3>{BACKUP_WARNING_NOT_CONFIGURED_TEXT}</td>";
         $html[] = "<td width=1% class='center' nowrap>" . $tpl->icon_nothing() . "</center></td>";
@@ -398,22 +410,16 @@ function table(){
     }
 
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='ufdbbk-pager'></span></div></div></div>";
     $html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"ufdbbk-rows","ufdbbk-pager");
     compile_rules();
 }
 

@@ -1,10 +1,8 @@
-<enable_original_recipient>Original recipient (X-Original-To)</enable_original_recipient>
-<enable_original_recipient_text>
-Enable support for the [b]X-Original-To message header[/b].[br] This header is needed for multi-recipient mailboxes.[br]
-When this parameter is enabled, the cleanup daemon performs duplicate elimination on distinct pairs of (original recipient, rewritten recipient), 
-and generates non-empty original recipient queue file records.[br][br]
-When this parameter is disabled, the cleanup daemon performs duplicate elimination on the rewritten recipient address only, 
-and generates empty original recipient queue file records
-</enable_original_recipient_text>
-<undisclosed_recipients_header>Undisclosed Recipients Header</undisclosed_recipients_header>
-<undisclosed_recipients_header_text>Message header that the Postfix cleanup server inserts when a message contains no To: or Cc: message header.</undisclosed_recipients_header_text>
+<enable_original_recipient>Destinatario original (X-Original-To)</enable_original_recipient>
+<enable_original_recipient_text>Habilitar la compatibilidad con el [b]encabezado de mensaje X-Original-To[/b].[br] Este encabezado es necesario para buzones con m&#250;ltiples destinatarios.[br]
+Cuando este par&#225;metro est&#225; habilitado, el daemon de limpieza realiza la eliminaci&#243;n de duplicados en pares distintos de (destinatario original, destinatario reescrito) 
+y genera registros de archivo de cola de destinatario original no vac&#237;os.[br][br]
+Cuando este par&#225;metro est&#225; deshabilitado, el daemon de limpieza realiza la eliminaci&#243;n de duplicados solo en la direcci&#243;n del destinatario reescrito 
+y genera registros de archivo de cola de destinatario original vac&#237;os</enable_original_recipient_text>
+<undisclosed_recipients_header>Encabezado de destinatarios no revelados</undisclosed_recipients_header>
+<undisclosed_recipients_header_text>Encabezado de mensaje que el servidor de limpieza de Postfix inserta cuando un mensaje no contiene un encabezado To: o Cc:.</undisclosed_recipients_header_text>

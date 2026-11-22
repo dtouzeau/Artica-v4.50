@@ -135,7 +135,7 @@ function render_charts(): void {
     $fmt = ts_format($hours);
 
     $h = [];
-    $h[] = "<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[] = "";
 
     // ── 1. Status summary ──
     $statusJson = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/squid/process-metrics/status"));

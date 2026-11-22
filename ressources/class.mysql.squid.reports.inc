@@ -8,7 +8,6 @@ include_once(dirname(__FILE__).'/class.users.menus.inc');
 if(function_exists("debug_mem")){debug_mem();}
 include_once(dirname(__FILE__).'/class.mysql.inc');
 if(function_exists("debug_mem")){debug_mem();}
-include_once(dirname(__FILE__)."/class.mysql.blackboxes.inc");
 if(function_exists("debug_mem")){debug_mem();}
 include_once(dirname(__FILE__)."/class.mysql.catz.inc");
 if(function_exists("debug_mem")){debug_mem();}
@@ -86,8 +85,11 @@ class mysql_squid_reports{
 		$dateT=date("{l} {F} d",$xtime);
 		if($time){$dateT=date("{l} {F} d H:i:s",$xtime);}
 		if($tpl->language=="fr"){$dateT=date("{l} d {F} ",$xtime);if($time){$dateT=date("{l} d {F} H:i:s",$xtime);}}
-		return $tpl->_ENGINE_parse_body($dateT);
-	
+		// Texte brut UTF-8, pas du HTML: les tokens de mois fr portent leurs accents
+		// en entites (Ao&ucirc;t), qu'un htmlspecialchars() appelant reechapperait.
+		// Meme contrat que templates::time_to_date().
+		return html_entity_decode($tpl->_ENGINE_parse_body($dateT),ENT_QUOTES,"UTF-8");
+
 	}
 	
 	public function mysql_error_html(){

@@ -1,10 +1,13 @@
 <?php
+// Service Pack 9 2026-10-10
 
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_POST["interface"])){save();exit;}
+// Pentest 2026-11-04 : les noms d'interface etaient recopies sans encodage dans la page (XSS).
+foreach (array("interface","service-flat","events-start","status","tabs","popup","leases") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^A-Za-z0-9_.:@-]#','',(string)$_GET[$xk]);}}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["status"])){status();exit;}
@@ -40,11 +43,13 @@ function js(){
 
 }
 function status_service():bool{
+    if(!fw_progress_page_priv("ASDCHPAdmin|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ini=new Bs_IniHandler();
     $sock=new sockets();
-    $interface=$_GET["service-status"];
+    $interface=fw_progress_seg($_GET["service-status"] ?? "");
+    if($interface===""){return fw_progress_bad_value("service-status");}
     $json=json_decode($sock->REST_API("/system/network/udhcpd/status/$interface"));
 
     $ini->loadString($json->Info);
@@ -283,7 +288,8 @@ function save(){
 
         $udhcpd_conf=base64_encode(serialize($_POST));
         $udhcpd=$_POST["udhcpd"];
-        $q->QUERY_SQL("UPDATE nics_vlan SET udhcpd_conf='$udhcpd_conf',udhcpd='$udhcpd' WHERE ID=$ID");
+        // Pentest 2026-11-04 : udhcpd etait concatene dans la requete.
+        $q->QUERY_SQL_PARAMS("UPDATE nics_vlan SET udhcpd_conf=?,udhcpd=? WHERE ID=?",array($udhcpd_conf,$udhcpd,intval($ID)));
         if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
         admin_tracks("DHCP settings saved for VLAN Interface $ID");
         $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/reset/cache");

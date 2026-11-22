@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 //SP119
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
@@ -51,7 +54,8 @@ function backend_stats_js(){
     $tpl=new template_admin();
     $servicename=$_GET["servicename"];
     $backendname=$_GET["backend-stats-js"];
-    $tpl->js_dialog2("{statistics} $backendname","$page?backend_stats=yes&backend=$backendname");
+    // Pentest 2026-11-04 : backend-stats-js etait recopie sans encodage dans la page (XSS).
+    $tpl->js_dialog2("{statistics} ".req_html(req_html($backendname)),"$page?backend_stats=yes&backend=".req_url($backendname));
     return true;
 }
 
@@ -98,7 +102,8 @@ function backend_delete_js(){
     $value="$servicename|$backendname";
 
     $js[]="LoadAjaxSilent('adagent-table-start','$page?backends-start=true');";
-    $tpl->js_confirm_delete("$servicename/$backendname" , "backend-delete", $value,@implode(";", $js));
+    // Pentest 2026-11-04 : servicename/backend-delete-js etaient recopies sans encodage dans la page (XSS).
+    $tpl->js_confirm_delete(req_html("$servicename/$backendname") , "backend-delete", $value,@implode(";", $js));
 
 }
 
@@ -982,7 +987,7 @@ function adagent_status(){
     $ARRAY["TITLE"]="{restart}";
     $ARRAY["AFTER"]="LoadAjax('adagent-table-start','$page?service=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-adagent-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-adagent-restart')";
 
 
     $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/adagent.progress";
@@ -991,7 +996,7 @@ function adagent_status(){
     $ARRAY["TITLE"]="{reloading}";
     $ARRAY["AFTER"]="LoadAjax('adagent-table-start','$page?service=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsreload="Loadjs('fw.progress.php?content=$prgress&mainid=progress-adagent-restart')";
+    $jsreload="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-adagent-restart')";
 
     $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/adagent-stop.progress";
     $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/adagent-stop.progress.txt";
@@ -999,7 +1004,7 @@ function adagent_status(){
     $ARRAY["TITLE"]="{stopping_service}";
     $ARRAY["AFTER"]="LoadAjax('adagent-table-start','$page?service=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsstop="Loadjs('fw.progress.php?content=$prgress&mainid=progress-adagent-restart')";
+    $jsstop="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-adagent-restart')";
 
     $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/adagent-stop.progress";
     $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/adagent-stop.progress.txt";
@@ -1007,7 +1012,7 @@ function adagent_status(){
     $ARRAY["TITLE"]="{starting_service}";
     $ARRAY["AFTER"]="LoadAjax('adagent-table-start','$page?service=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsstart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-adagent-restart')";
+    $jsstart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-adagent-restart')";
     $bts[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
     $bts[]="<label class=\"btn btn btn-warning\" OnClick=\"$jsrestart\"><i class='fas fa-refresh'></i> {restart} </label>";
     $bts[]="<label class=\"btn btn btn-info\" OnClick=\"$jsreload\"><i class='fas fa-rotate-right'></i> {reload} </label>";
@@ -1108,7 +1113,8 @@ function set_backend_js():bool{
     if(!empty($backendservicename)){
         $txt="{edit}";
     }
-    $tpl->js_dialog2("$txt","$page?set-backends-popup=$backendservicename&servicename=$servicename");
+    // Pentest 2026-11-04 : servicename/set-backends-js etaient recopies sans encodage dans la page (XSS).
+    $tpl->js_dialog2("$txt","$page?set-backends-popup=".req_url($backendservicename)."&servicename=".req_url($servicename));
     return true;
 }
 function set_backend_popup()
@@ -1157,14 +1163,15 @@ function set_backend_popup()
     unset($Interfaces["lo"]);
 
 
+    // Pentest 2026-11-04 : servicename/set-backends-popup etaient recopies sans encodage dans la page (XSS).
     $form[]=$tpl->field_info("servicename", "{servicename}", $servicename,true);
     if($backendname<>null){
         $form[]=$tpl->field_info("backendname", "{backendname}", $backendname);
-        $title="$servicename/$backendname ($Connector_text)";
+        $title=req_html("$servicename/$backendname")." ($Connector_text)";
 
     }else{
         $form[]=$tpl->field_text("backendname", "{backendname}", null,true);
-        $title="$servicename/{new_backend} ($Connector_text)";
+        $title=req_html($servicename)."/{new_backend} ($Connector_text)";
         $jsafter[]="dialogInstance2.close();";
     }
 
@@ -1279,7 +1286,7 @@ function adagent_parameters_popup(){
     $ARRAY["TITLE"]="{reloading}";
     $ARRAY["AFTER"]="LoadAjax('table-loader','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsafter[]="Loadjs('fw.progress.php?content=$prgress&mainid=progress-adagent-restart')";
+    $jsafter[]="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-adagent-restart')";
     echo $tpl->form_outside(null, $form,null,"{apply}", @implode(";",$jsafter), "AsSquidAdministrator");
     return true;
 
@@ -1339,7 +1346,7 @@ function backends_save(){
     $http_status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     if($http_status!="200"){
-        echo "jserror:Unable to connect to {$_POST["listen_ip"]}:{$_POST["listen_port"]}, status code $http_status";
+        echo (new template_admin())->post_error("Unable to connect to {$_POST["listen_ip"]}:{$_POST["listen_port"]}, status code $http_status");
         return false;
     }
 

@@ -1,7 +1,14 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.nics.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
@@ -26,70 +33,69 @@ page();
 function page(){
 	$page=CurrentPageName();
 	$tpl=new templates();
-	
+
 	$html="
 <div class=\"row border-bottom white-bg dashboard-header\">
 	<div class=\"col-sm-12\"><h1 class=ng-binding>{tcp_outgoing_mark}</h1><p>{tcp_outgoing_mark_explain}</div>
-	
+
 </div>
-			
-                            
-			
+
+
+
 <div class='row'><div id='progress-acls4-restart'></div>
 			<div class='ibox-content'>
-       	
+
 			 	<div id='table-acls4-rules'></div>
-                                    
+
 			</div>
 </div>
-					
-			
-			
+
+
+
+
 <script>
 LoadAjax('table-acls4-rules','$page?table=yes');
-			
+
 </script>";
-	
+
 	$tpl=new templates();
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 function rule_delete_js(){
 	header("content-type: application/x-javascript");
-	$ID=$_GET["rule-delete-js"];
+	$ID=intval($_GET["rule-delete-js"]);
 	$md=$_GET["md"];
 	if(!rule_delete($ID)){return;}
 	echo "$('#$md').remove();";
-	
-	
+
+
 }
 function rule_enable(){
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 	header("content-type: application/x-javascript");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM tcp_outgoing_mark WHERE ID='{$_GET["enable-js"]}'");
-	if(intval($ligne["enabled"])==0){
-		
-		$js="$( \"#acl-{$_GET["enable-js"]}\" ).removeClass( \"text-muted\" );";
-		$enabled=1;
-		}
-		else{
-			$js="$( \"#acl-{$_GET["enable-js"]}\" ).addClass( \"text-muted\" );";
-			$enabled=0;
-		}
-	
-	$q->QUERY_SQL("UPDATE tcp_outgoing_mark SET enabled='$enabled' WHERE ID='{$_GET["enable-js"]}'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."')";return;}
+	$ID=intval($_GET["enable-js"]);
+	$row=acls_api_get("/proxy/tcp-outgoing-mark/$ID");
+	if(!is_array($row)){echo "alert('Rule not found');";return;}
+	$current=intval($row["enabled"] ?? 0);
+	$enabled=($current==0)?1:0;
+	if($enabled==0){
+		$js="$( \"#acl-$ID\" ).addClass( \"text-muted\" );";
+	}else{
+		$js="$( \"#acl-$ID\" ).removeClass( \"text-muted\" );";
+	}
+	list($ok,$data)=acls_api_send("PUT","/proxy/tcp-outgoing-mark/$ID",["enabled"=>$enabled]);
+	if(!$ok){echo "alert('".addslashes($data ?? 'error')."')";return;}
 	echo $js;
 }
 
 function rule_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["rule-id-js"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT aclname FROM tcp_outgoing_mark WHERE ID='$ID'");
-	$tpl->js_dialog("{rule}: $ID {$ligne["aclname"]}","$page?rule-tabs=$ID");
+	$ID=intval($_GET["rule-id-js"]);
+	$row=acls_api_get("/proxy/tcp-outgoing-mark/$ID");
+	$aclname=is_array($row) ? ($row["ruleName"] ?? "") : "";
+	$tpl->js_dialog("{rule}: $ID $aclname","$page?rule-tabs=$ID");
 }
 
 
@@ -99,86 +105,64 @@ function rule_tabs(){
 	$tpl=new template_admin();
 	$ID=intval($_GET["rule-tabs"]);
 	$array["{rule}"]="$page?rule-settings=$ID";
-	
+
 	$RefreshTable=base64_encode("LoadAjax('table-acls4-rules','$page?table=yes');");
-	
+
 	$array["{proxy_objects}"]="fw.proxy.acls.objects.php?rule-id=$ID&TableLink=tcp_outgoing_mark_links&RefreshTable=$RefreshTable";
 	echo $tpl->tabs_default($array);
-	
+
 }
 
 
 function rule_settings(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["rule-settings"];
+	$ID=intval($_GET["rule-settings"]);
     $explain=null;
 
     $EnableLinkBalancer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLinkBalancer"));
     if($EnableLinkBalancer==1) {
-        $q = new lib_sqlite("/home/artica/SQLITE/firewall.db");
-        $results = $q->QUERY_SQL("SELECT Interface,mark FROM link_balance");
-        foreach ($results as $index=>$ligne) {
-            $nic=new system_nic($ligne["Interface"]);
-            if($nic->enabled==0){continue;}
-            $Interface = $ligne["Interface"];
-            $mark = $ligne["mark"];
-            $t[] = "{forwarding_packets_to} $Interface ($nic->NICNAME/$nic->netzone)  {use_mark} <strong>$mark</strong>";
+        $raw=acls_api_get("/network/link-balance");
+        if(is_array($raw)){
+            foreach($raw as $item){
+                $iface=$item["interface"] ?? "";
+                $mark=$item["mark"] ?? "";
+                if($iface===""){continue;}
+                $nic=new system_nic($iface);
+                if($nic->enabled==0){continue;}
+                $t[]="{forwarding_packets_to} $iface ($nic->NICNAME/$nic->netzone)  {use_mark} <strong>$mark</strong>";
+            }
+            $explain=@implode("<br>",$t);
         }
-        $explain=@implode("<br>",$t);
     }
 
-
-
-
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM tcp_outgoing_mark WHERE ID='{$_GET["rule-settings"]}'");
+	$row=acls_api_get("/proxy/tcp-outgoing-mark/$ID");
+	if(!is_array($row)){echo "{error}";return;}
 	$form[]=$tpl->field_hidden("rule-save", "$ID");
-	$form[]=$tpl->field_text("rulename", "{rule_name}", $ligne["rulename"],true);
-	$form[]=$tpl->field_numeric("mark", "{MARK}",$ligne["mark"]);
+	$form[]=$tpl->field_text("rulename", "{rule_name}", $row["ruleName"] ?? "",true);
+	$form[]=$tpl->field_numeric("mark", "{MARK}",$row["mark"] ?? 0);
 	$jsafter="LoadAjax('table-acls4-rules','$page?table=yes');";
-	$html=$tpl->form_outside($ligne["rulename"], @implode("\n", $form),$explain,"{apply}",$jsafter,"AsSquidAdministrator");
+	$html=$tpl->form_outside($row["ruleName"] ?? "", @implode("\n", $form),$explain,"{apply}",$jsafter,"AsSquidAdministrator");
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 function rule_save(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST_XSS();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-	$ID=$_POST["rule-save"];
-	$rulename=$q->sqlite_escape_string2(utf8_decode($_POST["rulename"]));
-	$TempName=md5(time());
-	
-	$FF[]="`rulename`";
-	$FF[]="`mark`";
-	$FF[]="`zorder`";
-	$FF[]="`enabled`";
-	
-	$FA[]="'$rulename'";
-	$FA[]="'{$_POST["mark"]}'";
-	$FA[]="'{$_POST["zorder"]}'";
-	$FA[]="'{$_POST["enabled"]}'";
-	
-	foreach ($FF as $index=>$key){$FB[]="$key={$FA[$index]}";}
-	
-	$sql="UPDATE tcp_outgoing_mark SET ".@implode(",", $FB)." WHERE ID=$ID";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
-	
-	$c=0;
-	$sql="SELECT ID FROM tcp_outgoing_mark ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-	
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE tcp_outgoing_mark SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return;}
-		$c++;
-	}
-	
-	
+
+	$ID=intval($_POST["rule-save"]);
+	$rulename=$tpl->CLEAN_BAD_XSS_SQL(utf8_decode($_POST["rulename"] ?? ""));
+
+	$body=[
+		"ruleName" => $rulename,
+		"mark"     => intval($_POST["mark"] ?? 0),
+		"enabled"  => intval($_POST["enabled"] ?? 1),
+	];
+
+	list($ok,$data)=acls_api_send("PUT","/proxy/tcp-outgoing-mark/$ID",$body);
+	if(!$ok){echo ($data ?? "error")."\n";return;}
 }
 
 function new_rule_js(){
@@ -189,11 +173,13 @@ function new_rule_js(){
 }
 
 function HEADERS_ARRAY(){
-	$ql=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$sql="SELECT * FROM http_headers ORDER BY HeaderName";
-	$resultsHeaders=$ql->QUERY_SQL($sql);
-	foreach ($resultsHeaders as $index=>$ligneHeaders){
-		$HEADERSZ[$ligneHeaders["HeaderName"]]=$ligneHeaders["HeaderName"];
+	$raw=acls_api_get("/http-headers");
+	$HEADERSZ=[];
+	if(is_array($raw)){
+		foreach($raw as $item){
+			$n=$item["HeaderName"] ?? $item["headerName"] ?? "";
+			if($n!==""){$HEADERSZ[$n]=$n;}
+		}
 	}
 	return $HEADERSZ;
 }
@@ -205,79 +191,39 @@ function new_rule_popup(){
 
     $EnableLinkBalancer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLinkBalancer"));
     if($EnableLinkBalancer==1) {
-        $q = new lib_sqlite("/home/artica/SQLITE/firewall.db");
-        $results = $q->QUERY_SQL("SELECT Interface,mark FROM link_balance");
-        foreach ($results as $index=>$ligne) {
-            $nic=new system_nic($ligne["Interface"]);
-            if($nic->enabled==0){continue;}
-            $Interface = $ligne["Interface"];
-            $mark = $ligne["mark"];
-            $t[] = "{forwarding_packets_to} $Interface ($nic->NICNAME/$nic->netzone)  {use_mark} <strong>$mark</strong>";
+        $raw=acls_api_get("/network/link-balance");
+        if(is_array($raw)){
+            foreach($raw as $item){
+                $iface=$item["interface"] ?? "";
+                $mark=$item["mark"] ?? "";
+                if($iface===""){continue;}
+                $nic=new system_nic($iface);
+                if($nic->enabled==0){continue;}
+                $t[]="{forwarding_packets_to} $iface ($nic->NICNAME/$nic->netzone)  {use_mark} <strong>$mark</strong>";
+            }
+            $explain=@implode("<br>",$t);
         }
-        $explain=@implode("<br>",$t);
     }
-	
 
 	$form[]=$tpl->field_hidden("newrule", "yes");
 	$form[]=$tpl->field_text("rulename", "{rule_name}", null,true);
     $form[]=$tpl->field_numeric("mark", "{MARK}",20);
 	$jsafter="LoadAjax('table-acls4-rules','$page?table=yes');BootstrapDialog1.close();BootstrapDialog1.close();";
-	
+
 	$html=$tpl->form_outside("{new_rule}", @implode("\n", $form),$explain,"{add}",$jsafter,"AsSquidAdministrator");
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 
 
 function rule_move(){
+	header("content-type: application/x-javascript");
 	$tpl=new template_admin();
-	$ID=$_GET["acl-rule-move"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$sql="SELECT zorder FROM tcp_outgoing_mark WHERE `ID`='$ID'";
-	$ligne=$q->mysqli_fetch_array($sql);
-	if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-	$xORDER_ORG=intval($ligne["zorder"]);
-	$xORDER=$xORDER_ORG;
-	
-	
-	if($_GET["acl-rule-dir"]==1){$xORDER=$xORDER_ORG-1;}
-	if($_GET["acl-rule-dir"]==0){$xORDER=$xORDER_ORG+1;}
-	if($xORDER<0){$xORDER=0;}
-	$sql="UPDATE tcp_outgoing_mark SET zorder=$xORDER WHERE `ID`='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-	if($_GET["acl-rule-dir"]==1){
-		$xORDER2=$xORDER+1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE tcp_outgoing_mark SET zorder=$xORDER2 WHERE `ID`<>'$ID' AND zorder=$xORDER";
-		$q->QUERY_SQL($sql);
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	}
-	if($_GET["acl-rule-dir"]==0){
-		$xORDER2=$xORDER-1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE tcp_outgoing_mark SET zorder=$xORDER2 WHERE `ID`<>'{$_GET["acl-rule-move"]}'";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-	}
-
-	$c=0;
-	$sql="SELECT ID FROM tcp_outgoing_mark ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE tcp_outgoing_mark SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if($GLOBALS["VERBOSE"]){echo "UPDATE tcp_outgoing_mark SET zorder=$c WHERE `ID`={$ligne["ID"]}\n";}
-		$c++;
-	}
-
-
+	$ID=intval($_GET["acl-rule-move"]);
+	$dir=intval($_GET["acl-rule-dir"]);
+	list($ok,$data)=acls_api_send("PUT","/proxy/tcp-outgoing-mark/$ID/move",["dir"=>$dir]);
+	if(!$ok){echo "alert('".$tpl->javascript_parse_text($data ?? 'error')."');";return;}
 }
 
 
@@ -285,182 +231,129 @@ function table(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$users=new usersMenus();
-	$eth_sql=null;
-	$token=null;
-	$class=null;
 	$order=$tpl->_ENGINE_parse_body("{order}");
 	$rulename=$tpl->_ENGINE_parse_body("{rulename}");
-	$interface=$tpl->_ENGINE_parse_body("{interface}");
-	$type=$tpl->_ENGINE_parse_body("{type}");
-	$interface=$tpl->_ENGINE_parse_body("{interface}");
 	$description=$tpl->_ENGINE_parse_body("{description}");
-	$rule=$tpl->_ENGINE_parse_body("{rule}");
-	$new_rule=$tpl->_ENGINE_parse_body("{new_rule}");
-	$groups=$tpl->_ENGINE_parse_body("{proxy_objects}");
-	$delete_rule_ask=$tpl->javascript_parse_text("{delete_rule_ask}");
-	$apply_params=$tpl->_ENGINE_parse_body("{apply}");
-	$options=$tpl->_ENGINE_parse_body("{options}");
 	$enabled=$tpl->_ENGINE_parse_body("{enabled}");
-	$js="OnClick=\"javascript:LoadAjax('table-firewall-rules','$page?table=yes&eth=');\"";
 
-	
-	$class=null;
-
-	
-	
 	$t=time();
 	$add="Loadjs('$page?newrule-js=yes',true);";
-	
+
 	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR ."/squid.access.center.progress";
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR ."/squid.access.center.progress.log";
-	$ARRAY["CMD"]="squid2.php?outgoingmark=yes";
+	$ARRAY["CMD"]="/proxy/outgoing-mark/apply";
 	$ARRAY["TITLE"]="{GLOBAL_ACCESS_CENTER}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-acls4-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-acls4-restart')";
 
     $users=new usersMenus();
     if($users->AsSquidAdministrator) {
         $html[] = $tpl->_ENGINE_parse_body("
-	
+
 	<div class=\"btn-group\" data-toggle=\"buttons\">
     	<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>
         <label class=\"btn btn btn-info\" OnClick=\"$jsrestart\"><i class='fa fa-save'></i> {apply_rules} </label>
      </div>
      ");
     }
-	
-	$html[]="<table id='table-webfilter-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='number' style='width:1%'>$order</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$rulename</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$description}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize center'>$enabled</th>";
-	
-	
+	$html[]="<th>$order</th>";
+	$html[]="<th>$rulename</th>";
+	$html[]="<th>{$description}</th>";
+	$html[]="<th class='center'>$enabled</th>";
 
-	
-	$html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
+
+
+	$html[]="<th></th>";
+	$html[]="<th></th>";
+	$html[]="<th></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
-	
+	$html[]="<tbody id='tcpoutgoingm-rows'>";
+
 	$jsAfter="LoadAjax('table-proxyheader-rules','$page?table=yes');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-	$results=$q->QUERY_SQL("SELECT * FROM tcp_outgoing_mark ORDER BY zorder");
+
+	$results=acls_api_get("/proxy/tcp-outgoing-mark");
+	if(!is_array($results)){$results=[];}
+
 	$TRCLASS=null;
-	
-	
+
+
 	foreach($results as $index=>$ligne) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$MUTED=null;
 		$md=md5(serialize($ligne));
-		$ID=$ligne["ID"];
-		$ligne['rulename']=utf8_encode($ligne['rulename']);
-		
+		$ID=intval($ligne["id"]);
+		$rulename_val=utf8_encode($ligne["ruleName"] ?? "");
+
 		$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID&md=$md')","AsSquidAdministrator");
 		$js="Loadjs('$page?rule-id-js=$ID')";
-		if($ligne["enabled"]==0){$MUTED=" text-muted";}
-		
-	
+		if(intval($ligne["enabled"] ?? 1)==0){$MUTED=" text-muted";}
+
+
 		$explain=EXPLAIN_THIS_RULE($ID);
 		$up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');","AsSquidAdministrator");
 		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');","AsSquidAdministrator");
-		
-		
+
+
 		$html[]="<tr class='$TRCLASS{$MUTED}' id='$md'>";
-		$html[]="<td class=\"center\" style='width:1%' nowrap>{$ligne["zorder"]}</td>";
-		$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap>".intval($ligne["xOrder"] ?? 0)."</td>";
+		$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>". $tpl->td_href($rulename_val,"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='vertical-align:middle'>$explain</td>";
 		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,"AsSquidAdministrator")."</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$up&nbsp;&nbsp;$down</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$delete</td>";
 		$html[]="</tr>";
-	
+
 	}
-	
-	
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+
+
+
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='tcpoutgoingm-pager'></span></div>";
+	$html[]="</div></div>";
 	$html[]="
-<script> 
+<script>
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-webfilter-rules').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); }); 
 </script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"tcpoutgoingm-rows","tcpoutgoingm-pager");
 }
 
 function new_rule_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-	
-	$rulename=sqlite_escape_string2(utf8_decode($_POST["rulename"]));
-	$headervalue=base64_encode($_POST["headervalue"]);
-	$TempName=md5(time());
-	
-	$FF[]="`rulename`";
-	$FF[]="`mark`";
-	$FF[]="`zorder`";
-	$FF[]="`enabled`";
-	
-	$FA[]="'$TempName'";
-	$FA[]="'{$_POST["mark"]}'";
-	$FA[]=99999;
-	$FA[]=1;
-	
 
-	
-	$sql="INSERT INTO tcp_outgoing_mark (".@implode(",", $FF).") VALUES (".@implode(",", $FA).")";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
-	
-	$ligne=$q->mysqli_fetch_array("SELECT ID FROM tcp_outgoing_mark WHERE rulename='$TempName'");
-	$LASTID=$ligne["ID"];
-	
-	$q->QUERY_SQL("UPDATE tcp_outgoing_mark SET rulename='$rulename' WHERE ID='$LASTID'");
-	
-	$c=0;
-	$sql="SELECT ID FROM tcp_outgoing_mark ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE tcp_outgoing_mark SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return;}
-		$c++;
-	}
+	$rulename=$tpl->CLEAN_BAD_XSS_SQL(utf8_decode($_POST["rulename"] ?? ""));
+
+	list($ok,$data)=acls_api_send("POST","/proxy/tcp-outgoing-mark",[
+		"ruleName" => $rulename,
+		"mark"     => intval($_POST["mark"] ?? 0),
+	]);
+	if(!$ok){echo $data ?? "error";return;}
 }
 
 function rule_delete($ID){
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$q->QUERY_SQL("DELETE FROM tcp_outgoing_mark_links WHERE aclid='$ID'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";return;}
-	$q->QUERY_SQL("DELETE FROM tcp_outgoing_mark WHERE ID='$ID'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";return;}
+	list($ok,$data)=acls_api_send("DELETE","/proxy/tcp-outgoing-mark/$ID");
+	if(!$ok){echo "alert('".addslashes($data ?? 'error')."');";return false;}
 	return true;
-	
+
 }
 function EXPLAIN_THIS_RULE($ID){
 	$acls=new squid_acls_groups();
 	$tpl=new templates();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM tcp_outgoing_mark WHERE ID=$ID");
-	$mark=$ligne["mark"];
-    $objects=$acls->getobjectsNameFromAclrule($ligne['ID'],"black","tcp_outgoing_mark_links");
+	$ligne=acls_api_get("/proxy/tcp-outgoing-mark/$ID");
+	if(!is_array($ligne)){return "";}
+	$mark=$ligne["mark"] ?? "";
+    $objects=$acls->getobjectsNameFromAclrule(intval($ID),"black","tcp_outgoing_mark_links");
 	if(count($objects)>0){$method[]="{for_objects} ". @implode(", {and} ", $objects);}
     $method[]="{then} {use_mark} &laquo;0x{$mark}&raquo;";
 	$page=CurrentPageName();
@@ -471,4 +364,3 @@ function EXPLAIN_THIS_RULE($ID){
 
 	return  $tpl->_ENGINE_parse_body("<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID'>".@implode(" ", $method)."</span>");
 }
-

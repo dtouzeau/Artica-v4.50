@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 include_once(dirname(__FILE__).'/class.ssl.certificate.inc');
 include_once(dirname(__FILE__) . '/class.system.network.inc');
 include_once(dirname(__FILE__) . '/class.mysql.inc');
@@ -218,7 +219,7 @@ class strongswan{
 				if(isset($GLOBALS["CLASS_SOCKETS"])){$sock=$GLOBALS["CLASS_SOCKETS"];}else{$GLOBALS["CLASS_SOCKETS"]=new sockets();$sock=$GLOBALS["CLASS_SOCKETS"];}
 				$ini=new Bs_IniHandler();
 				$datas=$sock->GET_INFO("ArticastrongSwanSettings");
-				if(!is_file("/etc/artica-postfix/settings/Daemons/strongswanUseLZO")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("strongswanUseLZO", 1);}
+				if(!artica_setting_exists("strongswanUseLZO")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("strongswanUseLZO", 1);}
 				writelogs("ArticastrongSwanSettings= ". strlen($datas)." bytes",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
 				$ini->loadString($sock->GET_INFO("ArticastrongSwanSettings",true));
 				$strongswanTUNMTU=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("strongswanTUNMTU"));

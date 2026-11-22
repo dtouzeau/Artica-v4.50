@@ -216,8 +216,8 @@ function domainGroups_save():bool{
     $groupid=intval($_POST["groupid"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
     if($groupid>0) {
-        $sql = "UPDATE domgroups SET GroupName='$GroupName',enabled=$enabled WHERE ID=$groupid";
-        $q->QUERY_SQL($sql);
+        // Pentest 2026-11-04 : $GroupName etait concatene dans la requete.
+        $q->QUERY_SQL_PARAMS("UPDATE domgroups SET GroupName=?,enabled=? WHERE ID=?",array($GroupName,$enabled,$groupid));
         if (!$q->ok) {
             echo $tpl->post_error($q->mysql_error);
             return false;
@@ -227,14 +227,15 @@ function domainGroups_save():bool{
 
     }
     $time=time();
-    $q->QUERY_SQL("INSERT INTO domgroups (GroupName,enabled,tcpmode) VALUES ('$time',$enabled)");
+    $q->QUERY_SQL_PARAMS("INSERT INTO domgroups (GroupName,enabled,tcpmode) VALUES (?,?,?)",array("$time",$enabled,$tcpmode));
     if (!$q->ok) {
         echo $tpl->post_error($q->mysql_error);
         return false;
     }
     $ligne=$q->mysqli_fetch_array("SELECT ID FROM domgroups WHERE GroupName='$time'");
-    $ID=$ligne["ID"];
-    $q->QUERY_SQL("UPDATE domgroups SET GroupName='$GroupName' WHERE ID=$ID");
+    $ID=intval($ligne["ID"]);
+    // Pentest 2026-11-04 : $GroupName etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE domgroups SET GroupName=? WHERE ID=?",array($GroupName,$ID));
     if($backendid>0){
         $zmd5=md5("$ID$backendid");
         $q->QUERY_SQL("INSERT INTO linkbackends (groupid,backendid,zmd5) VALUES ($ID,$backendid,'$zmd5')");
@@ -304,12 +305,13 @@ function website_save():bool{
         $sitename=$matches[1];
     }
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
-    $sql="UPDATE domains SET sitename='$sitename',enabled=$enabled,
-                   rootdir='$rootdir', 
-                   certificate='$certificate' WHERE ID=$websiteid";
+    // Pentest 2026-11-04 : $sitename, $rootdir et $certificate etaient concatenes dans la requete.
+    $sql="UPDATE domains SET sitename=?,enabled=?,
+                   rootdir=?, 
+                   certificate=? WHERE ID=?";
 
     if($websiteid>0){
-        $q->QUERY_SQL($sql);
+        $q->QUERY_SQL_PARAMS($sql,array($sitename,$enabled,$rootdir,$certificate,$websiteid));
         if(!$q->ok){
             echo $tpl->post_error($q->mysql_error);
             return false;
@@ -333,9 +335,9 @@ function website_save():bool{
     }
 
     $zmd5=md5("$sitename$websiteid$groupid$rootdir");
-    $sql="INSERT INTO domains (sitename,zmd5,rootdir,enabled) VALUES ('$sitename','$zmd5','$rootdir',$enabled)";
+    $sql="INSERT INTO domains (sitename,zmd5,rootdir,enabled) VALUES (?,?,?,?)";
 
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,array($sitename,$zmd5,$rootdir,$enabled));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -537,22 +539,25 @@ function backend_save():bool{
     $h2domain=trim($_POST["h2domain"]);
     $listen_ip=$_POST["listen_ip"];
     $q          = new lib_sqlite("/home/artica/SQLITE/PulseReverse.db");
+    // Pentest 2026-11-04 : $backendname, $h2domain et $listen_ip etaient concatenes dans la requete.
     $sql="UPDATE backends SET 
                     enabled=$enabled,
-                    backendname='$backendname',
+                    backendname=?,
                     isDisconnected=$isDisconnected,
                     listen_port=$listen_port,
                     bweight=$bweight,
                     ssl=$ssl,
                     h2=$h2,
                     proxyproto=$proxyproto,
-                    h2domain='$h2domain',
-                    listen_ip='$listen_ip'
+                    h2domain=?,
+                    listen_ip=?
                     WHERE ID=$ID";
+    $params=array($backendname,$h2domain,$listen_ip);
     if($ID==0){
-        $sql="INSERT INTO backends (enabled,backendname,isDisconnected,listen_port,bweight,proxyproto,listen_ip,ssl,h2,h2domain) VALUES($enabled,'$backendname',$isDisconnected,$listen_port,$bweight,$proxyproto,'$listen_ip',$ssl,$h2,'$h2domain')";
+        $sql="INSERT INTO backends (enabled,backendname,isDisconnected,listen_port,bweight,proxyproto,listen_ip,ssl,h2,h2domain) VALUES($enabled,?,$isDisconnected,$listen_port,$bweight,$proxyproto,?,$ssl,$h2,?)";
+        $params=array($backendname,$listen_ip,$h2domain);
     }
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$params);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -577,9 +582,11 @@ function search():bool{
         $search = str_replace("**", "*", $search);
         $search = str_replace("**", "*", $search);
         $search = str_replace("*","%",$search);
-        $sql="SELECT * FROM backends WHERE (backendname LIKE '$search%' OR listen_ip LIKE '$search%') LIMIT $LIMIT";
+        // Pentest 2026-11-04 : $search etait concatene dans la requete.
+        $sql="SELECT * FROM backends WHERE (backendname LIKE ? OR listen_ip LIKE ?) LIMIT $LIMIT";
+        $params=array("$search%","$search%");
     }
-    $results=$q->QUERY_SQL($sql);
+    $results=isset($params)?$q->QUERY_SQL_PARAMS($sql,$params):$q->QUERY_SQL($sql);
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
     $t=time();
     $html[]="<table class=\"table table-hover\" id='ReversePulse$t'>
@@ -658,6 +665,8 @@ function pulse_js():bool{
     $GlobalStatus=BackendsStatus();
 
     foreach ($list as $ID) {
+        // Pentest 2026-11-04 : $ID (liste pulse-js) etait concatene dans la requete.
+        $ID=intval($ID);
         $ligne=$q->mysqli_fetch_array("SELECT * FROM backends WHERE ID=$ID");
         $td_backendname=base64_encode(td_backendname($ligne));
         $td_frontendname=base64_encode(td_frontendname($ligne));
@@ -882,10 +891,12 @@ function domainGroups_search(){
             WHERE
                 linkbackends.groupid=domgroups.ID AND
                 linkbackends.backendid=$backendid
-                AND domgroups.GroupName LIKE '$search'
+                AND domgroups.GroupName LIKE ?
             ORDER BY domgroups.GroupName";
+        // Pentest 2026-11-04 : $search etait concatene dans la requete.
+        $params=array($search);
     }
-    $results=$q->QUERY_SQL($sql);
+    $results=isset($params)?$q->QUERY_SQL_PARAMS($sql,$params):$q->QUERY_SQL($sql);
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
     $width1="style='width:1%' nowrap";
@@ -964,7 +975,9 @@ function websites_search():bool{
         $search = str_replace("**", "*", $search);
         $search = str_replace("**", "*", $search);
         $search = str_replace("*","%",$search);
-        $ANDS="AND (domains.sitename LIKE '$search%' OR domains.rootdir LIKE '$search%')";
+        // Pentest 2026-11-04 : $search etait concatene dans la requete.
+        $ANDS="AND (domains.sitename LIKE ? OR domains.rootdir LIKE ?)";
+        $params=array("$search%","$search%");
     }
 
     $sql="SELECT domains.ID,domains.rootdir,
@@ -974,7 +987,7 @@ function websites_search():bool{
                         ORDER BY sitename LIMIT $LIMIT";
 
 
-    $results=$q->QUERY_SQL($sql);
+    $results=isset($params)?$q->QUERY_SQL_PARAMS($sql,$params):$q->QUERY_SQL($sql);
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
     $width1="style='width:1%' nowrap";

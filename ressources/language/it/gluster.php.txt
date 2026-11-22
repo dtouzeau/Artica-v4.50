@@ -4,4 +4,4 @@
 <gluster_settings_saved>Impostazioni salvate</gluster_settings_saved>
 <order_scheduled>Ordine previsto...</order_scheduled>
 <replicated_folders>Cartelle in cluster</replicated_folders>
-<set_cluster_replicator>Define has replicator</set_cluster_replicator>
+<set_cluster_replicator>Definisci come replicatore</set_cluster_replicator>

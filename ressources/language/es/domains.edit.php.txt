@@ -2,51 +2,51 @@
 <add_user>Agregar usuario</add_user>
 <Administrator_rules>Reglas del administrador</Administrator_rules>
 <antivirus_protection>Protecci&oacute;n antivirus</antivirus_protection>
-<antivirus_protection_enabled>Enable/disable antivirus domain scanning</antivirus_protection_enabled>
-<ARRAY_ALIASES>Email Aliases</ARRAY_ALIASES>
-<ARRAY_TRANSPORT>relay redirections</ARRAY_TRANSPORT>
-<attach_report>Attach&nbsp;report</attach_report>
+<antivirus_protection_enabled>Activar/desactivar el an&#225;lisis antivirus del dominio</antivirus_protection_enabled>
+<ARRAY_ALIASES>Alias de correo</ARRAY_ALIASES>
+<ARRAY_TRANSPORT>Redirecciones de retransmisi&#243;n</ARRAY_TRANSPORT>
+<attach_report>Adjuntar&amp;nbsp;informe</attach_report>
 <av_notify_rules>Reglas de notificaci%C3%B3n y acciones</av_notify_rules>
-<bt_add_aliases>save alias</bt_add_aliases>
-<bt_delete_alias>delete alias</bt_delete_alias>
+<bt_add_aliases>guardar alias</bt_add_aliases>
+<bt_delete_alias>eliminar alias</bt_delete_alias>
 <bt_delete_transport>Eliminar</bt_delete_transport>
 <bt_edit_antivirus_protection>Enviar</bt_edit_antivirus_protection>
-<bt_edit_mailbox>Edit Mailbox</bt_edit_mailbox>
+<bt_edit_mailbox>Editar buz&#243;n</bt_edit_mailbox>
 <bt_edit_notify>Enviar</bt_edit_notify>
-<bt_modify_transport>Modify transport</bt_modify_transport>
-<Corrupted>Corrupted</Corrupted>
-<Cured>Cured</Cured>
+<bt_modify_transport>Modificar transporte</bt_modify_transport>
+<Corrupted>Da&#241;ado</Corrupted>
+<Cured>Curado</Cured>
 <delete_thisuser>Eliminar este usuario</delete_thisuser>
 <domain_activated>Dominio activado</domain_activated>
 <edit>Editar.</edit>
 <edit_user>Editar este usuario</edit_user>
 <email>Direcci&oacute;n de correo</email>
 <Error>Error</Error>
-<ERROR_DELETE_TRANSPORT>Delete redirection entry?</ERROR_DELETE_TRANSPORT>
-<Filtered>Filtered</Filtered>
+<ERROR_DELETE_TRANSPORT>&#191;Eliminar la entrada de redirecci&#243;n?</ERROR_DELETE_TRANSPORT>
+<Filtered>Filtrado</Filtered>
 <firstname>Primer Nombre</firstname>
-<goback>Return to domains list</goback>
-<Infected>Infected</Infected>
-<js_antivirus_settings>Edit antivirus settings for this domain</js_antivirus_settings>
-<js_delete_alias_text>Are you sure to delete this alias ?</js_delete_alias_text>
-<label_add_transport>Add a relay server for this domain</label_add_transport>
+<goback>Volver a la lista de dominios</goback>
+<Infected>Infectado</Infected>
+<js_antivirus_settings>Editar la configuraci&#243;n de antivirus para este dominio</js_antivirus_settings>
+<js_delete_alias_text>&#191;Est&#225; seguro de que desea eliminar este alias?</js_delete_alias_text>
+<label_add_transport>A&#241;adir un servidor de retransmisi&#243;n para este dominio</label_add_transport>
 <label_email_from>Direcci&oacute;n de correo</label_email_from>
-<label_email_to>target address</label_email_to>
+<label_email_to>Direcci&#243;n de destino</label_email_to>
 <label_redirect>Reenviar a</label_redirect>
 <lastname>Apellidos</lastname>
-<LoadKasperskySettings_adminaddr>administrator address</LoadKasperskySettings_adminaddr>
+<LoadKasperskySettings_adminaddr>Direcci&#243;n del administrador</LoadKasperskySettings_adminaddr>
 <LoadKasperskySettings_general_title>Configuraci%C3%B3n general</LoadKasperskySettings_general_title>
-<LoadKasperskySettings_title>eMails scanning settings</LoadKasperskySettings_title>
+<LoadKasperskySettings_title>Configuraci&#243;n de an&#225;lisis de correos</LoadKasperskySettings_title>
 <notify>Notificar</notify>
-<no_mailbox_cause_transport>This domain does not store aliases cause all emails will be forwarded to another service/server</no_mailbox_cause_transport>
+<no_mailbox_cause_transport>Este dominio no almacena alias porque todos los correos se reenviar&#225;n a otro servicio/servidor</no_mailbox_cause_transport>
 <objects>Objetos</objects>
-<Protected>Protected</Protected>
+<Protected>Protegido</Protected>
 <Quarantine>Cuarentena</Quarantine>
 <QuarantinePath>Ruta de cuarentena</QuarantinePath>
-<recipient_rules>Recipient&nbsp;Rules</recipient_rules>
-<redirect_to_alias>Go to other</redirect_to_alias>
-<redirect_to_mailbox>Go to local mailbox</redirect_to_mailbox>
-<sender_rules>Sender&nbsp;rules</sender_rules>
+<recipient_rules>Reglas&amp;nbsp;de&amp;nbsp;destinatario</recipient_rules>
+<redirect_to_alias>Ir a otro</redirect_to_alias>
+<redirect_to_mailbox>Ir al buz&#243;n local</redirect_to_mailbox>
+<sender_rules>Reglas&amp;nbsp;de&amp;nbsp;remitente</sender_rules>
 <Suspicious>Sospechoso</Suspicious>
 <users>Usuarios</users>
 <Warning>Peligro</Warning>

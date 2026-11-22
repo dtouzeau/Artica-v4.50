@@ -3,6 +3,8 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.os.system.tools.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : interface/start etaient recopies sans encodage dans la page (XSS). Ce sont des noms d'interface.
+foreach(array("interface","start","refresh") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET[$k]);}}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["refresh"])){refresh();exit;}

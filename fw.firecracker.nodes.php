@@ -1,10 +1,19 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 	include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 	include_once('ressources/class.users.menus.inc');
     include_once('ressources/class.firecracker.inc');
 	if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 	$user=new usersMenus();
-	if(!$user->AsAnAdministratorGeneric){die("DIE " .__FILE__." Line: ".__LINE__);}
+	if(!$user->AsAnAdministratorGeneric){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
+    // Pentest 2026-11-04 : les identifiants de conteneur/image/reseau etaient recopies sans encodage dans la page (XSS).
+    // Ce sont des noms docker/firecracker (hex, uuid, depot/nom:tag@sha256) : on les reduit a leur alphabet.
+    foreach($_GET as $k=>$v){
+        if(in_array($k,array("function-main","function","md","search","verbose"),true)){continue;}
+        if(is_array($v)){unset($_GET[$k]);continue;}
+        $_GET[$k]=preg_replace('#[^A-Za-z0-9_.:@/-]#','',(string)$v);
+    }
     if(isset($_GET["allrows"])){RefreshTableRows();exit;}
     if(isset($_GET["td-row"])){td_row();exit;}
     if(isset($_GET["add-container-js"])){add_container_js();exit;}
@@ -121,9 +130,11 @@ function mysql_start(){
     return true;
 }
 function webshell_action():bool{
+    if(!fw_progress_page_priv("AsDockerAdmin|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $page=CurrentPageName();
     $function=$_GET["function-main"];
-    $uuid=$_GET["webshell-action"];
+    $uuid=fw_progress_seg($_GET["webshell-action"] ?? "");
+    if($uuid===""){return fw_progress_bad_value("webshell-action");}
     $tpl=new template_admin();
     $EnableShellInABox=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableShellInABox$uuid"));
     $html[]="<p style='font-size:16px;margin-bottom:30px'>{SSHOnlyShellInaBox_explain}</p>";
@@ -186,8 +197,10 @@ function mysql_action(){
     $tpl=new template_admin();
 }
 function delete_container_js():bool{
+    if(!fw_progress_page_priv("AsDockerAdmin|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
-    $uuid=$_GET["delete-container-js"];
+    $uuid=fw_progress_seg($_GET["delete-container-js"] ?? "");
+    if($uuid===""){return fw_progress_bad_value("delete-container-js");}
     $md=$_GET["md"];
     $deletejs=$tpl->framework_buildjs(
         "firecrack:/firecracker/jail/remove/$uuid",
@@ -212,6 +225,7 @@ function export_container():bool{
     return $tpl->js_dialog1("{export} {$_GET["export-container"]}","$page?export-container-popup=$nameec&function-main=$function",540);
 }
 function export_container_popup():bool{
+    if(!fw_progress_page_priv("AsDockerAdmin|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $ID=$_GET["ID"];
     $nameec=urlencode($_GET["export-container-popup"]);
     $Name=$_GET["export-container-popup"];
@@ -345,9 +359,11 @@ function compile_container():bool{
     return $tpl->js_dialog("{docker_build_image} ($Name)","$page?container-compile-popup=$ID&name=$Name&function-main=$function_main");
 }
 function compile_container_popup():bool{
+    if(!fw_progress_page_priv("AsDockerAdmin|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $ID=$_GET["container-compile-popup"];
+    $ID=fw_progress_seg($_GET["container-compile-popup"] ?? "");
+    if($ID===""){return fw_progress_bad_value("container-compile-popup");}
     $Name=$_GET["name"];
     $function_main=$_GET["function-main"];
 
@@ -914,9 +930,11 @@ function container_name_save():bool{
 }
 
 function restore_image_js():bool{
+    if(!fw_progress_page_priv("AsDockerAdmin|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $uuid=$_GET["restore-image-js"];
+    $uuid=fw_progress_seg($_GET["restore-image-js"] ?? "");
+    if($uuid===""){return fw_progress_bad_value("restore-image-js");}
     $image=$_GET["image"];
     $function_main=$_GET["function-main"];
     $action=$tpl->framework_buildjs("firecrack:/firecracker/image/restore/$uuid",
@@ -939,7 +957,9 @@ function info_container_table():bool{
     $uuid=$_GET["info-container-table"];
     $function_main=$_GET["function-main"];
     $q=new lib_sqlite("/home/artica/SQLITE/firecracker.db");
-    $ligne=$q->mysqli_fetch_array("SELECT ID,machinename,created,enabled,MacAddr,cpu,image,mem,disk,storage,nic FROM firecracker WHERE uuid='$uuid'");
+    // Pentest 2026-11-04 : uuid etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT ID,machinename,created,enabled,MacAddr,cpu,image,mem,disk,storage,nic FROM firecracker WHERE uuid=?",array($uuid));
+    $ligne=isset($rows[0])?$rows[0]:array();
     $ID=intval($ligne["ID"]);
 
 
@@ -1163,7 +1183,9 @@ function add_container_popup():bool{
         $title=$fire->GetContainerName($uuid);
         $button="{apply}";
         $q=new lib_sqlite("/home/artica/SQLITE/firecracker.db");
-        $ligne=$q->mysqli_fetch_array("SELECT ID,machinename,created,enabled,MacAddr,cpu,image,mem,disk,storage,nic FROM firecracker WHERE uuid='$uuid'");
+        // Pentest 2026-11-04 : uuid etait concatene dans la requete.
+        $rows=$q->QUERY_SQL_PARAMS("SELECT ID,machinename,created,enabled,MacAddr,cpu,image,mem,disk,storage,nic FROM firecracker WHERE uuid=?",array($uuid));
+        $ligne=isset($rows[0])?$rows[0]:array();
     }
 
     if(!isset($ligne["mem"])){
@@ -1208,11 +1230,12 @@ function add_container_save():bool{
     }
     if(strlen($_POST["uuid"])>0){
         $q=new lib_sqlite("/home/artica/SQLITE/firecracker.db");
-        $q->QUERY_SQL("UPDATE firecracker SET 
-                      cpu={$_POST["cpu"]},
-                      mem={$_POST["mem"]},
-                      disk={$_POST["disk"]},
-                      nic='{$_POST["nic"]}' WHERE uuid='{$_POST["uuid"]}'");
+        // Pentest 2026-11-04 : cpu/mem/disk/nic/uuid etaient concatenes dans la requete.
+        $q->QUERY_SQL_PARAMS("UPDATE firecracker SET 
+                      cpu=?,
+                      mem=?,
+                      disk=?,
+                      nic=? WHERE uuid=?",array(intval($_POST["cpu"]),intval($_POST["mem"]),intval($_POST["disk"]),$_POST["nic"],$_POST["uuid"]));
         if(!$q->ok){
             echo $tpl->post_error($q->mysql_error);
             return false;
@@ -1398,6 +1421,7 @@ function td_memory($uuid):string{
 function td_button_action($uuid):string{
     $tpl=new template_admin();
     $page=CurrentPageName();
+    if(fw_progress_seg($uuid)===""){return "";}   // from td-row: one path segment only
     $Status=$_SESSION["FIRECRACKER"][$uuid];
     $ProgressF = "firecracker.start.$uuid";
     $ProgressS= "firecracker.stop.$uuid";
@@ -1547,11 +1571,12 @@ function shellinaboxd_install():bool{
     return $tpl->js_confirm_execute("{ask_install_web_console}: $Name","shellinaboxd-install",$data,"$function_main()");
 }
 function shellinaboxd_install_perform():bool{
-    $data=unserialize(base64_decode($_POST["shellinaboxd-install"]));
+    $data=unserialize(base64_decode($_POST["shellinaboxd-install"]),array("allowed_classes"=>false));
 
     $ID=$data["ID"];
     if($ID==null){
-        echo "ID is Null\n{$_POST["shellinaboxd-install"]}";
+        // Pentest 2026-11-04 : shellinaboxd-install etait recopie sans encodage dans la page (XSS).
+        echo "ID is Null\n".req_html($_POST["shellinaboxd-install"]);
         return false;
     }
     $Name=unserialize($data["shellinaboxd-install"]);

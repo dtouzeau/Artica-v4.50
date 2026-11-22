@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.ActiveDirectoryRootDSE.inc");
 
@@ -6,8 +9,15 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once(
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Noeud de ferme HaCluster : jonction, deconnexion et compte machine viennent du LB.
+include_once(dirname(__FILE__)."/ressources/class.hacluster.node.inc");
+hacluster_node_ad_gate(
+    array("ADNETBIOSDOMAIN","kdestroy","ADNETBIOSDOMAIN_CHANGE","COMPUTER_BRANCH_CHANGE"),
+    array("changetrustpw-js","kerberos-disconnect-js","netbiosdomain-js","adbranch-js"),
+    array("netbiosdomain-popup","adbranch-popup")
+);
 if(isset($_POST["fullhosname_change"])){hostname_save();exit;}
-if(isset($_GET["table"])){features();exit;}
+if(isset($_GET["table"])){echo hacluster_node_ad_banner();features();exit;}
 if(isset($_POST["ADNETBIOSDOMAIN"])){Save();exit;}
 if(isset($_GET["hostname-js"])){hostname_js();exit();}
 if(isset($_GET["hostname-popup"])){hostname_popup();exit();}
@@ -62,7 +72,7 @@ function log_level_popup()
     $ARRAY["TITLE"]="{reloading}";
     $ARRAY["AFTER"]="LoadAjax('table-loader-ntlm-cnx-status','$page?table=yes&close=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsafter[]="Loadjs('fw.progress.php?content=$prgress&mainid=progress-ad-restart')";
+    $jsafter[]="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ad-restart')";
     echo $tpl->form_outside(null, $form,null,"{apply}", @implode(";",$jsafter), "AsSquidAdministrator");
     return true;
 }
@@ -137,7 +147,7 @@ function page(){
 
     $html=$tpl->page_header("Active Directory &raquo;&raquo {join_domain}",
         "fab fa-windows",
-    "{activedirectory_explain_section}","$page?table=yes{$addon}",
+    "{activedirectory_explain_section}","$page?table=yes$addon",
         "ad-connect",
         "progress-ad-restart",false,"table-loader-ntlm-cnx-status");
 
@@ -189,7 +199,12 @@ function kerberos_disconnect_js(){
 }
 function kerberos_disconnect_perform(){
     admin_tracks("Destroy Kerberos authorization tickets");
-    $GLOBALS["CLASS_SOCKETS"]->go_exec("/usr/bin/kdestroy");
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/kerberos/kdestroy"));
+    if(!$json || !property_exists($json,"Status") || !$json->Status){
+        $err=($json && property_exists($json,"Error"))?$json->Error:"articarest unreachable";
+        $tpl=new template_admin();
+        echo $tpl->post_error("kdestroy: $err");
+    }
 }
 
 function ntpad_js():bool{
@@ -202,7 +217,8 @@ function ntpad_js():bool{
     }
 
 
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?ntpad-ntlm=yes");
+    // chronyd lit NtpdateAD et prend l'AD comme source horaire a la reconfiguration.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/chrony/reconfigure");
     header("content-type: application/x-javascript");
     echo "LoadAjax('table-loader-ntlm-cnx-status','$page?table=yes&close=yes');";
     return true;
@@ -249,18 +265,19 @@ function features(){
         echo $tpl->FATAL_ERROR_SHOW_128("$hostname_exceed_15");
         return;
     }
-    $WindowsActiveDirectoryKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WindowsActiveDirectoryKerberos"));
+
 
     $NtpdateAD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NtpdateAD"));
     $severtype["WIN_2003"]="Windows 2000/2003";
     $severtype["WIN_2008AES"]="Windows 2008/2012/2016";
     if(isset($_GET["switch-template"])){$_GET["switch-template"]=null;}
     if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
-    $WindowsActiveDirectoryKerberos_explain=null;
     $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
 
-    if(!isset($array["ADNETBIOSDOMAIN"])){$array["ADNETBIOSDOMAIN"]=null;}
+    if(!isset($array["ADNETBIOSDOMAIN"])){$array["ADNETBIOSDOMAIN"]="";}
+    if(!isset($array["WINDOWS_SERVER_NETBIOSNAME"])){$array["WINDOWS_SERVER_NETBIOSNAME"]="";}
     if($array["ADNETBIOSDOMAIN"]==null){$array["ADNETBIOSDOMAIN"]=$NetbiosDomain;}
+
 
     if(strlen($array["WINDOWS_SERVER_NETBIOSNAME"])<3) {
         $sock = new sockets();
@@ -349,7 +366,8 @@ function features(){
 
 
     $html[]="<div id='ntlm-check'></div>";
-    $html[]=$tpl->form_outside("{join_activedirectory_domain} <strong>{wizard_kerberos_button_off}</strong>",
+    $html[]=$tpl->div_explain("{join_activedirectory_domain}||{wizard_kerberos_button_off}");
+    $html[]=$tpl->form_outside("",
         @implode("\n", $form),"{wizard_kerberosntlm_explain}","{save}",
         $jsrestart,"AsSystemAdministrator",true)."<script>$jstiny</script>";
 
@@ -460,22 +478,26 @@ function close_form(){
     $yesno[1]="<span class='label label-primary'>{yes}</span>";
 
 
-    $html[]="<table style='width:70%;margin-top:10px'>";
+    $html[]="<table style='width:100%;margin-top:10px'>";
     $html[]="<tr>";
     $html[]="<td style='width:250px;vertical-align: top'><div id='netad-status'></div></td>";
-    $html[]="<td style='width:100%;vertical-align: top'>";
+    $html[]="<td style='width:99%;vertical-align: top'>";
     $html[]="<div style='margin-left:50px'>";
     $html[]="<div id='kerb-status'></div>";
 
     $ADNETIPADDR=null;
 
     if(isset($array["ADNETIPADDR"])){
-        $ADNETIPADDR=" <small>({$array["ADNETIPADDR"]})</small>";
+        $ADNETIPADDR=$array["ADNETIPADDR"];
 
     }
 
     $tpl->table_form_field_js("Loadjs('$page?hostname-js=yes')","AsSystemAdministrator");
-    $tpl->table_form_field_text("{ad_full_hostname}","{$array["fullhosname"]}</strong>$ADNETIPADDR <small>({$severtype[$array["WINDOWS_SERVER_TYPE"]]})</small>",ico_microsoft);
+    $tpl->table_form_field_text("{ActiveDirectory}","{$array["fullhosname"]} <br><small style='font-size:10px'>({$severtype[$array["WINDOWS_SERVER_TYPE"]]})</small>",ico_microsoft);
+    if(strlen($ADNETIPADDR)>3){
+        $tpl->table_form_field_text("{ipaddr}","$ADNETIPADDR",ico_server);
+    }
+
 
     $tpl->table_form_field_js("Loadjs('$page?netbiosdomain-js=yes')","AsSystemAdministrator");
     $tpl->table_form_field_text("{ADNETBIOSDOMAIN}",$array["ADNETBIOSDOMAIN"],ico_earth);
@@ -508,7 +530,7 @@ function close_form(){
         "document.location.href='/ad-connect'"
     );
     $tpl->table_form_button($text_button,$ntlmProgress,"AsSystemAdministrator",ico_plug);
-    $html[]=$tpl->table_form_compile();
+    $html[]=$tpl->table_form_compile(2);
 
     $html[]="</div>";
     $html[]="</td>";
@@ -602,7 +624,7 @@ function hostname_save():bool{
 
 
     if(!$IPClass->isValid($ipaddr)){
-        echo "jserror:".$tpl->javascript_parse_text("{unable_to_resolve} {$_POST["fullhosname_change"]}");
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text("{unable_to_resolve} {$_POST["fullhosname_change"]}"));
         return false;
     }
 
@@ -688,14 +710,14 @@ function Save(){
     $sock->SET_INFO("NtpdateAD", $_POST["NtpdateAD"]);
 
     if(strpos($_POST["fullhosname"], ".")==0){
-        echo "jserror:".$tpl->javascript_parse_text("{reject_invalid_hostname} {$_POST["fullhosname"]}");
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text("{reject_invalid_hostname} {$_POST["fullhosname"]}"));
         return false;
     }
 
     $IPClass=new IP();
     $ipaddr=$GLOBALS["CLASS_SOCKETS"]->gethostbyname($_POST["fullhosname"]);
     if(!$IPClass->isValid($ipaddr)){
-        echo "jserror:".$tpl->javascript_parse_text("{unable_to_resolve} {$_POST["fullhosname"]}");
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text("{unable_to_resolve} {$_POST["fullhosname"]}"));
         return false;
     }
 
@@ -708,7 +730,7 @@ function Save(){
     foreach ($zports as $TEST_PORT) {
         $fp = @fsockopen($ipaddr, $TEST_PORT, $errno, $errstr, 2);
         if (!$fp) {
-            echo "jserror:" . $tpl->javascript_parse_text("{unable_to_connect} $ipaddr:$TEST_PORT - $errstr");
+            echo (new template_admin())->post_error("" . $tpl->javascript_parse_text("{unable_to_connect} $ipaddr:$TEST_PORT - $errstr"));
             return;
             @fclose($fp);
             return false;
@@ -740,7 +762,8 @@ function Save(){
     }
 
     if(strpos($_POST["ADNETBIOSDOMAIN"], ".")>0){
-        echo "The netbios domain \"{$_POST["ADNETBIOSDOMAIN"]}\" is invalid.\n";
+        // Pentest 2026-11-04 : ADNETBIOSDOMAIN etait recopie sans encodage dans la page (XSS).
+        echo "The netbios domain \"".req_html($_POST["ADNETBIOSDOMAIN"])."\" is invalid.\n";
         return false;
     }
 
@@ -760,7 +783,7 @@ function Save(){
     if(!$ldap_connection){
         $DIAG[]="{Connection_Failed_to_connect_to_DC} {$array["LDAP_SERVER"]}:{$array["LDAP_PORT"]}";
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror:".$tpl->javascript_parse_text(@implode("<br>", $DIAG));
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text(@implode("<br>", $DIAG)));
         @ldap_close();
         return false;
     }
@@ -773,7 +796,7 @@ function Save(){
         $DIAG[]="{login_Failed_to_connect_to_DC} {$array["LDAP_SERVER"]} - {$array["LDAP_DN"]}";
         $DIAG[]=ldap_err2str(ldap_errno($ldap_connection));
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror:".$tpl->javascript_parse_text(@implode("<br>", $DIAG));
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text(@implode("<br>", $DIAG)));
         return false;
     }
 
@@ -787,7 +810,7 @@ function Save(){
     if($_POST["LDAP_SUFFIX"]==null) {
         $RootDse = $ad_rootdse->RootDSE();
         if (!$RootDse) {
-            echo "jserror:" . $tpl->javascript_parse_text("{rootdse_failed_advsuff}");
+            echo (new template_admin())->post_error("" . $tpl->javascript_parse_text("{rootdse_failed_advsuff}"));
             return false;
         }
         $_POST["LDAP_SUFFIX"]=$RootDse;
@@ -798,7 +821,7 @@ function Save(){
         $NetbiosDomain=$ad_rootdse->nETBIOSName( $_POST["LDAP_SUFFIX"]);
         if(!$NetbiosDomain){
             $error=$ad_rootdse->mysql_error;
-            echo "jserror:" . $tpl->javascript_parse_text("netbios domain failed $error");
+            echo (new template_admin())->post_error("" . $tpl->javascript_parse_text("netbios domain failed $error"));
             return false;
         }
 

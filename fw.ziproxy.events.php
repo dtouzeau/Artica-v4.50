@@ -22,7 +22,7 @@ function zoom_js(){
 }
 function zoom(){
 
-	$data=unserialize(base64_decode($_GET["data"]));
+	$data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
 $html[]="<div class=ibox-content>";
 $html[]="<table class='table table table-bordered'>";
 	while (list ($key,$val) = each ($data)){
@@ -111,8 +111,13 @@ function search(){
 	$search=$MAIN["TERM"];
 	$MAIN["MAX"]=$MAIN["MAX"]+50;
 	
-	$sock->getFrameWork("squid.php?zipproxy-real=yes&rp={$MAIN["MAX"]}&query=".urlencode($search));
-	$filename="/usr/share/artica-postfix/ressources/logs/zipproxy-access.log.tmp";
+	// articarest /system/logfile/search/ziproxy (remplace framework/squid.php?zipproxy-real).
+	$logerror="";
+	$loglines=$tpl->logfile_search("ziproxy",$MAIN,false,250,$logerror);
+	if($logerror<>""){
+		echo $tpl->div_error($logerror);
+		return;
+	}
 	
 	
 	$categories=$tpl->javascript_parse_text("{categories}");
@@ -158,7 +163,7 @@ function search(){
 	<tbody>
 ";
 	
-	$data=explode("\n",@file_get_contents($filename));
+	$data=$loglines;
 	if(count($data)>3){$_SESSION["ZIPROXY_DAEMON_SEARCH"]=$_GET["search"];}
 	$zcat=new squid_familysite();
 	$logfileD=new logfile_daemon();
@@ -202,6 +207,12 @@ function search(){
 			}
 			if($sizeCompressed>1024){$sizeCompressed=FormatBytes($sizeCompressed/1024);}else{$sizeCompressed="$sizeCompressed Bytes";}
 			$date=str_replace($today." ", "", $date);
+			// Pentest 2026-11-04 : IP/methode/URL du journal ziproxy (donnee externe) affichees sans encodage (XSS stockee).
+			$ip=req_html($ip);
+			$PROTO=req_html($PROTO);
+			$uri=req_html($uri);
+			$size=req_html($size);
+			$sizeCompressed=req_html($sizeCompressed);
 
 		
 		

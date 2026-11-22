@@ -251,19 +251,6 @@ class monit_unix{
 	}
 	
 	
-	public function CheckFolders(){
-		if(!is_file($this->monitbin)){return;}
-		$unix=new unix();
-
-		@mkdir("/var/run/monit",0600,true);
-		@mkdir("/var/monit",0600,true);
-		@mkdir("/etc/monit/conf.d",0600,true);
-		$GLOBALS["CLASS_UNIX"]->chmod_func(0600, "/etc/monit/monitrc/*");
-		shell_exec("$this->rmbin -rf /var/monit/* >/dev/null 2>&1");
-		
-		
-	}
-	
 	function ToSyslog($text,$error=false){
 		
 		if(!$error){$LOG_SEV=LOG_INFO;}else{$LOG_SEV=LOG_ERR;}

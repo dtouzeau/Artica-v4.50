@@ -226,6 +226,28 @@ class SiegeDaemon
      */
     public function createTest(array $config): ?array
     {
+        // Normalize known object-type fields. PHP's json_decode($s, true)
+        // collapses empty JSON objects {} into empty PHP arrays [], and
+        // json_encode then re-emits them as JSON arrays []. The siege-
+        // daemon's TestConfig has STRUCT-typed fields (think_time,
+        // host_pacing, proxy_auth) that require an object on the wire;
+        // arriving as [] gives "json: cannot unmarshal array into Go
+        // struct field TestConfig.think_time of type ThinkTimeConfig"
+        // and the test silently fails to save.
+        //
+        // We can't tell here whether a non-empty array is associative
+        // (=> object) or list (=> array), but for these field names the
+        // daemon ONLY accepts objects, so casting to stdClass when the
+        // value is an empty array is both safe and sufficient. PHP's
+        // json_encode on a stdClass emits {} regardless of how it got
+        // there.
+        foreach (['proxy_auth', 'think_time', 'host_pacing'] as $f) {
+            if (array_key_exists($f, $config)
+                && is_array($config[$f])
+                && empty($config[$f])) {
+                $config[$f] = new \stdClass();
+            }
+        }
         return $this->post('/api/v1/tests', $config);
     }
 
@@ -285,6 +307,166 @@ class SiegeDaemon
     public function stopTest(string $testId): ?array
     {
         return $this->post("/api/v1/tests/{$testId}/stop");
+    }
+
+    /**
+     * Duplicate a test. The daemon assigns the new test a fresh UUID and
+     * appends " (copied)" to the source test's name. Returns:
+     *   { test_id, name, duplicated_from }
+     */
+    public function duplicateTest(string $testId): ?array
+    {
+        return $this->post("/api/v1/tests/{$testId}/duplicate");
+    }
+
+    /**
+     * List a paginated, optionally-filtered slice of a test's URLs.
+     * Backs the search box and table in the URLs popup.
+     *
+     * @param string $testId
+     * @param string $search Substring filter on URL (case-insensitive)
+     * @param int    $offset Skip N matching entries; 0 = top of list
+     * @param int    $limit  Max entries to return (daemon caps at 1000)
+     * @return array|null { test_id, total, filtered, offset, limit, urls[] }
+     */
+    public function listTestURLs(string $testId, string $search = '', int $offset = 0, int $limit = 150): ?array
+    {
+        $q = ['offset' => $offset, 'limit' => $limit];
+        if($search !== ''){ $q['search'] = $search; }
+        return $this->get("/api/v1/tests/{$testId}/urls", $q);
+    }
+
+    /**
+     * Append a URL to the test's URL list. The daemon assigns the new
+     * entry's index based on current list length.
+     */
+    public function addTestURL(string $testId, string $url, string $method = 'GET', string $body = '', string $contentType = ''): ?array
+    {
+        $payload = ['url' => $url, 'method' => $method];
+        if($body !== ''){ $payload['body'] = $body; }
+        if($contentType !== ''){ $payload['content_type'] = $contentType; }
+        return $this->post("/api/v1/tests/{$testId}/urls", $payload);
+    }
+
+    /**
+     * Delete one URL by its position in the test's URL list. Use the index
+     * field returned by listTestURLs() (which always reflects the position
+     * in the full list, not the filtered page).
+     */
+    public function deleteTestURL(string $testId, int $index): ?array
+    {
+        return $this->delete("/api/v1/tests/{$testId}/urls", ['index' => $index]);
+    }
+
+    /**
+     * Import a plain-text URL list (one per line, METHOD|URL|BODY format).
+     * Replaces the test's existing URL list. Uses POST against the daemon's
+     * /urls/import endpoint with text/plain body.
+     */
+    public function importTestURLs(string $testId, string $textBody): ?array
+    {
+        $prev = $this->timeout ?? 30;
+        $this->timeout = 60;
+        // Use raw POST since the daemon expects text/plain for this endpoint.
+        $url = "http://localhost/api/v1/tests/{$testId}/urls/import";
+        $ch = curl_init();
+        if($this->socketPath !== ''){
+            curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $this->socketPath);
+        }
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $textBody);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: text/plain']);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        $this->timeout = $prev;
+        if($resp === false){
+            $this->lastError = "curl: $err";
+            return null;
+        }
+        if($httpCode >= 400){
+            $this->lastError = "HTTP $httpCode: " . substr($resp, 0, 500);
+            return null;
+        }
+        $decoded = json_decode($resp, true);
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
+     * Download the test's URL list as plain text (one URL per line, in the
+     * same METHOD|URL|BODY format the import endpoint accepts). Returns
+     * the body string, or null on error.
+     */
+    public function exportTestURLs(string $testId): ?string
+    {
+        $url = "http://localhost/api/v1/tests/{$testId}/urls/export";
+        $ch = curl_init();
+        if($this->socketPath !== ''){
+            curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $this->socketPath);
+        }
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $this->timeout ?? 30);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if($resp === false){
+            $this->lastError = "curl: $err";
+            return null;
+        }
+        if($httpCode >= 400){
+            $this->lastError = "HTTP $httpCode";
+            return null;
+        }
+        return $resp;
+    }
+
+    /**
+     * Fast preflight of AD Kerberos ports against a KDC hostname.
+     * Meant to be called BEFORE attempting keytab creation or kinit, so a
+     * blocked upstream firewall (the most common Kerberos failure in the
+     * wild) is caught in ~2 seconds with an actionable error rather than
+     * after ~30 seconds of kinit timeout.
+     *
+     * @param string $kdcHost AD controller FQDN or IP
+     * @return array|null { host, resolved, success, checks[], error?, elapsed_ms }
+     */
+    public function kerberosPreflight(string $kdcHost): ?array
+    {
+        $prev = $this->timeout ?? 30;
+        $this->timeout = 10; // daemon itself caps at ~3s; allow slack
+        $result = $this->post("/api/v1/kerberos/preflight", [
+            "kdc_host" => $kdcHost,
+        ]);
+        $this->timeout = $prev;
+        return $result;
+    }
+
+    /**
+     * Run a quick smoke check against a stored test configuration.
+     * Exercises the test's proxy + auth config with 1 user and 2 canonical
+     * connectivity-check URLs. Used by the UI "Check" button to validate that
+     * a test's proxy credentials and reachability are correct before launching
+     * the full load.
+     *
+     * The daemon may take up to 30 seconds to respond; override the HTTP
+     * client timeout so PHP does not give up first.
+     *
+     * @param string $testId Test ID
+     * @return array|null Check result { test_id, success, results[], error? }
+     */
+    public function checkTest(string $testId): ?array
+    {
+        $prev = $this->timeout ?? 30;
+        $this->timeout = 45;
+        $result = $this->post("/api/v1/tests/{$testId}/check");
+        $this->timeout = $prev;
+        return $result;
     }
 
     /**

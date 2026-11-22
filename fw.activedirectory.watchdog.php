@@ -1,16 +1,20 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
 if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["ShowID-js"])){ShowID_js();exit;}
 if(isset($_GET["ShowID"])){ShowID();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["empty-js"])){empty_js();exit;}
 if(isset($_POST["empty"])){empty_table();exit;}
 
@@ -48,11 +52,14 @@ function empty_table(){
 function ShowID(){
 	
 	$tpl=new template_admin();
-	$sql="SELECT content FROM ntlm_admin_mysql WHERE ID={$_GET["ShowID"]}";
+	// Pentest 2026-11-04 : ShowID etait concatene dans la requete.
+	$ShowID=intval($_GET["ShowID"]);
+	$sql="SELECT content FROM ntlm_admin_mysql WHERE ID=$ShowID";
 	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
 	$ligne=$q->mysqli_fetch_array($sql);
 	
-	$content=$tpl->_ENGINE_parse_body($ligne["content"]);
+	// Pentest 2026-11-04 : content (donnee externe) affiche sans encodage (XSS stockee).
+	$content=$tpl->_ENGINE_parse_body(req_html($ligne["content"]));
 	$content=nl2br($content);
 	echo "<p>$content</p>";
 }
@@ -75,13 +82,16 @@ function table(){
 	$page=CurrentPageName();
     $search="";
     $FILTER="WHERE 1";
+    $FILTER_PARAMS=array();
     if(isset($_GET["search"])){$search=$_GET["search"];}
     if(strlen($search)>1){
         $search="*$search*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $FILTER="WHERE subject LIKE '%$search%' OR content LIKE '%$search%' OR function LIKE '%$search%'";
+        // Pentest 2026-11-04 : search etait concatene dans la requete.
+        $FILTER="WHERE subject LIKE ? OR content LIKE ? OR function LIKE ?";
+        $FILTER_PARAMS=array("%$search%","%$search%","%$search%");
     }
 
 
@@ -90,7 +100,7 @@ function table(){
     $q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
 
 	$sql="SELECT ID,zDate,subject,severity,function,line,filename, LENGTH(content) as content  FROM ntlm_admin_mysql $FILTER ORDER BY zDate DESC LIMIT 500";
-	$results=$q->QUERY_SQL($sql);
+	$results=$q->QUERY_SQL_PARAMS($sql,$FILTER_PARAMS);
 
 
     $html[]="<table id='table-firewall-rules' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
@@ -103,7 +113,9 @@ function table(){
 	$html[]="</thead>";
 	$html[]="<tbody>";
 
-	$jsAfter="LoadAjax('table-loader','$page?table=yes&eth={$_GET["eth"]}');";
+	// Pentest 2026-11-04 : eth etait recopie sans encodage dans la page (XSS).
+	$ethT=preg_replace('#[^A-Za-z0-9_.:@-]#','',(string)($_GET["eth"] ?? ""));
+	$jsAfter="LoadAjax('table-loader','$page?table=yes&eth=$ethT');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
 	
 
@@ -131,15 +143,18 @@ function table(){
 		$zdate=$tpl->time_to_date($ligne["zDate"],true);
 		$severity_class=$severityCL[$ligne["severity"]];
         $td1Prc="class=\"$text_class\" style='width:1%' nowrap";
+		// Pentest 2026-11-04 : subject/hostname/function/filename (donnee externe) affiches sans encodage (XSS stockee).
+		$ligne["ID"]=intval($ligne["ID"]);
 		$js="Loadjs('$page?ShowID-js={$ligne["ID"]}')";
 		$link="<span><i class='fa fa-search ' id='$id'></i>&nbsp;<a href=\"javascript:blur();\"
 		OnClick=\"$js\" class='{$severityTX[$ligne["severity"]]}' style='font-weight:bold'>";
 
 		if($ligne["content"]==0){$link="<span style='font-weight:bold'>";$js="blur()";}
 
-		$text=$link.$tpl->_ENGINE_parse_body($ligne["subject"]."</a></span>
-		<div style='font-size:10px'>{host}:{$ligne["hostname"]} {function}:{$ligne["function"]}, {line}:{$ligne["line"]}</div>");
+		$text=$link.$tpl->_ENGINE_parse_body(req_html($ligne["subject"])."</a></span>
+		<div style='font-size:10px'>{host}:".req_html($ligne["hostname"])." {function}:".req_html($ligne["function"]).", {line}:".req_html($ligne["line"])."</div>");
 		if(strpos(" ".$ligne["filename"], "/")>0){$ligne["filename"]=basename($ligne["filename"]);}
+		$ligne["filename"]=req_html($ligne["filename"]);
 		
 		$html[]="<tr class='$TRCLASS'>";
 		$html[]="<td $td1Prc><div class='label $severity_class' style='font-size:13px;padding:10px;width:100%' $curs OnClick=\"$js\">$zdate</a></div></td>";

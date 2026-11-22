@@ -38,6 +38,7 @@ function smtp_defaults():array{
     if(!isset($ini->_params["SMTP"]["smtp_auth_passwd"])){$ini->_params["SMTP"]["smtp_auth_passwd"]=null;}
     if(!isset($ini->_params["SMTP"]["tls_enabled"])){$ini->_params["SMTP"]["tls_enabled"]=0;}
     if(!isset($ini->_params["SMTP"]["ssl_enabled"])){$ini->_params["SMTP"]["ssl_enabled"]=0;}
+    if(!isset($ini->_params["SMTP"]["proxy_protocol"])){$ini->_params["SMTP"]["proxy_protocol"]=0;}
 
     if($ini->_params["SMTP"]["smtp_server_port"]==null){$ini->_params["SMTP"]["smtp_server_port"]=25;}
     if($ini->_params["SMTP"]["smtp_sender"]==null){$ini->_params["SMTP"]["smtp_sender"]="artica@".php_uname('n');}
@@ -54,6 +55,8 @@ function smtp_defaults():array{
     if(!isset($UfdbguardSMTPNotifs["smtp_auth_passwd"])){$UfdbguardSMTPNotifs["smtp_auth_passwd"]=$ini->_params["SMTP"]["smtp_auth_passwd"];}
     if(!isset($UfdbguardSMTPNotifs["tls_enabled"])){$UfdbguardSMTPNotifs["tls_enabled"]=$ini->_params["SMTP"]["tls_enabled"];}
     if(!isset($UfdbguardSMTPNotifs["ssl_enabled"])){$UfdbguardSMTPNotifs["ssl_enabled"]=$ini->_params["SMTP"]["ssl_enabled"];}
+    if(!isset($UfdbguardSMTPNotifs["proxy_protocol"])){$UfdbguardSMTPNotifs["proxy_protocol"]=$ini->_params["SMTP"]["proxy_protocol"];}
+
     if(!is_numeric($UfdbguardSMTPNotifs["smtp_server_port"])){$UfdbguardSMTPNotifs["smtp_server_port"]=25;}
     if(!isset($UfdbguardSMTPNotifs["use_login"])){$UfdbguardSMTPNotifs["use_login"]=0;}
     if(!isset($UfdbguardSMTPNotifs["smtp2go"])){$UfdbguardSMTPNotifs["smtp2go"]=0;}

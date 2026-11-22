@@ -1,7 +1,17 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.milter.greylist.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
+// Pentest 2026-11-04 : method/explain-type/delete-js/record-js/id etaient recopies sans encodage dans la page (XSS).
+foreach(array("method","explain-type") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET[$xssk]);}}
+foreach(array("delete-js","record-js") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=intval($_GET[$xssk]);}}
+if(isset($_POST["delete"])){$_POST["delete"]=intval($_POST["delete"]);}
+if(isset($_GET["id"])){$_GET["id"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["id"]);}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -45,7 +55,7 @@ function delete(){
 	$q->QUERY_SQL("DELETE FROM miltergreylist_acls WHERE ID='$id'");
 	if(!$q->ok){echo $q->mysql_error;return false;}
     $sock=new sockets();
-    $sock->REST_API("/postfix/smtpd/restrictions/0");
+    $sock->REST_API_POSTFIX("/postfix/smtpd/restrictions/0");
     return admin_tracks_post("Delete miltergreylist_acls rule for SMTP instance id 0");
 }
 
@@ -101,9 +111,10 @@ function smtpd_milter_maps_save(){
 	$tpl->CLEAN_POST();
     $instance_id=intval($_POST["instance_id"]);
 	$pattern=$_POST["smtpd-milter-item"];
-	$sql="INSERT INTO smtpd_milter_maps (pattern,enabled,instanceid) VALUES ('$pattern',1,$instance_id)";
+	// Pentest 2026-11-04 : smtpd-milter-item etait concatene dans la requete.
+	$sql="INSERT INTO smtpd_milter_maps (pattern,enabled,instanceid) VALUES (?,1,$instance_id)";
 	$q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
-	$q->QUERY_SQL($sql);
+	$q->QUERY_SQL_PARAMS($sql,array(strval($pattern)));
 	if(!$q->ok){echo $q->mysql_error;}
 }
 
@@ -142,7 +153,8 @@ function record_popup(){
 		$ligne=$q->mysqli_fetch_array($sql);
 		$title="{{$method}} {$ligne["pattern"]}";
 		$bt="{apply}";
-		$script="Onchange$t('{$ligne["type"]}');";
+		// Pentest 2026-11-04 : type (donnee de la base) dans du JS sans encodage (XSS stockee).
+		$script="Onchange$t('".req_js($ligne["type"])."');";
 	}
 	
 	$methods["blacklist"]="{blacklist}";
@@ -206,6 +218,9 @@ function record_save(){
 	$infos=str_replace("\n", "", $infos);
 	$infos=str_replace("\r", "", $infos);
 	$infos=str_replace("'", "`", $infos);
+	// Pentest 2026-11-04 : SaveAclID/method/type/pattern/description (et le nom PTR resolu) etaient
+	// concatenes dans la requete : id en entier, chaque valeur echappee (pg_escape_string2) a l'emploi.
+	$id=intval($id);
 
 
     $TR=array();
@@ -234,7 +249,7 @@ function record_save(){
                 $pattern = $re[4];
                 $description = $re[5];
                 $description = str_replace("'", "`", $description);
-                $IMPORT[] = "NOW(),'$instance','$zmethod','$type','$pattern','$description')";
+                $IMPORT[] = "NOW(),'".pg_escape_string2($instance)."','".pg_escape_string2($zmethod)."','".pg_escape_string2($type)."','".pg_escape_string2($pattern)."','".pg_escape_string2($description)."')";
                 continue;
             }else{
                 $tpl->post_error("$patterns No Matches");
@@ -248,7 +263,8 @@ function record_save(){
 			}
 			
 			//$patterns=pg_escape_bytea($patterns);
-			$TR[]="($lastid,NOW(),'$instance','$mode','$type','$patterns','$newinfos')";
+			$lastid=intval($lastid);
+			$TR[]="($lastid,NOW(),'".pg_escape_string2($instance)."','".pg_escape_string2($mode)."','".pg_escape_string2($type)."','".pg_escape_string2($patterns)."','".pg_escape_string2($newinfos)."')";
 		}
 		
 		if(count($TR)>0) {
@@ -265,6 +281,7 @@ function record_save(){
             $TR=array();
 		    foreach ($IMPORT as $line){
                 $lastid++;
+                $lastid=intval($lastid);
                 $TR[]="($lastid,$line";
             }
             $sql=$prefix.@implode(",", $TR);
@@ -274,17 +291,17 @@ function record_save(){
 
         }
         $sock=new sockets();
-        $sock->REST_API("/postfix/smtpd/restrictions/0");
+        $sock->REST_API_POSTFIX("/postfix/smtpd/restrictions/0");
         return admin_tracks_post("Save rules for SMTP instance id 0");
 
 	}
 	
 	
-	$sql="UPDATE miltergreylist_acls SET method='$mode',type='$type',pattern='$pattern',description='$infos' WHERE id=$id;";
-	$q->QUERY_SQL($sql);
+	$sql="UPDATE miltergreylist_acls SET method=$1,type=$2,pattern=$3,description=$4 WHERE id=$id;";
+	$q->QUERY_SQL_PARAMS($sql,array($mode,$type,$pattern,$infos));
 	if(!$q->ok){echo $q->mysql_error."<br>$sql\n";return false;}
     $sock=new sockets();
-    $sock->REST_API("/postfix/smtpd/restrictions/0");
+    $sock->REST_API_POSTFIX("/postfix/smtpd/restrictions/0");
     return admin_tracks_post("Save rules for SMTP instance id 0");
 }
 
@@ -357,7 +374,8 @@ function tabs(){
     if($instance_id>0){
         $q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
         $ligne=$q->mysqli_fetch_array("SELECT instancename from postfix_instances WHERE id='$instance_id'");
-        $instancename="&nbsp;<small>({$ligne["instancename"]})</small>";
+        // Pentest 2026-11-04 : instancename (donnee de la base) affiche sans encodage (XSS stockee).
+        $instancename="&nbsp;<small>(".req_html($ligne["instancename"]).")</small>";
     }
 
 
@@ -407,6 +425,8 @@ function IntelligentSearch($search){
         $search=$re[1];
         $Nextpattern=trim($re[2]);
     }
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $search=pg_escape_string2($search);
     $results["Q"]=" WHERE (pattern ~ '$search') OR (description ~ '$search')";
 
     if(is_numeric($Nextpattern)){
@@ -424,7 +444,9 @@ function IntelligentSearch($search){
 function search(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $function=$_GET["function"];
+    // Liste blanche au point de lecture: ce nom repart BRUT dans du JavaScript
+    // (OnClick, $jsafter), ce qui en faisait un vecteur de XSS reflechi.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $DisablePostGres=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisablePostGres"));
     if($DisablePostGres==1){
         $installjs=$tpl->framework_buildjs(
@@ -447,7 +469,9 @@ function search(){
 	$sock=new sockets();
 	$q=new postgres_sql();
 	$table="miltergreylist_acls";
-	$method=$_GET["method"];
+	// $method partait BRUT dans le WHERE de la requete SQL et dans des attributs
+	// OnClick. Les deux seules valeurs legitimes sont whitelist et blacklist.
+	$method=(isset($_GET["method"]) && $_GET["method"]=="blacklist")?"blacklist":"whitelist";
 	$EnableMilterRegex=intval($sock->GET_INFO("EnableMilterRegex"));
 
     $jsApply="Loadjs('fw.postfix.articarest.php?smtpd-client-restrictions=yes&instance-id=0')";
@@ -459,12 +483,12 @@ function search(){
 		$ARRAY["CMD"]="rbldnsd.php?compile=yes";
 		$ARRAY["TITLE"]="{APP_RBLDNSD}";
 		$prgress=base64_encode(serialize($ARRAY));
-		$jsApply="Loadjs('fw.progress.php?content=$prgress&mainid=progress-rbldnsd-restart')";
+		$jsApply="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-rbldnsd-restart')";
 	}
 	
 	$btns=$tpl->_ENGINE_parse_body("
 			<div class=\"btn-group\" data-toggle=\"buttons\">
-			<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?record-js=0&method=$method&function={$_GET["function"]}');;\">
+			<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?record-js=0&method=$method&function=$function');\">
 			<i class='fa fa-plus'></i> {new_entry} </label>
 			<label class=\"btn btn btn-info\" OnClick=\"$jsApply\">
 				<i class='fa fa-save'></i> {compile_database} </label>
@@ -483,7 +507,7 @@ function search(){
     }
 
 	
-	$sql="SELECT * FROM (SELECT * FROM $table WHERE method='{$_GET["method"]}') as t {$querys["Q"]} LIMIT $MAX";
+	$sql="SELECT * FROM (SELECT * FROM $table WHERE method='$method') as t {$querys["Q"]} LIMIT $MAX";
 	//(id,zdate,instance,method,type,pattern,description)
 
 	
@@ -491,59 +515,33 @@ function search(){
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." $sql<br>$q->mysql_error");return;}
 
 	
-	$TRCLASS=null;
-	$html[]="<table id='table-miltergrey-list-acls' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{records}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{explain}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{delete}</center></th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
+	$rows=array();
 	while ($ligne = pg_fetch_assoc($results)) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-		$md=md5(serialize($ligne));
-		$id=$ligne["id"];
-		$color="#000000";
-		$zdate=$tpl->time_to_date(strtotime($ligne["zdate"]));
-		$type=$ligne["type"];
-		$pattern=$ligne["pattern"];
-		$description=$ligne["description"];
-		
-		if($EnableMilterRegex==0){
-			if($type=="envsubject"){
-				$description="<small class='text-danger'><i class='fas fa-exclamation-square'></i>&nbsp;{APP_MILTER_REGEX} {inactive}</small> $description";
-			}
-			if($type=="envbody"){
-				$description="<small class='text-danger'><i class='fas fa-exclamation-square'></i>&nbsp;{APP_MILTER_REGEX} {inactive}</small> $description";
-			}
-			
-		}
-		
-		
-		$js="Loadjs('$page?record-js=$id&method=$method&function={$_GET["function"]}');";
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:1%'>".$tpl->td_href($id,"{view2}",$js)."</td>";
-		$html[]="<td style='width:1%' nowrap>$zdate</td>";
-		$html[]="<td style='width:1%' nowrap>{{$type}}</td>";
-		$html[]="<td style='width:1%' nowrap>".$tpl->td_href($pattern,"{view2}",$js)."</td>";
-		$html[]="<td>$description</td>";
-		$html[]="<td style='vertical-align:middle'><center>".$tpl->icon_delete("Loadjs('$page?delete-js=$id&id=$md')","AsPostfixAdministrator")."</center></td>";
-		$html[]="</tr>";
+		$rows[]=pfxbw_row($tpl,$page,$method,$function,$EnableMilterRegex,$ligne);
 	}
 
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{records}</th>";
+	$html[]="<th class='center'>{type}</th>";
+	$html[]="<th>{date}</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pfxbw-rows'>";
+	if(count($rows)==0){
+		$html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$shown=count($rows);
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown / $shown</span>";
+	$html[]="<span class='awc-pg' id='pfxbw-pager'></span>";
+	$html[]="</div></div></div>";
 
-    $title="{whitelist} {$querys["Q"]}";
-    if($method=="blacklist"){
-        $title="{blacklist} {$querys["Q"]}";
-    }
+    $title=($method=="blacklist")?"{blacklist}":"{whitelist}";
 
+    $TINY_ARRAY=array();
     $TINY_ARRAY["TITLE"]="$title";
     $TINY_ARRAY["ICO"]="fas fa-filter";
     $TINY_ARRAY["EXPL"]="{APP_POSTFIX_BACKWHITE_EXPLAIN}";
@@ -551,24 +549,50 @@ function search(){
     $TINY_ARRAY["BUTTONS"]=$btns;
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
+	// La requete SQL etait affichee sous le tableau (<small>$sql</small>): un reste
+	// de mise au point qui exposait le schema et le motif recherche a l'ecran.
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n$jstiny</script>";
 
-	$html[]="<tr>";
-	$html[]="<td colspan='6'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="<small>$sql</small>
-<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-miltergrey-list-acls').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	$jstiny
-</script>";
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.awc_pager_js(50,"pfxbw-rows","pfxbw-pager");
+}
 
-	echo $tpl->_ENGINE_parse_body($html);
+/**
+ * Une entree de liste: le motif est l'identite (c'est ce qu'on cherche), la
+ * description passe en sous-titre. L'identifiant numerique, qui occupait la
+ * premiere colonne, n'a d'interet que pour ouvrir la fiche: il reste dans le lien.
+ * Motif et description viennent de la base et etaient rendus bruts.
+ */
+function pfxbw_row($tpl,$page,$method,$function,$EnableMilterRegex,$ligne):string{
+	$md=md5(serialize($ligne));
+	$id=intval($ligne["id"]);
+	$type=(string)$ligne["type"];
+	$pattern=(string)$ligne["pattern"];
+	$description=htmlspecialchars((string)$ligne["description"]);
+
+	// Sans le module d'expressions regulieres, ces deux types ne sont pas evalues:
+	// la ligne existe mais ne filtre rien, il faut le dire.
+	if($EnableMilterRegex==0 && ($type=="envsubject" || $type=="envbody")){
+		$description="<span style='color:#ba1a1a'><i class='fas fa-triangle-exclamation'></i> "
+			."{APP_MILTER_REGEX} {inactive}</span> $description";
+	}
+
+	$js="Loadjs('$page?record-js=$id&method=$method&function=$function');";
+	$del=$tpl->icon_delete("Loadjs('$page?delete-js=$id&id=$md')","AsPostfixAdministrator");
+
+	$h ="<tr id='$md'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fas fa-filter'></i></span>";
+	$h.="<span><span class='awc-name'><a href=\"javascript:blur();\" title='{view2}' OnClick=\"$js\">"
+		.htmlspecialchars($pattern)."</a></span>";
+	if($description!==""){$h.="<div class='awc-meta'>$description</div>";}
+	$h.="</span></div></td>";
+	$h.="<td class='center'><span class='awc-tag'>{".htmlspecialchars($type)."}</span></td>";
+	$h.="<td class='awc-mono'>".htmlspecialchars($tpl->time_to_date(strtotime((string)$ligne["zdate"])))."</td>";
+	$h.="<td><div class='awc-acts'>$del</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 
 function smtpd_milter_maps_table(){
@@ -580,10 +604,10 @@ function smtpd_milter_maps_table(){
 
 	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/smtpd_client_restrictions_progress";
 	$ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/smtpd_client_restrictions_progress.log";
-	$ARRAY["CMD"]="postfix.php?smtpd-client-restrictions=yes&instance-id=$instance_id";
+	$ARRAY["CMD"]="/postfix/smtpd/restrictions/$instance_id";
 	$ARRAY["TITLE"]="{smtpd_client_restrictions}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsApply="Loadjs('fw.progress.php?content=$prgress&mainid=progress-postfixwbl-restart')";
+	$jsApply="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-postfixwbl-restart')";
 	
 	
 	$btns[]="<div class=\"btn-group\" data-toggle=\"buttons\" style=''>";
@@ -597,16 +621,6 @@ function smtpd_milter_maps_table(){
     $btns[]="</div>";
 
 	
-	$html[]="<table id='smtpd-milter-maps-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{items}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap class='center'>{enabled}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' class='center'>{delete}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
 	$q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
 
     if(!$q->FIELD_EXISTS("smtpd_milter_maps","instanceid")){
@@ -615,43 +629,35 @@ function smtpd_milter_maps_table(){
 
 	$results=$q->QUERY_SQL("SELECT * FROM smtpd_milter_maps WHERE instanceid=$instance_id ORDER BY pattern");
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);}
-    $TRCLASS=null;
+
+	$rows=array();
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$id=md5(serialize($ligne));
-		$html[]="<tr class='$TRCLASS' id='$id'>";
-		$pattern=$ligne["pattern"];
-		$ID=$ligne["ID"];
-		$html[]="<td><strong>$pattern</strong></td>";
-		$html[]="<td width=1% class='center'>". $tpl->icon_check($ligne["enabled"],
-                    "Loadjs('$page?smtpd-milter-maps-enable=$ID')","AsPostfixAdministrator")."</td>";
-		$html[]="<td width=1% class='center'>". $tpl->icon_delete("Loadjs('$page?smtpd-milter-maps-delete=$ID&md=$id')","AsPostfixAdministrator")."</td>";
-		$html[]="</tr>";
+		$rows[]=pfxmm_row($tpl,$page,$ligne);
 	}
-	
-	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-	$html[]="<td><strong>127.0.0.0/8</strong></td>";
-	$html[]="<td width=1% class='center'>". $tpl->icon_nothing()."</td>";
-	$html[]="<td width=1% class='center'>". $tpl->icon_nothing()."</td>";
-	$html[]="</tr>";
-	
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='3'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	// La boucle locale est toujours implicite: le loopback n'est pas une entree de
+	// la table, il est cable dans la configuration generee. Il etait rendu SANS
+	// balise <tr> ouvrante, ce qui cassait la derniere ligne du tableau.
+	$rows[]=pfxmm_loopback_row($tpl);
+
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{items}</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pfxmm-rows'>";
+	$html[]=@implode("\n",$rows);
+	$shown=count($rows);
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown / $shown</span>";
+	$html[]="<span class='awc-pg' id='pfxmm-pager'></span>";
+	$html[]="</div></div></div>";
 
     $instancename="SMTP Master";
     if($instance_id>0){
         $q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
         $ligne=$q->mysqli_fetch_array("SELECT instancename from postfix_instances WHERE id='$instance_id'");
-        $instancename="&nbsp;<small>({$ligne["instancename"]})</small>";
+        // Pentest 2026-11-04 : instancename (donnee de la base) affiche sans encodage (XSS stockee).
+        $instancename="&nbsp;<small>(".req_html($ligne["instancename"]).")</small>";
     }
 
     $TINY_ARRAY["TITLE"]="{whitelist} ({filters}) $instancename";
@@ -663,14 +669,42 @@ function smtpd_milter_maps_table(){
     echo "<script>$jstiny</script>";
 
 
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#smtpd-milter-maps-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-	
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.awc_pager_js(50,"pfxmm-rows","pfxmm-pager");
+}
+
+/** Un motif de la carte smtpd_milter_maps: bascule d'activation et suppression. */
+function pfxmm_row($tpl,$page,$ligne):string{
+	$md=md5(serialize($ligne));
+	$ID=intval($ligne["ID"]);
+	$en=!empty($ligne["enabled"]);
+	$chk=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?smtpd-milter-maps-enable=$ID')",null,"AsPostfixAdministrator");
+	$del=$tpl->icon_delete("Loadjs('$page?smtpd-milter-maps-delete=$ID&md=$md')","AsPostfixAdministrator");
+	$h ="<tr id='$md'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='".($en?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-network-wired'></i></span>";
+	$h.="<span><span class='".($en?"awc-name":"awc-name awc-name-off")."'>"
+		.htmlspecialchars((string)$ligne["pattern"])."</span></span>";
+	$h.="</div></td>";
+	$h.="<td><div class='awc-acts'>$chk$del</div></td>";
+	$h.="</tr>";
+	return $h;
+}
+
+/** La boucle locale: toujours autorisee, non modifiable, absente de la table. */
+function pfxmm_loopback_row($tpl):string{
+	$h ="<tr>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fas fa-network-wired'></i></span>";
+	$h.="<span><span class='awc-name'>127.0.0.0/8</span>";
+	$h.="<div class='awc-meta'>{implicit}</div></span>";
+	$h.="</div></td>";
+	$h.="<td><div class='awc-acts'>".$tpl->icon_nothing()."</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 
 
@@ -710,7 +744,8 @@ function status(){
     if($instance_id>0){
         $q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
         $ligne=$q->mysqli_fetch_array("SELECT instancename from postfix_instances WHERE id='$instance_id'");
-        $instancename="&nbsp;<small>({$ligne["instancename"]})</small>";
+        // Pentest 2026-11-04 : instancename (donnee de la base) affiche sans encodage (XSS stockee).
+        $instancename="&nbsp;<small>(".req_html($ligne["instancename"]).")</small>";
     }
 
 

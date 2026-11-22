@@ -1,36 +1,30 @@
-<CrossRoadsBalancingServerIP>Crossroads load-balacing server IP</CrossRoadsBalancingServerIP>
-<CrossRoadsBalancingServerIP_text>Define here wich TCP/IP address Crossroads will listen to.[br]
-This is the IP address used to receive mails[br]
-The local Postfix settings will be changed to listen 127.0.0.1 address in order to prevent IP/port conflict
-</CrossRoadsBalancingServerIP_text>
-<CrossRoadsBalancingServerName>Hostname of the Master server</CrossRoadsBalancingServerName>
-<CrossRoadsBalancingServerName_text>This hostname is important.[br]It used by slaves to locate the LDAP Master branch in order to takes it's configuration</CrossRoadsBalancingServerName_text>
-<CrossRoadsPoolingTime>Pooling time</CrossRoadsPoolingTime>
-<CrossRoadsPoolingTime_text>Slaves will report their status every X seconds, define here the pooling time to report to master</CrossRoadsPoolingTime_text>
-<crossroads_explain>
-Crossroads is a load balance and fail over utility for TCP based services.[br]
-It is a daemon program running in user space, and features extensive configurability, polling of back ends using 'wakeup calls',
-detailed status reporting, 'hooks' for special actions when backend calls fail, and much more.[br]
-Crossroads is service-independent: it is usable for HTTP/HTTPS, SSH, SMTP, DNS, etc. [br]
-In the case of HTTP balancing, Crossroads can modify HTTP headers, e.g. to provide 'session stickiness' for back end processes
-that need sessions, but aren't session-aware of other back ends
-</crossroads_explain>
-<main_server_text>
-Define here the parameters of the "source" server[br]
-All slaves server will use the LDAP Database of the source server.[br]
-Policies, global postfix settings will be replicated from this source server to all slaves servers that you will add.[br]
-In this case, This server will serve SMTP connections and balance them to slaves.
-</main_server_text>
-<main_slaves_text>Add here slaves that will receive order to be tranformed has a copy of this server in order to obtain a chained cluster.</main_slaves_text>
-<PostfixMasterServerIdentity>Master server address</PostfixMasterServerIdentity>
-<PostfixMasterServerIdentity_text>This is the IP or name address of this server.[br]This address will be used by the slaves servers, to report and get informations</PostfixMasterServerIdentity_text>
-<PostfixSlaveServersIdentity>Slave server address</PostfixSlaveServersIdentity>
-<PostfixSlaveServersIdentity_text>Set the name or the ip address of slaves servers</PostfixSlaveServersIdentity_text>
-<replicate_suffix>Replacted LDAP Branch</replicate_suffix>
-<replicate_suffix_text>This LDAP branch will be replicated by slaves servers</replicate_suffix_text>
-<slaves_servers>Slaves servers</slaves_servers>
+<CrossRoadsBalancingServerIP>IP del server di bilanciamento del carico Crossroads</CrossRoadsBalancingServerIP>
+<CrossRoadsBalancingServerIP_text>Definisci qui su quale indirizzo TCP/IP Crossroads ascolter&#224;.[br]
+Questo &#232; l'indirizzo IP utilizzato per ricevere le email[br]
+Le impostazioni locali di Postfix verranno modificate per ascoltare l'indirizzo 127.0.0.1 al fine di prevenire conflitti IP/porta</CrossRoadsBalancingServerIP_text>
+<CrossRoadsBalancingServerName>Hostname del server master</CrossRoadsBalancingServerName>
+<CrossRoadsBalancingServerName_text>Questo hostname &#232; importante.[br]Viene utilizzato dagli slave per localizzare il ramo master LDAP e prenderne la configurazione</CrossRoadsBalancingServerName_text>
+<CrossRoadsPoolingTime>Tempo di polling</CrossRoadsPoolingTime>
+<CrossRoadsPoolingTime_text>Gli slave segnaleranno il loro stato ogni X secondi, definisci qui il tempo di polling per segnalare al master</CrossRoadsPoolingTime_text>
+<crossroads_explain>Crossroads &#232; un'utilit&#224; di bilanciamento del carico e failover per servizi basati su TCP.[br]
+&#200; un programma daemon che gira nello spazio utente e offre ampia configurabilit&#224;, polling dei back end tramite 'wakeup call',
+report di stato dettagliati, 'hook' per azioni speciali quando le chiamate al backend falliscono e molto altro.[br]
+Crossroads &#232; indipendente dal servizio: &#232; utilizzabile per HTTP/HTTPS, SSH, SMTP, DNS, ecc. [br]
+Nel caso del bilanciamento HTTP, Crossroads pu&#242; modificare gli header HTTP, ad es. per fornire 'session stickiness' ai processi back end
+che necessitano di sessioni ma non sono consapevoli degli altri back end</crossroads_explain>
+<main_server_text>Definisci qui i parametri del server &quot;sorgente&quot;[br]
+Tutti i server slave utilizzeranno il database LDAP del server sorgente.[br]
+Le policy e le impostazioni globali di postfix verranno replicate da questo server sorgente a tutti i server slave che aggiungerai.[br]
+In questo caso, questo server gestir&#224; le connessioni SMTP e le bilancer&#224; verso gli slave.</main_server_text>
+<main_slaves_text>Aggiungi qui gli slave che riceveranno l'ordine di trasformarsi in una copia di questo server per ottenere un cluster concatenato.</main_slaves_text>
+<PostfixMasterServerIdentity>Indirizzo del server master</PostfixMasterServerIdentity>
+<PostfixMasterServerIdentity_text>Questo &#232; l'indirizzo IP o il nome di questo server.[br]Questo indirizzo verr&#224; utilizzato dai server slave per segnalare e ottenere informazioni</PostfixMasterServerIdentity_text>
+<PostfixSlaveServersIdentity>Indirizzo del server slave</PostfixSlaveServersIdentity>
+<PostfixSlaveServersIdentity_text>Imposta il nome o l'indirizzo IP dei server slave</PostfixSlaveServersIdentity_text>
+<replicate_suffix>Ramo LDAP replicato</replicate_suffix>
+<replicate_suffix_text>Questo ramo LDAP verr&#224; replicato dai server slave</replicate_suffix_text>
+<slaves_servers>Server slave</slaves_servers>
 <synchronize>Sincronizzare</synchronize>
-<synchronize_text>Click on this image to send order to slaves to enable the replication mode</synchronize_text>
-<warning_all_ldap_deleted>Master's LDAP Database [b]will erase remote LDAP databases[/b].[br]
-Be sure that yours slaves servers does not store any production datas[br]Usually, slaves has been fresh installed
-</warning_all_ldap_deleted>
+<synchronize_text>Clicca su questa immagine per inviare agli slave l'ordine di abilitare la modalit&#224; di replica</synchronize_text>
+<warning_all_ldap_deleted>Il database LDAP del master [b]canceller&#224; i database LDAP remoti[/b].[br]
+Assicurati che i tuoi server slave non memorizzino dati di produzione[br]Di solito gli slave sono stati installati da zero</warning_all_ldap_deleted>

@@ -1,15 +1,14 @@
 <about>O SQLgrey &eacute; um servi&ccedil;o de inspe&ccedil;&atilde;o do postfix  que implementa uma pol&iacute;tica de grey-listing. [br]
 SQLgrey &eacute; escrito em Perl e usa DBI para aceder a uma base de dados SQL. [br]
 O seu objetivo &eacute; reduzir  o SPAM nas caixas de correio dos utilizadores atingidos.</about>
-<add_white_list>Add a white listed server</add_white_list>
+<add_white_list>Adicionar um servidor na lista branca</add_white_list>
 <admin_mail>Endereço de e-mail do administrador</admin_mail>
 <admin_mail_text>Quem recebe notificaç%C3µes urgentes (DB est%C3¡ em baixo, por exemplo) vazio: n%C3£o enviar notificaç%C3µes por correio</admin_mail_text>
-<awl_age>Auto White List age</awl_age>
-<awl_age_text>Set in day the maximum days to live in auto white list age.[br]
-For bigger sites you may want a smaller Auto White List age and a bigger group domain level
-</awl_age_text>
-<classc>greylist by class C network</classc>
-<connect_src_throttle>Throttling too many new entries from new host</connect_src_throttle>
+<awl_age>Idade da Auto White List</awl_age>
+<awl_age_text>Defina em dias o n&#250;mero m&#225;ximo de dias de vida na idade da auto white list.[br]
+Para sites maiores pode querer uma idade da Auto White List menor e um n&#237;vel de dom&#237;nio de grupo maior</awl_age_text>
+<classc>greylisting por rede de classe C</classc>
+<connect_src_throttle>Limitar demasiadas entradas novas de um novo host</connect_src_throttle>
 <connect_src_throttle_text>A definiç%C3£o deste parâmetro opcional ir%C3¡ recusar um n%C3%BAmero excessivo de novas entradas na tabela de ligaç%C3£o do mesmo anfitri%C3£o, da seguinte forma
 [ul]
 [li]Se j%C3¡ existem entradas &quot;connect_src_throttle&quot; na tabela connect a partir do mesmo host (e-mails que ainda n%C3£o foram novamente testados)[/li].
@@ -19,7 +18,7 @@ For bigger sites you may want a smaller Auto White List age and a bigger group d
 [/ul]
 Esta caracter%C3%ADstica pode impedir que a mesa de ligaç%C3£o cresça demasiado grande e seja polu%C3%ADda por spambots, v%C3%ADrus, m%C3¡quinas zombies e similares [br].
 Se definido para &quot;0&quot; (por defeito), esta funcionalidade n%C3£o ser%C3¡ utilizada.[br]</connect_src_throttle_text>
-<discrimination>Discriminating Greylisting</discrimination>
+<discrimination>Greylisting discriminat&#243;rio</discrimination>
 <discrimination_add_rulenr>Discriminaç%C3£o acrescentar n%C3%BAmero da regra</discrimination_add_rulenr>
 <discrimination_add_rulenr_text>Adicionar o n%C3%BAmero da regra de discriminaç%C3£o nos registos</discrimination_add_rulenr_text>
 <discrimination_text>O comportamento discriminat%C3%B3rio é permitido pela vari%C3¡vel de configuraç%C3£o 'discriminaç%C3£o' em sqlgrey.conf
@@ -112,30 +111,28 @@ N%C3£o é preciso muito para fazer esta verificaç%C3£o se mantiver a sua list
 [br]
 Esta funç%C3£o est%C3¡ a ser utilizada num cen%C3¡rio da vida real com ~100.000 contas a serem verificadas por 10 express%C3µes regulares[br].
 N%C3£o h%C3¡ perda de desempenho mensur%C3¡vel [br].</discrimination_text>
-<enable_sqlgrey>Enable SQLGrey Policy server</enable_sqlgrey>
-<enable_sqlgrey_text>If enabled, artica will add the policy server into it's confugration in order to force postfix asking what he do when receiving mails</enable_sqlgrey_text>
-<fqdn_white_list>FQDN white list</fqdn_white_list>
-<fqdn_white_list_text>SQLgrey expects the following expressions:[br][br]
-[b]hostname.domain.com[/b] whole system name (least CPU intensive)[br]
-[b]*.domain.com[/b] whitelist any fqdn in the domain 'domain.com'[br]
-[b]/regexp/[/b] whitelist any fqdn matching the regexp (by far most CPU intensive)[br]
+<enable_sqlgrey>Ativar o servidor de pol&#237;ticas SQLGrey</enable_sqlgrey>
+<enable_sqlgrey_text>Se ativado, o artica adicionar&#225; o servidor de pol&#237;ticas &#224; sua configura&#231;&#227;o para for&#231;ar o postfix a perguntar o que fazer ao receber e-mails</enable_sqlgrey_text>
+<fqdn_white_list>Lista branca de FQDN</fqdn_white_list>
+<fqdn_white_list_text>O SQLgrey espera as seguintes express&#245;es:[br][br]
+[b]hostname.domain.com[/b] nome completo do sistema (menos intensivo para a CPU)[br]
+[b]*.domain.com[/b] colocar na whitelist qualquer fqdn no dom&#237;nio 'domain.com'[br]
+[b]/regexp/[/b] colocar na whitelist qualquer fqdn que corresponda &#224; regexp (de longe o mais intensivo para a CPU)[br]
 [br]
-[i]Note you need the following two lines to allow both lots of mtas.example.com and example.com [b]*.example.com example.com[/b][/i]
-</fqdn_white_list_text>
-<full>greylist by IP address</full>
-<greymethod>Greylisting method</greymethod>
+[i]Note que precisa das duas linhas seguintes para permitir tanto muitos mtas.example.com como example.com [b]*.example.com example.com[/b][/i]</fqdn_white_list_text>
+<full>greylisting por endere&#231;o IP</full>
+<greymethod>M&#233;todo de greylisting</greymethod>
 <greymethod_text>[ul]
-[li]full   : greylist by IP address[/li]
-[li]classc : greylist by class C network. eg: 2.3.4.6 connection accepted if 2.3.4.145 did connect earlier[/li]
-[li]smart  : greylist by class C network unless there is no reverse lookup or it looks like a home-user address[/li]
-[/ul]
-</greymethod_text>
-<group_domain_level>Group domain level</group_domain_level>
-<group_domain_level_text>wait for X validated adresses to add a whole domain in Auto White List</group_domain_level_text>
-<ip_white_list>IP white list</ip_white_list>
-<ip_white_list_text>Add here only IP address of server that will be exclude from SQLGrey process</ip_white_list_text>
-<max_connect_age>max connect age</max_connect_age>
-<max_connect_age_text>don't allow a reconnection after x hours</max_connect_age_text>
+[li]full : greylisting por endere&#231;o IP[/li]
+[li]classc : greylisting por rede de classe C. ex.: liga&#231;&#227;o 2.3.4.6 aceite se 2.3.4.145 se ligou antes[/li]
+[li]smart : greylisting por rede de classe C exceto se n&#227;o houver pesquisa inversa ou parecer um endere&#231;o de utilizador dom&#233;stico[/li]
+[/ul]</greymethod_text>
+<group_domain_level>N&#237;vel de dom&#237;nio do grupo</group_domain_level>
+<group_domain_level_text>Aguardar X endere&#231;os validados para adicionar um dom&#237;nio inteiro &#224; Auto White List</group_domain_level_text>
+<ip_white_list>Lista branca de IP</ip_white_list>
+<ip_white_list_text>Adicione aqui apenas o endere&#231;o IP do servidor que ser&#225; exclu&#237;do do processo SQLGrey</ip_white_list_text>
+<max_connect_age>Idade m&#225;xima da liga&#231;&#227;o</max_connect_age>
+<max_connect_age_text>N&#227;o permitir uma reconex&#227;o ap&#243;s x horas</max_connect_age_text>
 <optmethod>Optin/Optout</optmethod>
 <optmethod_text>O comportamento SQLgrey depende da vari%C3¡vel de configuraç%C3£o 'optmethod' em sqlgrey.conf
 Por defeito Optin/Optout est%C3¡ definido para 'nenhum' [br].
@@ -187,23 +184,21 @@ Para a portabilidade, os endereços s%C3£o limitados a 255 caracteres. Se tiver
 ter%C3¡ de aparar os endereços da mesma forma que SQLgrey: basta tirar os 255 primeiros caracteres do endereço deixando o resto de fora [br].
 Se tiver v%C3¡rios utilizadores com os mesmos 255 primeiros caracteres, ent%C3£o n%C3£o funcionar%C3¡ correctamente (obviamente o %C3%BAltimo utilizador modificado ir%C3¡ definir o
 Como os endereços deste tamanho s%C3£o bastante incomuns, o risco de colis%C3µes é provavelmente apenas te%C3%B3rico.</optmethod_text>
-<reconnect_delay>reconnect delay</reconnect_delay>
-<reconnect_delay_text>don't allow a reconnection before x minutes</reconnect_delay_text>
-<reject_early_reconnect>Reject early reconnect</reject_early_reconnect>
-<reject_early_reconnect_text>Default for early reconnection is the value affected to 'Reject first attempt' </reject_early_reconnect_text>
-<reject_first_attempt>Reject first attempt</reject_first_attempt>
-<reject_first_attempt_text>
-SQLgrey can tell Postfix to:[br]
+<reconnect_delay>Atraso de reconex&#227;o</reconnect_delay>
+<reconnect_delay_text>N&#227;o permitir uma reconex&#227;o antes de x minutos</reconnect_delay_text>
+<reject_early_reconnect>Rejeitar a reconex&#227;o antecipada</reject_early_reconnect>
+<reject_early_reconnect_text>O valor predefinido para a reconex&#227;o antecipada &#233; o valor atribu&#237;do a 'Rejeitar a primeira tentativa'</reject_early_reconnect_text>
+<reject_first_attempt>Rejeitar a primeira tentativa</reject_first_attempt>
+<reject_first_attempt_text>O SQLgrey pode indicar ao Postfix para:[br]
 [ul]
-[li]immediately reject a message with a temporary reject code[/li]
-[li]only do so if following rules would allow the message to pass [br]
+[li]rejeitar imediatamente uma mensagem com um c&#243;digo de rejei&#231;&#227;o tempor&#225;rio[/li]
+[li]faz&#234;-lo apenas se as regras seguintes permitissem a passagem da mensagem[br]
 [/ul][br]
-The first choice will prevent Postfix from spending time evaluating potentially expensive rules.[br]
-In some cases you may want following rules to be aware of the connection this.[br]
+A primeira escolha impedir&#225; que o Postfix gaste tempo a avaliar regras potencialmente dispendiosas.[br]
+Em alguns casos pode querer que as regras seguintes tenham em conta esta liga&#231;&#227;o.[br]
 
-[br]We can specify a different rejection strategy for the first connection attempt, and for early reconnections.
-[br]'immed' chooses immediate rejection 'delay' choose delayed rejection
-</reject_first_attempt_text>
+[br]Podemos especificar uma estrat&#233;gia de rejei&#231;&#227;o diferente para a primeira tentativa de liga&#231;&#227;o e para as reconex&#245;es antecipadas.
+[br]'immed' escolhe a rejei&#231;&#227;o imediata, 'delay' escolhe a rejei&#231;&#227;o atrasada</reject_first_attempt_text>
 <smart>Smart</smart>
-<whitelists_host>whitelists host</whitelists_host>
-<whitelists_host_text>where to get updates for whitelists</whitelists_host_text>
+<whitelists_host>Host das listas brancas</whitelists_host>
+<whitelists_host_text>Onde obter atualiza&#231;&#245;es para as listas brancas</whitelists_host_text>

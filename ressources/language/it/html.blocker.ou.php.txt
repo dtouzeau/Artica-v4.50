@@ -1,22 +1,20 @@
-<addhostname>URI to attached files</addhostname>
-<addhostname_text>Define the URI to attached files that user can use to download files, this uri will be added into the email[br]
-By default,artica allows you to use the artica front-end interface to get files "http://local:port/blocked_attachments".
-[br]if you change this uri, the URL to the file will be the full path to the server[br]In this case be sure that you have one HTTP engine that point to the global folder</addhostname_text>
+<addhostname>URI dei file allegati</addhostname>
+<addhostname_text>Definisci l'URI dei file allegati che l'utente pu&#242; usare per scaricare i file, questo uri verr&#224; aggiunto all'email[br]
+Per impostazione predefinita, artica ti consente di usare l'interfaccia front-end di artica per ottenere i file &quot;http://local:port/blocked_attachments&quot;.
+[br]Se cambi questo uri, l'URL del file sar&#224; il percorso completo del server[br]In tal caso assicurati di avere un motore HTTP che punti alla cartella globale</addhostname_text>
 <body_notification>Disclaimer</body_notification>
-<body_notification_text>This disclaimer is inserted at the top of each message sended to recipients and match rules,
-it designed to inform that all attached files are stored in the web server in order to allows them to download files.</body_notification_text>
-<extensions>Extensions</extensions>
-<extensions_text>Separate all extensions by a comma.[br]
-[b]Examples[/b]:[ul]
+<body_notification_text>Questo disclaimer viene inserito in cima a ogni messaggio inviato ai destinatari che corrisponde alle regole,
+&#232; progettato per informare che tutti i file allegati sono memorizzati nel server web per consentire loro di scaricare i file.</body_notification_text>
+<extensions>Estensioni</extensions>
+<extensions_text>Separa tutte le estensioni con una virgola.[br]
+[b]Esempi[/b]:[ul]
 [li]pps[/li]
 [li]pps,ppt,doc,zip[/li]
-[/ul]
-</extensions_text>
-<from_text>caracter "*" is allowed.[br]
-You can set for example[br]
-[blk][b]*@yourdomain.com or *@youdomain* or user.*@domain.*[/b][/blk]
-</from_text>
-<maxday>Max day to live</maxday>
+[/ul]</extensions_text>
+<from_text>Il carattere &quot;*&quot; &#232; consentito.[br]
+Puoi impostare ad esempio[br]
+[blk][b]*@yourdomain.com o *@youdomain* o user.*@domain.*[/b][/blk]</from_text>
+<maxday>Giorni massimi di vita</maxday>
 <maxsize>Dimensione massima</maxsize>
 <parameters>Parametri</parameters>
-<prependsubject>Prepend Subject to</prependsubject>
+<prependsubject>Anteponi all'oggetto</prependsubject>

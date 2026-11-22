@@ -8,14 +8,14 @@
 <entropy>Entropia</entropy>
 <hddtemp>Temperatura del disco duro</hddtemp>
 <interface>Interface de red</interface>
-<irq>Interrups</irq>
+<irq>Interrupciones</irq>
 <load>Carga media</load>
 <mysql>Base de Datos MySQL</mysql>
-<netlink>Network link</netlink>
+<netlink>Enlace de red</netlink>
 <ntpd>Network Time Daemon</ntpd>
 <plugin>Servicio</plugin>
 <show_graph>Ver grafico</show_graph>
-<span_plugin_instance_text>Instance:</span_plugin_instance_text>
+<span_plugin_instance_text>Instancia:</span_plugin_instance_text>
 <span_type_instance_text>Tipo de Grafica</span_type_instance_text>
 <swap>Memoria swap</swap>
 <tcpconns>Conecciones TCP</tcpconns>

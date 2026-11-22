@@ -1,7 +1,7 @@
 <artica_listen_port>Entfernter Artica-Listen-Port</artica_listen_port>
-<cluster_server>Network Cluster Storage server IP</cluster_server>
+<cluster_server>IP des Netzwerk-Cluster-Speicherservers</cluster_server>
 <main_storage_directory>Hauptspeicherverzeichnis</main_storage_directory>
-<SAN_CLUSTER>Network Cluster Storage</SAN_CLUSTER>
-<SAN_CLUSTER_CLIENT>Network Cluster Storage client</SAN_CLUSTER_CLIENT>
-<SAN_CLUSTER_CLIENT_TEXT>Link this computer to an Artica Network Cluster storage</SAN_CLUSTER_CLIENT_TEXT>
-<SAN_CLUSTER_TEXT>Dedicate this server to be a Network storage in order to build a Cluster environment for IMAP or other services</SAN_CLUSTER_TEXT>
+<SAN_CLUSTER>Netzwerk-Cluster-Speicher</SAN_CLUSTER>
+<SAN_CLUSTER_CLIENT>Client f&#252;r Netzwerk-Cluster-Speicher</SAN_CLUSTER_CLIENT>
+<SAN_CLUSTER_CLIENT_TEXT>Verbinden Sie diesen Computer mit einem Artica-Netzwerk-Cluster-Speicher</SAN_CLUSTER_CLIENT_TEXT>
+<SAN_CLUSTER_TEXT>Widmen Sie diesen Server als Netzwerkspeicher, um eine Cluster-Umgebung f&#252;r IMAP oder andere Dienste aufzubauen</SAN_CLUSTER_TEXT>

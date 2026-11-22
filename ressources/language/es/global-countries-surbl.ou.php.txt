@@ -1,5 +1,5 @@
-<action_100_pourc>Action when score up to 100%</action_100_pourc>
-<rbl_servers>SURBL servers</rbl_servers>
+<action_100_pourc>Acci&#243;n cuando la puntuaci&#243;n llega al 100%</action_100_pourc>
+<rbl_servers>Servidores SURBL</rbl_servers>
 <surbl_explain>Un Identificador Universal de Recursos (URI) es un medio est%C3¡ndar para direccionar recursos en la Web[br].
 Los URI comunes, como los localizadores uniformes de recursos (URL) y los nombres uniformes de recursos (URN), se utilizan para identificar el destino de los enlaces de hipertexto, as%C3%AD como las fuentes de las im%C3¡genes,
 informaci%C3%B3n y otros objetos en una p%C3¡gina web. [br]

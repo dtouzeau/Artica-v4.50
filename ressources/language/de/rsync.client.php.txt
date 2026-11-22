@@ -1,15 +1,15 @@
-<alternate_backup_server>Alternate backup server</alternate_backup_server>
-<alternate_backup_server_text>If the main backup server is failed or not available, you can use an alternate remote server to ensure that your backup is correctly set</alternate_backup_server_text>
-<APP_RSYNC_CLIENT_EXPLAIN>Define here parameters sent by your administrator in order to send you local storage to the remote server</APP_RSYNC_CLIENT_EXPLAIN>
+<alternate_backup_server>Alternativer Backup-Server</alternate_backup_server>
+<alternate_backup_server_text>Wenn der Haupt-Backup-Server ausgefallen oder nicht verf&#252;gbar ist, k&#246;nnen Sie einen alternativen entfernten Server verwenden, um sicherzustellen, dass Ihre Sicherung korrekt eingerichtet ist</alternate_backup_server_text>
+<APP_RSYNC_CLIENT_EXPLAIN>Definieren Sie hier die von Ihrem Administrator gesendeten Parameter, um Ihren lokalen Speicher an den entfernten Server zu senden</APP_RSYNC_CLIENT_EXPLAIN>
 <duration>Dauer</duration>
-<enable_remote_sync>Activate Remote Push</enable_remote_sync>
-<enable_remote_sync_text>If you turn to green, Artica will push your backuped datas to the target remote server</enable_remote_sync_text>
-<main_backup_server>Main backup server</main_backup_server>
-<remote_server_name>Remote server name</remote_server_name>
+<enable_remote_sync>Remote-Push aktivieren</enable_remote_sync>
+<enable_remote_sync_text>Wenn diese Option aktiviert ist, %C3%BCbertr%C3%A4gt Artica Ihre Sicherungsdaten auf den Ziel-Remote-Server.</enable_remote_sync_text>
+<main_backup_server>Haupt-Backup-Server</main_backup_server>
+<remote_server_name>Name des entfernten Servers</remote_server_name>
 <remote_server_port>Anschluss des entfernten Servers</remote_server_port>
 <RsyncClientSSL>SSL aktivieren</RsyncClientSSL>
-<RsyncUploadBwlimit>limit upload bandwidth</RsyncUploadBwlimit>
-<sent>sent</sent>
-<sent_numfiles>Number of files sended</sent_numfiles>
-<UseOnlyRsync>Use only Synchronization</UseOnlyRsync>
-<UseOnlyRsync_text>If you enable this feature, artica-backup will only use your remote server to store backuped files</UseOnlyRsync_text>
+<RsyncUploadBwlimit>Upload-Bandbreite begrenzen</RsyncUploadBwlimit>
+<sent>gesendet</sent>
+<sent_numfiles>Anzahl der gesendeten Dateien</sent_numfiles>
+<UseOnlyRsync>Nur Synchronisierung verwenden</UseOnlyRsync>
+<UseOnlyRsync_text>Wenn Sie diese Funktion aktivieren, verwendet artica-backup nur Ihren entfernten Server zum Speichern der gesicherten Dateien</UseOnlyRsync_text>

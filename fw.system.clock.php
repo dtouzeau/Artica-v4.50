@@ -388,7 +388,8 @@ function refresh_field(){
     $page=CurrentPageName();
     exec("/bin/date \"+%H:%M:%S\"",$results);
     $time=@implode("",$results);
-    $field=$_GET["refresh-field"];
+    // Pentest 2026-11-04 : refresh-field etait recopie sans encodage dans la page (XSS).
+    $field=preg_replace('#[^A-Za-z0-9_-]#','',(string)$_GET["refresh-field"]);
 
     $ChronydEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ChronydEnabled"));
     if($ChronydEnabled==1){$ChronydEnabled=1;}
@@ -442,16 +443,26 @@ function SaveTime(){
     $sock=new sockets();
     $timezone_def=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("timezones"));
     if(isset($_POST["timezones"])){
-        if($_POST["timezones"]<>$timezone_def){
-            $sock->SET_INFO("timezones", $_POST["timezones"]);
+        $newtz=trim($_POST["timezones"]);
+        // Trois consommateurs du fuseau, a tenir ensemble : la cle (source de
+        // verite), php.ini (l'heure que la console AFFICHE) et /etc/localtime
+        // (l'heure que le SYSTEME applique : ufdbguardd, rsyslog, squid, cron).
+        // Cette page ne posait que les deux premiers ; seul l'assistant
+        // d'installation appelait /system/timezone. Un fuseau change ici
+        // laissait donc la console en heure de Paris et le systeme en UTC, et
+        // les plages horaires du filtrage web decalees de deux heures.
+        if($newtz<>$timezone_def || $newtz<>date_default_timezone_get()){
+            $sock->SET_INFO("timezones", $newtz);
             $GLOBALS["CLASS_SOCKETS"]->REST_API("/php/ini/build");
-        }else{
-            $script_tz = date_default_timezone_get();
-            if($_POST["timezones"]<>$script_tz){
-                $sock->SET_INFO("timezones", $_POST["timezones"]);
-                $GLOBALS["CLASS_SOCKETS"]->REST_API("/php/ini/build");
-            }
         }
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/system/timezone", array("timezone"=>$newtz)));
+        if(!isset($json->success) || !$json->success){
+            $error=isset($json->error)?$json->error:"no answer";
+            writelogs("POST /system/timezone $newtz failed: $error",__FUNCTION__,__FILE__,__LINE__);
+            echo $tpl->_ENGINE_parse_body("{timezone}: {error} ($error)");
+            return false;
+        }
+        admin_tracks("Modifies system timezone to $newtz");
     }
 
 

@@ -198,10 +198,10 @@ class squid_stats_appliance{
 	public function GET_INDEX(){
 		if(!is_file("$this->workdir/artica_backup.gz")){$this->export_tables();}
 		if(!is_file("$this->workdir/squidlogs.gz")){$this->export_tables();}
-		if(!is_file("$this->workdir/artica_backup.gz")){echo "<ERROR>artica_backup.gz no such file</ERROR>";die("DIE " .__FILE__." Line: ".__LINE__);}
-		if(!is_file("$this->workdir/squidlogs.gz")){echo "<ERROR>artica_backup.gz no such file</ERROR>";die("DIE " .__FILE__." Line: ".__LINE__);}	
+		if(!is_file("$this->workdir/artica_backup.gz")){echo "<ERROR>artica_backup.gz no such file</ERROR>";die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
+		if(!is_file("$this->workdir/squidlogs.gz")){echo "<ERROR>artica_backup.gz no such file</ERROR>";die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}	
 		if(!is_file("$this->workdir/settingsHD.gz")){$this->export_artica_conf();}	
-		if(!is_file("$this->workdir/settingsHD.gz")){echo "<ERROR>settingsHD.gz no such file</ERROR>";die("DIE " .__FILE__." Line: ".__LINE__);}	
+		if(!is_file("$this->workdir/settingsHD.gz")){echo "<ERROR>settingsHD.gz no such file</ERROR>";die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}	
 		$base="ressources/".basename($this->workdir);
 		$array["$base/artica_backup.gz"]=true;
 		$array["$base/squidlogs.gz"]=true;

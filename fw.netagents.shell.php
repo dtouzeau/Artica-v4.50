@@ -26,7 +26,7 @@ function js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_can_view($users)){
         return $tpl->js_error("{no_privileges}");
     }
     $id=intval($_GET["id"]);

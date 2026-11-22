@@ -6,6 +6,21 @@ class lib_sqlite{
     var $mysql_error;
     private $sql;
     private $ReadOnly=false;
+    // When true, QUERY_SQL / IF_TABLE_EXISTS refuse to open a missing
+    // file instead of letting PDO silently create a blank DB (and chmod
+    // it 0777). Auto-enabled in the constructor for the articarest-
+    // replicated databases so a PHP query arriving mid cluster-restore
+    // cannot obliterate the daemon's in-flight WAL state. Callers can
+    // still override either way: e.g. a first-run installer can set
+    // $q->StrictFileMustExist=false to force auto-create.
+    public $StrictFileMustExist = false;
+    // Per-request memoization for notifyDaemonRefresh — every
+    // lib_sqlite instance within one page load shares the same set,
+    // so 50 inserts to acls.db produce 1 daemon notify, not 50.
+    private static $daemonNotified = [];
+    // Binds deposes par QUERY_SQL_PARAMS et consommes par QUERY_SQL. null =
+    // requete non parametree (le comportement historique).
+    private $bindParams = null;
     public 	$array_field_relay_tls=array(
         "none"=>"{none}",
         "may"=>"{Opportunistic_TLS}",
@@ -18,7 +33,66 @@ class lib_sqlite{
     function __construct($database_path=null,$ro=false){
         $this->db_path=$database_path;
         $this->ReadOnly=$ro;
+        // Allowlist of databases whose lifecycle is owned by articarest's
+        // dbpool and the cluster-restore safe-replicate path. Mirrors
+        // backup.SqlitedbList() + the allowlist around
+        // acluster/ClusterServer.go:579. Any DB whose basename is in
+        // this map gets strict-file-must-exist semantics by default so
+        // that an arriving PHP query during a restore cannot create a
+        // blank file under the daemon and demote it out of WAL mode.
+        static $StrictDBs = [
+            "acls.db" => true,
+            "antivirus.db" => true,
+            "certificates.db" => true,
+            "dns.db" => true,
+            "etc_hosts.db" => true,
+            "firewall.db" => true,
+            "proxy.db" => true,
+            "webfilter.db" => true,
+            "nginx.db" => true,
+        ];
+        if($database_path !== null && isset($StrictDBs[basename($database_path)])){
+            $this->StrictFileMustExist = true;
+        }
+    }
 
+    // Databases owned EXCLUSIVELY by the articarest daemon (dbpool). PHP must
+    // reach these only through the REST API. Opening them from a short-lived
+    // PHP process breaks that ownership and — in WAL journal mode — can strand
+    // the daemon's -shm mmap on an unlinked inode (the acls.db "disk I/O error"
+    // wedge). This is the SINGLE source of truth for that set: both QUERY_SQL
+    // and IF_TABLE_EXISTS (the only two methods that open a PDO handle) call it
+    // before opening, so the guard can never again exist in one path and be
+    // missing in the other. Keep in sync with the daemon: dbpool `aclsDBPath`
+    // and the per-DB DSN switch in dbpool/dbpool.go.
+    private function isDaemonOwnedDb(){
+        static $daemonOwned = ["acls.db"=>true, "nginx.db"=>true];
+        return isset($daemonOwned[basename((string)$this->db_path)]);
+    }
+    // Bases que le daemon tient ouvertes en permanence et qui doivent rester en
+    // mode journal DELETE. L'acces PHP reste AUTORISE (contrairement a
+    // isDaemonOwnedDb) : seul le pin WAL est supprime.
+    //
+    // sys_schedules.db porte system_schedules (servie par l'API SystemTasks)
+    // mais aussi pdf_reports et imapsync, ouvertes directement par huit
+    // scripts (exec.convert-to-sqlite.php, exec.mailsync.php, les trois
+    // exec.pdf.proxy.*, exec.statscom-stats.php, fw.statscom.reports.php,
+    // ressources/class.snapshots.blacklists.inc). Repousser cette base en
+    // WAL a chaque ouverture ferait reapparaitre le wedge SHM-mmap
+    // d'acls.db : le daemon lit alors un inode supprime et repond
+    // "disk I/O error" sur toute lecture.
+    //
+    // haproxy.db est dans le meme cas et doit rester synchronisee avec la
+    // liste Go dbpool.crossProcessDBs, qui contient acls.db, haproxy.db ET
+    // sys_schedules.db : seize fichiers PHP l'ouvrent (fw.haproxy.*,
+    // fw.haexchange.*, fw.hacluster.*, exec.haproxy.php, class.haproxy*.inc,
+    // ...). Epinglee en DELETE d'un seul cote, elle repassait en WAL a chaque
+    // ouverture PHP -- precisement le conflit de mode journal que ce garde
+    // existe pour empecher. acls.db n'a pas besoin d'y figurer : elle est
+    // deja refusee en amont par isDaemonOwnedDb().
+    private function isNoWalPinDb(){
+        static $noWalPin = ["sys_schedules.db"=>true, "haproxy.db"=>true];
+        return isset($noWalPin[basename((string)$this->db_path)]);
     }
     public function PatternToSearch($search):string{
         if($search==null){return "%";}
@@ -180,7 +254,24 @@ class lib_sqlite{
     public function IF_TABLE_EXISTS($tablename){
         if(!extension_loaded("pdo_sqlite")){return false;}
         $database=basename($this->db_path);
+        // Daemon-owned DBs (acls.db / nginx.db) are off-limits to PHP — same
+        // guard as QUERY_SQL. Without this, the PDO open + PRAGMA
+        // journal_mode=WAL below would touch the inode and fight the daemon's
+        // DELETE pin. Checked before the GLOBALS table-cache so a stale cache
+        // entry can't imply the table exists either.
+        if($this->isDaemonOwnedDb()){
+            $this->ok=false;
+            $this->mysql_error="$database is not allowed here";
+            writelogs(strtoupper($database)." (IF_TABLE_EXISTS): $tablename",__FUNCTION__,__FILE__,__LINE__);
+            return false;
+        }
         if(isset($GLOBALS["TABLES_$database"][$tablename])){return true;}
+
+        // Same strict-mode guard as QUERY_SQL — never let an absent file
+        // become a blank auto-created PDO DB on the pooled DB paths.
+        if($this->StrictFileMustExist && !is_file($this->db_path)){
+            return false;
+        }
 
         $sql="Select * FROM $tablename LIMIT 1";
         try {
@@ -196,6 +287,12 @@ class lib_sqlite{
 
         try {
             $db->exec("PRAGMA busy_timeout=30000");
+            // Pin WAL — see QUERY_SQL comment for rationale. NEVER on a
+            // daemon-owned DB (it pins DELETE); the guard above already
+            // returns before here, this is belt-and-suspenders.
+            if(!$this->ReadOnly && !$this->isDaemonOwnedDb() && !$this->isNoWalPinDb()){
+                $db->exec("PRAGMA journal_mode=WAL");
+            }
             $db->query($sql);
         } catch (PDOException $e){
             $error=$e->getMessage();
@@ -223,10 +320,69 @@ class lib_sqlite{
     }
 
 
+    // QUERY_SQL_PARAMS($sql, array $params) PREPARES $sql and binds $params.
+    // Use it whenever a value comes from $_POST/$_GET or from anything a user
+    // can influence. Placeholders are PDO's: positional "?" with a plain list,
+    // or named ":name" with an associative array.
+    //
+    //   $q->QUERY_SQL_PARAMS("UPDATE nics SET enabled=? WHERE Interface=?",
+    //                        array($enabled, $eth));
+    //
+    // Why a separate METHOD rather than an optional 2nd argument on QUERY_SQL:
+    // ~2100 call sites across the console already pass a second argument — the
+    // legacy MySQL database name ($q->QUERY_SQL($sql,"artica_backup")). An
+    // optional $params would silently swallow that string and hand it to
+    // PDOStatement::execute(), breaking those callers. The name is the guard.
+    //
+    // Both forms share one execution path (this method only stashes the binds
+    // and delegates), so the error handling, the /dbpool/refresh notification
+    // and the last-insert-id bookkeeping cannot drift between them.
+    //
+    // Note SQL identifiers — table and column names — can NEVER be bound; those
+    // still have to be validated against a whitelist by the caller.
+    public	function QUERY_SQL_PARAMS($sql,$params){
+        $this->bindParams = is_array($params) ? $params : array();
+        return $this->QUERY_SQL($sql);
+    }
+
     public	function QUERY_SQL($sql){
+        // Recupere et REARME immediatement: toute sortie anticipee ci-dessous
+        // laisserait sinon les binds en place pour la requete suivante.
+        $params = $this->bindParams;
+        $this->bindParams = null;
         $this->ok=true;
         $chmod=false;
         $LASTID=false;
+        $file="";$function="";$line="";
+
+        if(function_exists("debug_backtrace")){
+            $trace=debug_backtrace();
+
+            if(isset($trace[0])){
+                $file=basename($trace[0]["file"]);
+                $function=$trace[0]["function"];
+                $line=$trace[0]["line"];
+            }
+
+            if(isset($trace[1])){
+                $file=basename($trace[1]["file"]);
+                $function=$trace[1]["function"];
+                $line=$trace[1]["line"];
+            }
+
+
+
+        }
+
+
+
+        if($this->isDaemonOwnedDb()){
+            $base=basename($this->db_path);
+            $this->ok=false;
+            writelogs(strtoupper($base).": $sql $file/$function/$line",__FUNCTION__,__FILE__,__LINE__);
+            $this->mysql_error="$base is not allowed here";
+            return array();
+        }
 
         if(strlen($sql)<6){
             return array();
@@ -252,6 +408,17 @@ class lib_sqlite{
         }
 
         $this->sql=$sql;
+        // Strict mode (default-on for the articarest-replicated DBs):
+        // refuse to open a missing file. Without this, PDO would create
+        // a blank SQLite DB at $this->db_path in DEFAULT rollback-journal
+        // mode and the @chmod 0777 below would obliterate the daemon's
+        // in-flight WAL state during a cluster restore — the failure
+        // already documented in class.squid.sqlite.inc QUERY_SQL.
+        if($this->StrictFileMustExist && !is_file($this->db_path)){
+            $this->ok=false;
+            $this->mysql_error="Line:". __LINE__." database file does not exist: $this->db_path";
+            return array();
+        }
         if(!is_file($this->db_path)){$chmod=true;}
         $this->ok=true;
         $dsn="sqlite:$this->db_path";
@@ -263,7 +430,14 @@ class lib_sqlite{
             $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
             $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
-            if($chmod){@chmod($this->db_path, 0777);}
+            // 0660, pas 0777 : une base creee ici porte des donnees de la console
+            // (comptes, certificats, historique). Un FICHIER world-writable n'a pas
+            // d'equivalent du sticky bit — n'importe quel utilisateur local pouvait
+            // le reecrire (CIS 6.1.10). php-fpm tourne en www-data, proprietaire du
+            // fichier ; root ignore les modes. aperms.hardenSQLiteDatabases()
+            // applique le meme 0660 cote demon, les deux valeurs doivent rester
+            // identiques sinon le mode oscille a chaque passage.
+            if($chmod){@chmod($this->db_path, 0660);}
         } catch (PDOException $e){
             $strace=@debug_backtrace();
             foreach ($strace as $index=>$trace){$zlines[]="File ".basename($trace["file"])." Function {$trace["function"]} Line:{$trace["line"]}";}
@@ -276,7 +450,42 @@ class lib_sqlite{
 
         try {
             $db->exec("PRAGMA busy_timeout=30000");
-            $results = $db->query($sql);
+            // Pin WAL journal mode. WAL persistence only holds while the
+            // -wal sibling exists; if it was deleted mid-cluster-restore
+            // (or by a checkpoint truncate, or never set on a freshly
+            // auto-created file) the DB silently demotes to rollback-
+            // journal. Setting WAL here is idempotent in WAL mode and
+            // converts back from rollback-journal automatically. Skipped
+            // for read-only callers — query_only=1 is set below — and for
+            // daemon-owned DBs (the guard above already returns first; this
+            // is belt-and-suspenders so the WAL-pin can never fight DELETE).
+            if(!$this->ReadOnly && !$this->isDaemonOwnedDb() && !$this->isNoWalPinDb()){
+                $db->exec("PRAGMA journal_mode=WAL");
+            }
+            if($params===null){
+                $results = $db->query($sql);
+            }else{
+                // Chemin prepare: la valeur n'est jamais concatenee au SQL,
+                // donc rien de ce qu'elle contient ne peut etre interprete.
+                // L'erreur vit sur le STATEMENT, pas sur la connexion, d'ou le
+                // message construit ici plutot que dans la branche partagee
+                // plus bas (qui lit $db->errorInfo() et rendrait "00000").
+                $results = false;
+                $stmt = $db->prepare($sql);
+                if($stmt===false){
+                    $this->ok=false;
+                    $this->mysql_error="Line:". __LINE__." prepare failed: ".@implode(" ", $db->errorInfo())." in $this->db_path";
+                    $this->SQLITE_ERROR($db->errorInfo(),debug_backtrace(),$sql_log);
+                    return array();
+                }
+                if(!$stmt->execute($params)){
+                    $this->ok=false;
+                    $this->mysql_error="Line:". __LINE__." execute failed: ".@implode(" ", $stmt->errorInfo())." in $this->db_path";
+                    $this->SQLITE_ERROR($stmt->errorInfo(),debug_backtrace(),$sql_log);
+                    return array();
+                }
+                $results = $stmt;
+            }
             if($this->ReadOnly){
                 $db->exec("PRAGMA query_only = 1;");
             }
@@ -329,6 +538,13 @@ class lib_sqlite{
             return array();
         }
 
+        // Hint the daemon that this DB just took a write. Cheap when
+        // not applicable (StrictFileMustExist=false short-circuits);
+        // placed BEFORE both success returns so DELETE and the normal
+        // fetchAll path both benefit, and BEFORE $db is released so
+        // PHP still holds the WAL reader while the daemon resets its
+        // pool — see notifyDaemonRefresh() for the ordering rationale.
+        $this->notifyDaemonRefresh();
         if(preg_match("#^DELETE\s+#i", $sql)){return true;}
 
         $FINAL=$results->fetchAll(PDO::FETCH_ASSOC);
@@ -342,27 +558,92 @@ class lib_sqlite{
 
 
 
+    // notifyDaemonRefresh sends a fire-and-forget POST /dbpool/refresh
+    // to articarest so the daemon can preemptively HardReset its
+    // dbpool entry for this DB. Necessary because closing the last
+    // WAL reader of a pooled SQLite DB can recreate the SHM inode,
+    // leaving the daemon's mmap pointing at the unlinked old inode —
+    // every subsequent daemon read then returns "disk I/O error" or
+    // "database disk image is malformed" until restart (see the
+    // dbpool gotcha in articarest CLAUDE.md).
+    //
+    // Coalesced in two layers:
+    //   1. PHP per-request: self::$daemonNotified skips repeats for
+    //      the same path within one page load.
+    //   2. Daemon-side: rest_dbpool.go throttles HardResets to one
+    //      per path per 30s window.
+    //
+    // Only fires when $this->StrictFileMustExist is true (i.e. the
+    // articarest-replicated pooled DBs) AND the SQL is a mutation;
+    // reads don't grow the WAL or change the schema cookie.
+    //
+    // Called BEFORE $db is released so the daemon's HardReset
+    // happens while PHP still holds the WAL reader; when PHP later
+    // closes and SQLite potentially recreates the SHM, the daemon's
+    // pool is already empty and the next Get mmaps the fresh SHM.
+    private function notifyDaemonRefresh(){
+        if(!$this->StrictFileMustExist){return;}
+        // Match the SQL families that mutate the file. Aligned with
+        // the daemon's notion of "a write": INSERT/UPDATE/DELETE/
+        // REPLACE plus DDL (CREATE/ALTER/DROP). Reads short-circuit.
+        if(!preg_match(
+            "#^\s*(INSERT\s+INTO|UPDATE|DELETE\s+FROM|REPLACE\s+INTO|ALTER\s+TABLE|DROP\s+(TABLE|INDEX|VIEW|TRIGGER)|CREATE\s+(TABLE|INDEX|VIEW|TRIGGER))\b#i",
+            $this->sql)){
+            return;
+        }
+        if(isset(self::$daemonNotified[$this->db_path])){return;}
+        self::$daemonNotified[$this->db_path] = true;
+
+        $socketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+        if(!file_exists($socketPath)){return;}
+
+        $ch = @curl_init("http://localhost/dbpool/refresh");
+        if($ch === false){return;}
+        @curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, $socketPath);
+        @curl_setopt($ch, CURLOPT_POST, true);
+        @curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(["path" => $this->db_path]));
+        @curl_setopt($ch, CURLOPT_HTTPHEADER, ["Content-Type: application/json"]);
+        @curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // 100ms hard ceiling — a daemon hiccup must never block the
+        // PHP page render. If the daemon doesn't answer in time the
+        // worst case is one missed proactive refresh; the daemon's
+        // own dbpool.HardReset path is still available reactively
+        // when a query fails with disk-I/O error.
+        @curl_setopt($ch, CURLOPT_TIMEOUT_MS, 100);
+        @curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 100);
+        @curl_exec($ch);
+        @curl_close($ch);
+    }
+
     private function SQLITE_ERROR($error,$debug,$sql){
         writelogs("SQLITE_ERROR $sql",__FUNCTION__,__FILE__,__LINE__);
         if(isset( $GLOBALS["SQLITE_NO_SAVE_ERRORS"])){return true;}
         if(preg_match("#(INSERT|CREATE).*?sql_errors#i",$sql)){return false;}
         if(strpos($sql,"adminprivs")>0){return true;}
 
+        // Dropped as DATA (JSON), imported by articarest notifs.checkSQLErrors() with bound
+        // parameters. It used to be a ready-made "INSERT ..." the daemon executed as is, so any
+        // www-data process could run SQL on system_events.db through this directory.
         $subject="SQLite Error";
-        $database_path=$this->db_path;
         if(!is_array($error)){
-            $subject=str_replace("'","`",$error);
-            $error=base64_encode($error);
+            $subject=(string)$error;
+            $error=base64_encode((string)$error);
         }else {
             $error = base64_encode(serialize($error));
         }
-        $debug=base64_encode(serialize($debug));
-        $sqlsrc=base64_encode($sql);
-
-        $zdate=time();
-        $sql="INSERT INTO sql_errors (zdate,subject,error,sql,database,debug) VALUES('$zdate','$subject','$error','$sqlsrc','$database_path','$debug')";
-        $md=md5($sql);
-        @file_put_contents("/usr/share/artica-postfix/ressources/logs/sql_errors/$md",$sql);
+        $doc=json_encode(array(
+            "zdate"=>time(),
+            "subject"=>substr($subject,0,2048),
+            "error"=>$error,
+            "sql"=>base64_encode((string)$sql),
+            "database"=>(string)$this->db_path,
+            "debug"=>base64_encode(serialize($debug)),
+        ),JSON_PARTIAL_OUTPUT_ON_ERROR|JSON_INVALID_UTF8_SUBSTITUTE);
+        if(!is_string($doc)){return true;}
+        $dir="/usr/share/artica-postfix/ressources/logs/sql_errors";
+        $tmp="$dir/.".md5($doc.microtime()).".tmp";
+        // Written then renamed: the daemon never reads a half-written file.
+        if(@file_put_contents($tmp,$doc)!==false){@rename($tmp,"$dir/".md5($doc).".json");}
         return true;
     }
 

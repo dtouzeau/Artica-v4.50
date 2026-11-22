@@ -1,22 +1,20 @@
-<DELETE_MYSQL_REPLICA_INFOS>This replica has been successfully deleted, go into replica's Artica front-end and disable the cluster mode for this replica</DELETE_MYSQL_REPLICA_INFOS>
-<ENABLE_MYSQL_CLUSTER_MANAGER>Enable MySQL Cluster Management Server Daemon</ENABLE_MYSQL_CLUSTER_MANAGER>
-<ENABLE_MYSQL_CLUSTER_MANAGER_TEXT>
-The management server is the process that reads the cluster configuration file and distributes this information to all nodes in the cluster that request it.[br]
- It also maintains a log of cluster activities.[br]
- Management clients can connect to the management server and check the cluster's status.
- </ENABLE_MYSQL_CLUSTER_MANAGER_TEXT>
-<ENABLE_MYSQL_CLUSTER_REPLICAT>Enable this server has a cluster replicat</ENABLE_MYSQL_CLUSTER_REPLICAT>
-<ENABLE_MYSQL_CLUSTER_REPLICAT_TEXT>If you turn to green this server will be a part of your mysql cluster area, it will notify the Management Server has a new cluster resource</ENABLE_MYSQL_CLUSTER_REPLICAT_TEXT>
-<MysqlClusterManagerHostName>Server address of this server</MysqlClusterManagerHostName>
-<MysqlClusterManagerID>Unique node identifier</MysqlClusterManagerID>
-<MysqlClusterManagerTarget>Management server address</MysqlClusterManagerTarget>
-<MYSQL_CLUSTER_MANAGER>Management Server</MYSQL_CLUSTER_MANAGER>
-<MYSQL_CLUSTER_MANAGER_TEXT>Define this server has the Management Server that will serve communications with all nodes</MYSQL_CLUSTER_MANAGER_TEXT>
-<MYSQL_CLUSTER_REPLICAT>Set this server has Mysql replicat</MYSQL_CLUSTER_REPLICAT>
-<MYSQL_CLUSTER_REPLICAT_TEXT>Point this server to the MySQL Cluster Management Server in order to replicate databases in real-time</MYSQL_CLUSTER_REPLICAT_TEXT>
-<MYSQL_CLUSTER_REPLICA_ADD>Add a new Replica</MYSQL_CLUSTER_REPLICA_ADD>
-<MYSQL_CLUSTER_REPLICA_ADD_EXPLAIN>Define the client server (replica) IP/name address</MYSQL_CLUSTER_REPLICA_ADD_EXPLAIN>
-<MYSQL_CLUSTER_REPLICA_ADD_TEXT>Click on this icon to add a new mysql replica server</MYSQL_CLUSTER_REPLICA_ADD_TEXT>
-<MYSQL_REPLICAS>Mysql replicas list</MYSQL_REPLICAS>
-<NBD_MGMD_NOT_INSTALLED>nbd_mgmd is not installed</NBD_MGMD_NOT_INSTALLED>
-<NBD_MGMD_NOT_INSTALLED_TEXT>Your current Mysql server is not enabled for cluster configuration</NBD_MGMD_NOT_INSTALLED_TEXT>
+<DELETE_MYSQL_REPLICA_INFOS>Questa replica &#232; stata eliminata con successo, vai nel front-end Artica della replica e disabilita la modalit&#224; cluster per questa replica</DELETE_MYSQL_REPLICA_INFOS>
+<ENABLE_MYSQL_CLUSTER_MANAGER>Abilita il daemon del server di gestione del cluster MySQL</ENABLE_MYSQL_CLUSTER_MANAGER>
+<ENABLE_MYSQL_CLUSTER_MANAGER_TEXT>Il server di gestione &#232; il processo che legge il file di configurazione del cluster e distribuisce queste informazioni a tutti i nodi del cluster che le richiedono.[br]
+ Mantiene inoltre un registro delle attivit&#224; del cluster.[br]
+ I client di gestione possono connettersi al server di gestione e verificare lo stato del cluster.</ENABLE_MYSQL_CLUSTER_MANAGER_TEXT>
+<ENABLE_MYSQL_CLUSTER_REPLICAT>Abilita questo server come replica del cluster</ENABLE_MYSQL_CLUSTER_REPLICAT>
+<ENABLE_MYSQL_CLUSTER_REPLICAT_TEXT>Se lo imposti su verde, questo server far&#224; parte della tua area cluster MySQL e notificher&#224; al server di gestione una nuova risorsa cluster</ENABLE_MYSQL_CLUSTER_REPLICAT_TEXT>
+<MysqlClusterManagerHostName>Indirizzo del server di questo server</MysqlClusterManagerHostName>
+<MysqlClusterManagerID>Identificatore univoco del nodo</MysqlClusterManagerID>
+<MysqlClusterManagerTarget>Indirizzo del server di gestione</MysqlClusterManagerTarget>
+<MYSQL_CLUSTER_MANAGER>Server di gestione</MYSQL_CLUSTER_MANAGER>
+<MYSQL_CLUSTER_MANAGER_TEXT>Definisci questo server come server di gestione che servir&#224; le comunicazioni con tutti i nodi</MYSQL_CLUSTER_MANAGER_TEXT>
+<MYSQL_CLUSTER_REPLICAT>Imposta questo server come replica MySQL</MYSQL_CLUSTER_REPLICAT>
+<MYSQL_CLUSTER_REPLICAT_TEXT>Punta questo server al server di gestione del cluster MySQL per replicare i database in tempo reale</MYSQL_CLUSTER_REPLICAT_TEXT>
+<MYSQL_CLUSTER_REPLICA_ADD>Aggiungi una nuova replica</MYSQL_CLUSTER_REPLICA_ADD>
+<MYSQL_CLUSTER_REPLICA_ADD_EXPLAIN>Definisci l'indirizzo IP/nome del server client (replica)</MYSQL_CLUSTER_REPLICA_ADD_EXPLAIN>
+<MYSQL_CLUSTER_REPLICA_ADD_TEXT>Clicca su questa icona per aggiungere un nuovo server di replica MySQL</MYSQL_CLUSTER_REPLICA_ADD_TEXT>
+<MYSQL_REPLICAS>Elenco delle repliche MySQL</MYSQL_REPLICAS>
+<NBD_MGMD_NOT_INSTALLED>nbd_mgmd non &#232; installato</NBD_MGMD_NOT_INSTALLED>
+<NBD_MGMD_NOT_INSTALLED_TEXT>Il tuo attuale server MySQL non &#232; abilitato per la configurazione del cluster</NBD_MGMD_NOT_INSTALLED_TEXT>

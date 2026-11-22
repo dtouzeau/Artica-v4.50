@@ -9,12 +9,36 @@ if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 
 js();
 
+// Pentest 2026-11-04 : noms de fichiers et identifiants de champs venaient de la requete
+// sans controle (traversee -> unlink()/copy() arbitraires, XSS dans le JS renvoye).
+function image_validator_safe_name($name):string{
+    $name=(string)$name;
+    if($name==="" || $name!==basename($name)){return "";}
+    if($name[0]=="."){return "";}
+    if(preg_match('#[/\\\\\x00-\x1f"\'<>`]#',$name)){return "";}
+    return $name;
+}
+function image_validator_safe_id($id):string{
+    return preg_replace('#[^A-Za-z0-9_-]#','',(string)$id);
+}
+function image_validator_safe_path($path):string{
+    $root=realpath("/usr/share/artica-postfix");
+    if($root===false){return "";}
+    $real=realpath($root."/".(string)$path);
+    if($real===false || strpos($real,$root."/")!==0 || !is_file($real)){return "";}
+    return $real;
+}
+
 function file_uploaded():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/articaweb/chown");
     $tpl=new template_admin();
-    $file=$_GET["file-uploaded"];
-    $id=$_GET["id"];
-    $id2=$_GET["id2"];
+    $file=image_validator_safe_name($_GET["file-uploaded"] ?? "");
+    $id=image_validator_safe_id($_GET["id"] ?? "");
+    $id2=image_validator_safe_id($_GET["id2"] ?? "");
+    if($file==""){
+        $tpl->js_error_stop("Invalid file name");
+        return false;
+    }
     $path="/usr/share/artica-postfix/ressources/conf/upload/$file";
     list($width, $height, $type, $attr) = getimagesize($path);
     $image_mime = image_type_to_mime_type($type);
@@ -64,10 +88,10 @@ return true;
 
 
 function js():bool{
-    $id=$_GET["id"];
-    $id2=$_GET["id2"];
-    $path=$_GET["path"];
-    $basename=basename($path);
+    $id=image_validator_safe_id($_GET["id"] ?? "");
+    $id2=image_validator_safe_id($_GET["id2"] ?? "");
+    $path=(string)($_GET["path"] ?? "");
+    $basename=htmlspecialchars(basename($path),ENT_QUOTES);
     $encoded_string=urlencode($path);
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -78,13 +102,19 @@ function popup(){
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/articaweb/chown");
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $id=$_GET["id"];
-    $id2=$_GET["id2"];
-    $path=$_GET["path"];
-
-    $path="/usr/share/artica-postfix/$path";
-    $path=str_replace("//","/",$path);
-    $basename=basename($path);
+    $id=image_validator_safe_id($_GET["id"] ?? "");
+    $id2=image_validator_safe_id($_GET["id2"] ?? "");
+    // Pentest 2026-11-04 : le chemin doit rester sous /usr/share/artica-postfix (realpath).
+    $path=image_validator_safe_path($_GET["path"] ?? "");
+    $basename=image_validator_safe_name(basename($path));
+    if($path=="" || $basename==""){
+        $html=array();
+        $html[]="<center>";
+        $html[]=$tpl->button_upload("{upload} {picture} JPEG",$page,null,"&id=$id&id2=$id2");
+        $html[]="</center>";
+        echo $tpl->_ENGINE_parse_body($html);
+        return;
+    }
     $tmpapth=PROGRESS_DIR."/thumb-$basename";
     //$path=urlencode($path);
 

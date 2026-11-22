@@ -5,17 +5,7 @@ include_once(dirname(__FILE__)."/ressources/class.upload.handler.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
-if(isset($_POST["ip_addr"])){net_save();exit;}
-if(isset($_GET["net-js"])){net_js();exit;}
-if(isset($_GET["net-popup"])){net_popup();exit;}
-if(isset($_GET["netmask-unlink"])){net_del();exit;}
-if(isset($_GET["report-js"])){report_js();exit;}
-if(isset($_GET["report-popup"])){report_popup();exit;}
-if(isset($_GET["ping-report-js"])){ping_report_js();exit;}
-if(isset($_GET["ping-report-popup"])){ping_report_popup();exit;}
-if(isset($_GET["ping-report-table"])){ping_report_table();exit;}
 if(isset($_GET["enable"])){enable();exit;}
-if(isset($_GET["enabled-trusted"])){enable_trusted();exit;}
 
 page();
 
@@ -65,11 +55,13 @@ function search():bool{
             $search = str_replace("**", "*", $search);
             $search = str_replace("**", "*", $search);
             $search = str_replace("*", "%", $search);
-            $sql="SELECT * FROM peer WHERE ( id LIKE '$search' OR info LIKE '$search') ORDER BY created_at DESC";
+            // Pentest 2026-11-04 : search etait concatene dans la requete.
+            $sql="SELECT * FROM peer WHERE ( id LIKE ? OR info LIKE ?) ORDER BY created_at DESC";
+            $sqlparams=array($search,$search);
         }
     }
     $td1=$tpl->table_td1prc();
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,isset($sqlparams)?$sqlparams:array());
     foreach ($results as $index=>$ligne){
 
     $uuid=$ligne["uuid"];
@@ -98,6 +90,13 @@ function search():bool{
 
 
 
+    // Pentest 2026-11-04 : uuid/id/ip/nom PTR (donnee externe) affiches sans encodage (XSS stockee).
+    $uuid=req_html($uuid);
+    $id=req_html($id);
+    if(is_object($json) && property_exists($json,"ip")){
+        $ipAddr=req_html($ipAddr);
+        if($ipAddr_name!=$tpl->icon_nothing()){$ipAddr_name=req_html($ipAddr_name);}
+    }
 	$table[]="<tr id='$uuid'>";
 	$table[]="<td $td1><li class='".ico_computer."'></li></td>";
 	$table[]="<td $td1><strong>$id</strong></td>";

@@ -3,7 +3,6 @@ if(!isset($GLOBALS["AS_ROOT"])){if(posix_getuid()==0){$GLOBALS["AS_ROOT"]=true;}
 include_once(dirname(__FILE__).'/class.users.menus.inc');
 include_once(dirname(__FILE__).'/class.mysql.inc');
 include_once(dirname(__FILE__)."/class.categorize.externals.inc");
-include_once(dirname(__FILE__)."/class.mysql.blackboxes.inc");
 include_once(dirname(__FILE__)."/class.mysql.catz.inc");
 include_once(dirname(__FILE__).'/class.simple.image.inc');
 

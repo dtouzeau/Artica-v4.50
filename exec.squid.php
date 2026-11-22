@@ -56,7 +56,6 @@ $GLOBALS["NOUFDBG"]=false;
 $GLOBALS["FORMETA"]=false;
 $GLOBALS["NO_VERIF_ACLS"]=false;
 
-CheckWatdogCron();
 
 $GLOBALS["MYCOMMANDS"]=implode(" ",$argv);
 WriteMyLogs("commands= {$GLOBALS["MYCOMMANDS"]}","MAIN",__FILE__,__LINE__);
@@ -102,7 +101,6 @@ if(isset($argv[1])){
     if($argv[1]=="--import-webfilter"){import_webfilter($argv[2]);return false;}
     if($argv[1]=="--quick-ban"){quick_bann();exit();}
     if($argv[1]=="--kreconfigure"){Reload_only_squid();exit();}
-    if($argv[1]=="--artica-templates"){DefaultTemplatesInArtica();exit();}
     if($argv[1]=="--dump-tpl"){dump_templates();exit();}
     if($argv[1]=="--shm"){$GLOBALS["VERBOSE"]=true;echo $unix->TMPFS_CURRENTSIZE("/run/shm")."\n";}
     if($argv[1]=="--SquidReloadInpublicAlias"){SquidReloadInpublicAlias();exit;}
@@ -118,14 +116,10 @@ if(isset($argv[1])){
     if($argv[1]=="--caches"){BuildCaches();exit();}
     if($argv[1]=="--caches-reconstruct"){ReconstructCaches();exit();}
     if($argv[1]=="--compilation-params"){compilation_params();exit();}
-    if($argv[1]=="--mysql-tpl"){DefaultTemplatesInArtica();exit();}
     if($argv[1]=="--tpl-save"){TemplatesInMysql();exit();}
     if($argv[1]=="--templates"){TemplatesInMysql();exit();}
     if($argv[1]=="--tpl-unique"){TemplatesUniqueInMysql($argv[2]);exit();}
     if($argv[1]=="--watchdog-config"){watchdog_config();exit();}
-    if($argv[1]=="--build-schedules"){build_schedules();exit();}
-    if($argv[1]=="--build-schedules-test"){build_schedules_tests();exit();}
-    if($argv[1]=="--run-schedules"){run_schedules($argv[2]);exit();}
     if($argv[1]=="--schedules-extract"){extract_schedules();exit();}
     if($argv[1]=="--restart-squid"){restart_squid();exit();}
     
@@ -142,7 +136,6 @@ if(isset($argv[1])){
     if($argv[1]=="--check-temp"){CheckTempConfig();exit();}
     if($argv[1]=="--test-sarg"){test_sarg();exit();}
     if($argv[1]=="--pactester"){squid_pactester();exit();}
-    if($argv[1]=="--cache-rules"){cache_rules();exit();}
     if($argv[1]=="--band"){bandwith_rules();exit();}
     if($argv[1]=="--cert"){BuildSquidCertificate();exit();}
     if($argv[1]=="--defaults-schedules"){Defaultschedules();exit();}
@@ -229,29 +222,6 @@ function purge():bool    {
 }
 
 
-function CheckWatdogCron(){
-	$nice=EXEC_NICE();
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-
-	if(!is_file("/etc/cron.d/artica-squid-watchdog")){
-		$f=array();
-		$f[]="MAILTO=\"\"";
-		$f[]="3,6,9,11,13,15,17,19,21,23,25,27,29,31,33,35,37,39,41,43,45,47,49,51,55,57,59 * * * *  root $nice $php5 /usr/share/artica-postfix/exec.squid.watchdog.php >/dev/null 2>&1";
-		$f[]="";
-		@file_put_contents("/etc/cron.d/artica-squid-watchdog", @implode("\n", $f));
-		WriteMyLogs("Creating Cron task cron.d/artica-squid-watchdog done",__FUNCTION__,__FILE__,__LINE__);
-	}
-
-	if(!is_file("/etc/cron.d/artica-ping-cloud")){
-		$f=array();
-		$f[]="MAILTO=\"\"";
-		$f[]="15 0,2,4,6,8,10,12,14,16,18,20,22 * * * root $nice $php5 /usr/share/artica-postfix/exec.web-community-filter.php --bycron >/dev/null 2>&1";
-		$f[]="";
-		@file_put_contents("/etc/cron.d/artica-ping-cloud", @implode("\n", $f));
-		WriteMyLogs("Creating Cron task cron.d/artica-ping-cloud done",__FUNCTION__,__FILE__,__LINE__);
-	}
-}
 function build_progress($text,$pourc){
 	$echotext=$text;
 	$echotext=str_replace("{reconfigure}", "Reconfigure", $echotext);
@@ -373,9 +343,7 @@ function disable_cache(){
 	}
     system("/usr/sbin/artica-phpfpm-service -proxy-build-caches");
     system("/usr/sbin/artica-phpfpm-service -proxy-parents");
-	$HyperCacheSquid=new HyperCacheSquid();
-	$HyperCacheSquid->build();
-	$unix=new unix();
+	system("/usr/sbin/artica-phpfpm-service -proxy-build-storeid");
 	system("/usr/sbin/artica-phpfpm-service -reload-proxy");
 }
 
@@ -525,7 +493,7 @@ function build(){
 		$EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
 		if(!is_numeric("$EnableKerbAuth")){$EnableKerbAuth=0;}
 
-		if(!is_dir("/usr/share/squid-langpack")){TemplatesInMysql(true);exit;}
+
 		echo "Starting......: ".date("H:i:s")." Checking squid kerberos authentification is set to $EnableKerbAuth\n";
 		echo "Starting......: ".date("H:i:s")." Checking squid certificate\n";
 		build_progress("{reconfigure} Check database",25);
@@ -559,7 +527,9 @@ function build(){
 		build_progress("{reconfigure} Check files and security",49);
 
 		build_progress("{reconfigure} Building schedules",50);
-		build_schedules(true);
+		// Moteur porte dans le daemon Go (module SystemTasks): la route
+		// regenere /etc/cron.d/squidsch-* depuis webfilters_schedules.
+		$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/schedule/apply");
 		build_progress("{reconfigure} Building SSL passwords",89);
 		build_sslpasswords();
 		build_progress("{reconfigure} Building {GLOBAL_ACCESS_CENTER}",93);
@@ -618,9 +588,9 @@ function build(){
 		if($GLOBALS["RESTART"]){
 			if(!$GLOBALS["NORELOAD"]){
 				build_progress("{stopping_service}",91);
-				system("$PHP /usr/share/artica-postfix/exec.squid.watchdog.php --stop $forceCMD --byForceReconfigure");
+				system("/usr/sbin/artica-phpfpm-service -stop-proxy");
 				build_progress("{starting_service}",93);
-				system("$PHP /usr/share/artica-postfix/exec.squid.watchdog.php --start $forceCMD --byForceReconfigure");
+				system("/usr/sbin/artica-phpfpm-service -start-proxy");
 				build_progress("{starting_service}",95);
 			}
 		}
@@ -640,7 +610,7 @@ function build(){
 		}
 
 		build_progress("{building} Templates",98);
-		sys_THREAD_COMMAND_SET("$PHP ". __FILE__." --mysql-tpl");
+		sys_THREAD_COMMAND_SET("/usr/sbin/artica-phpfpm-service -mysql-tpl");
 
 
 		build_progress("{reconfiguring_proxy_service} {success}",100);
@@ -792,8 +762,26 @@ function Defaultschedules($aspid=false){
 	@unlink($PidTime);
 	@file_put_contents($PidTime, time());
 
-	$q=new mysql_squid_builder();
-	$q->CheckDefaultSchedules();
+	// Anciennement $q->CheckDefaultSchedules(), dont la boucle d'insertion
+	// etait inatteignable (mysqli_fetch_array() rend array() quand il n'y a pas
+	// de ligne, donc le continue partait justement dans le cas ou il fallait
+	// inserer) et dont la boucle de suppression effacait 33 types de
+	// webfilters_schedules a chaque passage -- toutes les deux heures.
+	//
+	// REGENERE, ne SEME PAS. Ce chemin est PERIODIQUE: son unique appelant est
+	// exec.squid.run.schedules.php (tache de type 60, toutes les 5 minutes)
+	// derriere le verrou de 120 minutes ci-dessus. Y appeler /proxy/tasks/defaults
+	// rendrait le semis periodique, et un planning proxy par defaut que
+	// l'operateur SUPPRIME reapparaitrait tout seul sous deux heures, avec pour
+	// seule trace une ligne Info dans articarest.log.
+	//
+	// Supprimer un planning est un choix d'operateur qui doit survivre; le
+	// DESACTIVER est le geste reversible, et il survit deja (la generation lit
+	// la colonne enabled). Le semis reste donc sur la route explicite
+	// /proxy/tasks/defaults et sur les deux chemins d'INSTALLATION qui
+	// l'appellent (exec.wizard-install.php, exec.artica.update.manu.php) --
+	// decision 14 du plan.
+	$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/schedule/apply");
 }
 
 
@@ -1276,9 +1264,6 @@ function ApplyConfig($smooth=false){
 			$squid->MAX_PROGRESS=79;
 			$squid->BuildSquidConf();
 			$sock->TOP_NOTIFY("{squid_parameters_was_saved}","info");
-			build_progress("{writing_templates}",79);
-			$cmd=$unix->LOCATE_PHP5_BIN()." ".__FILE__." --templates --noreload";
-			$unix->THREAD_COMMAND_SET($cmd);
 	}
 
 	build_progress("{checking}: squidclamav",79);
@@ -1829,7 +1814,7 @@ function DefaultTemplatesInArtica(){
 
 		}
 	}
-    system("/usr/sbin/artica-phpfpm-service -proxy-mimeconf");
+
 }
 
 
@@ -2241,194 +2226,7 @@ function TemplatesDesign($title,$content){
 }
 
 
-function TemplatesInMysql($aspid=false){
 
-	$unix=new unix();
-	$pidpath="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".pid";
-	$pidtime="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".time";
-	if(!$aspid){
-		$pid=$unix->get_pid_from_file($pidpath);
-		if($unix->process_exists($pid)){return false;}
-
-	}
-
-	@file_put_contents($pidpath, getmypid());
-	@file_put_contents("/etc/artica-postfix/SQUID_TEMPLATE_DONE", time());
-	@file_put_contents("/etc/artica-postfix/SQUID_TEMPLATE_DONEv2", time());
-
-
-	$sock=new sockets();
-	$SquidTemplateSimple=$sock->GET_INFO("SquidTemplateSimple");
-	if(!is_numeric($SquidTemplateSimple)){$SquidTemplateSimple=1;}
-	if($SquidTemplateSimple==1){
-		$unix=new unix();
-		$php=$unix->LOCATE_PHP5_BIN();
-		$nohup=$unix->find_program("nohup");
-		$by="--FUNC-".__FUNCTION__."-L-".__LINE__;
-		shell_exec("$nohup $php /usr/share/artica-postfix/exec.squid.templates.php $by >/dev/null 2>&1 &");
-		return false;
-	}
-
-
-
-	$TimeExec=$unix->file_time_min($pidtime);
-	if(!$GLOBALS["FORCE"]){
-		if($TimeExec<240){return false;}
-	}
-
-
-
-
-	$sock=new sockets();
-
-	$EnableWebProxyStatsAppliance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWebProxyStatsAppliance"));
-	if(!is_numeric($EnableWebProxyStatsAppliance)){$EnableWebProxyStatsAppliance=0;}
-
-	$UnlockWebStats=$sock->GET_INFO("UnlockWebStats");
-	if(!is_numeric($UnlockWebStats)){$UnlockWebStats=0;}
-
-
-	@mkdir("/etc/artica-postfix",0755,true);
-	$base="/usr/share/squid-langpack";
-	@mkdir($base,0755,true);
-	if(!is_dir("$base/templates")){@mkdir("$base/templates",0755,true);}
-	$headerTemp=@file_get_contents(dirname(__FILE__)."/ressources/databases/squid.default.header.db");
-
-
-
-
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-
-	if($q->COUNT_ROWS("squidtpls")==0){
-		if(!is_file("/etc/artica-postfix/SQUID_TEMPLATE_DONE")){
-			squid_admin_mysql(2,"Ask to build default templates squidtpls=0", null,__FILE__,__LINE__);
-			DefaultTemplatesInArtica();
-		}
-	}
-
-	if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
-		if(!is_file("/etc/artica-postfix/SQUID_TEMPLATE_DONE")){
-			squid_admin_mysql(2,"Ask to build default templates - no license -", null,__FILE__,__LINE__);
-			DefaultTemplatesInArtica();
-			return false;
-		}
-	}
-
-	$sql="SELECT * FROM squidtpls";
-	$results = $q->QUERY_SQL($sql);
-	if(!$q->ok){
-		squid_admin_mysql(1, "MySQL Error on templates", $q->mysql_error,__FILE__,__LINE__);
-		squid_admin_mysql(1, "Fatal,$q->mysql_error", __FUNCTION__, __FILE__, __LINE__, "proxy");
-		return false;
-	}
-	$c=0;
-	foreach ($results as $index=>$ligne){
-		$ligne["template_header"]=stripslashes($ligne["template_header"]);
-		$ligne["template_title"]=stripslashes($ligne["template_title"]);
-		$ligne["template_body"]=stripslashes($ligne["template_body"]);
-		$template_name=$ligne["template_name"];
-		if($ligne["template_link"]==1){continue;}
-		$header=trim($ligne["template_header"]);
-		if($header==null){$header=$headerTemp;}
-		if($GLOBALS["VERBOSE"]){
-			echo "Template: `$template_name`: {$ligne["template_title"]}\n";
-		}
-
-		if(!preg_match("#^ERR_.+#", $ligne["template_name"])){
-				$ligne["template_name"]="ERR_".$ligne["template_name"];
-		}
-
-		$filename2=null;
-		$ligne["template_body"]=utf8_encode($ligne["template_body"]);
-		$ligne["template_title"]=utf8_encode($ligne["template_title"]);
-
-
-		$filename="$base/{$ligne["lang"]}/{$ligne["template_name"]}";
-		if($ligne["lang"]=="en"){
-			$filename2="/usr/share/squid-langpack/templates/{$ligne["template_name"]}";
-		}
-		$newheader=str_replace("{TITLE}", $ligne["template_title"], $header);
-		$templateDatas="$newheader{$ligne["template_body"]}</body></html>";
-
-		if($GLOBALS["VERBOSE"]){
-			echo "Template: `$template_name`: Path `$filename`\n";
-		}
-
-		if($ligne["emptytpl"]==1){
-			$templateDatas="<html><head></head><body></body></html>";
-		}
-
-		if($GLOBALS["VERBOSE"]){
-			echo "Template: `$template_name`: {$ligne["lang"]}\n";
-		}
-
-		if(is_numeric($ligne["lang"])){$ligne["lang"]="en";}
-
-		@mkdir(dirname($filename),0755,true);
-		@file_put_contents($filename, $templateDatas);
-		if($filename2<>null){
-			@file_put_contents($filename2, $templateDatas);
-			$unix->chown_func("squid","squid","$filename2");
-		}
-		@file_put_contents("$base/{$ligne["lang"]}/{$ligne["template_name"]}", $templateDatas);
-		$unix->chown_func("squid","squid","$base/{$ligne["lang"]}/{$ligne["template_name"]}");
-		$unix->chown_func("squid","squid","$filename");
-
-		$c++;
-
-
-		if($ligne["lang"]=="en"){
-			if($GLOBALS["VERBOSE"]){echo "Writing $base/{$ligne["template_name"]}\n";}
-			@file_put_contents("$base/{$ligne["template_name"]}", $templateDatas);
-			$unix->chown_func("squid:squid", null,"$base/templates/{$ligne["template_name"]}");
-		}else{
-			if(!IfTemplateExistsinEn($template_name)){
-				@mkdir("$base/en",0755,true);
-				@file_put_contents("$base/en/{$ligne["template_name"]}", $templateDatas);
-				$unix->chown_func("squid:squid", null,"$base/en/{$ligne["template_name"]}");
-				}
-		}
-	}
-
-
-
-	$sql="SELECT * FROM squidtpls WHERE emptytpl=1";
-	$results = $q->QUERY_SQL($sql);
-	foreach ($results as $index=>$ligne){
-		if(is_numeric($ligne["lang"])){$ligne["lang"]="en";}
-		if(!preg_match("#^ERR_.+#", $ligne["template_name"])){
-			$ligne["template_name"]="ERR_".$ligne["template_name"];
-		}
-
-		$filename="$base/{$ligne["lang"]}/{$ligne["template_name"]}";
-		$templateDatas="<html><head></head><body></body></html>";
-		@mkdir(dirname($filename),0755,true);
-		@file_put_contents($filename, $templateDatas);
-		@file_put_contents("$base/{$ligne["lang"]}/{$ligne["template_name"]}", $templateDatas);
-		$unix->chown_func("squid","squid","$base/{$ligne["lang"]}/{$ligne["template_name"]}");
-		$unix->chown_func("squid","squid","$filename");
-	}
-
-
-
-
-	$unix=new unix();
-	$tar=$unix->find_program("tar");
-	$unix->chown_func("squid","squid", "$base/*");
-	chdir($base);
-	shell_exec("$tar -czf ".dirname(__FILE__)."/ressources/databases/squid-lang-pack.tgz *");
-
-	if($EnableWebProxyStatsAppliance==1){
-		if($GLOBALS["VERBOSE"]){echo "-> notify_remote_proxys()\n";}
-		notify_remote_proxys();
-		if($GLOBALS["VERBOSE"]){echo "This is a statistics appliance, aborting next step\n";}
-		return false;
-	}
-
-	squid_admin_mysql(2, "$c web pages templates saved", "no information",__FILE__,__LINE__);
-	Reload_Squid();
-
-}
 
 function EventsWatchdog($text){
 
@@ -2527,219 +2325,6 @@ function extract_schedules(){
 
 }
 
-function run_schedules($ID){
-	$GLOBALS["SCHEDULE_ID"]=$ID;
-	writelogs("Task $ID",__FUNCTION__,__FILE__,__LINE__);
-	$qProxy=new mysql_squid_builder(true);
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	$ligne=$q->mysqli_fetch_array("SELECT TaskType FROM webfilters_schedules WHERE ID=$ID");
-
-	$TaskType=$ligne["TaskType"];
-	if($TaskType==0){return false;}
-	if(!isset($qProxy->tasks_processes[$TaskType])){squid_admin_mysql(1, "Unable to understand task type `$TaskType` For this task" , __FUNCTION__, __FILE__, __LINE__, "tasks");return false;}
-	$script=$qProxy->tasks_processes[$TaskType];
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$WorkingDirectory=dirname(__FILE__);
-	$cmd="$nohup $php5 $WorkingDirectory/$script --schedule-id=$ID >/dev/null 2>&1 &";
-	writelogs("Task {$GLOBALS["SCHEDULE_ID"]} is executed with `$cmd` ",__FUNCTION__,__FILE__,__LINE__);
-	squid_admin_mysql(1, "Task is executed with `$cmd`" , __FUNCTION__, __FILE__, __LINE__, "tasks");
-	shell_exec($cmd);
-
-}
-
-function build_schedules_tests(){
-	$unix=new unix();
-	if(!$unix->IsSquidTaskCanBeExecuted()){
-		EventsWatchdog("IsSquidTaskCanBeExecuted() return false");
-
-		return false;}
-	$pidTime="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".time";
-
-	$pidTimeINT=$unix->file_time_min($pidTime);
-	if(!$GLOBALS["VERBOSE"]){
-		if($pidTimeINT<5){
-			EventsWatchdog("Too short time to execute the process ($pidTime)");
-			writelogs("To short time to execute the process",__FILE__,__FUNCTION__,__LINE__);
-			return false;
-		}
-	}
-
-	@file_put_contents($pidTime, time());
-
-	if(!is_file("/etc/artica-postfix/squid.schedules")){
-		echo "No schedule yet....\n";
-		shell_exec("/etc/init.d/artica-postfix restart watchdog");
-	}
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	$qProxy=new mysql_squid_builder(true);
-	$ligne=$q->mysqli_fetch_array("SELECT TimeText FROM webfilters_schedules WHERE TaskType=14");
-	if($ligne["TimeText"]==null){
-		$sql="INSERT OR IGNORE INTO `webfilters_schedules` (`TimeText`, `TimeDescription`, `TaskType`, `enabled`,`params`) VALUES ('30 6 * * *', 'Optimize all tables  each day at 06h30', 14, 1,' ');";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){writelogs("$q->mysql_error",__FUNCTION__,__FILE__,__LINE__);return false;}
-		shell_exec("/etc/init.d/artica-postfix restart watchdog");
-	}
-}
-
-
-function build_schedules($notfcron=false):bool{
-    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
-    if($Enablehacluster==1){return true;}
-	$unix=new unix();
-	@mkdir("/var/log/artica-postfix/youtube",0755,true);
-	$pidfile="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".pid";
-	$pidTime="/etc/artica-postfix/pids/".basename(__FILE__).".".__FUNCTION__.".time";
-	$pid=$unix->get_pid_from_file($pidfile);
-
-
-	if($unix->process_exists($pid,basename(__FILE__))){
-		writelogs("Already executed pid $pid",__FILE__,__FUNCTION__,__LINE__);
-		return false;
-	}
-
-
-	@file_put_contents($pidfile, getmypid());
-
-	$pidTimeINT=$unix->file_time_min($pidTime);
-	if(!$GLOBALS["VERBOSE"]){
-		if($pidTimeINT<2){
-			build_progress_schedules("{failed}", 110);
-			writelogs("To short time to execute the process",__FILE__,__FUNCTION__,__LINE__);
-			return false;
-		}
-	}
-
-
-	$RemoveProxyTasks=false;
-	@file_put_contents($pidTime, time());
-	if(!$unix->IsSquidTaskCanBeExecuted()){
-		$RemoveProxyTasks=true;
-	}
-
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	$qProxy=new mysql_squid_builder(true);
-	$qProxy->CheckDefaultSchedules(true);
-
-	if($q->COUNT_ROWS("webfilters_schedules")==0){
-		build_progress_schedules("{failed} no schedules set", 110);
-		return false;
-	}
-	$AuthTaskType=array();
-
-	if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
-		echo "Community Edition\n";
-		$AuthTaskType[6]=true;
-
-	}else{
-		$AuthTaskType[3]=true;
-		echo "Entreprise Edition\n";
-	}
-    $sql="SELECT *  FROM webfilters_schedules WHERE enabled=1";
-	$results = $q->QUERY_SQL($sql);
-	if(!$q->ok){
-		build_progress_schedules("{failed} MySQL error", 110);
-		return false;}
-
-	@unlink("/etc/cron.d/SquidTailInjector");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$WorkingDirectory=dirname(__FILE__);
-
-	foreach (glob("/etc/cron.d/*") as $filename) {
-		$file=basename($filename);
-
-		if(preg_match("#squidsch-[0-9]+#", $filename)){if($GLOBALS["VERBOSE"]){echo "Removing old task $file\n";}@unlink($filename);}
-	}
-	@unlink("/etc/artica-postfix/TASKS_SQUID_CACHE.DB");
-
-	$settings=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FcronSchedulesParams"));
-	if(!isset($settings["max_nice"])){$settings["max_nice"]=19;}
-	if(!isset($settings["max_load_avg5"])){$settings["max_load_avg5"]=3;}
-	if(!isset($settings["max_load_wait"])){$settings["max_load_wait"]=10;}
-	if(!is_numeric($settings["max_load_avg5"])){$settings["max_load_avg5"]="3";}
-	if(!is_numeric($settings["max_load_wait"])){$settings["max_load_wait"]="10";}
-	if(!is_numeric($settings["max_nice"])){$settings["max_nice"]="19";}
-
-	@unlink("/etc/artica-postfix/squid.schedules");
-	$nice=EXEC_NICE();
-
-	build_progress_schedules("{building}", 50);
-	$c=0;$d=0;
-	foreach ($results as $index=>$ligne){
-		$allminutes="1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59";
-		$TaskType=$ligne["TaskType"];
-		$CronFile="/etc/cron.d/squidsch-{$ligne["ID"]}";
-
-		echo "*****************************************************************************************\n";
-		echo "* * Task {$ligne["ID"]} Type $TaskType: $CronFile {$ligne["TimeDescription"]} * * \n";
-		echo "*****************************************************************************************\n";
-
-		if($RemoveProxyTasks){
-			if(!isset($AuthTaskType[$TaskType])){
-				echo "Task {$ligne["ID"]} type '$TaskType' {$ligne["TimeDescription"]} aborted...\n";
-				if(is_file($CronFile)){@unlink($CronFile);}continue;}
-		}
-
-		$TimeText=$ligne["TimeText"];
-		if($TaskType==0){continue;}
-		if($ligne["TimeText"]==null){continue;}
-
-		$md5=md5("$TimeText$TaskType");
-		if(isset($alreadydone[$md5])){if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." artica-postfix watchdog task {$ligne["ID"]} already set\n";}continue;}
-		$alreadydone[$md5]=true;
-
-		if(!isset($qProxy->tasks_processes[$TaskType])){
-			if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." artica-postfix task {$ligne["ID"]} no such task...\n";}
-			$d++;continue;
-		}
-		if(isset($qProxy->tasks_disabled[$TaskType])){
-			if(!isset($AuthTaskType[$TaskType])){
-				if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." artica-postfix task {$ligne["ID"]} is disabled or did not make sense...\n";}
-				$d++;
-				continue;
-			}
-		}
-
-
-
-		$script=$qProxy->tasks_processes[$TaskType];
-		if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." artica-postfix create task {$ligne["ID"]} type $TaskType..\n";}
-		if(trim($ligne["TimeText"]=="$allminutes * * * *")){$ligne["TimeText"]="* * * * *";}
-
-		$f=array();
-		$f[]="MAILTO=\"\"";
-		$f[]="# $script Type: $TaskType";
-		$f[]="{$ligne["TimeText"]}  root $nice $php5 $WorkingDirectory/exec.schedules.php --run-squid {$ligne["ID"]} >/dev/null 2>&1";
-		$f[]="";
-		if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." creating /etc/cron.d/squidsch-{$ligne["ID"]}\n";}
-		@file_put_contents("/etc/cron.d/squidsch-{$ligne["ID"]}", @implode("\n", $f));
-		$c++;
-
-	}
-
-
-	build_progress_schedules("{building}", 80);
-	@file_put_contents("/etc/artica-postfix/squid.schedules",implode("\n",$f));
-	if($notfcron){
-		echo "Starting......: ".date("H:i:s")." Squid $c scheduled tasks ($d disabled)\n";
-		return false;
-	}
-	$cron_path=$unix->find_program("cron");
-	$cron_pid=null;
-	if(is_file("/var/run/cron.pid")){$cron_pid=$unix->get_pid_from_file("/var/run/cron.pid");}
-	if(!$unix->process_exists($cron_pid)){$cron_pid=0;}
-	if(!is_numeric($cron_pid) OR $cron_pid<5){$cron_pid=$unix->PIDOF("$cron_path");}
-	if($cron_pid>5){
-		if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." artica-postfix reloading $cron_path [$cron_pid]...\n";}
-		unix_system_HUP("$cron_pid");
-	}
-	build_progress_schedules("{building}", 90);
-	if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." artica-postfix reloading fcron...\n";}
-    $unix->go_exec("/etc/init.d/cron reload");
-	build_progress_schedules("{done}", 100);
-    return true;
-}
 function WriteMyLogs($text){
 	if(!isset($GLOBALS["MYPID"])){$GLOBALS["MYPID"]=getmypid();}
 	$sourcefunction=null;
@@ -3012,12 +2597,6 @@ function test_sarg(){
 }
 function disableUFDB(){
 	shell_exec("/etc/init.d/ufdb-client stop");
-}
-function cache_rules(){
-    $q=new squid_caches_rules();
-	$q->build();
-	echo @implode("\n", $q->final_array);
-
 }
 function bandwith_rules():bool{
 	$bandwith=new squid_bandwith_builder();

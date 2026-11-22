@@ -169,7 +169,7 @@ function install($filekey=0){
 	build_progress_idb("{extracting}",96);
 	if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]}, extracting....\n";}
 	$tar=$unix->find_program("tar");
-	shell_exec("$tar xvf $tmpdir/$filename -C /");
+	shell_exec("$tar xvf $tmpdir/$filename --keep-directory-symlink --no-overwrite-dir -C /");
 	
 	if($GLOBALS["MIGRATION"]){
 		
@@ -1245,7 +1245,7 @@ function disconnect_progress(){
 	$sock->SET_INFO("EnableInfluxDB", 1);
 	
 	build_progress_rs("{reconfiguring_proxy_service}",70);
-	system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+	system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 	build_progress_rs("{restarting_services} 1/6",74);
 	$unix=new unix();$unix->RESTART_SYSLOG(true);
 	build_progress_rs("{restarting_services} 2/6",75);
@@ -1342,7 +1342,7 @@ function remote_progress(){
 	
 	
 	build_progress_rs("{reconfiguring_proxy_service}",70);
-	system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+	system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 	
 	
 	

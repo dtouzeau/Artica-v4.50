@@ -114,23 +114,24 @@ function save(){
     $tpl->CLEAN_POST();
     $ID=intval($_POST["ID"]);
     $wpid=intval($_POST["wpid"]);
-    if($wpid==0){echo "jserror:No WPID !";return;}
+    if($wpid==0){echo (new template_admin())->post_error("No WPID !");return;}
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
-    $description=$q->sqlite_escape_string2($_POST["description"]);
+    // Pentest 2026-11-04 : address etait concatene dans la requete (description et address passent en parametres).
+    $description=$_POST["description"];
     $IPClass=new IP();
 
     if(!$IPClass->isIPAddressOrRange($_POST['address'])){
-        echo "jserror:Please specify an IP address or netmask";
+        echo (new template_admin())->post_error("Please specify an IP address or netmask");
         return null;
     }
     if($ID==0){
-        $q->QUERY_SQL("INSERT INTO wp_admin_ip (address,description,wpid) VALUES('{$_POST['address']}','$description','$wpid')");
-        if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";return;}
+        $q->QUERY_SQL_PARAMS("INSERT INTO wp_admin_ip (address,description,wpid) VALUES(?,?,?)",array($_POST['address'],$description,$wpid));
+        if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo (new template_admin())->post_error("$q->mysql_error");return;}
         return;
     }
 
-    $q->QUERY_SQL("UPDATE wp_admin_ip SET address='{$_POST['address']}',description='$description' WHERE ID=$ID");
-    if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";return;}
+    $q->QUERY_SQL_PARAMS("UPDATE wp_admin_ip SET address=?,description=? WHERE ID=?",array($_POST['address'],$description,$ID));
+    if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo (new template_admin())->post_error("$q->mysql_error");return;}
 }
 
 

@@ -1,5 +1,5 @@
-<ARTICA_VPN_CONNECT>Connect to Artica Server</ARTICA_VPN_CONNECT>
+<ARTICA_VPN_CONNECT>Ligar ao servidor Artica</ARTICA_VPN_CONNECT>
 <ARTICA_VPN_CONNECT_TEXT>Estabelecer ligaç%C3µes VPN a servidores Artica OpenVPN e ligar a sua rede a uma rede remota alvo</ARTICA_VPN_CONNECT_TEXT>
-<connexion_name>connection name</connexion_name>
-<WIZARD_CONNECT_ARTICA>Add a new connection</WIZARD_CONNECT_ARTICA>
-<WIZARD_CONNECT_ARTICA_TEXT>This operation will connect to a remote Artica server by receive all settings automatically</WIZARD_CONNECT_ARTICA_TEXT>
+<connexion_name>nome da liga&#231;&#227;o</connexion_name>
+<WIZARD_CONNECT_ARTICA>Adicionar uma nova liga&#231;&#227;o</WIZARD_CONNECT_ARTICA>
+<WIZARD_CONNECT_ARTICA_TEXT>Esta opera&#231;&#227;o ir&#225; ligar-se a um servidor Artica remoto recebendo todas as configura&#231;&#245;es automaticamente</WIZARD_CONNECT_ARTICA_TEXT>

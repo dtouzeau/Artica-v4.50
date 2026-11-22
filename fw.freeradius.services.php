@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
@@ -72,7 +73,8 @@ function connection_js(){
 function delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["delete-js"];
+	// Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+	$ID=intval($_GET["delete-js"]);
 	$q=new mysql();
 	$sql="SELECT connectionname from freeradius_db WHERE ID='$ID'";
 	$ligne=mysqli_fetch_array($q->QUERY_SQL($sql,"artica_backup"));
@@ -82,7 +84,9 @@ function delete_js(){
 
 function delete_perform(){
 	$q=new mysql();
-	$q->QUERY_SQL("DELETE FROM freeradius_db WHERE ID='{$_POST["delete"]}'",'artica_backup');
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$ID=intval($_POST["delete"]);
+	$q->QUERY_SQL("DELETE FROM freeradius_db WHERE ID='$ID'",'artica_backup');
 	if(!$q->ok){echo $q->mysql_error;}
 }
 
@@ -92,12 +96,14 @@ function enable_js(){
 	header("content-type: application/x-javascript");
 	$q=new mysql();
 	
-	$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT enabled FROM freeradius_db WHERE ID='{$_GET["enable-js"]}'","artica_backup"));
+	// Pentest 2026-11-04 : enable-js etait concatene dans la requete.
+	$ID=intval($_GET["enable-js"]);
+	$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT enabled FROM freeradius_db WHERE ID='$ID'","artica_backup"));
 	if(intval($ligne["enabled"])==1){
-		$q->QUERY_SQL("UPDATE freeradius_db SET enabled=0 WHERE ID='{$_GET["enable-js"]}'","artica_backup");
+		$q->QUERY_SQL("UPDATE freeradius_db SET enabled=0 WHERE ID='$ID'","artica_backup");
 		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}
 	}else{
-		$q->QUERY_SQL("UPDATE freeradius_db SET enabled=1 WHERE ID='{$_GET["enable-js"]}'","artica_backup");
+		$q->QUERY_SQL("UPDATE freeradius_db SET enabled=1 WHERE ID='$ID'","artica_backup");
 		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}		
 	}
 }
@@ -256,20 +262,23 @@ function connection_form_ad($connection_id){
 function connection_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$ID=$_POST["ID"];
+	// Pentest 2026-11-04 : ID, connectionname et connectiontype etaient concatenes dans la requete.
+	$ID=intval($_POST["ID"]);
 	
 	if($_POST["connectionname"]==null){$_POST["connectionname"]=time();}
 	$params=base64_encode(serialize($_POST));
+	$connectionname=mysql_escape_string2($_POST["connectionname"]);
+	$connectiontype=mysql_escape_string2($_POST["connectiontype"]);
 	
 	
 	if($ID==0){
 		$sql="INSERT IGNORE INTO freeradius_db
 		(`connectionname`,`connectiontype` ,`params`,`enabled`)
-		VALUES('{$_POST["connectionname"]}','{$_POST["connectiontype"]}','$params',1)";
+		VALUES('$connectionname','$connectiontype','$params',1)";
 
 	}else{
-	$sql="UPDATE freeradius_db SET `connectionname`='{$_POST["connectionname"]}',
-			`connectiontype`='{$_POST["connectiontype"]}',`params`='$params'
+	$sql="UPDATE freeradius_db SET `connectionname`='$connectionname',
+			`connectiontype`='$connectiontype',`params`='$params'
 			WHERE ID=$ID
 			";
 	}
@@ -287,15 +296,21 @@ function client_save(){
 	$tpl->CLEAN_POST();
 	$q=new mysql();
 	
-	$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT ipaddr FROM freeradius_clients WHERE ipaddr='{$_GET["ipaddr"]}'","artica_backup"));
+	// Pentest 2026-11-04 : ipaddr, shortname, nastype et secret etaient concatenes dans la requete.
+	$ipaddrGet=mysql_escape_string2(isset($_GET["ipaddr"]) ? $_GET["ipaddr"] : "");
+	$ipaddr=mysql_escape_string2($_POST["ipaddr"]);
+	$shortname=mysql_escape_string2($_POST["shortname"]);
+	$nastype=mysql_escape_string2($_POST["nastype"]);
+	$secret=mysql_escape_string2($_POST["secret"]);
+	$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT ipaddr FROM freeradius_clients WHERE ipaddr='$ipaddrGet'","artica_backup"));
 
 	if($ligne["ipaddr"]==null){
 		$sql="INSERT IGNORE INTO freeradius_clients
 		(`shortname`,`ipaddr` ,`nastype`,`secret`,`enabled`)
-		VALUES('{$_POST["shortname"]}','{$_POST["ipaddr"]}','{$_POST["nastype"]}','{$_POST["secret"]}',1)";
+		VALUES('$shortname','$ipaddr','$nastype','$secret',1)";
 
 	}else{
-	$sql="UPDATE freeradius_clients SET `shortname`='{$_POST["shortname"]}',`nastype`='{$_POST["nastype"]}',`secret`='{$_POST["secret"]}' WHERE `ipaddr`='{$_POST["ipaddr"]}'";
+	$sql="UPDATE freeradius_clients SET `shortname`='$shortname',`nastype`='$nastype',`secret`='$secret' WHERE `ipaddr`='$ipaddr'";
 	}
 
 	$q=new mysql();
@@ -324,7 +339,7 @@ function table(){
 	$ARRAY["TITLE"]="{reconfigure_service} {APP_FREERADIUS}";
 	
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-freeradius-clients-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-freeradius-clients-restart')";
 	
 	$bts[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
     $bts[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?connection-js=0');\"><i class='fa fa-plus'></i> {new_connection} </label>";

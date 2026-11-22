@@ -1,26 +1,21 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["refresh-ssl-cache"])){refresh_ssl_cached();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["search"])){table_rows();exit;}
-if(isset($_GET["rule-delete-js"])){rule_delete_js();exit;}
-if(isset($_GET["newrule-popup"])){new_rule_popup();exit;}
-if(isset($_POST["newrule"])){new_rule_save();exit;}
 
-if(isset($_GET["rule-id-js"])){rule_js();exit;}
-if(isset($_GET["rule-tabs"])){rule_tabs();exit;}
 
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["enable-js"])){rule_enable();exit;}
-if(isset($_GET["acl-rule-move"])){rule_move();exit;}
-if(isset($_GET["default-js"])){default_js();exit;}
-if(isset($_GET["default-popup"])){default_popup();exit;}
-if(isset($_POST["ProxyDefaultUncryptSSL"])){ProxyDefaultUncryptSSL_save();exit;}
-if(isset($_GET["filltable"])){filltable();exit;}
 if(isset($_GET["rebuild-ssl-cache"])){rebuild_ssl_cache_confirm();exit;}
 if(isset($_POST["rebuild-ssl-cache"])){rebuild_ssl_cache_confirm_track();exit;}
 if(isset($_GET["search"])){search_form();exit;}
@@ -89,36 +84,40 @@ function table_rows(){
     $search=$_GET["search"];
 
     $html[]="<div id='rebuild-squisslcache' style='margin-top:15px'></div>";
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text'>{hostname}</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text' style='width:1%' nowrap>{from_date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' style='width:1%' nowrap>{to_date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
+    $html[]="<th>{hostname}</th>";
+    $html[]="<th class='awc-nowrap'>{from_date}</th>";
+    $html[]="<th class='awc-nowrap'>{to_date}</th>";
+    $html[]="<th>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='sslcertifica-rows'>";
 
     $jsAfter="LoadAjax('table-firewall-rules','$page?table=yes&eth={$_GET["eth"]}');";
     $GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
     $q=new lib_sqlite("/home/artica/SQLITE/ssl_db.db");
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $sqlparams=array();
     $sql="SELECT * FROM certificates ORDER BY sitename";
     if(strlen($search)>2){
         $search="*$search*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $sql="SELECT * FROM certificates WHERE sitename LIKE '$search' ORDER BY sitename";
+        $sql="SELECT * FROM certificates WHERE sitename LIKE ? ORDER BY sitename";
+        $sqlparams=array($search);
     }
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,$sqlparams);
     $ico=ico_certificate;
     $TRCLASS=null;
 
     foreach($results as $index=>$ligne) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $sitename=$ligne["sitename"];
         $validfrom=intval($ligne["validfrom"]);
         $validto=intval($ligne["validto"]);
@@ -136,20 +135,13 @@ function table_rows(){
     }
 
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='6'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='sslcertifica-pager'></span></div>";
+	$html[]="</div></div>";
     $html[]="
 <script> 
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) }); 
 ";
 
     $buttons="<div class=\"btn-group\" data-toggle=\"buttons\">
@@ -167,7 +159,9 @@ $(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enab
     $html[]=$jstiny;
     $html[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"sslcertifica-rows","sslcertifica-pager");
 }
 
 

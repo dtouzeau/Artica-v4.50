@@ -5,6 +5,11 @@ include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 include_once(dirname(__FILE__)."/ressources/class.hosts.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : sdate/container/interval/ipaddr etaient recopies sans encodage dans la page (XSS).
+if(isset($_GET["sdate"]) && $_GET["sdate"]!==""){$_GET["sdate"]=intval($_GET["sdate"]);}
+if(isset($_GET["container"])){$_GET["container"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["container"]);}
+if(isset($_GET["interval"])){$_GET["interval"]=preg_replace('/[^A-Za-z0-9 _.-]/','',(string)$_GET["interval"]);}
+if(isset($_GET["ipaddr"])){$_GET["ipaddr"]=preg_replace('/[^0-9A-Fa-f.:]/','',(string)$_GET["ipaddr"]);}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["alias-proxy"])){alias_proxy();exit;}
 if(isset($_POST["proxyalias"])){alias_proxy_save();exit;}
@@ -23,7 +28,10 @@ function js(){
     $ipaddr=urlencode($_GET["ipaddr"]);
     if($sdate==null){$sdate=strtotime(date("Y-m-d 00:00:00"));}
     $curetime=$tpl->time_to_date($sdate);
-    $tpl->js_dialog1("$uid: $curetime","$page?tabs=$uidEnc&sdate=$sdate&ipaddr=$ipaddr",990);
+    // Pentest 2026-11-04 : uid etait recopie sans encodage dans la page (XSS) ; le titre de modale est
+    // rendu en HTML apres decodage des entites : on y retire les caracteres de balisage.
+    $uidTitle=preg_replace('/[<>&\\\\]/','',(string)$uid);
+    $tpl->js_dialog1("$uidTitle: $curetime","$page?tabs=$uidEnc&sdate=$sdate&ipaddr=$ipaddr",990);
 }
 function tabs(){
 
@@ -75,7 +83,8 @@ function bandwidth_1(){
     $uid=$_GET["bandwidth-1"];
     $ipaddr=urlencode($_GET["ipaddr"]);
     $today=date("Y-m-d 00:00:00",$_GET["sdate"]);
-    $results=$q->QUERY_SQL("SELECT size, zdate FROM \"access_users\" WHERE zdate>'$today' AND userid='$uid' order by zdate ASC ");
+    // Pentest 2026-11-04 : bandwidth-1 (uid) etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS("SELECT size, zdate FROM \"access_users\" WHERE zdate>'$today' AND userid=$1 order by zdate ASC ",array(strval($uid)));
 
     $daytext=$tpl->time_to_date($_GET["sdate"]);
 
@@ -114,7 +123,8 @@ function bandwidth_2(){
     $uid=$_GET["bandwidth-2"];
     $ipaddr=urlencode($_GET["ipaddr"]);
     $today=date("Y-m-d 00:00:00",$_GET["sdate"]);
-    $results=$q->QUERY_SQL("SELECT rqs, zdate FROM \"access_users\" WHERE zdate>'$today' AND userid='$uid' order by zdate ASC ");
+    // Pentest 2026-11-04 : bandwidth-2 (uid) etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS("SELECT rqs, zdate FROM \"access_users\" WHERE zdate>'$today' AND userid=$1 order by zdate ASC ",array(strval($uid)));
 
     $daytext=$tpl->time_to_date($_GET["sdate"]);
 
@@ -155,8 +165,10 @@ function isAlias($value){
     if($ipClass->isValid($value)){return true;}
     if($ipClass->IsvalidMAC($value)){return true;}
 
-    $sql="SELECT * FROM hostsnet WHERE proxyalias='$value'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    // Pentest 2026-11-04 : l'alias etait concatene dans la requete.
+    $res=$q->QUERY_SQL_PARAMS("SELECT * FROM hostsnet WHERE proxyalias=$1",array(strval($value)));
+    $ligne=$res?@pg_fetch_assoc($res):array();
+    if(!is_array($ligne)){$ligne=array();}
     if($ligne["ipaddr"]<>null){return true;}
     return false;
 }
@@ -190,8 +202,10 @@ function alias_proxy(){
     }
 
     if(!$FOUND) {
-        $sql = "SELECT * FROM hostsnet WHERE proxyalias='$key'";
-        $ligne=$q->mysqli_fetch_array($sql);
+        // Pentest 2026-11-04 : alias-proxy etait concatene dans la requete.
+        $res=$q->QUERY_SQL_PARAMS("SELECT * FROM hostsnet WHERE proxyalias=$1",array(strval($key)));
+        $ligne=$res?@pg_fetch_assoc($res):array();
+        if(!is_array($ligne)){$ligne=array();}
         $ipaddr=$ligne["ipaddr"];
         $mac = $ligne["mac"];
         $alias=$key;
@@ -237,6 +251,6 @@ function alias_proxy_save(){
     $memcached=new lib_memcached();
     $memcached->saveKey($_POST["mac"].":alias", $_POST["proxyalias"]);
     $memcached->saveKey($_POST["ipaddr"].":alias", $_POST["proxyalias"]);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid.php?user-retranslation=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hostnets/aliases/rebuild");
 
 }

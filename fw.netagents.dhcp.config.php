@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DHCP config management: diff preview, validate, apply, import, rollback.
  *
@@ -189,7 +191,7 @@ function dhcp_revisions(): void {
     }
 
     $h   = [];
-    $h[] = "<table class='table table-striped table-condensed' style='margin:0'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "  <thead><tr>";
     $h[] = "    <th>{revision}</th>";
     $h[] = "    <th style='width:1%'></th>";
@@ -203,15 +205,15 @@ function dhcp_revisions(): void {
         $rollbackJs .= "\$.post('$page',{id:$id,rollback:1,revision:'" . addslashes($revName) . "'},";
         $rollbackJs .= "function(r){\$('#dhcp-config-result-$id').html(r);LoadAjaxSilent('dhcp-diff-div-$id','$page?diff=$id');LoadAjaxSilent('dhcp-revisions-div-$id','$page?revisions=$id');});}";
         $h[] = "  <tr>";
-        $h[] = "    <td><span style='font-family:monospace;font-size:12px'>$dateStr</span></td>";
+        $h[] = "    <td><span style='font-size:12px'>$dateStr</span></td>";
         $h[] = "    <td><button class='btn btn-xs btn-warning' onclick=\"$rollbackJs\">";
         $h[] = "        <i class='fas fa-undo'></i> {rollback}";
         $h[] = "    </button></td>";
         $h[] = "  </tr>";
     }
-    $h[] = "  </tbody></table>";
+    $h[] = "  </tbody></table></div></div></div>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 
 /** Validate candidate config and return pass/fail + error list. */

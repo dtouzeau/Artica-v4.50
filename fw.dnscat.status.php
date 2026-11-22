@@ -19,10 +19,6 @@ if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_POST["DnscatzInterface"])){Save();exit;}
-if(isset($_GET["ufdbconf-popup"])){ufdbconf_popup();exit;}
-if(isset($_GET["ufdbdebug-popup"])){ufdbdebug_popup();exit;}
-if(isset($_GET["graph1"])){graph1();exit;}
-if(isset($_GET["remove-database-ask"])){remove_database_ask();exit;}
 if(isset($_GET["form-js"])){form_js();exit;}
 if(isset($_GET["official-js"])){official_js();exit;}
 if(isset($_GET["official-popup"])){official_popup();exit;}

@@ -1,6 +1,53 @@
 <?php
 include_once(dirname(__FILE__)."/class.wifidog.templates.inc");
 include_once(dirname(__FILE__)."/class.template-admin.inc");
+
+/**
+ * Appel des routes /proxy/templates-manager et /proxy/templates-files du daemon
+ * (tables templates_manager / templates_files de proxy.db, que la console n'ouvre plus).
+ * Rend array(true,$data) ou array(false,"message d'erreur").
+ */
+function templates_manager_api(string $method,string $path,$body=null):array{
+	if(!isset($GLOBALS["CLASS_SOCKETS"])){
+		if(!class_exists("sockets")){include_once(dirname(__FILE__)."/class.sockets.inc");}
+		$GLOBALS["CLASS_SOCKETS"]=new sockets();
+	}
+	$sock=$GLOBALS["CLASS_SOCKETS"];
+	switch($method){
+		case "POST":   $raw=$sock->REST_API_POST_JSON($path,$body===null?array():$body); break;
+		case "PUT":    $raw=$sock->REST_API_PUT_JSON($path,$body===null?array():$body); break;
+		case "DELETE": $raw=$sock->REST_API_DELETE($path); break;
+		default:       $raw=$sock->REST_API($path);
+	}
+	$json=json_decode(strval($raw),true);
+	if(!is_array($json)){return array(false,"articarest: invalid answer from $path");}
+	if(empty($json["success"])){
+		$err=strval($json["error"] ?? "");
+		return array(false,$err=="" ? "articarest: $path failed" : $err);
+	}
+	return array(true,$json["data"] ?? null);
+}
+
+/**
+ * Un fichier de modele ([file=<nom>]) : array(filename, contentType, contentSize, contentFile en base64),
+ * ou array() s'il n'existe pas.
+ */
+function templates_manager_file(string $filename):array{
+	$filename=trim($filename);
+	if($filename==""){return array();}
+	list($ok,$data)=templates_manager_api("GET","/proxy/templates-files/content?name=".urlencode($filename));
+	return ($ok && is_array($data)) ? $data : array();
+}
+
+/** Un texte a envoyer en JSON : json_encode() rend false sur des octets non UTF-8. */
+function templates_manager_utf8($s):string{
+	$s=strval($s);
+	if(function_exists("mb_check_encoding") && !mb_check_encoding($s,"UTF-8")){
+		return strval(mb_convert_encoding($s,"UTF-8","ISO-8859-1"));
+	}
+	return $s;
+}
+
 class templates_manager{
 	private $templateid;
 	public $mysql_error_html;
@@ -746,14 +793,15 @@ class templates_manager{
             return true;
         }
 
-        $tpl=new template_admin();
-		$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM templates_manager WHERE ID='$this->templateid'");
-		
-		$this->CssContent=base64_decode($ligne["CssContent"]);
-		$this->headContent=base64_decode($ligne["headContent"]);
-		$this->BodyContent=base64_decode($ligne["BodyContent"]);
-		$this->TemplateName=$tpl->utf8_encode($ligne["TemplateName"]);
+		// proxy.db est lu par le daemon (GET /proxy/templates-manager/{id}) : la console
+		// n'ouvre plus la base. Le JSON rend deja de l'UTF-8, pas de utf8_encode().
+		list($found,$ligne)=templates_manager_api("GET","/proxy/templates-manager/".intval($this->templateid));
+		if(!$found || !is_array($ligne)){$ligne=array();}
+
+		$this->CssContent=base64_decode(strval($ligne["cssContent"] ?? ""));
+		$this->headContent=base64_decode(strval($ligne["headContent"] ?? ""));
+		$this->BodyContent=base64_decode(strval($ligne["bodyContent"] ?? ""));
+		$this->TemplateName=strval($ligne["templateName"] ?? "");
 		
 		if($GLOBALS["VERBOSE"]){VERBOSE("CssContent:".strlen($this->CssContent), __LINE__);}
 		
@@ -773,40 +821,33 @@ class templates_manager{
 		return true;
 	}
 	
+	private function api_result($ok,$data){
+		$this->ok=$ok;
+		$this->mysql_error=$ok ? null : strval($data);
+		$this->mysql_error_html=$ok ? null : "<div class='alert alert-danger'>".htmlspecialchars(strval($data))."</div>";
+	}
+
 	public function Create(){
-	
-		$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-		$sql="INSERT INTO templates_manager (`TemplateName`) VALUES ('$this->TemplateName')";
-		$q->QUERY_SQL($sql);
-		$this->ok=$q->ok;
-		$this->mysql_error=$q->mysql_error;
-		$this->mysql_error_html=$q->mysql_error_html();
+		list($ok,$data)=templates_manager_api("POST","/proxy/templates-manager",
+			array("templateName"=>templates_manager_utf8($this->TemplateName)));
+		$this->api_result($ok,$data);
 	}
 	
 	function Delete(){
-		$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-		$q->QUERY_SQL("DELETE FROM templates_manager WHERE ID='$this->templateid'");
-		if(!$q->ok){echo $q->mysql_error;}
+		list($ok,$data)=templates_manager_api("DELETE","/proxy/templates-manager/".intval($this->templateid));
+		$this->api_result($ok,$data);
+		if(!$ok){echo $this->mysql_error;}
 	}
 	
 	public function Save(){
-		$CssContent=base64_encode($this->CssContent);
-		$headContent=base64_encode($this->headContent);
-		$BodyContent=base64_encode($this->BodyContent);
-		$TemplateName=mysql_escape_string2($this->TemplateName);
-		$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-		
-		$sql="UPDATE templates_manager 
-			SET 
-			`CssContent`='$CssContent',
-			`headContent`='$headContent',
-			`BodyContent`='$BodyContent',
-			`TemplateName`='$TemplateName' WHERE `ID`='$this->templateid'";
-		
-		$q->QUERY_SQL($sql);
-		$this->ok=$q->ok;
-		$this->mysql_error=$q->mysql_error;
-		$this->mysql_error_html=$q->mysql_error_html();
+		// Contenus en base64 : c'est la forme stockee, et json_encode() echoue sur un texte non UTF-8.
+		list($ok,$data)=templates_manager_api("PUT","/proxy/templates-manager/".intval($this->templateid),array(
+			"templateName"=>templates_manager_utf8($this->TemplateName),
+			"cssContent"=>base64_encode(strval($this->CssContent)),
+			"headContent"=>base64_encode(strval($this->headContent)),
+			"bodyContent"=>base64_encode(strval($this->BodyContent)),
+		));
+		$this->api_result($ok,$data);
         if($this->ok){
             $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/templates");
         }

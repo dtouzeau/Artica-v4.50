@@ -97,7 +97,7 @@ function search(){
 		$ACTION=null;
 		$FF=false;
 		if(!preg_match("#^(.+?)\s+([0-9])+\s+([0-9:]+)\s+(.+?)\s+.*?\[([0-9]+)\]:\s+(.+)#", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
+			echo "<strong style='color:red'>".req_html($line)."</strong><br>"; 
 			continue;}
 		
 		$date="{$re[1]} {$re[2]} ".date('Y')." {$re[3]}";
@@ -105,8 +105,9 @@ function search(){
 		$FTime=date("Y-m-d H:i:s",$xtime);
 		$curDate=date("Y-m-d");
 		$FTime=trim(str_replace($curDate, "", $FTime));
-		$pid=$re[5];
-		$line=$re[6];
+		// Pentest 2026-11-04 : ligne de journal iscsi (donnee externe) affiche sans encodage (XSS stockee).
+		$pid=req_html($re[5]);
+		$line=req_html($re[6]);
 
 		
 
@@ -120,7 +121,7 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents("/usr/share/artica-postfix/ressources/logs/web/iscsi.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents("/usr/share/artica-postfix/ressources/logs/web/iscsi.syslog.pattern"))."</i></div>";
 	echo @implode("\n", $html);
 	
 	

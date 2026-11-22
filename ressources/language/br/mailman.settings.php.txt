@@ -1,540 +1,488 @@
-<accept>Accept</accept>
-<acceptable_aliases>Acceptable aliases</acceptable_aliases>
-<acceptable_aliases_input>Give the pattern</acceptable_aliases_input>
-<acceptable_aliases_text>Alias names (regexps) which qualify as explicit to or cc destination names for this list.[br]
-Alternate addresses that are acceptable when `require_explicit_destination' is enabled. This option takes a list of regular expressions, one per line,
-which is matched against every recipient address in the message.[br]
-The matching is performed with Python's re.match() function, meaning they are anchored to the start of the string.[br]
-For backwards compatibility with Mailman 1.1, if the regexp does not contain an `@', then the pattern is matched against just the local part of the recipient address.[br]
-If that match fails, or if the pattern does contain an `@', then the pattern is matched against the entire recipient address.[br]
-Matching against the local part is deprecated; [br]in a future release, the pattern will always be matched against the entire recipient address</acceptable_aliases_text>
-<accept_these_nonmembers>Accept Non members</accept_these_nonmembers>
-<accept_these_nonmembers_text>List of non-member addresses whose postings should be automatically accepted.[br]
-Postings from any of these non-members will be automatically accepted with no further moderation applied.[br]
-Add member addresses one per line; start the line with a ^ character to designate a regular expression match.</accept_these_nonmembers_text>
-<acknowledge>Acknowledge the member's posting</acknowledge>
-<add_moderator>Add a new email</add_moderator>
-<add_moderator_input>provide the email address of the user</add_moderator_input>
-<administrators>administrators</administrators>
-<administrators_intro>list administrators are the people who have ultimate control over all parameters of this mailing list.[br]
-They are able to change any list configuration variable available through these administration web pages.</administrators_intro>
+<accept>Aceitar</accept>
+<acceptable_aliases>Alias aceit&#225;veis</acceptable_aliases>
+<acceptable_aliases_input>Indique o padr&#227;o</acceptable_aliases_input>
+<acceptable_aliases_text>Nomes de alias (regexps) que se qualificam como nomes de destino to ou cc expl&#237;citos para esta lista.[br]
+Endere&#231;os alternativos aceit&#225;veis quando `require_explicit_destination' est&#225; ativado. Esta op&#231;&#227;o recebe uma lista de express&#245;es regulares, uma por linha,
+que &#233; comparada com cada endere&#231;o de destinat&#225;rio na mensagem.[br]
+A compara&#231;&#227;o &#233; feita com a fun&#231;&#227;o re.match() do Python, o que significa que est&#227;o ancoradas ao in&#237;cio da string.[br]
+Para compatibilidade com o Mailman 1.1, se a regexp n&#227;o contiver um `@', ent&#227;o o padr&#227;o &#233; comparado apenas com a parte local do endere&#231;o do destinat&#225;rio.[br]
+Se essa compara&#231;&#227;o falhar, ou se o padr&#227;o contiver um `@', ent&#227;o o padr&#227;o &#233; comparado com o endere&#231;o completo do destinat&#225;rio.[br]
+A compara&#231;&#227;o com a parte local est&#225; obsoleta; [br]numa vers&#227;o futura, o padr&#227;o ser&#225; sempre comparado com o endere&#231;o completo do destinat&#225;rio</acceptable_aliases_text>
+<accept_these_nonmembers>Aceitar n&#227;o membros</accept_these_nonmembers>
+<accept_these_nonmembers_text>Lista de endere&#231;os de n&#227;o membros cujas publica&#231;&#245;es devem ser automaticamente aceitas.[br]
+As publica&#231;&#245;es de qualquer um destes n&#227;o membros ser&#227;o automaticamente aceitas sem mais modera&#231;&#227;o aplicada.[br]
+Adicione os endere&#231;os dos membros um por linha; comece a linha com um caractere ^ para designar uma correspond&#234;ncia de express&#227;o regular.</accept_these_nonmembers_text>
+<acknowledge>Confirmar o recebimento da publica&#231;&#227;o do membro</acknowledge>
+<add_moderator>Adicionar um novo e-mail</add_moderator>
+<add_moderator_input>indique o endere&#231;o de e-mail do usu&#225;rio</add_moderator_input>
+<administrators>administradores</administrators>
+<administrators_intro>Os administradores da lista s&#227;o as pessoas que t&#234;m o controle absoluto sobre todos os par&#226;metros desta lista de distribui&#231;&#227;o.[br]
+Podem alterar qualquer vari&#225;vel de configura&#231;&#227;o da lista dispon&#237;vel atrav&#233;s destas p&#225;ginas web de administra&#231;&#227;o.</administrators_intro>
 <administrivia>administrivia</administrivia>
-<administrivia_text>Administrivia tests will check postings to see whether it's really[br]
-meant as an administrative request (like subscribe, unsubscribe, etc),[br]
-and will add it to the the administrative requests queue, notifying[br]
-the administrator of the new request, in the process.</administrivia_text>
-<admin_immed_notify>Requests daily reminders</admin_immed_notify>
-<admin_immed_notify_text>List moderators (and list administrators) are sent daily reminders of[br]
-requests pending approval, like subscriptions to a moderated list, or[br]
-postings that are being held for one reason or another.  Setting this[br]
-option causes notices to be sent immediately on the arrival of new[br]
-requests as well.</admin_immed_notify_text>
-<admin_notify_mchanges>subscribes and unsubscribes</admin_notify_mchanges>
-<admin_notify_mchanges_text>Should administrator get[br] notices of subscribes and unsubscribes?</admin_notify_mchanges_text>
-<advertised>advertised</advertised>
-<advertised_text>Advertise this list when people ask what lists are on this machine?</advertised_text>
-<affectedou>Affected organization</affectedou>
-<always>Always</always>
-<anonymous_list>Hide the sender</anonymous_list>
-<anonymous_list_text>Hide the sender of a message,[br] replacing it with the list address (Removes From, Sender and Reply-To fields)</anonymous_list_text>
-<anyone>Anyone</anyone>
-<archive>Enable archiving feature</archive>
-<archive_private>Private Archives</archive_private>
-<archive_private_text>Is archive file source for public or private archival?</archive_private_text>
-<archive_text>Enable, archive all messages for this mailling list</archive_text>
-<archive_volume_frequency>How often should a new archive volume be started?</archive_volume_frequency>
-<archiving_options>Archiving Options</archiving_options>
-<archiving_options_text>List traffic archival policies.</archiving_options_text>
-<as_needed>As needed</as_needed>
-<attachments>Attachments</attachments>
-<autoresponder>Auto-responder</autoresponder>
-<autoresponder_text>Auto-responder characteristics.</autoresponder_text>
-<autorespond_admin>Enable auto-response admin</autorespond_admin>
-<autorespond_admin_text>Should Mailman send an auto-response to emails sent to the -owner address?</autorespond_admin_text>
-<autorespond_postings>Enable auto-respond</autorespond_postings>
-<autorespond_postings_text>Should Mailman send an auto-response to mailing list posters?</autorespond_postings_text>
-<autorespond_requests>Enable Auto-responses to the -request address</autorespond_requests>
-<autorespond_requests_text>Should Mailman send an auto-response to emails sent to the -request address?[br]
-If you choose yes, decide whether you want Mailman to discard the original email, or forward it on to the system as a normal mail command.</autorespond_requests_text>
-<autoresponse_admin_text>Auto-response text to send to -owner emails.</autoresponse_admin_text>
+<administrivia_text>Os testes administrivia verificam as publica&#231;&#245;es para ver se s&#227;o realmente[br]
+destinadas como um pedido administrativo (como subscribe, unsubscribe, etc.),[br]
+e adicionam-no &#224; fila de pedidos administrativos, notificando[br]
+o administrador do novo pedido no processo.</administrivia_text>
+<admin_immed_notify>Lembretes di&#225;rios de pedidos</admin_immed_notify>
+<admin_immed_notify_text>Aos moderadores da lista (e aos administradores da lista) s&#227;o enviados lembretes di&#225;rios de[br]
+pedidos pendentes de aprova&#231;&#227;o, como inscri&#231;&#245;es numa lista moderada ou[br]
+publica&#231;&#245;es que est&#227;o retidas por uma raz&#227;o ou outra. Ativar esta[br]
+op&#231;&#227;o faz com que sejam enviados avisos imediatamente &#224; chegada de novos[br]
+pedidos tamb&#233;m.</admin_immed_notify_text>
+<admin_notify_mchanges>inscri&#231;&#245;es e cancelamentos</admin_notify_mchanges>
+<admin_notify_mchanges_text>O administrador deve receber[br] avisos de inscri&#231;&#245;es e cancelamentos?</admin_notify_mchanges_text>
+<advertised>anunciada</advertised>
+<advertised_text>Anunciar esta lista quando as pessoas perguntam que listas existem nesta m&#225;quina?</advertised_text>
+<affectedou>Organiza&#231;&#227;o afetada</affectedou>
+<always>Sempre</always>
+<anonymous_list>Ocultar o remetente</anonymous_list>
+<anonymous_list_text>Ocultar o remetente de uma mensagem,[br] substituindo-o pelo endere&#231;o da lista (remove os campos From, Sender e Reply-To)</anonymous_list_text>
+<anyone>Qualquer pessoa</anyone>
+<archive>Ativar o recurso de arquivo</archive>
+<archive_private>Arquivos privados</archive_private>
+<archive_private_text>A fonte do arquivo de arquivo &#233; para arquivo p&#250;blico ou privado?</archive_private_text>
+<archive_text>Ativar, arquivar todas as mensagens desta lista de distribui&#231;&#227;o</archive_text>
+<archive_volume_frequency>Com que frequ&#234;ncia deve ser iniciado um novo volume de arquivo?</archive_volume_frequency>
+<archiving_options>Op&#231;&#245;es de arquivo</archiving_options>
+<archiving_options_text>Pol&#237;ticas de arquivo do tr&#225;fego da lista.</archiving_options_text>
+<as_needed>Conforme necess&#225;rio</as_needed>
+<attachments>Anexos</attachments>
+<autoresponder>Auto-respondedor</autoresponder>
+<autoresponder_text>Caracter&#237;sticas do auto-respondedor.</autoresponder_text>
+<autorespond_admin>Ativar resposta autom&#225;tica admin</autorespond_admin>
+<autorespond_admin_text>O Mailman deve enviar uma resposta autom&#225;tica aos e-mails enviados para o endere&#231;o -owner?</autorespond_admin_text>
+<autorespond_postings>Ativar resposta autom&#225;tica</autorespond_postings>
+<autorespond_postings_text>O Mailman deve enviar uma resposta autom&#225;tica aos autores de publica&#231;&#245;es na lista de distribui&#231;&#227;o?</autorespond_postings_text>
+<autorespond_requests>Ativar respostas autom&#225;ticas para o endere&#231;o -request</autorespond_requests>
+<autorespond_requests_text>O Mailman deve enviar uma resposta autom&#225;tica aos e-mails enviados para o endere&#231;o -request?[br]
+Se escolher sim, decida se quer que o Mailman descarte o e-mail original ou o encaminhe para o sistema como um comando de correio normal.</autorespond_requests_text>
+<autoresponse_admin_text>Texto de resposta autom&#225;tica a enviar para os e-mails -owner.</autoresponse_admin_text>
 <autoresponse_graceperiod>Per%C3%ADodo de tolerância</autoresponse_graceperiod>
-<autoresponse_graceperiod_text>Number of days between auto-responses to either the mailing list or -request/-owner address from the same poster.[br]
-Set to zero (or negative) for no grace period (i.e. auto-respond to every message).</autoresponse_graceperiod_text>
-<autoresponse_postings_text>Auto-response text to send to mailing list posters</autoresponse_postings_text>
-<autoresponse_request_text>Auto-response text to send to -request emails.</autoresponse_request_text>
-<available_languages>available languages</available_languages>
-<available_languages_text>These are all the natural languages supported by this list. Note that the default language must be included.</available_languages_text>
-<banlist>Ban list</banlist>
-<banlist_text>
-List of addresses which are banned from membership in this mailing list.[br]
-Addresses in this list are banned outright from subscribing to this mailing list,[br]
-with no further moderation required.[br]
-Add addresses one per line; start the line with a ^ character to designate a regular expression match</banlist_text>
-<bounce_detection_sensitivity>Bounce detection sensitivity</bounce_detection_sensitivity>
-<bounce_info_stale_after>Max day discard bounce</bounce_info_stale_after>
-<bounce_info_stale_after_text>The number of days after which a member's bounce information is discarded, if no new bounces have been received in the interim.[br]
-This value must be an integer.
-</bounce_info_stale_after_text>
-<bounce_matching_headers>Hold posts rules</bounce_matching_headers>
-<bounce_matching_headers_text>
-Hold posts with header value matching a specified regexp.[br]
-Use this option to prohibit posts according to specific header values.[br]
-The target value is a regular-expression for matching against the specified header.[br]
-The match is done disregarding letter case. Lines beginning with '#' are ignored as comments.[br]
-For example:[br]
+<autoresponse_graceperiod_text>N&#250;mero de dias entre respostas autom&#225;ticas para a lista de distribui&#231;&#227;o ou para o endere&#231;o -request/-owner do mesmo autor.[br]
+Defina zero (ou negativo) para n&#227;o ter per&#237;odo de car&#234;ncia (ou seja, responder automaticamente a cada mensagem).</autoresponse_graceperiod_text>
+<autoresponse_postings_text>Texto de resposta autom&#225;tica a enviar para os autores de publica&#231;&#245;es na lista de distribui&#231;&#227;o</autoresponse_postings_text>
+<autoresponse_request_text>Texto de resposta autom&#225;tica a enviar para os e-mails -request.</autoresponse_request_text>
+<available_languages>l&#237;nguas dispon&#237;veis</available_languages>
+<available_languages_text>Estas s&#227;o todas as l&#237;nguas naturais suportadas por esta lista. Note que a l&#237;ngua padr&#227;o deve ser inclu&#237;da.</available_languages_text>
+<banlist>Lista de banimento</banlist>
+<banlist_text>Lista de endere&#231;os que est&#227;o banidos da inscri&#231;&#227;o nesta lista de distribui&#231;&#227;o.[br]
+Os endere&#231;os nesta lista est&#227;o totalmente banidos de se inscrever nesta lista de distribui&#231;&#227;o,[br]
+sem necessidade de mais modera&#231;&#227;o.[br]
+Adicione os endere&#231;os um por linha; comece a linha com um caractere ^ para designar uma correspond&#234;ncia de express&#227;o regular</banlist_text>
+<bounce_detection_sensitivity>Sensibilidade de detec&#231;&#227;o de bounces</bounce_detection_sensitivity>
+<bounce_info_stale_after>Dias m&#225;x para descartar bounce</bounce_info_stale_after>
+<bounce_info_stale_after_text>O n&#250;mero de dias ap&#243;s os quais as informa&#231;&#245;es de bounce de um membro s&#227;o descartadas, se nenhum novo bounce tiver sido recebido entretanto.[br]
+Este valor deve ser um inteiro.</bounce_info_stale_after_text>
+<bounce_matching_headers>Regras de reten&#231;&#227;o de publica&#231;&#245;es</bounce_matching_headers>
+<bounce_matching_headers_text>Reter as publica&#231;&#245;es cujo valor de cabe&#231;alho corresponde a uma express&#227;o regular especificada.[br]
+Use esta op&#231;&#227;o para proibir publica&#231;&#245;es de acordo com valores de cabe&#231;alho espec&#237;ficos.[br]
+O valor alvo &#233; uma express&#227;o regular para comparar com o cabe&#231;alho especificado.[br]
+A compara&#231;&#227;o &#233; feita sem distin&#231;&#227;o entre mai&#250;sculas e min&#250;sculas. As linhas que come&#231;am com '#' s&#227;o ignoradas como coment&#225;rios.[br]
+Por exemplo:[br]
 to: .*@public.com [br]
-says to hold all postings with a To: mail header containing '@public.com' anywhere among the addresses.[br]
-Note that leading whitespace is trimmed from the regexp.[br]
-This can be circumvented in a number of ways, e.g. by escaping or bracketing it.
-</bounce_matching_headers_text>
-<bounce_notify_owner_on_disable>Notify when bounces cause a member's subscription to be disabled</bounce_notify_owner_on_disable>
-<bounce_notify_owner_on_disable_text>Should Mailman notify you, the list owner, when bounces cause a member's subscription to be disabled?[br]
-By setting this value to No, you turn off notification messages that are normally sent to the list owners when a member's delivery is disabled due to excessive bounces.
-[br]An attempt to notify the member will always be made.</bounce_notify_owner_on_disable_text>
-<bounce_notify_owner_on_removal>Notify when bounces cause a member to be unsubscribed</bounce_notify_owner_on_removal>
-<bounce_notify_owner_on_removal_text>Should Mailman notify you, the list owner, when bounces cause a member to be unsubscribed?[br]
-By setting this value to No, you turn off notification messages that are normally sent to the list owners when a member is unsubscribed due to excessive bounces.[br]
-An attempt to notify the member will always be made</bounce_notify_owner_on_removal_text>
-<bounce_processing>Enable bounce processing</bounce_processing>
-<bounce_processing_sec>Bounce processing</bounce_processing_sec>
-<bounce_processing_sec_text>These policies control the automatic bounce processing system in Mailman. Here's an overview of how it works.[br]
-When a bounce is received, Mailman tries to extract two pieces of information from the message: the address of the member the message was intended for, and the severity of
-the problem causing the bounce. The severity can be either hard or soft meaning either a fatal error occurred, or a transient error occurred.[br]
-When in doubt, a hard severity is used.
-If no member address can be extracted from the bounce, then the bounce is usually discarded.[br]
-Otherwise, each member is assigned a bounce score and every time we encounter a bounce from this member we increment the score.[br]
-Hard bounces increment by 1 while soft bounces increment by 0.5.[br]
-We only increment the bounce score once per day, so even if we receive ten hard bounces from a member per day, their score will increase by only 1 for that day.[br]
-When a member's bounce score is greater than the bounce score threshold, the subscription is disabled.[br]
-Once disabled, the member will not receive any postings from the list until their membership is explicitly re-enabled (either by the list administrator or the user).
-[br]However, they will receive occasional reminders that their membership has been disabled, and these reminders will include information about how to re-enable their membership.[br]
-You can control both the number of reminders the member will receive and the frequency with which these reminders are sent.[br]
-There is one other important configuration variable;[br] after a certain period of time -- during which no bounces from the member are received -- the bounce information is considered stale and discarded.
-[br]Thus by adjusting this value, and the score threshold, you can control how quickly bouncing members are disabled.
-[br]You should tune both of these to the frequency and traffic volume of your list</bounce_processing_sec_text>
-<bounce_processing_text>Should Mailman perform automatic bounce processing?[br]
-By setting this value to No, you disable all automatic bounce processing for this list, however bounce messages will still be discarded so that the list administrator isn't inundated with them.</bounce_processing_text>
-<bounce_score_threshold>Maximum member bounce score</bounce_score_threshold>
-<bounce_score_threshold_text>The maximum member bounce score before the member's subscription is disabled.[br]
-This value can be a floating point number.[br]
-Each subscriber is assigned a bounce score, as a floating point number.[br]
-Whenever Mailman receives a bounce from a list member, that member's score is incremented.[br]
-Hard bounces (fatal errors) increase the score by 1, while soft bounces (temporary errors) increase the score by 0.5.[br]
-Only one bounce per day counts against a member's score, so even if 10 bounces are received for a member on the same day, their score will increase by just 1.[br]
-This variable describes the upper limit for a member's bounce score, above which they are automatically disabled, but not removed from the mailing list.</bounce_score_threshold_text>
-<bounce_unrecognized_goes_to_list_owner>Bounce messages that failed to be detected</bounce_unrecognized_goes_to_list_owner>
-<bounce_unrecognized_goes_to_list_owner_text>Should Mailman send you, the list owner, any bounce messages that failed to be detected by the bounce processor?[br]
-Yes  is recommended.[br]
-While Mailman's bounce detector is fairly robust, it's impossible to detect every bounce format in the world.[br]
-You should keep this variable set to Yes for two reasons: [br]
-1) If this really is a permanent bounce from one of your members, you should probably manually remove them from your list, and
-[br]2) you might want to send the message on to the Mailman developers so that this new format can be added to its known set.[br]
-If you really can't be bothered, then set this variable to No and all non-detected bounces will be discarded without further processing.[br]
-Note: This setting will also affect all messages sent to your list's -admin address.[br]
-This address is deprecated and should never be used, but some people may still send mail to this address.[br]
-If this happens, and this variable is set to No those messages too will get discarded.[br]
-You may want to set up an autoresponse message for email to the -owner and -admin address.</bounce_unrecognized_goes_to_list_owner_text>
-<bounce_you_are_disabled_warnings>How many Your Membership Is Disabled warnings a disabled member should get before their address is removed from the mailing list</bounce_you_are_disabled_warnings>
-<bounce_you_are_disabled_warnings_interval>The number of days between sending the Your Membership Is Disabled warnings</bounce_you_are_disabled_warnings_interval>
-<bounce_you_are_disabled_warnings_interval_text>The number of days between sending the Your Membership Is Disabled warnings. This value must be an integer.</bounce_you_are_disabled_warnings_interval_text>
-<bounce_you_are_disabled_warnings_text>How many Your Membership Is Disabled warnings a disabled member should get before their address is removed from the mailing list.[br]
-Set to 0 to immediately remove an address from the list once their bounce score exceeds the threshold. This value must be an integer.</bounce_you_are_disabled_warnings_text>
-<collapse_alternatives>collapse multipart/alternative</collapse_alternatives>
-<collapse_alternatives_text>Should Mailman collapse multipart/alternative to its first part content?</collapse_alternatives_text>
-<conceal>Conceal the member's address</conceal>
+indica reter todas as publica&#231;&#245;es cujo cabe&#231;alho de correio To: contenha '@public.com' em qualquer parte entre os endere&#231;os.[br]
+Note que os espa&#231;os iniciais s&#227;o removidos da express&#227;o regular.[br]
+Isto pode ser contornado de v&#225;rias formas, p. ex. escapando-o ou colocando-o entre par&#234;nteses.</bounce_matching_headers_text>
+<bounce_notify_owner_on_disable>Notificar quando os bounces fazem com que a inscri&#231;&#227;o de um membro seja desativada</bounce_notify_owner_on_disable>
+<bounce_notify_owner_on_disable_text>O Mailman deve notific&#225;-lo a voc&#234;, o propriet&#225;rio da lista, quando os bounces fazem com que a inscri&#231;&#227;o de um membro seja desativada?[br]
+Ao definir este valor como N&#227;o, voc&#234; desativa as mensagens de notifica&#231;&#227;o normalmente enviadas aos propriet&#225;rios da lista quando a entrega a um membro &#233; desativada devido a bounces excessivos.
+[br]Ser&#225; sempre feita uma tentativa de notificar o membro.</bounce_notify_owner_on_disable_text>
+<bounce_notify_owner_on_removal>Notificar quando os bounces fazem com que um membro seja cancelado</bounce_notify_owner_on_removal>
+<bounce_notify_owner_on_removal_text>O Mailman deve notific&#225;-lo a voc&#234;, o propriet&#225;rio da lista, quando os bounces fazem com que um membro seja cancelado?[br]
+Ao definir este valor como N&#227;o, voc&#234; desativa as mensagens de notifica&#231;&#227;o normalmente enviadas aos propriet&#225;rios da lista quando um membro &#233; cancelado devido a bounces excessivos.[br]
+Ser&#225; sempre feita uma tentativa de notificar o membro</bounce_notify_owner_on_removal_text>
+<bounce_processing>Ativar o processamento de bounces</bounce_processing>
+<bounce_processing_sec>Processamento de bounces</bounce_processing_sec>
+<bounce_processing_sec_text>Estas pol&#237;ticas controlam o sistema de processamento autom&#225;tico de bounces no Mailman. Aqui est&#225; uma vis&#227;o geral de como funciona.[br]
+Quando um bounce &#233; recebido, o Mailman tenta extrair duas informa&#231;&#245;es da mensagem: o endere&#231;o do membro a quem a mensagem se destinava e a gravidade do problema que causa o bounce. A gravidade pode ser hard ou soft, significando que ocorreu um erro fatal ou um erro transit&#243;rio.[br]
+Em caso de d&#250;vida, &#233; usada uma gravidade hard.
+Se nenhum endere&#231;o de membro puder ser extra&#237;do do bounce, ent&#227;o o bounce &#233; normalmente descartado.[br]
+Caso contr&#225;rio, a cada membro &#233; atribu&#237;da uma pontua&#231;&#227;o de bounce e sempre que encontramos um bounce deste membro incrementamos a pontua&#231;&#227;o.[br]
+Os bounces hard incrementam 1 enquanto os bounces soft incrementam 0,5.[br]
+S&#243; incrementamos a pontua&#231;&#227;o de bounce uma vez por dia, por isso mesmo que recebamos dez bounces hard de um membro por dia, a sua pontua&#231;&#227;o s&#243; aumentar&#225; 1 nesse dia.[br]
+Quando a pontua&#231;&#227;o de bounce de um membro &#233; maior que o limiar da pontua&#231;&#227;o de bounce, a inscri&#231;&#227;o &#233; desativada.[br]
+Uma vez desativado, o membro n&#227;o receber&#225; quaisquer publica&#231;&#245;es da lista at&#233; que a sua inscri&#231;&#227;o seja explicitamente reativada (pelo administrador da lista ou pelo usu&#225;rio).
+[br]No entanto, receber&#225; lembretes ocasionais de que a sua inscri&#231;&#227;o foi desativada, e estes lembretes incluir&#227;o informa&#231;&#245;es sobre como reativar a sua inscri&#231;&#227;o.[br]
+Voc&#234; pode controlar tanto o n&#250;mero de lembretes que o membro receber&#225; como a frequ&#234;ncia com que estes lembretes s&#227;o enviados.[br]
+H&#225; uma outra vari&#225;vel de configura&#231;&#227;o importante;[br] ap&#243;s um certo per&#237;odo de tempo &#8212; durante o qual n&#227;o s&#227;o recebidos bounces do membro &#8212; as informa&#231;&#245;es de bounce s&#227;o consideradas obsoletas e descartadas.
+[br]Assim, ajustando este valor e o limiar de pontua&#231;&#227;o, voc&#234; pode controlar a rapidez com que os membros em bounce s&#227;o desativados.
+[br]Deve ajustar ambos &#224; frequ&#234;ncia e ao volume de tr&#225;fego da sua lista</bounce_processing_sec_text>
+<bounce_processing_text>O Mailman deve realizar o processamento autom&#225;tico de bounces?[br]
+Ao definir este valor como N&#227;o, voc&#234; desativa todo o processamento autom&#225;tico de bounces para esta lista; no entanto, as mensagens de bounce ser&#227;o na mesma descartadas para que o administrador da lista n&#227;o seja inundado com elas.</bounce_processing_text>
+<bounce_score_threshold>Pontua&#231;&#227;o m&#225;xima de bounce do membro</bounce_score_threshold>
+<bounce_score_threshold_text>A pontua&#231;&#227;o m&#225;xima de bounce de um membro antes de a sua inscri&#231;&#227;o ser desativada.[br]
+Este valor pode ser um n&#250;mero de ponto flutuante.[br]
+A cada assinante &#233; atribu&#237;da uma pontua&#231;&#227;o de bounce, como n&#250;mero de ponto flutuante.[br]
+Sempre que o Mailman recebe um bounce de um membro da lista, a pontua&#231;&#227;o desse membro &#233; incrementada.[br]
+Os bounces hard (erros fatais) aumentam a pontua&#231;&#227;o em 1, enquanto os bounces soft (erros tempor&#225;rios) aumentam-na em 0,5.[br]
+Apenas um bounce por dia conta para a pontua&#231;&#227;o de um membro, por isso mesmo que sejam recebidos 10 bounces para um membro no mesmo dia, a sua pontua&#231;&#227;o s&#243; aumentar&#225; em 1.[br]
+Esta vari&#225;vel descreve o limite superior da pontua&#231;&#227;o de bounce de um membro, acima do qual &#233; automaticamente desativado, mas n&#227;o removido da lista de distribui&#231;&#227;o.</bounce_score_threshold_text>
+<bounce_unrecognized_goes_to_list_owner>Mensagens de bounce n&#227;o detectadas</bounce_unrecognized_goes_to_list_owner>
+<bounce_unrecognized_goes_to_list_owner_text>O Mailman deve enviar-lhe a voc&#234;, o propriet&#225;rio da lista, quaisquer mensagens de bounce que o processador de bounce n&#227;o tenha conseguido detectar?[br]
+Sim &#233; recomendado.[br]
+Embora o detector de bounce do Mailman seja bastante robusto, &#233; imposs&#237;vel detectar todos os formatos de bounce do mundo.[br]
+Voc&#234; deve manter esta vari&#225;vel em Sim por duas raz&#245;es: [br]
+1) Se isto for realmente um bounce permanente de um dos seus membros, provavelmente deve remov&#234;-lo manualmente da sua lista, e
+[br]2) voc&#234; pode querer encaminhar a mensagem para os desenvolvedores do Mailman para que este novo formato possa ser adicionado ao seu conjunto conhecido.[br]
+Se realmente n&#227;o se quiser incomodar, defina esta vari&#225;vel como N&#227;o e todos os bounces n&#227;o detectados ser&#227;o descartados sem mais processamento.[br]
+Nota: esta configura&#231;&#227;o tamb&#233;m afetar&#225; todas as mensagens enviadas para o endere&#231;o -admin da sua lista.[br]
+Este endere&#231;o est&#225; obsoleto e nunca deve ser usado, mas algumas pessoas podem ainda enviar correio para este endere&#231;o.[br]
+Se isto acontecer e esta vari&#225;vel estiver em N&#227;o, essas mensagens tamb&#233;m ser&#227;o descartadas.[br]
+Voc&#234; pode querer configurar uma mensagem de resposta autom&#225;tica para o e-mail para os endere&#231;os -owner e -admin.</bounce_unrecognized_goes_to_list_owner_text>
+<bounce_you_are_disabled_warnings>Quantos avisos &quot;A sua inscri&#231;&#227;o est&#225; desativada&quot; um membro desativado deve receber</bounce_you_are_disabled_warnings>
+<bounce_you_are_disabled_warnings_interval>O n&#250;mero de dias entre o envio dos avisos &quot;A sua inscri&#231;&#227;o est&#225; desativada&quot;</bounce_you_are_disabled_warnings_interval>
+<bounce_you_are_disabled_warnings_interval_text>O n&#250;mero de dias entre o envio dos avisos &quot;A sua inscri&#231;&#227;o est&#225; desativada&quot;. Este valor deve ser um inteiro.</bounce_you_are_disabled_warnings_interval_text>
+<bounce_you_are_disabled_warnings_text>Quantos avisos &quot;A sua inscri&#231;&#227;o est&#225; desativada&quot; um membro desativado deve receber antes de o seu endere&#231;o ser removido da lista de distribui&#231;&#227;o.[br]
+Defina 0 para remover imediatamente um endere&#231;o da lista assim que a sua pontua&#231;&#227;o de bounce exceder o limiar. Este valor deve ser um inteiro.</bounce_you_are_disabled_warnings_text>
+<collapse_alternatives>reduzir multipart/alternative</collapse_alternatives>
+<collapse_alternatives_text>O Mailman deve reduzir multipart/alternative ao conte&#250;do da sua primeira parte?</collapse_alternatives_text>
+<conceal>Ocultar o endere&#231;o do membro</conceal>
 <confirm>Confirme</confirm>
-<confirm_and_approve>Confirm and approve</confirm_and_approve>
-<contentfiltering>Content filtering</contentfiltering>
-<contentfiltering_text>
-Policies concerning the content of list traffic.[br]
-Content filtering works like this: when a message is received by the list and you have enabled content filtering, the individual attachments are first compared to the filter types.
-[br]If the attachment type matches an entry in the filter types, it is discarded.
-[br]Then, if there are pass types defined, any attachment type that does not match a pass type is also discarded.
-[br]If there are no pass types defined, this check is skipped.
-[br]After this initial filtering, any multipart attachments that are empty are removed.
-[br]If the outer message is left empty after this filtering, then the whole message is discarded.
-[br]Then, each multipart/alternative section will be replaced by just the first alternative that is non-empty after filtering if collapse_alternatives is enabled.
-[br]Finally, any text/html parts that are left in the message may be converted to text/plain if convert_html_to_plaintext is enabled and the site is configured to allow these conversions.
-</contentfiltering_text>
-<convert_html_to_plaintext>convert text/html parts to html</convert_html_to_plaintext>
-<convert_html_to_plaintext_text>Should Mailman convert text/html parts to plain text?[br] This conversion happens after MIME attachments have been stripped.</convert_html_to_plaintext_text>
-<copypost>Do not send a copy of a member's own post</copypost>
-<create_address_from>Create robots from</create_address_from>
-<default_member_moderation>Default member moderation</default_member_moderation>
-<default_member_moderation_text>
-By default, should new list member postings be moderated?[br]
-Each list member has a moderation flag which says whether messages from the list member can be posted directly to the list,
-or must first be approved by the list moderator.[br]
-When the moderation flag is turned on, list member postings must be approved first.[br]
-You, the list administrator can decide whether a specific individual's postings will be moderated or not.[br]
-When a new member is subscribed, their initial moderation flag takes its value from this option.[br]
-Turn this option off to accept member postings by default. Turn this option on to, by default, moderate member postings first.[br]
-You can always manually set an individual member's moderation bit by using the membership management screens
-</default_member_moderation_text>
-<defer>Defer</defer>
-<deliver>Digest Delivery options</deliver>
+<confirm_and_approve>Confirmar e aprovar</confirm_and_approve>
+<contentfiltering>Filtragem de conte&#250;do</contentfiltering>
+<contentfiltering_text>Pol&#237;ticas relativas ao conte&#250;do do tr&#225;fego da lista.[br]
+A filtragem de conte&#250;do funciona assim: quando uma mensagem &#233; recebida pela lista e voc&#234; ativou a filtragem de conte&#250;do, os anexos individuais s&#227;o primeiro comparados com os tipos de filtro.
+[br]Se o tipo de anexo corresponder a uma entrada nos tipos de filtro, &#233; descartado.
+[br]Depois, se houver tipos permitidos definidos, qualquer tipo de anexo que n&#227;o corresponda a um tipo permitido tamb&#233;m &#233; descartado.
+[br]Se n&#227;o houver tipos permitidos definidos, esta verifica&#231;&#227;o &#233; ignorada.
+[br]Ap&#243;s esta filtragem inicial, todos os anexos multipart vazios s&#227;o removidos.
+[br]Se a mensagem externa ficar vazia ap&#243;s esta filtragem, toda a mensagem &#233; descartada.
+[br]Depois, cada se&#231;&#227;o multipart/alternative ser&#225; substitu&#237;da apenas pela primeira alternativa n&#227;o vazia ap&#243;s a filtragem se collapse_alternatives estiver ativado.
+[br]Por fim, todas as partes text/html que restem na mensagem podem ser convertidas em text/plain se convert_html_to_plaintext estiver ativado e o site estiver configurado para permitir estas convers&#245;es.</contentfiltering_text>
+<convert_html_to_plaintext>converter as partes text/html em html</convert_html_to_plaintext>
+<convert_html_to_plaintext_text>O Mailman deve converter as partes text/html em texto simples?[br] Esta convers&#227;o ocorre depois de os anexos MIME terem sido removidos.</convert_html_to_plaintext_text>
+<copypost>N&#227;o enviar uma c&#243;pia da pr&#243;pria publica&#231;&#227;o ao membro</copypost>
+<create_address_from>Criar rob&#244;s a partir de</create_address_from>
+<default_member_moderation>Modera&#231;&#227;o padr&#227;o de membros</default_member_moderation>
+<default_member_moderation_text>Por padr&#227;o, as publica&#231;&#245;es dos novos membros da lista devem ser moderadas?[br]
+Cada membro da lista tem um sinalizador de modera&#231;&#227;o que indica se as mensagens do membro podem ser publicadas diretamente na lista,
+ou t&#234;m primeiro de ser aprovadas pelo moderador da lista.[br]
+Quando o sinalizador de modera&#231;&#227;o est&#225; ativado, as publica&#231;&#245;es dos membros t&#234;m primeiro de ser aprovadas.[br]
+Voc&#234;, o administrador da lista, pode decidir se as publica&#231;&#245;es de um indiv&#237;duo espec&#237;fico ser&#227;o moderadas ou n&#227;o.[br]
+Quando um novo membro se inscreve, o seu sinalizador de modera&#231;&#227;o inicial toma o seu valor desta op&#231;&#227;o.[br]
+Desative esta op&#231;&#227;o para aceitar as publica&#231;&#245;es dos membros por padr&#227;o. Ative esta op&#231;&#227;o para, por padr&#227;o, moderar primeiro as publica&#231;&#245;es dos membros.[br]
+Voc&#234; pode sempre definir manualmente o bit de modera&#231;&#227;o de um membro individual usando as telas de gest&#227;o de membros</default_member_moderation_text>
+<defer>Adiar</defer>
+<deliver>Op&#231;&#245;es de entrega do resumo</deliver>
 <description>Descriç%C3£o</description>
-<description_text>This description is used when the mailing list is listed with other mailing lists,[br]
-or in headers, and so forth.[br]
-It should be as succinct as you can get it, while still identifying what the list is.</description_text>
-<digest>Digest options</digest>
-<digestsoptions_text>Batched-delivery digest characteristics</digestsoptions_text>
-<digest_footer>Footer</digest_footer>
-<digest_footer_text>Footer added to every digest</digest_footer_text>
-<digest_header>Header</digest_header>
-<digest_header_text>Header added to every digest</digest_header_text>
-<digest_is_default>Default digest mode</digest_is_default>
-<digest_is_default_text>Which delivery mode is the default for new users?
-[ul][li]Digest=Enabled[/li][li]Regular=Disabled[/li][/ul]
-</digest_is_default_text>
-<digest_send_periodic>Send periodic</digest_send_periodic>
-<digest_send_periodic_text>Should a digest be dispatched daily when the size threshold isn't reached?</digest_send_periodic_text>
-<digest_size_threshhold>size threshold</digest_size_threshhold>
-<digest_size_threshhold_text>How big in Kb should a digest be before it gets sent out? </digest_size_threshhold_text>
-<digest_volume_frequency>Volume Frequency</digest_volume_frequency>
-<digest_volume_frequency_text>How often should a new digest volume be started? </digest_volume_frequency_text>
+<description_text>Esta descri&#231;&#227;o &#233; usada quando a lista de distribui&#231;&#227;o &#233; listada com outras listas de distribui&#231;&#227;o,[br]
+ou em cabe&#231;alhos, etc.[br]
+Deve ser o mais sucinta poss&#237;vel, identificando ainda o que &#233; a lista.</description_text>
+<digest>Op&#231;&#245;es de resumo</digest>
+<digestsoptions_text>Caracter&#237;sticas do resumo de entrega agrupada</digestsoptions_text>
+<digest_footer>Rodap&#233;</digest_footer>
+<digest_footer_text>Rodap&#233; adicionado a cada resumo</digest_footer_text>
+<digest_header>Cabe&#231;alho</digest_header>
+<digest_header_text>Cabe&#231;alho adicionado a cada resumo</digest_header_text>
+<digest_is_default>Modo de resumo padr&#227;o</digest_is_default>
+<digest_is_default_text>Qual o modo de entrega padr&#227;o para os novos usu&#225;rios?
+[ul][li]Resumo=Ativado[/li][li]Normal=Desativado[/li][/ul]</digest_is_default_text>
+<digest_send_periodic>Enviar periodicamente</digest_send_periodic>
+<digest_send_periodic_text>Deve ser enviado um resumo diariamente quando o limiar de tamanho n&#227;o &#233; atingido?</digest_send_periodic_text>
+<digest_size_threshhold>limiar de tamanho</digest_size_threshhold>
+<digest_size_threshhold_text>Que tamanho em Kb deve ter um resumo antes de ser enviado?</digest_size_threshhold_text>
+<digest_volume_frequency>Frequ&#234;ncia dos volumes</digest_volume_frequency>
+<digest_volume_frequency_text>Com que frequ&#234;ncia deve ser iniciado um novo volume de resumo?</digest_volume_frequency_text>
 <discard>Descartar</discard>
-<discard_these_nonmembers>Discard non-Members</discard_these_nonmembers>
-<discard_these_nonmembers_text>List of non-member addresses whose postings will be automatically discarded.[br]
-Postings from any of these non-members will be automatically discarded.[br]
-That is, the message will be thrown away with no further processing or notification.[br]
-The sender will not receive a notification or a bounce, however the list moderators can optionally receive copies of auto-discarded messages..[br]
-Add member addresses one per line; start the line with a ^ character to designate a regular expression match.</discard_these_nonmembers_text>
-<d_new_volume>New volume</d_new_volume>
-<d_new_volume_text>Should Mailman start a new digest volume?[br]Setting this option instructs Mailman to start a new volume with the next digest sent out.</d_new_volume_text>
-<d_send_digest_now>Send Digest now</d_send_digest_now>
-<d_send_digest_now_text>Should Mailman send the next digest right now, if it is not empty ?</d_send_digest_now_text>
+<discard_these_nonmembers>Descartar n&#227;o membros</discard_these_nonmembers>
+<discard_these_nonmembers_text>Lista de endere&#231;os de n&#227;o membros cujas publica&#231;&#245;es ser&#227;o automaticamente descartadas.[br]
+As publica&#231;&#245;es de qualquer um destes n&#227;o membros ser&#227;o automaticamente descartadas.[br]
+Ou seja, a mensagem ser&#225; jogada fora sem mais processamento ou notifica&#231;&#227;o.[br]
+O remetente n&#227;o receber&#225; uma notifica&#231;&#227;o ou um bounce, no entanto os moderadores da lista podem opcionalmente receber c&#243;pias das mensagens descartadas automaticamente.[br]
+Adicione os endere&#231;os dos membros um por linha; comece a linha com um caractere ^ para designar uma correspond&#234;ncia de express&#227;o regular.</discard_these_nonmembers_text>
+<d_new_volume>Novo volume</d_new_volume>
+<d_new_volume_text>O Mailman deve iniciar um novo volume de resumo?[br]Ativar esta op&#231;&#227;o indica ao Mailman para iniciar um novo volume com o pr&#243;ximo resumo enviado.</d_new_volume_text>
+<d_send_digest_now>Enviar resumo agora</d_send_digest_now>
+<d_send_digest_now_text>O Mailman deve enviar o pr&#243;ximo resumo agora, se n&#227;o estiver vazio?</d_send_digest_now_text>
 <emergency>Emergência</emergency>
-<emergency_text># When this option is enabled, all list traffic is emergency moderated,[br]
-i.e. held for moderation.  Turn this option on when your list is[br]
-experiencing a flamewar and you want a cooling off period.[br]</emergency_text>
-<encode_ascii_prefixes>Encode ASCII prefixes</encode_ascii_prefixes>
-<encode_ascii_prefixes_text>
-If your mailing list's default language uses a non-ASCII character set[br]
-and the prefix contains non-ASCII characters, the prefix will always[br]
-be encoded according to the relevant standards.  However, if your[br]
-prefix contains only ASCII characters, you may want to set this option[br]
-to Never to disable prefix encoding.  This can make the subject[br]
-headers slightly more readable for users with mail readers that don't[br]
-properly handle non-ASCII encodings.[br]
+<emergency_text># Quando esta op&#231;&#227;o est&#225; ativada, todo o tr&#225;fego da lista &#233; moderado de emerg&#234;ncia,[br]
+ou seja, retido para modera&#231;&#227;o. Ative esta op&#231;&#227;o quando a sua lista[br]
+estiver passando por uma flame war e quiser um per&#237;odo de resfriamento.[br]</emergency_text>
+<encode_ascii_prefixes>Codificar prefixos ASCII</encode_ascii_prefixes>
+<encode_ascii_prefixes_text>Se o idioma padr&#227;o da sua lista de distribui&#231;&#227;o usar um conjunto de caracteres n&#227;o ASCII[br]
+e o prefixo contiver caracteres n&#227;o ASCII, o prefixo ser&#225; sempre[br]
+codificado de acordo com as normas pertinentes. No entanto, se o seu[br]
+prefixo contiver apenas caracteres ASCII, voc&#234; pode querer definir esta op&#231;&#227;o[br]
+como Nunca para desativar a codifica&#231;&#227;o do prefixo. Isto pode tornar os[br]
+cabe&#231;alhos de assunto ligeiramente mais leg&#237;veis para usu&#225;rios com leitores de correio que n&#227;o[br]
+lidam corretamente com codifica&#231;&#245;es n&#227;o ASCII.[br]
  [br]
-Note however, that if your mailing list receives both encoded and[br]
-unencoded subject headers, you might want to choose As needed.  Using[br]
-this setting, Mailman will not encode ASCII prefixes when the rest of[br]
-the header contains only ASCII characters, but if the original header[br]
-contains non-ASCII characters, it will encode the prefix.  This avoids[br]
-an ambiguity in the standards which could cause some mail readers to[br]
-display extra, or missing spaces between the prefix and the original[br]
-header.[br]
-</encode_ascii_prefixes_text>
-<exclude>Exclude</exclude>
-<exclude_explain>Remove message attachments that don't have a matching pattern filename </exclude_explain>
-<explicit_address>Explicit address</explicit_address>
-<filter_action>Filter action</filter_action>
-<filter_action_text>Action to take when a message matches the content filtering rules.[br]
+Note, no entanto, que se a sua lista de distribui&#231;&#227;o receber cabe&#231;alhos de assunto tanto codificados como[br]
+n&#227;o codificados, voc&#234; pode querer escolher Conforme necess&#225;rio. Com[br]
+este ajuste, o Mailman n&#227;o codificar&#225; os prefixos ASCII quando o resto do[br]
+cabe&#231;alho contiver apenas caracteres ASCII, mas se o cabe&#231;alho original[br]
+contiver caracteres n&#227;o ASCII, codificar&#225; o prefixo. Isto evita[br]
+uma ambiguidade nas normas que poderia fazer com que alguns leitores de correio[br]
+exibissem espa&#231;os adicionais ou em falta entre o prefixo e o cabe&#231;alho[br]
+original.[br]</encode_ascii_prefixes_text>
+<exclude>Excluir</exclude>
+<exclude_explain>Remover os anexos das mensagens cujo nome de arquivo n&#227;o corresponda a um padr&#227;o</exclude_explain>
+<explicit_address>Endere&#231;o expl&#237;cito</explicit_address>
+<filter_action>A&#231;&#227;o de filtragem</filter_action>
+<filter_action_text>A&#231;&#227;o a tomar quando uma mensagem corresponde &#224;s regras de filtragem de conte&#250;do.[br]
 
-One of these actions is taken when the message matches one of the content filtering rules, meaning, the top-level content type matches one of the filter_mime_types,
-or the top-level content type does not match one of the pass_mime_types, or if after filtering the subparts of the message, the message ends up empty.[br]
-Note this action is not taken if after filtering the message still contains content.
-[br]In that case the message is always forwarded on to the list membership.
-[br]When messages are discarded, a log entry is written containing the Message-ID of the discarded message.
-[br]When messages are rejected or forwarded to the list owner, a reason for the rejection is included in the bounce message to the original author.
-[br]When messages are preserved, they are saved in a special queue directory on disk for the site administrator to view (and possibly rescue) but otherwise discarded.
-[br]This last option is only available if enabled by the site administrator.</filter_action_text>
-<filter_content>Enable filter</filter_content>
-<filter_content_text>Should Mailman filter the content of list traffic according to the settings below?</filter_content_text>
-<filter_duplicate_messages>Filter duplicate messages</filter_duplicate_messages>
-<filter_filename_extensions_add>Remove message attachments that have a matching filename extension eg: exe</filter_filename_extensions_add>
-<filter_filename_extensions_but>Add an Extension filter</filter_filename_extensions_but>
-<filter_mime_types_add>Give the pattern to filter content type
-eg : type/subtype, e.g. image/gif</filter_mime_types_add>
-<filter_mime_types_but>Add a Content type filter</filter_mime_types_but>
-<first_strip_reply_to>Strip reply-to</first_strip_reply_to>
-<first_strip_reply_to_text>Should any existing Reply-To: header[br] found in the original message be stripped?[br]
-If so, this will be done regardless of whether an explict[br] Reply-To: header is added by Mailman or not.</first_strip_reply_to_text>
-<forward_auto_discards>Discards email from non-members</forward_auto_discards>
-<forward_auto_discards_text>Should messages from non-members, which are automatically discarded, be forwarded to the list moderator?</forward_auto_discards_text>
-<forward_to_list_owner>Forward to list -owner</forward_to_list_owner>
-<gateway_to_mail>News to email</gateway_to_mail>
-<gateway_to_mail_text>Should new posts to the newsgroup be sent to the mailing list?</gateway_to_mail_text>
-<gateway_to_news>eMails to news</gateway_to_news>
-<gateway_to_news_text>Should new posts to the mailing list be sent to the newsgroup?</gateway_to_news_text>
-<generallistpersonality>General list personality</generallistpersonality>
-<general_options>General options</general_options>
-<generic_nonmember_action>Generic Non-member action </generic_nonmember_action>
-<generic_nonmember_action_text>Action to take for postings from non-members for which no explicit action is defined.[br]
-When a post from a non-member is received, the message's sender is matched against the list of explicitly accepted,[br]
-held, rejected (bounced), and discarded addresses.[br] If no match is found, then this action is taken</generic_nonmember_action_text>
+Uma destas a&#231;&#245;es &#233; tomada quando a mensagem corresponde a uma das regras de filtragem de conte&#250;do, ou seja, o tipo de conte&#250;do de n&#237;vel superior corresponde a um dos filter_mime_types,
+ou o tipo de conte&#250;do de n&#237;vel superior n&#227;o corresponde a um dos pass_mime_types, ou se ap&#243;s filtrar as subpartes da mensagem, esta acaba vazia.[br]
+Note que esta a&#231;&#227;o n&#227;o &#233; tomada se ap&#243;s a filtragem a mensagem ainda contiver conte&#250;do.
+[br]Nesse caso, a mensagem &#233; sempre encaminhada para os membros da lista.
+[br]Quando as mensagens s&#227;o descartadas, &#233; escrita uma entrada de log contendo o Message-ID da mensagem descartada.
+[br]Quando as mensagens s&#227;o rejeitadas ou encaminhadas para o propriet&#225;rio da lista, &#233; inclu&#237;da uma raz&#227;o para a rejei&#231;&#227;o na mensagem de bounce ao autor original.
+[br]Quando as mensagens s&#227;o preservadas, s&#227;o salvas num diret&#243;rio de fila especial no disco para o administrador do site as ver (e possivelmente recuperar), caso contr&#225;rio s&#227;o descartadas.
+[br]Esta &#250;ltima op&#231;&#227;o s&#243; est&#225; dispon&#237;vel se ativada pelo administrador do site.</filter_action_text>
+<filter_content>Ativar filtro</filter_content>
+<filter_content_text>O Mailman deve filtrar o conte&#250;do do tr&#225;fego da lista de acordo com as configura&#231;&#245;es abaixo?</filter_content_text>
+<filter_duplicate_messages>Filtrar mensagens duplicadas</filter_duplicate_messages>
+<filter_filename_extensions_add>Remover os anexos das mensagens que tenham uma extens&#227;o de nome de arquivo correspondente, p. ex.: exe</filter_filename_extensions_add>
+<filter_filename_extensions_but>Adicionar um filtro de extens&#227;o</filter_filename_extensions_but>
+<filter_mime_types_add>Indique o padr&#227;o para filtrar o tipo de conte&#250;do
+ex.: type/subtype, p. ex. image/gif</filter_mime_types_add>
+<filter_mime_types_but>Adicionar um filtro de tipo de conte&#250;do</filter_mime_types_but>
+<first_strip_reply_to>Remover reply-to</first_strip_reply_to>
+<first_strip_reply_to_text>Deve ser removido qualquer cabe&#231;alho Reply-To: existente[br] encontrado na mensagem original?[br]
+Se sim, isto ser&#225; feito independentemente de o Mailman adicionar ou n&#227;o[br] um cabe&#231;alho Reply-To: expl&#237;cito.</first_strip_reply_to_text>
+<forward_auto_discards>Descarta e-mails de n&#227;o membros</forward_auto_discards>
+<forward_auto_discards_text>As mensagens de n&#227;o membros, que s&#227;o automaticamente descartadas, devem ser encaminhadas para o moderador da lista?</forward_auto_discards_text>
+<forward_to_list_owner>Encaminhar para o propriet&#225;rio da lista</forward_to_list_owner>
+<gateway_to_mail>Not&#237;cias para e-mail</gateway_to_mail>
+<gateway_to_mail_text>As novas publica&#231;&#245;es no grupo de not&#237;cias devem ser enviadas para a lista de distribui&#231;&#227;o?</gateway_to_mail_text>
+<gateway_to_news>E-mails para not&#237;cias</gateway_to_news>
+<gateway_to_news_text>As novas publica&#231;&#245;es na lista de distribui&#231;&#227;o devem ser enviadas para o grupo de not&#237;cias?</gateway_to_news_text>
+<generallistpersonality>Personalidade geral da lista</generallistpersonality>
+<general_options>Op&#231;&#245;es gerais</general_options>
+<generic_nonmember_action>A&#231;&#227;o gen&#233;rica para n&#227;o membros</generic_nonmember_action>
+<generic_nonmember_action_text>A&#231;&#227;o a tomar para as publica&#231;&#245;es de n&#227;o membros para as quais n&#227;o est&#225; definida qualquer a&#231;&#227;o expl&#237;cita.[br]
+Quando uma publica&#231;&#227;o de um n&#227;o membro &#233; recebida, o remetente da mensagem &#233; comparado com a lista de endere&#231;os explicitamente aceitos,[br]
+retidos, rejeitados (devolvidos) e descartados.[br] Se n&#227;o for encontrada qualquer correspond&#234;ncia, esta a&#231;&#227;o &#233; tomada</generic_nonmember_action_text>
 <global_settings>Configuraç%C3µes globais</global_settings>
-<goodbye_msg_text>Text sent to people leaving the list.  If empty, no special text will be added to the unsubscribe message.</goodbye_msg_text>
+<goodbye_msg_text>Texto enviado &#224;s pessoas que deixam a lista. Se vazio, nenhum texto especial ser&#225; adicionado &#224; mensagem de cancelamento de inscri&#231;&#227;o.</goodbye_msg_text>
 <headers>Cabeçalhos</headers>
-<header_filter_rules>Header rules</header_filter_rules>
-<header_filter_rules_text>Filter rules to match against the headers of a message.[br]
-Each header filter rule has two parts, a list of regular expressions, one per line, and an action to take.[br]
-Mailman matches the message's headers against every regular expression in the rule and if any match, the message is rejected, held, or discarded based on the action you specify.[br]
-Use Defer to temporarily disable a rule.[br]
-You can have more than one filter rule for your list.[br]
-In that case, each rule is matched in turn, with processing stopped after the first match.[br]
-Note that headers are collected from all the attachments (except for the mailman administrivia message) and matched against the regular expressions.[br]
-With this feature, you can effectively sort out messages with dangerous file types or file name extensions.
-</header_filter_rules_text>
-<hold_these_nonmembers>Hold Members</hold_these_nonmembers>
-<hold_these_nonmembers_text>List of non-member addresses whose postings will be immediately held for moderation.[br]
-Postings from any of these non-members will be immediately and automatically held for moderation by the list moderators.[br]
-The sender will receive a notification message which will allow them to cancel their held message.[br]
-Add member addresses one per line; start the line with a ^ character to designate a regular expression match</hold_these_nonmembers_text>
-<host_name>Host name</host_name>
-<host_name_text>The "host name" is the preferred name for email to mailman-related addresses on this host,[br]
-and generally should be the mail host's exchanger address, if any.[br]
-This setting can be useful for selecting among alternative names of a host that has multiple addresses.</host_name_text>
-<include>Include</include>
-<include_explain>Remove message attachments that have a matching pattern filename</include_explain>
+<header_filter_rules>Regras de cabe&#231;alho</header_filter_rules>
+<header_filter_rules_text>Regras de filtro para comparar com os cabe&#231;alhos de uma mensagem.[br]
+Cada regra de filtro de cabe&#231;alho tem duas partes: uma lista de express&#245;es regulares, uma por linha, e uma a&#231;&#227;o a tomar.[br]
+O Mailman compara os cabe&#231;alhos da mensagem com cada express&#227;o regular na regra e se alguma corresponder, a mensagem &#233; rejeitada, retida ou descartada com base na a&#231;&#227;o que voc&#234; especificar.[br]
+Use Adiar para desativar temporariamente uma regra.[br]
+Voc&#234; pode ter mais de uma regra de filtro para a sua lista.[br]
+Nesse caso, cada regra &#233; comparada por sua vez, parando o processamento ap&#243;s a primeira correspond&#234;ncia.[br]
+Note que os cabe&#231;alhos s&#227;o coletados de todos os anexos (exceto a mensagem administrativa do mailman) e comparados com as express&#245;es regulares.[br]
+Com este recurso, voc&#234; pode efetivamente separar mensagens com tipos de arquivo ou extens&#245;es de nome de arquivo perigosos.</header_filter_rules_text>
+<hold_these_nonmembers>Reter membros</hold_these_nonmembers>
+<hold_these_nonmembers_text>Lista de endere&#231;os de n&#227;o membros cujas publica&#231;&#245;es ser&#227;o imediatamente retidas para modera&#231;&#227;o.[br]
+As publica&#231;&#245;es de qualquer um destes n&#227;o membros ser&#227;o imediata e automaticamente retidas para modera&#231;&#227;o pelos moderadores da lista.[br]
+O remetente receber&#225; uma mensagem de notifica&#231;&#227;o que lhe permitir&#225; cancelar a sua mensagem retida.[br]
+Adicione os endere&#231;os dos membros um por linha; comece a linha com um caractere ^ para designar uma correspond&#234;ncia de express&#227;o regular</hold_these_nonmembers_text>
+<host_name>Nome de host</host_name>
+<host_name_text>O &quot;nome de host&quot; &#233; o nome preferido para o correio para os endere&#231;os relacionados com o mailman neste host,[br]
+e geralmente deve ser o endere&#231;o do exchanger do host de correio, se existir.[br]
+Esta configura&#231;&#227;o pode ser &#250;til para selecionar entre nomes alternativos de um host que tem v&#225;rios endere&#231;os.</host_name_text>
+<include>Incluir</include>
+<include_explain>Remover os anexos das mensagens cujo nome de arquivo corresponda a um padr&#227;o</include_explain>
 <include_list_post_header>List-Post</include_list_post_header>
-<include_list_post_header_text>The List-Post: header is one of the headers recommended by RFC 2369.[br]
-However for some announce-only mailing lists, only a very select group[br]
-of people are allowed to post to the list; the general membership is[br]
-usually not allowed to post.  For lists of this nature, the List-Post:[br]
-header is misleading. Select No to disable the inclusion of this[br]
-header. (This does not affect the inclusion of the other List-*:[br]
-headers.)</include_list_post_header_text>
-<include_rfc2369_headers>include rfc 2369</include_rfc2369_headers>
-<include_rfc2369_headers_text>
-RFC 2369 defines a set of List-* headers that are normally added to[br]
-every message sent to the list membership. These greatly aid end-users[br]
-who are using standards compliant mail readers.  They should normally[br]
-always be enabled.[br]
+<include_list_post_header_text>O cabe&#231;alho List-Post: &#233; um dos cabe&#231;alhos recomendados pela RFC 2369.[br]
+No entanto, para algumas listas de distribui&#231;&#227;o apenas de an&#250;ncios, apenas um grupo muito seleto[br]
+de pessoas tem permiss&#227;o para publicar na lista; aos membros gerais normalmente n&#227;o &#233;[br]
+permitido publicar. Para listas desta natureza, o cabe&#231;alho List-Post:[br]
+&#233; enganoso. Selecione N&#227;o para desativar a inclus&#227;o deste[br]
+cabe&#231;alho. (Isto n&#227;o afeta a inclus&#227;o dos outros cabe&#231;alhos List-*:.)</include_list_post_header_text>
+<include_rfc2369_headers>incluir rfc 2369</include_rfc2369_headers>
+<include_rfc2369_headers_text>A RFC 2369 define um conjunto de cabe&#231;alhos List-* que normalmente s&#227;o adicionados a[br]
+cada mensagem enviada aos membros da lista. Ajudam muito os usu&#225;rios[br]
+finais que usam leitores de correio conformes com as normas. Normalmente devem[br]
+estar sempre ativados.[br]
 
-However, not all mail readers are standards compliant yet, and if you[br]
-have a large number of members who are using non-compliant mail[br]
-readers, they may be annoyed at these headers.  You should first try[br]
-to educate your members as to why these headers exist, and how to hide[br]
-them in their mail clients.  As a last resort you can disable these[br]
-headers, but this is not recommended (and in fact, your ability to[br]
-disable these headers may eventually go away).
+No entanto, nem todos os leitores de correio s&#227;o ainda conformes com as normas, e se[br]
+voc&#234; tiver um grande n&#250;mero de membros que usam leitores de correio n&#227;o conformes,[br]
+podem ficar incomodados com estes cabe&#231;alhos. Voc&#234; deve primeiro tentar[br]
+educar os seus membros sobre por que estes cabe&#231;alhos existem e como ocult&#225;-los[br]
+nos seus clientes de correio. Como &#250;ltimo recurso voc&#234; pode desativar estes[br]
+cabe&#231;alhos, mas n&#227;o &#233; recomendado (e, de fato, a sua capacidade de[br]
+desativar estes cabe&#231;alhos pode acabar por desaparecer).
 [br]</include_rfc2369_headers_text>
 <info>Info</info>
-<info_text> The text will be treated as html except that newlines will be translated to[br]
-- so you can use links, preformatted text, etc, [br]
-but don't put in carriage returns except where you mean to separate paragraphs.[br]
-And review your changes - bad html (like some unterminated HTML constructs)[br]
-can prevent display of the entire listinfo page.</info_text>
-<language_options>Language options</language_options>
-<limits>limits</limits>
-<linked_newsgroup>Usenet group</linked_newsgroup>
-<linked_newsgroup_text>The name of the Usenet group to gateway to and/or from.</linked_newsgroup_text>
-<list_admin_only>List admin only</list_admin_only>
-<list_members>List members</list_members>
-<MailManAdminPassword>Global administration password</MailManAdminPassword>
-<MailManAdminPassword_text>Password to permit administrative operations</MailManAdminPassword_text>
-<MailManDefaulPublicArchiveUrl>Public Archive URL</MailManDefaulPublicArchiveUrl>
-<MailManDefaulPublicArchiveUrl_text>
-The url template for the public archives.[br]
-This will be used in several places, including the List-Archive: header, links to the archive on the list's listinfo page, and on the list's admin page.[br]
-This should be a string with "%(listname)s" somewhere in it.[b]  Mailman will interpolate the name of the list into this.[br]
-You can also include a "%(hostname)s" in the string, into which Mailman will interpolate the host name (usually "Default url host").</MailManDefaulPublicArchiveUrl_text>
-<mailmandefaultemailhost>Default email host</mailmandefaultemailhost>
-<mailmandefaulthosts>[br] Mailman needs to know about (at least) two fully-qualified domain names (fqdn); [ul]
-[li]1) the hostname used in your urls,[/li]
-[li]2) the hostname used in email addresses for your domain.[/li]
-[/ul]  For example, if people visit your Mailman system
-[br] with "http://www.dom.ain/mailman" then your url fqdn is "www.dom.ain", and
-[br] if people send mail to your system via "yourlist@dom.ain" then your email
-[br] fqdn is "dom.ain".  "Default url host" controls the former, and
-[br] "default email host" controls the latter.  Mailman also needs to know how to
-[br] map from one to the other (this is especially important if you're running
-[br] with virtual domains).  
+<info_text>O texto ser&#225; tratado como HTML, exceto que as quebras de linha ser&#227;o traduzidas para[br]
+- por isso voc&#234; pode usar links, texto pr&#233;-formatado, etc.,[br]
+mas n&#227;o coloque retornos de carro exceto onde pretende separar par&#225;grafos.[br]
+E reveja as suas altera&#231;&#245;es - HTML incorreto (como alguns construtos HTML n&#227;o terminados)[br]
+pode impedir a exibi&#231;&#227;o de toda a p&#225;gina listinfo.</info_text>
+<language_options>Op&#231;&#245;es de idioma</language_options>
+<limits>limites</limits>
+<linked_newsgroup>Grupo Usenet</linked_newsgroup>
+<linked_newsgroup_text>O nome do grupo Usenet para o qual e/ou a partir do qual fazer gateway.</linked_newsgroup_text>
+<list_admin_only>Apenas administrador da lista</list_admin_only>
+<list_members>Membros da lista</list_members>
+<MailManAdminPassword>Senha de administra&#231;&#227;o global</MailManAdminPassword>
+<MailManAdminPassword_text>Senha para permitir opera&#231;&#245;es administrativas</MailManAdminPassword_text>
+<MailManDefaulPublicArchiveUrl>URL de arquivo p&#250;blico</MailManDefaulPublicArchiveUrl>
+<MailManDefaulPublicArchiveUrl_text>O modelo de URL para os arquivos p&#250;blicos.[br]
+Ser&#225; usado em v&#225;rios locais, incluindo o cabe&#231;alho List-Archive:, os links para o arquivo na p&#225;gina listinfo da lista e na p&#225;gina de administra&#231;&#227;o da lista.[br]
+Isto deve ser uma string que contenha &quot;%(listname)s&quot; em algum lugar.[b] O Mailman interpolar&#225; o nome da lista nela.[br]
+Voc&#234; tamb&#233;m pode incluir um &quot;%(hostname)s&quot; na string, no qual o Mailman interpolar&#225; o nome de host (normalmente &quot;Host de URL padr&#227;o&quot;).</MailManDefaulPublicArchiveUrl_text>
+<mailmandefaultemailhost>Host de e-mail padr&#227;o</mailmandefaultemailhost>
+<mailmandefaulthosts>[br] O Mailman precisa de conhecer (pelo menos) dois nomes de dom&#237;nio totalmente qualificados (fqdn); [ul]
+[li]1) o nome de host usado nos seus URLs,[/li]
+[li]2) o nome de host usado nos endere&#231;os de e-mail do seu dom&#237;nio.[/li]
+[/ul] Por exemplo, se as pessoas visitam o seu sistema Mailman
+[br] com &quot;http://www.dom.ain/mailman&quot;, ent&#227;o o seu fqdn de URL &#233; &quot;www.dom.ain&quot;, e
+[br] se as pessoas enviam correio para o seu sistema atrav&#233;s de &quot;yourlist@dom.ain&quot;, ent&#227;o o seu
+[br] fqdn de e-mail &#233; &quot;dom.ain&quot;. &quot;Host de URL padr&#227;o&quot; controla o primeiro, e
+[br] &quot;host de e-mail padr&#227;o&quot; controla o segundo. O Mailman tamb&#233;m precisa de saber como
+[br] mapear de um para o outro (isto &#233; especialmente importante se voc&#234; executar
+[br] com dom&#237;nios virtuais).
 [br]
-[br] If you don't need to change "default email host" and "default url host" in your then you're done; the default mapping is added automatically.</mailmandefaulthosts>
-<MailManDefaultUrlHost>Default url host</MailManDefaultUrlHost>
-<MailManDefaultUrlPattern>Default URL pattern</MailManDefaultUrlPattern>
-<mailman_modify_robot>Modify robot address</mailman_modify_robot>
-<mailman_robots_address>Robots addresses</mailman_robots_address>
-<mail_new_gateways>Mail and News gateways</mail_new_gateways>
-<mail_new_gateways_text>Mail-to-News and News-to-Mail gateway services.</mail_new_gateways_text>
-<max_days_to_hold>max days to hold</max_days_to_hold>
-<max_days_to_hold_text>Discard held messages older than this number of days.[br] Use 0 for no automatic discarding.</max_days_to_hold_text>
-<max_message_size>max message size</max_message_size>
-<max_message_size_text>Maximum length in kilobytes (KB) of a message body.  Use 0 for no limit.</max_message_size_text>
-<max_num_recipients>Max number of recipients</max_num_recipients>
-<max_num_recipients_text>Ceiling on acceptable number of recipients for a posting.[br]
-If a posting has this number, or more, of recipients, it is held for admin approval.[br]
-Use 0 for no ceiling</max_num_recipients_text>
-<member_moderation_action>Member moderation action</member_moderation_action>
-<member_moderation_action_text>Action to take when a moderated member posts to the list.</member_moderation_action_text>
-<member_moderation_notice>moderation notice</member_moderation_notice>
-<member_moderation_notice_text>Text to include in any rejection notice to be sent to moderated members who post to this list</member_moderation_notice_text>
-<mime_is_default_digest>Default mail format</mime_is_default_digest>
-<moderated>Moderated</moderated>
-<moderators>Moderators</moderators>
-<moderators_intro>The list moderators have more limited permissions;[br] they are not able to change any list configuration variable, but they are allowed to tend to pending administration requests, including approving or
-rejecting held subscription requests, and disposing of held postings.[br]
-Of course, the list administrators can also tend to pending requests.</moderators_intro>
-<msg_footer>Footer message</msg_footer>
-<msg_footer_text>Text appended to the bottom of every immediately-delivery message.[br]This text can include Python format strings which are resolved against list attributes.</msg_footer_text>
-<msg_header>Header message</msg_header>
-<msg_header_text>Text prepended to the top of every immediately-delivery message.[br] This text can include Python format strings which are resolved against list attributes.</msg_header_text>
+[br] Se n&#227;o precisar alterar &quot;host de e-mail padr&#227;o&quot; e &quot;host de URL padr&#227;o&quot;, ent&#227;o terminou; o mapeamento padr&#227;o &#233; adicionado automaticamente.</mailmandefaulthosts>
+<MailManDefaultUrlHost>Host de URL padr&#227;o</MailManDefaultUrlHost>
+<MailManDefaultUrlPattern>Padr&#227;o de URL padr&#227;o</MailManDefaultUrlPattern>
+<mailman_modify_robot>Modificar o endere&#231;o do rob&#244;</mailman_modify_robot>
+<mailman_robots_address>Endere&#231;os de rob&#244;s</mailman_robots_address>
+<mail_new_gateways>Gateways de correio e not&#237;cias</mail_new_gateways>
+<mail_new_gateways_text>Servi&#231;os de gateway Mail-para-News e News-para-Mail.</mail_new_gateways_text>
+<max_days_to_hold>dias m&#225;x de reten&#231;&#227;o</max_days_to_hold>
+<max_days_to_hold_text>Descartar as mensagens retidas mais antigas do que este n&#250;mero de dias.[br] Use 0 para n&#227;o descartar automaticamente.</max_days_to_hold_text>
+<max_message_size>tamanho m&#225;x da mensagem</max_message_size>
+<max_message_size_text>Comprimento m&#225;ximo em kilobytes (KB) do corpo de uma mensagem. Use 0 para n&#227;o ter limite.</max_message_size_text>
+<max_num_recipients>N&#250;mero m&#225;x de destinat&#225;rios</max_num_recipients>
+<max_num_recipients_text>Limite m&#225;ximo do n&#250;mero aceit&#225;vel de destinat&#225;rios para uma publica&#231;&#227;o.[br]
+Se uma publica&#231;&#227;o tiver este n&#250;mero, ou mais, de destinat&#225;rios, &#233; retida para aprova&#231;&#227;o do administrador.[br]
+Use 0 para n&#227;o ter limite</max_num_recipients_text>
+<member_moderation_action>A&#231;&#227;o de modera&#231;&#227;o de membros</member_moderation_action>
+<member_moderation_action_text>A&#231;&#227;o a tomar quando um membro moderado publica na lista.</member_moderation_action_text>
+<member_moderation_notice>Aviso de modera&#231;&#227;o</member_moderation_notice>
+<member_moderation_notice_text>Texto a incluir em qualquer aviso de rejei&#231;&#227;o a enviar aos membros moderados que publicam nesta lista</member_moderation_notice_text>
+<mime_is_default_digest>Formato de correio padr&#227;o</mime_is_default_digest>
+<moderated>Moderado</moderated>
+<moderators>Moderadores</moderators>
+<moderators_intro>Os moderadores da lista t&#234;m permiss&#245;es mais limitadas;[br] n&#227;o podem alterar qualquer vari&#225;vel de configura&#231;&#227;o da lista, mas t&#234;m permiss&#227;o para tratar dos pedidos de administra&#231;&#227;o pendentes, incluindo a aprova&#231;&#227;o ou rejei&#231;&#227;o de pedidos de inscri&#231;&#227;o retidos e a gest&#227;o de publica&#231;&#245;es retidas.[br]
+Claro que os administradores da lista tamb&#233;m podem tratar dos pedidos pendentes.</moderators_intro>
+<msg_footer>Mensagem de rodap&#233;</msg_footer>
+<msg_footer_text>Texto adicionado no fundo de cada mensagem de entrega imediata.[br]Este texto pode incluir strings de formato Python que s&#227;o resolvidas em rela&#231;&#227;o aos atributos da lista.</msg_footer_text>
+<msg_header>Mensagem de cabe&#231;alho</msg_header>
+<msg_header_text>Texto adicionado no topo de cada mensagem de entrega imediata.[br] Este texto pode incluir strings de formato Python que s&#227;o resolvidas em rela&#231;&#227;o aos atributos da lista.</msg_header_text>
 <never>Nunca</never>
-<news_moderation>Moderation</news_moderation>
-<news_moderation_text>The moderation policy of the newsgroup.[br]
-This setting determines the moderation policy of the newsgroup and its interaction with the moderation policy of the mailing list.
-[br]This only applies to the newsgroup that you are gatewaying to, so if you are only gatewaying from Usenet, or the newsgroup you are gatewaying to is not moderated, set this option to None.
-[br]If the newsgroup is moderated, you can set this mailing list up to be the moderation address for the newsgroup.
-[br]By selecting Moderated, an additional posting hold will be placed in the approval process.
-[br]All messages posted to the mailing list will have to be approved before being sent on to the newsgroup, or to the mailing list membership.
-Note that if the message has an Approved header with the list's administrative password in it, this hold test will be bypassed, allowing privileged posters
-to send messages directly to the list and the newsgroup.[br]
-Finally, if the newsgroup is moderated, but you want to have an open posting policy anyway, you should select Open list, moderated group.
-[br]The effect of this is to use the normal Mailman moderation facilities, but to add an Approved header to all messages that are gatewayed to Usenet.</news_moderation_text>
-<news_prefix_subject_too>Prefix Subject: in news</news_prefix_subject_too>
-<news_prefix_subject_too_text>
-Prefix Subject: headers on postings gated to news?[br]
-Mailman prefixes Subject: headers with text you can customize and normally, this prefix shows up in messages gatewayed to Usenet.[br]
-You can set this option to No to disable the prefix on gated messages. [br]Of course, if you turn off normal Subject: prefixes, they won't be prefixed for gated messages either
-</news_prefix_subject_too_text>
-<new_member_options>New member options</new_member_options>
-<new_member_options_text>When a new member is subscribed to this list, their initial set of[br]options is taken from the this variable's setting.</new_member_options_text>
-<nntp_host>NNTP Host</nntp_host>
-<nntp_host_text>The hostname of the machine your news server is running on.[br]
-This value may be either the name of your news server, or optionally of the format name:port, where port is a port number.
-[br]The news server is not part of Mailman proper.
-[br]You have to already have access to an NNTP server, and that NNTP server must recognize the machine
-this mailing list runs on as a machine capable of reading and posting news.</nntp_host_text>
-<nondigestable>non digest</nondigestable>
-<nondigestable_text>Can subscribers choose to receive mail immediately, rather than in batched digests?</nondigestable_text>
-<nondigests>Non-digest options</nondigests>
-<nondigests_text>Policies concerning immediately delivered list traffic</nondigests_text>
+<news_moderation>Modera&#231;&#227;o</news_moderation>
+<news_moderation_text>A pol&#237;tica de modera&#231;&#227;o do grupo de not&#237;cias.[br]
+Esta configura&#231;&#227;o determina a pol&#237;tica de modera&#231;&#227;o do grupo de not&#237;cias e a sua intera&#231;&#227;o com a pol&#237;tica de modera&#231;&#227;o da lista de distribui&#231;&#227;o.[br]Isto aplica-se apenas ao grupo de not&#237;cias para o qual voc&#234; est&#225; fazendo gateway, por isso se estiver apenas fazendo gateway a partir da Usenet, ou se o grupo de not&#237;cias para o qual faz gateway n&#227;o for moderado, defina esta op&#231;&#227;o como Nenhum.[br]Se o grupo de not&#237;cias for moderado, voc&#234; pode configurar esta lista de distribui&#231;&#227;o como o endere&#231;o de modera&#231;&#227;o do grupo de not&#237;cias.[br]Ao selecionar Moderado, ser&#225; colocada uma reten&#231;&#227;o de publica&#231;&#227;o adicional no processo de aprova&#231;&#227;o.[br]Todas as mensagens publicadas na lista de distribui&#231;&#227;o ter&#227;o de ser aprovadas antes de serem enviadas para o grupo de not&#237;cias ou para os membros da lista de distribui&#231;&#227;o.
+Note que se a mensagem tiver um cabe&#231;alho Approved com a senha administrativa da lista, este teste de reten&#231;&#227;o ser&#225; ignorado, permitindo que autores privilegiados enviem mensagens diretamente para a lista e para o grupo de not&#237;cias.[br]
+Por fim, se o grupo de not&#237;cias for moderado, mas mesmo assim quiser ter uma pol&#237;tica de publica&#231;&#227;o aberta, deve selecionar Lista aberta, grupo moderado.[br]O efeito disto &#233; usar os recursos normais de modera&#231;&#227;o do Mailman, mas adicionar um cabe&#231;alho Approved a todas as mensagens encaminhadas para a Usenet.</news_moderation_text>
+<news_prefix_subject_too>Prefixar Subject: nas not&#237;cias</news_prefix_subject_too>
+<news_prefix_subject_too_text>Anteceder os cabe&#231;alhos Subject: nas publica&#231;&#245;es encaminhadas para as not&#237;cias?[br]
+O Mailman antecede os cabe&#231;alhos Subject: com um texto que voc&#234; pode personalizar e normalmente este prefixo aparece nas mensagens encaminhadas para a Usenet.[br]
+Voc&#234; pode definir esta op&#231;&#227;o como N&#227;o para desativar o prefixo nas mensagens encaminhadas.[br]Claro que, se desativar os prefixos Subject: normais, tamb&#233;m n&#227;o ser&#227;o prefixados nas mensagens encaminhadas</news_prefix_subject_too_text>
+<new_member_options>Op&#231;&#245;es de novos membros</new_member_options>
+<new_member_options_text>Quando um novo membro se inscreve nesta lista, o seu conjunto inicial[br]de op&#231;&#245;es &#233; retirado da configura&#231;&#227;o desta vari&#225;vel.</new_member_options_text>
+<nntp_host>Host NNTP</nntp_host>
+<nntp_host_text>O nome de host da m&#225;quina onde o seu servidor de not&#237;cias est&#225; sendo executado.[br]
+Este valor pode ser o nome do seu servidor de not&#237;cias ou, opcionalmente, do formato name:port, onde port &#233; um n&#250;mero de porta.[br]O servidor de not&#237;cias n&#227;o faz parte do Mailman propriamente dito.[br]Voc&#234; j&#225; tem de ter acesso a um servidor NNTP, e esse servidor NNTP tem de reconhecer a m&#225;quina onde esta lista de distribui&#231;&#227;o &#233; executada como uma m&#225;quina capaz de ler e publicar not&#237;cias.</nntp_host_text>
+<nondigestable>sem resumo</nondigestable>
+<nondigestable_text>Os assinantes podem escolher receber o correio imediatamente, em vez de em resumos agrupados?</nondigestable_text>
+<nondigests>Op&#231;&#245;es sem resumo</nondigests>
+<nondigests_text>Pol&#237;ticas relativas ao tr&#225;fego da lista entregue imediatamente</nondigests_text>
 <none>Nenhum</none>
-<nonmember_rejection_notice>Rejection notice</nonmember_rejection_notice>
-<nonmember_rejection_notice_text>Text to include in any rejection notice to be sent to non-members who post to this list.[br]
-This notice can include the list's owner address by %(listowner)s and replaces the internally crafted default message.</nonmember_rejection_notice_text>
+<nonmember_rejection_notice>Aviso de rejei&#231;&#227;o</nonmember_rejection_notice>
+<nonmember_rejection_notice_text>Texto a incluir em qualquer aviso de rejei&#231;&#227;o a enviar aos n&#227;o membros que publicam nesta lista.[br]
+Este aviso pode incluir o endere&#231;o do propriet&#225;rio da lista atrav&#233;s de %(listowner)s e substitui a mensagem padr&#227;o criada internamente.</nonmember_rejection_notice_text>
 <notifications>Notificaç%C3µes</notifications>
-<obscure_addresses>Obscure addresses</obscure_addresses>
-<obscure_addresses_text>Show member addresses so they're not directly recognizable as email addresses?[br]
-Setting this option causes member email addresses to be transformed when they are presented on list web pages (both in text and as links),[br]
-so they're not trivially recognizable as email addresses.[br]
-The intention is to prevent the addresses from being snarfed up by automated web scanners for use by spammers</obscure_addresses_text>
-<openl>Open list, moderated group</openl>
-<poster>Poster</poster>
-<preferred_language>Preferred language</preferred_language>
-<preferred_language_text>This is the default natural language for this mailing list. If more[br]
-than one language is supported then users will be able to select their[br]
-own preferences for when they interact with the list.  All other[br]
-interactions will be conducted in the default language.  This applies[br]
-to both web-based and email-based messages, but not to email posted by[br]
-list members.</preferred_language_text>
-<preserve>Preserve</preserve>
-<privacy_options>Privacy options</privacy_options>
-<privacy_options_text>This section allows you to configure subscription and membership exposure policy</privacy_options_text>
-<private_roster>Membership exposure</private_roster>
-<private_roster_text>Who can view subscription list</private_roster_text>
-<real_name>Real name</real_name>
-<real_name_text>The capitalization of this name can be changed to make it presentable
-in polite company as a proper noun, or to make an acronym part all
-upper case, etc.  However, the name will be advertised as the email
-address (e.g., in subscribe confirmation notices), so it should not be
-otherwise altered.  (Email addresses are not case sensitive, but they
-are sensitive to almost everything else :-)</real_name_text>
-<recipient_filters>Recipient filters</recipient_filters>
-<recipient_filters_text>This section allows you to configure various filters based on the recipient of the message</recipient_filters_text>
-<reject_these_nonmembers>Reject non-members</reject_these_nonmembers>
-<reject_these_nonmembers_text>List of non-member addresses whose postings will be automatically rejected.[br]
-Postings from any of these non-members will be automatically rejected. In other words, their messages will be bounced back to the sender with a notification of automatic rejection.[br]
-This option is not appropriate for known spam senders; their messages should be automatically discarded.[br]
-Add member addresses one per line; start the line with a ^ character to designate a regular expression match</reject_these_nonmembers_text>
-<reply_goes_to_list>Reply-To model</reply_goes_to_list>
-<reply_goes_to_list_text>
-Some mailing lists have restricted posting privileges, with a parallel[br]
-list devoted to discussions.  Examples are `patches' or `checkin'[br]
-lists, where software changes are posted by a revision control system,[br]
-but discussion about the changes occurs on a developers mailing list.[br]
-To support these types of mailing lists, select Explicit address and[br]
-set the Reply-To: address below to point to the parallel list.</reply_goes_to_list_text>
-<reply_to_address>Reply-To address</reply_to_address>
-<reply_to_address_text>Note that if the original message contains a Reply-To: header, it will not be changed.</reply_to_address_text>
-<require_approval>Require approval</require_approval>
-<require_explicit_destination>Require explicit destination</require_explicit_destination>
-<require_explicit_destination_text>Must posts have list named in destination (to, cc) field (or be among the acceptable alias names, specified below)?[br]
-Many (in fact, most) spams do not explicitly name their myriad destinations in the explicit destination addresses [br]
-- in fact often the To: field has a totally bogus address for obfuscation.[br]
-The constraint applies only to the stuff in the address before the '@' sign, but still catches all such spams.[br]
-The cost is that the list will not accept unhindered any postings relayed from other addresses, unless[ul]
-[li]1. The relaying address has the same name, or[/li]
-[li]2. The relaying address name is included on the options that specifies acceptable aliases for the list.[/li]
+<obscure_addresses>Ofuscar endere&#231;os</obscure_addresses>
+<obscure_addresses_text>Mostrar os endere&#231;os dos membros de modo que n&#227;o sejam diretamente reconhec&#237;veis como endere&#231;os de e-mail?[br]
+Ativar esta op&#231;&#227;o faz com que os endere&#231;os de e-mail dos membros sejam transformados quando apresentados nas p&#225;ginas web da lista (tanto em texto como em links),[br]
+de modo que n&#227;o sejam trivialmente reconhec&#237;veis como endere&#231;os de e-mail.[br]
+A inten&#231;&#227;o &#233; impedir que os endere&#231;os sejam coletados por scanners web automatizados para uso por spammers</obscure_addresses_text>
+<openl>Lista aberta, grupo moderado</openl>
+<poster>Autor</poster>
+<preferred_language>Idioma preferido</preferred_language>
+<preferred_language_text>Este &#233; o idioma natural padr&#227;o para esta lista de distribui&#231;&#227;o. Se for suportado[br]
+mais de um idioma, os usu&#225;rios poder&#227;o selecionar as suas[br]
+pr&#243;prias prefer&#234;ncias para quando interagem com a lista. Todas as outras[br]
+intera&#231;&#245;es decorrer&#227;o no idioma padr&#227;o. Isto aplica-se[br]
+tanto &#224;s mensagens baseadas na web como por e-mail, mas n&#227;o ao e-mail publicado pelos[br]
+membros da lista.</preferred_language_text>
+<preserve>Preservar</preserve>
+<privacy_options>Op&#231;&#245;es de privacidade</privacy_options>
+<privacy_options_text>Esta se&#231;&#227;o permite configurar a pol&#237;tica de inscri&#231;&#227;o e exposi&#231;&#227;o da inscri&#231;&#227;o</privacy_options_text>
+<private_roster>Exposi&#231;&#227;o da inscri&#231;&#227;o</private_roster>
+<private_roster_text>Quem pode ver a lista de inscri&#231;&#245;es</private_roster_text>
+<real_name>Nome real</real_name>
+<real_name_text>A capitaliza&#231;&#227;o deste nome pode ser alterada para o tornar apresent&#225;vel em boa companhia como um nome pr&#243;prio, ou para colocar parte de um acr&#244;nimo todo em mai&#250;sculas, etc. No entanto, o nome ser&#225; anunciado como o endere&#231;o de e-mail (por ex. nos avisos de confirma&#231;&#227;o de inscri&#231;&#227;o), por isso n&#227;o deve ser alterado de outra forma. (Os endere&#231;os de e-mail n&#227;o s&#227;o sens&#237;veis a mai&#250;sculas/min&#250;sculas, mas s&#227;o sens&#237;veis a quase tudo o resto :-)</real_name_text>
+<recipient_filters>Filtros de destinat&#225;rio</recipient_filters>
+<recipient_filters_text>Esta se&#231;&#227;o permite configurar v&#225;rios filtros baseados no destinat&#225;rio da mensagem</recipient_filters_text>
+<reject_these_nonmembers>Rejeitar n&#227;o membros</reject_these_nonmembers>
+<reject_these_nonmembers_text>Lista de endere&#231;os de n&#227;o membros cujas publica&#231;&#245;es ser&#227;o automaticamente rejeitadas.[br]
+As publica&#231;&#245;es de qualquer um destes n&#227;o membros ser&#227;o automaticamente rejeitadas. Em outras palavras, as suas mensagens ser&#227;o devolvidas ao remetente com uma notifica&#231;&#227;o de rejei&#231;&#227;o autom&#225;tica.[br]
+Esta op&#231;&#227;o n&#227;o &#233; apropriada para remetentes de spam conhecidos; as suas mensagens devem ser descartadas automaticamente.[br]
+Adicione os endere&#231;os dos membros um por linha; comece a linha com um caractere ^ para designar uma correspond&#234;ncia de express&#227;o regular</reject_these_nonmembers_text>
+<reply_goes_to_list>Modelo Reply-To</reply_goes_to_list>
+<reply_goes_to_list_text>Algumas listas de distribui&#231;&#227;o t&#234;m privil&#233;gios de publica&#231;&#227;o restritos, com uma lista paralela[br]
+dedicada &#224;s discuss&#245;es. Exemplos s&#227;o as listas `patches' ou `checkin',[br]
+onde as altera&#231;&#245;es de software s&#227;o publicadas por um sistema de controle de revis&#245;es,[br]
+mas onde a discuss&#227;o sobre as altera&#231;&#245;es ocorre numa lista de distribui&#231;&#227;o de desenvolvedores.[br]
+Para suportar estes tipos de listas de distribui&#231;&#227;o, selecione Endere&#231;o expl&#237;cito e[br]
+defina o endere&#231;o Reply-To: abaixo para apontar para a lista paralela.</reply_goes_to_list_text>
+<reply_to_address>Endere&#231;o Reply-To</reply_to_address>
+<reply_to_address_text>Note que se a mensagem original contiver um cabe&#231;alho Reply-To:, este n&#227;o ser&#225; alterado.</reply_to_address_text>
+<require_approval>Exigir aprova&#231;&#227;o</require_approval>
+<require_explicit_destination>Exigir destino expl&#237;cito</require_explicit_destination>
+<require_explicit_destination_text>As publica&#231;&#245;es t&#234;m de nomear a lista no campo de destino (to, cc) (ou estar entre os nomes de alias aceit&#225;veis, especificados abaixo)?[br]
+Muitos (na verdade, a maioria) dos spams n&#227;o nomeiam explicitamente os seus in&#250;meros destinos nos endere&#231;os de destino expl&#237;citos[br]
+- de fato, muitas vezes o campo To: tem um endere&#231;o totalmente falso para ofusca&#231;&#227;o.[br]
+A restri&#231;&#227;o aplica-se apenas ao que est&#225; no endere&#231;o antes do sinal '@', mas ainda apanha todos esses spams.[br]
+O custo &#233; que a lista n&#227;o aceitar&#225; sem restri&#231;&#245;es as publica&#231;&#245;es retransmitidas a partir de outros endere&#231;os, a menos que[ul]
+[li]1. O endere&#231;o retransmissor tenha o mesmo nome, ou[/li]
+[li]2. O nome do endere&#231;o retransmissor esteja inclu&#237;do nas op&#231;&#245;es que especificam os alias aceit&#225;veis para a lista.[/li]
 [/ul]</require_explicit_destination_text>
-<respond_to_post_requests>Respond to post</respond_to_post_requests>
-<respond_to_post_requests_text>Send mail to poster when[br] their posting is held for approval?</respond_to_post_requests_text>
-<scrub_nondigest>Clean attachments</scrub_nondigest>
-<scrub_nondigest_text>When you scrub attachments, they are stored in archive area and links[br]
-are made in the message so that the member can access via web browser.[br]
-If you want the attachments totally disappear, you can use content filter options.</scrub_nondigest_text>
-<sender_filters>Sender Filters</sender_filters>
-<sender_filters_text>When a message is posted to the list, a series of moderation steps are take to decide whether the a moderator must first approve the message or not.[br]
-This section contains the controls for moderation of both member and non-member postings.[br]
-Member postings are held for moderation if their moderation flag is turned on.[br]
-You can control whether member postings are moderated by default or not.[br]
-Non-member postings can be automatically accepted, held for moderation, rejected (bounced), or discarded, either individually or as a group.[br]
-Any posting from a non-member who is not explicitly accepted, rejected, or discarded, will have their posting filtered by the general non-member rules.[br]
-In the text boxes below, add one address per line; start the line with a ^ character to designate a Python regular expression.[br]
-When entering backslashes, do so as if you were using Python raw strings (i.e. you generally just use a single backslash).[br]
-Note that non-regexp matches are always done first.
-</sender_filters_text>
-<send_goodbye_msg>Goodbye Message</send_goodbye_msg>
-<send_reminders>Password reminder</send_reminders>
-<send_reminders_text>Turn this on if you want password reminders to be sent once per month to your members.[br]
-Note that members may disable their own individual password reminders.</send_reminders_text>
-<send_welcome_msg>Enable welcome message</send_welcome_msg>
-<spam_filters>Spam filter</spam_filters>
-<spam_filters_text>This section allows you to configure various anti-spam filters posting filters, which can help reduce the amount of spam your list members end up receiving.</spam_filters_text>
-<subject_prefix>Subject Prefix</subject_prefix>
-<subject_prefix_text>This text will be prepended to subject lines of messages posted to the list,[br]
-to distinguish mailing list messages in mailbox summaries.[br]Brevity is premium here, it's ok to shorten long mailing list names to[br]
-something more concise, as long as it still identifies the mailing list.[br][br] You can also add a sequential number by %d substitution
-directive. eg.; [ul][li][listname %d] -&amp;raquo; [listname 123][/li][li] (listname %05d) -&amp;raquo; (listname 00123)[/li][/ul]</subject_prefix_text>
-<subscribe_policy>Subscribe Policy</subscribe_policy>
-<subscribe_policy_text>What steps are required for subscription?[br]
-[ul][li]Confirm (*) - email confirmation required[/li]
-[li]Require approval - require list administrator approval for subscriptions[/li]
-[li]Confirm and approve - both confirm and approve[/li]
+<respond_to_post_requests>Responder &#224; publica&#231;&#227;o</respond_to_post_requests>
+<respond_to_post_requests_text>Enviar correio ao remetente quando[br] a sua publica&#231;&#227;o &#233; retida para aprova&#231;&#227;o?</respond_to_post_requests_text>
+<scrub_nondigest>Limpar anexos</scrub_nondigest>
+<scrub_nondigest_text>Quando voc&#234; limpa os anexos, eles s&#227;o armazenados na &#225;rea de arquivo e[br]
+s&#227;o criados links na mensagem para que o membro possa acessar atrav&#233;s de um navegador web.[br]
+Se quiser que os anexos desapare&#231;am totalmente, voc&#234; pode usar as op&#231;&#245;es de filtragem de conte&#250;do.</scrub_nondigest_text>
+<sender_filters>Filtros de remetente</sender_filters>
+<sender_filters_text>Quando uma mensagem &#233; publicada na lista, &#233; tomada uma s&#233;rie de passos de modera&#231;&#227;o para decidir se um moderador tem de aprovar primeiro a mensagem ou n&#227;o.[br]
+Esta se&#231;&#227;o cont&#233;m os controles para a modera&#231;&#227;o de publica&#231;&#245;es de membros e n&#227;o membros.[br]
+As publica&#231;&#245;es de membros s&#227;o retidas para modera&#231;&#227;o se o seu sinalizador de modera&#231;&#227;o estiver ativado.[br]
+Voc&#234; pode controlar se as publica&#231;&#245;es de membros s&#227;o moderadas por padr&#227;o ou n&#227;o.[br]
+As publica&#231;&#245;es de n&#227;o membros podem ser automaticamente aceitas, retidas para modera&#231;&#227;o, rejeitadas (devolvidas) ou descartadas, individualmente ou em grupo.[br]
+Qualquer publica&#231;&#227;o de um n&#227;o membro que n&#227;o seja explicitamente aceita, rejeitada ou descartada ter&#225; a sua publica&#231;&#227;o filtrada pelas regras gerais de n&#227;o membros.[br]
+Nas caixas de texto abaixo, adicione um endere&#231;o por linha; comece a linha com um caractere ^ para designar uma express&#227;o regular Python.[br]
+Ao inserir barras invertidas, fa&#231;a-o como se estivesse usando strings raw de Python (ou seja, geralmente usa apenas uma &#250;nica barra invertida).[br]
+Note que as correspond&#234;ncias n&#227;o regex s&#227;o sempre feitas primeiro.</sender_filters_text>
+<send_goodbye_msg>Mensagem de despedida</send_goodbye_msg>
+<send_reminders>Lembrete de senha</send_reminders>
+<send_reminders_text>Ative isto se quiser que os lembretes de senha sejam enviados uma vez por m&#234;s aos seus membros.[br]
+Note que os membros podem desativar os seus pr&#243;prios lembretes de senha individuais.</send_reminders_text>
+<send_welcome_msg>Ativar mensagem de boas-vindas</send_welcome_msg>
+<spam_filters>Filtro de spam</spam_filters>
+<spam_filters_text>Esta se&#231;&#227;o permite configurar v&#225;rios filtros anti-spam de publica&#231;&#227;o, que podem ajudar a reduzir a quantidade de spam que os membros da sua lista acabam por receber.</spam_filters_text>
+<subject_prefix>Prefixo de assunto</subject_prefix>
+<subject_prefix_text>Este texto ser&#225; anteposto &#224;s linhas de assunto das mensagens publicadas na lista,[br]
+para distinguir as mensagens da lista de distribui&#231;&#227;o nos resumos da caixa de correio.[br]A brevidade &#233; fundamental aqui, &#233; aceit&#225;vel encurtar nomes longos de listas de distribui&#231;&#227;o para[br]
+algo mais conciso, desde que ainda identifique a lista de distribui&#231;&#227;o.[br][br] Voc&#234; tamb&#233;m pode adicionar um n&#250;mero sequencial atrav&#233;s da diretiva de substitui&#231;&#227;o %d. ex.; [ul][li][listname %d] -&amp;amp;raquo; [listname 123][/li][li] (listname %05d) -&amp;amp;raquo; (listname 00123)[/li][/ul]</subject_prefix_text>
+<subscribe_policy>Pol&#237;tica de inscri&#231;&#227;o</subscribe_policy>
+<subscribe_policy_text>Que passos s&#227;o necess&#225;rios para a inscri&#231;&#227;o?[br]
+[ul][li]Confirmar (*) - &#233; necess&#225;ria confirma&#231;&#227;o por e-mail[/li]
+[li]Exigir aprova&#231;&#227;o - requer a aprova&#231;&#227;o do administrador da lista para as inscri&#231;&#245;es[/li]
+[li]Confirmar e aprovar - tanto confirmar como aprovar[/li]
 [/ul]
-(*) when someone requests a subscription, Mailman sends them a notice with a unique subscription request number that they must reply to in order to subscribe.[br]
-This prevents mischievous (or malicious) people from creating subscriptions for others without their consent.</subscribe_policy_text>
-<thislist>This list</thislist>
-<topics>Topics</topics>
-<topics_bodylines_limit>Max line scanning</topics_bodylines_limit>
-<topics_bodylines_limit_text>How many body lines should the topic matcher scan?[br]
-The topic matcher will scan this many lines of the message body looking for topic keyword matches.
-[br]Body scanning stops when either this many lines have been looked at, or a non-header-like body line is encountered.
-[br]By setting this value to zero, no body lines will be scanned (i.e. only the Keywords: and Subject: headers will be scanned).
-[br]By setting this value to a negative number, then all body lines will be scanned until a non-header-like line is encountered.
-</topics_bodylines_limit_text>
-<topics_enabled>Enable Topics</topics_enabled>
-<topics_text>The topic filter categorizes each incoming email message according to regular expression filters you specify below.
-[br]If the message's Subject: or Keywords: header contains a match against a topic filter, the message is logically placed into a topic bucket.
-[br]Each user can then choose to only receive messages from the mailing list for a particular topic bucket (or buckets).
-[br]Any message not categorized in a topic bucket registered with the user is not delivered to the list.
-[br]Note that this feature only works with regular delivery, not digest delivery.
-[br]The body of the message can also be optionally scanned for Subject: and Keywords: headers, as specified by the topics_bodylines_limit configuration variable.
-</topics_text>
+(*) quando algu&#233;m solicita uma inscri&#231;&#227;o, o Mailman envia-lhe um aviso com um n&#250;mero de pedido de inscri&#231;&#227;o &#250;nico ao qual tem de responder para se inscrever.[br]
+Isto impede que pessoas maliciosas (ou mal-intencionadas) criem inscri&#231;&#245;es para outros sem o seu consentimento.</subscribe_policy_text>
+<thislist>Esta lista</thislist>
+<topics>T&#243;picos</topics>
+<topics_bodylines_limit>An&#225;lise m&#225;xima de linhas</topics_bodylines_limit>
+<topics_bodylines_limit_text>Quantas linhas do corpo deve o detector de t&#243;picos analisar?[br]O detector de t&#243;picos analisar&#225; este n&#250;mero de linhas do corpo da mensagem &#224; procura de correspond&#234;ncias de palavras-chave de t&#243;pico.[br]A an&#225;lise do corpo para quando este n&#250;mero de linhas tiver sido examinado ou quando for encontrada uma linha do corpo n&#227;o semelhante a um cabe&#231;alho.[br]Ao definir este valor como zero, nenhuma linha do corpo ser&#225; analisada (ou seja, apenas os cabe&#231;alhos Keywords: e Subject: ser&#227;o analisados).[br]Ao definir este valor como um n&#250;mero negativo, todas as linhas do corpo ser&#227;o analisadas at&#233; ser encontrada uma linha n&#227;o semelhante a um cabe&#231;alho.</topics_bodylines_limit_text>
+<topics_enabled>Ativar t&#243;picos</topics_enabled>
+<topics_text>O filtro de t&#243;picos categoriza cada mensagem de e-mail recebida de acordo com os filtros de express&#245;es regulares que voc&#234; especificar abaixo.[br]Se o cabe&#231;alho Subject: ou Keywords: da mensagem corresponder a um filtro de t&#243;pico, a mensagem &#233; logicamente colocada num grupo de t&#243;pico.[br]Cada usu&#225;rio pode ent&#227;o escolher receber apenas as mensagens da lista de distribui&#231;&#227;o para um determinado grupo de t&#243;pico (ou v&#225;rios).[br]Qualquer mensagem n&#227;o categorizada num grupo de t&#243;pico registrado pelo usu&#225;rio n&#227;o &#233; entregue &#224; lista.[br]Note que este recurso s&#243; funciona com a entrega normal, n&#227;o com a entrega em resumo.[br]O corpo da mensagem tamb&#233;m pode ser opcionalmente analisado para cabe&#231;alhos Subject: e Keywords:, conforme especificado pela vari&#225;vel de configura&#231;&#227;o topics_bodylines_limit.</topics_text>
 <topic_desc>Descriç%C3£o</topic_desc>
-<topic_name>Topic name</topic_name>
-<topic_pattern>Regex Pattern</topic_pattern>
-<unsubscribe_policy>Unsubscribe policy</unsubscribe_policy>
-<unsubscribe_policy_text>
-Is the list moderator's approval required for unsubscription requests?[br](No is recommended)[br]
-When members want to leave a list, they will make an unsubscription request, either via the web or via email.
-[br]Normally it is best for you to allow open unsubscriptions so that users can easily remove themselves from mailing lists (they get really upset if they can't get off lists!).[br]
-For some lists though, you may want to impose moderator approval before an unsubscription request is processed.
-[br]Examples of such lists include a corporate mailing list that all employees are required to be members of.
-</unsubscribe_policy_text>
-<VirtualHostOverview>Virtual Host Overview</VirtualHostOverview>
-<VirtualHostOverview_text>
-When Enabled, the listinfo and admin overviews of lists on the machine will be confined to only those lists whose web page url configuration option host is included within the URL by which the page is visited - only those
-"on the virtual host".[br]  When disabled, all advertised (i.e. public) lists are included in the overview.</VirtualHostOverview_text>
+<topic_name>Nome do t&#243;pico</topic_name>
+<topic_pattern>Padr&#227;o Regex</topic_pattern>
+<unsubscribe_policy>Pol&#237;tica de cancelamento de inscri&#231;&#227;o</unsubscribe_policy>
+<unsubscribe_policy_text>&#201; necess&#225;ria a aprova&#231;&#227;o do moderador da lista para os pedidos de cancelamento de inscri&#231;&#227;o?[br](N&#227;o &#233; recomendado)[br]
+Quando os membros querem deixar uma lista, fazem um pedido de cancelamento de inscri&#231;&#227;o, seja via web ou e-mail.
+[br]Normalmente &#233; melhor permitir cancelamentos abertos para que os usu&#225;rios se possam remover facilmente das listas de distribui&#231;&#227;o (ficam muito aborrecidos se n&#227;o conseguirem sair das listas!).[br]
+Para algumas listas, no entanto, pode querer impor a aprova&#231;&#227;o do moderador antes de um pedido de cancelamento ser processado.
+[br]Exemplos de tais listas incluem uma lista de distribui&#231;&#227;o corporativa da qual todos os funcion&#225;rios t&#234;m de ser membros.</unsubscribe_policy_text>
+<VirtualHostOverview>Vis&#227;o geral do host virtual</VirtualHostOverview>
+<VirtualHostOverview_text>Quando ativado, as vis&#245;es gerais listinfo e admin das listas na m&#225;quina ser&#227;o limitadas apenas &#224;quelas listas cuja op&#231;&#227;o de configura&#231;&#227;o host do URL da p&#225;gina web esteja inclu&#237;da no URL pelo qual a p&#225;gina &#233; visitada &#8212; apenas aquelas &quot;no host virtual&quot;.[br] Quando desativado, todas as listas anunciadas (ou seja, p&#250;blicas) s&#227;o inclu&#237;das na vis&#227;o geral.</VirtualHostOverview_text>
 <welcome_message>Mensagem de boas-vindas</welcome_message>
-<welcome_msg_text>Welcome message, if any, will be added to the front of the new-subscriber welcome message.[br]
-The rest of the welcome message already describes the important addresses and URLs for the mailing list, so you don't need to include any of that kind of stuff here.[br]
-This should just contain mission-specific kinds of things, like etiquette policies or team orientation, or that kind of thing.[br]
-Note that this text will be wrapped, according to the following rules:[ul]
-[li]Each paragraph is filled so that no line is longer than 70 characters.[/li]
-[li]Any line that begins with whitespace is not filled. A blank line separates paragraphs.[/li][/ul]
-</welcome_msg_text>
+<welcome_msg_text>A mensagem de boas-vindas, se existir, ser&#225; adicionada ao in&#237;cio da mensagem de boas-vindas dos novos assinantes.[br]
+O resto da mensagem de boas-vindas j&#225; descreve os endere&#231;os e URLs importantes da lista de distribui&#231;&#227;o, por isso voc&#234; n&#227;o precisa incluir esse tipo de informa&#231;&#227;o aqui.[br]
+Isto deve conter apenas elementos espec&#237;ficos da miss&#227;o, como regras de etiqueta ou orienta&#231;&#227;o de equipe, ou esse tipo de coisa.[br]
+Note que este texto ser&#225; ajustado de acordo com as seguintes regras:[ul]
+[li]Cada par&#225;grafo &#233; preenchido de modo que nenhuma linha exceda 70 caracteres.[/li]
+[li]Qualquer linha que comece com um espa&#231;o n&#227;o &#233; preenchida. Uma linha em branco separa os par&#225;grafos.[/li][/ul]</welcome_msg_text>

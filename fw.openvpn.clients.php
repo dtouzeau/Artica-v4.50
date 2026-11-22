@@ -1,5 +1,10 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style()/awc_pager_js()/siem_tiny_filters(): inclusion INCONDITIONNELLE,
+// au premier niveau. Placee dans le bloc if(!class_exists("sockets")) elle ne
+// s'executerait jamais -> Call to undefined function au rendu.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.openvpn.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -15,8 +20,10 @@ if(isset($_GET["main"])){main();exit;}
 if(isset($_POST["connection_name"])){buildconfig();exit;}
 if(isset($_POST["delete-script"])){delete_script();exit;}
 if(isset($_GET["rebuild"])){rebuild();exit;}
+if(isset($_GET["fw-js"])){fw_js();exit;}
 if(isset($_GET["support-js"])){support_js();exit;}
 if(isset($_GET["support-popup"])){support_popup();exit;}
+if(isset($_GET["export"])){export_csv();exit;}
 
 page();
 function rule_js():bool{
@@ -27,26 +34,36 @@ function rule_js():bool{
 	return $tpl->js_dialog("{BUILD_OPENVPN_CLIENT_CONFIG}","$page?rule-popup=yes&uid={$_GET["uid"]}&function=$function");
 }
 
+function fw_js():bool{
+	// Open the per-client firewall manager (firewall page scoped by clientuid) in a dialog.
+	$tpl=new template_admin();
+	$uid=urlencode($_GET["uid"]);
+	return $tpl->js_dialog2("{firewall}","fw.openvpn.firewall.php?main-start=yes&clientuid=$uid&function=NoSpinner");
+}
+
 function delete_rule_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$t=time();
     $uid=base64_decode($_GET["delete-js"]);
-	$delete=$tpl->javascript_parse_text("{delete} $uid");
+	// Pentest 2026-11-04 : delete-js/id etait recopie sans encodage dans la page (XSS).
+	$delete=$tpl->javascript_parse_text("{delete}")." ".req_js($uid);
+	$domid=req_js($_GET["id"] ?? "");
+	$deljs=req_js($_GET["delete-js"]);
 	
 	
 echo "	
 	var xOpenVPNRoutesDelete$t= function (obj) {
 		var res=obj.responseText;
 		if(res.length>3){alert(res);return;}
-		 $('#{$_GET["id"]}').remove();
+		 $('#$domid').remove();
 	}
 	
 	function OpenVPNRoutesDelete$t(){
 		if(!confirm('$delete ?')){return;}
 		var XHR = new XHRConnection();
 		
-		XHR.appendData('delete-script','{$_GET["delete-js"]}');
+		XHR.appendData('delete-script','$deljs');
 		XHR.sendAndLoad('$page', 'POST',xOpenVPNRoutesDelete$t);
 	}
 	
@@ -63,34 +80,36 @@ function support_js():bool{
     return $tpl->js_dialog("{create_a_support_connection}","$page?support-popup=yes&function=$function");
 }
 function uid_row(){
-    $uid=$_GET["uid-row"];
+    $uid=(string)$_GET["uid-row"];
     $uidmd5=md5($uid);
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM openvpn_clients WHERE uid='$uid'");
-    $fixip=base64_encode(td_fixip($ligne));
-    $ipaddr=base64_encode($ligne["vpnip"]);
-    $status=base64_encode($tpl->_ENGINE_parse_body(td_status($ligne)));
-    $auth=base64_encode($tpl->_ENGINE_parse_body(td_auth($ligne)));
-    $profile=base64_encode($tpl->_ENGINE_parse_body(td_profile($ligne)));
+    // Le uid vient de l'URL et partait BRUT dans la clause WHERE.
+    $uidSql=$q->sqlite_escape_string2($uid);
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM openvpn_clients WHERE uid='$uidSql'");
+    if(!is_array($ligne)){
+        header("content-type: application/x-javascript");
+        echo "";
+        return;
+    }
 
+    // Memes constructeurs que le tableau: une ligne rafraichie ne peut donc pas
+    // diverger d'une ligne rendue. L'adresse repartait auparavant en texte brut,
+    // sans sa puce.
+    $cells=array();
+    $cells["fixip-$uidmd5"]  =$tpl->_ENGINE_parse_body(td_fixip($ligne));
+    $cells["ipaddr-$uidmd5"] =$tpl->_ENGINE_parse_body(ovc_ip($ligne));
+    $cells["status-$uidmd5"] =$tpl->_ENGINE_parse_body(td_status($ligne));
+    $cells["auth-$uidmd5"]   =$tpl->_ENGINE_parse_body(td_auth($ligne));
+    $cells["profile-$uidmd5"]=$tpl->_ENGINE_parse_body(td_profile($ligne));
 
-
-    $f[]="if(document.getElementById('auth-$uidmd5')){";
-    $f[]="\tdocument.getElementById('auth-$uidmd5').innerHTML=base64_decode('$auth');";
-    $f[]="}";
-    $f[]="if(document.getElementById('fixip-$uidmd5')){";
-    $f[]="\tdocument.getElementById('fixip-$uidmd5').innerHTML=base64_decode('$fixip');";
-    $f[]="}";
-    $f[]="if(document.getElementById('status-$uidmd5')){";
-    $f[]="\tdocument.getElementById('status-$uidmd5').innerHTML=base64_decode('$status');";
-    $f[]="}";
-    $f[]="if(document.getElementById('ipaddr-$uidmd5')){";
-    $f[]="\tdocument.getElementById('ipaddr-$uidmd5').innerHTML=base64_decode('$ipaddr');";
-    $f[]="}";
-    $f[]="if(document.getElementById('profile-$uidmd5')){";
-    $f[]="\tdocument.getElementById('profile-$uidmd5').innerHTML=base64_decode('$profile');";
-    $f[]="}";
+    $f=array();
+    foreach($cells as $id=>$html){
+        $b64=base64_encode((string)$html);
+        $f[]="if(document.getElementById('$id')){";
+        $f[]="\tdocument.getElementById('$id').innerHTML=base64_decode('$b64');";
+        $f[]="}";
+    }
 
     header("content-type: application/x-javascript");
     echo @implode("\n",$f);
@@ -272,242 +291,634 @@ function GetOS():array{
 	return $os;
 }
 
-function main_start():bool{
+/* ===========================================================================
+ *  Bibliotheque de composants .ovc-* -- transposition de
+ *  /home/claude/images/stitch_refonte_interface_vpn_clients
+ *  Regle du projet : un widget = une fonction.
+ * ======================================================================== */
+
+/**
+ * Feuille de style de la page. Emise UNE SEULE FOIS par requete et TOUJOURS
+ * concatenee EN DEHORS de _ENGINE_parse_body(): son motif #{(.+?)}#is
+ * prendrait chaque corps de regle CSS pour un {token}.
+ */
+function ovc_style():string{
+    if(isset($GLOBALS["OVC_CSS_DONE"])){return "";}
+    $GLOBALS["OVC_CSS_DONE"]=true;
+    return "<style>
+.ovc-wrap{color:#334155;font-size:13px;line-height:1.45}
+.ovc-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(216px,1fr));gap:16px;
+margin:6px 0 18px}
+.ovc-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:15px 18px;
+display:flex;align-items:center;justify-content:space-between;gap:12px;
+box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.ovc-kpi-l{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#64748b}
+.ovc-kpi-v{font-size:25px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:5px}
+.ovc-kpi-s{font-size:11px;color:#94a3b8;margin-left:7px;font-weight:500}
+.ovc-kpi-i{width:42px;height:42px;border-radius:10px;display:inline-flex;align-items:center;
+justify-content:center;font-size:16px;flex:0 0 auto}
+.ovc-i-slate{background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0}
+.ovc-i-teal{background:#ecfdf5;color:#059669;border:1px solid #a7f3d0}
+.ovc-i-grey{background:#f1f5f9;color:#94a3b8;border:1px solid #e2e8f0}
+.ovc-i-amber{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+.ovc-i-red{background:#fef2f2;color:#dc2626;border:1px solid #fecaca}
+.ovc-kpi-teal>div>.ovc-kpi-l,.ovc-kpi-teal>div>.ovc-kpi-v{color:#059669}
+.ovc-kpi-amber>div>.ovc-kpi-l,.ovc-kpi-amber>div>.ovc-kpi-v{color:#d97706}
+.ovc-kpi-red>div>.ovc-kpi-l,.ovc-kpi-red>div>.ovc-kpi-v{color:#dc2626}
+.ovc-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;
+box-shadow:0 1px 2px rgba(15,23,42,.04);margin-top:14px}
+.ovc-scroll{overflow-x:auto}
+.ovc-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.ovc-tbl th{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;
+color:#64748b;text-align:left;padding:14px;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+.ovc-tbl td{padding:13px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.ovc-nowrap{white-space:nowrap}
+.ovc-center{text-align:center}
+.ovc-pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:5px 12px;
+font-size:12px;font-weight:600;border:1px solid;white-space:nowrap}
+.ovc-p-on{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+.ovc-p-off{background:#f8fafc;color:#64748b;border-color:#e2e8f0}
+.ovc-p-exp{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.ovc-dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;
+flex:0 0 auto}
+.ovc-ident{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.ovc-uico{font-size:15px;color:#94a3b8;margin-top:2px;flex:0 0 auto}
+.ovc-uico-sup{color:#d97706}
+.ovc-uico-exp{color:#dc2626}
+.ovc-name{font-size:13px;font-weight:700;color:#0f172a;word-break:break-word}
+.ovc-name a{color:#0f172a;text-decoration:none}
+.ovc-name a:hover{color:#0d9488}
+.ovc-sub{font-size:11px;margin-top:3px}
+.ovc-warn{color:#dc2626;font-style:italic}
+.ovc-mut{color:#94a3b8}
+.ovc-sup{color:#d97706;font-weight:600}
+.ovc-chip{display:inline-flex;align-items:center;gap:6px;background:#f1f5f9;border:1px solid #e2e8f0;
+border-radius:7px;padding:4px 9px;font-size:12px;color:#334155;white-space:nowrap}
+.ovc-chip-ip{font-family:'Courier New',Courier,monospace;background:#ecfdf5;border-color:#a7f3d0;
+color:#047857;font-weight:600}
+.ovc-none{color:#94a3b8;font-style:italic;font-family:'Courier New',Courier,monospace;font-size:12px;
+white-space:nowrap}
+.ovc-act{width:34px;height:34px;border-radius:8px;display:inline-flex;align-items:center;
+justify-content:center;border:1px solid;cursor:pointer;font-size:13px;text-decoration:none}
+.ovc-act:hover{text-decoration:none}
+.ovc-a-teal{background:#ecfdf5;border-color:#a7f3d0;color:#059669}
+.ovc-a-teal:hover{background:#d1fae5;color:#047857}
+.ovc-a-slate{background:#f8fafc;border-color:#e2e8f0;color:#64748b}
+.ovc-a-slate:hover{background:#f1f5f9;color:#334155}
+.ovc-a-red{background:#fef2f2;border-color:#fecaca;color:#dc2626}
+.ovc-a-red:hover{background:#fee2e2;color:#b91c1c}
+.ovc-a-off{background:#f8fafc;border-color:#f1f5f9;color:#cbd5e1;cursor:not-allowed}
+.ovc-foot{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+padding:14px;border-top:1px solid #e2e8f0;font-size:12px;color:#94a3b8}
+.ovc-foot-l{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.ovc-dhcp{display:inline-flex;align-items:center;gap:7px;font-family:'Courier New',Courier,monospace;
+color:#64748b}
+.ovc-empty{text-align:center;color:#94a3b8;padding:44px 14px}
+</style>";
+}
+
+/** Detache le bloc <style> d'un fragment: il ne doit pas etre analyse. */
+function ovc_split_style($html):array{
+    $css="";
+    $out=preg_replace_callback('#<style\b[^>]*>.*?</style>#is',
+        function($m) use (&$css){$css.=$m[0];return "";},(string)$html);
+    return array($css,(string)$out);
+}
+
+/** Etat demande, sur liste blanche: la valeur part dans du SQL et du JavaScript. */
+function ovc_state():string{
+    $state=(string)(isset($_GET["state"])?$_GET["state"]:"all");
+    $allowed=array("all","connected","disconnected","expired");
+    if(!in_array($state,$allowed,true)){return "all";}
+    return $state;
+}
+
+/** Nom de la fonction de rafraichissement fournie par search_block. */
+function ovc_function():string{
+    return preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+}
+
+/** Clause WHERE commune a la liste et a l'export: meme filtre, meme recherche. */
+function ovc_where($q,$search,$state):string{
+    $where=array();
+    $search=(string)$search;
+    if(strlen($search)>2){
+        $like=str_replace("*","%","*$search*");
+        $like=str_replace("%%","%",$like);
+        // Le terme est interpole dans le SQL: il doit etre echappe, sinon une
+        // apostrophe dans la boite de recherche reecrit la requete.
+        $like=$q->sqlite_escape_string2($like);
+        $where[]="( uid LIKE '$like' OR ComputerOS LIKE '$like'"
+                ." OR vpnip LIKE '$like' OR fixip LIKE '$like' )";
+    }
+    $now=time();
+    if($state=="connected"){$where[]="( status=1 AND (lifetime=0 OR lifetime>$now) )";}
+    if($state=="disconnected"){$where[]="( status<>1 AND (lifetime=0 OR lifetime>$now) )";}
+    if($state=="expired"){$where[]="( lifetime>0 AND lifetime<=$now )";}
+    if(count($where)==0){return "";}
+    return " WHERE ".@implode(" AND ",$where);
+}
+
+/**
+ * Compteurs des vignettes. Calcules sur la table ENTIERE, jamais sur la page
+ * filtree: sinon "Total 8" mentirait des qu'un filtre est actif.
+ */
+function ovc_counters():array{
+    $out=array("total"=>0,"connected"=>0,"disconnected"=>0,"support"=>0,"expired"=>0);
+    $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
+    $now=time();
+    $sql="SELECT COUNT(*) AS total,"
+        ." SUM(CASE WHEN lifetime>0 AND lifetime<=$now THEN 1 ELSE 0 END) AS expired,"
+        ." SUM(CASE WHEN status=1 AND (lifetime=0 OR lifetime>$now) THEN 1 ELSE 0 END) AS connected,"
+        ." SUM(CASE WHEN status<>1 AND (lifetime=0 OR lifetime>$now) THEN 1 ELSE 0 END) AS disconnected,"
+        ." SUM(CASE WHEN support=1 THEN 1 ELSE 0 END) AS support"
+        ." FROM openvpn_clients";
+    $results=$q->QUERY_SQL($sql);
+    if(!is_array($results)){return $out;}
+    if(!isset($results[0])){return $out;}
+    foreach($out as $key=>$unused){
+        $out[$key]=intval(isset($results[0][$key])?$results[0][$key]:0);
+    }
+    return $out;
+}
+
+/** Une vignette de comptage. */
+function ovc_kpi($ico,$tone,$label,$value,$sub=""):string{
+    $subHtml=($sub!="")?"<span class='ovc-kpi-s'>$sub</span>":"";
+    $h=array();
+    $h[]="<div class='ovc-kpi ovc-kpi-$tone'>";
+    $h[]="<div><div class='ovc-kpi-l'>$label</div>";
+    $h[]="<div class='ovc-kpi-v'>$value$subHtml</div></div>";
+    $h[]="<span class='ovc-kpi-i ovc-i-$tone'><i class='$ico'></i></span>";
+    $h[]="</div>";
+    return @implode("",$h);
+}
+
+/** La rangee de vignettes. Celle des expires n'apparait que s'il y en a. */
+function ovc_kpi_row(array $c):string{
+    $k=array();
+    $k[]=ovc_kpi("fas fa-sitemap","slate","{ovc_total_connections}",$c["total"]);
+    $k[]=ovc_kpi("fas fa-circle-check","teal","{ovc_successful_connections}",
+        $c["connected"],"{ovc_online}");
+    $k[]=ovc_kpi("fas fa-circle-pause","grey","{disconnected}",$c["disconnected"],"{ovc_offline}");
+    $k[]=ovc_kpi("fas fa-headset","amber","{ovc_support_profile}",$c["support"],"{ovc_dedicated_tunnels}");
+    if($c["expired"]>0){
+        $k[]=ovc_kpi("fas fa-triangle-exclamation","red","{expired}",$c["expired"],"");
+    }
+    return "<div class='ovc-kpis'>".@implode("",$k)."</div>";
+}
+
+/** Icone d'identite: casque pour un tunnel de support, silhouette sinon. */
+function ovc_uico($ligne):string{
+    $support=intval(isset($ligne["support"])?$ligne["support"]:0);
+    $cls=$support==1?"ovc-uico ovc-uico-sup":"ovc-uico";
+    if(IsExpired($ligne)){$cls="ovc-uico ovc-uico-exp";}
+    $ico=$support==1?"fas fa-headset":"fas fa-user";
+    return "<i class='$ico $cls'></i>";
+}
+
+/**
+ * Bloc identite: nom cliquable, IP fixe, methode d'authentification, profil.
+ * Les identifiants de span sont un CONTRAT EXTERNE: uid_row() les rafraichit
+ * depuis fw.openvpn.clients.config.php et fw.openvpn.profiles.php.
+ */
+function ovc_ident($ligne):string{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    echo $tpl->search_block($page,null,null,null,"&main=yes");
+    $function=ovc_function();
+    $uid=(string)$ligne["uid"];
+    $md5=md5($uid);
+    $uidEnc=urlencode($uid);
+    // Pentest 2026-11-04 : uid/adresses/noms (donnee externe) ; htmlspecialchars UTF-8 rendait "" sur du Latin-1 (XSS stockee).
+    $name=req_html($uid);
+    if(!IsExpired($ligne)){
+        $name="<a href=\"javascript:blur();\" OnClick=\"Loadjs("
+             ."'fw.openvpn.clients.config.php?uid=$uidEnc&function=$function');\">$name</a>";
+    }
+    $h=array();
+    $h[]="<div class='ovc-ident'>".ovc_uico($ligne);
+    $h[]="<div style='min-width:0'>";
+    $h[]="<div class='ovc-name'>$name<span id='fixip-$md5'>".td_fixip($ligne)."</span></div>";
+    $h[]="<div id='auth-$md5'>".td_auth($ligne)."</div>";
+    $h[]="<div id='profile-$md5'>".td_profile($ligne)."</div>";
+    $h[]="</div></div>";
+    return @implode("",$h);
+}
+
+/** Adresse distribuee au client, ou la mention explicite qu'il n'y en a pas. */
+function ovc_ip($ligne):string{
+    $ip=trim((string)(isset($ligne["vpnip"])?$ligne["vpnip"]:""));
+    if($ip==="" OR $ip==="0.0.0.0"){
+        return "<span class='ovc-none'>&mdash; {ovc_unassigned} &mdash;</span>";
+    }
+    return "<span class='ovc-chip ovc-chip-ip'>".req_html($ip)."</span>";
+}
+
+/** Systeme d'exploitation declare a la creation de la connexion. */
+function ovc_os($ligne):string{
+    $icons=array(""=>"fas fa-question","windowsXP"=>"fab fa-windows",
+        "windows2003"=>"fab fa-windows","linux"=>"fab fa-linux","artica"=>"fab fa-linux",
+        "mac"=>"fab fa-apple","Windows7"=>"fab fa-windows","Android_IOS"=>"fas fa-mobile-alt");
+    $names=GetOS();
+    $key=(string)(isset($ligne["ComputerOS"])?$ligne["ComputerOS"]:"");
+    $ico=isset($icons[$key])?$icons[$key]:"fas fa-question";
+    $name=isset($names[$key])?$names[$key]:"{unknown}";
+    return "<span class='ovc-chip'><i class='$ico'></i>".htmlspecialchars($name)."</span>";
+}
+
+/**
+ * Colonne "logiciel": soit le client est fourni par le systeme, soit on donne
+ * les liens de telechargement du client OpenVPN adapte.
+ */
+function ovc_software($ligne):string{
+    $down="<i class='fa fa-download'></i>&nbsp;";
+    $connect="$down<a href='http://articatech.net/download/openvpn-connect-3.4.3.3337_signed.msi'>";
+    $links=array();
+    $links["windowsXP"]="$down<a href='http://www.articatech.net/download/openvpn-install-2.3.11-I001-i686.exe'>32Bits</a>&nbsp;|&nbsp;<a href='http://www.articatech.net/download/openvpn-install-2.3.11-I001-x86_64.exe'>64Bits</a>";
+    $links["windows2003"]=$links["windowsXP"];
+    $links["Windows7"]="$down<a href='http://articatech.net/download/openvpn-install-2.3.13-I601-x86_64.exe'>Win7 64Bits</a><br>{$connect}Win10/11 64bits</a>";
+    $links["mac"]="<a href='http://articatech.net/download/Tunnelblick_3.7.0_build_4790.dmg'>OS X 10.4+</a>";
+    $key=(string)(isset($ligne["ComputerOS"])?$ligne["ComputerOS"]:"");
+    if(isset($links[$key])){return "<span class='ovc-nowrap'>".$links[$key]."</span>";}
+    return "<span class='ovc-nowrap'><span class='ovc-dot' style='color:#10b981'></span>"
+          ."&nbsp;In System</span>";
+}
+
+/** Un bouton d'action de ligne. $js vide = bouton inerte, visiblement eteint. */
+function ovc_act($ico,$tone,$title,$js):string{
+    if($js==""){
+        return "<span class='ovc-act ovc-a-off' title='$title'><i class='$ico'></i></span>";
+    }
+    return "<a class='ovc-act ovc-a-$tone' href=\"javascript:blur();\" title='$title' "
+          ."OnClick=\"$js\"><i class='$ico'></i></a>";
+}
+
+/**
+ * Les quatre actions de ligne. Un client expire perd telechargement et
+ * reconstruction -- comportement d'avant la refonte, conserve.
+ */
+function ovc_actions($ligne,$canManage):array{
+    $page=CurrentPageName();
+    $function=ovc_function();
+    $uid=(string)$ligne["uid"];
+    $uidEnc=urlencode($uid);
+    $md5=md5(serialize($ligne));
+    $zipsize=intval(isset($ligne["zipsize"])?$ligne["zipsize"]:0);
+    $expired=IsExpired($ligne);
+
+    $jsDownload="";
+    if($canManage AND !$expired AND $zipsize>0){
+        $jsDownload="document.location.href='$page?download=yes&uid=$uidEnc'";
+    }
+    $jsRebuild="";
+    if($canManage AND !$expired){
+        $jsRebuild="Loadjs('$page?rebuild=$uidEnc&function=$function');";
+    }
+    $jsFirewall="Loadjs('$page?fw-js=yes&uid=$uidEnc&function=$function')";
+    $jsDelete="";
+    if($canManage){
+        $jsDelete="Loadjs('$page?delete-js=".urlencode(base64_encode($uid))."&id=$md5')";
+    }
+    return array(
+        ovc_act("fas fa-download","teal","{download2}",$jsDownload),
+        ovc_act("fas fa-arrow-right-to-bracket","slate","{rebuild}",$jsRebuild),
+        ovc_act("fas fa-shield-halved","slate","{firewall}",$jsFirewall),
+        ovc_act("fas fa-trash","red","{delete}",$jsDelete));
+}
+
+/** Une ligne du tableau. */
+function ovc_row($ligne,$canManage):string{
+    $md5=md5($ligne["uid"]);
+    $rowid=md5(serialize($ligne));
+    $acts=ovc_actions($ligne,$canManage);
+    $h=array();
+    $h[]="<tr id='$rowid'>";
+    $h[]="<td class='ovc-nowrap'><span id='status-$md5'>".td_status($ligne)."</span></td>";
+    $h[]="<td>".ovc_ident($ligne)."</td>";
+    $h[]="<td class='ovc-nowrap'><span id='ipaddr-$md5'>".ovc_ip($ligne)."</span></td>";
+    $h[]="<td class='ovc-nowrap'>".td_lifetime($ligne)."</td>";
+    $h[]="<td class='ovc-nowrap'>".ovc_os($ligne)."</td>";
+    $h[]="<td>".ovc_software($ligne)."</td>";
+    foreach($acts as $a){$h[]="<td class='ovc-center'>$a</td>";}
+    $h[]="</tr>";
+    return @implode("",$h);
+}
+
+/**
+ * 255.255.255.0 -> 24. La forme CIDR tient dans la ligne de pied la ou le
+ * masque pointe la fait deborder; la valeur non convertible est rendue telle
+ * quelle plutot que remplacee par un chiffre faux.
+ */
+function ovc_mask_to_prefix($mask){
+    $mask=trim((string)$mask);
+    if(preg_match('/^\d{1,2}$/',$mask)){return $mask;}
+    $long=@ip2long($mask);
+    if($long===false){return $mask;}
+    $bits=decbin($long);
+    if(!preg_match('/^1*0*$/',str_pad($bits,32,"0",STR_PAD_LEFT))){return $mask;}
+    return (string)substr_count($bits,"1");
+}
+
+/** Puce du pied: le reseau distribue par le serveur OpenVPN. */
+function ovc_dhcp_chip():string{
+    $vpn=new openvpn();
+    $global=isset($vpn->main_array["GLOBAL"])&&is_array($vpn->main_array["GLOBAL"])
+        ?$vpn->main_array["GLOBAL"]:array();
+    $start=trim((string)(isset($global["IP_START"])?$global["IP_START"]:""));
+    $mask=trim((string)(isset($global["NETMASK"])?$global["NETMASK"]:""));
+    if($start==="" OR $mask===""){return "";}
+    $network=$start."/".ovc_mask_to_prefix($mask);
+    return "<span class='ovc-dhcp'><span class='ovc-dot' style='color:#94a3b8'></span>"
+          ."{ovc_dhcp_lease}: ".req_html($network)."</span>";
+}
+
+/** Pied du tableau: volume affiche, reseau distribue, pagination. */
+function ovc_foot($shown,$total):string{
+    $h=array();
+    $h[]="<div class='ovc-foot'><div class='ovc-foot-l'>";
+    $h[]="<span>{showing} $shown / $total</span>";
+    $h[]=ovc_dhcp_chip();
+    $h[]="</div><span class='awc-pg' id='ovc-pager'></span></div>";
+    return @implode("",$h);
+}
+
+/* ===========================================================================
+ *  Fragments
+ * ======================================================================== */
+
+/**
+ * Section principale: vignettes, barre de recherche, et l'en-tete TINY qui
+ * porte le segment d'etat. Le filtre est dans l'EN-TETE et non dans une bande
+ * au-dessus du tableau (regle artica-webconsole-php-page 2b): une bande
+ * occuperait exactement le bandeau que l'operateur depasse a chaque visite.
+ */
+function main_start():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $state=ovc_state();
+    $search=(string)(isset($_GET["search"])?$_GET["search"]:"");
+    $counters=ovc_counters();
+
+
+    // Le terme tape est reinjecte dans le champ: sans cela un changement de
+    // filtre, qui recharge toute la section, effacerait la recherche en cours.
+    $prefill=null;
+    if($search!==""){$prefill="value=".htmlspecialchars($search,ENT_QUOTES);}
+    list($sbCss,$sb)=ovc_split_style(
+        $tpl->search_block($page,null,null,$prefill,"&main=yes&state=$state"));
+
+    $html=array();
+    $html[]="<div class='ovc-wrap'>";
+    $html[]=ovc_kpi_row($counters);
+    $html[]=$sb;
+    $html[]="</div>";
+
+
+
+
+    if($counters["expired"]>0){$options["expired"]="{expired}";}
+
+    $jstiny=tiny();
+
+
+    // Un changement de filtre recharge TOUTE la section: le segment actif, les
+    // vignettes et le urlToadd de search_block sont alors regeneres ensemble,
+    // donc ils ne peuvent pas diverger.
+    $script="<script>
+function OvcState(v){LoadAjaxSilent('table-loader','$page?main-start=yes&state='+encodeURIComponent(v)+OvcTerm());}
+function OvcTerm(){var e=document.querySelector('.sb-stitch input.form-control');
+return e?('&search='+encodeURIComponent(e.value)):'';}
+function OvcRefresh(){OvcState('$state');}
+function OvcExport(){document.location.href='$page?export=csv&state=$state'+OvcTerm();}
+$jstiny
+</script>";
+
+    echo ovc_style().siem_tiny_filters_style().$sbCss
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
     return true;
 }
 
-function main(){
-	$tpl=new template_admin();
-	$page=CurrentPageName();
-    $function=$_GET["function"];
-	$delete=$tpl->javascript_parse_text("{delete}");
-	$ComputerOS=$tpl->javascript_parse_text("{ComputerOS}");
-	$userid=$tpl->javascript_parse_text("{connections}");
-	$download=$tpl->javascript_parse_text("{download2}");
-	$run=$tpl->javascript_parse_text("{rebuild}");
-	$software=$tpl->javascript_parse_text("{software}");
-    $t=time();
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$userid}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>TTL</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>$ComputerOS</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$software</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$download</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' class='center'>{$run}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' class='center'>$delete</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-	$sql="SELECT *  FROM openvpn_clients ORDER BY uid,ComputerOS";
+function tiny():string{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $function=ovc_function();
+    $fields=array();
+    $state=ovc_state();
 
-    $search=$_GET["search"];
-    if(strlen($search)>2){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
-        $sql="SELECT *  FROM openvpn_clients WHERE ( (uid LIKE '$search') OR ( ComputerOS LIKE '$search') ) ORDER BY uid,ComputerOS";
-    }
-    $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $results = $q->QUERY_SQL($sql);
-	if(!$q->ok){
-		echo $q->mysql_error_html(true,$sql);
-	}
-	$ois[""]="fas fa-question";
-	$ois["windowsXP"]="fab fa-windows";
-	$ois["windows2003"]="fab fa-windows";
-	$ois["linux"]="fab fa-linux";
-    $ois["artica"]="fab fa-linux";
-	$ois["mac"]="fab fa-apple";
-	$ois["Windows7"]="fab fa-windows";
-	$ois["Android_IOS"]="fas fa-mobile-alt";
-    $downico="<i class='fa fa-download'></i>&nbsp;";
-	$ClientConnect="$downico<a href='http://articatech.net/download/openvpn-connect-3.4.3.3337_signed.msi'>";
-	
-	$oisLink["windowsXP"]="$downico<a href='http://www.articatech.net/download/openvpn-install-2.3.11-I001-i686.exe'>32Bits</a>&nbsp;|&nbsp;<a href='http://www.articatech.net/download/openvpn-install-2.3.11-I001-x86_64.exe'>64Bits</a>";
-	$oisLink["windows2003"]="$downico<a href='http://www.articatech.net/download/openvpn-install-2.3.11-I001-i686.exe'>32Bits</a>&nbsp;|&nbsp;<a href='http://www.articatech.net/download/openvpn-install-2.3.11-I001-x86_64.exe'>64Bits</a>";
-	$oisLink["Windows7"]="$downico<a href='http://articatech.net/download/openvpn-install-2.3.13-I601-x86_64.exe'>Win7 64Bits</a><br>{$ClientConnect}Win10/11 64bits</a>";
-	$oisLink["mac"]="<a href='http://articatech.net/download/Tunnelblick_3.7.0_build_4790.dmg'>OS X 10.4+</a>";
-	$oisLink["linux"]="In System";
-    $oisLink["artica"]="In System";
-	$os=GetOS();
+    $options=array("all"=>"{all}","connected"=>"{connected}","disconnected"=>"{disconnected}");
 
-    $width1="style='vertical-align:middle;width:1%' class='center' nowrap";
-    $widthL="style='vertical-align:middle;width:1%' class='left' nowrap";
-    $TRCLASS=null;
-	foreach($results as $index=>$ligne) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $md=md5(serialize($ligne));
-		$zipsize=intval($ligne["zipsize"]);
-		$userid=$ligne["uid"];
-        $useridEnc=urlencode($userid);
-        $rebuildjs="Loadjs('$page?rebuild=$useridEnc&function=$function');";
-		$userid_encoded=urlencode($userid);
-        $support=intval($ligne["support"]);
-        $ipaddr=$ligne["vpnip"];
-        $Ico=ico_user;
-        $TextColor=null;
-        $jsDownload="document.location.href='$page?download=yes&uid=$userid&t=$t'";
+    $fields[]=array("TYPE"=>"segment","ID"=>"ovc-f-state","LABEL"=>"{status}",
+        "VALUE"=>$state,"OPTIONS"=>$options,"JS"=>"OvcState");
 
-        $ico_down=$tpl->icon_download($jsDownload,"AsVPNManager");
-        $IcoOs=$ois[$ligne["ComputerOS"]];
-        $fixip=td_fixip($ligne);
-        $OsText=$os[$ligne["ComputerOS"]];
-        $OsLink=$oisLink[$ligne["ComputerOS"]];
-        $profile=$ligne["profile"];
-        $zAuth=array();
-        $profile_text=td_profile($ligne);
-
-        $userid_label=sprintf("%s<span id='fixip-$userid'>%s</span>",$userid,$fixip);
-
-        $useridjs=$tpl->td_href($userid_label,null,"Loadjs('fw.openvpn.clients.config.php?uid=$userid_encoded&function=$function');");
+    $topbuttons=array();
+    $topbuttons[]=array("Loadjs('$page?ruleid-js=&function=$function');",ico_plus,
+        "{create_a_connection}");
+    $topbuttons[]=array("Loadjs('$page?support-js=&function=$function');",ico_support,
+        "{create_a_support_connection}");
+    $topbuttons[]=array("OvcRefresh();",ico_refresh,"{refresh}");
+    $topbuttons[]=array("OvcExport();",ico_csv,"{export}");
 
 
-        $run=$tpl->icon_run($rebuildjs,"AsVPNManager");
-
-        if(IsExpired($ligne)){
-            $status="<span class='label label-danger'>{expired}</span>";
-            $TextColor=" text-danger";
-            $run="&nbsp;";
-            $ico_down="&nbsp;";
-            $useridjs=$userid;
-        }
-        if($zipsize==0){
-            $ico_down="&nbsp;";
-        }
-
-		$numenc=urlencode(base64_encode($ligne["uid"]));
-        $DeleteIco=$tpl->icon_delete("Loadjs('$page?delete-js=$numenc&id=$md')","AsVPNManager");
-        $LifeTime=td_lifetime($ligne);
-
-        if($support==1){
-            $Ico=ico_support;
-            $AuthTxt=null;
-        }
-        $status=td_status($ligne);
-        $AuthTxt=td_auth($ligne);
-        $useridmd5=md5($userid);
-        $Span="<span class='$TextColor'>";
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td $width1><span id='status-$useridmd5'>$status</span></td>";
-		$html[]="<td><i class='$Ico$TextColor'></i>&nbsp;$Span$useridjs</a><span id='auth-$useridmd5'>$AuthTxt</span><span id='profile-$useridmd5'>$profile_text</span></td>";
-        $html[]="<td $widthL><span id='ipaddr-$useridmd5'>$ipaddr</span></td>";
-        $html[]="<td $widthL>$LifeTime</td>";
-		$html[]="<td $widthL><i class='fa $IcoOs$TextColor'></i>&nbsp;$Span$OsText</i></td>";
-		$html[]="<td $widthL>$Span$OsLink</a></span></td>";
-		$html[]="<td $width1>$ico_down</td>";
-		$html[]="<td $width1>$run</td>";
-		$html[]="<td $width1>$DeleteIco</td>";
-        $html[]="</tr>";
-	}
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='9'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-
-
-
-    $topbuttons[] = array("Loadjs('$page?ruleid-js=&function=$function');",ico_plus,"{create_a_connection}");
-    $topbuttons[] = array("Loadjs('$page?support-js=&function=$function');",ico_support,"{create_a_support_connection}");
     $OpenVPNVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNVersion");
+    $TINY_ARRAY=array();
     $TINY_ARRAY["TITLE"]="{members} v$OpenVPNVersion";
     $TINY_ARRAY["ICO"]="fas fa-users-crown";
     $TINY_ARRAY["EXPL"]="{BUILD_OPENVPN_CLIENT_CONFIG_TEXT}";
-    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
-    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+    $TINY_ARRAY["BUTTONS"]=siem_tiny_filters($fields,$tpl->table_buttons($topbuttons));
+    return "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true } } ); });
-	$jstiny
-	</script>";
-	
-	echo $tpl->_ENGINE_parse_body($html);
 }
+
+/** Le tableau: repondeur de search_block. */
+function main(){
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    $canManage=$users->AsVPNManager;
+    $state=ovc_state();
+    $search=(string)(isset($_GET["search"])?$_GET["search"]:"");
+
+    $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
+    $where=ovc_where($q,$search,$state);
+
+    $total=0;
+    $cnt=$q->QUERY_SQL("SELECT COUNT(*) AS tcount FROM openvpn_clients$where");
+    if(is_array($cnt) AND isset($cnt[0]["tcount"])){$total=intval($cnt[0]["tcount"]);}
+
+    // La pagination est faite par le NAVIGATEUR (awc_pager_js): sans borne,
+    // toutes les lignes partent dans le fragment et finissent par bloquer le
+    // rendu -- meme classe de panne que le RESULT_CODE_HUNG de
+    // fw.proxy.whitelist.php. On ne sert que les premieres.
+    $LIMIT=500;
+    $sql="SELECT * FROM openvpn_clients$where ORDER BY uid,ComputerOS LIMIT $LIMIT";
+    $results=$q->QUERY_SQL($sql);
+    if(!$q->ok){
+        echo $q->mysql_error_html(true,$sql);
+        return;
+    }
+    if(!is_array($results)){$results=array();}
+
+    $html=array();
+    if($total>count($results)){
+        $html[]=$tpl->div_warning("{showing} ".count($results)." / $total");
+    }
+    $html[]="<div class='ovc-card'><div class='ovc-scroll'>";
+    $html[]="<table class='ovc-tbl'><thead><tr>";
+    $html[]="<th>{status}</th>";
+    $html[]="<th>{connections}</th>";
+    $html[]="<th>{ipaddr}</th>";
+    $html[]="<th>TTL</th>";
+    $html[]="<th>{ComputerOS}</th>";
+    $html[]="<th>{software}</th>";
+    $html[]="<th class='ovc-center'>{download2}</th>";
+    $html[]="<th class='ovc-center'>{rebuild}</th>";
+    $html[]="<th class='ovc-center'>{firewall}</th>";
+    $html[]="<th class='ovc-center'>{delete}</th>";
+    $html[]="</tr></thead><tbody id='ovc-rows'>";
+
+    $n=0;
+    foreach($results as $ligne){
+        if(!is_array($ligne)){continue;}
+        $n++;
+        $html[]=ovc_row($ligne,$canManage);
+    }
+    if($n==0){
+        $html[]="<tr><td colspan='10' class='ovc-empty'>{no_data}</td></tr>";
+    }
+    $html[]="</tbody></table></div>";
+    $html[]=ovc_foot($n,$total);
+    $html[]="</div>";
+    $jstiny=tiny();
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo ovc_style().awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$jstiny;</script>"
+        .awc_pager_js(50,"ovc-rows","ovc-pager");
+}
+
+/**
+ * Une cellule CSV. Un tableur interprete une valeur commencant par = + - @
+ * comme une formule: le uid est saisi par un operateur, on le neutralise.
+ */
+function ovc_csv_safe($value):string{
+    $value=(string)$value;
+    if($value===""){return "";}
+    if(strpos("=+-@",substr($value,0,1))!==false){return "'".$value;}
+    return $value;
+}
+
+/**
+ * Export CSV. Rejoue exactement la recherche et le filtre affiches, et
+ * verifie le droit COTE SERVEUR: masquer le bouton ne protege rien, le
+ * repartiteur repond a toute session authentifiee.
+ */
+function export_csv(){
+    $users=new usersMenus();
+    if(!$users->AsVPNManager){
+        header("HTTP/1.1 403 Forbidden");
+        header("Content-Type: text/plain; charset=UTF-8");
+        die("Forbidden\n");
+    }
+    $state=ovc_state();
+    $search=(string)(isset($_GET["search"])?$_GET["search"]:"");
+    $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
+    $where=ovc_where($q,$search,$state);
+    $results=$q->QUERY_SQL("SELECT uid,ComputerOS,status,vpnip,fixip,publicip,support,"
+        ."lifetime,profile,updated FROM openvpn_clients$where ORDER BY uid,ComputerOS");
+    if(!is_array($results)){$results=array();}
+
+    header("Content-Type: text/csv; charset=UTF-8");
+    header("Content-Disposition: attachment; filename=openvpn-clients-".date("Ymd-His").".csv");
+    header("X-Content-Type-Options: nosniff");
+    header("Cache-Control: no-cache, no-store, must-revalidate");
+
+    $out=fopen("php://output","w");
+    fputcsv($out,array("uid","os","status","vpnip","fixip","publicip","support",
+        "expires","profile","updated"));
+    foreach($results as $ligne){
+        if(!is_array($ligne)){continue;}
+        $lifetime=intval(isset($ligne["lifetime"])?$ligne["lifetime"]:0);
+        fputcsv($out,array(
+            ovc_csv_safe(isset($ligne["uid"])?$ligne["uid"]:""),
+            ovc_csv_safe(isset($ligne["ComputerOS"])?$ligne["ComputerOS"]:""),
+            intval(isset($ligne["status"])?$ligne["status"]:0),
+            ovc_csv_safe(isset($ligne["vpnip"])?$ligne["vpnip"]:""),
+            ovc_csv_safe(isset($ligne["fixip"])?$ligne["fixip"]:""),
+            ovc_csv_safe(isset($ligne["publicip"])?$ligne["publicip"]:""),
+            intval(isset($ligne["support"])?$ligne["support"]:0),
+            $lifetime>0?date("Y-m-d H:i:s",$lifetime):"",
+            intval(isset($ligne["profile"])?$ligne["profile"]:0),
+            intval(isset($ligne["updated"])?$ligne["updated"]:0)));
+    }
+    fclose($out);
+    admin_tracks("Exported the OpenVPN clients list (state=$state)");
+}
+
+/* ===========================================================================
+ *  Cellules partagees -- SOURCE UNIQUE
+ *  uid_row() les rejoue pour rafraichir une ligne depuis
+ *  fw.openvpn.clients.config.php et fw.openvpn.profiles.php: la ligne
+ *  rafraichie et la ligne rendue ne peuvent donc pas diverger.
+ * ======================================================================== */
+
 function td_auth($ligne):string{
-    $LocalAuth=intval($ligne["LocalAuth"]);
+    // Accumulateurs declares d'emblee: PHP 8 leve une TypeError fatale sur
+    // count(null), et les deux tableaux n'etaient affectes que dans un if -- un
+    // client sans authentification locale et sans profil tuait toute la page.
+    $zAuth=array();
+    $a=array();
+    $LocalAuth=intval(isset($ligne["LocalAuth"])?$ligne["LocalAuth"]:0);
     if($LocalAuth==1){
         $zAuth[]="{UseLocalDatabase}";
     }
     if(count($zAuth)==0){
-        $profile=$ligne["profile"];
+        $profile=intval(isset($ligne["profile"])?$ligne["profile"]:0);
         if($profile>0) {
             $q = new lib_sqlite("/home/artica/SQLITE/openvpn.db");
             $results = $q->QUERY_SQL("SELECT rulename FROM auths WHERE profileid=$profile ORDER BY ID LIMIT 250");
-            $a=array();
-            foreach ($results as $index => $ligne) {
-                $rulename = $ligne["rulename"];
-                $a[] = "$rulename";
+            if(is_array($results)){
+                foreach ($results as $index => $row) {
+                    $a[] = req_html((string)$row["rulename"]);
+                }
             }
         }
         if(count($a)>0){
-            $AuthTxt=sprintf("<br><i>{authentication}: %s</i>",@implode(",",$a));
-            return $AuthTxt;
+            return "<div class='ovc-sub ovc-mut'>{authentication}: ".@implode(", ",$a)."</div>";
         }
-
-
-        $AuthTxt="<br><i><span class='text-danger'>{no_auth_defined}</span></i>";
-    }else{
-        $AuthTxt=sprintf("<br><i>{authentication}: %s</i>",@implode(",",$zAuth));
+        return "<div class='ovc-sub ovc-warn'>{no_auth_defined}</div>";
     }
-    return $AuthTxt;
-
+    return "<div class='ovc-sub ovc-mut'>{authentication}: ".@implode(", ",$zAuth)."</div>";
 }
+
 function td_status($ligne):string{
-
     if(IsExpired($ligne)) {
-        return "<span class='label label-danger'>{expired}</span>";
+        return "<span class='ovc-pill ovc-p-exp'><span class='ovc-dot'></span>{expired}</span>";
     }
-
-
-    if($ligne["status"]==0){
-        return "<span class='label label-default'>{disconnected}</span>";
+    $status=intval(isset($ligne["status"])?$ligne["status"]:0);
+    if($status==1){
+        return "<span class='ovc-pill ovc-p-on'><span class='ovc-dot'></span>{connected}</span>";
     }
-    if($ligne["status"]==1){
-        return "<span class='label label-primary'>{connected}</span>";
-    }
-
-    return "<span class='label label-default'>{unknown}</span>";
+    return "<span class='ovc-pill ovc-p-off'><span class='ovc-dot'></span>{disconnected}</span>";
 }
 
 function td_profile($ligne):string{
-    $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $profile=$ligne["profile"];
-    $userid=$ligne["uid"];
+    $profile=intval(isset($ligne["profile"])?$ligne["profile"]:0);
+    $userid=urlencode((string)(isset($ligne["uid"])?$ligne["uid"]:""));
     if($profile==0){
-        return sprintf("<br><i>{profile}: %s</i>","{none}");
+        return "<div class='ovc-sub ovc-mut'>{profile}: {none}</div>";
     }
-
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM profiles WHERE ID=$profile");
-    $prfilename=$ligne["rulename"];
-
-    $prfilename=$tpl->td_href($prfilename,"","Loadjs('fw.openvpn.profiles.php?ruleid-js=$profile&uid=$userid')","AsVPNManager");
-
-    return sprintf("<br><i>{profile}: %s</i>",$prfilename);
-
-
+    $row=$q->mysqli_fetch_array("SELECT rulename FROM profiles WHERE ID=$profile");
+    $name=req_html((string)(isset($row["rulename"])?$row["rulename"]:""));
+    if($name===""){
+        return "<div class='ovc-sub ovc-mut'>{profile}: {none}</div>";
+    }
+    $js="Loadjs('fw.openvpn.profiles.php?ruleid-js=$profile&uid=$userid')";
+    return "<div class='ovc-sub ovc-mut'>{profile}: <a class='ovc-sup' "
+          ."href=\"javascript:blur();\" OnClick=\"$js\">$name</a></div>";
 }
 
 function td_fixip($ligne){
-    $fixip=$ligne["fixip"];
+    $fixip=(string)(isset($ligne["fixip"])?$ligne["fixip"]:"");
 
     if($fixip=="0.0.0.0"){
         return "";
@@ -521,50 +932,46 @@ function td_fixip($ligne){
         return "";
     }
 
-    return " ($fixip)";
+    return " <span class='ovc-mut'>(".req_html($fixip).")</span>";
 }
 
 
 function IsExpired($ligne){
-    $lifetime=$ligne["lifetime"];
+    $lifetime=intval(isset($ligne["lifetime"])?$ligne["lifetime"]:0);
     if($lifetime==0){return false;}
     if($lifetime>time()){return false;}
     return true;
 }
-function td_lifetime($ligne){
 
-    $Clock=ico_clock;
-    $lifetime=$ligne["lifetime"];
-    $lifetime_text="{unlimited}";
+function td_lifetime($ligne){
+    $lifetime=intval(isset($ligne["lifetime"])?$ligne["lifetime"]:0);
+    $clock="<i class='far fa-clock'></i>";
 
     if($lifetime==0){
-        return "<span class='$Clock'></span>&nbsp;$lifetime_text";
+        return "<span class='ovc-chip'>$clock{unlimited}</span>";
     }
     if(time()>$lifetime) {
-        return "<span class='$Clock text-danger'></span>&nbsp;<span class='text-danger'>{expired}</span>";
-
+        return "<span class='ovc-chip' style='background:#fef2f2;border-color:#fecaca;"
+              ."color:#b91c1c'>$clock{expired}</span>";
     }
-
-    $lifetime_text=distanceOfTimeInWords(time(),$lifetime);
-    return "<span class='$Clock'></span>&nbsp;$lifetime_text</span>";
-
-
+    return "<span class='ovc-chip'>$clock".distanceOfTimeInWords(time(),$lifetime)."</span>";
 }
 
 function delete_script()
 {
     $uid = base64_decode($_POST["delete-script"]);
-    $sql = "DELETE FROM vpnclient WHERE connexion_name='$uid'";
+    // Pentest 2026-11-04 : delete-script (uid) etait concatene dans la requete.
+    $sql = "DELETE FROM vpnclient WHERE connexion_name=?";
     $q = new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,array($uid));
     if (!$q->ok) {
         echo $q->mysql_error;
         return;
     }
-    $sql = "DELETE FROM openvpn_clients WHERE uid='$uid'";
-    $q->QUERY_SQL($sql);
-    $sql = "DELETE FROM memberlinks WHERE connection='$uid'";
-    $q->QUERY_SQL($sql);
+    $sql = "DELETE FROM openvpn_clients WHERE uid=?";
+    $q->QUERY_SQL_PARAMS($sql,array($uid));
+    $sql = "DELETE FROM memberlinks WHERE connection=?";
+    $q->QUERY_SQL_PARAMS($sql,array($uid));
 }
 
 
@@ -605,14 +1012,17 @@ function buildconfig():bool{
 
 	$q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
 
-    $sql=sprintf("INSERT OR IGNORE INTO `openvpn_clients` (uid,ComputerOS) VALUES ('%s','%s')",$connection_name,$_POST["ComputerOS"]);
+    // Pentest 2026-11-04 : ComputerOS etait concatene dans la requete.
+    $sql="INSERT OR IGNORE INTO `openvpn_clients` (uid,ComputerOS) VALUES (?,?)";
+    $params=array($connection_name,strval($_POST["ComputerOS"]));
 
     if($_POST["ComputerOS"]=="artica"){
         $username=generateRandomSerial();
         $password=generateRandomSerial();
-        $sql=sprintf("INSERT OR IGNORE INTO `openvpn_clients` (uid,ComputerOS,username,password,LocalAuth) VALUES ('%s','%s','%s','%s',1)",$connection_name,"artica",$username,$password);
+        $sql="INSERT OR IGNORE INTO `openvpn_clients` (uid,ComputerOS,username,password,LocalAuth) VALUES (?,?,?,?,1)";
+        $params=array($connection_name,"artica",$username,$password);
     }
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$params);
 	if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
 
 	$sock=new sockets();
@@ -634,7 +1044,7 @@ function buildconfig():bool{
 function download(){
 	$uid=$_GET["uid"];
 	header("Content-Type:  application/zip");
-	header("Content-Disposition: attachment; filename=$uid.zip");
+	header("Content-Disposition: attachment; filename=".preg_replace('#[^A-Za-z0-9_.@-]#','_',(string)$uid).".zip"); // Pentest 2026-11-04 : injection d'en-tete
 	header("Cache-Control: no-cache, no-store, must-revalidate"); // HTTP 1.1
 	header("Pragma: no-cache"); // HTTP 1.0
 	header("Expires: 0"); // Proxies
@@ -646,9 +1056,9 @@ function download(){
 	//$ligne=$q->mysqli_fetch_array("SELECT zipcontent,zipsize FROM openvpn_clients WHERE uid='$uid'");
 	//$ligne=$q->QUERY_SQL("SELECT zipcontent,zipsize FROM openvpn_clients WHERE uid='$uid'");
 	//$ligne=mysqli_fetch_array($res);
-	$ligne=$q->mysqli_fetch_array("SELECT zipcontent,zipsize FROM openvpn_clients WHERE uid='$uid'");
-@file_put_contents("/tmp/test.zip",base64_decode($ligne["zipcontent"]));
-shell_exec("/usr/bin/unzip /tmp/test.zip");
+	// Pentest 2026-11-04 : uid etait concatene dans la requete.
+	$results=$q->QUERY_SQL_PARAMS("SELECT zipcontent,zipsize FROM openvpn_clients WHERE uid=?",array($uid));
+	$ligne=(is_array($results) && isset($results[0]))?$results[0]:array();
 
 
 	if(!$q->ok){exit;}

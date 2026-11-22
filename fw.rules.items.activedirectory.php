@@ -1,6 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["adddn"])){add();exit;}
@@ -25,20 +28,21 @@ function uriext():string{
 }
 function add():bool{
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $DN=$q->sqlite_escape_string2(base64_decode($_GET["adddn"]));
+    $DN=base64_decode($_GET["adddn"]);
     $md=$_GET["md"];
-    $jsafter=$_GET["js-after"];
+    $jsafter=jsafter_token($_GET["js-after"]);
     $function=$_GET["function"];
     $samaccountname=$_GET["samaccountname"];
-    $gpid=$_GET["gpid"];
-    $date=date("Y-m-d H:i:s");
+    $gpid=intval($_GET["gpid"]);
+    $description="{group}: ".base64_decode($samaccountname);
     header("content-type: application/x-javascript");
-    $description=$q->sqlite_escape_string2("{group}: ".base64_decode($samaccountname));
-    $sql="INSERT INTO webfilters_sqitems (gpid,pattern,enabled,zdate,description) VALUES ($gpid,'$DN',1,'$date','$description')";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->js_error($q->mysql_error);
+    $enabled=1;
+    [$ok,$err]=acls_api_send("POST","/proxy/acls/sqlite/items",[
+        "gpid"  => $gpid,
+        "items" => [["pattern"=>$DN,"enabled"=>$enabled,"description"=>$description]],
+    ]);
+    if(!$ok){
+        echo $tpl->js_error(is_string($err)?$err:"insert failed");
         return false;
     }
     echo "$('#$md').remove();\n";
@@ -97,17 +101,18 @@ function search(){
     $groups=$tpl->_ENGINE_parse_body("{groups2}");
     $domain=$tpl->_ENGINE_parse_body("{domain}");
     $html=array();
-    $html[]="<table id='table-wizardnew-objects' class=\"table table-hover\" data-page-size=\"100\" data-paging=\"true\">";
+    // Quatre colonnes dont une pour la seule icone: le groupe et son domaine
+    // designent le meme objet, le domaine devient le sous-titre.
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th>&nbsp;</th>";
     $html[]="<th>$groups</th>";
-    $html[]="<th>$domain</th>";
-    $html[]="<th></th>";
+    $html[]="<th>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
-    $id=$_GET["id"];
+    $html[]="<tbody id='rulesitemsad-rows'>";
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
     reset($q->acl_GroupType);
     $TRCLASS=null;
     $method=$tpl->_ENGINE_parse_body("{method}").":";
@@ -132,20 +137,12 @@ function search(){
         }
 
         $html[]="<tr>";
-        $html[]="<td colspan='4'>{your_search_results} <strong>&laquo;$search&raquo;</strong>{$servers}: <span class='text-danger'>{no_data}</span></td>";
+        $html[]="<td colspan='2' class='awc-empty'>{your_search_results} <strong>&laquo;".htmlspecialchars($search)."&raquo;</strong>{$servers}: <span class='text-danger'>{no_data}</span></td>";
         $html[]="</tr>";
-        $html[]="</tbody>";
-        $html[]="<tfoot>";
+        // Sortie anticipee: elle doit fermer AUSSI les div du conteneur awc.
+        $html[]="</tbody></table></div></div></div>";
 
-        $html[]="<tr>";
-        $html[]="<td colspan='4'>";
-        $html[]="<ul class='pagination pull-right'></ul>";
-        $html[]="</td>";
-        $html[]="</tr>";
-        $html[]="</tfoot>";
-        $html[]="</table>";
-
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return;
     }
 
@@ -155,7 +152,7 @@ function search(){
     foreach ($Array as $dn => $samaccountname){
         $choose=null;
         $funct="Select".md5($dn);
-        $choose="<button class='btn btn-primary btn-xs' type='button' OnClick=\"$funct();\">$select</button>";
+        $choose="<button class='awc-btn' type='button' OnClick=\"$funct();\">$select</button>";
         $trid=md5($dn);
         $dn_dom=array();
         $dn_temp=strtolower($dn);
@@ -176,32 +173,35 @@ function search(){
 
 
 
+        // Les trois cellules fermaient un </span> jamais ouvert, et la derniere
+        // un </center> absent.
         $html[]="<tr id='$trid'>";
-        $html[]="<td class=\"center\" style='width:1%' nowrap><i class='far fa-users'></i></td>";
-        $html[]="<td nowrap>{$samaccountname}</span></td>";
-        $html[]="<td nowrap>{$domain}</span></td>";
-        $html[]="<td class=center style='width:1%' nowrap>$choose</center></span></td>";
+        $html[]="<td><div class='awc-ident'>"
+               ."<span class='awc-ico'><i class='far fa-users'></i></span>"
+               ."<div><div class='awc-name'>".htmlspecialchars((string)$samaccountname)."</div>"
+               ."<div class='awc-meta'>".htmlspecialchars((string)$domain)."</div>"
+               ."</div></div></td>";
+        $html[]="<td><div class='awc-acts' style='opacity:1'>$choose</div></td>";
         $html[]="</tr>";
 
 
     }
 
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($Array)."</span>"
+           ."<span class='awc-pg' id='rulesitemsad-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    // Le bloc <script> est concatene APRES l'analyse: il declare une fonction
+    // par groupe trouve, et la regex #{(.+?)}# de _ENGINE_parse_body prenait
+    // chaque corps de fonction pour un jeton a resoudre.
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n"
+           .@implode("\n", $js)."\n</script>";
 
-    $html[]="<script>";
-    $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."";
-    $html[]=@implode("\n", $js);
-    //$html[]="$(document).ready(function() { $('#table-wizardnew-objects').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"rulesitemsad-rows","rulesitemsad-pager");
 }

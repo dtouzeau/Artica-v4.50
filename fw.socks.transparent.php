@@ -25,7 +25,8 @@ function js(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ID=$_GET["ruleid"];
+	// Pentest 2026-11-04 : ruleid etait concatene dans la requete.
+	$ID=intval($_GET["ruleid"]);
 	$ligne=$q->mysqli_fetch_array("SELECT servicename FROM `redsocks` WHERE ID=$ID");
 	$title="{$ligne["servicename"]}: {transparent}";
 	$tpl->js_dialog7($title,"$page?rule-tabs=$ID",950);

@@ -1,5 +1,8 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.maillogs.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
@@ -28,23 +31,29 @@ function options_js(){
 function report_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $tpl->js_dialog1("{report}", "$page?report-popup={$_GET["report"]}");
+    // Pentest 2026-11-04 : report etait recopie sans encodage dans la page (XSS).
+    $report=req_url($_GET["report"]);
+    $tpl->js_dialog1("{report}", "$page?report-popup=$report");
 }
 function report_popup(){
-    echo base64_decode($_SESSION["score_tootip"][$_GET["report-popup"]]);
+    // Pentest 2026-11-04 : rapport antispam (journal, donnee externe) affiche sans filtrage (XSS stockee).
+    echo html_safe_fragment(base64_decode($_SESSION["score_tootip"][$_GET["report-popup"]] ?? ""));
 }
 function delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
+	// Pentest 2026-11-04 : delete-js etait recopie sans encodage dans la page (XSS).
 	$id=$_GET["delete-js"];
-	$tpl->js_confirm_delete($id, "delete", $id,"$('#{$_GET["md"]}').remove()");
+	$tpl->js_confirm_delete(req_html($id), "delete", $id,"$('#{$_GET["md"]}').remove()");
 }
 function delete(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$GLOBALS["CLASS_SOCKETS"]->getFrameWork("postfix2.php?history-delete={$_POST["delete"]}");
 	$q=new lib_sqlite("/home/artica/SQLITE/postfix_events.db");
-	$q->QUERY_SQL("DELETE FROM postfix_search WHERE ID='{$_POST["delete"]}'");
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$delid=intval($_POST["delete"]);
+	$q->QUERY_SQL("DELETE FROM postfix_search WHERE ID='$delid'");
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -92,8 +101,9 @@ function options_popup(){
 function options_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $_SESSION["MAX_LINES"]=$_POST["MAX_LINES"];
-    $_SESSION["DAYS_LEFT"]=$_POST["DAYS_LEFT"];
+    // Pentest 2026-11-04 : MAX_LINES/DAYS_LEFT etait recopie sans encodage dans la page (XSS).
+    $_SESSION["MAX_LINES"]=intval($_POST["MAX_LINES"]);
+    $_SESSION["DAYS_LEFT"]=intval($_POST["DAYS_LEFT"]);
 }
 
 function tabs(){
@@ -126,7 +136,7 @@ function RTMMail(){
     echo "<div style='margin-top:10px'></div>";
     echo $tpl->search_block($page,null,null,null,"&RTMMail-search=yes");
 
-    $jsApply=$tpl->framework_buildjs("articamilter.php?export=yes",
+    $jsApply=$tpl->framework_buildjs("/articamilter/export/gz",
         "articamilter.progress",
         "articamilter.log","progress-postfix-maillog",
         "document.location.href='/$page?download=yes'");
@@ -158,24 +168,14 @@ function RTMMail_search(){
     }
     $t=time();
     $tpl=new template_admin();
-    $sock=new sockets();
-    $sock->getFrameWork("articamilter.php?syslog=".urlencode($search));
-    $file_result=PROGRESS_DIR."/articamilter.syslog";
-    $lines=explode("\n",@file_get_contents($file_result));
-    krsort($lines);
+    $lines=$tpl->logfile_search("articamilter",array("TERM"=>(string)$search,"MAX"=>1500),false);
 
-    $html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{time}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{from}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{to}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{subject}</th>";
-
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{subject}</th>";
+    $html[]="<th>{ipaddr}</th>";
+    $html[]="<th>{time}</th>";
+    $html[]="</tr></thead><tbody id='pfxml-rows'>";
 
     $TRCLASS=null;
     foreach ($lines as $line){
@@ -197,25 +197,15 @@ function RTMMail_search(){
 
 
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $stime=$tpl->time_to_date($sdate,true);
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td style='width:1%' nowrap>$stime</td>";
-        $html[]="<td style='width:1%;' nowrap class='$class'>{$MAIN["ipaddr"]}</td>";
-        $html[]="<td style='width:1%;' nowrap class='$class'>{$MAIN["from"]}</td>";
-        $html[]="<td width=1% class='$class'>$recipients</td>";
-        $html[]="<td width=99% class='$class'>$subject</td>";
-        $html[]="</tr>";
-        
-
-
+        $html[]=pfxml_milter_row($tpl->time_to_date($sdate,true),
+            (string)($MAIN["ipaddr"] ?? ""),(string)($MAIN["from"] ?? ""),$recipients,$subject);
     }
-    $jsApply=$tpl->framework_buildjs("articamilter.php?export=yes",
+    $jsApply=$tpl->framework_buildjs("/articamilter/export/gz",
         "articamilter.progress",
         "articamilter.log","progress-postfix-maillog",
         "document.location.href='/$page?download=yes'");
 
-    $jsApply_csv=$tpl->framework_buildjs("articamilter.php?csv=yes",
+    $jsApply_csv=$tpl->framework_buildjs("/articamilter/export/csv",
         "articamilter.progress",
         "articamilter.log","progress-postfix-maillog",
         "document.location.href='/$page?csv=yes'");
@@ -239,14 +229,20 @@ function RTMMail_search(){
 
 
 
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span class='awc-pg' id='pfxml-pager'></span>";
+    $html[]="</div></div></div>";
+
     $html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	$jstiny
 	</script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js(100,"pfxml-rows","pfxml-pager");
 }
 
 
@@ -287,14 +283,16 @@ function RunInvestigate(){
 
 
 	$page=CurrentPageName();
+// Pentest 2026-11-04 : div-id etait recopie sans encodage dans la page (XSS).
     $jsApply=$tpl->framework_buildjs("postfix2.php?history-search=$patternenc&md5=$md5",
         "postfix.events.$md5.progress","postfix.events.$md5.progress.txt",
         "progress-postfix-maillog",
-        "LoadAjax('{$_GET["div-id"]}','$page?table=$md5');");
+        "LoadAjax('".req_js($_GET["div-id"] ?? "")."','$page?table=$md5');");
 
 
 
-    $TINY_ARRAY["TITLE"]="{messaging}:{investigate} &laquo;{$_GET["search"]}&raquo;";
+    // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+    $TINY_ARRAY["TITLE"]="{messaging}:{investigate} &laquo;".req_html($_GET["search"])."&raquo;";
     $TINY_ARRAY["ICO"]="fas fa-eye";
     $TINY_ARRAY["EXPL"]="{mail_investigate_explain}";
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
@@ -308,7 +306,8 @@ function RunInvestigate(){
 function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-    $md5=$_GET["table"];
+    // Pentest 2026-11-04 : table etait recopie sans controle dans un chemin de fichier.
+    $md5=preg_replace('/[^a-f0-9]/','',strtolower((string)$_GET["table"]));
     unset( $_SESSION["score_tootip"]);
     if(!isset($_SESSION["MAX_LINES"])){$_SESSION["MAX_LINES"]=200;}
     if(!isset($_SESSION["DAYS_LEFT"])){$_SESSION["DAYS_LEFT"]=0;}
@@ -320,17 +319,12 @@ function table(){
 
     $finalLogs=PROGRESS_DIR."/postfix.events.$md5.progress.txt";
 	
-	$html[]="<table id='table-my-postfix-search' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{time}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{service}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{pid}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{last_days} {$array["DAYS_LEFT"]} {$_SESSION["MAX_LINES"]} {max_lines}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";	
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{last_days} {$array["DAYS_LEFT"]} {$_SESSION["MAX_LINES"]} {max_lines}</th>";
+	$html[]="<th class='center'>{status}</th>";
+	$html[]="<th>{time}</th>";
+	$html[]="</tr></thead><tbody id='pfxmls-rows'>";
 	
 VERBOSE("$finalfile = ".filesize($finalfile));
     $results=array();
@@ -373,13 +367,7 @@ VERBOSE("$finalfile = ".filesize($finalfile));
             $status="<span class='label'>ANTISPAM</span>";
             $service="Policy server";
             $text=scanispam($text);
-            $html[]="<tr class='$TRCLASS'>";
-            $html[]="<td style='width:1%' nowrap>{$status}</td>";
-            $html[]="<td style='width:1%;' nowrap class='$class'>$date</td>";
-            $html[]="<td style='width:1%;' nowrap class='$class'>$service</td>";
-            $html[]="<td style='width:1%;' nowrap class='$class'>$pid</td>";
-            $html[]="<td width=99% class='$class'>$text</td>";
-            $html[]="</tr>";
+            $html[]=pfxml_syslog_row($status,$date,$service,$pid,$text);
             continue;
         }
 
@@ -443,7 +431,8 @@ VERBOSE("$finalfile = ".filesize($finalfile));
         if(!$mdgid_parsed) {
             if (preg_match("#^([A-Z0-9]+):\s+#", $text, $re)) {
                 $msgid = $re[1];
-                $js_msgid = "Loadjs('fw.postfix.transactions.php?second-query=" . base64_encode("WHERE msgid='$msgid'") . "&title=" . urlencode("{see_messages_with}:$msgid") . "')";
+                // Pentest 2026-11-04 : msgid etait concatene dans la clause second-query (desormais signee et echappee).
+                $js_msgid = "Loadjs('fw.postfix.transactions.php?second-query=" . signed_html_token("WHERE msgid='".pg_escape_string2($msgid)."'") . "&title=" . urlencode("{see_messages_with}:$msgid") . "')";
                 $msgid = $tpl->td_href($msgid, "{see_messages_with}:$msgid", $js_msgid);
                 $text = str_replace($re[1], $msgid, $text);
             }
@@ -540,47 +529,72 @@ VERBOSE("$finalfile = ".filesize($finalfile));
 
         //Loadjs('fw.postfix.transactions.php?second-query=V0hFUkUgbXNnaWQ9J0Q3NEZGMjgwMEQxJw==&title=%7Bsee_messages_with%7D%3AD74FF2800D1')
 		
-		$html[]="<tr class='$TRCLASS'>";
-		$html[]="<td style='width:1%' nowrap>{$status}</td>";
-		$html[]="<td style='width:1%;' nowrap class='$class'>$date</td>";
-		$html[]="<td style='width:1%;' nowrap class='$class'>$service</td>";
-        $html[]="<td style='width:1%;' nowrap class='$class'>$pid</td>";
-		$html[]="<td width=99% class='$class'>$text</td>";
-		$html[]="</tr>";
-		
+		$html[]=pfxml_syslog_row($status,$date,$service,$pid,$text);
 	}
 
+	// Les lignes du journal d'execution de la recherche: elles n'ont ni service ni
+	// PID, seulement un texte.
 	$restuls=explode("\n",@file_get_contents("$finalLogs"));
     foreach ($restuls as $ligne){
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td width=1% nowrap-</td>";
-        $html[]="<td style='width:1%;' nowrap class='$class'>-</td>";
-        $html[]="<td style='width:1%;' nowrap class='$class'>-</td>";
-        $html[]="<td style='width:1%;' nowrap class='$class'>-</td>";
-        $html[]="<td width=99% class='$class'>$ligne</td>";
-        $html[]="</tr>";
-
+        $ligne=trim($ligne);
+        if($ligne===""){continue;}
+        $html[]=pfxml_syslog_row("","","","",htmlspecialchars($ligne));
     }
-	
-	
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='6'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table><div><i></i></div>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span class='awc-pg' id='pfxmls-pager'></span>";
+	$html[]="</div></div></div>";
 	$html[]="
 	<script>
 	document.getElementById('progress-postfix-maillog').innerHTML='';
 	NoSpinner();
 	</script>";
-	
-	echo $tpl->_ENGINE_parse_body($html);
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body($html)
+		.awc_pager_js(100,"pfxmls-rows","pfxmls-pager");
+}
+
+/**
+ * Une transaction vue par artica-milter: sujet en identite, expediteur et
+ * destinataires en sous-titre. Sujet et adresses viennent des en-tetes du
+ * message -- donc d'un tiers -- et etaient rendus BRUTS.
+ */
+function pfxml_milter_row($stime,$ipaddr,$from,$recipients,$subject):string{
+    $subject=trim((string)$subject);
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-envelope'></i></span>";
+    $h.="<span><span class='awc-name'>"
+        .($subject===""?"<span class='awc-none'>{no_subject}</span>":htmlspecialchars($subject))."</span>";
+    $h.="<div class='awc-meta'>".htmlspecialchars(trim((string)$from));
+    if(trim((string)$recipients)!==""){$h.=" &rarr; ".$recipients;}
+    $h.="</div></span></div></td>";
+    $h.="<td class='awc-mono'>".htmlspecialchars((string)$ipaddr)."</td>";
+    $h.="<td class='awc-mono'>".htmlspecialchars((string)$stime)."</td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/**
+ * Une ligne de syslog: le message est l'identite (c'est ce qu'on lit), le service
+ * et le PID passent en sous-titre -- deux colonnes etroites qui repoussaient le
+ * texte, seul contenu utile, tout a droite.
+ * $text est deja mis en forme par l'appelant (liens de zoom, mises en evidence).
+ */
+function pfxml_syslog_row($status,$date,$service,$pid,$text):string{
+    $meta=trim(trim((string)$service)." ".(trim((string)$pid)!==""?"[".$pid."]":""));
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-file-lines'></i></span>";
+    $h.="<span><span class='awc-name' style='font-weight:400'>$text</span>";
+    if($meta!==""){$h.="<div class='awc-meta'>".htmlspecialchars($meta)."</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='center'>".($status!==""?$status:"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="<td class='awc-mono'>".($date!==""?htmlspecialchars((string)$date):"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="</tr>";
+    return $h;
 }
 
 function scanispam($content){
@@ -607,18 +621,20 @@ $page=CurrentPageName();
     $content_filter=str_replace("\n","<br>",$content_filter);
     if(intval($score)>0) {
         $_SESSION["score_tootip"][$msgid]=base64_encode($content_filter);
-        $score_tootip = "<span class='text-danger'><strong>".$tpl->td_href($score,"{report}","Loadjs('$page?report-js=yes&report=$msgid')")."</strong></span>";
+        $score_tootip = "<span class='text-danger'><strong>".$tpl->td_href($score,"{report}","Loadjs('$page?report-js=yes&report=".req_url($msgid)."')")."</strong></span>";
     }
 
+    // Pentest 2026-11-04 : domaine/IP/hostname/destinataire/msgid (journal MIMEDEFANG, donnee externe) affiches sans encodage (XSS stockee).
     $sender=$tpl->td_href($FROM, null,
-        "Loadjs('fw.postfix.transactions.php?zoom-from-js=$encode&domain=$domainFROM')");
+        "Loadjs('fw.postfix.transactions.php?zoom-from-js=$encode&domain=".req_url($domainFROM)."')");
 
     $ipaddr=$tpl->td_href($IP,null,
-        "Loadjs('fw.postfix.transactions.php?zoom-ip-js=$IP&hostname=$hostname&maillog=yes')");
+        "Loadjs('fw.postfix.transactions.php?zoom-ip-js=".req_url($IP)."&hostname=".req_url($hostname)."&maillog=yes')");
 
-    $js_msgid=$tpl->td_href($msgid,null,"Loadjs('fw.postfix.transactions.php?second-query=".base64_encode("WHERE msgid='$msgid'")."&title=".urlencode("{see_messages_with}:$msgid")."')");
+    // Pentest 2026-11-04 : msgid etait concatene dans la clause second-query (desormais signee et echappee).
+    $js_msgid=$tpl->td_href($msgid,null,"Loadjs('fw.postfix.transactions.php?second-query=".signed_html_token("WHERE msgid='".pg_escape_string2($msgid)."'")."&title=".urlencode("{see_messages_with}:$msgid")."')");
 
-    $text="$js_msgid: $score_tootip from=$sender, To: $recipient  $ipaddr:[$hostname] $size<br><small>$subject</small>";
+    $text="$js_msgid: $score_tootip from=$sender, To: ".req_html($recipient)."  $ipaddr:[".req_html($hostname)."] $size<br><small>$subject</small>";
 
     return $text;
 }

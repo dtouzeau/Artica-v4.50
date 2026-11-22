@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 if(isset($_SESSION["TIMEZONES"])){if(function_exists("getLocalTimezone")){@date_default_timezone_set($_SESSION["TIMEZONES"]);}}
 if(isset($GLOBALS["TIMEZONES"])){if(function_exists("getLocalTimezone")){@date_default_timezone_set($GLOBALS["TIMEZONES"]);}}
 if(function_exists("posix_getuid")){
@@ -7,7 +9,14 @@ if(function_exists("posix_getuid")){
 if(!isset($GLOBALS["DEBUG"])){$GLOBALS["DEBUG"]=false;}
 if(!isset($GLOBALS["DEBUG_TEMPLATE"])){$GLOBALS["DEBUG_TEMPLATE"]=false;}
 if(!isset($GLOBALS["DEBUG_MEM"])){$GLOBALS["DEBUG_MEM"]=false;}
-if(!isset($GLOBALS["DEBUGLOGS"])){$GLOBALS["DEBUGLOGS"]=false;}
+// DEBUGLOGS est un ACCUMULATEUR: les huit sites qui l'alimentent font
+// $GLOBALS["DEBUGLOGS"][]="..."; aucun ne le lit comme un booleen. L'initialiser
+// a false le rendait non denombrable, et les deux count($GLOBALS["DEBUGLOGS"])
+// des branches d'erreur de Ldap_modify()/Ldap_add() levaient alors une
+// TypeError SOUS PHP 8 -- un fatal a corps vide, donc un 500 muet qui remplacait
+// le message LDAP que ces branches etaient justement en train de composer.
+// (PHP 7 se contentait d'un avertissement et renvoyait 1.)
+if(!isset($GLOBALS["DEBUGLOGS"]) || !is_array($GLOBALS["DEBUGLOGS"])){$GLOBALS["DEBUGLOGS"]=array();}
 if(function_exists("debug_mem")){debug_mem();}
 
 if(dirname($_SERVER['PHP_SELF'])<>"/smartsieve"){
@@ -36,6 +45,34 @@ define('grep_ip','([0-9]+)\.([0-9]+)\.([0-9]+)\.([0-9]+)');
 
 
 class clladp{
+
+    /**
+     * Intitule de l'appelant, pour les messages d'erreur.
+     *
+     * debug_backtrace() ne garantit AUCUNE de ses cles: "class" manque des que
+     * l'appelant est une fonction ordinaire -- exactement le cas de
+     * fw.groups.ldap.php/privileges_save() --, "file" et "line" manquent pour un
+     * appel interne (call_user_func, closure, __destruct), et le cadre demande
+     * peut ne pas exister du tout quand la methode est appelee depuis le niveau
+     * global. Les dix sites qui lisaient $trace[1]["file"|"class"|"line"] en
+     * direct emettaient donc un "Undefined array key" a CHAQUE erreur LDAP, et
+     * laissaient $called indefini a l'interpolation quand le cadre manquait.
+     *
+     * $depth=2 reproduit le cadre que lisaient ces appels directs: vu d'ici,
+     * [0]=cette methode, [1]=la methode LDAP qui m'appelle, [2]=son appelant.
+     */
+    private function CallerTrace($depth=2):string{
+        if(!function_exists("debug_backtrace")){return "";}
+        $trace=debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,$depth+1);
+        if(!isset($trace[$depth]) || !is_array($trace[$depth])){return "";}
+        $f=$trace[$depth];
+        $file =isset($f["file"])?basename($f["file"]):"?";
+        $line =isset($f["line"])?$f["line"]:"?";
+        $func =isset($f["function"])?$f["function"]:"?";
+        $class=isset($f["class"])?$f["class"]."/":"";
+        return " called by $file $class$func() line $line";
+    }
+
     var $ldap_admin=null;
     var $ldap_password=null;
     var $ldap_host;
@@ -71,8 +108,7 @@ class clladp{
 
 
         if($GLOBALS["VERBOSE++"]){
-            $trace=debug_backtrace();
-            $called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";
+            $called=$this->CallerTrace();
             writelogs("Instanciate ".__CLASS__ ." $called",__CLASS__."/" .__FUNCTION__,__FILE__);
         }
 
@@ -158,11 +194,14 @@ class clladp{
 
             $zCalled=array();
             if(!$this->ldapbind){
-                $trace=debug_backtrace();
+                // Meme precaution que CallerTrace(), appliquee a la pile entiere:
+                // un cadre interne n'a ni "file" ni "line".
+                $trace=debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
                 foreach ($trace as $index=>$are) {
                     $zCalled[] = " called by " .
-                        basename($are["file"]) .
-                        " {$are["function"]}() line {$are["line"]}";
+                        (isset($are["file"])?basename($are["file"]):"?") .
+                        " ".(isset($are["function"])?$are["function"]:"?")."() line " .
+                        (isset($are["line"])?$are["line"]:"?");
                 }
                 $called=@implode(", ",$zCalled);
                 if($GLOBALS["VERBOSE"]){writelogs("Fatal: ldapbind -> cn=$this->ldap_admin,$this->suffix",__CLASS__.'/'.__FUNCTION__,__FILE__);}
@@ -236,8 +275,7 @@ class clladp{
         if($GLOBALS["VERIFLDAPTRUE"]){return true;}
 
         if(!$this->ldap_fsock_perform($this->ldap_host,$this->ldap_port)){
-            $trace=debug_backtrace();
-            $called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";
+            $called=$this->CallerTrace();
             $this->verbose("ldap_fsock:: Fatal: ERROR unable to connect to ldap server  $this->ldap_host: $this->ldap_port",__LINE__);
             if($GLOBALS["DEBUG"]){writelogs("Fatal: ERROR unable to connect to ldap server in line ". __LINE__." $this->ldap_host, $this->ldap_port $called",__CLASS__."/" .__FUNCTION__,__FILE__);}
             if($this->ldap_host=="127.0.0.1"){$this->ldapFailed=true;return false;}
@@ -441,7 +479,7 @@ class clladp{
 
         if(!function_exists("ldap_connect")){
             $this->verbose("ldap_perform_connection: ldap_connect no such function",__LINE__);
-            if(function_exists("debug_backtrace")){$trace=debug_backtrace();if(isset($trace[1])){$called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";writeLogs("-> Call to undefined function ldap_connect() $called".__LINE__,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}}
+            $called=$this->CallerTrace();writeLogs("-> Call to undefined function ldap_connect() $called".__LINE__,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
             return false;
         }
 
@@ -2482,8 +2520,7 @@ class clladp{
     function _ParsePrivieleges($content=null,$array=array(),$debug=false):array{
         if(!$debug){if(isset($GLOBALS["DEBUG_PRIVS"])){$debug=true;}}
         if($debug){
-            $trace=debug_backtrace();
-            $called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";
+            $called=$this->CallerTrace();
             writelogs("$called",__CLASS__.'/'.__FUNCTION__,__FILE__);
             $strlen=0;
             if(!is_null($content)){
@@ -2651,11 +2688,8 @@ class clladp{
 
         $POSTFIX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"));
         if($POSTFIX_INSTALLED==1){
-            $sock->getFrameWork("cmd.php?postfix-transport-maps=yes");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport");
             if($usr->AMAVIS_INSTALLED){$sock->getFrameWork("cmd.php?amavis-restart=yes");}
-            $EnableDKFilter=$sock->GET_INFO("EnableDkimMilter");
-            if($EnableDKFilter==null){$EnableDKFilter=0;}
-            if($EnableDKFilter==1){$sock->getFrameWork("services.php?reload-dkim=yes");}
             $PostmasterAutoCreate=$sock->GET_INFO("PostmasterAutoCreate");
             if(!is_numeric($PostmasterAutoCreate)){$PostmasterAutoCreate=1;}
             if($PostmasterAutoCreate==1){
@@ -2703,7 +2737,7 @@ class clladp{
         if($hashdoms[$domain]<>null){
             include_once(dirname(__FILE__).'/class.templates.inc');
             $tpl=new templates();
-            $trace=debug_backtrace();if(isset($trace[1])){$called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";}
+            $called=$this->CallerTrace();
             $this->ldap_last_error=$tpl->javascript_parse_text('{error_domain_exists}\nCalled:'.$called);
             return false;
         }
@@ -2975,13 +3009,14 @@ class clladp{
 
         if($nolog==false){
             $this->ldap_last_error_num=$ldap_errno;
-
+            // Seul le cas 12 du switch renseigne $add_error; sans cette valeur par
+            // defaut la concatenation plus bas lisait une variable indefinie.
+            if(!isset($add_error)){$add_error="";}
 
             $error_string="ERROR Number: $ldap_errno $ldap_err2str\nLdap_modify:  " . ldap_err2str(ldap_errno($this->ldap_connection));
             writelogs($ldap_err2str . "($ldap_errno)",__CLASS__ . "/" . __FUNCTION__,__FILE__);
             error_log($ldap_err2str . "($ldap_errno)");
-            $trace=debug_backtrace();
-            if(isset($trace[1])){$called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";}
+            $called=$this->CallerTrace();
             if(count($GLOBALS["DEBUGLOGS"])>0){$add_error=$add_error."\n".@implode("\n", $GLOBALS["DEBUGLOGS"]);}
             return "Error number $ldap_errno $ldap_err2str\nAction:LDAP Modify\n" .
                 ldap_err2str(ldap_errno($this->ldap_connection)).
@@ -3019,14 +3054,16 @@ class clladp{
 
             if($nolog==false){
                 $this->ldap_last_error_num=$ldap_errno;
-                if(function_exists("debug_backtrace")){
-                    $trace=debug_backtrace();
-                    if(isset($trace[1])){$called=" called by ". basename($trace[1]["file"])." {$trace[1]["class"]}/{$trace[1]["function"]}() line {$trace[1]["line"]}";}
-                }
+                $called=$this->CallerTrace();
 
                 $error_string="ERROR Number: $ldap_errno $ldap_err2str\nLdap_modify  \"dn=$dn\" :  " . ldap_err2str(ldap_errno($this->ldap_connection));
                 writelogs($ldap_err2str . "($ldap_errno) Dn:`$dn` $called",__CLASS__ . "/" . __FUNCTION__,__FILE__,__LINE__);
                 error_log($ldap_err2str . "($ldap_errno)");
+                // $infos est initialise AVANT la boucle: un $update_array vide le
+                // laissait indefini, et l'implode() plus bas devenait une TypeError
+                // sous PHP 8 -- que le @ n'attrape pas, puisqu'il masque les
+                // avertissements et non les exceptions.
+                $infos=array();
                 foreach ($update_array as $num=>$ligne){
                     if(is_array($ligne)){
                         foreach ($ligne as $a=>$b){
@@ -3034,13 +3071,19 @@ class clladp{
                             writelogs("ERROR $num($a)=$b",__CLASS__ . "/" . __FUNCTION__,__FILE__,__LINE__);
                         }
                     }else{
-                        $infos[]="$a = $b";
+                        // Cette branche recopiait "$a = $b", deux variables de la
+                        // boucle INTERNE: indefinies au premier tour, perimees
+                        // ensuite. La valeur voulue est celle du tour courant.
+                        $infos[]="$num = $ligne";
                         writelogs("ERROR $num=$ligne",__CLASS__ . "/" . __FUNCTION__,__FILE__,__LINE__);
                     }
 
 
                 }
-                $add_error=null;
+                // $add_error n'est plus remis a null: le switch ci-dessus y place
+                // le conseil « Please index your LDAP server » pour l'erreur 12,
+                // que cette ligne effacait juste avant de l'afficher.
+                if(!isset($add_error)){$add_error="";}
                 if(count($GLOBALS["DEBUGLOGS"])>0){$add_error=$add_error."\n".@implode("\n", $GLOBALS["DEBUGLOGS"]);}
                 $this->ldap_last_error="Error number $ldap_errno $ldap_err2str\nAction:LDAP Modify\ndn:$dn\n" .
                     ldap_err2str(ldap_errno($this->ldap_connection)).$add_error."\nTrace:$called\nInformations\n".@implode("\n", $infos);
@@ -3082,14 +3125,7 @@ class clladp{
 
         if(!$res){
 
-            if(function_exists("debug_backtrace")){
-                $trace=debug_backtrace();
-                if(isset($trace[1])){
-                    if(!isset($trace[1]["class"])){$trace[1]["class"]=null;}
-                    $called=" called by ".
-                        basename($trace[1]["file"]).
-                        " {$trace[1]["class"]}/{$trace[1]["function"]}() line {$trace[1]["line"]}";}
-            }
+            $called=$this->CallerTrace();
 
             $nolog=false;
             if(ldap_errno($this->ldap_connection)=="0"){return true;}
@@ -3173,8 +3209,7 @@ class clladp{
         if(!$r){
             $error=ldap_errno($this->ldap_connection);
             $msg=ldap_err2str(ldap_errno($this->ldap_connection));
-            $trace=debug_backtrace();
-            $called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";
+            $called=$this->CallerTrace();
             $msg=$msg." $called";
             $this->ldap_event($error,$msg,__FUNCTION__,$update_array,$dn);
             if($error==20){return true;}

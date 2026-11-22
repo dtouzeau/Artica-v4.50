@@ -70,10 +70,11 @@ function table(){
 		$date=strtotime($ligne["event_time"]);
 		$date_text=$tpl->time_to_date($date,true);
 		$risk=$ligne["risk"];
-		$dbuser=$ligne["dbuser"];
-		$userip=$ligne["userip"];
-		$query=$ligne["query"];
-		$reason=$ligne["reason"];
+		// Pentest 2026-11-04 : utilisateur/IP/requete SQL/raison (donnee externe) affiches sans encodage (XSS stockee).
+		$dbuser=req_html($ligne["dbuser"]);
+		$userip=req_html($ligne["userip"]);
+		$query=req_html($ligne["query"]);
+		$reason=req_html($ligne["reason"]);
 		
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td style='width:1%' nowrap>{$date_text}</td>";
@@ -96,7 +97,7 @@ function table(){
 	$html[]="</tr>";
 	$html[]="</tfoot>";
 	$html[]="</table>";
-	$html[]="<div><small>$sql</small></div>
+	$html[]="<div><small>".req_html($sql)."</small></div>
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('#table-greensql-alerts').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });

@@ -12,11 +12,11 @@ class openldap_ssl{
 
     public function build(){
         $certificatename=md5($this->certificate);
-        $q = new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $sql = "SELECT `srca`,`SquidCert`,`privkey`,`crt`,`Squidkey`,`UsePrivKeyCrt`  
-                FROM sslcertificates WHERE CommonName='$this->certificate'";
-        $ligne = $q->mysqli_fetch_array($sql);
-        if(!$q->ok){return false;}
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $row=$cdb->getByCommonName($this->certificate);
+        if(!is_object($row)){return false;}
+        $ligne=(array)$row;
         @mkdir("/etc/unbound", 0755, true);
         $field = "privkey";
         if ($ligne["UsePrivKeyCrt"] == 0) {

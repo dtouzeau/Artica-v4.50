@@ -15,7 +15,9 @@ if(isset($_GET["parameters-flat"])){parameters_flat();exit;}
 if(isset($_GET["parameters-popup"])){parameters_popup();exit;}
 
 if(isset($_POST["DisableCategoriesDatabasesUpdates"])){Save_settings();exit;}
-if(isset($_GET["btns-white"])){echo base64_decode($_GET["btns-white"]);exit;}
+// Pentest 2026-11-04 M-01 : la route renvoyait le HTML recu ; elle n'est
+// appelee qu'a vide (pour effacer la zone), elle ne renvoie donc plus rien.
+if(isset($_GET["btns-white"])){exit;}
 page();
 
 function parameters_page():bool{
@@ -72,7 +74,10 @@ function database_status(){
 
 	$DisableCategoriesDatabasesUpdates=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableCategoriesDatabasesUpdates"));
 	$ProductName="Artica";
-	$ProductNamef=dirname(__FILE__) . "/ressources/templates/{$_COOKIE["artica-template"]}/ProducName.conf";
+	// Pentest 2026-11-04 : le cookie artica-template formait un chemin (traversee) ; reduit a un nom de dossier.
+	$ArticaTemplate=basename((string)($_COOKIE["artica-template"] ?? ""));
+	if(!preg_match('/^[A-Za-z0-9_.-]+$/',$ArticaTemplate) || $ArticaTemplate=="." || $ArticaTemplate==".."){$ArticaTemplate="default";}
+	$ProductNamef=dirname(__FILE__) . "/ressources/templates/$ArticaTemplate/ProducName.conf";
 	if(is_file($ProductNamef)){$ProductName=trim(@file_get_contents($ProductNamef));}
 	
 	if($DisableCategoriesDatabasesUpdates==1){

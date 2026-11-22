@@ -1,5 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -8,12 +10,6 @@ if(isset($_GET["status"])){status();exit;}
 if(isset($_POST["CategorizePayit"])){save();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_POST["CategoriesResolvedCache"])){save();exit;}
-if(isset($_POST["PerformanceSave"])){PerformanceSave();exit;}
-if(isset($_GET["SafePorts"])){SafePorts();exit;}
-if(isset($_GET["SafePortTable"])){SafePorts_table();exit;}
-if(isset($_GET["safeport-add"])){SafePorts_add();exit;}
-if(isset($_POST["SafePort"])){SafePorts_save();exit;}
-if(isset($_GET["safeport-http"])){SafePorts_switch();exit;}
 if(isset($_GET["not-categorized"])){not_categorized_table();exit;}
 if(isset($_GET["users-requests-delete"])){users_requests_delete();exit;}
 if(isset($_GET["categories-list-js"])){categories_list_js();exit;}
@@ -29,7 +25,6 @@ if(isset($_GET["search"])){not_categorized_search();exit;}
 if(isset($_GET["not-categorized-delete"])){not_categorized_categorize_delete();exit;}
 if(isset($_GET["not-categorized-scan"])){not_categorized_scan();exit;}
 if(isset($_GET["not-categorized-catz"])){not_categorized_catz();exit;}
-if(isset($_GET["clean-cache"])){clean_cache();exit;}
 if(isset($_GET["import-list-js"])){import_list_js();exit;}
 if(isset($_GET["import-list-popup"])){import_list_popup();exit;}
 if(isset($_POST["import-list"])){import_list_save();exit;}
@@ -56,8 +51,10 @@ function page():bool{
 }
 function not_categorized_categorize_delete():bool{
     header("content-type: application/x-javascript");
-	$familysite=$_GET["not-categorized-delete"];
-	$md=$_GET["num"];
+	// Le domaine partait BRUT dans une expression reguliere PostgreSQL et le
+	// jeton $md BRUT dans le JavaScript renvoye. $md est toujours un md5.
+	$familysite=pg_escape_string2((string)$_GET["not-categorized-delete"]);
+	$md=preg_replace('/[^a-f0-9]/','',(string)($_GET["num"] ?? ""));
 	$q=new postgres_sql();
 	$q->QUERY_SQL("DELETE FROM cloud_categorize WHERE domain ~'$familysite'");
 	echo "$('#$md').remove();";
@@ -67,9 +64,12 @@ function not_categorized_categorize_delete():bool{
 function not_categorized_catz():bool{
     $page=CurrentPageName();
     header("content-type: application/x-javascript");
+    // Le domaine cible partait BRUT dans quatre requetes (deux DELETE, un
+    // DELETE par expression reguliere, un INSERT) et $md BRUT dans le
+    // JavaScript renvoye.
     $familysite=$_GET["not-categorized-catz"];
-    $domain=$_GET["domain"];
-    $md=$_GET["md"];
+    $domain=pg_escape_string2((string)$_GET["domain"]);
+    $md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
     $tpl=new template_admin();
     $qlproxy=new mysql_squid_builder();
     if(preg_match("#^(www|mail)\.(.+)#",$familysite,$re)){
@@ -90,23 +90,29 @@ function not_categorized_catz():bool{
 
 
 
-    if(!$qlproxy->categorize($familysite, $_GET["category"],$FORCE)){
+    // L'identifiant de categorie etait transmis brut a categorize() alors qu'il
+    // etait deja converti en entier dix lignes plus bas: une seule conversion,
+    // au plus tot.
+    $category_id=intval($_GET["category"]);
+    if(!$qlproxy->categorize($familysite, $category_id,$FORCE)){
         echo $tpl->js_error("{failed} $qlproxy->mysql_error");
         return false;
     }
-    $uid=$_SESSION["uid"];
+    $uid=pg_escape_string2((string)$_SESSION["uid"]);
     if($uid=="-100"){
         $uid="Manager";
     }
 
-    $category_id=intval($_GET["category"]);
     $mem=new lib_memcached();
     $mem->saveKey("CATEGORY:$qlproxy->finaldomain", $category_id,86400);
     $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE domain = '$domain'");
     $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE domain ~ '$domain'");
     $catz=new mysql_catz();
     $categoryname=$catz->CategoryIntToStr($category_id);
-    echo "document.getElementById('fam-$md').innerHTML='<span style=\"color:red\">$familysite OK ADDED TO $categoryname</span>';\n";
+    // Le nom de domaine est ecrit dans une chaine JavaScript simple-quote: une
+    // apostrophe suffisait a rompre l'instruction renvoyee.
+    $famjs=addslashes(htmlspecialchars($familysite));
+    echo "document.getElementById('fam-$md').innerHTML='<span style=\"color:red\">$famjs OK ADDED TO $categoryname</span>';\n";
 
     $sql="CREATE TABLE IF NOT EXISTS categorize_logs (
             domain varchar(255) PRIMARY KEY,
@@ -158,6 +164,11 @@ function import_list_save():bool{
         if(strpos("   $domain", "#")>0){continue;}
         if(preg_match("#^[0-9\.]+$#",$domain)){continue;}
         $zdate=date("Y-m-d H:i:s");
+        // La liste de caracteres refuses juste au-dessus ne contenait ni
+        // l'apostrophe ni l'antislash: une ligne collee dans le champ d'import
+        // suffisait a detourner l'INSERT.
+        $domain=pg_escape_string2(trim((string)$domain));
+        if($domain===""){continue;}
         $c++;
         $q->QUERY_SQL("INSERT INTO cloud_categorize(domain,created) VALUES ('$domain','$zdate') ON CONFLICT DO NOTHING");
         if(!$q->ok){
@@ -173,15 +184,19 @@ function import_list_save():bool{
 
 }
 function not_categorized_scan(){
+    // Le domaine partait BRUT dans le DELETE et dans les trois chaines
+    // JavaScript renvoyees; $md est toujours un md5.
     $familysite=$_GET["not-categorized-scan"];
-    $md=$_GET["md"];
+    $md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
+    $famjs=addslashes(htmlspecialchars($familysite));
     $catz=new mysql_catz();
     $category=$catz->GET_CATEGORIES($familysite);
     if($category>0){
         $q=new postgres_sql();
-        $q->QUERY_SQL("DELETE FROM not_categorized WHERE familysite='$familysite'");
+        $famsql=pg_escape_string2((string)$familysite);
+        $q->QUERY_SQL("DELETE FROM not_categorized WHERE familysite='$famsql'");
         $categoryname=$catz->CategoryIntToStr($category);
-        echo "document.getElementById('fam-$md').innerHTML='$familysite <span style=\"color:red\">$categoryname</span>';\n";
+        echo "document.getElementById('fam-$md').innerHTML='$famjs <span style=\"color:red\">$categoryname</span>';\n";
         echo "setTimeout(\"$('#$md').remove()\",1000);\n";
         echo "setTimeout(\"$('#des_$md').remove()\",1000);";
         return;
@@ -196,12 +211,12 @@ function not_categorized_scan(){
     } catch(Net_DNS2_Exception $e) {
         $message=$e->getMessage();
         if(stripos("  $message","referenced in the query does not exist")>0){
-            echo "document.getElementById('fam-$md').innerHTML='$familysite <span style=\"color:red\">No DNS</span>';\n";
+            echo "document.getElementById('fam-$md').innerHTML='$famjs <span style=\"color:red\">No DNS</span>';\n";
 
         }
         return;
     }
-    echo "document.getElementById('fam-$md').innerHTML='$familysite {$result->answer[0]->address}';";
+    echo "document.getElementById('fam-$md').innerHTML='$famjs {$result->answer[0]->address}';";
 
 
 
@@ -279,20 +294,14 @@ function status():bool{
 
 
 	$widget1=$tpl->widget_jaune("{not_categorized}",$not_categorized);
-	$html[]="<table style='width:100%;margin-top:20px'>";
-	$html[]="<tr>";
-	$html[]="<td style='width:355px'>";
-    $html[]=$widget1;
-	$html[]="</td>";
-	$html[]="<td style='width:355px;vertical-align:top;padding-top:7px;padding-left:15px'>";
-    $html[]="<div style='border-top:0;width:355px'>";
-	$html[]="<div id='cached-websites-catz'></div>";
-	$html[]="";
-    $html[]="</div>";
-	$html[]="</td>";
-    $html[]="<td style='width:99%'>&nbsp;</td>";
-	$html[]="</tr>";
-    $html[]="</table>";
+	// Mise en page en flex. Les cellules etaient figees a 355px alors qu'une
+	// tuile de service en mesure 335: la colonne de droite, qui recoit le
+	// classement par contributeur, etait rognee des que le tableau depassait
+	// trois colonnes.
+	$html[]="<div style='display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;margin-top:20px'>";
+	$html[]="<div style='flex:0 0 auto'>$widget1</div>";
+	$html[]="<div style='flex:1 1 420px;min-width:0' id='cached-websites-catz'></div>";
+	$html[]="</div>";
     $html[]="<script>";
     $html[]="LoadAjaxTiny('cached-websites-catz','$page?groupby=yes')";
     $html[]="</script>";
@@ -310,10 +319,6 @@ function not_categorized_search():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 
-
-	$html[]="<table id='table-notcategorized-sites' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
     $q=new postgres_sql();
     $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE title LIKE '%Artica v4.x Infrastructure Appliances%'");
     $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE title LIKE 'Buy and Sell Domain Names%'");
@@ -351,25 +356,22 @@ function not_categorized_search():bool{
     $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE title LIKE '%Dit domein is gereserveerd%'");
     $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE title LIKE '%Your Internet Address For Life%'");
     $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE title LIKE '% is for sale%'");
-           $TRCLASS=null;
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{domains}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{action}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{scan}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</center></th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-    $CategorizeRandom=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategorizeRandom");
 
+    // La saisie partait BRUTE dans trois LIKE PostgreSQL: une apostrophe
+    // suffisait a detourner la requete.
+    $CategorizeRandom=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategorizeRandom");
     $ORDER="created ASC";
     if($CategorizeRandom==1){
         $ORDER="random()";
     }
-    $search="*".$_GET["search"]."*";
+    $search=pg_escape_string2("*".trim((string)($_GET["search"] ?? ""))."*");
     $search=str_replace("**","*",$search);
     $search=str_replace("*","%",$search);
-    $sql="SELECT * FROM cloud_categorize and rscan=1 ORDER BY created ASC LIMIT 250";
+
+    // La branche sans filtre etait syntaxiquement fausse ("FROM
+    // cloud_categorize and rscan=1", sans WHERE). Elle n'etait jamais atteinte
+    // -- $search vaut au minimum "%" -- mais elle aurait echoue.
+    $sql="SELECT * FROM cloud_categorize WHERE rscan=1 ORDER BY $ORDER LIMIT 250";
     if($search<>null){
         $sql="SELECT * FROM cloud_categorize WHERE (domain LIKE '$search' OR title LIKE '$search' OR description LIKE '$search') and rscan=1 ORDER BY $ORDER LIMIT 250";
     }
@@ -380,119 +382,135 @@ function not_categorized_search():bool{
         echo "<script>Loadjs('$page?not-categorized-head=yes');</script>";
         return false;
     }
-	
-    $style='font-size:14px;fonct-weight:bold';
+
 	$fam=new familysite();
+	$rows=array();
 	while ($ligne = pg_fetch_assoc($results)) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $domain=$ligne["domain"];
-		$md=md5(serialize($ligne));
-        if(preg_match("#^(www|ww|mx|admin|magento|hostmaster|ns|ns1|webmail|mail|bbs|cpanel|webdisk|autodiscover|smtp|cpcalendars|cpcontacts)\.(.+)#",$domain,$re)){
-            $domain=$re[2];
-        }
-        $numenc=urlencode($domain);
-        $tooldoms=$numenc;
-		$xfam=$fam->GetFamilySites($domain);
-        $domain_url=$tpl->td_href("<span class='label label-default' style='$style'>{$domain}</span>","{categorize}","Loadjs('$page?categorize-this-js=$numenc&md=$md&domain=$domain');");
+		$rows[]=catz_notcat_row($ligne,$fam,$page,$tpl);
+	}
+	$shown=count($rows);
 
-        if($xfam<>$domain){
-            $tooldoms=$xfam;
-            $domain_url=$domain_url."&nbsp;|&nbsp;".$tpl->td_href("<span class='label label-default' style='$style'>$xfam</span>","{categorize}","Loadjs('$page?categorize-this-js=$numenc&md=$md&domain=$xfam');");
-        }
-        $www=null;
-        if($domain==$xfam){
-            if(!preg_match("#^www\.#",$domain)){
-                $www="www.";
-            }
-        }
-        $link="http://$www$domain";
-        $visits="<i class='fa fa-link'></i>&nbsp;".$tpl->td_href("{view}",null,"s_PopUpFull('$link','1024','900')");
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{domains}</th>";
+	$html[]="<th>{categories}</th>";
+	$html[]="<th>{date}</th>";
+	$html[]="<th class='center'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='catz-nc-rows'>";
+	if($shown==0){
+		$html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown</span>";
+	$html[]="<span class='awc-pg' id='catz-nc-pager'></span>";
+	$html[]="</div></div></div>";
 
-        $sezarch="https://www.google.com/search?channel=fs&client=ubuntu&q=%22$tooldoms%22";
-        $URL="s_PopUpFull('$sezarch','1024','900')";
-
-        $google="&nbsp;<i class='fa fa-link'></i>&nbsp;".$tpl->td_href("Google",null,$URL);
-		
-		$delete=$tpl->icon_delete("Loadjs('$page?not-categorized-delete=$numenc&num=$md')","AsSquidPersonalCategories");
-		$scan=$tpl->icon_recycle("Loadjs('$page?not-categorized-scan=$numenc&md=$md')","AsDansGuardianAdministrator");
-
-
-		$phishing=$tpl->td_href("<span class='label label-warning'>Phishing</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=105&domain=$tooldoms')");
-        $Governments=$tpl->td_href("<span class='label label-primary'>Governments</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=62&domain=$tooldoms')");
-
-        $Industry=$tpl->td_href("<span class='label label-warning'>Industry</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=81&domain=$tooldoms')");
-
-        $Suscpicous=$tpl->td_href("<span class='label label-danger'>Suspicious</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=140&domain=$tooldoms')");
-
-        $jobtraining=$tpl->td_href("<span class='label label-info'>Job Training</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=86&domain=$tooldoms')");
-
-        $music=$tpl->td_href("<span class='label label-success'>Music</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=101&domain=$tooldoms')");
-
-        $movie=$tpl->td_href("<span class='label label-default'>Movies</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=100&domain=$tooldoms')");
-
-        $travel=$tpl->td_href("<span class='label label-success'>Travel</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=119&domain=$tooldoms')");
-
-        $reaf=$tpl->td_href("<span class='label label-danger'>Reaffected</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=112&domain=$tooldoms')");
-
-        $tracker=$tpl->td_href("<span class='label label-warning'>Tracker</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=143&domain=$tooldoms')");
-
-        $computing=$tpl->td_href("<span class='label  label-info'>Computing</span>",null,
-            "Loadjs('$page?not-categorized-catz=$numenc&md=$md&category=126&domain=$tooldoms')");
-
-        $title=$ligne["title"];
-        $description=$ligne["description"];
-        $rscan=$ligne["rscan"];
-        if($rscan==1){$ligne["created"]="<strong>{$ligne["created"]}</strong>";}
-
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:1%' nowrap>{$ligne["created"]}</td>";
-		$html[]="<td><strong id='fam-$md'>$visits&nbsp;$domain_url</span>&nbsp;$google</strong></td>";
-        $html[]="<td style='width:1%' nowrap>$reaf&nbsp;&nbsp;$tracker&nbsp;&nbsp;$computing&nbsp;&nbsp;$travel&nbsp;&nbsp;$movie&nbsp;&nbsp;$music&nbsp;&nbsp;$Industry&nbsp;&nbsp;$Governments&nbsp;&nbsp;$jobtraining&nbsp;&nbsp;$phishing&nbsp;&nbsp;$Suscpicous</td>";
-        $html[]="<td style='width:1%'>$scan</td>";
-		$html[]="<td style='width:1%'>$delete</td>";
-		$html[]="</tr>";
-
-        if(strlen($title)>0){
-            $html[]="<tr class='$TRCLASS' id='des_$md'>";
-            $html[]="<td style='width:1%' nowrap></td>";
-            $html[]="<td colspan=4 ><div style='padding-left:5px;margin-left: 30px;border-left: 2px solid #CCCCCC'>Title:$title";
-            if(strlen($description)>2){
-                $html[]="<div><small>Description:$description</small></div>";
-            }
-            $html[]="</td>";
-            $html[]="</tr>";
-        }
-
-	}	
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	Loadjs('$page?not-categorized-head=yes');
 	</script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.awc_pager_js(50,"catz-nc-rows","catz-nc-pager");
     return true;
+}
+
+/** Une pastille de categorisation rapide: un clic classe le domaine. */
+function catz_notcat_chip($label,$bg,$js):string{
+	return "<a href=\"javascript:blur();\" style='text-decoration:none' OnClick=\"$js\">"
+		."<span class='awc-badge' style='background:$bg'>$label</span></a>";
+}
+
+/**
+ * Un domaine en attente de categorisation. Le titre et la description de la
+ * page occupaient jusqu'ici une SECONDE ligne de tableau (<tr id="des_...">)
+ * qui doublait la hauteur du tableau et cassait l'alternance des couleurs; ils
+ * passent en sous-titre de l'identite. Les deux lignes gardent leur identifiant
+ * -- les gestionnaires de suppression retirent toujours "#$md" ET "#des_$md" --
+ * mais la seconde n'existe plus: retirer un identifiant absent est sans effet
+ * en jQuery.
+ */
+function catz_notcat_row($ligne,$fam,$page,$tpl):string{
+	$style='font-size:14px';
+	$domain=$ligne["domain"];
+	$md=md5(serialize($ligne));
+	if(preg_match("#^(www|ww|mx|admin|magento|hostmaster|ns|ns1|webmail|mail|bbs|cpanel|webdisk|autodiscover|smtp|cpcalendars|cpcontacts)\.(.+)#",$domain,$re)){
+		$domain=$re[2];
+	}
+	$numenc=urlencode($domain);
+	$tooldoms=$numenc;
+	$xfam=$fam->GetFamilySites($domain);
+	$domain_url=$tpl->td_href("<span class='awc-name'>".htmlspecialchars($domain)."</span>","{categorize}",
+		"Loadjs('$page?categorize-this-js=$numenc&md=$md&domain=".urlencode($domain)."');");
+
+	if($xfam<>$domain){
+		$tooldoms=urlencode($xfam);
+		$domain_url=$domain_url."&nbsp;|&nbsp;".$tpl->td_href(
+			"<span class='awc-tag'>".htmlspecialchars($xfam)."</span>","{categorize}",
+			"Loadjs('$page?categorize-this-js=$numenc&md=$md&domain=".urlencode($xfam)."');");
+	}
+
+	$www=null;
+	if($domain==$xfam){
+		if(!preg_match("#^www\.#",$domain)){$www="www.";}
+	}
+	// L'URL est ecrite dans une chaine JavaScript simple-quote: un domaine
+	// contenant une apostrophe (ils existent dans cloud_categorize, la table est
+	// alimentee par les journaux du proxy) rompait l'appel a s_PopUpFull.
+	$link=addslashes("http://$www$domain");
+	$visits=$tpl->td_href("<i class='fa fa-link'></i>&nbsp;{view}",null,"s_PopUpFull('$link','1024','900')");
+	$sezarch="https://www.google.com/search?channel=fs&client=ubuntu&q=%22$tooldoms%22";
+	$google=$tpl->td_href("<i class='fa fa-link'></i>&nbsp;Google",null,"s_PopUpFull('$sezarch','1024','900')");
+
+	// Les onze raccourcis de categorisation. Chaque entree: libelle, fond,
+	// identifiant de categorie.
+	$quick=array(
+		array("Reaffected",   "#ba1a1a", 112),
+		array("Tracker",      "#865300", 143),
+		array("Computing",    "#006a62", 126),
+		array("Travel",       "#26a69a", 119),
+		array("Movies",       "#263238", 100),
+		array("Music",        "#26a69a", 101),
+		array("Industry",     "#865300",  81),
+		array("Governments",  "#1c84c6",  62),
+		array("Job Training", "#006a62",  86),
+		array("Phishing",     "#865300", 105),
+		array("Suspicious",   "#7d1218", 140),
+	);
+	$chips=array();
+	foreach($quick as $c){
+		$chips[]=catz_notcat_chip($c[0],$c[1],
+			"Loadjs('$page?not-categorized-catz=$numenc&md=$md&category={$c[2]}&domain=$tooldoms')");
+	}
+
+	$delete=$tpl->icon_delete("Loadjs('$page?not-categorized-delete=$numenc&num=$md')","AsSquidPersonalCategories");
+	$scan=$tpl->icon_recycle("Loadjs('$page?not-categorized-scan=$numenc&md=$md')","AsDansGuardianAdministrator");
+
+	$title=trim((string)$ligne["title"]);
+	$description=trim((string)$ligne["description"]);
+	$created=(string)$ligne["created"];
+
+	$h ="<tr id='$md'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fas fa-globe'></i></span>";
+	$h.="<span id='fam-$md'>$domain_url";
+	$h.="<div class='awc-meta'>$visits &middot; $google</div>";
+	if($title!==""){
+		$h.="<div class='awc-meta'>".htmlspecialchars($title)."</div>";
+	}
+	if(strlen($description)>2){
+		$h.="<div class='awc-meta awc-muted'>".htmlspecialchars($description)."</div>";
+	}
+	$h.="</span></div></td>";
+	$h.="<td><div class='awc-chips'>".@implode("",$chips)."</div></td>";
+	$h.="<td class='awc-mono'>".htmlspecialchars($created)."</td>";
+	$h.="<td class='center'><div class='awc-acts'>$scan$delete</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 
 function not_categorized_categorize_js():bool{
@@ -519,53 +537,61 @@ function categories_list_popup():bool{
     $ManageOfficialsCategories = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ManageOfficialsCategories"));
     $sql="SELECT * FROM personal_categories WHERE official_category=0 AND free_category=0 ORDER by categoryname";
     if($ManageOfficialsCategories==1){
-        $sql="SELECT * FROM personal_categories WHERE official_category=1 order by category_id";
+        $sql="SELECT * FROM personal_categories WHERE official_category=1 order by categoryname";
     }
 
-    $TRCLASS=null;
-    $html[]="<table id='table-notcategorized-sites' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{name}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
     $results=$q->QUERY_SQL($sql);
+    $rows=array();
     while ($ligne = pg_fetch_assoc($results)) {
-        $categoryname=$ligne["categoryname"];
-        if(preg_match("#^reserved#",$categoryname)){continue;}
-        $category_id=$ligne["category_id"];
-        $category_description=$tpl->_ENGINE_parse_body($ligne['category_description']);
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        if(preg_match("#^reserved#",$ligne["categoryname"])){continue;}
+        $rows[]=catz_category_row($ligne,$tpl);
+    }
+    $shown=count($rows);
 
-        $md=md5(serialize($ligne));
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{name}</th>";
+    $html[]="<th>{description}</th>";
+    $html[]="</tr></thead><tbody id='catz-cat-rows'>";
+    if($shown==0){
+        $html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $shown</span>";
+    $html[]="<span class='awc-pg' id='catz-cat-pager'></span>";
+    $html[]="</div></div></div>";
+    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%' nowrap>$category_id</td>";
-        $html[]="<td style='width:1%' nowrap><strong>$categoryname</strong></td>";
-        $html[]="<td>$category_description</td>";
-        $html[]="</tr>";
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .awc_pager_js(50,"catz-cat-rows","catz-cat-pager");
+    return true;
 }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+/**
+ * Une categorie personnelle. L'identifiant numerique occupait une colonne
+ * entiere sans en-tete: il devient le sous-titre du nom.
+ */
+function catz_category_row($ligne,$tpl):string{
+    $categoryname=(string)$ligne["categoryname"];
+    $category_id=intval($ligne["category_id"]);
+    // La description est stockee sous forme de jetons {…}: elle doit passer par
+    // le moteur de traduction et ne peut donc pas etre echappee en HTML.
+    $category_description=$tpl->_ENGINE_parse_body($ligne["category_description"]);
 
-    $html[]="<tr>";
-    $html[]="<td colspan='6'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-    return true;
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-tag'></i></span>";
+    $h.="<span><span class='awc-name'>".htmlspecialchars($categoryname)."</span>";
+    $h.="<div class='awc-meta awc-mono'>#$category_id</div></span>";
+    $h.="</div></td>";
+    $h.="<td>".($category_description!==""?$category_description:"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="</tr>";
+    return $h;
 }
 
 function not_categorized_categorize_popup():bool{
@@ -574,7 +600,7 @@ function not_categorized_categorize_popup():bool{
     $zdomain=$_GET["domain"];
 	$tpl->field_hidden("domain",$zdomain);
 	$form[]=$tpl->field_categories_list("categorize", "{category}", null);
-	$md=$_GET["md"];
+	$md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
 	$jsafter="$('#$md').remove();$('#des_$md').remove();dialogInstance1.close();Loadjs('$page?not-categorized-head=yes');";
 	echo $tpl->form_outside("{categorize} $zdomain", $form,null,"{categorize}",$jsafter,"AsSquidPersonalCategories");
 	return true;
@@ -589,21 +615,26 @@ function not_categorized_categorize_save():bool{
     if($domain==null){echo "?? Nothing ???";return false;}
 
 
-    $uid=$_SESSION["uid"];
+    $uid=pg_escape_string2((string)$_SESSION["uid"]);
     if($uid=="-100"){
         $uid="Manager";
     }
+    // CLEAN_POST retire les caracteres XSS mais pas l'antislash: le domaine
+    // alimente cinq requetes PostgreSQL dont un DELETE par expression
+    // reguliere. La variable echappee sert UNIQUEMENT au SQL -- les methodes de
+    // mysql_squid_builder continuent de recevoir la valeur d'origine.
+    $domainsql=pg_escape_string2($domain);
     $q=new postgres_sql();
     $category=intval($_POST["categorize"]);
     $FORCE=false;
     $oldcatz=$qlproxy->GET_CATEGORIES($domain);
     if($oldcatz==5){
-        $q->QUERY_SQL("DELETE FROM category_advertising WHERE sitename='$domain'");
+        $q->QUERY_SQL("DELETE FROM category_advertising WHERE sitename='$domainsql'");
         $FORCE=true;
     }
 
     if($oldcatz==82){
-        $q->QUERY_SQL("DELETE FROM category_internal WHERE sitename='$domain'");
+        $q->QUERY_SQL("DELETE FROM category_internal WHERE sitename='$domainsql'");
         $FORCE=true;
     }
 
@@ -618,8 +649,8 @@ function not_categorized_categorize_save():bool{
 	
 
     if(strlen($domain)>3) {
-        $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE domain = '$domain'");
-        $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE domain ~ '$domain'");
+        $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE domain = '$domainsql'");
+        $q->QUERY_SQL("DELETE FROM cloud_categorize WHERE domain ~ '$domainsql'");
     }
 
     $sql="CREATE TABLE IF NOT EXISTS categorize_logs (
@@ -632,56 +663,40 @@ function not_categorized_categorize_save():bool{
     $q->QUERY_SQL($sql);
     $date=date("Y-m-d H:i:s");
     $sql="INSERT INTO categorize_logs (domain,category_id,created,uid) 
-   VALUES('$domain',$category,'$date','$uid')";
+   VALUES('$domainsql',$category,'$date','$uid')";
     $q->QUERY_SQL($sql);
 	return true;
 }
 
 function users_requests_delete():bool{
 	$tpl=new template_admin();
-	$id=$_GET["users-requests-delete"];
+	// L'identifiant partait BRUT dans le WHERE (c'est une cle SERIAL) et $md
+	// BRUT dans le JavaScript renvoye.
+	$id=intval($_GET["users-requests-delete"]);
+	$md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
 	$q=new postgres_sql();
 	$q->QUERY_SQL("DELETE FROM categories_requests WHERE id=$id");
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
-	echo "$('#{$_GET["md"]}').remove();\n";
-    echo "$('#des_{$_GET["md"]}').remove();";
+	echo "$('#$md').remove();\n";
+    echo "$('#des_$md').remove();";
 	return true;
 }
 
 function users_requests_table():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$t=time();
 
-
-
-
-
-	$html[]=$tpl->_ENGINE_parse_body("
-			<div class=\"btn-group\" data-toggle=\"buttons\">
-			<label class=\"btn btn btn-primary\" OnClick=\"$jsrestart\"><i class='fas fa-retweet'></i> {analyze} </label>
-			</div>");
-
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-
-
-	$TRCLASS=null;
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{domains}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{detected}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{company}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{email}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+	// Le bouton "{analyze}" qui coiffait ce tableau appelait
+	// OnClick="$jsrestart" -- une variable qui n'a JAMAIS ete definie dans ce
+	// fichier: l'attribut sortait vide et le bouton ne faisait rien. Il est
+	// retire plutot que recable: cette vue (?users-requests-table=yes) n'est
+	// referencee ni par tabs() ni par le menu de gauche, elle n'a donc pas de
+	// conteneur connu a rafraichir.
+	$html=array();
 
 	$q=new postgres_sql();
 	$catz=new mysql_catz();
-	
+
 	$sql="CREATE TABLE IF NOT EXISTS categories_requests(
 		id SERIAL NOT NULL PRIMARY KEY,
 		zDate timestamp,
@@ -691,70 +706,85 @@ function users_requests_table():bool{
 		category VARCHAR(128),
 		company VARCHAR(128),
 		email VARCHAR(128) )";
-	
+
 	$q->QUERY_SQL($sql);
 	if(!$q->ok){
 		echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);
 		return false;
 	}
-	
-
 
 	$results=$q->QUERY_SQL("SELECT * FROM categories_requests ORDER BY zDate DESC");
 	if(!$q->ok){
 		echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);
 		return false;
 	}
-	
+
 	if(pg_num_rows($results)==0){
 		echo $tpl->FATAL_ERROR_SHOW_128("{no_data}");
 		return false;
 	}
-	
-	
-	
+
+	$rows=array();
 	while ($ligne = pg_fetch_assoc($results)) {
-		//zDate,uuid,sitename,category,company,email,detectedas
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-		$md=md5(serialize($ligne));
-		$delete=$tpl->icon_delete("Loadjs('$page?users-requests-delete={$ligne["id"]}&md=$md')");
-		$detectedas=$ligne["detectedas"];
-		$detectedascat=$catz->CategoryIntToStr($detectedas);
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td>{$ligne["zdate"]}</td>";
-		$html[]="<td><strong>{$ligne["sitename"]}</strong></td>";
-		$html[]="<td>{$ligne["category"]}</td>";
-		$html[]="<td>$detectedascat</td>";
-		$html[]="<td>{$ligne["company"]}</td>";
-		$html[]="<td>{$ligne["email"]}</td>";
-		$html[]="<td style='width:1%' class='center'>$delete</td>";
-		$html[]="</tr>";
+		$rows[]=catz_request_row($ligne,$catz,$page,$tpl);
 	}
+	$shown=count($rows);
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{domains}</th>";
+	$html[]="<th>{category}</th>";
+	$html[]="<th>{detected}</th>";
+	$html[]="<th>{date}</th>";
+	$html[]="<th class='center'>{delete}</th>";
+	$html[]="</tr></thead><tbody id='catz-req-rows'>";
+	$html[]=@implode("\n",$rows);
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown</span>";
+	$html[]="<span class='awc-pg' id='catz-req-pager'></span>";
+	$html[]="</div></div></div>";
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
-	$html[]="<tr>";
-	$html[]="<td colspan='6'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true 	}, 	\"sorting\": { 	\"enabled\": true 	} } ); });
-	</script>";
-
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.awc_pager_js(50,"catz-req-rows","catz-req-pager");
     return true;
+}
+
+/**
+ * Une demande de categorisation envoyee par un utilisateur. Societe et adresse
+ * de contact tenaient chacune une colonne: elles decrivent le demandeur, pas la
+ * demande, et passent en sous-titre du site concerne.
+ */
+function catz_request_row($ligne,$catz,$page,$tpl):string{
+	$md=md5(serialize($ligne));
+	$delete=$tpl->icon_delete("Loadjs('$page?users-requests-delete=".intval($ligne["id"])."&md=$md')");
+	$detectedascat=$catz->CategoryIntToStr(intval($ligne["detectedas"]));
+
+	$meta=array();
+	if(trim((string)$ligne["company"])!==""){$meta[]=htmlspecialchars((string)$ligne["company"]);}
+	if(trim((string)$ligne["email"])!==""){$meta[]=htmlspecialchars((string)$ligne["email"]);}
+
+	$h ="<tr id='$md'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fas fa-comment-dots'></i></span>";
+	$h.="<span><span class='awc-name'>".htmlspecialchars((string)$ligne["sitename"])."</span>";
+	if(count($meta)>0){$h.="<div class='awc-meta'>".@implode(" &middot; ",$meta)."</div>";}
+	$h.="</span></div></td>";
+	$h.="<td><span class='awc-tag'>".htmlspecialchars((string)$ligne["category"])."</span></td>";
+	$h.="<td>".($detectedascat!==""
+		?"<span class='awc-tag'>".htmlspecialchars((string)$detectedascat)."</span>"
+		:"<span class='awc-none'>&mdash;</span>")."</td>";
+	$h.="<td class='awc-mono'>".htmlspecialchars((string)$ligne["zdate"])."</td>";
+	$h.="<td class='center'><div class='awc-acts'>$delete</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 
 function not_categorized_head():bool{
     $tpl=new template_admin();
-    $uid=$_SESSION["uid"];
+    $uid=pg_escape_string2((string)$_SESSION["uid"]);
     if($uid=="-100"){
         $uid="Manager";
     }
@@ -811,27 +841,6 @@ function status_groupby():bool{
     $CategorizeCurrency=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CategorizeCurrency");
 
     $q=new postgres_sql();
-    $results=$q->QUERY_SQL("SELECT count(domain) as tcount, uid FROM categorize_logs GROUP BY uid ORDER BY tcount DESC");
-
-    $TRCLASS=null;
-    $html[]="<table id='table-notcategorized-sites' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{domains}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{performance}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{member}</center></th>";
-    if($CategorizePayit==1) {
-        $html[] = "<th data-sortable=true class='text-capitalize' data-type='text'>$CategorizeCurrency</center></th>";
-    }
-
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    $Max=0;
-    while ($ligne = pg_fetch_assoc($results)) {
-        $Max=$Max + $ligne["tcount"];
-
-    }
 
     if(!$q->FIELD_EXISTS("cloud_categorize","rscan")){
         $q->QUERY_SQL("ALTER TABLE cloud_categorize ADD rscan smallint NOT NULL DEFAULT 0");
@@ -840,64 +849,77 @@ function status_groupby():bool{
         $q->QUERY_SQL("ALTER TABLE cloud_categorize ADD description VARCHAR(512) NULL");
     }
 
-    $results=$q->QUERY_SQL("SELECT count(domain) as tcount, uid FROM categorize_logs GROUP BY uid ORDER BY tcount DESC");
+    // La meme requete etait executee DEUX fois: une premiere passe uniquement
+    // pour totaliser, une seconde pour afficher. Les lignes sont desormais
+    // collectees une fois et le total calcule dessus.
+    $SQL="SELECT count(domain) as tcount, uid FROM categorize_logs GROUP BY uid ORDER BY tcount DESC";
+    $results=$q->QUERY_SQL($SQL);
+    $lignes=array();
+    $Max=0;
     while ($ligne = pg_fetch_assoc($results)) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-
-        $html[]="<tr class='$TRCLASS' id='' style='font-size:18px'>";
-
-        $tcount=$ligne["tcount"];
-        $uid=$ligne["uid"];
-        $tcountDoms=FormatNumber($tcount);
-        $prc=$tcount/$Max;
-        $prc=round($prc*100,2);
-
-        $html[]="<td style='width:1%' nowrap style='text-align: right'><strong>$tcountDoms</strong>&nbsp;</td>";
-        $html[]="<td style='width:1%' nowrap style='text-align: right'><strong>$prc%</strong></td>";
-        $html[]="<td style='width:1%' nowrap><strong>$uid</strong></td>";
-
-        if($CategorizePayit==1) {
-            $tcount_pay=round($CategorizePayBySite*$tcount,2);
-            $tcount_pay=FormatNumber($tcount_pay)." $CategorizeCurrency";
-            $html[]="<td nowrap style='text-align: right;width:99%'><strong>$tcount_pay</strong></td>";
-        }
-
-        $html[]="</tr>";
+        $Max=$Max + intval($ligne["tcount"]);
+        $lignes[]=$ligne;
     }
+
+    $rows=array();
+    foreach($lignes as $ligne){
+        $rows[]=catz_member_row($ligne,$Max,$CategorizePayit,$CategorizePayBySite,$CategorizeCurrency);
+    }
+
     $colspan=3;
-    if($CategorizePayit==1) {$colspan=4;}
-    $Max=FormatNumber($Max);
-    $html[]="<tr class='$TRCLASS' id='' style='font-size:18px'>";
-    $html[]="<td style='font-size:28px;border-top:1px solid #CCCCCC;text-align: right' colspan='$colspan'><span style='font-size:12px'>{websites_categorized}:</span>&nbsp;<strong>$Max</strong>&nbsp;</td>";
-    $html[]="</tr>";
-    
+    if($CategorizePayit==1){$colspan=4;}
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{member}</th>";
+    $html[]="<th class='center'>{domains}</th>";
+    $html[]="<th class='center'>{performance}</th>";
+    if($CategorizePayit==1){
+        $html[]="<th class='center'>".htmlspecialchars((string)$CategorizeCurrency)."</th>";
+    }
+    $html[]="</tr></thead><tbody id='catz-mbr-rows'>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='$colspan'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{websites_categorized}: <b>".FormatNumber($Max)."</b></span>";
+    $html[]="<span class='awc-pg' id='catz-mbr-pager'></span>";
+    $html[]="</div></div></div>";
+    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan=34'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-
-
-
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	</script>";
-
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .awc_pager_js(50,"catz-mbr-rows","catz-mbr-pager");
     return true;
-
-
 }
 
-function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'):string{$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}
+/**
+ * La contribution d'un membre. Le total general etait une ligne <tr> en
+ * 28 pixels collee sous le tableau: il passe dans le pied de carte, ou il ne
+ * peut plus etre emporte par la pagination.
+ */
+function catz_member_row($ligne,$Max,$CategorizePayit,$CategorizePayBySite,$CategorizeCurrency):string{
+    $tcount=intval($ligne["tcount"]);
+    $uid=(string)$ligne["uid"];
+    // Division par zero si categorize_logs est vide et qu'une ligne existe
+    // malgre tout (tcount a 0): le total servait de diviseur sans garde.
+    $prc=($Max>0)?round(($tcount/$Max)*100,2):0;
+
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-user'></i></span>";
+    $h.="<span><span class='awc-name'>".htmlspecialchars($uid)."</span></span>";
+    $h.="</div></td>";
+    $h.="<td class='center'><b>".FormatNumber($tcount)."</b></td>";
+    $h.="<td class='center awc-mono'>$prc%</td>";
+    if($CategorizePayit==1){
+        $pay=FormatNumber(round(floatval($CategorizePayBySite)*$tcount,2))." ".htmlspecialchars((string)$CategorizeCurrency);
+        $h.="<td class='center'><b>$pay</b></td>";
+    }
+    $h.="</tr>";
+    return $h;
+}

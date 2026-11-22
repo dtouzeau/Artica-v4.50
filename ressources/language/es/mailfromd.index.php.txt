@@ -1,14 +1,14 @@
-<about>Mailfromd is a general-purpose mail filtering daemon. It is able to interact with any MTA that supports milter or pmilter protocol,
-such as Sendmail , Postfix and MeTA1..[br]
-It is able to filter both incoming and outgoing messages using criteria of arbitrary complexity,[br]
-supplied by the administrator in the form of a script file.</about>
+<about>Mailfromd es un daemon de filtrado de correo de prop&#243;sito general. Puede interactuar con cualquier MTA que admita el protocolo milter o pmilter,
+como Sendmail, Postfix y MeTA1.[br]
+Puede filtrar tanto los mensajes entrantes como los salientes usando criterios de complejidad arbitraria,[br]
+proporcionados por el administrador en forma de un archivo de script.</about>
 <apply_to_server>Aplicar configuraciones</apply_to_server>
-<close_windows>All operations are completed, you can close this windows...</close_windows>
-<enabled_plugins>Plugins Enabled</enabled_plugins>
+<close_windows>Todas las operaciones se han completado, puede cerrar esta ventana...</close_windows>
+<enabled_plugins>Plugins habilitados</enabled_plugins>
 <global_settings>Plugins y configuraciones</global_settings>
-<save_to_ldap_success> save settings to LDAP server</save_to_ldap_success>
-<save_to_server_success>Success Send order to framework </save_to_server_success>
-<script>Mailfromd user script</script>
-<service_mailfromd_failed>Failed !!! the service did not respond in time,check your script</service_mailfromd_failed>
-<service_mailfromd_suc>Success,  all settings are now in production mode</service_mailfromd_suc>
-<USE_CLIENT_SCRIPT>Use your script instead artica script</USE_CLIENT_SCRIPT>
+<save_to_ldap_success>guardar la configuraci&#243;n en el servidor LDAP</save_to_ldap_success>
+<save_to_server_success>&#201;xito, orden enviada al framework</save_to_server_success>
+<script>Script de usuario de Mailfromd</script>
+<service_mailfromd_failed>&#161;&#161;&#161;Error!!! el servicio no respondi&#243; a tiempo, compruebe su script</service_mailfromd_failed>
+<service_mailfromd_suc>&#201;xito, toda la configuraci&#243;n est&#225; ahora en modo de producci&#243;n</service_mailfromd_suc>
+<USE_CLIENT_SCRIPT>Usar su script en lugar del script de artica</USE_CLIENT_SCRIPT>

@@ -5,9 +5,6 @@ $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
-if(isset($_POST["EnableLDAPSyncProv"])){cluster_save();exit;}
-if(isset($_GET["cluster"])){cluster();exit;}
-if(isset($_GET["cluster2"])){cluster2();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["table2"])){table2();exit;}
 if(isset($_GET["tab"])){tabs();exit;}
@@ -18,12 +15,6 @@ if(isset($_POST["EnableMultipleOrganizations"])){save();exit;}
 if(isset($_POST["LdapDBCachesize"])){save();exit;}
 
 
-if(isset($_GET["suffix-js"])){suffix_js();exit;}
-if(isset($_GET["suffix-popup"])){suffix_popup();exit;}
-if(isset($_GET["join-js"])){join_js();exit;}
-if(isset($_GET["join-popup"])){join_popup();exit;}
-if(isset($_POST["ChangeLDAPSuffixFrom"])){suffix_save();exit;}
-if(isset($_POST["REMOTE_ARTICA_SERVER"])){join_save();exit;}
 if(isset($_GET["remove-database"])){remove_database_ask();exit;}
 if(isset($_POST["removedb"])){remove_database_perform();exit;}
 if(isset($_GET["flat"])){flat_config();exit;}
@@ -66,108 +57,17 @@ function remove_database_ask():bool{
 function remove_database_perform():bool{
     return admin_tracks("Remove Grafana Loki database server");
 }
-function join_js(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $tpl->js_dialog2("{join_a_cluster}","$page?join-popup=yes");
-}
 
-function join_save(){
-    $tpl=new template_admin();
-    $tpl->CLEAN_POST();
-    $WizardLdapCluster=serialize($_POST);
-    admin_tracks("Run wizard to join an OpenLDAP Master {$_POST["REMOTE_ARTICA_SERVER"]}");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WizardLdapCluster",$WizardLdapCluster);
-}
 
-function join_popup(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $btname="{connect}";
-    $title="{connect}";
 
-    $WizardLdapCluster=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardLdapCluster"));
-    $REMOTE_ARTICA_SERVER=$WizardLdapCluster["REMOTE_ARTICA_SERVER"];
-    $REMOTE_ARTICA_SERVER_PORT=intval($WizardLdapCluster["REMOTE_ARTICA_SERVER_PORT"]);
-    $REMOTE_ARTICA_USERNAME=trim($WizardLdapCluster["REMOTE_ARTICA_USERNAME"]);
-    $REMOTE_ARTICA_PASSWORD=trim($WizardLdapCluster["REMOTE_ARTICA_PASSWORD"]);
-    if($REMOTE_ARTICA_SERVER_PORT==0){$REMOTE_ARTICA_SERVER_PORT=9000;}
-    if($REMOTE_ARTICA_USERNAME==null){$REMOTE_ARTICA_USERNAME="Manager";}
-    $form[]= $tpl->field_text("REMOTE_ARTICA_SERVER","{REMOTE_ARTICA_SERVER}",$REMOTE_ARTICA_SERVER,true);
-    $form[]= $tpl->field_numeric("REMOTE_ARTICA_SERVER_PORT","{REMOTE_ARTICA_SERVER_PORT}",$REMOTE_ARTICA_SERVER_PORT,true);
-    $form[]= $tpl->field_text("REMOTE_ARTICA_USERNAME","{REMOTE_ARTICA_USERNAME}",$REMOTE_ARTICA_USERNAME,true);
-    $form[]= $tpl->field_password("REMOTE_ARTICA_PASSWORD","{REMOTE_ARTICA_PASSWORD}",$REMOTE_ARTICA_PASSWORD,true);
 
-    $applyjs=$tpl->framework_buildjs(
-        "openldap.php?join=yes",
-        "openldap.join.prog",
-        "openldap.join.log",
-        "progress-loki-restart",
-        "LoadAjaxSilent('cluster-parameters','$page?cluster2=yes');"
 
-    );
-
-    $html[]=$tpl->form_outside($title, @implode("\n", $form),"{wizard_com_artica_api}",$btname,
-        "dialogInstance2.close();$applyjs",
-        "AsSquidAdministrator",true);
-
-    echo $tpl->_ENGINE_parse_body($html);
-
-// wizard_com_artica_api
-}
-
-function suffix_js(){
-    $id=$_GET["id"];
-    $value=$_GET["value"];
-    $valuencode=urlencode($value);
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $tpl->js_dialog2("{ldap_suffix}","$page?suffix-popup=$valuencode&id=$id");
-}
-
-function suffix_popup(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $security="AsSystemAdministrator";
-    $id=$_GET["id"];
-    $value=$_GET["suffix-popup"];
-
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/openldap.chsuffix.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/openldap.chsuffix.progress.txt";
-    $ARRAY["CMD"]="openldap.php?change-suffix=yes";
-    $ARRAY["TITLE"]="{suffix}";
-    $ARRAY["AFTER"]="window.location.href ='logoff.php';";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-openldap-suffix')";
-
-    $tpl->field_hidden("ChangeLDAPSuffixFrom",$value);
-    $html[]="<div id='progress-openldap-suffix'></div>";
-    $form[]=$tpl->field_text("ChangeLDAPSuffixTo","{ldap_suffix}",$value,true);
-    $html[]=$tpl->form_outside("{modify}: {ldap_suffix}", @implode("\n", $form),
-        "{openldap_change_suffix_warning}","{modify}",$jsrestart,$security);
-
-    echo $tpl->_ENGINE_parse_body($html);
-}
-
-function suffix_save(){
-    $sock=new sockets();
-    $tpl=new template_admin();
-    $tpl->CLEAN_POST();
-    
-    if(strtolower($_POST["ChangeLDAPSuffixTo"]) == strtolower($_POST["ChangeLDAPSuffixFrom"]) ){
-        echo $tpl->post_error("{no_change}");
-        exit;
-    }
-    admin_tracks("Change LDAP Database suffix from {$_POST["ChangeLDAPSuffixFrom"]} to {$_POST["ChangeLDAPSuffixTo"]}");
-    $sock->SaveConfigFile(base64_encode($_POST["ChangeLDAPSuffixTo"]),"ChangeLDAPSuffixTo");
-    $sock->SaveConfigFile(base64_encode($_POST["ChangeLDAPSuffixFrom"]),"ChangeLDAPSuffixFrom");
-}
 
 function page(){
 	$page=CurrentPageName();
     $tpl=new template_admin();
 
-    $html=$tpl->page_header("{APP_LOKI}","fas fa-database","{APP_LOKI_EXPLAIN}",
+    $html=$tpl->page_header("{APP_LOKI}",ico_database,"{APP_LOKI_EXPLAIN}",
         "$page?tab=yes","loki-database","progress-loki-restart",false,"table-loader-openldap-service");
 
     $tpl=new template_admin("{APP_LOKI}",$html);
@@ -182,112 +82,10 @@ function page(){
 	echo $tpl->_ENGINE_parse_body($html);
 
 }
-function cluster_save(){
-
-    $tpl=new template_admin();
-    $tpl->SAVE_POSTs();
-    $EnableLDAPSyncProv=intval($_POST["EnableLDAPSyncProv"]);
-    if($EnableLDAPSyncProv==0){
-        admin_tracks("Set LDAP Server Cluster replication to OFF");
-        return true;
-    }
-    if($EnableLDAPSyncProv==1){
-        admin_tracks("Set LDAP Server Cluster replication to ON Client mode={$_POST["EnableLDAPSyncProvClient"]}");
-    }
-    return true;
-
-}
-function cluster(){
-    $page=CurrentPageName();
-    echo "<div id='cluster-parameters'></div>
-    <script>LoadAjax('cluster-parameters','$page?cluster2=yes');</script>";
-}
-function cluster2(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $security="AsSystemAdministrator";
-
-    $EnableLDAPSyncProv=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProv"));
-    $EnableLDAPSyncProvClient=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProvClient");
-
-    $SyncProvUser=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SyncProvUserDN");
-    $LDAPSyncProvClientServer=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientServer");
-    $LDAPSyncProvClientSearchBase=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientSearchBase");
-    $LDAPSyncProvClientBindDN=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindDN");
-    $LDAPSyncProvClientBindPassword=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindPassword");
-
-    $LDAPSyncProvID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvID"));
-    if($LDAPSyncProvID==0){$LDAPSyncProvID=1;}
-    if($LDAPSyncProvID>999){$LDAPSyncProvID=999;}
-
-    $title_add=null;
-
-    if($EnableLDAPSyncProv==0){$title_add=" ({disabled})";}
-    if($EnableLDAPSyncProv==1){
-        $title_add=" ({master_mode})";
-        if($EnableLDAPSyncProvClient==1){
-            $title_add=" ({client_mode})";
-        }else{
-            $LokiListenInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LokiListenInterface"));
-            if($LokiListenInterface==null){$LokiListenInterface="lo";}
-            if($LokiListenInterface=="lo"){
-                echo $tpl->div_error("{error_server_listen_loopback}");
-            }
-        }
-    }
-
-
-    $form[]=$tpl->field_checkbox("EnableLDAPSyncProv","{enable_ldap_sync_service}",$EnableLDAPSyncProv,true);
-    $form[]=$tpl->field_numeric("LDAPSyncProvID","{uuid}",$LDAPSyncProvID);
-    $form[]=$tpl->field_section("{server_mode}");
-    $form[]=$tpl->field_browse_ldap_user("SyncProvUserDN","{sync_user}",$SyncProvUser);
-
-    $form[]=$tpl->field_section("{client_mode}");
-    $form[]=$tpl->field_checkbox("EnableLDAPSyncProvClient","{enable_client_mode}",$EnableLDAPSyncProvClient,"LDAPSyncProvClientServer,LDAPSyncProvClientSearchBase,LDAPSyncProvClientBindDN,LDAPSyncProvClientBindPassword");
-    $form[]=$tpl->field_text("LDAPSyncProvClientServer","{ldap_server}",$LDAPSyncProvClientServer);
-    $form[]=$tpl->field_text("LDAPSyncProvClientSearchBase","{searchbasedn}",$LDAPSyncProvClientSearchBase);
-    $form[]=$tpl->field_text("LDAPSyncProvClientBindDN","{ldap_user_dn}",$LDAPSyncProvClientBindDN);
-    $form[]=$tpl->field_password("LDAPSyncProvClientBindPassword","{ldap_password}",$LDAPSyncProvClientBindPassword);
-
-
-    $jsrestart=$tpl->framework_buildjs(
-        "/grafana/restart",
-        "loki.progress",
-        "loki.progress.log",
-        "progress-loki-restart",
-        "LoadAjaxSilent('cluster-parameters','$page?cluster2=yes');"
-    );
-
-    $html[]="<table style='width:100%;margin-top:10px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:240px;vertical-align: top'><div id='cluster-status'></div></td>";
-    $html[]="<td style='width:99%;vertical-align: top'>";
-    $html[]=$tpl->form_outside("{LDAP} {cluster}", @implode("\n", $form),null,"{apply}",$jsrestart,$security);
-
-    $bts[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-    $bts[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?join-js=yes');\"><i class='fas fa-sign-in'></i> {join_a_cluster} </label>";
-    $bts[]="</div>";
-
-
-    $TINY_ARRAY["TITLE"]="{APP_LOKI}:{cluster}$title_add";
-    $TINY_ARRAY["ICO"]="fad fa-exchange";
-    $TINY_ARRAY["EXPL"]="{APP_LOKI_EXPLAIN}";
-    $TINY_ARRAY["BUTTONS"]=@implode("",$bts);
-    $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<script>";
-    $html[]="LoadAjax('cluster-status','$page?status=yes');";
-    $html[]=$headsjs;
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-}
 function tabs(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $array["{parameters}"]="$page?table=yes";
-    $array["{cluster}"]="$page?cluster=yes";
     echo $tpl->tabs_default($array);
 
 }
@@ -327,7 +125,7 @@ function table2(){
         $LokiVersion = " v$LokiVersion";
     }
     $TINY_ARRAY["TITLE"] = "{APP_LOKI}$LokiVersion";
-    $TINY_ARRAY["ICO"] = "fas fa-database";
+    $TINY_ARRAY["ICO"] = ico_database;
     $TINY_ARRAY["EXPL"] = "{APP_LOKI_EXPLAIN}";
     $TINY_ARRAY["BUTTONS"] = $tpl->table_buttons($topbuttons);
     $headsjs = "Loadjs('fw.progress.php?tiny-page=" . urlencode(base64_encode(serialize($TINY_ARRAY))) . "');";

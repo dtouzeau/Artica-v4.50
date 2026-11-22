@@ -1,5 +1,7 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__).'/ressources/class.template-admin.inc');
+include_once(dirname(__FILE__).'/ressources/class.progress.sign.inc');
 {if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["build-main"])){build_main();exit;}
@@ -10,16 +12,53 @@ if(isset($_GET["morris-logs"])){morris_logs();exit;}
 if(isset($_GET["morris-zoom"])){morris_zoom();exit;}
 build_modal();
 
+// Task links signed by fw_progress_args() (class.progress.sign.inc): every step checks
+// the signature BEFORE decoding and passes it on to the next one. Returns null (after
+// answering the refusal) when the link is unsigned, altered or from another session.
+# v10/10/2026
+function lock_read_signed($param){
+    $b64=fw_progress_b64_normalize(isset($_GET[$param])?$_GET[$param]:"");
+    $sig=isset($_GET["sig"])?strtolower(trim((string)$_GET["sig"])):"";
+    if($b64==="" || !fw_progress_verify($b64,$sig,"task")){
+        fw_progress_refuse($param);
+        return null;
+    }
+    $ARRAY=fw_progress_decode($b64);
+    if(!isset($ARRAY["CMD"])){$ARRAY["CMD"]=null;}
+    if(!isset($ARRAY["TITLE"])){$ARRAY["TITLE"]=null;}
+    if(!isset($ARRAY["AFTER"])){$ARRAY["AFTER"]=null;}
+    if(!isset($ARRAY["PROGRESS_FILE"])){$ARRAY["PROGRESS_FILE"]=null;}
+    if(!isset($ARRAY["LOG_FILE"])){$ARRAY["LOG_FILE"]=null;}
+    $GLOBALS["LOCK_SIGNED"]=urlencode($b64)."&sig=$sig";
+    return $ARRAY;
+}
+
+// Title carried from step to step in the URL: text only.
+function lock_lasttitle(){
+    if(!isset($_GET["lasttitle"])){return "";}
+    $b64=fw_progress_b64_normalize($_GET["lasttitle"]);
+    return base64_encode(strip_tags((string)base64_decode($b64)));
+}
+
 
 function build_modal(){
     $page      = CurrentPageName();
     $tpl       = new template_admin();
     $t         = time();
-    $content   = $_GET["content"];
-    $ARRAY     = unserialize(base64_decode($content));
+    // This step runs the REST route: Loadjs() only (X-Requested-With), signed link only.
+    if(!isset($_SERVER["HTTP_X_REQUESTED_WITH"]) || strtolower(trim((string)$_SERVER["HTTP_X_REQUESTED_WITH"]))!=="xmlhttprequest"){
+        return fw_progress_refuse("build_modal without X-Requested-With");
+    }
+    $ARRAY     = lock_read_signed("content");
+    if($ARRAY===null){return false;}
     $TITLE     = $ARRAY["TITLE"];
     $CMD       = $ARRAY["CMD"];
-    $contente  = urlencode($content);
+    $contente  = $GLOBALS["LOCK_SIGNED"];
+    if(isset($ARRAY["PRIV"]) && !fw_progress_priv_allowed($ARRAY["PRIV"])){
+        error_log("Artica progress: Web console: task refused, privilege missing");
+        return $tpl->js_error("{ERROR_NO_PRIVS2}");
+    }
+    if(!fw_progress_cmd_safe($CMD)){return fw_progress_refuse("build_modal: route outside its prefix");}
 
     writelogs("$CMD",__FUNCTION__,__FILE__,__LINE__);
 
@@ -57,20 +96,21 @@ function build_main(){
     if(isset($_GET["start"])) {
         $t = $_GET["start"];
     }
-    $content    = $_GET["content"];
-    $contente   = urlencode($content);
+    if(lock_read_signed("content")===null){return;}
+    $contente   = $GLOBALS["LOCK_SIGNED"];
     $page       = CurrentPageName();
-    $lasttitle  = $_GET["lasttitle"];
+    $lasttitle  = lock_lasttitle();
+    $t          = fw_progress_safe_id($t);
     echo "<center style='margin-top: 25px'><div id='install-$t'></div></center>";
     echo "<script>LoadAjaxSilent('install-$t','$page?morris=$t&content=$contente&md5=&tt=$tt&lasttitle=$lasttitle')</script>";
 
 }
 
 function start(){
-    $t          = $_GET["start"];
-    $content    = $_GET["content"];
+    $t          = fw_progress_safe_id($_GET["start"]);
+    if(lock_read_signed("content")===null){return;}
     $tt         = time();
-    $contente   = urlencode($content);
+    $contente   = $GLOBALS["LOCK_SIGNED"];
     $page       = CurrentPageName();
     $jsa[]="function JmorrisWaitStart(){";
     $jsa[]="\tLoadjs('$page?morris=$t&content=$contente&md5=&tt=$tt');";
@@ -84,18 +124,18 @@ function start(){
 
 function morris(){
     $lastprc        = 0;
-    $t              = $_GET["morris"];
+    $t              = fw_progress_safe_id($_GET["morris"]);
     $tt             = time();
     if(isset($_GET["lastprc"])) {
         $lastprc = intval($_GET["lastprc"]);
     }
-    $content        = $_GET["content"];
-    $contente       = urlencode($content);
-    $ARRAY          = unserialize(base64_decode($content));
+    $ARRAY          = lock_read_signed("content");
+    if($ARRAY===null){return;}
+    $contente       = $GLOBALS["LOCK_SIGNED"];
     $page           = CurrentPageName();
     $PROGRESS_FILE  = $ARRAY["PROGRESS_FILE"];
     $LOG_FILE       = $ARRAY["LOG_FILE"];
-    $array          = unserialize(@file_get_contents($PROGRESS_FILE));
+    $array          = @unserialize((string)@file_get_contents($PROGRESS_FILE),array("allowed_classes"=>false));
     if(!is_array($array)){$array=array();}
     if(!isset($array["POURC"])){$array["POURC"]=15;}
     if(!isset($array["TEXT"])){$array["TEXT"]=null;}
@@ -105,7 +145,7 @@ function morris(){
 
     if($array["TEXT"]==null){
         if(isset($_GET["lasttitle"])){
-            $array["TEXT"]=base64_decode($_GET["lasttitle"]);
+            $array["TEXT"]=base64_decode(lock_lasttitle());
         }
     }
     if($array["TEXT"]==null){$array["TEXT"]="{please_wait}";}
@@ -162,11 +202,12 @@ function morris(){
 
  function morris_failed(){
 
-     $content        = $_GET["content"];
-     $contente       = urlencode($content);
      $page           = CurrentPageName();
      $tpl            = new template_admin();
-     $ARRAY          = unserialize(base64_decode($content));
+     $ARRAY          = lock_read_signed("content");
+     if($ARRAY===null){return;}
+     if(!isset($ARRAY["TEXT"])){$ARRAY["TEXT"]=null;}
+     $contente       = $GLOBALS["LOCK_SIGNED"];
 
      $TITLE2=$tpl->_ENGINE_parse_body($ARRAY["TEXT"]);
      $TITLE=$tpl->_ENGINE_parse_body("{operation_failed}");
@@ -198,8 +239,8 @@ function morris(){
  }
 
  function morris_logs(){
-     $content        = $_GET["morris-logs"];
-     $contente       = urlencode($content);
+     if(lock_read_signed("morris-logs")===null){return;}
+     $contente       = $GLOBALS["LOCK_SIGNED"];
      $page           = CurrentPageName();
      $tpl            = new template_admin();
      $tpl->js_dialog6("{nmap_logs_text}","$page?morris-zoom=$contente","950");
@@ -208,12 +249,14 @@ function morris(){
 
  function morris_zoom(){
      $tpl               = new template_admin();
-     $content           = $_GET["morris-zoom"];
-     $ARRAY             = unserialize(base64_decode($content));
+     $ARRAY             = lock_read_signed("morris-zoom");
+     if($ARRAY===null){return;}
      $TITLE             = $ARRAY["TITLE"];
      $PROGRESS_FILE     = $ARRAY["PROGRESS_FILE"];
      $LOG_FILE          = $ARRAY["LOG_FILE"];
-     $array             = unserialize(@file_get_contents($PROGRESS_FILE));
+     $array             = @unserialize((string)@file_get_contents($PROGRESS_FILE),array("allowed_classes"=>false));
+     if(!is_array($array)){$array=array();}
+     if(!isset($array["TEXT"])){$array["TEXT"]="";}
 
      $html[]="<H1>$TITLE</H1>";
      $html[]="<H2>{$array["TEXT"]}</H2>";

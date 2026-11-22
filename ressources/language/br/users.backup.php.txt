@@ -1,14 +1,14 @@
-<backup_text>This area allows you to find old mails backuped[br]use the query form in order to found mails</backup_text>
-<dont_know>Don't know</dont_know>
-<mail_backup_lost>Mail source is lost</mail_backup_lost>
-<mail_backup_lost_text>The file source has been probably delete from Disk, you not able to resend this mail, only display it</mail_backup_lost_text>
-<q_from>I was sended</q_from>
-<q_to>I was recieved</q_to>
-<resend_mail>Resend this mail</resend_mail>
-<resend_mail_success>Success resend</resend_mail_success>
-<resend_mail_text>Resend this mail in original mode</resend_mail_text>
-<resend_mail_text_success>The command has been successfully sended to daemon, Check mailboxes</resend_mail_text_success>
-<search_messages_that>Search my messages that</search_messages_that>
-<with_body>With these words in body</with_body>
-<with_email>matching this email address</with_email>
-<with_subject>matching this subject</with_subject>
+<backup_text>Esta &#225;rea permite que voc&#234; encontre e-mails antigos copiados[br]use o formul&#225;rio de consulta para encontrar e-mails</backup_text>
+<dont_know>N&#227;o se sabe</dont_know>
+<mail_backup_lost>A origem do e-mail foi perdida</mail_backup_lost>
+<mail_backup_lost_text>O arquivo de origem foi provavelmente exclu&#237;do do disco, voc&#234; n&#227;o pode reenviar este e-mail, apenas exibi-lo</mail_backup_lost_text>
+<q_from>Eu enviei</q_from>
+<q_to>Eu recebi</q_to>
+<resend_mail>Reenviar este e-mail</resend_mail>
+<resend_mail_success>Reenvio com sucesso</resend_mail_success>
+<resend_mail_text>Reenviar este e-mail em modo original</resend_mail_text>
+<resend_mail_text_success>O comando foi enviado com sucesso ao daemon, verifique as caixas de correio</resend_mail_text_success>
+<search_messages_that>Pesquisar as minhas mensagens que</search_messages_that>
+<with_body>com estas palavras no corpo</with_body>
+<with_email>que corresponda a este endere&#231;o de e-mail</with_email>
+<with_subject>que corresponda a este assunto</with_subject>

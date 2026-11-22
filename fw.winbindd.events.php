@@ -124,7 +124,9 @@ function search(){
 		if(preg_match("#Disabling#", $line)){$color="text-warning";}
 		if(preg_match("#Not loading#", $line)){$color="text-warning";}
 		if(preg_match("#ERROR:#", $line)){$color="text-danger";}
-		
+		// Pentest 2026-11-04 : ligne de journal winbindd (comptes AD : donnee externe) affichee sans encodage (XSS stockee).
+		$line=req_html($line);
+		$FTime=req_html($FTime);
 		$html[]="<tr>
 				<td style='width:1%' nowrap>$FTime</td>
 				<td><span class='$color'>$line</span></td>
@@ -133,7 +135,7 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents("/usr/share/artica-postfix/ressources/logs/web/winbindd-events.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents("/usr/share/artica-postfix/ressources/logs/web/winbindd-events.syslog.pattern"))."</i></div>";
 
 	VERBOSE("FINAL.:".count($html)." lines",__LINE__);
 	echo $tpl->_ENGINE_parse_body($html);

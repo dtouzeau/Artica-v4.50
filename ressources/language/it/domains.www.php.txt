@@ -1,10 +1,10 @@
-<APP_JOOMLA_TEXT>Joomla is an award-winning content management system (CMS), 
-which enables you to build Web sites and powerful online applications.[br]
- Many aspects, including its ease-of-use and extensibility, have made Joomla the most popular Web site software available.[br]
-  Best of all, Joomla is an open source solution that is freely available to everyone.</APP_JOOMLA_TEXT>
-<service_type>Service type</service_type>
-<WWWAppliPassword>Application Manager password</WWWAppliPassword>
-<WWWAppliUser>Application Manager username</WWWAppliUser>
+<APP_JOOMLA_TEXT>Joomla &#232; un sistema di gestione dei contenuti (CMS) pluripremiato,
+che ti consente di creare siti web e potenti applicazioni online.[br]
+ Molti aspetti, tra cui la sua facilit&#224; d'uso ed estensibilit&#224;, hanno reso Joomla il software per siti web pi&#249; popolare disponibile.[br]
+  E la cosa migliore &#232; che Joomla &#232; una soluzione open source liberamente disponibile per tutti.</APP_JOOMLA_TEXT>
+<service_type>Tipo di servizio</service_type>
+<WWWAppliPassword>Password del gestore applicazioni</WWWAppliPassword>
+<WWWAppliUser>Nome utente del gestore applicazioni</WWWAppliUser>
 <WWWMysqlPassword>Password del database MySQL</WWWMysqlPassword>
-<WWWMysqlUser>Mysql Database Admin</WWWMysqlUser>
-<www_delete_web_service_confirm>This operation will uninstall this web service, Are you sure to perform this operation</www_delete_web_service_confirm>
+<WWWMysqlUser>Amministratore del database Mysql</WWWMysqlUser>
+<www_delete_web_service_confirm>Questa operazione disinstaller&#224; questo servizio web, sei sicuro di voler eseguire questa operazione?</www_delete_web_service_confirm>

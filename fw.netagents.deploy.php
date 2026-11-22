@@ -7,6 +7,8 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
     }
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
+// Deploiement SSH : infogerant seulement (routes global-only), jamais une session au perimetre d'un tenant.
+if(!meta_provider_or_sysadmin()){http_response_code(403);$tplDeny=new template_admin();if(count($_POST)>0){echo $tplDeny->post_error("{ERROR_NO_PRIVS}");}else{header("content-type: application/x-javascript");$tplDeny->js_error("{ERROR_NO_PRIVS}");}exit;}
 if(isset($_GET["step1"])){step1();exit;}
 if(isset($_GET["step2"])){step2();exit;}
 if(isset($_POST["remote"])){step_deploy();exit;}

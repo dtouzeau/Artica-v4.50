@@ -1,12 +1,12 @@
 <add_a_rule>Neue Regel</add_a_rule>
-<edit_a_rule>Edit rule</edit_a_rule>
-<error_header>Please select value in header field</error_header>
-<error_pattern>Please type a pattern to detect</error_pattern>
-<match_pattern>Match pattern</match_pattern>
-<only_regex_off>(Only if use regex pattern is switched off)</only_regex_off>
-<rules_list>Rules list</rules_list>
-<select_header_field>if in</select_header_field>
-<user_delete>Delete mail</user_delete>
-<user_quarantine>Put mail into quarantine</user_quarantine>
-<user_skip_antispam>Skip antispam process</user_skip_antispam>
-<use_regex>Use regex pattern</use_regex>
+<edit_a_rule>Regel bearbeiten</edit_a_rule>
+<error_header>Bitte w&#228;hlen Sie einen Wert im Header-Feld aus</error_header>
+<error_pattern>Bitte geben Sie ein zu erkennendes Muster ein</error_pattern>
+<match_pattern>&#220;bereinstimmungsmuster</match_pattern>
+<only_regex_off>(Nur wenn die Verwendung des Regex-Musters deaktiviert ist)</only_regex_off>
+<rules_list>Regelliste</rules_list>
+<select_header_field>wenn in</select_header_field>
+<user_delete>E-Mail l&#246;schen</user_delete>
+<user_quarantine>E-Mail in Quarant&#228;ne verschieben</user_quarantine>
+<user_skip_antispam>Antispam-Prozess &#252;berspringen</user_skip_antispam>
+<use_regex>Regex-Muster verwenden</use_regex>

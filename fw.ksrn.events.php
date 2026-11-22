@@ -1,6 +1,5 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
 page();
@@ -27,10 +26,13 @@ function page():bool{
 }
 
 function search(){
-	$time=null;
+
 	$sock=new sockets();
 	$tpl=new template_admin();
-	$max=0;$date=null;$c=0;
+    $users=new usersMenus();
+    if(!isReader($users)){
+        return "";
+    }
 	
 	$MAIN=$tpl->format_search_protocol($_GET["search"]);
 	
@@ -68,20 +70,21 @@ function search(){
         $FOUND=false;
             if(preg_match("#^^(.*?)\s+([0-9]+)\s+([0-9:]+)\s+.*?\[([0-9]+)\]:.*?([a-z]+)\.go:([0-9]+):(.+)#",$line,$re)){
                 $FOUND=true;
-                $month=$re[1];
+                // Pentest 2026-11-04 : ligne de journal ksrn (donnee externe) affiche sans encodage (XSS stockee).
+                $month=req_html($re[1]);
                 $day=$re[2];
                 $hour=$re[3];
                 $pid=$re[4];
                 $function=$re[5];
                 $number_line=$re[6];
-                $line=trim($re[7]);
+                $line=req_html(trim($re[7]));
                 $FTime="$month $day $hour";
             }
 
         $type="NONE";
         $color="text-default";
         if(!$FOUND){
-            echo "<strong style='color:red'>$line</strong><br>";
+            echo "<strong style='color:red'>".req_html($line)."</strong><br>";
             continue;
         }
         if($type=="ERROR"){$color="text-danger";}
@@ -108,10 +111,18 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/ksrn.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/ksrn.syslog.pattern"))."</i></div>";
 	echo $tpl->_ENGINE_parse_body($html);
 	
 	
 	
 }
-
+function isReader($users){
+    if($users->AsDansGuardianAdministrator){
+        return true;
+    }
+    if($users->AsProxyMonitor){
+        return true;
+    }
+    return false;
+}

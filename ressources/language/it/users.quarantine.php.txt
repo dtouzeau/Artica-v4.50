@@ -1,9 +1,9 @@
-<go_to_page>Got to page</go_to_page>
-<informations>Message information</informations>
-<resend>Resend this email</resend>
-<resend_text>If resend operation is successfull, this mail will be deleted from your quarantine area</resend_text>
-<search_intro>Set words to to find in your quarantine mails body:</search_intro>
+<go_to_page>Vai alla pagina</go_to_page>
+<informations>Informazioni sul messaggio</informations>
+<resend>Reinvia questa email</resend>
+<resend_text>Se l'operazione di reinvio ha successo, questa email verr&#224; eliminata dalla tua area di quarantena</resend_text>
+<search_intro>Imposta le parole da trovare nel corpo delle tue email in quarantena:</search_intro>
 <this_week>Questa settimana</this_week>
-<top_senders>TOP Senders</top_senders>
-<view_message>View this message</view_message>
+<top_senders>TOP Mittenti</top_senders>
+<view_message>Visualizza questo messaggio</view_message>
 <yesterday>Leri</yesterday>

@@ -24,16 +24,22 @@ class ValkeyClient
     /** Get a persistent, shared Redis instance (UNIX socket or TCP fallback).
      * @return Redis|null
      */
+    private static $lastPingAt = 0.0;
+
     private static function r()
     {
         if (self::$r instanceof Redis) {
-            // Check if connection is still alive
+            $now = microtime(true);
+            if ($now - self::$lastPingAt < 5.0) {
+                return self::$r;
+            }
             try {
                 self::$r->ping();
+                self::$lastPingAt = $now;
                 return self::$r;
             } catch (\RedisException $e) {
-                // Connection is broken, reconnect
                 self::$r = null;
+                self::$lastPingAt = 0.0;
             }
         }
 
@@ -233,6 +239,13 @@ class ValkeyClient
      */
     public static function httpGetInfo($key)
     {
+        // Le handler Go /getinfo/{key} applique lui-même le préfixe SET:
+        // (convention GET_INFO). Les appelants arrivent ici avec la clé déjà
+        // normalisée « SET:xxx » : retirer le préfixe, sinon le daemon cherche
+        // « SET:SET:xxx » — toujours vide (observé : GET /getinfo/SET%3AARTICA_INFOS).
+        if (strpos($key, self::PREFIX) === 0) {
+            $key = substr($key, strlen(self::PREFIX));
+        }
         $encodedKey = urlencode($key);
         $response = self::httpRequest("/getinfo/$encodedKey");
 
@@ -259,7 +272,17 @@ class ValkeyClient
      */
     private static function httpSetInfo($key, $value)
     {
+        // Même logique que httpGetInfo : le handler Go /setinfo re-préfixe SET:,
+        // ne pas envoyer la clé déjà normalisée sous peine d'écrire SET:SET:xxx.
+        if (strpos($key, self::PREFIX) === 0) {
+            $key = substr($key, strlen(self::PREFIX));
+        }
         $encodedKey = urlencode(base64_encode($key));
+        // Valeur vide => /setinfo/<cle>/ : aucune route ne correspond (404). Le handler Go
+        // traduit "!nil" en valeur vide, comme pour SET_INFO_REST.
+        if (strlen((string)$value) === 0) {
+            $value = "!nil";
+        }
         $encodedValue = urlencode(base64_encode($value));
         $response = self::httpRequest("/setinfo/$encodedKey/$encodedValue");
 
@@ -854,9 +877,12 @@ class ValkeyClient
             $r = self::r();
 
             if ($r === null) {
-                // Connection failed, try HTTP fallback
-                $value = ($object === '' || $object === null) ? '' : trim((string)$object);
-                return self::httpSetInfo($key, $value);
+                // Valkey injoignable : pas de repli HTTP. saveKey() écrit un CACHE à durée de
+                // vie (2 jours par défaut) ; /setinfo en faisait un réglage durable, sans
+                // expiration, écrit dans /etc/artica-postfix/settings/Daemons et relu ensuite
+                // par getKey() (sessions MICROHOTSPOT:*, CAPTCHA:*, TRANSLATE_*... jamais purgées).
+                // Un cache non écrit n'est qu'un défaut de cache.
+                return false;
             }
 
             try {
@@ -884,13 +910,12 @@ class ValkeyClient
                     return $r->set($key, $value);
                 }
             } catch (\RedisException $e) {
-                // Connection lost during operation - invalidate and try HTTP fallback
+                // Connexion perdue : invalider, sans repli HTTP (voir plus haut).
                 self::$r = null;
                 if (function_exists('writelogs')) {
-                    writelogs('Redis saveKey failed: ' . $e->getMessage() . ', trying HTTP fallback', __FUNCTION__, __FILE__, __LINE__);
+                    writelogs('Redis saveKey failed: ' . $e->getMessage(), __FUNCTION__, __FILE__, __LINE__);
                 }
-                $value = ($object === '' || $object === null) ? '' : trim((string)$object);
-                return self::httpSetInfo($key, $value);
+                return false;
             }
 
         } catch (\Throwable $e) {

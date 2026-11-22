@@ -112,6 +112,9 @@ function search(){
         $color=$FONTS[$dLevel];
         $content=$array["CONTENT"];
         $ss="style='width:1%' class='$color' nowrap";
+        // Pentest 2026-11-04 : ligne de journal IDS (donnee externe) affichee sans encodage (XSS stockee).
+        $date=req_html($date);$interface=req_html($interface);$pid=req_html($pid);
+        $function=req_html($function);$content=req_html($content);
 
 		$html[]="<tr>
 				<td $ss>$date</td>
@@ -149,7 +152,8 @@ function parseit($line):array{
     if(preg_match("#^\[([0-9]+)\s+.*?\] (.+?) ([0-9:]+) (.+?): (.+?): (.+)#",$line,$re)) {
         return array("PID" => $re[1],  "INTERFACE" => "-",  "DATE" =>"$re[2] $re[3]",  "LEVEL" => strtoupper($re[4]),  "FUNCTION" => $re[5],  "CONTENT" => $re[6] );
     }
-    echo "<strong style='color:red'>$line</strong><br>";
+    // Pentest 2026-11-04 : ligne de journal IDS (donnee externe) affichee sans encodage (XSS stockee).
+    echo "<strong style='color:red'>".req_html($line)."</strong><br>";
     return array("PID" => "0",  "INTERFACE" => "",  "DATE" =>"",  "LEVEL" => "ERROR",  "FUNCTION" => "NONE",  "CONTENT" => $line );
 }
 function download():bool{

@@ -1,5 +1,7 @@
 #!/usr/bin/php
 <?php
+// stamp 01/11/2026
+// Versionnée pour le SP9 2026-10-10
 $GLOBALS["DATA_PROCESSED"]=0;
 $GLOBALS["STATSCOMCOUNTS"]=0;
 $GLOBALS["VERBOSE_COUNT"]=false;
@@ -63,7 +65,6 @@ $server->on('error', function (Exception $e) {
     die();
 });
 
-$unix->framework_exec("exec.squid.disable.php --syslog");
 
 $pid = pcntl_fork();
 

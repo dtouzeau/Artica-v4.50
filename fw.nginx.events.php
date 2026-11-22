@@ -4,6 +4,8 @@ include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.logfile_daemon.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["search"])){search();exit;}
@@ -98,17 +100,13 @@ function search(){
     $LEVELS["error"]="<span class='label label-danger'>ERROR</span>";
 
     $LEVELS["success"]="<span class='label label-primary'>Success</span>";
-    $html[]=$tpl->_ENGINE_parse_body("
-			<table id='$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{events}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    $TRCLASS=null;
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'>";
+    $html[]="<thead><tr>";
+    $html[]="<th class='center'>{date}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
+    $html[]="<th>{events}</th>";
+    $html[]="</tr></thead><tbody id='nev-rows'>";
 
 
     $json=json_decode($data);
@@ -116,42 +114,40 @@ function search(){
         echo $tpl->div_error("Decoding: ".strlen($data)." bytes<hr>$data".json_last_error_msg());
         return false;
     }
-    if(!$json->Status){
-        echo $tpl->div_error($json->Error);
+    // json_decode() rend NULL quand le daemon ne repond pas: lire ->Status
+    // dessus est une erreur fatale en PHP 8.
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        echo $tpl->div_error(is_object($json) && isset($json->Error)?htmlspecialchars($json->Error):"{unknown_error}");
         return false;
     }
-    $td1="style='width:1%' nowrap";
-    foreach ($json->Logs as $line){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $text_class="";
-        if(trim($line)==null){continue;}
+    $logs=(isset($json->Logs) && is_array($json->Logs))?$json->Logs:array();
+    foreach ($logs as $line){
+        if(trim((string)$line)==""){continue;}
         if($GLOBALS['VERBOSE']){echo "FOUND $line\n";}
-       $Main=parseRows($line);
-        $datetext=$tpl->time_to_date($Main["TIME"]);
-        $label=$LEVELS[$Main["TYPE"]];
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td class=\"$text_class\" $td1>$datetext</td>";
-        $html[]="<td class=\"$text_class\" $td1>$label</td>";
-        $html[]="<td class=\"$text_class\" style='width:99%'>{$Main["EVENTS"]}</td>";
-        $html[]="</tr>";
+        $Main=parseRows($line);
+        // $LEVELS etait indexe sans garde: un niveau inconnu emettait un
+        // avertissement en PHP 8 et laissait la cellule vide.
+        $html[]="<tr>"
+            ."<td class='center awc-nowrap awc-mono'>".htmlspecialchars($tpl->time_to_date($Main["TIME"]))."</td>"
+            ."<td class='center awc-nowrap'>".($LEVELS[$Main["TYPE"]] ?? htmlspecialchars((string)$Main["TYPE"]))."</td>"
+            ."<td>".htmlspecialchars((string)$Main["EVENTS"])."</td>"
+            ."</tr>";
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    // Le pied donnait colspan='5' a un tableau de TROIS colonnes, et
+    // l'initialisation footable ciblait #nginx-event-table alors que le tableau
+    // s'appelle #$t: elle ne s'appliquait donc a rien et la pagination restait
+    // vide.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='nev-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='5'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table><div><i></i></div>";
-	$html[]="
-	<script>
-		NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-		$(document).ready(function() { $('#nginx-event-table').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>"
+	    .awc_pager_js(100,"nev-rows","nev-pager");
 	return true;
 	
 	

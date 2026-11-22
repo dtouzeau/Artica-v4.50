@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 class mysql_services{
 	public $TokenParams=null;
 	public $SERV_NAME=null;
@@ -146,7 +147,7 @@ class mysql_services{
 		
 		//--tmp_table_size=16384000 --max_heap_table_size=16384000
 		
-		if(is_file("/etc/artica-postfix/settings/Daemons/$this->TokenParams")){
+		if(artica_setting_exists("$this->TokenParams")){
 			$TuningParameters=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("$this->TokenParams")));
 			
 		}

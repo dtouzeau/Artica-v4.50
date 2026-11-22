@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
@@ -38,6 +39,7 @@ function file_uploaded_js(){
 }
 
 function upload_progress_popup(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $page=CurrentPageName();
     $tpl=new template_admin();
     $filename=$_GET["upload-progress-popup"];
@@ -49,7 +51,7 @@ function upload_progress_popup(){
     $ARRAY["TITLE"]="{importing}";
     $ARRAY["AFTER"]="LoadAjax('import-results','$page?import-results=yes');if(typeof dialogInstance6 == 'object'){ dialogInstance6.close();}";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-$t-upload')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-$t-upload')";
     echo "<div class='row'><div id='progress-$t-upload'></div><script>$jsrestart</script>";
 }
 

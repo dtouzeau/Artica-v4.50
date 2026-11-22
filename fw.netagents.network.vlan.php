@@ -1,4 +1,11 @@
 <?php
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * VLAN Management for remote netagents.
  * Loaded as a tab from fw.netagents.network.php tabs() via:
@@ -21,7 +28,7 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
 }
 
 $users=new usersMenus();
-if(!$users->AsSystemAdministrator){exit();}
+if(!meta_node_admin($users)){exit();}
 
 // POST dispatchers
 if(isset($_POST["load-module"]))    {vlan_load_module();    exit;}
@@ -77,6 +84,12 @@ function vlan_start():bool{
 
     // Support badge area
     $h[]="<div id='vlan-support-$id' style='margin-bottom:12px;margin-top:10px'></div>";
+
+    // Noeud Artica : les VLAN sont ceux d'Artica (nics_vlan), avec ses limites.
+    $status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/status/$id"));
+    if(is_object($status) && !empty($status->artica)){
+        $h[]=$tpl->div_info("{netagent_vlan_artica}");
+    }
 
     // VLAN list area
     $h[]="<div id='vlan-list-$id'></div>";
@@ -185,7 +198,7 @@ function vlan_list():void{
     }
 
     $t=time();
-    $h[]="<table id='table-$t' class='table table-stripped' data-page-size='50'>";
+    $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[]="<thead><tr>";
     $h[]="<th data-sortable='true' data-type='number'>ID</th>";
     $h[]="<th data-sortable='true' data-type='text'>{name}</th>";
@@ -200,7 +213,7 @@ function vlan_list():void{
     $TRCLASS=null;
     foreach($vlans as $v){
         if(!is_object($v)) continue;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $vid    =htmlspecialchars($v->id ?? '');
         $tag    =intval($v->vlan_id ?? 0);
@@ -271,11 +284,11 @@ function vlan_list():void{
 
     $h[]="</tbody>";
     $h[]="<tfoot><tr><td colspan='8'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $h[]="</table>";
+    $h[]="</table></div></div></div>";
     $h[]="<script>NoSpinner();\n".implode("\n",$tpl->ICON_SCRIPTS);
     $h[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n",$h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$h));
 }
 
 // ── Add VLAN dialog opener ───────────────────────────────────────────────
@@ -797,15 +810,18 @@ function vlan_metrics_charts():void{
     $maxBw=max(array_merge($rxBpsAvg,$txBpsAvg,$rxBpsMax,$txBpsMax,[0]));
     if($maxBw>1024){
         $unit="MB/s";
-        $rxBpsAvg=array_map(fn($v)=>round($v/1024,2),$rxBpsAvg);
-        $txBpsAvg=array_map(fn($v)=>round($v/1024,2),$txBpsAvg);
-        $rxBpsMax=array_map(fn($v)=>round($v/1024,2),$rxBpsMax);
-        $txBpsMax=array_map(fn($v)=>round($v/1024,2),$txBpsMax);
+        // Plancher PHP 7.3: pas de fonction flechee (elle casse tout le fichier).
+        $rxBpsAvg=array_map(function($v){ return round($v/1024,2); },$rxBpsAvg);
+        $txBpsAvg=array_map(function($v){ return round($v/1024,2); },$txBpsAvg);
+        $rxBpsMax=array_map(function($v){ return round($v/1024,2); },$rxBpsMax);
+        $txBpsMax=array_map(function($v){ return round($v/1024,2); },$txBpsMax);
     }
 
     // Format arrays for JS (avoid PHP float precision issues)
-    $fmtF=fn(array $a):string=>'['.implode(',',array_map(fn($v)=>sprintf("%.2f",$v),$a)).']';
-    $fmtI=fn(array $a):string=>'['.implode(',',array_map('intval',$a)).']';
+    $fmtF=function(array $a){
+        return '['.implode(',',array_map(function($v){ return sprintf("%.2f",$v); },$a)).']';
+    };
+    $fmtI=function(array $a){ return '['.implode(',',array_map('intval',$a)).']'; };
     $labelsJs=json_encode($labels);
     $rxBwJs=$fmtF($rxBpsAvg);  $txBwJs=$fmtF($txBpsAvg);
     $rxBwMaxJs=$fmtF($rxBpsMax); $txBwMaxJs=$fmtF($txBpsMax);
@@ -827,7 +843,7 @@ function vlan_metrics_charts():void{
     $h[]="</div>";
 
     // Chart.js script (must be in same HTML response)
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[]="";
     $h[]="<script>";
 
     // Shared options

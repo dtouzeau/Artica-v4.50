@@ -1,7 +1,13 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
 if(isset($_GET["table"])){table();exit;}
@@ -44,23 +50,20 @@ function ruleid_delete():bool{
     $tpl=new template_admin();
     $md=$_GET["md"];
     $id=intval($_GET["ruleid-delete"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne = $q->mysqli_fetch_array("SELECT ipaddr,listenport,service_name FROM c_icap_services WHERE ID='$id'");
-    if(!$q->ok){
-        return $tpl->js_mysql_alert($q->mysql_error);
-
+    $ligne=acls_api_get("/proxy/icap/services/$id");
+    if(!is_array($ligne)){
+        return $tpl->js_mysql_alert("ICAP service #$id not found");
     }
    $text="{$ligne["ipaddr"]}:{$ligne["listenport"]}/{$ligne["service_name"]}";
     return $tpl->js_confirm_delete("$text","ruleid-delete",$id,"$('#$md').remove();");
 }
 function ruleid_delete_confirm():bool{
     $id=intval($_POST["ruleid-delete"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne = $q->mysqli_fetch_array("SELECT ipaddr,listenport,service_name FROM c_icap_services WHERE ID='$id'");
-    $text="{$ligne["ipaddr"]}:{$ligne["listenport"]}/{$ligne["service_name"]}";
-    $q->QUERY_SQL("DELETE FROM c_icap_services WHERE ID='$id'");
-    if(!$q->ok){
-        echo $q->mysql_error;
+    $ligne=acls_api_get("/proxy/icap/services/$id");
+    $text=is_array($ligne)?"{$ligne["ipaddr"]}:{$ligne["listenport"]}/{$ligne["service_name"]}":"#$id";
+    list($ok,$data)=acls_api_send("DELETE","/proxy/icap/services/$id");
+    if(!$ok){
+        echo is_string($data)?$data:"API error";
         return false;
     }
     return admin_tracks("Remove ICAP service $text");
@@ -79,32 +82,31 @@ function item_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["item-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM c_icap_services WHERE ID='$ID'");
-    $title=$ligne["service_name"];
+    $ligne=acls_api_get("/proxy/icap/services/$ID");
+    $title=is_array($ligne)?$ligne["service_name"]:"";
     $tpl->js_dialog1($title,"$page?item-popup=$ID",990);
 }
 
 
 function enabled(){
-    $ID=$_GET["enabled"];
+    $ID=intval($_GET["enabled"]);
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT service_name,enabled FROM c_icap_services WHERE ID='$ID'");
+    $ligne=acls_api_get("/proxy/icap/services/$ID");
+    if(!is_array($ligne)){echo $tpl->js_mysql_alert("ICAP service #$ID not found");return false;}
     $service_name=$ligne["service_name"];
     if(intval($ligne["enabled"])==1){
-        $q->QUERY_SQL("UPDATE c_icap_services SET enabled=0 WHERE ID=$ID");
-        if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return false;}
+        list($ok,$data)=acls_api_send("PUT","/proxy/icap/services/$ID",["enabled"=>0]);
+        if(!$ok){echo $tpl->js_mysql_alert($data);return false;}
         admin_tracks("Change ICAP service $service_name to disabled");
     }else{
-        $q->QUERY_SQL("UPDATE c_icap_services SET enabled=1 WHERE ID=$ID");
-        if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
+        list($ok,$data)=acls_api_send("PUT","/proxy/icap/services/$ID",["enabled"=>1]);
+        if(!$ok){echo $tpl->js_mysql_alert($data);return;}
         admin_tracks("Change ICAP service $service_name to enabled");
     }
 
     if($ID==1){
         $page=CurrentPageName();
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?icap-silent=yes");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/icap");
         header("content-type: application/x-javascript");
         echo "if(document.getElementById('cicap-main-status-start') ){\n";
         echo "\tLoadAjax('cicap-main-status-start','fw.proxy.c-icap.php?main-status=yes');\n";
@@ -118,18 +120,21 @@ function enabled(){
 }
 
 function bypass(){
-    $ID=$_GET["bypass"];
+    $ID=intval($_GET["bypass"]);
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT service_name,bypass FROM c_icap_services WHERE ID='$ID'");
+    $ligne=acls_api_get("/proxy/icap/services/$ID");
+    if(!is_array($ligne)){echo $tpl->js_mysql_alert("ICAP service #$ID not found");return false;}
     $service_name=$ligne["service_name"];
-    if(intval($ligne["enabled"])==1){
-        $q->QUERY_SQL("UPDATE c_icap_services SET bypass=0 WHERE ID=$ID");
-        if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return false;}
+    // Toggle on the *bypass* value. The legacy code tested $ligne["enabled"]
+    // while only selecting bypass, so enabled was always unset (0) and bypass
+    // could never be turned back off — fixed here to flip the real flag.
+    if(intval($ligne["bypass"])==1){
+        list($ok,$data)=acls_api_send("PUT","/proxy/icap/services/$ID",["bypass"=>0]);
+        if(!$ok){echo $tpl->js_mysql_alert($data);return false;}
         admin_tracks("Change ICAP service $service_name to not bypass when encounter error");
     }else{
-        $q->QUERY_SQL("UPDATE c_icap_services SET bypass=1 WHERE ID=$ID");
-        if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return false;}
+        list($ok,$data)=acls_api_send("PUT","/proxy/icap/services/$ID",["bypass"=>1]);
+        if(!$ok){echo $tpl->js_mysql_alert($data);return false;}
         admin_tracks("Change ICAP service $service_name to bypass if error");
     }
     return true;
@@ -139,6 +144,10 @@ function move_items_js(){
     $page=CurrentPageName();
      $t=time();
     header("content-type: application/x-javascript");
+    // Pentest 2026-11-04 : ID/t/dir etaient recopies sans encodage dans la page (XSS).
+    $mvID=intval($_GET["ID"] ?? 0);
+    $mvT=req_js($_GET["t"] ?? "");
+    $mvDir=intval($_GET["dir"] ?? 0);
     $html="
 
 var xSave$t= function (obj) {
@@ -147,9 +156,9 @@ var xSave$t= function (obj) {
 }
 function Save$t(){
 	var XHR = new XHRConnection();
-	XHR.appendData('move-item','{$_GET["ID"]}');
-	XHR.appendData('t','{$_GET["t"]}');
-	XHR.appendData('dir','{$_GET["dir"]}');
+	XHR.appendData('move-item','$mvID');
+	XHR.appendData('t','$mvT');
+	XHR.appendData('dir','$mvDir');
 	XHR.sendAndLoad('$page', 'POST',xSave$t);
 }
 
@@ -160,82 +169,48 @@ Save$t();
 
 }
 function move_items(){
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ID=$_POST["move-item"];
-    $dir=$_POST["dir"];
-    $ligne=$q->mysqli_fetch_array("SELECT zOrder FROM c_icap_services WHERE ID='$ID'");
-    if(!$q->ok){echo $q->mysql_error;}
-
-
-    $CurrentOrder=$ligne["zOrder"];
-
-    if($dir==0){
-        $NextOrder=$CurrentOrder-1;
-    }else{
-        $NextOrder=$CurrentOrder+1;
-    }
-
-    $sql="UPDATE c_icap_services SET zOrder=$CurrentOrder WHERE zOrder='$NextOrder'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;}
-
-
-    $sql="UPDATE c_icap_services SET zOrder=$NextOrder WHERE ID='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;}
-
-    $results=$q->QUERY_SQL("SELECT ID FROM c_icap_services ORDER by zOrder");
-    if(!$q->ok){echo $q->mysql_error;}
-    $c=1;
-   foreach ($results as $index=>$ligne){
-        $ID=$ligne["ID"];
-        $sql="UPDATE c_icap_services SET zOrder=$c WHERE ID='$ID'";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo $q->mysql_error;}
-        $c++;
-    }
-
+    // The daemon's move endpoint swaps with the neighbour and renumbers all
+    // rows in one transaction. dir convention (matching moveSimpleRule and the
+    // sibling fw.proxy.icap.acls.php): 1 = up (smaller zOrder), 0 = down.
+    $ID=intval($_POST["move-item"]);
+    $dir=intval($_POST["dir"]);
+    list($ok,$data)=acls_api_send("PUT","/proxy/icap/services/$ID/move",["dir"=>$dir]);
+    if(!$ok){echo is_string($data)?$data:"API error";}
 }
 function save(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $tpl->CLEAN_POST_XSS();
-    $ID=$_POST["ID"];
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
+    $ID=intval($_POST["ID"]);
     $service_name=$_POST["service_name"];
-    $service_name=$q->sqlite_escape_string2($service_name);
 
     if($_POST["service_key"]==null){
         $_POST["service_key"]=md5("{$_POST["address"]}{$_POST["listenport"]}{$_POST["respmod"]}{$_POST["icap_server"]}");
     }
 
+    // Form field "address" maps to the ipaddr column. Parameterized server-side,
+    // so no SQL escaping is needed here anymore.
+    $body=array(
+        "service_name"=>$service_name,
+        "service_key"=>$_POST["service_key"],
+        "respmod"=>$_POST["respmod"],
+        "routing"=>intval($_POST["routing"]),
+        "bypass"=>intval($_POST["bypass"]),
+        "enabled"=>intval($_POST["enabled"]),
+        "zOrder"=>intval($_POST["zOrder"]),
+        "ipaddr"=>$_POST["address"],
+        "listenport"=>intval($_POST["listenport"]),
+        "icap_server"=>$_POST["icap_server"],
+        "maxconn"=>intval($_POST["maxconn"]),
+        "overload"=>$_POST["overload"],
+    );
 
     if($ID==0){
-        $sql="INSERT INTO c_icap_services (service_name,service_key,respmod,routing,bypass,enabled,zOrder,ipaddr,listenport,icap_server,maxconn,overload)
-			VALUES('$service_name','{$_POST["service_key"]}','{$_POST["respmod"]}',
-			{$_POST["routing"]},{$_POST["bypass"]},{$_POST["enabled"]},
-			{$_POST["zOrder"]},'{$_POST["address"]}','{$_POST["listenport"]}','{$_POST["icap_server"]}','{$_POST["maxconn"]}','{$_POST["overload"]}')";
+        list($ok,$data)=acls_api_send("POST","/proxy/icap/services",$body);
+    }else{
+        list($ok,$data)=acls_api_send("PUT","/proxy/icap/services/$ID",$body);
     }
-
-
-    if($ID>0){
-        $sql="UPDATE c_icap_services SET
-		`service_name`='$service_name',
-		`service_key`='{$_POST["service_key"]}',
-		`listenport`='{$_POST["listenport"]}',
-		`icap_server`='{$_POST["icap_server"]}',
-		`respmod`='{$_POST["respmod"]}',
-		`routing`='{$_POST["routing"]}',
-		`bypass`='{$_POST["bypass"]}',
-		`enabled`='{$_POST["enabled"]}',
-		`zOrder`='{$_POST["zOrder"]}',
-		`maxconn`='{$_POST["maxconn"]}',
-		`ipaddr`='{$_POST["address"]}',
-		`overload`='{$_POST["overload"]}' WHERE ID=$ID";
-    }
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$q->mysql_error;return;}
+    if(!$ok){echo (new template_admin())->post_error("".(is_string($data)?$data:"API error"));return;}
 
 }
 
@@ -248,12 +223,12 @@ function item_popup(){
     $tpl=new template_admin();
     $ID=intval($_GET["item-popup"]);
     $bt="{add}";
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $ligne=array();
     $ligne["enabled"]=1;
     $ligne["zOrder"]=0;
     if($ID>0) {
-        $ligne = $q->mysqli_fetch_array("SELECT * FROM c_icap_services WHERE ID='$ID'");
+        $row=acls_api_get("/proxy/icap/services/$ID");
+        if(is_array($row)){$ligne=$row;}
         $bt = "{apply}";
     }
 
@@ -310,11 +285,11 @@ function reconfigure_progress(){
     $page           = CurrentPageName();
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR ."/squid.access.center.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR ."/squid.access.center.progress.log";
-    $ARRAY["CMD"]="squid2.php?icap-silent=yes";
+    $ARRAY["CMD"]="/proxy/icap/builder";
     $ARRAY["AFTER"]="LoadAjax('table-loader-icap-pages','$page?table=yes');";
     $ARRAY["TITLE"]="{apply}";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-icap-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-icap-restart')";
     return $jsrestart;
 }
 
@@ -332,7 +307,6 @@ function CICAP_Addr():string{
 }
 
 function table(){
-    $TRCLASS        = null;
     $page           = CurrentPageName();
     $tpl            = new template_admin();
     $add            = "Loadjs('$page?item-js=0');";
@@ -340,129 +314,166 @@ function table(){
     $t=time();
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cicap.php?clients-scan=yes");
 
-    $btns=$tpl->_ENGINE_parse_body("
-			<div class=\"btn-group\" data-toggle=\"buttons\">
-			<label class=\"btn btn btn-info\" OnClick=\"LoadAjax('table-loader-icap-pages','$page?table=yes');\"><i class='fas fa-sync'></i> {refresh} </label>
-			<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_service} </label>
-			<label class=\"btn btn btn-info\" OnClick=\"$jsrestart\"><i class='fa fa-save'></i> {save_config_to_server} </label>
-			</div>
-			<div class=\"btn-group\" data-toggle=\"buttons\"></div>");
+    $topbuttons[] = array($add,ico_plus,"{new_service}");
+    $topbuttons[] = array($jsrestart,ico_save,"{apply_rules}");
 
 
 
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
 
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{order}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{service_name}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' width=1%>{address}</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' width=1%>{mode}</th>";
-    $html[]="<th data-sortable=false width=1%>{bypass}</th>";
-    $html[]="<th data-sortable=false width=1%>{move}</th>";
-    $html[]="<th data-sortable=false width=1%>{enabled}</th>";
-    $html[]="<th data-sortable=false width=1%>{delete}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // Neuf colonnes dont quatre d'une icone chacune (contournement / deplacer /
+    // actif / supprimer). Le nom, l'adresse:port et les messages d'etat sont
+    // regroupes dans la colonne d'identite; les icones dans une colonne
+    // d'actions.
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{service_name}</th>";
+    $html[]="<th class='center'>{status}</th>";
+    $html[]="<th class='center'>{mode}</th>";
+    $html[]="<th class='center'>{order}</th>";
+    $html[]="<th class='center'>{bypass}</th>";
+    $html[]="<th class='center'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='ic-rows'>";
 
-    $sql="SELECT * FROM c_icap_services ORDER BY zOrder";
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $results=$q->QUERY_SQL($sql);
+    $results=acls_api_get("/proxy/icap/services");
+    if(!is_array($results)){$results=array();}
 
 
-    $STATUS_ARRAY[0]="<span class=label>{disabled}</span>";
-    $STATUS_ARRAY[1]="<span class='label label-primary'>{active2}</span>";
-    $STATUS_ARRAY[2]="<span class='label label-danger'>{error}</span>";
-    $STATUS_ARRAY[3]="<span class='label label-warning'>{error}</span>";
-    $STATUS_ARRAY[4]="<span class='label label-warning'>{inactive}</span>";
-    $STATUS_ARRAY[5]="<span class='label label-danger'>{emergency2}</span>";
+    $STATUS_ARRAY=icap_status_badges();
 
     $RESMODE["respmod_precache"]="{response}";
     $RESMODE["reqmod_precache"]="{request}";
-    $RESMODE_ALL="{all}";
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]=cicap_status($TRCLASS);
-    $C_ICAP_CLIENTS_SCAN=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_CLIENTS_SCAN"));
+    $html[]=cicap_status();
+    $ROWS=1;
+    // unserialize() rend FALSE quand le reglage est vide: isset() sur un
+    // booleen est faux, donc l'ancien code marquait tous les services
+    // "inactifs" sans avertissement. Le tableau vide donne le meme resultat
+    // mais sans dependre d'un type inattendu.
+    $C_ICAP_CLIENTS_SCAN=unserialize((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_CLIENTS_SCAN"));
+    if(!is_array($C_ICAP_CLIENTS_SCAN)){$C_ICAP_CLIENTS_SCAN=array();}
 
 
     foreach ($results as $index=>$ligne){
-        $ID=$ligne["ID"];
-        $colortext=null;
+        // The API returns the PK as lowercase "id"; alias it to "ID" so the
+        // existing downstream {$ligne['ID']} references keep working.
+        $ID=intval($ligne["id"]);
+        $ligne["ID"]=$ID;
         if($ID==1 OR $ID == 2){continue;}
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $ROWS++;
         $md=md5(serialize($ligne).$index);
-        $up=$tpl->icon_up("Loadjs('$page?move-item-js=yes&ID={$ligne['ID']}&dir=0')","AsProxyMonitor");
-        $down=$tpl->icon_down("Loadjs('$page?move-item-js=yes&ID={$ligne['ID']}&dir=1')","AsProxyMonitor");
-        $del=$tpl->icon_delete("Loadjs('$page?ruleid-delete={$ligne["ID"]}&md=$md')","AsSquidAdministrator");
-        $bypass=$tpl->icon_check($ligne["bypass"],"Loadjs('$page?bypass={$ligne['ID']}')","AsProxyMonitor");
-        $enabled=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enabled={$ligne['ID']}')","AsProxyMonitor");
+        // dir: 1 = up (smaller zOrder), 0 = down — matches the daemon move endpoint.
+        $up=$tpl->icon_up("Loadjs('$page?move-item-js=yes&ID=$ID&dir=1')","AsProxyMonitor");
+        $down=$tpl->icon_down("Loadjs('$page?move-item-js=yes&ID=$ID&dir=0')","AsProxyMonitor");
+        $del=$tpl->icon_delete("Loadjs('$page?ruleid-delete=$ID&md=$md')","AsSquidAdministrator");
+        $bypass=$tpl->icon_check($ligne["bypass"],"Loadjs('$page?bypass=$ID')",null,"AsProxyMonitor");
+        $enabled=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enabled=$ID')",null,"AsProxyMonitor");
 
-        if($ligne["ID"]<20){$del=$tpl->icon_nothing();}
-        if($ligne["ID"]==1 or $ligne["ID"]==2) {
-            $ListenAddress = CICAP_Addr();
-            $ligne["ipaddr"]=$ListenAddress;
-            $ligne["listenport"]=1345;
-        }
+        if($ID<20){$del=$tpl->icon_nothing();}
+        // Un bloc reaffectait ici ipaddr/listenport pour les identifiants 1 et 2,
+        // alors que le "continue" ci-dessus les a deja ecartes: code mort.
+        // Le grisage des services desactives passait par une variable $color qui
+        // n'etait JAMAIS remise a zero entre deux tours de boucle: des qu'un
+        // service desactive etait rendu, tous les suivants heritaient du gris.
 
-        if($ligne["enabled"]==0){
-            $colortext="#CCCCCC";
-        }
         if($ligne["enabled"]==1){
             if($ligne["status"]<5){
-                if(!isset($C_ICAP_CLIENTS_SCAN[$ligne['ID']])){
+                if(!isset($C_ICAP_CLIENTS_SCAN[$ID])){
                     $ligne["status"]=4;
                 }
             }
         }
-        $status=$STATUS_ARRAY[$ligne["status"]];
+        $status=$STATUS_ARRAY[intval($ligne["status"])] ?? $STATUS_ARRAY[0];
 
-        if($colortext<>null) {
-            $color = "style='color:$colortext'";
-        }
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width='1%' nowrap>$status</td>";
-        $html[]="<td width='1%' $color>{$ligne["zOrder"]}</td>";
-        $html[]="<td><strong $color>".$tpl->td_href($ligne["service_name"],null,"Loadjs('$page?item-js=$ID');")."</strong></td>";
-        $html[]="<td><strong $color>{$ligne["ipaddr"]}:{$ligne["listenport"]}</strong></td>";
-        $html[]="<td width='1%' nowrap><strong $color>{$RESMODE[$ligne["respmod"]]}</strong></td>";
-        $html[]="<td width='1%' nowrap align='center' $color>$bypass</td>";
-        $html[]="<td width=1% align='center' nowrap='' $color>$up&nbsp;$down</td>";
-        $html[]="<td width='1%' nowrap align='center'>$enabled</td>";
-        $html[]="<td width=1% align='center'>$del</td>";
-        $html[]="</tr>";
+        // Le nom du service et l'adresse viennent de la base et partaient BRUTS
+        // dans le HTML.
+        $html[]=icap_row(array(
+            "id"      =>$md,
+            "off"     =>(intval($ligne["enabled"])==0),
+            "name"    =>$tpl->td_href(htmlspecialchars((string)$ligne["service_name"]),null,"Loadjs('$page?item-js=$ID');"),
+            "meta"    =>htmlspecialchars((string)$ligne["ipaddr"].":".(string)$ligne["listenport"]),
+            "status"  =>$status,
+            "mode"    =>($RESMODE[$ligne["respmod"]] ?? "{all}"),
+            "order"   =>intval($ligne["zOrder"]),
+            "bypass"  =>$bypass,
+            "actions" =>"$up$down$enabled$del"));
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='9'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    // L'ancienne version placait le pied A L'INTERIEUR du corps du tableau.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $ROWS</span>";
+    $html[]="<span class='awc-pg' id='ic-pager'></span>";
+    $html[]="</div></div></div>";
 
     $TINY_ARRAY["TITLE"]="{icap_center}";
     $TINY_ARRAY["ICO"]="fas fa-plug";
     $TINY_ARRAY["EXPL"]="{icap_center_explain}";
     $TINY_ARRAY["URL"]="icap-center";
-    $TINY_ARRAY["BUTTONS"]=$btns;
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-$jstiny
-	</script>";
-
-    echo $tpl->_ENGINE_parse_body($html);
+    // Feuille de style, script et pager concatenes APRES l'analyse: la regex
+    // #{(.+?)}# de _ENGINE_parse_body prend chaque corps d'accolade CSS ou
+    // JavaScript pour un {token}.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$jstiny</script>"
+        .awc_pager_js(50,"ic-rows","ic-pager");
 }
 
-function cicap_status($TRCLASS):string{
+/**
+ * Pastilles d'etat d'un service ICAP.
+ * Elles etaient declarees deux fois, a l'identique, dans table() et dans
+ * cicap_status(). Les <span class=label> Bootstrap sans color:#fff rendaient
+ * un texte gris sur fond sombre.
+ */
+function icap_status_badges():array{
+    return array(
+        0=>"<span class='awc-badge awc-badge-off'>{disabled}</span>",
+        1=>"<span class='awc-badge awc-badge-on'>{active2}</span>",
+        2=>"<span class='awc-badge' style='background:#ba1a1a'>{error}</span>",
+        3=>"<span class='awc-badge' style='background:#865300'>{error}</span>",
+        4=>"<span class='awc-badge' style='background:#865300'>{inactive}</span>",
+        5=>"<span class='awc-badge' style='background:#7d1218'>{emergency2}</span>");
+}
+
+/**
+ * Etiquette d'un module c-icap (antimalware, bac a sable).
+ */
+function icap_module_chip($name,$on):string{
+    if($on){return "<span class='awc-badge awc-badge-on'>$name</span>";}
+    return "<span class='awc-badge awc-badge-off'>$name [OFF]</span>";
+}
+
+/**
+ * Un service ICAP.
+ * Les trois producteurs de lignes (service integre, service integre desactive,
+ * services declares) repetaient les memes neuf cellules. Le nom, l'adresse:port,
+ * les messages d'etat et les etiquettes de modules tiennent dans la colonne
+ * d'identite; contournement mis a part, les icones vont dans la colonne
+ * d'actions.
+ * Les valeurs arrivent deja construites par l'appelant: elles ne peuvent pas
+ * etre echappees ici.
+ */
+function icap_row($r):string{
+    $meta=trim((string)$r["meta"]);
+    $off=!empty($r["off"]);
+    $h ="<tr id='{$r["id"]}'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico".($off?" awc-ico-off":"")."'><i class='fas fa-plug'></i></span>";
+    $h.="<span><span class='awc-name".($off?" awc-name-off":"")."'>{$r["name"]}</span>";
+    if($meta<>""){$h.="<div class='awc-meta'>$meta</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='center awc-nowrap'>{$r["status"]}</td>";
+    $h.="<td class='center'>".($r["mode"]<>""?$r["mode"]:"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="<td class='center awc-mono'>{$r["order"]}</td>";
+    $h.="<td class='center'>{$r["bypass"]}</td>";
+    $h.="<td><div class='awc-acts'>{$r["actions"]}</div></td>";
+    $h.="</tr>";
+    return $h;
+}
+
+function cicap_status():string{
     $tpl        = new template_admin();
     $page       = CurrentPageName();
     $error_gen  = null;
@@ -473,47 +484,47 @@ function cicap_status($TRCLASS):string{
 
 
 
-    $STATUS_ARRAY[0]="<span class=label>{disabled}</span>";
-    $STATUS_ARRAY[1]="<span class='label label-primary'>{active2}</span>";
-    $STATUS_ARRAY[2]="<span class='label label-danger'>{error}</span>";
-    $STATUS_ARRAY[3]="<span class='label label-warning'>{error}</span>";
-    $STATUS_ARRAY[4]="<span class='label label-warning'>{inactive}</span>";
+    $STATUS_ARRAY=icap_status_badges();
 
 
 
 
     if($CicapEnabled==0) {
-        $html[] = "<tr class='$TRCLASS' id='none'>";
-        $html[] = "<td width='1%' nowrap>$STATUS_ARRAY[0]</td>";
-        $html[] = "<td width='1%'>0</td>";
-        $html[] = "<td><strong class='text-muted'>{SERVICE_WEBAVEX}</strong></td>";
-        $html[] = "<td><strongclass='text-muted'>$ListenAddress:1345</strong></td>";
-        $html[] = "<td width='1%' nowrap>" . $tpl->icon_nothing() . "</td>";
-        $html[] = "<td width='1%' nowrap align='center'>" . $tpl->icon_nothing() . "</td>";
-        $html[] = "<td width=1% align='center' nowrap=''>&nbsp;</td>";
-        $html[] = "<td width='1%' nowrap align='center'>&nbsp;</span></td>";
-        $html[] = "<td width=1% align='center'>" . $tpl->icon_nothing() . "</td>";
-        $html[] = "</tr>";
-        return @implode("\n", $html);
+        // L'ancienne version ecrivait ici <strongclass='text-muted'> (espace
+        // manquant) et fermait un </span> jamais ouvert.
+        return icap_row(array(
+            "id"      =>"none",
+            "off"     =>true,
+            "name"    =>"{SERVICE_WEBAVEX}",
+            "meta"    =>htmlspecialchars("$ListenAddress:1345"),
+            "status"  =>$STATUS_ARRAY[0],
+            "mode"    =>"",
+            "order"   =>0,
+            "bypass"  =>$tpl->icon_nothing(),
+            "actions" =>$tpl->icon_nothing()));
     }
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cicap.php?checks=yes");
-    $MAIN=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CICAPCHK_INFOS"));
+    $MAIN=array();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/cicap/check"));
+    if(isset($json->data)){
+        if(strlen($json->data->error)>0){$MAIN["ERROR"]=$json->data->error;}
+        if(strlen($json->data->service)>0){$MAIN["SERVICE"]=$json->data->service;}
+    }
 
     if(isset($MAIN["ERROR"])){
         $STATUS=2;
-        $error_gen= "<br>{$MAIN["ERROR"]}";
+        $error_gen= "<br>".htmlspecialchars($MAIN["ERROR"]);
     }
 
     if(isset($MAIN["SERVICE"])){
         $MAIN["SERVICE"]=str_replace(" - Url_Check demo service","",$MAIN["SERVICE"]);
-        $icap_info=" <small>({$MAIN["SERVICE"]})</small>";
+        $icap_info=" <small>(".htmlspecialchars($MAIN["SERVICE"]).")</small>";
 
     }
 
 
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM c_icap_services WHERE ID=1");
-    if($ligne["enabled"]==0){$STATUS=4;}
+    $ligne=acls_api_get("/proxy/icap/services/1");
+    if(!is_array($ligne)){$ligne=array("enabled"=>0,"bypass"=>0);}
+    if(intval($ligne["enabled"] ?? 0)==0){$STATUS=4;}
 
     if(!isset($MAIN["ERROR"])) {
         $fp = @fsockopen($ListenAddress, "1345", $errno, $errstr, 1);
@@ -539,37 +550,26 @@ function cicap_status($TRCLASS):string{
     $EnableClamavInCiCap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableClamavInCiCap"));
     $CICAPEnableSandBox=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CICAPEnableSandBox"));
     if($ligne["enabled"]==0){$EnableClamavInCiCap=0;$CICAPEnableSandBox=0;}
-    $modules[]="<table style='width:5%;margin-top:5px'>";
-    $modules[]="<tr>";
-    if($EnableClamavInCiCap==1) {
-        $modules[] = "<td width='1%' nowrap><span class='label label-primary'>antimalware</span></td>";
-    }else{
-        $modules[] = "<td width='1%' nowrap><span class='label'>antimalware [OFF]</span></td>";
-    }
-    if($CICAPEnableSandBox==1){
-        $modules[] = "<td style='width:1%;padding-left:5px' nowrap><span class='label label-primary'>SandBox</span></td>";
-    }else{
-        $modules[] = "<td style='width:1%;padding-left:5px' nowrap><span class='label'>SandBox [OFF]</span></td>";
-    }
-    $modules[]="</tr>";
-    $modules[]="</table>";
-    $mmods=@implode("",$modules);
+    // Les deux etiquettes de modules tenaient dans un <table style='width:5%'>
+    // de MISE EN PAGE d'une seule ligne.
+    $modules=array();
+    $modules[]=icap_module_chip("antimalware",$EnableClamavInCiCap==1);
+    $modules[]=icap_module_chip("SandBox",$CICAPEnableSandBox==1);
+    $mmods="<div style='margin-top:5px'>".@implode("&nbsp;",$modules)."</div>";
 
 
-    $bypass=$tpl->icon_check($ligne["bypass"],"Loadjs('$page?bypass=1')","AsProxyMonitor");
+    $bypass=$tpl->icon_check($ligne["bypass"],"Loadjs('$page?bypass=1')",null,"AsProxyMonitor");
     $link=$tpl->td_href("{SERVICE_WEBAVEX}",null,"Loadjs('$page?item-js=1');");
-    $html[]="<tr class='$TRCLASS' id='ICAPAV'>";
-    $html[]="<td width='1%' nowrap>{$STATUS_ARRAY[$STATUS]}</td>";
-    $html[]="<td width='1%'>0</td>";
-    $html[]="<td><strong class='$textclassip'>$link</strong>$icap_info$error_gen$mmods</td>";
-    $html[]="<td><strong class='$textclassip'>$ListenAddress:1345</strong></td>";
-    $html[]="<td width='1%' nowrap><strong>{all}</strong></td>";
-    $html[]="<td width='1%' nowrap align='center'>$bypass</td>";
-    $html[]="<td width=1% align='center' nowrap=''>" . $tpl->icon_nothing() . "</td>";
-    $html[]="<td width='1%' nowrap align='center'>$enabled</td>";
-    $html[]="<td width=1% align='center'>" . $tpl->icon_nothing() . "</td>";
-    $html[]="</tr>";
-    return @implode("\n", $html);
+    return icap_row(array(
+        "id"      =>"ICAPAV",
+        "off"     =>false,
+        "name"    =>"<span class='$textclassip'>$link</span>",
+        "meta"    =>htmlspecialchars("$ListenAddress:1345").$icap_info.$error_gen.$mmods,
+        "status"  =>$STATUS_ARRAY[$STATUS],
+        "mode"    =>"{all}",
+        "order"   =>0,
+        "bypass"  =>$bypass,
+        "actions" =>$enabled));
 
 
 

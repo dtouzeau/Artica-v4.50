@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -20,11 +22,11 @@ function js(){
 function popup(){
 	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/php7install.progress";
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/php7install.log";
-	$ARRAY["CMD"]="services.php?apt-get-install=open-vm-tools";
+	$ARRAY["CMD"]="/system/debian/install/open-vm-tools";
 	$ARRAY["TITLE"]="{INSTALL_VMWARE_TOOLS}";
 	$ARRAY["AFTER"]="dialogInstance6.close();LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-open-vm-tools-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-open-vm-tools-restart')";
 	$html="<div id='progress-open-vm-tools-restart'></div><script>$jsrestart</script>";
 	echo $html;
 }

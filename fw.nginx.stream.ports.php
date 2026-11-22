@@ -1,8 +1,13 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
-
+// Pentest 2026-11-04 : table/serviceid/port-js/port-popup/md5 etaient recopies sans encodage dans la page (XSS).
+foreach(array("table","serviceid","port-js","port-popup") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
+if(isset($_GET["md5"])){$_GET["md5"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["md5"]);}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["port-js"])){port_js();exit;}
 if(isset($_GET["port-popup"])){port_popup();exit;}
@@ -15,19 +20,23 @@ table_start();
 
 function table_start():bool{
 	$page=CurrentPageName();
-	$ID=$_GET["service"];
+	$ID=isset($_GET["service"])?intval($_GET["service"]):0;
 	echo "<div id='stream-listen-ports-$ID'></div>
 	<script>LoadAjax('stream-listen-ports-$ID','$page?table=$ID')</script>";
     return true;
 }
+// fetch_stream_port returns a single stream_ports row by ID via the daemon API.
+
+
 function delete_js(){
 	$tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
-	$ID=$_GET["delete"];
+	$ID=intval($_GET["delete"]);
 	$md5=$_GET["md5"];
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$ligne=$q->mysqli_fetch_array("SELECT `interface`,`port` FROM stream_ports WHERE ID=$ID");
-	$tpl->js_confirm_delete("{$ligne["interface"]}:{$ligne["port"]}", "delete", "$ID","$('#$md5').remove()");
+	$ligne=fetch_stream_port($ID);
+	$interface=isset($ligne["interface"])?$ligne["interface"]:"";
+	$port=isset($ligne["port"])?$ligne["port"]:"";
+	$tpl->js_confirm_delete("$interface:$port", "delete", "$ID","$('#$md5').remove()");
 }
 function  delete():bool{
 	$ID=intval($_POST["delete"]);
@@ -60,17 +69,15 @@ function port_popup(){
     $ligne["options"]=base64_encode(serialize(array()));
 	
 	$btname="{add}";
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT type FROM nginx_services WHERE ID=$serviceid");
-    $type=intval($ligne["type"]);
-
+	$type=fetch_nginx_service_type($serviceid);
+	$ligne=array("options"=>base64_encode(serialize(array())));
 
 	if($ID>0){
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM stream_ports WHERE ID=$ID");
+		$ligne=fetch_stream_port($ID);
 		$btname="{apply}";
-		$title="{$ligne["interface"]}:{$ligne["port"]}";
-		$serviceid=$ligne["serviceid"];
-		$md5=$ligne["zmd5"];
+		$title=(isset($ligne["interface"])?$ligne["interface"]:"").":".(isset($ligne["port"])?$ligne["port"]:"");
+		$serviceid=isset($ligne["serviceid"])?$ligne["serviceid"]:$serviceid;
+		$md5=isset($ligne["zmd5"])?$ligne["zmd5"]:$md5;
 	}
 	$js="dialogInstance2.close();LoadAjax('stream-listen-ports-$serviceid','$page?table=$serviceid');NgixSitesReload();";
 
@@ -138,7 +145,7 @@ function table():bool{
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:10px'>";
 	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?port-js=0&serviceid={$_GET["table"]}&md5=');\"><i class='fa fa-plus'></i> {new_entry} </label>";
 	$html[]="</div>";
-	$html[]="<table id='table-listenport-{$_GET["table"]}' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{interfaces}</th>";
@@ -150,13 +157,11 @@ function table():bool{
 
 	
 
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$results=$q->QUERY_SQL("SELECT * FROM stream_ports WHERE serviceid='{$_GET["table"]}'");
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return false;}
+	$results=fetch_stream_ports_for_service(intval($_GET["table"]));
 
     $TRCLASS=null;
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$options=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["options"]);
 		$md5=md5(serialize($ligne));
 		$interface=$ligne["interface"];
@@ -183,21 +188,11 @@ function table():bool{
 		$html[]="</tr>";
 	}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='3'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div></div></div>";
 	$html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-listenport-{$_GET["table"]}').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });
 	</script>";
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style().$tpl->_ENGINE_parse_body($html);
     return true;
 }

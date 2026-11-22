@@ -21,47 +21,37 @@ function popup(){
 }
 
 function passwordch():bool{
-	$sock=new sockets();
     $tpl=new template_admin();
-	$nsswitchEnableLdap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nsswitchEnableLdap"));
-	
-	if(strpos(" {$_POST["change_password"]}", ":")>0){
-        echo $tpl->post_error("`:` not supported !");
-		return false;
-	}
-	
-	if(strlen(trim($_POST["change_password"]))>1){
-		$_POST["change_password"]=url_decode_special_tool($_POST["change_password"]);
-        $len=strlen($_POST["change_password"]);
-			
-		if($nsswitchEnableLdap==1){
-			include_once(dirname(__FILE__))."/ressources/class.samba.inc";
-			$smb=new samba();
-			if(!$smb->createRootID($_POST["change_password"])){
-                echo $tpl->post_error("createRootID failed");
-				return false;
-			}
-		}
-		$sock->SET_INFO("RootPasswordChanged", 1);
-		$change_password=url_decode_special($_POST["change_password"]);
-		$changeRootPasswd=urlencode(base64_encode($change_password));
-
-        $resp=$sock->REST_API("/system/rootpwd/$changeRootPasswd");
-        $json=json_decode($resp);
-
-        if (json_last_error()> JSON_ERROR_NONE) {
-            echo $tpl->post_error("Decode REST API: ".json_last_error_msg()."<br>$resp");
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){echo $tpl->post_error("{ERROR_NO_PRIVS2}");return false;}
+    // Mot de passe lu brut, decode une seule fois (meme regle que fw.system.users.php) ; il part dans
+    // le CORPS d'un POST JSON : jamais dans une URL, donc jamais dans articarest.query.log.
+    $password=isset($_POST["change_password"]) && !is_array($_POST["change_password"])?(string)$_POST["change_password"]:"";
+    if(function_exists("url_decode_special_tool")){$password=url_decode_special_tool($password);}
+    $len=strlen($password);
+    if($len<8 || $len>128 || preg_match('/[\r\n]/',$password)){
+        echo $tpl->post_error("{systemusers_password_rule}");
+        return false;
+    }
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/system/user/chpasswd",array("user"=>"root","password"=>$password));
+    $json=json_decode($resp);
+    if(!is_object($json)){
+        echo $tpl->post_error("Decode REST API: ".json_last_error_msg());
+        return false;
+    }
+    if(empty($json->success)){
+        echo $tpl->post_error(htmlspecialchars((string)($json->error ?? "unknown error"),ENT_QUOTES));
+        return false;
+    }
+    $nsswitchEnableLdap=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("nsswitchEnableLdap"));
+    if($nsswitchEnableLdap==1){
+        include_once(dirname(__FILE__)."/ressources/class.samba.inc");
+        $smb=new samba();
+        if(!$smb->createRootID($password)){
+            echo $tpl->post_error("createRootID failed");
             return false;
         }
-
-        if(!$json->Status){
-            echo $tpl->post_error($json->Error);
-            return false;
-        }
-
-        return admin_tracks("Success Changing the root password with en length of $len  characters");
-			
-			
-	}
-    return false;
+    }
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("RootPasswordChanged", 1);
+    return admin_tracks("Success Changing the root password with a length of $len characters");
 }

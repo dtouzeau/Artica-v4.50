@@ -1,7 +1,12 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// Politique Meta proxypac : exceptions en lecture seule quand "rules" est tenu.
+include_once(dirname(__FILE__)."/ressources/class.proxypac.meta.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -15,22 +20,33 @@ if(isset($_POST["ID"])){item_save();exit;}
 
 js();
 function enabled_js(){
-    $aclid=$_GET["enabled-js"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT pattern,enabled FROM pac_except WHERE ID='$aclid'");
-    $enabled=$ligne["enabled"];
-    if($enabled==1){$enabled=0;}else{$enabled=1;}
-    admin_tracks("Enable = $enabled for proxy.pac {$ligne["pattern"]} exception item $aclid");
-    $q->QUERY_SQL("UPDATE pac_except SET enabled=$enabled WHERE ID=$aclid");
-    if(!$q->ok){echo $q->mysql_error;}
+    if(proxypac_meta_refuse_rules_js()){return;}
+    $tpl=new template_admin();
+    $aclid=intval($_GET["enabled-js"]);
+    $ruleid=intval($_GET["ruleid"]);
+    $items=acls_api_get("/proxypac/excepts?ruleID=$ruleid");
+    $item=null;
+    if(is_array($items)){
+        foreach($items as $row){if(intval($row["id"])==$aclid){$item=$row;break;}}
+    }
+    $enabled=(is_array($item) && intval($item["enabled"])==1)?0:1;
+    admin_tracks("Enable = $enabled for proxy.pac ".($item["pattern"] ?? $aclid)." exception item $aclid");
+    list($ok,$err)=acls_api_send("PUT","/proxypac/excepts/$aclid/enable",["enabled"=>$enabled]);
+    if(!$ok){echo $err;}
 }
 function item_delete(){
-    $ID=$_GET["delete-js"];
+    if(proxypac_meta_refuse_rules_js()){return;}
+    $ID=intval($_GET["delete-js"]);
     $md=$_GET["md"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT pattern FROM pac_except WHERE ID='$ID'");
-    $q->QUERY_SQL("DELETE FROM pac_except WHERE ID='$ID'");
-    admin_tracks("Removed {$ligne["pattern"]} for proxy.pac exception item $ID");
+    $ruleid=intval($_GET["ruleid"]);
+    $items=acls_api_get("/proxypac/excepts?ruleID=$ruleid");
+    $pattern=$ID;
+    if(is_array($items)){
+        foreach($items as $row){if(intval($row["id"])==$ID){$pattern=$row["pattern"] ?? $ID;break;}}
+    }
+    list($ok,$err)=acls_api_send("DELETE","/proxypac/excepts/$ID");
+    if(!$ok){header("content-type: application/x-javascript");echo "alert('".addslashes($err)."');";return;}
+    admin_tracks("Removed $pattern for proxy.pac exception item $ID");
     header("content-type: application/x-javascript");
     echo "$('#$md').remove();\n";
 }
@@ -67,9 +83,8 @@ function table_start(){
 function item_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $ID=$_GET["item-popup"];
-    $ruleid=$_GET["ruleid"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    $ID=intval($_GET["item-popup"]);
+    $ruleid=intval($_GET["ruleid"]);
 
     $title="{item} $ID";
     if($ID==0){
@@ -81,11 +96,16 @@ function item_popup(){
     }else{
         $addjs=null;
         $btname="{apply}";
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM pac_except WHERE ID=$ID");
+        $items=acls_api_get("/proxypac/excepts?ruleID=$ruleid");
+        $ligne=["enabled"=>1,"type"=>"src","pattern"=>""];
+        if(is_array($items)){
+            foreach($items as $row){if(intval($row["id"])==$ID){$ligne=["enabled"=>intval($row["enabled"]),"type"=>$row["type"],"pattern"=>$row["pattern"]];break;}}
+        }
     }
 
     $tpl->field_hidden("ID",$ID);
     $tpl->field_hidden("ruleid",$ruleid);
+    if(proxypac_meta_rules_held()){proxypac_meta_lock_form($tpl);}
 
     $type["src"]="{src}";
     $type["browser"]="{browser}";
@@ -100,27 +120,29 @@ function item_popup(){
 
 }
 function item_save(){
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
+    $meta=proxypac_meta_refuse_rules_post();
+    if($meta!==""){echo $meta;return false;}
     $tpl->CLEAN_POST();
+    $ID=intval($_POST["ID"]);
+    $ruleID=intval($_POST["ruleid"]);
+    $pattern=$_POST["pattern"];
+    $ztype=$_POST["ztype"];
 
-    if($_POST["ID"]==0){
-        $sql="INSERT INTO pac_except (`type`,`pattern`,`ruleid`) VALUES ('{$_POST["ztype"]}','{$_POST["pattern"]}','{$_POST["ruleid"]}')";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
-        admin_tracks("Created {$_POST["pattern"]} for proxy.pac rule {$_POST["ruleid"]}");
+    if($ID==0){
+        list($ok,$err)=acls_api_send("POST","/proxypac/excepts",["ruleID"=>$ruleID,"type"=>$ztype,"pattern"=>$pattern]);
+        if(!$ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($err));return false;}
+        admin_tracks("Created $pattern for proxy.pac rule $ruleID");
         return false;
-
     }
 
+    // No PUT for type/pattern — delete+re-insert to update
+    list($ok,$err)=acls_api_send("DELETE","/proxypac/excepts/$ID");
+    if(!$ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($err));return false;}
+    list($ok,$err)=acls_api_send("POST","/proxypac/excepts",["ruleID"=>$ruleID,"type"=>$ztype,"pattern"=>$pattern]);
+    if(!$ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($err));return false;}
 
-    $q->QUERY_SQL("UPDATE pac_except SET `type`='{$_POST["ztype"]}',
-    `pattern`='{$_POST["pattern"]}',ruleid='{$_POST["ruleid"]}' WHERE ID={$_POST["ID"]}");
-
-
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
-
-    admin_tracks("Updated {$_POST["pattern"]} for proxy.pac rule {$_POST["ruleid"]}");
+    admin_tracks("Updated $pattern for proxy.pac rule $ruleID");
 
 }
 
@@ -130,71 +152,61 @@ function table(){
     $ruleid=intval($_GET["table"]);
     $tpl=new template_admin();
     $TRCLASS=null;
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
     $add="Loadjs('$page?item-js=0&ruleid=$ruleid');";
+    $xsec=proxypac_meta_rules_sec("AsSquidAdministrator");
 
-    $sql="CREATE TABLE IF NOT EXISTS `pac_except` (
-            `ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			`ruleid` INTEGER NOT NULL,
-			`type` TEXT,
-			`pattern` TEXT ,
-			`enabled` INTEGER NOT NULL DEFAULT 1)";
-    $q->QUERY_SQL($sql);
-    $html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-    $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_item} </label>";
-    $html[]="</div>";
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true data-type='text'>{pattern}</th>";
-    $html[]="<th data-sortable=false style='width:1%'>{type}</th>";
-    $html[]="<th data-sortable=false style='width:1%'>{enable}</th>";
-    $html[]="<th data-sortable=false>{delete}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    if(proxypac_meta_rules_held()){
+        $html[]=proxypac_meta_banner($tpl,proxypac_meta_rules());
+    }else{
+        $html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
+        $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_item} </label>";
+        $html[]="</div>";
+    }
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{pattern}</th>";
+    $html[]="<th class='center'>{type}</th>";
+    $html[]="<th class='center'>{enable}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
+    $html[]="</tr></thead><tbody id='pacx-rows'>";
 
-    $sql="SELECT * FROM pac_except WHERE ruleid=$ruleid ORDER BY pattern ASC";
-    $results=$q->QUERY_SQL($sql);
+    $results=acls_api_get("/proxypac/excepts?ruleID=$ruleid");
+    if(!is_array($results)){echo $tpl->_ENGINE_parse_body("<tr><td colspan='4'>{error}</td></tr></tbody></table>");return;}
 
     $type["src"]="{src}";
     $type["browser"]="{browser}";
 
     foreach ($results as $index=>$ligne){
-        $ID=$ligne["ID"];
+        $ID=intval($ligne["id"]);
         $editjs="Loadjs('$page?item-js=$ID&ruleid=$ruleid');";
         $md=md5(serialize($ligne));
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $check=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enabled-js=$ID')",null,null,"AsSquidAdministrator");
-        $delete=$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$md')","AsSquidAdministrator");
+        $TRCLASS=null;
+        $check=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enabled-js=$ID&ruleid=$ruleid')",null,$xsec);
+        $delete=$tpl->icon_delete("Loadjs('$page?delete-js=$ID&ruleid=$ruleid&md=$md')",$xsec);
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td><strong>". $tpl->td_href($ligne["pattern"],null,$editjs)."</strong></td>";
-        $html[]="<td style='width:1%' nowrap>{$type[$ligne["type"]]}</center></td>";
-        $html[]="<td style='width:1%' nowrap>$check</td>";
-        $html[]="<td width=1% class='center' nowrap>$delete</center></td>";
+        // DEUX </center> orphelins fermaient ces cellules, et la derniere
+        // portait un width=1% NON QUOTE contenant un %.
+        $html[]="<tr id='$md'>";
+        $html[]="<td><strong>". $tpl->td_href(htmlspecialchars((string)$ligne["pattern"]),null,$editjs)."</strong></td>";
+        $html[]="<td class='center awc-nowrap'>".($type[$ligne["type"]] ?? htmlspecialchars((string)$ligne["type"]))."</td>";
+        $html[]="<td class='center awc-nowrap'>$check</td>";
+        $html[]="<td><div class='awc-acts'>$delete</div></td>";
         $html[]="</tr>";
 
 
     }
 
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='pacx-pager'></span></div>";
+	$html[]="</div></div>";
 	$html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style().$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js(100,"pacx-rows","pacx-pager");
 }

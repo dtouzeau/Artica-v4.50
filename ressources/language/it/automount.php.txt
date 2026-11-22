@@ -1,5 +1,5 @@
-<automount_add_backup>Select this resource and add it in the backup server schedule.</automount_add_backup>
-<automount_restore_from>Restore backup form this resource</automount_restore_from>
-<RestoreFromRsyncPath>Restore backup from this item</RestoreFromRsyncPath>
-<RestoreFromRsyncPath_warn>Warning[br]All datas on your server will be replaced by the backup defined[br]Click on restore button if you want to perform this operation</RestoreFromRsyncPath_warn>
-<SELECT_RESSOURCE>Select the resource</SELECT_RESSOURCE>
+<automount_add_backup>Seleziona questa risorsa e aggiungila alla pianificazione del server di backup.</automount_add_backup>
+<automount_restore_from>Ripristina il backup da questa risorsa</automount_restore_from>
+<RestoreFromRsyncPath>Ripristina il backup da questo elemento</RestoreFromRsyncPath>
+<RestoreFromRsyncPath_warn>Attenzione[br]Tutti i dati sul tuo server verranno sostituiti dal backup definito[br]Clicca sul pulsante di ripristino se vuoi eseguire questa operazione</RestoreFromRsyncPath_warn>
+<SELECT_RESSOURCE>Seleziona la risorsa</SELECT_RESSOURCE>

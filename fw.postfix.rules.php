@@ -1,5 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
@@ -17,9 +19,12 @@ $GLOBALS["TABLE"]["body_checks"]="{check_body_access_title}";
 
 $GLOBALS["NOVALUE"]["IGNORE"]=true;
 
+// Pentest 2026-11-04 : rule-js, rule-popup, rule-delete, rule-enable, instance-id et id etaient recopies sans encodage dans la page (XSS).
+foreach(array("rule-js","rule-popup","rule-delete","rule-enable","instance-id") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
+if(isset($_GET["id"])){$_GET["id"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["id"]);}
 
 
-if(isset($_POST["rbl-choose"])){rbl_save();exit;}
+
 if(isset($_GET["rule-js"])){rule_js();exit;}
 if(isset($_GET["rule-wizard"])){rule_wizard();exit;}
 if(isset($_POST["rule-wizard"])){rule_wizard_save();exit;}
@@ -43,9 +48,9 @@ function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$POSTFIX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_VERSION");
-    $html=$tpl->page_header("{global_smtp_rules} v$POSTFIX_VERSION",
+    $html=$tpl->page_header("{mta_rules} v$POSTFIX_VERSION",
         "fas fa-filter",
-        "{security_rules_explain}",
+        "{mta_rules_explain}",
         "$page?table-div=yes&instance-id=$instance_id",
         "postfix-smtp-rules-$instance_id",
         "progress-postfix-smtp-rules",false,
@@ -160,7 +165,8 @@ function table_div(){
 function rule_delete(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$id=$_GET["rule-delete"];
+	// Pentest 2026-11-04 : rule-delete etait concatene dans la requete.
+	$id=intval($_GET["rule-delete"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
 	$results=$q->QUERY_SQL("SELECT rulename from smtp_rules WHERE id='$id'");
 	$rulename=$results[0]["rulename"];
@@ -168,7 +174,8 @@ function rule_delete(){
 }
 function rule_delete_perform():bool{
 	$q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
-	$id=$_POST["rule-delete"];
+	// Pentest 2026-11-04 : rule-delete etait concatene dans la requete.
+	$id=intval($_POST["rule-delete"]);
 
 
     $ligne=$q->mysqli_fetch_array("SELECT instanceid FROM smtp_rules WHERE id=$id");
@@ -179,7 +186,7 @@ function rule_delete_perform():bool{
 	if(!$q->ok){echo $q->mysql_error;return false;}
 
     $sock=new sockets();
-    $sock->REST_API("/postfix/smtpd/restrictions/$instanceid");
+    $sock->REST_API_POSTFIX("/postfix/smtpd/restrictions/$instanceid");
     return admin_tracks_post("Delete SMTP rule $id for SMTP instance id $instanceid");
 }
 
@@ -284,7 +291,8 @@ function rule_wizard_save_final(){
         return false;
     }
 
-    $instance_id=$_SESSION["SMTP_WIZARD"]["instance_id"];
+    // Pentest 2026-11-04 : instance_id, ruletype et action (POST recopie en session) etaient concatenes dans la requete.
+    $instance_id=intval($_SESSION["SMTP_WIZARD"]["instance_id"]);
 	$action_value=$q->sqlite_escape_string2($_SESSION["SMTP_WIZARD"]["ACTION_VALUE"]);
 	$items=$q->sqlite_escape_string2($_POST["ITEMS"]);
 	$zdate=date("Y-m-d H:i:s");
@@ -293,13 +301,13 @@ function rule_wizard_save_final(){
 	$order=intval($results[0]["zorder"])+1;
 	
 	$sql="INSERT INTO smtp_rules (rulename,ruletype,action,action_value,items,zdate,enabled,zorder,instanceid) 
-    VALUES ('$rulename','$ruletype','$action','$action_value','$items','$zdate',1,$order,$instance_id)";
-	$q->QUERY_SQL($sql);
+    VALUES ('$rulename',?,?,'$action_value','$items','$zdate',1,$order,$instance_id)";
+	$q->QUERY_SQL_PARAMS($sql,array((string)$ruletype,(string)$action));
 	if(!$q->ok){echo $sql."<br>$q->mysql_error";}
 
 
     $sock=new sockets();
-    $sock->REST_API("/postfix/smtpd/restrictions/$instance_id");
+    $sock->REST_API_POSTFIX("/postfix/smtpd/restrictions/$instance_id");
     return admin_tracks_post("Create new SMTP rule for SMTP instance id $instance_id");
 	
 	
@@ -330,7 +338,8 @@ function rule_popup(){
 	$tpl=new template_admin();
     $instance_id=intval($_GET["instance-id"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
-	$ruleid=$_GET["rule-popup"];
+	// Pentest 2026-11-04 : rule-popup etait concatene dans la requete.
+	$ruleid=intval($_GET["rule-popup"]);
     $function=$_GET["function"];
 	$results=$q->QUERY_SQL("SELECT * from smtp_rules WHERE id='$ruleid'");
 	$ligne=$results[0];
@@ -367,7 +376,8 @@ function rule_save(){
 	$rulename=$q->sqlite_escape_string2($_POST["rulename"]);
 	$action_value=$q->sqlite_escape_string2($_POST["action_value"]);
 	$items=$q->sqlite_escape_string2($_POST["items"]);
-	$id=$_POST["rule-id"];
+	// Pentest 2026-11-04 : rule-id etait concatene dans la requete.
+	$id=intval($_POST["rule-id"]);
 	$sql="UPDATE smtp_rules SET rulename='$rulename',action_value='$action_value',items='$items' WHERE id='$id'";
 	$q->QUERY_SQL($sql);
 	if(!$q->ok){echo $q->mysql_error;}
@@ -375,7 +385,7 @@ function rule_save(){
 
     $ligne=$q->mysqli_fetch_array("SELECT instanceid FROM smtp_rules WHERE id=$id");
     $instanceid=intval($ligne["instanceid"]);
-    $sock->REST_API("/postfix/smtpd/restrictions/$instanceid");
+    $sock->REST_API_POSTFIX("/postfix/smtpd/restrictions/$instanceid");
     return admin_tracks_post("Save SMTP rule for SMTP instance id $instanceid");
 }
 
@@ -386,7 +396,8 @@ function rule_js(){
 	$page=CurrentPageName();
 	$title="{new_rule}";
 	$tpl=new template_admin();
-	$ruleid=$_GET["rule-js"];
+	// Pentest 2026-11-04 : rule-js etait concatene dans la requete.
+	$ruleid=intval($_GET["rule-js"]);
 	if($ruleid==0){
 		$tpl->js_dialog1("{new_rule}", "$page?rule-wizard=yes&instance-id=$instance_id&function=$function");
 		return;
@@ -398,7 +409,8 @@ function rule_js(){
 	$tpl->js_dialog1("$rulename", "$page?rule-popup=$ruleid&instance-id=$instance_id&function=$function");
 }
 function rule_enable(){
-	$rbl=$_GET["rule-enable"];
+	// Pentest 2026-11-04 : rule-enable etait concatene dans la requete.
+	$rbl=intval($_GET["rule-enable"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
 	$results=$q->QUERY_SQL("SELECT enabled from smtp_rules WHERE id='$rbl'");
 	$enabled=intval($results[0]["enabled"]);
@@ -412,7 +424,7 @@ function rule_enable(){
     $ligne=$q->mysqli_fetch_array("SELECT instanceid FROM smtp_rules WHERE id=$rbl");
     $instanceid=intval($ligne["instanceid"]);
     $sock=new sockets();
-    $sock->REST_API("/postfix/smtpd/restrictions/$instanceid");
+    $sock->REST_API_POSTFIX("/postfix/smtpd/restrictions/$instanceid");
     return admin_tracks_post("Enable/Disable SMTP rule for SMTP instance id $instanceid");
 
 }
@@ -423,7 +435,7 @@ function table(){
 	$tpl=new template_admin();
     $instance_id=intval($_GET["instance-id"]);
     $function=$_GET["function"];
-    $ARRAY["CMD"]="postfix.php?smtpd-client-restrictions=yes&instance-id=$instance_id";
+
 
 	$reconfigure="Loadjs('fw.postfix.articarest.php?smtpd-client-restrictions=yes&instance-id=$instance_id')";
 	
@@ -438,17 +450,12 @@ function table(){
     $btn[]="<i class='fa fa-save'></i> {apply_configuration} </label>";
 
     $btn[]="</div>";
-	$html[]="<table id='table-postfix-smtp-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{rules}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{enabled}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{order}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{delete}</center></th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{rules}</th>";
+	$html[]="<th class='center'>{status}</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pfxrul-rows'>";
 	
 	$TRCLASS=null;
 	
@@ -481,14 +488,13 @@ function table(){
         $q->QUERY_SQL("ALTER TABLE smtp_rules ADD instanceid INTEGER NOT NULL DEFAULT 0");
     }
     $sql="SELECT * FROM smtp_rules WHERE instanceid=$instance_id ORDER by zorder";
-    $search=trim($_GET["search"]);
+    $search=trim((string)($_GET["search"] ?? ""));
     if(strlen($search)>2){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
-        $sql="SELECT * FROM smtp_rules WHERE (rulename LIKE '$search' OR items LIKE '$search') AND instanceid=$instance_id ORDER by zorder";
-
+        // La saisie partait BRUTE dans le LIKE: une quote suffisait a detourner
+        // la requete. sqlite_escape_string2 double les quotes.
+        $like=$q->sqlite_escape_string2(str_replace("*","%","*$search*"));
+        $like=str_replace("%%","%",$like);
+        $sql="SELECT * FROM smtp_rules WHERE (rulename LIKE '$like' OR items LIKE '$like') AND instanceid=$instance_id ORDER by zorder";
     }
 
 	
@@ -498,15 +504,16 @@ function table(){
 	    return false;
 	}
 	
-	$CheckActions["ACCEPT"]="-primary";
-	$CheckActions["REJECT"]="-danger";
-	$CheckActions["BCC"]="-success";
-	$CheckActions["DISCARD"]="-danger";
-	$CheckActions["HOLD"]="-warning";
-	$CheckActions["PREPEND"]="-success";
-	$CheckActions["REDIRECT"]="-success";
-	$CheckActions["INFO"]="-success";
-	$CheckActions["IGNORE"]="-primary";
+	// Fond de la pastille de verdict: awc-badge impose color:#fff.
+	$CheckActions["ACCEPT"]="#26a69a";
+	$CheckActions["REJECT"]="#ba1a1a";
+	$CheckActions["BCC"]="#7b3f8c";
+	$CheckActions["DISCARD"]="#ba1a1a";
+	$CheckActions["HOLD"]="#865300";
+	$CheckActions["PREPEND"]="#006a62";
+	$CheckActions["REDIRECT"]="#006a62";
+	$CheckActions["INFO"]="#006a62";
+	$CheckActions["IGNORE"]="#263238";
 	
 	
 	
@@ -520,49 +527,42 @@ function table(){
 		$ligne["items"]=str_replace("\\n", "\n", $ligne["items"]);
 		$items_array=explode("\n",$ligne["items"]);
 		$items_count=count($items_array);
-		$explain="<strong>".$tpl->td_href($rulename,"{click_to_edit}","Loadjs('$page?rule-js=$id&instance-id=$instance_id&function=$function')")."</strong>
-		<br><small> <strong>{{$ruletype}}</strong> {for} $items_count {elements} {then} <strong>{{$action}}</strong>";
-		if(!isset($GLOBALS["NOVALUE"][$action])){$explain=$explain."  &laquo;$action_value&raquo;";}
-		
-		
+		// Le nom de la regle et la valeur d'action viennent de la base et etaient
+		// rendus BRUTS.
+		// Pentest 2026-11-04 : ruletype/action (donnees de la base) affiches sans encodage (XSS stockee).
+		$meta="<strong>{".req_html($ruletype)."}</strong> {for} $items_count {elements} {then} <strong>{".req_html($action)."}</strong>";
+		if(!isset($GLOBALS["NOVALUE"][$action])){$meta.="  &laquo;".htmlspecialchars((string)$action_value)."&raquo;";}
+
 		$iddiv=md5(serialize($ligne));
 		$up=$tpl->icon_up("Loadjs('$page?move-js=yes&id=$id&dir=up&instance-id=$instance_id')");
 		$down=$tpl->icon_down("Loadjs('$page?move-js=yes&id=$id&dir=down&instance-id=$instance_id')");
-		
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}	
-		$html[]="<tr class='$TRCLASS' id='$iddiv'>";
-		$html[]="<td style='width:1%' nowrap><span class='label label{$CheckActions[$action]}'>$action</span></td>";
-		$html[]="<td nowrap>$explain</td>";
-		$html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?rule-enable=$id&instance-id=$instance_id')",null,"AsPostfixAdministrator")."</center></td>";
-		$html[]="<td class=\"center\" style='width:1%' nowrap>$up&nbsp;&nbsp;$down</td>";
-		$html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_delete("Loadjs('$page?rule-delete=$id&id=$iddiv&instance-id=$instance_id')","AsPostfixAdministrator")."</center></td>";
-		$html[]="</tr>";
-	
-	
+		$check=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?rule-enable=$id&instance-id=$instance_id')",null,"AsPostfixAdministrator");
+		$del=$tpl->icon_delete("Loadjs('$page?rule-delete=$id&id=$iddiv&instance-id=$instance_id')","AsPostfixAdministrator");
+		$bg=isset($CheckActions[$action])?$CheckActions[$action]:"#263238";
+
+		$html[]=pfxrul_row($iddiv,
+			"Loadjs('$page?rule-js=$id&instance-id=$instance_id&function=$function')",
+			(string)$rulename,$meta,(string)$action,$bg,
+			$up.$down.$check.$del,intval($ligne["enabled"]));
 	}
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='5'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span class='awc-pg' id='pfxrul-pager'></span>";
+	$html[]="</div></div></div>";
 
     $instancename="SMTP Master";
     if($instance_id>0){
         $q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
         $ligne=$q->mysqli_fetch_array("SELECT instancename from postfix_instances WHERE id='$instance_id'");
-        $instancename="&nbsp;<small>({$ligne["instancename"]})</small>";
+        // Pentest 2026-11-04 : instancename (donnee de la base) affiche sans encodage (XSS stockee).
+        $instancename="&nbsp;<small>(".req_html($ligne["instancename"]).")</small>";
     }
 
     $POSTFIX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_VERSION");
-    $TINY_ARRAY["TITLE"]="{global_smtp_rules} v$POSTFIX_VERSION $instancename";
+    $TINY_ARRAY["TITLE"]="{mta_rules} v$POSTFIX_VERSION $instancename";
     $TINY_ARRAY["ICO"]="fas fa-filter";
-    $TINY_ARRAY["EXPL"]="{security_rules_explain}";
+    $TINY_ARRAY["EXPL"]="{mta_rules_explain}";
     $TINY_ARRAY["URL"]="postfix-smtp-rule-$instance_id";
     $TINY_ARRAY["BUTTONS"]=@implode("\n",$btn);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
@@ -572,11 +572,31 @@ function table(){
 	<script>
 	$jstiny
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-postfix-smtp-rules').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-	
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.awc_pager_js(50,"pfxrul-rows","pfxrul-pager");
+
+}
+
+/**
+ * Une regle SMTP: nom en identite, condition et verdict en sous-titre (le tout
+ * tenait dans une seule cellule avec un <small> et deux <strong> imbriques),
+ * verdict en pastille, reordonnancement / bascule / suppression en actions.
+ */
+function pfxrul_row($iddiv,$editjs,$rulename,$meta,$action,$bg,$actions,$enabled):string{
+	$h ="<tr id='$iddiv'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='".($enabled?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-filter'></i></span>";
+	$h.="<span><span class='".($enabled?"awc-name":"awc-name awc-name-off")."'>";
+	$h.="<a href=\"javascript:blur();\" title='{click_to_edit}' OnClick=\"$editjs\">".htmlspecialchars($rulename)."</a></span>";
+	$h.="<div class='awc-meta'>$meta</div>";
+	$h.="</span></div></td>";
+	$h.="<td class='center'><span class='awc-badge' style='background:$bg'>".htmlspecialchars($action)."</span></td>";
+	$h.="<td><div class='awc-acts'>$actions</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 
 

@@ -1,10 +1,10 @@
-<db_enable_mailboxes>Manage local mailboxes</db_enable_mailboxes>
-<db_method>Database method</db_method>
-<domains_link>Add, Edit, manage your eMail domains</domains_link>
-<domains_title>Your domains</domains_title>
-<srv_artica>Artica service</srv_artica>
-<srv_kav_mail>Kaspersky Antivirus For Postfix</srv_kav_mail>
-<srv_postfix>Postfix service status</srv_postfix>
-<srv_postfix_infos>Postfix infos</srv_postfix_infos>
-<srv_postfix_version>Postfix major version</srv_postfix_version>
-<WELCOME>Welcome on Artica-Postfix</WELCOME>
+<db_enable_mailboxes>Zarz&#261;dzaj lokalnymi skrzynkami pocztowymi</db_enable_mailboxes>
+<db_method>Metoda bazy danych</db_method>
+<domains_link>Dodawaj, edytuj i zarz&#261;dzaj swoimi domenami e-mail</domains_link>
+<domains_title>Twoje domeny</domains_title>
+<srv_artica>Us&#322;uga Artica</srv_artica>
+<srv_kav_mail>Kaspersky Antivirus dla Postfix</srv_kav_mail>
+<srv_postfix>Stan us&#322;ugi Postfix</srv_postfix>
+<srv_postfix_infos>Informacje o Postfix</srv_postfix_infos>
+<srv_postfix_version>G&#322;&#243;wna wersja Postfix</srv_postfix_version>
+<WELCOME>Witamy w Artica-Postfix</WELCOME>

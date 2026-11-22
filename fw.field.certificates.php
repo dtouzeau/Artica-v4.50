@@ -17,7 +17,7 @@ function js(){
     if(isset($_GET["NoRoots"])){
         $NoRoots="&NoRoots=yes";
     }
-    $tpl->js_dialog13("{certificates}","$page?popup-search=yes&name=$name&id=$id&value=$value&suffix-form=$suffix$NoRoots");
+    $tpl->js_dialog13("{certificates}","$page?popup-search=yes&name=".urlencode($name)."&id=".urlencode($id)."&value=".urlencode($value)."&suffix-form=".urlencode($suffix).$NoRoots);
 }
 function popup_search():bool{
     $name=$_GET["name"];
@@ -30,7 +30,7 @@ function popup_search():bool{
     if(isset($_GET["NoRoots"])){
         $NoRoots="&NoRoots=yes";
     }
-    echo $tpl->search_block($page,"","","","&name=$name&id=$id&value=$value&suffix-form=$suffix$NoRoots");
+    echo $tpl->search_block($page,"","","","&name=".urlencode($name)."&id=".urlencode($id)."&value=".urlencode($value)."&suffix-form=".urlencode($suffix).$NoRoots);
     return true;
 }
 function popup(){
@@ -94,10 +94,18 @@ function popup(){
             $keyEnc = urlencode($key);
             $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/certificate/details/$keyEnc"));
 
-            if(!$json->Status){
-                $error="<br><i class='text-danger'>$json->Error</i>";
+            if(!is_object($json) || !$json->Status){
+                $jErr = is_object($json) ? ($json->Error ?? '') : 'no response from daemon';
+                $error="<br><i class='text-danger'>$jErr</i>";
             }else{
                 $Info=$json->Info;
+                if(!is_object($Info)){ $Info=new stdClass(); }
+                // A Let's Encrypt entry with no certificate data yet is a pending issuance,
+                // not an error. The daemon returns Status:true with an empty CertificateData.
+                if(property_exists($Info,"UseLetsEncrypt") && $Info->UseLetsEncrypt==1
+                    && property_exists($Info,"CertificateData") && empty($Info->CertificateData)){
+                    $opts[]="<span class='label label-info'>Let`s Encrypt &middot; {pending}</span>";
+                }
                 if(property_exists($Info,"OrganizationName")){
                     if($Info->OrganizationName=="Let`s Encrypt"){
                         $opts[]="<span class='label label-success'>Let`s Encrypt</span>";
@@ -117,8 +125,7 @@ function popup(){
                 }
                 if(property_exists($Info,"ExpireDate")){
                     $expdate=distanceOfTimeInWords(time(),$Info->ExpireDate);
-                        $opts[]="<br>{expire}: $expdate";
-                    }
+                    $opts[]="<br>{expire}: $expdate";
                 }
                 if(property_exists($Info,"OrganizationalUnitName")){
                     $opts[]="&nbsp;|&nbsp;<i>$Info->OrganizationalUnitName</i>";
@@ -138,6 +145,7 @@ function popup(){
                     }
                 }
             }
+        }
 
         $idrow=md5($key.$value.$fieldid);
         $text=base64_encode($value);

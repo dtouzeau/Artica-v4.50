@@ -33,7 +33,8 @@ function discovered(){
     $TRCLASS=null;
 
     $q=new postgres_sql();
-    $results=$q->QUERY_SQL("SELECT * FROM prads_time WHERE ipaddr='$ipaddr' ORDER BY discovered DESC");
+    // Pentest 2026-11-04 : discovered etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS("SELECT * FROM prads_time WHERE ipaddr=$1 ORDER BY discovered DESC",array(strval($ipaddr)));
 
     while ($ligne = pg_fetch_assoc($results)) {
         if ($TRCLASS == "footable-odd") {

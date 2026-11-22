@@ -1,20 +1,23 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : cache-edit-js, ID et eth etaient recopies sans encodage dans la page (XSS).
+foreach (array("cache-edit-js","ID") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=intval($_GET[$xk]);}}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('#[^A-Za-z0-9_.:@-]#','',(string)$_GET["eth"]);}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["move-item-js"])){move_item_js();}
 if(isset($_GET["new-cache-js"])){new_cache_js();exit;}
 if(isset($_GET["new-cache-folder-js"])){new_cache_folder_js();exit;}
 if(isset($_GET["new-cache-step1"])){new_cache_step1();exit;}
 if(isset($_GET["new-cache-folder-step1"])){new_cache_folder_step1();exit;}
-if(isset($_GET["new-cache-step2"])){new_cache_step2();exit;}
-if(isset($_GET["new-cache-step3"])){new_cache_step3();exit;}
-if(isset($_GET["new-cache-step4"])){new_cache_step4();exit;}
-if(isset($_GET["delete-empty-js"])){delete_empty_js();exit;}
 if(isset($_GET["delete-item-js"])){delete_js();exit;}
-if(isset($_POST["empty-item"])){exit;}
 if(isset($_POST["delete-item"])){delete();exit;}
 if(isset($_GET["cache-edit-js"])){cache_edit_js();exit;}
 if(isset($_GET["cache-edit"])){cache_edit();exit;}
@@ -22,6 +25,9 @@ if(isset($_POST["cache_directory"])){cache_save();exit;}
 if(isset($_POST["new-cache-disk"])){new_cache_folder_save();exit;}
 if(isset($_GET["enabled-js"])){enable_js();exit;}
 if(isset($_GET["table"])){table_start();exit;}
+
+
+
 
 page();
 
@@ -53,10 +59,9 @@ function page():bool{
 
 function enable_js(){
     $ID=intval($_GET["enabled-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enabled,cachename FROM caches_center WHERE ID='$ID'");
-    $title=$ligne["cachename"];
-    $enabled=$ligne["enabled"];
+    $ligne=fetch_cache_by_id($ID);
+    $title=isset($ligne["cachename"])?$ligne["cachename"]:"";
+    $enabled=isset($ligne["enabled"])?intval($ligne["enabled"]):0;
     if($enabled==1){
         $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"caches_center","set"=>array("enabled"=>"0"),"where"=>array("ID"=>"$ID")));
         admin_tracks("Disable reverse-Proxy cache $ID $title");
@@ -71,10 +76,9 @@ function cache_edit_js(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$ID=$_GET["cache-edit-js"];
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$ligne=$q->mysqli_fetch_array("SELECT cachename FROM caches_center WHERE ID='$ID'");
-	$title=$ligne["cachename"];
-	$tpl->js_dialog($title, "$page?cache-edit=$ID");	
+	$ligne=fetch_cache_by_id($ID);
+	$title=isset($ligne["cachename"])?$ligne["cachename"]:"#$ID";
+	$tpl->js_dialog($title, "$page?cache-edit=$ID");
 }
 
 function cache_edit(){
@@ -82,18 +86,15 @@ function cache_edit(){
 	$tpl=new template_admin();
 	$ID=intval($_GET["cache-edit"]);
 
-
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM caches_center WHERE ID='$ID'");
-	if(!$q->ok){echo $q->mysql_error_html();}
+	$ligne=fetch_cache_by_id($ID);
 
         // cachename,cache_dir,cache_type,cache_size
 
-	$cachename=$ligne["cachename"];
-	$cache_directory=$ligne["cache_dir"];
-	$cache_size=$ligne["cache_size"];
-	$cache_type=$ligne["cache_type"];
-	$enabled=$ligne["enabled"];
+	$cachename=isset($ligne["cachename"])?$ligne["cachename"]:"";
+	$cache_directory=isset($ligne["cache_dir"])?$ligne["cache_dir"]:"";
+	$cache_size=isset($ligne["cache_size"])?$ligne["cache_size"]:0;
+	$cache_type=isset($ligne["cache_type"])?$ligne["cache_type"]:"";
+	$enabled=isset($ligne["enabled"])?$ligne["enabled"]:0;
 	$bt="{apply}";
 
     $form[]=$tpl->field_hidden("ID", $ID);
@@ -110,153 +111,124 @@ function new_cache_folder_save(){
 	$tpl->CLEAN_POST();
 	$cachename=basename($_POST["new-cache-disk"]);
 	$cache_directory=$_POST["new-cache-disk"];
-	$size=$_POST["cache_size"];
-	$enabled=1;
-	$RemoveSize=0;
-    $cache_type="disk";
+	$size=intval($_POST["cache_size"]);
 
-	
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	
-$sql="INSERT INTO caches_center
-			(cachename,cache_dir,cache_type,cache_size,enabled,percentcache,usedcache,zOrder,RemoveSize)
-			VALUES('$cachename','$cache_directory','$cache_type','$size',$enabled,0,0,1,$RemoveSize)";
-	
-	$q->QUERY_SQL("$sql");
-	
-	if(!$q->ok){echo $q->mysql_error." LINE ".__LINE__." $sql";}
-
-	
+	$resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	    "action"=>"insert","table"=>"caches_center",
+	    "values"=>["cachename"=>$cachename,"cache_dir"=>$cache_directory,"cache_type"=>"disk",
+	               "cache_size"=>$size,"enabled"=>1,"percentcache"=>0,"usedcache"=>0,"zOrder"=>1,"RemoveSize"=>0]
+	]);
+	$data=json_decode($resp,true);
+	if(!is_array($data) || empty($data["Status"])){
+	    $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"daemon unavailable";
+	    echo $err;
+	}
 }
 
 function cache_save(){
-	
+
 	$_POST=mysql_escape_line_query($_POST);
 	$cache_directory=$_POST["cache_directory"];
 	$cache_type=$_POST["cache_type"];
-	$size=$_POST["squid-cache-size"];
+	$size=intval($_POST["squid-cache-size"]);
 	$cachename=$_POST["cachename"];
-	$enabled=$_POST["enabled"];
-	$ID=$_POST["ID"];
-	if($cache_type=="rock"){$CPU=0;}
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	
+	$enabled=intval($_POST["enabled"]);
+	$ID=intval($_POST["ID"]);
 
-	
-
-	
-
-	
 	if($ID==0){
-	    $sql="INSERT INTO caches_center
-				(cachename,cache_dir,cache_type,cache_size,enabled,percentcache,usedcache,zOrder)
-				VALUES('$cachename','$cache_directory','$cache_type','$size',$enabled,0,0,1)";
-		$q->QUERY_SQL($sql);
-		echo $sql;
-
+	    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	        "action"=>"insert","table"=>"caches_center",
+	        "values"=>["cachename"=>$cachename,"cache_dir"=>$cache_directory,
+	                   "cache_type"=>$cache_type,"cache_size"=>$size,
+	                   "enabled"=>$enabled,"percentcache"=>0,"usedcache"=>0,"zOrder"=>1]
+	    ]);
 	}else{
-		$sql="UPDATE caches_center SET
-				cachename='$cachename',
-				cache_size='$size',
-				enabled=$enabled
-				WHERE ID=$ID";
-		$q->QUERY_SQL($sql,"artica_backup");
-	
+	    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	        "action"=>"update","table"=>"caches_center",
+	        "set"=>["cachename"=>$cachename,"cache_size"=>$size,"enabled"=>$enabled],
+	        "where"=>["ID"=>$ID]
+	    ]);
 	}
-	
-	if(!$q->ok){echo $q->mysql_error."\n$sql\n";}
-	
-	
+	$data=json_decode($resp,true);
+	if(!is_array($data) || empty($data["Status"])){
+	    $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"daemon unavailable";
+	    echo $err;
+	}
 }
 
 function delete_js(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$ID=$_GET["ID"];
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$ligne=$q->mysqli_fetch_array("SELECT cachename FROM caches_center WHERE ID='$ID'");
-	$title=$ligne["cachename"];
+	$ligne=fetch_cache_by_id($ID);
+	$title=isset($ligne["cachename"])?$ligne["cachename"]:"#$ID";
 	$action_remove_cache_ask="<strong>$title</strong><br>".$tpl->javascript_parse_text("{action_remove_cache_ask}");
 	$tpl->js_confirm_delete($action_remove_cache_ask,"delete-item", $ID,"LoadAjax('table-loader-cachecenteer-service','$page?table=yes');");
 }
 
 function move_item_js(){
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$ID=$_GET["ID"];
-	$dir=$_GET["dir"];
-	$ligne=$q->mysqli_fetch_array("SELECT zOrder,cpu FROM caches_center WHERE ID='$ID'");
-	if(!$q->ok){echo $q->mysql_error;}
+	$ID=intval($_GET["ID"]);
+	$dir=intval($_GET["dir"]);
 
-	$cpu=$ligne["cpu"];
-	$CurrentOrder=$ligne["zOrder"];
+	$ligne=fetch_cache_by_id($ID);
+	$cpu=isset($ligne["cpu"])?intval($ligne["cpu"]):0;
+	$CurrentOrder=isset($ligne["zOrder"])?intval($ligne["zOrder"]):0;
+	$NextOrder=($dir==0)?$CurrentOrder-1:$CurrentOrder+1;
 
-	if($dir==0){
-		$NextOrder=$CurrentOrder-1;
-	}else{
-		$NextOrder=$CurrentOrder+1;
-	}
+	// Find the row currently at NextOrder (within the same cpu group) and
+	// swap its zOrder to CurrentOrder. /nginx-db/exec UPDATE supports the
+	// AND-of-equality pattern via the `where` map.
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	    "action"=>"update","table"=>"caches_center",
+	    "set"=>["zOrder"=>$CurrentOrder],
+	    "where"=>["zOrder"=>$NextOrder,"cpu"=>$cpu]
+	]);
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	    "action"=>"update","table"=>"caches_center",
+	    "set"=>["zOrder"=>$NextOrder],
+	    "where"=>["ID"=>$ID]
+	]);
 
-	$sql="UPDATE caches_center SET zOrder=$CurrentOrder WHERE zOrder='$NextOrder' AND `cpu`='$cpu'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";}
-
-
-	$sql="UPDATE caches_center SET zOrder=$NextOrder WHERE ID='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";}
-
-	$results=$q->QUERY_SQL("SELECT ID FROM caches_center WHERE `cpu`='$cpu' ORDER by zOrder");
-	if(!$q->ok){echo "alert('".$q->mysql_error;}
+	// Renumber to compact gaps. Pull the rows for this cpu (filtered via
+	// /nginx-db/query), sort by current zOrder, rewrite as 1..N.
+	$rows=fetch_caches_by_cpu($cpu);
+	usort($rows,function($a,$b){
+	    $az=isset($a["zOrder"])?intval($a["zOrder"]):0;
+	    $bz=isset($b["zOrder"])?intval($b["zOrder"]):0;
+	    return $az-$bz;
+	});
 	$c=1;
-	foreach ($results as $index=>$ligne){
-		$ID=$ligne["ID"];
-		$sql="UPDATE caches_center SET zOrder=$c WHERE ID='$ID'";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo "alert('".$q->mysql_error."');";}
-		$c++;
+	foreach ($rows as $r){
+	    $rid=isset($r["ID"])?intval($r["ID"]):0;
+	    if($rid<=0){continue;}
+	    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	        "action"=>"update","table"=>"caches_center",
+	        "set"=>["zOrder"=>$c],"where"=>["ID"=>$rid]
+	    ]);
+	    $c++;
 	}
 }
 function delete():bool{
-	$ID=$_POST["delete-item"];
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT cachename FROM caches_center WHERE ID='$ID'");
-    $cachename=$ligne["cachename"];
-    $sql="UPDATE caches_center SET `remove`=1 WHERE ID=$ID";
+	$ID=intval($_POST["delete-item"]);
+	$ligne=fetch_cache_by_id($ID);
+	$cachename=isset($ligne["cachename"])?$ligne["cachename"]:"#$ID";
 
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){
-        echo $q->mysql_error."\n$sql";
-        return false;
-    }
+	$resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	    "action"=>"update","table"=>"caches_center",
+	    "set"=>["remove"=>1],"where"=>["ID"=>$ID]
+	]);
+	$data=json_decode($resp,true);
+	if(!is_array($data) || empty($data["Status"])){
+	    $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"daemon unavailable";
+	    echo $err;
+	    return false;
+	}
 
     admin_tracks("Remove reverse-porxy cache $cachename");
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?synchronize-caches");
     return true;
 }
 
-function delete_empty_js(){
-	$tpl=new template_admin();
-	$page=CurrentPageName();
-	$ID=$_GET["ID"];
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-	$ligne=$q->mysqli_fetch_array("SELECT cachename FROM caches_center WHERE ID='$ID'");
-	$title=$ligne["cachename"];
-	$action_empty_cache_ask=$tpl->javascript_parse_text("{action_empty_cache_ask}");
-	$action_empty_cache_ask=str_replace("%s", $title, $action_empty_cache_ask);
-	
-	$ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/squid.cache.center.empty.txt";
-	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/squid.cache.center.empty.progress";
-	
-	
-	$ARRAY["CMD"]="squid.php?cache-center-empty=$ID";
-	$ARRAY["TITLE"]="{empty} $title";
-	$ARRAY["AFTER"]="LoadAjax('table-loader-cachecenteer-service','$page?table=yes');";
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-cachecenter-restart')";
-	$tpl->js_confirm_empty($action_empty_cache_ask, "empty-item", $ID,$jsrestart);
-	
-	
-}
 
 
 function new_cache_js(){
@@ -336,7 +308,6 @@ function table(){
 	$inactive=$tpl->_ENGINE_parse_body("{inactive}");
 
 	$tt=time();
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
 	$DisableAnyCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableAnyCache"));
 	if($DisableAnyCache==1){echo $tpl->FATAL_ERROR_SHOW_128("{DisableAnyCache_enabled_warning}");return;}
 	
@@ -347,11 +318,11 @@ function table(){
 
 	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/squid.caches.progress";
 	$ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/squid.caches.progress.log";
-	$ARRAY["CMD"]="squid.php?verify-caches-progress=yes";
+	$ARRAY["CMD"]="/proxy/caches/verify";
 	$ARRAY["TITLE"]="{verify_caches}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-cachecenteer-service','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$apply="Loadjs('fw.progress.php?content=$prgress&mainid=progress-cachecenter-restart')";
+	$apply="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-cachecenter-restart')";
 
     $prefix="data-sortable=true class='text-capitalize' data-type='text'";
 
@@ -360,7 +331,7 @@ function table(){
     $btn[]="<label class=\"btn btn btn-info\" OnClick=\"javascript:$apply\"><i class='fa fa-save'></i> {apply_configuration} </label>";
     $btn[]="</div>";
 
-    $html[]="<table id='table-cachecenter-list' class=\"footable table white-bg table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th $prefix style='width:1%;text-align:center'></th>";
@@ -379,8 +350,7 @@ function table(){
 
 	$to_remove=$tpl->_ENGINE_parse_body("{to_remove}");
 	$license_error=$tpl->_ENGINE_parse_body("{license_error}");
-	$sql="SELECT *  FROM caches_center ORDER BY zOrder";
-	$results=$q->QUERY_SQL($sql);
+	$results=fetch_caches_all_by_zorder();
 	$TRCLASS=null;
 
     $NGINX_CACHES_DIR=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NGINX_CACHES_DIR"));
@@ -415,7 +385,7 @@ function table(){
 
 	
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$ID=$ligne["ID"];
 		$current=0;$error=null;
 		$cachename=$ligne["cachename"];
@@ -428,7 +398,10 @@ function table(){
 		$cache_size=$cache_size*1024;
         $cache_size_bytes=$cache_size*1024;
 		$cache_size=FormatBytes($cache_size);
-		$reconstruct=$tpl->icon_recycle("Loadjs('$page?delete-empty-js=yes&ID={$ligne["ID"]}')","AsProxyMonitor");
+		// No "empty" action: it called the PROXY cache center
+		// (squid.php?cache-center-empty) with this nginx ID, i.e. it emptied the
+		// Squid cache that happened to carry the same number.
+		$reconstruct=$tpl->icon_nothing();
 		$delete=$tpl->icon_delete("Loadjs('$page?delete-item-js=yes&ID={$ligne["ID"]}')","AsProxyMonitor");
         $cache_row=$tpl->td_href($cachename,"{click_to_edit}","Loadjs('$page?cache-edit-js=$ID');");
 
@@ -475,15 +448,7 @@ function table(){
 		$html[]="</tr>";
 
 	}
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div></div></div>";
 
     $TINY_ARRAY["TITLE"]="{sites_caching}";
     $TINY_ARRAY["ICO"]=ico_hd;
@@ -497,9 +462,8 @@ function table(){
 	<script>
 	$jstiny;
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-cachecenter-list').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	";
 
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 
 }

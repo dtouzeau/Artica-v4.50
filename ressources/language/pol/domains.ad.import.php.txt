@@ -1,28 +1,27 @@
 <administrator>Administrator</administrator>
 <admin_dn>Konto administratora</admin_dn>
-<admin_dn_text>Give the Active Directory Administrator account and password.[br]Usually, the Administrator has "Administrator" name is stored in cn="Administrator,cn=Users,..."
-[br]You can give here the name of the Administrator or the full "DN" path
-[br]The suffix is the first branch of your Active Directory Branch.[br]Usually if your server is named has server.domain.tld,the suffix will be "dc=server,dc=domain,dc=tld"
-</admin_dn_text>
+<admin_dn_text>Podaj konto i has&#322;o administratora Active Directory.[br]Zazwyczaj administrator ma nazw&#281; &quot;Administrator&quot; i jest przechowywany w cn=&quot;Administrator,cn=Users,...&quot;
+[br]Mo&#380;esz poda&#263; tutaj nazw&#281; administratora lub pe&#322;n&#261; &#347;cie&#380;k&#281; &quot;DN&quot;
+[br]Sufiks to pierwsza ga&#322;&#261;&#378; Twojej ga&#322;&#281;zi Active Directory.[br]Zazwyczaj, je&#347;li Tw&#243;j serwer nazywa si&#281; server.domain.tld, sufiks b&#281;dzie &quot;dc=server,dc=domain,dc=tld&quot;</admin_dn_text>
 <ad_server>Adres serwera Active Directory</ad_server>
-<ad_server_text>Give here the IP address or server name of your Active Directory/MS Exchange server</ad_server_text>
+<ad_server_text>Podaj tutaj adres IP lub nazw&#281; serwera Active Directory/MS Exchange</ad_server_text>
 <bdu>Z%C5%82a nazwa u%C5%BCytkownika lub has%C5%82o</bdu>
 <cls>Nie mo%C5%BCna po%C5%82%C4%85czy%C4%87 si%C4%99 z serwerem Active Directory</cls>
 <connected>Po%C5%82%C4%85czenie zako%C5%84czone pomy%C5%9Blnie</connected>
-<err_unkown>Warning unable to logon with following</err_unkown>
-<failed>Connection Failed</failed>
-<iar>Insufficient access rights.</iar>
-<importation_completed>Importation task completed</importation_completed>
-<import_ad_title>Active Directory Members Importation</import_ad_title>
-<local_group>Select your local group</local_group>
-<local_group_text>Select in the list the Artica local group that will store your active directory users</local_group_text>
-<perform_importation>Perform the importation task</perform_importation>
-<remote_org>Select Remote organization</remote_org>
-<remote_org_text>Select the container that store users you want to import</remote_org_text>
-<restart_importation>Restart new importation</restart_importation>
+<err_unkown>Ostrze&#380;enie: nie mo&#380;na zalogowa&#263; si&#281; przy u&#380;yciu nast&#281;puj&#261;cych danych</err_unkown>
+<failed>Po&#322;&#261;czenie nie powiod&#322;o si&#281;</failed>
+<iar>Niewystarczaj&#261;ce uprawnienia dost&#281;pu.</iar>
+<importation_completed>Zadanie importu zako&#324;czone</importation_completed>
+<import_ad_title>Import cz&#322;onk&#243;w Active Directory</import_ad_title>
+<local_group>Wybierz swoj&#261; lokaln&#261; grup&#281;</local_group>
+<local_group_text>Wybierz z listy lokaln&#261; grup&#281; Artica, kt&#243;ra b&#281;dzie przechowywa&#263; u&#380;ytkownik&#243;w Active Directory</local_group_text>
+<perform_importation>Wykonaj zadanie importu</perform_importation>
+<remote_org>Wybierz organizacj&#281; zdaln&#261;</remote_org>
+<remote_org_text>Wybierz kontener przechowuj&#261;cy u&#380;ytkownik&#243;w, kt&#243;rych chcesz zaimportowa&#263;</remote_org_text>
+<restart_importation>Uruchom ponownie nowy import</restart_importation>
 <server_name>Adres serwera</server_name>
 <server_port>Port nas%C5%82uchuj%C4%85cy</server_port>
 <suffix>Sufiks Active Directory</suffix>
-<ucl>Unable to connect to the LDAP server specified[br]please,verify if ldap daemon is running or the ldap server address</ucl>
-<unable_to_connect>Unable to connect to the Active Directory server specified</unable_to_connect>
+<ucl>Nie mo&#380;na po&#322;&#261;czy&#263; si&#281; z okre&#347;lonym serwerem LDAP[br]sprawd&#378;, czy demon ldap dzia&#322;a lub adres serwera ldap</ucl>
+<unable_to_connect>Nie mo&#380;na po&#322;&#261;czy&#263; si&#281; z okre&#347;lonym serwerem Active Directory</unable_to_connect>
 <users>Cz%C5%82onkowie</users>

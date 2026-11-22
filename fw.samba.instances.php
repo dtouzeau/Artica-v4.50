@@ -310,7 +310,7 @@ function add_instance_save():bool{
     $samba=new ArticaSamba();
     try{
         if(strlen($id)>0 && $id!=="0"){
-            $samba->updateResources($id,$params);
+            $samba->updateInstance($id,$params);
             admin_tracks("Updated File Sharing instance $name #$id");
         }else{
             $samba->createInstance($params);

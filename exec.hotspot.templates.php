@@ -95,59 +95,17 @@ if($GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
 
 @file_put_contents("/home/artica/web_templates/hotspot.loginform",@implode("\n",$wifidog_templates->enterprise_login_form()));
 
-$ActiveDirectoryConnections=array();
-
 @file_put_contents("/home/artica/web_templates/hotspot.SavedTime",time());
 
-if(IsAdConnected()){
-    echo "Active Directory (Active)\n";
-    $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
-    $ActiveDirectoryConnections=build_default_connection($ActiveDirectoryConnections);
-    $CountOf=count($ActiveDirectoryConnections);
-    echo "Active Directory Connections Count = $CountOf\n";
+// hotspot.AdCnx (directory connections of the HotSpot / proxy LDAP
+// authenticators) is written by the daemon, without the bind password this
+// script used to put in it: GET /activedirectory/connections/hotspot.
+$json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/activedirectory/connections/hotspot"));
+if($json && property_exists($json,"Status") && $json->Status){
+    echo "/home/artica/web_templates/hotspot.AdCnx: ".intval($json->Count)." connection(s)\n";
 }else{
-    echo "Active Directory (Inactive/not installed)\n";
+    echo "/home/artica/web_templates/hotspot.AdCnx: ".(($json && property_exists($json,"Error"))?$json->Error:"daemon unreachable")."\n";
 }
-
-$f=array();
-foreach ($ActiveDirectoryConnections as $index=>$HASH) {
-    $name = null;
-    if (isset($HASH["NAME"])) {$name = $HASH["NAME"];}
-    if(!isset($HASH["LDAP_SSL"])){$HASH["LDAP_SSL"]=0;}
-
-    if(isset($HASH["ADNETIPADDR"])){
-        if(IP::isValid($HASH["ADNETIPADDR"])){
-            $HASH["LDAP_SERVER"]=$HASH["ADNETIPADDR"];
-        }
-    }
-
-    if(!isset($HASH["LDAP_SERVER"])){continue;}
-    if($HASH["LDAP_SERVER"]==null){continue;}
-    if(!isset($HASH["LDAP_PORT"])){continue;}
-    if(intval($HASH["LDAP_PORT"])==0){continue;}
-
-    if(!isset($HASH["LDAP_DN"])){continue;}
-    if($HASH["LDAP_DN"]==null){continue;}
-    if(!isset($HASH["LDAP_PASSWORD"])){continue;}
-    if($HASH["LDAP_PASSWORD"]==null){continue;}
-    if(!isset($HASH["LDAP_SUFFIX"])){continue;}
-    if($HASH["LDAP_SUFFIX"]==null){continue;}
-
-
-
-    $host   = $HASH["LDAP_SERVER"];
-    $port   = intval($HASH["LDAP_PORT"]);
-    $user   = $HASH["LDAP_DN"];
-    $ssl   = $HASH["LDAP_SSL"];
-    $password = base64_encode($HASH["LDAP_PASSWORD"]);
-    if($name==null){$name="$user@$host:$port";}
-    $suffix = base64_encode($HASH["LDAP_SUFFIX"]);
-    $name=base64_encode($name);
-    $f[]="$host|$port|$user|$password|$suffix|$name|$ssl";
-
-}
-@file_put_contents("/home/artica/web_templates/hotspot.AdCnx",@implode("\n",$f));
-echo "/home/artica/web_templates/hotspot.AdCnx done\n";
 
 $Groups=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotLimitAdGroups"));
 $zGps=array();
@@ -203,28 +161,6 @@ $css=$wifidog_templates->CSS_999998();
 @file_put_contents("/home/artica/web_templates/hotspot.wifi4eu.WIFI4UEERRORTEXT","$wifidog_templates->WIFI4UEERRORTEXT");
 
 
-function IsAdConnected():bool{
-    if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
-        echo "\t---\tLicense Error [FALSE]\n";
-        return false;
-    }
-    $EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
-    $LockActiveDirectoryToKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LockActiveDirectoryToKerberos"));
-    $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
-    $EnableActiveDirectoryFeature=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"));
-    echo "\t---\tEnableActiveDirectoryFeature.........:[$EnableActiveDirectoryFeature]\n";
-    echo "\t---\tEnableKerbAuth.......................:[$EnableKerbAuth]\n";
-    echo "\t---\tLockActiveDirectoryToKerberos........:[$LockActiveDirectoryToKerberos]\n";
-    echo "\t---\tHaClusterClient......................:[$HaClusterClient]\n";
-
-
-
-    if($HaClusterClient==1){return true;}
-    if($LockActiveDirectoryToKerberos==1){return true;}
-    if($EnableKerbAuth==1){return true;}
-    if($EnableActiveDirectoryFeature==1){return true;}
-    return false;
-}
 
 function added_forms():bool{
 
@@ -256,44 +192,4 @@ function added_forms():bool{
     @file_put_contents("/home/artica/web_templates/hotspot.AddedFields",@implode("\n",$f));
     return true;
 
-}
-
-function build_default_connection($ActiveDirectoryConnections=array()):array{
-    $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
-    $active=new ActiveDirectory();
-
-    if($array["LDAP_SERVER"]==null){
-        if($array["fullhosname"]<>null){
-            $array["LDAP_SERVER"]=$array["fullhosname"];
-        }
-    }
-    if(!isset($array["LDAP_DN"])){
-        if(isset($array["WINDOWS_SERVER_ADMIN"])){
-            $array["LDAP_DN"]=$array["WINDOWS_SERVER_ADMIN"];
-        }
-    }
-    if(!isset($array["LDAP_PORT"])){$array["LDAP_PORT"]=null;}
-    if(!isset($array["LDAP_PASSWORD"])){
-        if(isset($array["WINDOWS_SERVER_PASS"])){
-            $array["LDAP_PASSWORD"]=$array["WINDOWS_SERVER_PASS"];
-        }
-    }
-
-    if(!isset($array["LDAP_DN"])){$array["LDAP_DN"]=null;}
-    if(!isset($array["LDAP_SUFFIX"])){$array["LDAP_SUFFIX"]=null;}
-    if(!isset($array["LDAP_SERVER"])){$array["LDAP_SERVER"]=null;}
-    if(!isset($array["LDAP_PORT"])){$array["LDAP_PORT"]=null;}
-    if(!isset($array["LDAP_PASSWORD"])){$array["LDAP_PASSWORD"]=null;}
-    if(!isset($array["LDAP_SSL"])){$array["LDAP_SSL"]=null;}
-
-
-    if($array["LDAP_DN"]==null){$array["LDAP_DN"]=$active->ldap_dn_user;}
-    if($array["LDAP_SUFFIX"]==null){$array["LDAP_SUFFIX"]=$active->suffix;}
-    if($array["LDAP_SERVER"]==null){$array["LDAP_SERVER"]=$active->ldap_host;}
-    if($array["LDAP_PORT"]==null){$array["LDAP_PORT"]=$active->ldap_port;}
-    if($array["LDAP_PASSWORD"]==null){$array["LDAP_PASSWORD"]=$active->ldap_password;}
-    if($array["LDAP_SSL"]==null){$array["LDAP_SSL"]=$active->ldap_ssl;}
-    if(preg_match("#^(.+?)@(.+?)@$#",trim($array["LDAP_DN"]),$re)){$array["LDAP_DN"]="$re[1]@$re[2]";}
-    $ActiveDirectoryConnections[]=$array;
-    return $ActiveDirectoryConnections;
 }

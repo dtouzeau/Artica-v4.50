@@ -13,8 +13,6 @@ include_once(dirname(__FILE__)."/frame.class.inc");
 include_once(dirname(__FILE__)."/class.unix.inc");
 
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(!isset($GLOBALS["ARTICALOGDIR"])){$GLOBALS["ARTICALOGDIR"]=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaLogDir"); if($GLOBALS["ARTICALOGDIR"]==null){ $GLOBALS["ARTICALOGDIR"]="/var/log/artica-postfix"; } }
-if(isset($_GET["reconfigure"])){reconfigure();exit;}
-if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["uninstall"])){uninstall();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["restart"])){restart();exit;}
@@ -30,9 +28,7 @@ if(isset($_GET["emergency-disable"])){emergency_off();exit;}
 if(isset($_GET["restart-client"])){restart_client();exit;}
 if(isset($_GET["install-kcloud"])){install_kcloud();exit;}
 if(isset($_GET["uninstall-kcloud"])){uninstall_kcloud();exit;}
-if(isset($_GET["uninstall-feature"])){uninstall_feature();exit;}
 
-if(isset($_GET["remove-cache"])){remove_cache();exit;}
 if(isset($_GET["log-file"])){log_file();exit;}
 
 if(isset($_GET["install-categories-cache"])){install_categories_cache();exit;}
@@ -41,11 +37,7 @@ if(isset($_GET["restart-categories-cache"])){restart_categories_cache();exit;}
 if(isset($_GET["status-categories-cache"])){status_categories_cache();exit;}
 if(isset($_GET["remove-categories-cache"])){remove_categories_cache();exit;}
 if(isset($_GET["import-categories-cache"])){import_categories_cache();exit;}
-if(isset($_GET["disable-go-shield-server"])){disable_go_shield_server();exit;}
-if(isset($_GET["go-shield-status"])){go_shield_status();exit;}
 if(isset($_GET["go-squid-auth"])){go_squid_auth_status();exit;}
-if(isset($_GET["restart-go-shield-server"])){restart_go_shield_server();exit;}
-if(isset($_GET["disable-nrds"])){nrds_disable();exit;}
 if(isset($_GET["uncategorized-events"])){uncategorized_events();exit;}
 
 writelogs_framework("Unable to understand ".serialize($_GET),"MAIN",__FILE__,__LINE__);
@@ -55,10 +47,7 @@ function go_squid_auth_status():bool{
     return $unix->framework_exec("exec.status.php --go-squid-auth");
 }
 
-function go_shield_status():bool{
-    $unix=new unix();
-    return $unix->framework_exec("exec.status.php --go-shield");
-}
+
 
 function status():bool{
     $unix=new unix();
@@ -75,16 +64,6 @@ function log_file(){
     $unix=new unix();
     $unix->framework_execute("exec.ksrn.php --logfile","ksrn.progress", "ksrn.log");
 }
-function remove_cache(){
-    $unix=new unix();
-    $unix->framework_execute("exec.ksrn.php --ksrn-cache","ksrn.empty.cache", "ksrn.empty.log");
-}
-function reconfigure(){
-    $unix=new unix();
-    $unix->framework_execute("exec.ksrn.php --check-updates","ksrn.updates.progress",
-        "ksrn.updates.progress.log");
-}
-
 function restart(){
    $unix=new unix();
     $unix->framework_execute("exec.ksrn.php --restart","ksrn.restart",
@@ -122,12 +101,6 @@ function import_categories_cache(){
 }
 
 
-function restart_go_shield_server():bool{
-    $unix=new unix();
-    $unix->framework_execute("exec.go.shield.server.php --restart","go.shield.server.progress",
-        "go.shield.server.log");
-    return true;
-}
 
 function restart_client(){
 
@@ -197,23 +170,6 @@ function install_kcloud(){
 
 }
 
-function install(){
-    $ARTICAP="/usr/share/artica-postfix";
-    $ProgressFile=PROGRESS_DIR."/ksrn.progress";
-    $LogFile=PROGRESS_DIR."/ksrn.log";
-    @unlink($ProgressFile);
-    @unlink($LogFile);
-    @touch($ProgressFile);
-    @touch($LogFile);
-    @chmod($ProgressFile,0777);$array["POURC"]=2;$array["TEXT"]="{please_wait}";@file_put_contents($ProgressFile, serialize($array));
-    @chmod($GLOBALS["LOG_FILE"],0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 $ARTICAP/exec.ksrn.php --install >{$LogFile} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
 function dnsbl(){
     $ARTICAP="/usr/share/artica-postfix";
     $ProgressFile=PROGRESS_DIR."/ksrn.progress";
@@ -365,16 +321,8 @@ function emergency_off(){
     writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
-function disable_go_shield_server(){
-    $unix=new unix();
-    $unix->framework_execute("exec.go.shield.server.php --disable","go.shield.server.progress",
-        "go.shield.server.log");
-}
-function uninstall_feature(){
-    $unix=new unix();
-    $unix->framework_execute("exec.go.shield.server.php --remove-all","go.shield.server.progress",
-        "go.shield.server.log");
-}
+
+
 
 
 

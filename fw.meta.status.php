@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Versionnée pour le SP9 2026-10-10
 //SP 100
 $GLOBALS["CLUSTER_PORT_FEATURE"]=true;
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
@@ -12,7 +14,6 @@ if(isset($_GET["interface-popup"])){interface_popup();exit;}
 if(isset($_GET["Launch"])){Launch();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["params-js"])){parameters_js();exit;}
-if(isset($_GET["parameters"])){parameters();exit;}
 if(isset($_GET["parameters-start"])){parameters_start();exit;}
 if(isset($_GET["flat-parameters-metasrv"])){flat_parameters();exit;}
 if(isset($_GET["status"])){status();exit;}
@@ -216,12 +217,10 @@ function interface_popup():bool{
 }
 function CertID():int{
     $MetaServCertificate=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MetaServCertificate");
-    $q = new lib_sqlite("/home/artica/SQLITE/certificates.db");
-    $ligne = $q->mysqli_fetch_array("SELECT ID FROM sslcertificates WHERE CommonName='$MetaServCertificate'");
-    if (!isset($ligne['ID'])) {
-        $ligne['ID'] = 0;
-    }
-    return intval($ligne['ID']);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    [$exists, $ID] = $cdb->exists((string)$MetaServCertificate);
+    return $exists ? intval($ID) : 0;
 }
 
 
@@ -268,9 +267,9 @@ function flat_parameters():bool{
                 $tpl->table_form_field_button("{create_certificate}", "{create_certificate}", ico_certificate);
             }
 
-            $q = new lib_sqlite("/home/artica/SQLITE/certificates.db");
-            $ligne = $q->mysqli_fetch_array("SELECT count(*) as tcount FROM subcertificates WHERE certid='$CertID'");
-            $Count = $ligne['tcount'];
+            include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+            $cdb = new CertificatesDB();
+            $Count = count($cdb->subList(intval($CertID)));
             $tpl->table_form_field_js("Loadjs('fw.certificates-center.php?subcertificates-js=$CertID&OnlyClient=yes&NoPass=yes')");
             if ($Count == 0) {
                 $tpl->table_form_field_bool("{client_certificates}", "$Count", ico_interface);

@@ -3,6 +3,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.os.system.tools.inc");
 include_once(dirname(__FILE__)."/ressources/class.cpu.percent.inc");
+include_once(dirname(__FILE__)."/ressources/class.dashboard2.ui.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/prefetch-info.inc"); __prefetchCommonSettings($GLOBALS["CLASS_SOCKETS"]);
 $GLOBALS["PEITYCONF"]="{ width:255,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
@@ -62,7 +63,7 @@ function tabs(){
         if (count($users->NGINX_SERVICES) > 0) {
             $EnableNginx = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx");
             if ($EnableNginx == 1) {
-                $array["{myWebServices}"] = "fw.nginx.sites.php?table-form=yes&MiniAdm=yes";
+                $array["{myWebServices}"] = "fw.nginx.sites2.php?table-form=yes&MiniAdm=yes";
             }
         }
     }
@@ -70,12 +71,11 @@ function tabs(){
 
     if($users->AsAnAdministratorGeneric) {
         $array["{your_system}"] = "$page?system-start=yes";
+        $EnableConntrackd=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableConntrackd"));
+        if($EnableConntrackd==1){
+            $array["{connections}"] = "fw.conntrackd.php";
+        }
     }
-    $EnableConntrackd=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableConntrackd"));
-    if($EnableConntrackd==1){
-        $array["{connections}"] = "fw.conntrackd.php";
-    }
-
 
 
 
@@ -116,8 +116,8 @@ function tabs(){
             $array["{APP_DNSFILTERD}"] = "fw.dashboard.dnsfilterd.php";
         }
     }
-
-    if($users->AsProxyMonitor) {
+    $ArticaProxyToSIEM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaProxyToSIEM"));
+    if($users->AsProxyMonitor && $ArticaProxyToSIEM==0) {
         if ($SQUIDEnable == 1) {
             $array["{your_proxy}"] = "fw.dashboard.YourProxy.php";
         }
@@ -200,33 +200,16 @@ function system_start(){
     $w_disk   = (strlen($widget_sysdisk) > 10) ? $tpl->_ENGINE_parse_body($widget_sysdisk) : "";
 
     $html[]="<div style='margin-top:10px'>$ERROR_FATAL</div>";
-    $html[]="<div class='container-fluid'>
-  <div class='row' style='vertical-align:top;padding:5px'>
-    <div class='col-sm-3'>
+    $html[]="<div class='dash2-metrics'>
     <div id='sysmemory'>$w_memory</div>
-    </div>
-    <div class='col-sm-3'>
     <div id='syscpu'>$w_cpu</div>
-    </div>
-    <div class='col-sm-3'>
     <div id='sysload'>$w_load</div>
-    </div>
-        <div class='col-sm-2'>
     <div id='sysdisk'>$w_disk</div>
-    </div>
-            <div class='col-sm-2'>
     <div id='bandwidth-dashboard'></div>
-    </div>
-  </div>
-</div>";
-    $html[]="<div class=\"container-fluid\">";
-    $html[]="<div class=\"row\">";
-    $html[]="                    <div class=\"col-lg-6\" id='frontend-notifications'>";
-    $html[]="                    </div>";
-    $html[]="";
-    $html[]="                    <div class=\"col-lg-6\">";
-    $html[]="";
-    $html[]="                        <div class=\"row\">";
+  </div>";
+    $html[]="<div class=\"dash2-bento\">";
+    $html[]="<div id='frontend-notifications'></div>";
+    $html[]="<div>";
 
 
    $licInfo                     = $tpl->ClickMouse("pop:https://wiki.articatech.com/license/overview");
@@ -258,6 +241,7 @@ function system_start(){
     if(!$AS_DOCKER_SERVICE) {
         $html[] = "\t        <div class=\"col-md-6\" id='dashboard-ps-mem'>";
         $html[] = "\t            <canvas id=\"doughnut-ps-mem\" width=250px height=250px style=\"margin: 0 auto 0\"></canvas>";
+        $html[] = "\t            ".dashboard2_doughnut_center();
         $html[] = "\t        </div>";
         $html[] = "\t        <div class=\"col-md-6\">";
         $html[] = "\t            <div id='dashboard-top-processes' style='text-align:left;padding-left:45px'></div>";
@@ -276,7 +260,7 @@ function system_start(){
     $html[]="</script>";
 
    // $html[]="                            <div class=\"col-lg-6\">";
-    $html[]="                                <div class=\"ibox float-e-margins\">";
+    $html[]="                                <div class=\"ibox float-e-margins\" style='margin-top:10px'>";
     $html[]="                                    <div class=\"ibox-title\">";
     $html[]="                                        <h5>{tips}...</h5>";
     $html[]="                                    </div>";
@@ -399,20 +383,6 @@ function system_start(){
     $html[]="                                </div>";
     $html[]="                            </div>";
     $html[]="                        </div>";
-    $html[]="                        <div class=\"row\">";
-    $html[]="                            <div class=\"col-lg-12\"></div>";
-    $html[]="                                            <div class=\"col-lg-6\">";
-    $html[]="                                    </div>";
-    $html[]="                                    </div>";
-    $html[]="                                </div>";
-    $html[]="                            </div>";
-    $html[]="                        </div>";
-    $html[]="";
-    $html[]="                    </div>";
-    $html[]="";
-    $html[]="";
-    $html[]="                </div>";
-    $html[]="</div>";
     $html[]="</div>";
     $html[]="<script>";
     $html[]="Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.system.status.php?top-widget=yes');";
@@ -469,9 +439,9 @@ function doughnut_ps_mem(): bool {
     $i = 0;
 
     $colorz = array(
-        "#a383d5", "#8783d5", "#8399d5", "#9bc2da", "#9bdab5",
-        "#bdda9b", "#dada9b", "#dac59b", "#dab09b", "#da9b9b",
-        "#da9cb1", "#da9cc5", "#da9cda", "#c59cda", "#00aa7f"
+        "#9061f9", "#3f83f8", "#1c64f2", "#2563eb", "#6bd8cb",
+        "#008378", "#00685f", "#eab308", "#f97316", "#ba0035",
+        "#e21e49", "#565e74", "#a383d5", "#8399d5", "#9bc2da"
     );
 
     $labels = array();
@@ -535,7 +505,7 @@ function doughnut_ps_mem(): bool {
     if ($othersBytes < 0) { $othersBytes = 0; }
     $others = ($othersBytes / 1024);
     $data[] = round($others);
-    $bgcolor[] = json_encode("#00aa7f");
+    $bgcolor[] = json_encode("#bcc9c6");
 
     $t = time();
 
@@ -573,6 +543,17 @@ function doughnut_ps_mem(): bool {
     // Legend text list
     $f[] = "var el = document.getElementById('dashboard-top-processes');";
     $f[] = "if(el){ el.innerHTML=" . json_encode(implode("", $textinfo), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "; }";
+
+    $totalHuman = FormatBytes($TOTAL, true);      // plain text (real space, no &nbsp;) e.g. "1.37 GB"
+    $centerVal  = $totalHuman;
+    $centerUnit = "{total}";
+    if (preg_match('/^([0-9.,]+)\s*(\S+)$/', $totalHuman, $m)) {
+        $centerVal  = $m[1];
+        $centerUnit = $m[2] . " {total}";
+    }
+    $centerHtml = "<span class='d2-val'>" . $centerVal . "</span><span class='d2-unit'>" . $centerUnit . "</span>";
+    $f[] = "var elc = document.getElementById('doughnut-ps-mem-center');";
+    $f[] = "if(elc){ elc.innerHTML=" . json_encode($tpl->_ENGINE_parse_body($centerHtml), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) . "; }";
 
     header("content-type: application/x-javascript");
     echo implode("\n", $f);
@@ -633,13 +614,13 @@ function top_cpus($Status=array()):string{
     }
 
     if(is_array($Status) && count($Status)==0){
-        $Status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysmonitor/stats"),true);
+        $Status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/sysmonitor/current"),true);
     }
 
-    if(!isset($Status["data"]["latest"])){return "";}
+    if(!isset($Status["data"]["cpu_percent"])){return "";}
 
-    $MEM_USED_PERC=floatval($Status["data"]["latest"]["mem_percent"]);
-    $cpu = floatval($Status["data"]["latest"]["cpu_percent"]);
+    $MEM_USED_PERC=floatval($Status["data"]["mem_percent"]);
+    $cpu = floatval($Status["data"]["cpu_percent"]);
     VERBOSE("CPU PERCEN $cpu MEM PERC: $MEM_USED_PERC", __LINE__);
     $cpu_color = "text-muted";
     $mem_color = "text-muted";
@@ -778,10 +759,12 @@ JS;
 
     header("content-type: application/x-javascript");
     echo $js."\n";
-    echo "LoadAjaxSilent('frontend-notifications','$page?frontend-notifications=yes');\n";
-    //echo "LoadAjaxSilent('widget-hostname','fw.index.php?widget-hostname=yes');\n";
+    //echo "LoadAjaxSilent('widget-hostname','fw.index.php?widget-hostname=yes');\n fw.system.status.php?doughnut-ps-mem=yes";
     echo "Loadjs('$page?doughnut-ps-mem=yes');\n";
     echo "LoadAjaxSilent('widget-info','{$HTTP_X_ARTICA_SUBFOLDER}fw.index.php?widget-info=yes&from-hostname=yes');\n";
+    // De-duplicated: was dispatched twice (once without subfolder prefix, once with)
+    // per widget refresh, resulting in 8 hits to fw.system.status.php?frontend-notifications=yes
+    // per 27 s window in Chrome trace. Keep only the subfolder-aware call.
     echo "LoadAjaxSilent('frontend-notifications','{$HTTP_X_ARTICA_SUBFOLDER}fw.system.status.php?frontend-notifications=yes');\n";
     echo "LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');\n";
     echo "$top_cpu_mem\n";
@@ -827,7 +810,7 @@ function widget_load($Status,$metrics):string{
     $html[]="                    </div>";
     if(count($DASHBOARD_LOAD)>1){
         $peity_conf=$GLOBALS["PEITYCONF"];
-        $html[]="<span id=\"dashboard-load-line\">".@implode(",",$DASHBOARD_LOAD)."</span>";
+        $html[]="<div style='padding-left:5px'><span id=\"dashboard-load-line\">".@implode(",",$DASHBOARD_LOAD)."</span></div>";
         $dashjs="\t$(\"#dashboard-load-line\").peity(\"line\",$peity_conf);";
     }
     $html[]="                </div>";
@@ -888,11 +871,9 @@ function widget_sysdisk():string{
             $INODES_TOT = $PartData->total_inodes;
             $INODES_PRC = round($PartData->used_percent,1);
             $INODE_TEXT = "<small>{inode_size} $INODES_USED / $INODES_TOT</small>";
-            $inodes_row[] = "<div>";
-            $inodes_row[] = "            <div class=\"stat-percent font-bold text-success\">";
-            $inodes_row[] = "                    $INODES_PRC% <i class=\"fa fa-bolt\"></i>";
-            $inodes_row[] = "            </div>";
+            $inodes_row[] = "<div class=\"dash2-part-row\">";
             $inodes_row[] = "            $INODE_TEXT";
+            $inodes_row[] = "            <span class=\"stat-percent font-bold text-success\">$INODES_PRC% <i class=\"fa fa-bolt\"></i></span>";
             $inodes_row[] = "</div>";
             $inodes_text = @implode("\n", $inodes_row);
             $ID_FS_LABEL = $PartData->label;
@@ -933,9 +914,10 @@ function widget_sysdisk():string{
 
             $dahs = "<span id=\"dashboard-" . md5($ID_FS_LABEL) . "\">$value1,$value2</span>";
 
-            $srcjs[] = "$(\"#dashboard-" . md5($ID_FS_LABEL) . "\").peity(\"pie\",{ fill: [\"#18a689\", \"#eeeeee\"], height:38,width:38 });";
+            $srcjs[] = "$(\"#dashboard-" . md5($ID_FS_LABEL) . "\").peity(\"pie\",{ fill: [\"#00685f\", \"#e2e8f0\"], height:120,width:120 });";
             $ic=ico_hd;
-            $html[] = "    <div class=\"ibox float-e-margins\">";
+            $html[] = "    <div class=\"ibox float-e-margins dash2-part-card\">";
+            $html[] = "        <div class=\"dash2-part-wm\">$dahs</div>";
             $html[] = "        <div class=\"ibox-title\">";
             $html[] = "            <span class=\"label $label_part pull-right\">$text_part</span>";
             $html[] = "            <h5><i class='$ic'></i>&nbsp;{partition}:$ID_FS_LABEL</h5>";
@@ -946,13 +928,12 @@ function widget_sysdisk():string{
             $html[] = "<td style='width:99%'>";
             $html[] = "            <h1 class=\"no-margins\">$PERCENT%&nbsp;</h1>";
             $html[] = "</td>";
-            $html[] = "<td style='width:1%' nowrap=''>$dahs</td>";
             $html[] = "</tr>";
             $html[] = "</table>";
-            $html[] = "            <div class=\"stat-percent font-bold text-success\">";
-            $html[] = "                    $SIZE_TEXT <i class=\"fa fa-bolt\"></i>";
+            $html[] = "            <div class=\"dash2-part-row\">";
+            $html[] = "                <small>{used} $UTIL_TEXT</small>";
+            $html[] = "                <span class=\"stat-percent font-bold text-success\">$SIZE_TEXT <i class=\"fa fa-bolt\"></i></span>";
             $html[] = "            </div>";
-            $html[] = "            <small>{used} $UTIL_TEXT</small>";
             $html[] = "$inodes_text";
             $html[] = "        </div>";
             $html[] = "    </div>";
@@ -1002,7 +983,7 @@ function widget_cpu():array{
     $html[]="                        <small>{cpu_use}</small>";
     $html[]="                    </div>";
     if(count($acpu)>0){
-        $html[]="<span id=\"dashboard-cpu-line\">".@implode(",",$acpu)."</span>";
+        $html[]="<div style='padding-left:5px'><span id=\"dashboard-cpu-line\">".@implode(",",$acpu)."</span></div>";
         $peity_conf=$GLOBALS["PEITYCONF"];
         $dashjs="$(\"#dashboard-cpu-line\").peity(\"line\",$peity_conf);";
     }

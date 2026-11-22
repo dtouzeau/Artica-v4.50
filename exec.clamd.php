@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(function_exists("posix_getuid")){if(posix_getuid()<>0){die("Cannot be used in web server mode\n\n");}}
 $GLOBALS["FORCE"]=false;
 $GLOBALS["RECONFIGURE"]=false;
@@ -36,13 +37,11 @@ if(isset($argv[1])){
     if($argv[1]=="--install"){$GLOBALS["OUTPUT"]=true;install();exit();}
     if($argv[1]=="--monit"){$GLOBALS["OUTPUT"]=true;install_monit();exit();}
     if($argv[1]=="--uninstall"){$GLOBALS["OUTPUT"]=true;uninstall();exit();}
-    if($argv[1]=="--remove"){$GLOBALS["OUTPUT"]=true;remove();exit();}
     if($argv[1]=="--install-fresh"){$GLOBALS["OUTPUT"]=true;install_clamav_freshclam();exit();}
     if($argv[1]=="--reconfigure"){$GLOBALS["OUTPUT"]=true;reconfigure();exit();}
     if($argv[1]=="--permissions"){$GLOBALS["OUTPUT"]=true;permissions();exit();}
     if($argv[1]=="--sockets"){CheckClamavSocket();exit;}
     if($argv[1]=="--socket-watch"){CheckClamavSocket(true);exit;}
-    if($argv[1]=="--apparmor"){apparmor();exit;}
     if($argv[1]=="--memory-exceed"){memory_exceed();exit;}
     if($argv[1]=="--restart-schedule"){restart_schedule();exit;}
 }
@@ -57,94 +56,6 @@ function memory_exceed():bool{
     return true;
 }
 
-function remove(){
-    $prc=10;
-    $unix=new unix();
-    $aptget=$unix->find_program("apt-get");
-
-    $pid=$unix->PIDOF("/usr/bin/dpkg");
-    if($unix->process_exists($pid)){
-        build_progress(110,"dpkg {already_running} pid $pid");
-        return false;
-    }
-    $pid=$unix->PIDOF_PATTERN("/var/lib/dpkg/");
-    if($unix->process_exists($pid)){
-        $process=@file_get_contents("/proc/$pid/cmdline");
-        echo "Existing process: $process\n";
-        build_progress(110,"dpkg {already_running} pid $pid");
-        return false;
-    }
-
-    $opts="-o Dpkg::Options::=\"--force-confold\"  -o Dpkg::Options::=\"--force-remove-reinstreq\"";
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableClamavDaemon", 0);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableFreshClam", 0);
-
-    $packages=explode(",","clamav,clamav-base,clamav-daemon,clamav-freshclam,clamdscan,libclamav-dev,libclamav9,libclamav*,clamav*");
-    foreach ($packages as $pkg){
-        $prc++;
-        build_progress($prc,"{remove} $pkg");
-        $cmdline="DEBIAN_FRONTEND=noninteractive $aptget purge -y -q $opts $pkg";
-        echo $cmdline."\n";
-        system($cmdline);
-    }
-    $tdirs[]="/lib";
-    $tdirs[]="/usr/lib";
-    $tdirs[]="/usr/local/lib";
-    $tdirs[]="/usr/lib/x86_64-linux-gnu";
-    foreach ($tdirs as $basedir){
-        $prc++;
-        build_progress($prc,"{remove} libclam* [$basedir]");
-        if(!is_dir($basedir)){continue;}
-        $handle = opendir($basedir);
-        while (false !== ($filename = readdir($handle))) {
-            if ($filename == ".") {continue;}
-            if ($filename == "..") {continue;}
-            $tpath="$basedir/$filename";
-            if(is_dir($tpath)){continue;}
-            if(preg_match("#^libclam#",$filename)){
-                echo "Removing $tpath\n";
-            }
-        }
-    }
-
-    $artfiles[]="/etc/cron.d/clamd-cron";
-    $artfiles[]="/etc/monit/conf.d/APP_CLAMAV.monitrc";
-    foreach ($artfiles as $tfile){
-        if(is_file($tfile)){@unlink($tfile);}
-    }
-
-
-
-    build_progress(40,"{uninstalling}");
-    if(is_file("/etc/monit/conf.d/APP_CLAMAV.monitrc")) {
-        @unlink("/etc/monit/conf.d/APP_CLAMAV.monitrc");
-    }
-    shell_exec("/etc/init.d/cron reload");
-    build_progress(70,"{uninstalling}");
-    $unix->reload_monit();
-    build_progress(80,"{uninstalling}");
-    $dirs[]="/etc/clamav";
-    $dirs[]="/var/run/clamav";
-    $dirs[]="/var/lib/clamav*";
-    $dirs[]="/var/log/clamav";
-    $unix=new  unix();
-    $rm=$unix->find_program("rm");
-    build_progress(90,"{uninstalling}");
-    foreach ($dirs as $directory){if(is_dir($directory)){shell_exec("$rm -rf $directory/*");}}
-
-    $servs[]="/etc/init.d/clamav-daemon";
-    $servs[]="/etc/init.d/clamav-freshclam";
-    foreach ($servs as $tfile){
-        if(is_file($tfile)){
-            remove_service($tfile);
-            build_progress(91,"{uninstalling} $tfile");
-        }
-    }
-
-
-    build_progress(100,"{uninstalling} {done}");
-    return true;
-}
 
 
 
@@ -235,7 +146,6 @@ function uninstall():bool{
 function install(){
 	$unix=new unix();
 
-	$unix->Popuplate_cron_make("clamd-cron","0 */2 * * *","exec.freshclam.php --sigtool");
 
 	$sock=new sockets();
 	$sock->SET_INFO("EnableClamavDaemon", 1);
@@ -478,54 +388,6 @@ function install_clamav_daemon(){
 
 }
 
-function apparmor(){
-    $socket_path    = "run/clamav/clamav.sock";
-    $fname="/etc/apparmor.d/usr.sbin.clamd";
-
-    $f[]="#include <tunables/global>";
-    $f[]="";
-    $f[]="/usr/sbin/clamd  flags=(complain){";
-    $f[]="  #include <abstractions/base>";
-    $f[]="  #include <abstractions/nameservice>";
-    $f[]="  #include <abstractions/openssl>";
-    $f[]="";
-    $f[]="  capability dac_override,";
-    $f[]="  capability setgid,";
-    $f[]="  capability setuid,";
-    $f[]="  capability chown,";
-    $f[]="  @{PROC}/filesystems r,";
-    $f[]="  @{PROC}/[0-9]*/status r,";
-    $f[]="  /etc/clamav/clamd.conf r,";
-    $f[]="  /usr/sbin/clamd mr,";
-    $f[]="  /tmp/ rw,";
-    $f[]="  /tmp/** krw,";
-    $f[]="";
-    $f[]="  /var/lib/clamav/ r,";
-    $f[]="  /var/lib/clamav/** krw,";
-    $f[]="  /var/log/clamav/* krw,";
-    $f[]="  /{,var/}run/clamav/clamd.ctl w,";
-    $f[]="  /{,var/}run/clamav/clamd.pid w,";
-    $f[]="  /var/run/clamav/clamd.pid w,";
-    $f[]="  /var/run/clamav/clamav.sock w,";
-    $f[]="  /{,var/}$socket_path w,";
-    $f[]="  /{,var/}run/clamav/clamd.pid w,";
-    $f[]="  /var/spool/clamsmtp/* r,";
-    $f[]="  /var/spool/qpsmtpd/* r,";
-    $f[]="  /var/spool/p3scan/children/** r,";
-    $f[]="  /var/spool/havp/** r,";
-    $f[]="  /var/spool/MIMEDefang/mdefang-*/Work/ r,";
-    $f[]="  /var/spool/MIMEDefang/mdefang-*/Work/** r,";
-    $f[]="  # Allow home dir to be scanned,";
-    $f[]="  @{HOME}/ r,";
-    $f[]="  @{HOME}/** r,";
-    $f[]="  # Site-specific additions and overrides. See local/README for details.";
-    $f[]="  #include <local/usr.sbin.clamd>";
-    $f[]="}";
-    @file_put_contents($fname,@implode("\n",$f));
-    $unix=new unix();
-    $aa_complain=$unix->find_program("aa-complain");
-    shell_exec("$aa_complain /usr/sbin/clamd");
-}
 
 
 
@@ -601,7 +463,6 @@ function start($aspid=false){
 	}
 
 	$EnableClamavDaemon=$sock->EnableClamavDaemon();
-    apparmor();
 
 
 

@@ -1,25 +1,25 @@
-<ADDRESSBOOK>Address Book</ADDRESSBOOK>
-<ADDRESSBOOK_TEXT>Store your contacts addres on this server and ensure you can query them everywhere</ADDRESSBOOK_TEXT>
-<AntiSpam_parameters>Your anti-spam settings</AntiSpam_parameters>
-<AntiSpam_parameters_text>Personnalize your anti-spam settings according your needs</AntiSpam_parameters_text>
-<calendar>Web Calendar</calendar>
-<dotclear_user_intro>Manager your DotClear personal Blog</dotclear_user_intro>
-<emailing>eMailing</emailing>
-<mailbox_rules>mailbox rules</mailbox_rules>
-<menu_account_text>Your account settings</menu_account_text>
-<menu_backup_text>Search messages in your backup storage</menu_backup_text>
-<menu_calendar_text>Access to your web groupware calendar, use the same account to login</menu_calendar_text>
-<menu_fetchmail_text>Import your mails from an ISP or other server</menu_fetchmail_text>
-<menu_messaging_text>Manage your mail server and all securites settings</menu_messaging_text>
-<menu_openvpn_text>Display informations about your Virtual Private Network</menu_openvpn_text>
-<menu_organizations_text>Manage users & Organizations</menu_organizations_text>
-<menu_OUT_OF_OFFICE_text>Enable auto-reply from in response to incoming e-mails, based on your Status (Away, Out of Office, Vacation, custom Status)</menu_OUT_OF_OFFICE_text>
-<menu_quarantine_text>See Your anti-spam and antivirus quarantine</menu_quarantine_text>
-<menu_share_text>Share your local folders over the network</menu_share_text>
-<menu_sieve_text>Manage your mailbox rules</menu_sieve_text>
-<menu_statistic_text>See your mailbox statistics</menu_statistic_text>
+<ADDRESSBOOK>Adressbuch</ADDRESSBOOK>
+<ADDRESSBOOK_TEXT>Speichern Sie Ihre Kontaktadressen auf diesem Server und stellen Sie sicher, dass Sie sie von &#252;berall abfragen k&#246;nnen</ADDRESSBOOK_TEXT>
+<AntiSpam_parameters>Ihre Anti-Spam-Einstellungen</AntiSpam_parameters>
+<AntiSpam_parameters_text>Passen Sie Ihre Anti-Spam-Einstellungen an Ihre Bed&#252;rfnisse an</AntiSpam_parameters_text>
+<calendar>Web-Kalender</calendar>
+<dotclear_user_intro>Verwalten Sie Ihren pers&#246;nlichen DotClear-Blog</dotclear_user_intro>
+<emailing>E-Mailing</emailing>
+<mailbox_rules>Postfachregeln</mailbox_rules>
+<menu_account_text>Ihre Kontoeinstellungen</menu_account_text>
+<menu_backup_text>Nachrichten in Ihrem Sicherungsspeicher suchen</menu_backup_text>
+<menu_calendar_text>Zugriff auf Ihren Web-Groupware-Kalender, verwenden Sie dasselbe Konto zum Anmelden</menu_calendar_text>
+<menu_fetchmail_text>Importieren Sie Ihre Mails von einem ISP oder anderen Server</menu_fetchmail_text>
+<menu_messaging_text>Verwalten Sie Ihren Mailserver und alle Sicherheitseinstellungen</menu_messaging_text>
+<menu_openvpn_text>Informationen &#252;ber Ihr virtuelles privates Netzwerk anzeigen</menu_openvpn_text>
+<menu_organizations_text>Benutzer &amp; Organisationen verwalten</menu_organizations_text>
+<menu_OUT_OF_OFFICE_text>Aktivieren Sie automatische Antworten auf eingehende E-Mails, basierend auf Ihrem Status (Abwesend, Au&#223;er Haus, Urlaub, benutzerdefinierter Status)</menu_OUT_OF_OFFICE_text>
+<menu_quarantine_text>Sehen Sie Ihre Anti-Spam- und Antiviren-Quarant&#228;ne</menu_quarantine_text>
+<menu_share_text>Geben Sie Ihre lokalen Ordner im Netzwerk frei</menu_share_text>
+<menu_sieve_text>Verwalten Sie Ihre Postfachregeln</menu_sieve_text>
+<menu_statistic_text>Sehen Sie Ihre Postfachstatistiken</menu_statistic_text>
 <menu_system_text>Verwalten Sie Ihr System</menu_system_text>
-<menu_webmail_text>Access to your mailbox</menu_webmail_text>
-<menu_web_proxy_text>Manage your Internet Proxy Squid</menu_web_proxy_text>
-<YOUR_ADDRESSBOOK>Fill your personal Address Book</YOUR_ADDRESSBOOK>
-<YOUR_ADDRESSBOOK_TEXT>Store your contacts addresses on this server and ensure you can query them everywhere</YOUR_ADDRESSBOOK_TEXT>
+<menu_webmail_text>Zugriff auf Ihr Postfach</menu_webmail_text>
+<menu_web_proxy_text>Verwalten Sie Ihren Squid-Internet-Proxy</menu_web_proxy_text>
+<YOUR_ADDRESSBOOK>F&#252;llen Sie Ihr pers&#246;nliches Adressbuch</YOUR_ADDRESSBOOK>
+<YOUR_ADDRESSBOOK_TEXT>Speichern Sie Ihre Kontaktadressen auf diesem Server und stellen Sie sicher, dass Sie sie von &#252;berall abfragen k&#246;nnen</YOUR_ADDRESSBOOK_TEXT>

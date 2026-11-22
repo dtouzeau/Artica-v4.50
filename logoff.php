@@ -17,7 +17,7 @@ function defrag(){
 	include_once(dirname(__FILE__) . "/class.sockets.inc");
 	include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 	$user=new usersMenus();
-	if(!$user->AsSystemAdministrator){die("DIE " .__FILE__." Line: ".__LINE__);}	
+	if(!$user->AsSystemAdministrator){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}	
 	$sock=new sockets();
 	$DisableRebootOrShutDown=$sock->GET_INFO('DisableRebootOrShutDown');		
 	if($DisableRebootOrShutDown==1){return;}
@@ -28,7 +28,7 @@ function perform(){
 	include_once(dirname(__FILE__) . "/class.sockets.inc");
 	include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 	$user=new usersMenus();
-	if(!$user->AsSystemAdministrator){die("DIE " .__FILE__." Line: ".__LINE__);}
+	if(!$user->AsSystemAdministrator){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 	
 	$sock=new sockets();
 	$DisableRebootOrShutDown=$sock->GET_INFO('DisableRebootOrShutDown');		
@@ -46,7 +46,7 @@ function reboot_js(){
 	include_once(dirname(__FILE__) . "/class.sockets.inc");
 	include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 	$user=new usersMenus();
-	if(!$user->AsSystemAdministrator){die("DIE " .__FILE__." Line: ".__LINE__);}	
+	if(!$user->AsSystemAdministrator){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}	
 	$t=time();
 	$page=CurrentPageName();
 	$tpl=new templates();
@@ -78,7 +78,7 @@ function shutdown_js(){
 	include_once(dirname(__FILE__) . "/ressources/class.templates.inc");	
 	$users=new usersMenus();
 	$page=CurrentPageName();
-	if(!$users->AsSystemAdministrator){die("DIE " .__FILE__." Line: ".__LINE__);}
+	if(!$users->AsSystemAdministrator){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 	$tpl=new templates();
 	$warn=$tpl->javascript_parse_text("{warn_shutdown_computer}");
 	header("content-type: application/x-javascript");
@@ -111,7 +111,7 @@ function defrag_js(){
 	$restart_computer_and_defrag_warn=$tpl->javascript_parse_text("{restart_computer_and_defrag_warn}");
 	$users=new usersMenus();
 	$page=CurrentPageName();
-	if(!$users->AsSystemAdministrator){die("DIE " .__FILE__." Line: ".__LINE__);}	
+	if(!$users->AsSystemAdministrator){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}	
 	$t=time();
 	header("content-type: application/x-javascript");
 echo "
@@ -135,16 +135,19 @@ RestartDefragComputer$t();";
 	
 }
 
-if(is_file("ressources/templates/{$_COOKIE["artica-template"]}/i/pattern.png")){$pattern="ressources/templates/{$_COOKIE["artica-template"]}/i/pattern.png";}
+// Pentest 2026-11-04 : nom de template du cookie -> nom simple uniquement (traversee de repertoire).
+$ArticaTplSafe=isset($_COOKIE["artica-template"])?basename((string)$_COOKIE["artica-template"]):"";
+if(!preg_match('#^[A-Za-z0-9_.-]+$#',$ArticaTplSafe) || $ArticaTplSafe=="." || $ArticaTplSafe==".."){$ArticaTplSafe="default";}
+if(is_file("ressources/templates/{$ArticaTplSafe}/i/pattern.png")){$pattern="ressources/templates/{$ArticaTplSafe}/i/pattern.png";}
 if($pattern==null){$pattern="ressources/templates/default/img/pattern.png";}
 
-if(is_file("ressources/templates/{$_COOKIE["artica-template"]}/i/fond-artica.png")){$logo="ressources/templates/{$_COOKIE["artica-template"]}/i/fond-artica.png";}
+if(is_file("ressources/templates/{$ArticaTplSafe}/i/fond-artica.png")){$logo="ressources/templates/{$ArticaTplSafe}/i/fond-artica.png";}
 
 if($logo==null){
-	if(is_file("ressources/templates/{$_COOKIE["artica-template"]}/i/logo.png")){$logo="ressources/templates/{$_COOKIE["artica-template"]}/i/logo.png";}
+	if(is_file("ressources/templates/{$ArticaTplSafe}/i/logo.png")){$logo="ressources/templates/{$ArticaTplSafe}/i/logo.png";}
 }
 
-if($logo==null){$logo="ressources/templates/{$_COOKIE["artica-template"]}/i/fond-artica.png";}
+if($logo==null){$logo="ressources/templates/{$ArticaTplSafe}/i/fond-artica.png";}
 
 $GLOBALS["CLASS_SOCKETS"]->SET_INFO($_SESSION["UID_KEY"],"");
 unset($_SESSION["privileges_array"]);
@@ -178,7 +181,27 @@ foreach ($_SESSION as $num=>$ligne){
 	unset($_SESSION[$num]);
 }
 
-session_destroy();
+// La deconnexion ne doit JAMAIS rendre un 500 : un magasin de sessions qui
+// refuse une ecriture (Valkey en MISCONF apres un BGSAVE rate, memcached
+// injoignable) fait lever session_destroy(), et l'operateur reste sur une page
+// d'erreur en se croyant deconnecte -- le pire des deux mondes. Le depot a
+// safe_session_destroy() pour cela ; logoff.php n'inclut pas class.sessions.inc,
+// d'ou le repli en ligne plutot qu'un elargissement de son graphe d'inclusion.
+if(function_exists("safe_session_destroy")){
+    safe_session_destroy();
+}else{
+    try{ session_destroy(); }catch(\Throwable $e){ @session_abort(); }
+}
+
+// session_destroy() efface les DONNEES cote serveur et laisse l'identifiant
+// dans le navigateur. On expire donc le cookie explicitement, avec les memes
+// attributs que ceux qui l'ont pose -- un setcookie() dont le chemin ou le
+// drapeau secure differe ne remplace pas le cookie, il en cree un second.
+if(ini_get("session.use_cookies")){
+    $sp=session_get_cookie_params();
+    setcookie(session_name(),"",time()-42000,
+        $sp["path"],$sp["domain"],!empty($sp["secure"]),!empty($sp["httponly"]));
+}
 
 $URL="fw.login.php";
 

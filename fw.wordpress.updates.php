@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 if(isset($_GET["verbose"])){ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',"");ini_set('error_append_string',"<br>\n");$GLOBALS["VERBOSE"]=true;$GLOBALS["DEBUG_PROCESS"]=true;$GLOBALS["VERBOSE_SYSLOG"]=true;}
 if(isset($argv)){if(preg_match("#--verbose#",implode(" ",$argv))){$GLOBALS["VERBOSE"]=true;}}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
@@ -8,7 +9,6 @@ if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 if(isset($_GET["start-table"])){start_table();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["install-js"])){install_js();exit;}
-if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["upgrade"])){upgrade_perform();exit;}
 js();
 
@@ -33,12 +33,15 @@ function start_table(){
 
 
 function install_js(){
-    $ID=$_GET["siteid"];
+    if(!fw_progress_page_priv("AsWebMaster|AsSystemWebMaster")){return false;}   // task link signed for this session: built only for whom may run it
+    // Pentest 2026-11-04 : siteid etait recopie sans encodage dans la page (XSS) et concatene dans la requete.
+    $ID=intval($_GET["siteid"]);
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
     $ligne=$q->mysqli_fetch_array("SELECT hostname FROM wp_sites WHERE ID=$ID");
     $hostname=$ligne["hostname"];
-    $version=$_GET["install-js"];
+    $version=fw_progress_seg($_GET["install-js"] ?? "");
+    if($version===""){return fw_progress_bad_value("install-js");}
     $tpl = new template_admin();
 
     $service_reconfigure=$tpl->framework_buildjs("wordpress.php?updates-install=$ID&VersionToUpgrade=$version",
@@ -57,11 +60,12 @@ function upgrade_perform(){
 }
 
 function file_uploaded(){
+    if(!fw_progress_page_priv("AsWebMaster|AsSystemWebMaster")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl = new template_admin();
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
     $file=$_GET["file-uploaded"];
-    $siteid=$_GET["siteid"];
+    $siteid=intval($_GET["siteid"]);
     $filename=base64_encode($file);
 
     $service_reconfigure=$tpl->framework_buildjs("wordpress.php?updates-install=$siteid&filename=$filename",

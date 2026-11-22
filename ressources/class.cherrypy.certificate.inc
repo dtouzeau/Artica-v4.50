@@ -26,11 +26,11 @@ class cherrypy_certificate{
     }
 
     private function load_certificate(){
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $sql="SELECT `UsePrivKeyCrt`,`CertPassword`,`crt`,`csr`,`srca`,`clientkey`,`clientcert`,`privkey`,`SquidCert`,`Squidkey`,
-		`bundle`,`UseGodaddy`
-		FROM sslcertificates WHERE CommonName='$this->certificate'";
-        $ligne=$q->mysqli_fetch_array($sql);
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $row=$cdb->getByCommonName($this->certificate);
+        if(!is_object($row)){return;}
+        $ligne=(array)$row;
         $this->UsePrivKeyCrt=$ligne["UsePrivKeyCrt"];
         $this->crt_content=str_replace("\\n","\n",$ligne["crt"]);
         $this->csr_content=str_replace("\\n","\n",$ligne["csr"]);

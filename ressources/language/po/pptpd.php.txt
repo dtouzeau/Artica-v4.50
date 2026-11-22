@@ -1,102 +1,99 @@
 <accountname>Nome Conta</accountname>
 <added_on>Adicionado em</added_on>
 <ADD_CONNEXION>Adicionar uma conex%C3£o</ADD_CONNEXION>
-<add_imap_account>New IMAP account</add_imap_account>
-<add_imap_bad_emailing_account_text>Add IMAP account in order to parse bad mails in this mailbox</add_imap_bad_emailing_account_text>
-<ADD_PPTP_CONNEXION_TEXT>Add a PPTP Vpn tunnel connection to a VPN server</ADD_PPTP_CONNEXION_TEXT>
-<affectip_from>Affect IP addresses from</affectip_from>
-<affectip_to>Affect IP to</affectip_to>
-<allow_nmap_scanner>Allow auto NMAP scanner</allow_nmap_scanner>
-<allow_parse_dhcp_leases>Allow parse DHCP leases infos</allow_parse_dhcp_leases>
+<add_imap_account>Nova conta IMAP</add_imap_account>
+<add_imap_bad_emailing_account_text>Adicionar conta IMAP para analisar mensagens indesejadas nesta caixa de correio</add_imap_bad_emailing_account_text>
+<ADD_PPTP_CONNEXION_TEXT>Adicionar uma liga&#231;&#227;o de t&#250;nel VPN PPTP a um servidor VPN</ADD_PPTP_CONNEXION_TEXT>
+<affectip_from>Atribuir endere&#231;os IP de</affectip_from>
+<affectip_to>Atribuir IP a</affectip_to>
+<allow_nmap_scanner>Permitir o scanner NMAP autom&#225;tico</allow_nmap_scanner>
+<allow_parse_dhcp_leases>Permitir a an&#225;lise das informa&#231;&#245;es de concess&#245;es DHCP</allow_parse_dhcp_leases>
 <all_days_of_month>Todos os dias dos meses</all_days_of_month>
-<AntiHacks_roundcube_explain>This feature will create a firewall rule if remote clients failed to login on the RoundCube front page during a period in minutes.[br]
- If an IP address is blocked, you will see it in the events section.</AntiHacks_roundcube_explain>
-<AntiHacks_roundcube_text>Prevent attacks against brute force attacks on RoundCube WebMail front page</AntiHacks_roundcube_text>
+<AntiHacks_roundcube_explain>Esta funcionalidade criar&#225; uma regra de firewall se os clientes remotos n&#227;o conseguirem iniciar sess&#227;o na p&#225;gina inicial do RoundCube durante um per&#237;odo em minutos.[br]
+ Se um endere&#231;o IP for bloqueado, v&#234;-lo-&#225; na sec&#231;&#227;o de eventos.</AntiHacks_roundcube_explain>
+<AntiHacks_roundcube_text>Prevenir ataques de for&#231;a bruta contra a p&#225;gina inicial do RoundCube WebMail</AntiHacks_roundcube_text>
 <APP_APT_MIRROR>Espelhamento APT</APP_APT_MIRROR>
-<APP_ARTICA_SQUIDGUARDTAIL>Artica Squiguard watchdog</APP_ARTICA_SQUIDGUARDTAIL>
-<APP_PPTPD>PPTP Daemon</APP_PPTPD>
+<APP_ARTICA_SQUIDGUARDTAIL>Watchdog do Artica SquidGuard</APP_ARTICA_SQUIDGUARDTAIL>
+<APP_PPTPD>Daemon PPTP</APP_PPTPD>
 <APP_WEBFILTER_COMMUNITY_EXPLAIN>Os s%C3%ADtios Web proibidos pela comunidade Artica s%C3£o um processo silencioso que envia os seus s%C3%ADtios e categorias pessoais acrescentados para um servidor de armazenamento central Artica[br].
 Quando categoriza um novo s%C3%ADtio web, Artica envia a informaç%C3£o para um servidor central [br].
 Isto para partilhar o seu trabalho com outros membros da comunidade Artica [br].
 O seu servidor Artica é capaz de se descarregar periodicamente novos s%C3%ADtios web adicionados pela comunidade Artica.</APP_WEBFILTER_COMMUNITY_EXPLAIN>
-<apt_mirror_threads>Number of processes used for download packages.[br]Increase this value will increase the bandwith consumption.</apt_mirror_threads>
-<ARTICA_DATABASE_MAINTENANCE>Artica DB maintenance</ARTICA_DATABASE_MAINTENANCE>
-<ARTICA_DATABASE_SQUID_MAINTENANCE>Artica urls requests maintenance (purge, backup events)</ARTICA_DATABASE_SQUID_MAINTENANCE>
+<apt_mirror_threads>N&#250;mero de processos usados para transferir pacotes.[br]Aumentar este valor aumentar&#225; o consumo de largura de banda.</apt_mirror_threads>
+<ARTICA_DATABASE_MAINTENANCE>Manuten&#231;&#227;o da BD do Artica</ARTICA_DATABASE_MAINTENANCE>
+<ARTICA_DATABASE_SQUID_MAINTENANCE>Manuten&#231;&#227;o dos pedidos de URL do Artica (purga, eventos de backup)</ARTICA_DATABASE_SQUID_MAINTENANCE>
 <ARTICA_DATABASE_SQUID_MAINTENANCE_WHY>Cada url passada pela lula é analisada pelo serviço Proxy RealTime log.[br]Proxy RealTime log transforma os pedidos e guarda-os numa base de dados mysql a fim de fornecer gr%C3¡ficos, gr%C3¡ficos e estat%C3%ADsticas.[br]
 Esta secç%C3£o define parâmetros de purga a fim de reduzir o tamanho da base de dados.[br]As tarefas de purga s%C3£o executadas todos os domingos às 5h00 da manh%C3£</ARTICA_DATABASE_SQUID_MAINTENANCE_WHY>
-<at>at</at>
-<backup_datas_before_delete>Backup datas before delete</backup_datas_before_delete>
-<bad_mails>Bad eMails</bad_mails>
-<bad_mails_emailing_text>Manage the blacklist database and the "bad Mails" parser</bad_mails_emailing_text>
-<blacklist_database>Blacklist database</blacklist_database>
-<clients_routes_add_text>Routes automatically added when a client establish a connection to the server.[br]
-For example if a client with an internal IP is 192.168.12.* establish a connection to the server,
- the server will add a automatically a route for 192.168.12.0/24 from the LAN to the VPN interface.</clients_routes_add_text>
-<connection>Connection</connection>
+<at>&#224;s</at>
+<backup_datas_before_delete>Fazer backup dos dados antes de eliminar</backup_datas_before_delete>
+<bad_mails>Mensagens indesejadas</bad_mails>
+<bad_mails_emailing_text>Gerir a base de dados da lista negra e o analisador de &quot;mensagens indesejadas&quot;</bad_mails_emailing_text>
+<blacklist_database>Base de dados da lista negra</blacklist_database>
+<clients_routes_add_text>Rotas adicionadas automaticamente quando um cliente estabelece uma liga&#231;&#227;o ao servidor.[br]
+Por exemplo, se um cliente com um IP interno 192.168.12.* estabelecer uma liga&#231;&#227;o ao servidor,
+ o servidor adicionar&#225; automaticamente uma rota para 192.168.12.0/24 da LAN para a interface VPN.</clients_routes_add_text>
+<connection>Liga&#231;&#227;o</connection>
 <connexions>Conex%C3µes</connexions>
-<connexion_name>connection name</connexion_name>
-<context>context</context>
+<connexion_name>Nome da liga&#231;&#227;o</connexion_name>
+<context>contexto</context>
 <country_code>C%C3%B3digo do pa%C3%ADs</country_code>
-<create_task>Create task</create_task>
-<crypted_connection>crypted connection</crypted_connection>
-<debian_mirror>Debian mirror</debian_mirror>
+<create_task>Criar tarefa</create_task>
+<crypted_connection>liga&#231;&#227;o encriptada</crypted_connection>
+<debian_mirror>Espelho Debian</debian_mirror>
 <DEBIAN_REPOSITORIES>Reposit%C3%B3rios Debian</DEBIAN_REPOSITORIES>
 <DNS_1>Servidor DNS principal</DNS_1>
 <DNS_2>Servidor DNS secund%C3¡rio</DNS_2>
 <download_tasks>Processos de descarga</download_tasks>
-<dynamic>dynamic</dynamic>
-<enable_64bits>Enable 64bits</enable_64bits>
-<enable_apt_mirror>Activate Debian like repositories mirroring</enable_apt_mirror>
-<enable_debian_repository>Enable Debian repositories</enable_debian_repository>
-<enable_in_left_menus>Display in left menu</enable_in_left_menus>
-<enable_squatter_service>Enable indexing service</enable_squatter_service>
-<enable_ubuntu_repository>Enable Ubuntu repositories</enable_ubuntu_repository>
-<ENABLE_VPN_SERVER>Activate VPN server</ENABLE_VPN_SERVER>
-<ENABLE_VPN_SERVER_TEXT>Activate the VPN service mode that will able clients to connect on 1723 port to activate the tunnel</ENABLE_VPN_SERVER_TEXT>
+<dynamic>din&#226;mico</dynamic>
+<enable_64bits>Ativar 64 bits</enable_64bits>
+<enable_apt_mirror>Ativar a replica&#231;&#227;o de reposit&#243;rios do tipo Debian</enable_apt_mirror>
+<enable_debian_repository>Ativar os reposit&#243;rios Debian</enable_debian_repository>
+<enable_in_left_menus>Mostrar no menu esquerdo</enable_in_left_menus>
+<enable_squatter_service>Ativar o servi&#231;o de indexa&#231;&#227;o</enable_squatter_service>
+<enable_ubuntu_repository>Ativar os reposit&#243;rios Ubuntu</enable_ubuntu_repository>
+<ENABLE_VPN_SERVER>Ativar o servidor VPN</ENABLE_VPN_SERVER>
+<ENABLE_VPN_SERVER_TEXT>Ativar o modo de servi&#231;o VPN que permitir&#225; aos clientes ligarem-se na porta 1723 para ativar o t&#250;nel</ENABLE_VPN_SERVER_TEXT>
 <every_day_at>Cada dia em</every_day_at>
-<gateway_vpn_server>Use VPN server has gateway</gateway_vpn_server>
-<GIVE_A_NOTE>Give a note</GIVE_A_NOTE>
-<HTTP_ADD_SAFE_PORTS_EXPLAIN>
- You should use :
- "123 125 126": add multiple ports list
- "123-129": matches 123 124 125 126 127 128 129
- "123": matches a single port
- </HTTP_ADD_SAFE_PORTS_EXPLAIN>
+<gateway_vpn_server>Usar o servidor VPN como gateway</gateway_vpn_server>
+<GIVE_A_NOTE>Atribuir uma nota</GIVE_A_NOTE>
+<HTTP_ADD_SAFE_PORTS_EXPLAIN>Deve usar:
+ &quot;123 125 126&quot;: adicionar uma lista de v&#225;rias portas
+ &quot;123-129&quot;: corresponde a 123 124 125 126 127 128 129
+ &quot;123&quot;: corresponde a uma &#250;nica porta</HTTP_ADD_SAFE_PORTS_EXPLAIN>
 <http_safe_ports>Portos seguros</http_safe_ports>
-<HTTP_SAFE_PORTS_EXPLAIN>Access control list to define Safe ports that should be allowed by default</HTTP_SAFE_PORTS_EXPLAIN>
-<imap_account>IMAP Account</imap_account>
-<imap_accounts>IMAP Accounts</imap_accounts>
-<imap_server>IMAP server</imap_server>
+<HTTP_SAFE_PORTS_EXPLAIN>Lista de controlo de acesso para definir as portas seguras que devem ser permitidas por predefini&#231;&#227;o</HTTP_SAFE_PORTS_EXPLAIN>
+<imap_account>Conta IMAP</imap_account>
+<imap_accounts>Contas IMAP</imap_accounts>
+<imap_server>Servidor IMAP</imap_server>
 <imported>Importado</imported>
-<import_datas>Import datas</import_datas>
-<iproutes>IP routes</iproutes>
-<ip_match>IP matches</ip_match>
-<link_databases>New Database Linker</link_databases>
-<link_databases_emailing_text>Create a "virtual" Database that link datas from others databases.</link_databases_emailing_text>
-<link_net_from>Link remote to local</link_net_from>
+<import_datas>Importar dados</import_datas>
+<iproutes>Rotas IP</iproutes>
+<ip_match>Correspond&#234;ncias de IP</ip_match>
+<link_databases>Novo vinculador de bases de dados</link_databases>
+<link_databases_emailing_text>Criar uma base de dados &quot;virtual&quot; que liga dados de outras bases de dados.</link_databases_emailing_text>
+<link_net_from>Ligar remoto a local</link_net_from>
 <link_net_to>Ligar a rede a</link_net_to>
-<MAILBOXES_MIGRATION>Mailboxes migration</MAILBOXES_MIGRATION>
-<MAILBOXES_MIGRATION_EXPLAIN>In this form you can upload a text file (*.txt) with pre-defined user's parameters 
- in order to create users, create mailbox and import all mailboxes datas in the same operation.[br]
- Text file must be formatted has follow : [br]
+<MAILBOXES_MIGRATION>Migra&#231;&#227;o de caixas de correio</MAILBOXES_MIGRATION>
+<MAILBOXES_MIGRATION_EXPLAIN>Neste formul&#225;rio pode carregar um ficheiro de texto (*.txt) com par&#226;metros de utilizador predefinidos
+ para criar utilizadores, criar caixas de correio e importar todos os dados das caixas na mesma opera&#231;&#227;o.[br]
+ O ficheiro de texto deve ter o seguinte formato: [br]
  [code]account;password;remote imap server[/code][br]
- if remote imap server using SSL, use "ssl:" suffix.[br]
- eg: [code]jhon;123;ssl:imap.remotehost.com[/code][br] 
- all lines will be separated by a carriage return.
- </MAILBOXES_MIGRATION_EXPLAIN>
-<MAILBOXES_MIGRATION_TEXT>Transfert in mass operation all users and mailbox to this server</MAILBOXES_MIGRATION_TEXT>
-<make_unique_table_text>all stored email addresses in this database will be deleted on others databases in order to make this table unique</make_unique_table_text>
-<MaxAttemtps>MAX. attempts</MaxAttemtps>
-<MaxTime>Max delay</MaxTime>
-<max_day_events>Max events days</max_day_events>
+ se o servidor IMAP remoto usar SSL, use o prefixo &quot;ssl:&quot;.[br]
+ ex.: [code]jhon;123;ssl:imap.remotehost.com[/code][br] 
+ todas as linhas ser&#227;o separadas por uma quebra de linha.</MAILBOXES_MIGRATION_EXPLAIN>
+<MAILBOXES_MIGRATION_TEXT>Transferir numa opera&#231;&#227;o em massa todos os utilizadores e caixas de correio para este servidor</MAILBOXES_MIGRATION_TEXT>
+<make_unique_table_text>Todos os endere&#231;os de e-mail armazenados nesta base de dados ser&#227;o eliminados noutras bases de dados para tornar esta tabela &#250;nica</make_unique_table_text>
+<MaxAttemtps>M&#193;X. tentativas</MaxAttemtps>
+<MaxTime>Atraso m&#225;ximo</MaxTime>
+<max_day_events>Dias m&#225;ximos de eventos</max_day_events>
 <member>Membro</member>
-<merged_database>Merged database</merged_database>
-<merged_database_explain>A merged database is not a real database but a virtual database that link datas to a single point</merged_database_explain>
-<move_to>Move to</move_to>
-<NODB_SELECTED>No database selected</NODB_SELECTED>
-<no_acl_arp>No ACL ARP</no_acl_arp>
+<merged_database>Base de dados unida</merged_database>
+<merged_database_explain>Uma base de dados unida n&#227;o &#233; uma base de dados real, mas uma base de dados virtual que liga os dados num &#250;nico ponto</merged_database_explain>
+<move_to>Mover para</move_to>
+<NODB_SELECTED>Nenhuma base de dados selecionada</NODB_SELECTED>
+<no_acl_arp>Sem ACL ARP</no_acl_arp>
 <no_acl_arp_text>Proxy n%C3£o é compilado com suporte arp, computadores proibidos e com lista branca n%C3£o suportar%C3£o filtro de endereços MAC</no_acl_arp_text>
-<only>only</only>
+<only>apenas</only>
 <only_days>Apenas dias</only_days>
 <ports>Portos</ports>
 <PPTPD_EXPLAIN>O Protocolo de Tunelamento Ponto a Ponto (PPTP) é um método para implementar redes privadas virtuais [br].
@@ -105,40 +102,40 @@ PPTP usa um canal de controle sobre TCP e um t%C3%BAnel GRE operando para encaps
 passagem basical da VPN, recurso PPTP/IPSEC)[br].
 Seja carinhoso, algumas caixas de ISPs desabilitam pacotes GRE externos porque os ISPs usam GRE internamente para gerenciar roteadores [br].
 Se você encontrar autenticaç%C3µes, conex%C3µes VPN quebradas, timeout com &quot;Clientes Microsoft Windows&quot;, uma alternativa é colocar o servidor Artica em uma DMZ.</PPTP_EXPLAIN_TEXT>
-<preferred_org>preferred organization</preferred_org>
-<public_fqdn_name>Public full hostname</public_fqdn_name>
+<preferred_org>organiza&#231;&#227;o preferida</preferred_org>
+<public_fqdn_name>Nome de anfitri&#227;o completo p&#250;blico</public_fqdn_name>
 <repositories>Reposit%C3%B3rios</repositories>
-<REPOSITORY_DEB_MIRROR>Debian mirror</REPOSITORY_DEB_MIRROR>
-<REPOSITORY_DEB_MIRROR_TEXT>create a Debian/Ubuntu mirror for your local network</REPOSITORY_DEB_MIRROR_TEXT>
+<REPOSITORY_DEB_MIRROR>Espelho Debian</REPOSITORY_DEB_MIRROR>
+<REPOSITORY_DEB_MIRROR_TEXT>criar um espelho Debian/Ubuntu para a sua rede local</REPOSITORY_DEB_MIRROR_TEXT>
 <REPOSITORY_DEB_MIRROR_WHY>Ter um espelho Debian local é uma coisa boa se tiver de instalar v%C3¡rios sistemas na sua rede local.[br]
 Todos os pacotes necess%C3¡rios podem ent%C3£o ser descarregados através da r%C3¡pida ligaç%C3£o LAN, poupando a sua largura de banda de Internet.</REPOSITORY_DEB_MIRROR_WHY>
 <requests>Pedidos</requests>
-<roundcube_instance>Roundcube instance</roundcube_instance>
-<routes>TCP routes</routes>
-<RUN_COMPILATION>Run compilation</RUN_COMPILATION>
-<RUN_COMPILATION_SARG>Launch squid statistics generation now.</RUN_COMPILATION_SARG>
-<sarg_access>Acces to Proxy statistics</sarg_access>
-<SARG_MEMBERS_EXPLAIN>Give here members allowed to display squid statistics.</SARG_MEMBERS_EXPLAIN>
+<roundcube_instance>Inst&#226;ncia RoundCube</roundcube_instance>
+<routes>Rotas TCP</routes>
+<RUN_COMPILATION>Executar compila&#231;&#227;o</RUN_COMPILATION>
+<RUN_COMPILATION_SARG>Iniciar agora a gera&#231;&#227;o de estat&#237;sticas do squid.</RUN_COMPILATION_SARG>
+<sarg_access>Acesso &#224;s estat&#237;sticas do proxy</sarg_access>
+<SARG_MEMBERS_EXPLAIN>Indique aqui os membros autorizados a exibir as estat&#237;sticas do squid.</SARG_MEMBERS_EXPLAIN>
 <schedules>Hor%C3¡rios</schedules>
-<see_complete_list>See complete list</see_complete_list>
-<server_ip>server Ip address</server_ip>
-<SMTPHACK_RESOLUTION_FAILURE>Temporary failure in name resolution</SMTPHACK_RESOLUTION_FAILURE>
+<see_complete_list>Ver a lista completa</see_complete_list>
+<server_ip>Endere&#231;o IP do servidor</server_ip>
+<SMTPHACK_RESOLUTION_FAILURE>Falha tempor&#225;ria na resolu&#231;&#227;o de nomes</SMTPHACK_RESOLUTION_FAILURE>
 <SMTPHACK_TIMEOUTS>Demasiados intervalos de tempo</SMTPHACK_TIMEOUTS>
-<SMTPHACK_TOO_MANY_ERRORS>Too many errors in SMTP protocol</SMTPHACK_TOO_MANY_ERRORS>
-<SMTP_HACK_HOWTO>Define here limits when the SMTP engine encounter errors.[br]When limit exceed, a firewall rule will be created.[br]
-If you want to disable the limit, set it to [b]0[/b]</SMTP_HACK_HOWTO>
-<starting>starting</starting>
+<SMTPHACK_TOO_MANY_ERRORS>Demasiados erros no protocolo SMTP</SMTPHACK_TOO_MANY_ERRORS>
+<SMTP_HACK_HOWTO>Defina aqui os limites quando o motor SMTP encontra erros.[br]Quando o limite for ultrapassado, ser&#225; criada uma regra de firewall.[br]
+Se quiser desativar o limite, defina-o como [b]0[/b]</SMTP_HACK_HOWTO>
+<starting>a iniciar</starting>
 <stopping>Paragem</stopping>
 <tasks_list>Lista de tarefas</tasks_list>
-<terminated>terminated</terminated>
-<UBUNTU_REPOSITORIES>Ubuntu repositories</UBUNTU_REPOSITORIES>
+<terminated>terminado</terminated>
+<UBUNTU_REPOSITORIES>Reposit&#243;rios Ubuntu</UBUNTU_REPOSITORIES>
 <unkown>Desconhecido</unkown>
-<updated_from_community>Updated from community repository</updated_from_community>
-<use_default_route>Use default route</use_default_route>
-<use_this_schedule>Use this schedule</use_this_schedule>
+<updated_from_community>Atualizado a partir do reposit&#243;rio da comunidade</updated_from_community>
+<use_default_route>Usar a rota predefinida</use_default_route>
+<use_this_schedule>Usar este agendamento</use_this_schedule>
 <vpn_members>Membros VPN</vpn_members>
-<vpn_server>VPN server</vpn_server>
-<vpn_server_addr>VPN server address</vpn_server_addr>
-<webfilter_community_text>Display Artica's community banned categories status</webfilter_community_text>
-<yes_acl_arp>banned and whitelisted notice</yes_acl_arp>
-<yes_acl_arp_text>Squid can only determine the MAC address for clients that are on the same subnet.[br]If the client is on a different subnet, then Squid cannot find out its MAC address.</yes_acl_arp_text>
+<vpn_server>Servidor VPN</vpn_server>
+<vpn_server_addr>Endere&#231;o do servidor VPN</vpn_server_addr>
+<webfilter_community_text>Exibir o estado das categorias banidas pela comunidade do Artica</webfilter_community_text>
+<yes_acl_arp>aviso de banidos e em lista branca</yes_acl_arp>
+<yes_acl_arp_text>O Squid s&#243; pode determinar o endere&#231;o MAC para clientes que est&#227;o na mesma sub-rede.[br]Se o cliente estiver numa sub-rede diferente, o Squid n&#227;o consegue descobrir o seu endere&#231;o MAC.</yes_acl_arp_text>

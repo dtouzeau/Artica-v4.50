@@ -8,7 +8,6 @@ if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["NetDataListenPort"])){Save();exit;}
 if(isset($_GET["status"])){Status();exit;}
 if(isset($_GET["ndpid-flat-config"])){flat_config();exit;}
-if(isset($_GET["ndpi-top-status"])){Status_top();exit;}
 if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["didyouknow-js"])){didyouknow_js();exit;}
 if(isset($_GET["didyouknow-popup"])){didyouknow_popup();exit;}

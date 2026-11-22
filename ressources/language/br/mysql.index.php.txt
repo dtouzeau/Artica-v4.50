@@ -1,24 +1,22 @@
-<browse_mysql_server>Browse your mysql server</browse_mysql_server>
-<browse_mysql_server_text>Display database and tables of your Mysql server</browse_mysql_server_text>
-<change_mysql_power>Tune mysql engine</change_mysql_power>
-<databases_status>Databases status</databases_status>
+<browse_mysql_server>Navegar pelo seu servidor mysql</browse_mysql_server>
+<browse_mysql_server_text>Exibir o banco de dados e as tabelas do seu servidor Mysql</browse_mysql_server_text>
+<change_mysql_power>Otimizar o motor mysql</change_mysql_power>
+<databases_status>Status dos bancos de dados</databases_status>
 <database_size>Tamanho do banco de dados</database_size>
-<enable_mysql>Activate Mysql Engine</enable_mysql>
-<enable_mysql_text>If you use a local mysql server or a remote mysql server, you can enable/disable using this Database engine[br]
-It depends on your computer performances.[br]
-Some services and features using mysql (Mail backups, syslog injection...) should take more process and memory.</enable_mysql_text>
-<mysqlserver>Mysql hostname</mysqlserver>
-<mysql_account>Mysql administrator profil</mysql_account>
-<mysql_database>MySQL database engine</mysql_database>
-<mysql_database_text>Mysql database advanced options</mysql_database_text>
-<MYSQL_PASSWORD_USER>New Mysql password and username</MYSQL_PASSWORD_USER>
-<MYSQL_PASSWORD_USER_TEXT>Reset and change Mysql administrator to a new username and password</MYSQL_PASSWORD_USER_TEXT>
-<mysql_performance_level>Performance engine level</mysql_performance_level>
+<enable_mysql>Ativar o motor Mysql</enable_mysql>
+<enable_mysql_text>Se usar um servidor mysql local ou remoto, voc&#234; pode ativar/desativar a utiliza&#231;&#227;o com isto</enable_mysql_text>
+<mysqlserver>Nome de host Mysql</mysqlserver>
+<mysql_account>Perfil do administrador Mysql</mysql_account>
+<mysql_database>Motor de banco de dados MySQL</mysql_database>
+<mysql_database_text>Op&#231;&#245;es avan&#231;adas do banco de dados Mysql</mysql_database_text>
+<MYSQL_PASSWORD_USER>Nova senha e nome de usu&#225;rio Mysql</MYSQL_PASSWORD_USER>
+<MYSQL_PASSWORD_USER_TEXT>Redefinir e alterar o administrador Mysql para um novo nome de usu&#225;rio e senha</MYSQL_PASSWORD_USER_TEXT>
+<mysql_performance_level>N&#237;vel do motor de desempenho</mysql_performance_level>
 <mysql_repair>Reparaç%C3£o do banco de dados</mysql_repair>
-<MYSQL_USER_NET>Mysql auth parameters</MYSQL_USER_NET>
-<MYSQL_USER_NET_TEXT>Change the password, username and myslq server address</MYSQL_USER_NET_TEXT>
-<performances>Performances</performances>
-<rows_number>Rows Number</rows_number>
-<tables_list>Tables list</tables_list>
-<tables_number>Tables number</tables_number>
-<table_size>Table size</table_size>
+<MYSQL_USER_NET>Par&#226;metros de autentica&#231;&#227;o Mysql</MYSQL_USER_NET>
+<MYSQL_USER_NET_TEXT>Alterar a senha, o nome de usu&#225;rio e o endere&#231;o do servidor mysql</MYSQL_USER_NET_TEXT>
+<performances>Desempenho</performances>
+<rows_number>N&#250;mero de linhas</rows_number>
+<tables_list>Lista de tabelas</tables_list>
+<tables_number>N&#250;mero de tabelas</tables_number>
+<table_size>Tamanho da tabela</table_size>

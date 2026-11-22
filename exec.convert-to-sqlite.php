@@ -13,8 +13,6 @@ $pid=$unix->get_pid_from_file($pid_file);
 if(isset($argv[1])) {
     if ($argv[1] == "--network") {migrate_interfaces();exit;}
     if ($argv[1] == "--analyze") {analyze();exit;}
-    if ($argv[1] == "--nginx") {CheckNGINXTables();exit;}
-    if ($argv[1] == "--hamrp") {hamrp();exit;}
     if ($argv[1] == "--force") {$force=true;}
 }
 if(isset($argv[2])) {
@@ -83,10 +81,6 @@ if(isset($argv[1])) {
         schedules();
         exit;
     }
-    if ($argv[1] == "--caches") {
-        caches();
-        exit;
-    }
 
     if ($argv[1] == "--ftp") {
         proftpd_table();
@@ -112,12 +106,7 @@ if(isset($argv[1])) {
         keepalived();
         exit;
     }
-    if($argv[1]=="--backup-task"){
-        migrate_backup_tasks();
-        exit;
-    }
 }
-migrate_backup_tasks();
 check_hotspot_tables();
 radius_db();
 upgrade_smtp_tables();
@@ -126,34 +115,12 @@ migrate_interfaces();
 if(!$force) {if(system_is_overloaded(__FILE__)){ die(); }}
 imapbox_tables();
 if(!$force) {if(system_is_overloaded(__FILE__)){ die(); }}
-analyze();
-if(!$force) {if(system_is_overloaded(__FILE__)){ die(); }}
 $unix=new unix();
 $php=$unix->LOCATE_PHP5_BIN();
 $nohup=$unix->find_program("nohup");
 if(!is_dir("/etc/artica-postfix")){@mkdir("/etc/artica-postfix",0755);}
 if(!is_file("/etc/artica-postfix/UPGRADE_SQLITE_440")){@touch("/etc/artica-postfix/UPGRADE_SQLITE_440");}
-$unix->chown_func("www-data", "www-data", "/home/artica/SQLITE/*");
 
-function analyze():bool{
-    $sdir="/home/artica/SQLITE";
-    if (!$handle = opendir($sdir)) {return false;}
-    echo "Scanning $sdir\n";
-    while (false !== ($filename = readdir($handle))) {
-        if($filename=="."){continue;}
-        if($filename==".."){continue;}
-        if(!preg_match("#\.db$#",$filename)){continue;}
-        $targetFile="$sdir/$filename";
-        echo "Analysis, optimize $targetFile\n";
-        $q=new lib_sqlite($targetFile);
-        $q->QUERY_SQL("PRAGMA analysis_limit=400;");
-        if(!$q->ok){echo "---------------> $q->mysql_error\n";}
-        $q->QUERY_SQL("PRAGMA optimize;");
-
-    }
-
-    return true;
-}
 function upgrade_smtp_tables():bool{
 
     $q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
@@ -237,28 +204,7 @@ function upgrade_smtp_tables():bool{
     @chmod("/home/artica/SQLITE/postfix.db", 0777);
     return true;
 }
-function migrate_backup_tasks():bool{
-    $unix=new unix();
-    $q=new lib_sqlite("/home/artica/SQLITE/sys_schedules.db");
-    $results=$q->QUERY_SQL("SELECT * FROM system_schedules WHERE TaskType=75 ORDER BY ID DESC");
-    if(count($results)==0){return true;}
 
-    foreach ($results as $index=>$ligne){
-        $enabled=$ligne["enabled"];
-        if($enabled==0){
-            continue;
-        }
-        $TimeText=$ligne["TimeText"];
-        $unix->Popuplate_cron_make("backup-snaphosts",$TimeText,"exec.backup.artica.php --snapshot");
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("BackupArticaSnaps",1);
-        break;
-
-
-    }
-    $q->QUERY_SQL("DELETE FROM system_schedules WHERE TaskType=75");
-    return true;
-
-}
 function radius_db():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/radius.db");
     $sql="CREATE TABLE IF NOT EXISTS freeradius_clients (
@@ -317,69 +263,7 @@ function schedules():bool{
     return true;
 }
 
-function CheckNGINXTables($groupid=0):bool{
-    $dbpath="/home/artica/SQLITE/nginx.db";
-    if($groupid==0) {
-        hamrp();
-    }
-    if($groupid>0){
-        $dbpath="/home/artica/SQLITE/nginx.$groupid.db";
-    }
 
-    $q=new lib_sqlite($dbpath);
-
-    $sql="CREATE TABLE IF NOT EXISTS `httrack_sites` ( 
-    `ID` INTEGER PRIMARY KEY AUTOINCREMENT, `enabled` INTEGER NOT NULL DEFAULT 0 ,
-     `serviceid` INTEGER NOT NULL DEFAULT 0 , 
-    `size` INTEGER DEFAULT '0', 
-    `minrate` INTEGER NOT NULL DEFAULT '512', 
-    `maxfilesize` INTEGER NOT NULL DEFAULT '512', 
-    `maxsitesize` INTEGER NOT NULL DEFAULT '5000', 
-    `maxworkingdir` INTEGER NOT NULL DEFAULT '20',
-    `UserAgent` TEXT NULL )";
-
-    $q->QUERY_SQL($sql);
-
-
-
-
-    $sql="CREATE TABLE IF NOT EXISTS `caches_center` (
-			 `ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			  `cachename` TEXT ,
-			  `inactive` INTEGER,
-			  `RemoveSize` INTEGER,
-			  `cache_dir` TEXT NOT NULL,
-			  `cache_type` VARCHAR( 50 ) NOT NULL,
-			  `cache_size` INTEGER NOT NULL,
-			  `cache_dir_level1` INT( 10 ),
-			  `cache_dir_level2` INT( 10 ),
-			  `min_size` INTEGER NOT NULL DEFAULT 0,
-			  `max_size` INTEGER NOT NULL DEFAULT 80000,
-			  `enabled` INTEGER DEFAULT 1,
-			  `remove` INTEGER NOT NULL DEFAULT 0,
-			  `percentcache` INTEGER,
-			  `percenttext` TEXT,
-			  `usedcache` INTEGER,
-			  `zOrder` INTEGER
-			)";
-
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        echo "$q->mysql_error (".__LINE__.")\n$sql\n";
-    }
-
-    if($q->COUNT_ROWS("caches_center")==0) {
-        if (!$q->FIELD_EXISTS("caches_center", "inactive")) {
-            $q->QUERY_SQL("ALTER TABLE caches_center ADD inactive INTEGER");
-        }
-        $sql = "INSERT INTO caches_center (cachename,cache_dir,cache_type,cache_size,inactive)
-        VALUES('Default cache','/home/nginx/BigCache','disk',1024,172800)";
-        $q->QUERY_SQL($sql);
-    }
-    wordpress();
-
-    return true;
-}
 function wordpress():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
     @chmod("/home/artica/SQLITE/wordpress.db", 0644);
@@ -484,42 +368,6 @@ function check_hotspot_tables():bool{
     $q->QUERY_SQL($sql);
     return true;
 }
-function caches():bool{
-    @mkdir("/home/artica/SQLITE", 0755, true);
-    $q=new lib_sqlite("/home/artica/SQLITE/caches.db");
-    @chmod("/home/artica/SQLITE/caches.db", 0644);
-    @chown("/home/artica/SQLITE/caches.db", "www-data");
-
-
-
-    $sql="CREATE TABLE IF NOT EXISTS `squid_caches_center` (
-			 `ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			  `cachename` TEXT ,
-			  `cpu` INTEGER,
-			  `RemoveSize` INTEGER,
-			  `cache_dir` TEXT NOT NULL,
-			  `cache_type` VARCHAR( 50 ) NOT NULL,
-			  `cache_size` INT( 50 ) NOT NULL,
-			  `cache_dir_level1` INT( 10 ),
-			  `cache_dir_level2` INT( 10 ),
-			  `min_size` INTEGER,
-			  `max_size` INTEGER,
-			  `enabled` INTEGER DEFAULT 1,
-			  `remove` INTEGER,
-			  `percentcache` INTEGER,
-			  `percenttext` VARCHAR(10),
-			  `usedcache` INTEGER,
-			  `CPUAF` INTEGER  DEFAULT 0,
-			   `wizard` INTEGER,
-			  `zOrder` INTEGER
-			)";
-
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        echo "Fatal: $q->mysql_error (".__LINE__.")\n";
-    }
-    return true;
-}
 function CheckUsersTables():bool{
     @mkdir("/home/artica/SQLITE", 0755, true);
     $qlite=new lib_sqlite("/home/artica/SQLITE/admins.db");
@@ -538,12 +386,11 @@ function migrate_interfaces():bool
     haproxy_tables();
     keepalived();
     adagent_tables();
-    CheckNGINXTables();
     postfix_tables();
     openvpn();
     strongswan();
     schedules();
-    caches();
+    // caches.db (squid_caches_center) is created by articarest: squid/caches_schema.go.
     hypercaches_tables();
     postfix_events();
     proftpd_table();
@@ -1629,116 +1476,7 @@ function imapbox_tables():bool{
     }
     return true;
 }
-function hamrp():bool{
-    $q = new lib_sqlite("/home/artica/SQLITE/hamrp.db");
-    
-    if($q->TABLE_EXISTS("hamrp")){
-         if(!$q->FIELD_EXISTS("hamrp","ssl")){
-            $q->QUERY_SQL("DROP TABLE hamrp");
-        }
-    }
-    
-    $sql="CREATE TABLE IF NOT EXISTS `hamrp` (
-				`uuid` TEXT PRIMARY KEY,
-				`nodename` TEXT NOT NULL DEFAULT 'New node',
-				`nodetype` INTEGER NOT NULL DEFAULT '0',
-				`groupid` INTEGER NOT NULL DEFAULT '0',
-				`ipaddr` TEXT NOT NULL DEFAULT '0.0.0.0',
-				`port` INTEGER NOT NULL DEFAULT '9503',
-				`enabled` INTEGER NOT NULL DEFAULT '1',
-				`ssl` INTEGER NOT NULL DEFAULT '0',
-				`hostname` TEXT NOT NULL DEFAULT 'localhost.localdomain',
-				`status` INTEGER NOT NULL DEFAULT '0',
-				`lastsaved` INTEGER NOT NULL DEFAULT '0',
-				`zOrder` INTEGER NOT NULL DEFAULT '1',
-				`NginxRun` INTEGER NOT NULL DEFAULT '0',
-				`HaProxyRun` INTEGER NOT NULL DEFAULT '0',
-                `cpu` INTEGER NOT NULL DEFAULT '1',
-                `mem` INTEGER NOT NULL DEFAULT '100',
-                `version` TEXT NOT NULL DEFAULT '0.0.0',
-                `CpuPourc` TEXT NOT NULL DEFAULT '0',
-                `MemRow` TEXT NOT NULL DEFAULT '0.0,0,0',
-                 kernel TEXT NOT NULL DEFAULT '0',
-                 NginxVersion TEXT NOT NULL DEFAULT '',
-                 HaProxyVersion TEXT NOT NULL DEFAULT '',
-                 DistributionName TEXT NOT NULL DEFAULT ''
-                                   
-                 
-    )";
 
-
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        echo __FUNCTION__." [".__LINE__."]:Fatal: ".$q->mysql_error."\n$sql\n";
-        return false;
-    }
-
-    if(!$q->FIELD_EXISTS("hamrp","enabled")){
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD enabled INTEGER NOT NULL DEFAULT '1'");
-    }
-    if(!$q->FIELD_EXISTS("hamrp","DistributionName")){
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD DistributionName TEXT NOT NULL DEFAULT ''");
-    }
-
-
-
-    if(!$q->FIELD_EXISTS("hamrp","NginxRun")){
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD NginxRun INTEGER NOT NULL DEFAULT '0'");
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD HaProxyRun INTEGER NOT NULL DEFAULT '0'");
-    }
-
-    if(!$q->FIELD_EXISTS("hamrp","CpuPourc")){
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD CpuPourc TEXT NOT NULL DEFAULT '0'");
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD MemRow TEXT NOT NULL DEFAULT '0.0,0,0'");
-    }
-    if(!$q->FIELD_EXISTS("hamrp","NginxVersion")){
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD NginxVersion TEXT NOT NULL DEFAULT ''");
-        if(!$q->ok){
-            echo $q->mysql_error."\n";
-        }
-        $q->QUERY_SQL("ALTER TABLE hamrp ADD HaProxyVersion TEXT NOT NULL DEFAULT ''");
-        if(!$q->ok){
-            echo $q->mysql_error."\n";
-        }
-    }
-
-    $q->QUERY_SQL("CREATE INDEX IF NOT EXISTS groupid ON hamrp (groupid)");
-
-    $sql="CREATE TABLE IF NOT EXISTS `groups` (
-				`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-				`groupname` TEXT NOT NULL DEFAULT 'New group',
-				`comment` TEXT NOT NULL,
-				`EnableRedis` INTEGER NOT NULL DEFAULT '0',
-				`enabled` INTEGER NOT NULL DEFAULT '1'
-		)";
-
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        echo __FUNCTION__." [".__LINE__."]:Fatal: ".$q->mysql_error."\n$sql\n";
-
-    }
-    if(!$q->FIELD_EXISTS("groups","EnableRedis")){
-        $q->QUERY_SQL("ALTER TABLE groups ADD EnableRedis INTEGER NOT NULL DEFAULT 0");
-    }
-
-
-    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS privs (`ID` INTEGER PRIMARY KEY AUTOINCREMENT, groupid INT,dngroup TEXT )");
-
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        echo __FUNCTION__." [".__LINE__."]:Fatal: ".$q->mysql_error."\n$sql\n";
-    }
-
-    $results=$q->QUERY_SQL("SELECT ID FROM groups");
-
-    foreach ($results as $index=>$ligne){
-        $ID=intval($ligne["ID"]);
-        if($ID==0){continue;}
-        CheckNGINXTables($ID);
-
-    }
-    return true;
-}
 
 function proftpd_table():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/ftpusers.db");

@@ -1,10 +1,10 @@
-<APP_JOOMLA_TEXT>Joomla is an award-winning content management system (CMS), 
-which enables you to build Web sites and powerful online applications.[br]
- Many aspects, including its ease-of-use and extensibility, have made Joomla the most popular Web site software available.[br]
-  Best of all, Joomla is an open source solution that is freely available to everyone.</APP_JOOMLA_TEXT>
-<service_type>Service type</service_type>
-<WWWAppliPassword>Application Manager password</WWWAppliPassword>
-<WWWAppliUser>Application Manager username</WWWAppliUser>
+<APP_JOOMLA_TEXT>O Joomla &#233; um sistema de gerenciamento de conte&#250;do (CMS) premiado,
+que permite que voc&#234; construa sites e poderosas aplica&#231;&#245;es online.[br]
+ Muitos aspectos, incluindo a sua facilidade de uso e extensibilidade, tornaram o Joomla o software de sites mais popular dispon&#237;vel.[br]
+  E o melhor de tudo, o Joomla &#233; uma solu&#231;&#227;o de c&#243;digo aberto dispon&#237;vel gratuitamente para todos.</APP_JOOMLA_TEXT>
+<service_type>Tipo de servi&#231;o</service_type>
+<WWWAppliPassword>Senha do gerenciador de aplica&#231;&#245;es</WWWAppliPassword>
+<WWWAppliUser>Nome de usu&#225;rio do gerenciador de aplica&#231;&#245;es</WWWAppliUser>
 <WWWMysqlPassword>Senha do banco de dados MySQL</WWWMysqlPassword>
-<WWWMysqlUser>Mysql Database Admin</WWWMysqlUser>
-<www_delete_web_service_confirm>This operation will uninstall this web service, Are you sure to perform this operation</www_delete_web_service_confirm>
+<WWWMysqlUser>Administrador do banco de dados Mysql</WWWMysqlUser>
+<www_delete_web_service_confirm>Esta opera&#231;&#227;o desinstalar&#225; este servi&#231;o web, tem certeza de que deseja realizar esta opera&#231;&#227;o?</www_delete_web_service_confirm>

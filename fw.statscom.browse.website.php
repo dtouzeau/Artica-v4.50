@@ -1,7 +1,11 @@
 <?php
+// Service Pack 9
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : engine, field, siteid, t, date-from et date-to etaient recopies sans encodage dans la page (XSS).
+foreach (array("engine","field") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^A-Za-z0-9_]#','',(string)$_GET[$xk]);}}
+foreach (array("siteid","t","date-from","date-to") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=intval($_GET[$xk]);}}
 if(isset($_GET["template"])){template();exit;}
 if(isset($_GET["vertical-timeline"])){vertical_timeline();exit;}
 if(isset($_GET["top-sites"])){top_sites();exit;}
@@ -21,7 +25,9 @@ function js(){
     $catz=new mysql_catz();
     $_GET["t"]=time();
     $q= new postgres_sql();
-    $ligne=$q->mysqli_fetch_array("SELECT sitename,category FROM statscom_websites WHERE siteid=$siteid");
+    // Pentest 2026-11-04 : siteid etait concatene dans la requete.
+    $siteidSQL=intval($siteid);
+    $ligne=$q->mysqli_fetch_array("SELECT sitename,category FROM statscom_websites WHERE siteid=$siteidSQL");
     $sitename=$ligne["sitename"];
     $category=$catz->CategoryIntToStr($ligne["category"]);
     $page=CurrentPageName();
@@ -48,7 +54,8 @@ function queryadd(){
     $fieldenc=urlencode($field);
     $valueenc=urlencode($value);
     $siteid=$_GET["siteid"];
-    $sitename=$_GET["sitename"];
+    // Pentest 2026-11-04 : sitename etait recopie sans encodage dans la page (XSS).
+    $sitename=req_url($_GET["sitename"] ?? "");
     if(!isset($_GET["engine"])){$_GET["engine"]="proxy";}
     if(isset($_GET["total"])){
         $total="&total=yes";
@@ -135,8 +142,15 @@ function vertical_timeline(){
         $UNIT = "{daily}";
         $SQL_DATE = "date_part('day', zdate)";
     }
+    // Pentest 2026-11-04 : field/value/siteid etaient concatenes dans la requete.
+    $siteid=intval($siteid);
+    $params=array();
     $AND=null;
-    if($field<>null){$AND=" AND $field='$value'";}
+    if($field<>null){
+        if(!in_array(strtolower($field),array("username","ipaddr","mac"),true)){$tpl->js_mysql_alert("Invalid field");return false;}
+        $AND=" AND $field=$1";
+        $params[]=$value;
+    }
 
     $sql="SELECT SUM(statscom.size) as size,$SQL_DATE as zdate FROM statscom,statscom_websites WHERE 
     statscom_websites.siteid=statscom.siteid
@@ -151,7 +165,7 @@ function vertical_timeline(){
     }
 
 
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,$params);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
 
     while ($ligne = pg_fetch_assoc($results)) {
@@ -177,11 +191,14 @@ function vertical_timeline(){
 
     $stimeFrom=$tpl->time_to_date($time1);
     $stimeTo=$tpl->time_to_date($time2);
-    $title="{downloaded_flow} (KB) {$_GET["sitename"]} $field $value $stimeFrom - $stimeTo {$UNIT}";
+    // Pentest 2026-11-04 : sitename, value et interval etaient recopies sans encodage dans la page (XSS).
+    $sitenameT=req_js(req_html($_GET["sitename"] ?? ""));
+    $valueT=req_js(req_html($value));
+    $title="{downloaded_flow} (KB) $sitenameT $field $valueT $stimeFrom - $stimeTo {$UNIT}";
     if($_GET["engine"]=="dnsfw"){
-        $title="DNS {queries} {$_GET["sitename"]} $field $value $stimeFrom - $stimeTo {$UNIT}";
+        $title="DNS {queries} $sitenameT $field $valueT $stimeFrom - $stimeTo {$UNIT}";
     }
-    $timetext=$_GET["interval"];
+    $timetext=req_js(req_html($_GET["interval"] ?? ""));
     $highcharts=new highcharts();
     $highcharts->container="vertical-timeline-$t";
     $highcharts->xAxis=$xdata;
@@ -240,13 +257,17 @@ function top_users(){
     $strtime=date("Y-m-d H:i:s",$time1);
     $strtoTime=date("Y-m-d H:i:s",$time2);
 
-    $siteid=$_GET["siteid"];
+    // Pentest 2026-11-04 : field/value/siteid etaient concatenes dans la requete.
+    $siteid=intval($_GET["siteid"]);
+    $params=array();
     $AND=null;
     if($field<>null){
-        $AND=" AND statscom.$field='$value'";
+        if(!in_array(strtolower($field),array("username","ipaddr","mac"),true)){$tpl->js_mysql_alert("Invalid field");return;}
+        $AND=" AND statscom.$field=$1";
         if($_GET["engine"]=="dnsfw"){
-            $AND=" AND statscom_dnsfw.$field='$value'";
+            $AND=" AND statscom_dnsfw.$field=$1";
         }
+        $params[]=$value;
     }
 
     $sql="SELECT SUM(statscom.size) as size,username,ipaddr,MAC FROM statscom,statscom_websites  WHERE 
@@ -264,8 +285,7 @@ function top_users(){
 
     }
 
-    $q->QUERY_SQL($sql);
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,$params);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
     while ($ligne = pg_fetch_assoc($results)) {
@@ -316,18 +336,19 @@ function top_users_table(){
     $html[]="<tr>";
     $html[]="<th>{member}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["users-table"]));
+    $table=unserialize(base64_decode($_GET["users-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$sizeM) {
         $h=explode("|",$site);
         $t=array();
+        // Pentest 2026-11-04 : users-table (donnees serialisees) etait recopie sans encodage dans la page (XSS).
         if($h[0]<>null){
-            $t[]=$tpl->td_href($h[0],null,"Loadjs('fw.statscom.browse.users.php?field=username&value=".urlencode($h[0])."&engine={$_GET["engine"]}')");
+            $t[]=$tpl->td_href(req_html($h[0]),null,"Loadjs('fw.statscom.browse.users.php?field=username&value=".urlencode($h[0])."&engine={$_GET["engine"]}')");
         }
         if($h[1]<>null){
-            $t[]=$tpl->td_href($h[1],null,"Loadjs('fw.statscom.browse.users.php?field=mac&value=".urlencode($h[1])."&engine={$_GET["engine"]}')");
+            $t[]=$tpl->td_href(req_html($h[1]),null,"Loadjs('fw.statscom.browse.users.php?field=mac&value=".urlencode($h[1])."&engine={$_GET["engine"]}')");
         }
         if($h[2]<>null){
-            $t[]=$tpl->td_href($h[2],null,"Loadjs('fw.statscom.browse.users.php?field=ipaddr&value=".urlencode($h[2])."&engine={$_GET["engine"]}')");
+            $t[]=$tpl->td_href(req_html($h[2]),null,"Loadjs('fw.statscom.browse.users.php?field=ipaddr&value=".urlencode($h[2])."&engine={$_GET["engine"]}')");
         }
 
         $value=FormatBytes($sizeM*1024);

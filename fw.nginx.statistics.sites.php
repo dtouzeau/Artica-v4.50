@@ -1,6 +1,8 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -39,16 +41,19 @@ function select_sites_selected():bool{
 }
 function select_sites_search():bool{
     $page=CurrentPageName();
-    $function=$_GET["function"];
+    // SECURITE: repart dans l'URL d'un Loadjs, donc dans un attribut OnClick.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $TRCLASS="";
-    $t=time();
     $exclude=intval($_GET["select-site-search"]);
-    $html[]="<table id='table-$t' class='table table-stripped' data-page-size='50'>";
-    $html[]="<thead><tr>";
-    $html[]="<th data-sortable=false data-type='text' style='width:1%'>&nbsp;</th>";
-    $html[]="<th data-sortable=true data-type='text'>{websites}</th>";
-    $html[]="<th data-sortable=false data-type='text' style='width:1%'>&nbsp;</th>";
+    // INJECTION DE REGEX: la saisie partait TELLE QUELLE entre les delimiteurs
+    // #...# de preg_match(). Un "#" cassait la page, un motif a explosion
+    // combinatoire bloquait le processus PHP-FPM. On compare desormais en clair.
+    $needle=trim((string)($_GET["search"] ?? ""));
+    $html=array();
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{websites}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
     $html[]="</tr></thead><tbody>";
     $get_site_names=get_site_names();
     foreach($get_site_names as $serviceid=>$name){
@@ -62,28 +67,26 @@ function select_sites_search():bool{
                 continue;
             }
         }
-        if(strlen($_GET["search"])>2){
-            if(!preg_match("#{$_GET["search"]}#",$name)){
-                continue;
-            }
-        }
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        //$js="LoadAjax('site-content-area','$page?site-content=yes&serviceid=$serviceid');$function();";
-        $js="Loadjs('$page?site-selected-js=$serviceid&function=$function');";
-        $but=$tpl->button_autnonome("{select}",$js,ico_check,"AsWebStatisticsAdministrator",0,"btn-primary");
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td style='width:1%'><i class='".ico_earth."'></td>";
-        $html[]="<td style='width:99%'><strong style='font-size:16px'>$name</strong></td>";
-        $html[]="<td style='width:1%'>$but</td>";
+        if(strlen($needle)>2 && stripos($name,$needle)===false){continue;}
+        $but=$tpl->button_autnonome("{select}",
+            "Loadjs('$page?site-selected-js=".intval($serviceid)."&function=$function');",
+            ico_check,"AsWebStatisticsAdministrator",0,"btn-primary");
+        // L'ancienne cellule d'icone ouvrait un <i> qu'elle ne refermait JAMAIS.
+        $html[]="<tr>";
+        $html[]="<td><div class='awc-ident'>"
+               ."<span class='awc-ico'><i class='".ico_earth."'></i></span>"
+               ."<span class='awc-name'>".htmlspecialchars((string)$name)."</span>"
+               ."</div></td>";
+        $html[]="<td class='center awc-nowrap'>$but</td>";
         $html[]="</tr>";
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot><tr><td colspan='3'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
-    $html[]="<script>NoSpinner();";
-    $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // L'ancien pied contenait une <ul class='pagination'> que footable etait
+    // cense remplir -- mais aucun appel a .footable() n'etait emis sur ce
+    // tableau: la liste restait vide et le data-page-size sans effet.
+    $html[]="</tbody></table></div></div></div>";
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
     return true;
 }
 
@@ -481,17 +484,14 @@ function site_table():bool{
         ['500','Internal Server Error','5xx'],['502','Bad Gateway','5xx'],['503','Service Unavailable','5xx'],['504','Gateway Timeout','5xx'],
     ];
 
-    $t=time();
-    $html[]="<table id='table-$t' class='footable table table-stripped' data-page-size='50'>";
-    $html[]="<thead><tr>";
-    $html[]="<th data-sortable=true data-type='text'>HTTP {status}</th>";
-    $html[]="<th data-sortable=true data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=true data-type='text'>{category}</th>";
-    $html[]="<th data-sortable=true data-type='number'>{count}</th>";
-    $html[]="<th data-sortable=false style='width:30%'>&nbsp;</th>";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>HTTP {status}</th>";
+    $html[]="<th class='center'>{category}</th>";
+    $html[]="<th class='center'>{count}</th>";
+    $html[]="<th style='width:30%'>&nbsp;</th>";
     $html[]="</tr></thead><tbody>";
 
-    $TRCLASS=null;
     $maxVal=1;
     foreach($codes as $c){
         $v=intval($row['c'.$c[0]] ?? 0);
@@ -499,31 +499,9 @@ function site_table():bool{
     }
 
     foreach($codes as $c){
-        $code=$c[0];$desc=$c[1];$cat=$c[2];
-        $val=intval($row['c'.$code] ?? 0);
-        if($val==0) continue;
-
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-        $badgeColor="#1ab394";
-        if($cat=="3xx") $badgeColor="#1c84c6";
-        if($cat=="4xx") $badgeColor="#f8ac59";
-        if($cat=="5xx") $badgeColor="#ed5565";
-
-        $pct=round(($val/$maxVal)*100);
-        $bar="<div style='background:#f5f5f5;border-radius:3px;height:18px;width:100%'>";
-        $bar.="<div style='background:$badgeColor;height:18px;border-radius:3px;width:{$pct}%;min-width:2px'></div></div>";
-
-        $badge="<span class='badge' style='background:$badgeColor;color:#fff'>$cat</span>";
-        $valFmt=number_format($val);
-
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td><strong>$code</strong></td>";
-        $html[]="<td>$desc</td>";
-        $html[]="<td>$badge</td>";
-        $html[]="<td>$valFmt</td>";
-        $html[]="<td>$bar</td>";
-        $html[]="</tr>";
+        $val=intval($row['c'.$c[0]] ?? 0);
+        if($val==0){continue;}
+        $html[]=nginx_status_code_row($c,$val,$maxVal);
     }
 
     $title="{APP_NGINX} {statistics} - {websites}";
@@ -543,15 +521,36 @@ function site_table():bool{
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $html[]="</tbody>";
-    $html[]="<tfoot><tr><td colspan='5'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
-    $html[]="<script>NoSpinner();";
-    $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function(){ $('#table-$t').footable({";
-    $html[]="\"sorting\":{\"enabled\":true},\"paging\":{\"size\":50}";
-    $html[]="});});$headsjs</script>";
-
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="</tbody></table></div></div></div>";
+    // Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n$headsjs</script>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
     return true;
+}
+
+/**
+ * Un code de statut HTTP et son volume.
+ * La description passe en sous-titre du code, ce qui libere une colonne.
+ */
+function nginx_status_code_row(array $c,$val,$maxVal):string{
+    $code=(string)$c[0]; $desc=(string)$c[1]; $cat=(string)$c[2];
+    $colors=array("2xx"=>"#26a69a","3xx"=>"#006a62","4xx"=>"#865300","5xx"=>"#ba1a1a");
+    $color=$colors[$cat] ?? "#263238";
+
+    $pct=$maxVal>0 ? round(($val/$maxVal)*100) : 0;
+    $bar="<div style='background:#f4f8f9;border-radius:3px;height:18px;width:100%'>"
+        ."<div style='background:$color;height:18px;border-radius:3px;width:{$pct}%;min-width:2px'></div></div>";
+
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico' style='background:rgba(0,106,98,.1)'><i class='fas fa-hashtag'></i></span>";
+    $h.="<span><div class='awc-name awc-mono'>".htmlspecialchars($code)."</div>";
+    $h.="<div class='awc-meta'>".htmlspecialchars($desc)."</div></span>";
+    $h.="</div></td>";
+    $h.="<td class='center awc-nowrap'><span class='awc-badge' style='background:$color'>".htmlspecialchars($cat)."</span></td>";
+    $h.="<td class='center awc-nowrap awc-mono'>".number_format($val)."</td>";
+    $h.="<td>$bar</td>";
+    $h.="</tr>";
+    return $h;
 }

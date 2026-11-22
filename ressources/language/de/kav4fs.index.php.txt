@@ -1,12 +1,11 @@
-<APP_KAV4FS_ABOUT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.[br]
-Kaspersky Anti-Virus for Linux allows to:
+<APP_KAV4FS_ABOUT>Kaspersky Anti-virus for Linux File Server dient dem Schutz von Dateiservern, die unter Linux-Betriebssystemen laufen.[br]
+Kaspersky Anti-Virus f&#252;r Linux erm&#246;glicht:
 [ul] 
-[li]Ensure real-time protection of the file system against malicious code:[br]
-intercept and analyze attempts to access files, disinfect and delete infected objects.[/li]
-[li]Scan objects on-demand: search infected and suspicious files (including files in the specified scan scopes); analyze files; disinfect or delete infected files.[/li]
-[li]Quarantine suspicious and infected files.[/li]
-[li]Create a copy of an infected object in the backup storage before disinfect or delete attempt to make it possible to restore such an object.[/li]
-[/ul]
-</APP_KAV4FS_ABOUT>
-<APP_KAV4FS_TEXT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.</APP_KAV4FS_TEXT>
-<LICENSE_INSTALL>Install a license</LICENSE_INSTALL>
+[li]Echtzeitschutz des Dateisystems vor Schadcode gew&#228;hrleisten:[br]
+Zugriffsversuche auf Dateien abfangen und analysieren, infizierte Objekte desinfizieren und l&#246;schen.[/li]
+[li]Objekte auf Anfrage scannen: infizierte und verd&#228;chtige Dateien suchen (einschlie&#223;lich Dateien in den angegebenen Scan-Bereichen); Dateien analysieren; infizierte Dateien desinfizieren oder l&#246;schen.[/li]
+[li]Verd&#228;chtige und infizierte Dateien in Quarant&#228;ne stellen.[/li]
+[li]Vor dem Desinfektions- oder L&#246;schversuch eine Kopie eines infizierten Objekts im Backup-Speicher erstellen, um die Wiederherstellung eines solchen Objekts zu erm&#246;glichen.[/li]
+[/ul]</APP_KAV4FS_ABOUT>
+<APP_KAV4FS_TEXT>Kaspersky Anti-virus for Linux File Server dient dem Schutz von Dateiservern, die unter Linux-Betriebssystemen laufen.</APP_KAV4FS_TEXT>
+<LICENSE_INSTALL>Eine Lizenz installieren</LICENSE_INSTALL>

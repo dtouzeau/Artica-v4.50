@@ -642,28 +642,22 @@ class squid_ports{
         $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
         $Certif=$HaClusterGBConfig["HaClusterCertif"];
         $DataCertif=unserialize(base64_decode($HaClusterGBConfig["CertifData"]));
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM sslcertificates WHERE CommonName='$Certif'");
-        $ID=intval($ligne["ID"]);
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        [$exists,$ID]=$cdb->exists($Certif);
 
+        $fields=array();
         foreach ($DataCertif as $key => $val) {
             if(is_numeric($key)){continue;}
             if($key=="ID"){continue;}
-            $zKeys[] = "$key";
-            $zVals[] = "'" . $q->sqlite_escape_string2($val) . "'";
-            $zEdit[] = "$key = '". $q->sqlite_escape_string2($val) . "'";
+            $fields[$key]=$val;
         }
 
-        if($ID==0) {
-            $sql="INSERT INTO sslcertificates (".@implode(",",$zKeys).") 
-            VALUES (".@implode(",",$zVals).")";
-        }else {
-            $sql="UPDATE sslcertificates SET ".@implode(",", $zEdit)." WHERE ID=$ID";
-
+        if(!$exists){
+            $newId=$cdb->insert($fields);
+            return $newId>0;
         }
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){return false;}
-        return true;
+        return $cdb->update(intval($ID), $fields);
     }
 
     private function mikrotik_ports(){

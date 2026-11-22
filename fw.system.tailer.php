@@ -12,6 +12,8 @@
  * - Start/stop tailing service
  */
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){
     if(!class_exists("sockets")){
         include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
@@ -351,49 +353,64 @@ function files_table(){
         $html[]="<i class='fa fa-info-circle'></i> {no_files_configured_explain}";
         $html[]="</div>";
     }else{
-        $html[]="<table class='table table-striped table-hover'>";
-        $html[]="<thead><tr>";
-        $html[]="<th style='width:150px'>{alias}</th>";
-        $html[]="<th style='width:100px'>{group}</th>";
-        $html[]="<th>{path}</th>";
-        $html[]="<th style='width:80px'>{actions}</th>";
-        $html[]="</tr></thead>";
-        $html[]="<tbody>";
-        $s1="style='width:1%' nowrap";
+        $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+        $html[]="<table class='awc-tbl'><thead><tr>";
+        $html[]="<th>{alias}</th>";
+        $html[]="<th class='center'>{group}</th>";
+        $html[]="<th class='center'>&nbsp;</th>";
+        $html[]="</tr></thead><tbody id='tail-rows'>";
         foreach($files as $file){
-            $alias=isset($file["alias"]) ? htmlspecialchars($file["alias"]) : "";
-            $group=isset($file["group"]) ? htmlspecialchars($file["group"]) : "";
-            $path=isset($file["path"]) ? htmlspecialchars($file["path"]) : "";
-            $pathB64=base64_encode($path);
-            $md=md5($path);
-            $groupBadge="";
-            switch($group){
-                case "System": $groupBadge="<span class='label label-info'>$group</span>"; break;
-                case "Proxy": $groupBadge="<span class='label label-warning'>$group</span>"; break;
-                case "Nginx": $groupBadge="<span class='label label-success'>$group</span>"; break;
-                case "Artica": $groupBadge="<span class='label label-primary'>$group</span>"; break;
-                case "DNS": $groupBadge="<span class='label label-default'>$group</span>"; break;
-                case "Security": $groupBadge="<span class='label label-danger'>$group</span>"; break;
-                case "Mail": $groupBadge="<span class='label label-info'>$group</span>"; break;
-                default: $groupBadge="<span class='label label-default'>$group</span>"; break;
-            }
-
-            $deleteBtn=$tpl->icon_delete("Loadjs('$page?remove-file=$pathB64&md=$md');");
-
-            $html[]="<tr id='$md'>";
-            $html[]="<td $s1><strong>$alias</strong></td>";
-            $html[]="<td $s1>$groupBadge</td>";
-            $html[]="<td style='width:99%'><code style='font-size:11px'>$path</code></td>";
-            $html[]="<td $s1>$deleteBtn</td>";
-            $html[]="</tr>";
+            if(!is_array($file)){continue;}
+            $html[]=tailer_file_row($tpl,$page,$file);
         }
-
-        $html[]="</tbody></table>";
+        $html[]="</tbody></table></div></div></div>";
     }
 
     $html[]="</div>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n", $html))
+        .awc_pager_js(50,"tail-rows","tail-pager");
+}
+
+/**
+ * Un fichier suivi par le tailer.
+ * Le chemin etait rendu dans un <code>, proscrit par le theme, et la couleur du
+ * groupe passait par un switch de huit cas dont deux etaient identiques.
+ * L'ancienne ligne comptait quatre cellules -- alias, groupe, chemin, action --
+ * la ou le chemin tient desormais en sous-titre de l'alias.
+ */
+function tailer_file_row($tpl,$page,array $file):string{
+    $alias=(string)($file["alias"] ?? "");
+    $group=(string)($file["group"] ?? "");
+    $path =(string)($file["path"] ?? "");
+    $md=md5($path);
+    $delete=$tpl->icon_delete("Loadjs('$page?remove-file=".base64_encode($path)."&md=$md');");
+
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-file-lines'></i></span>";
+    $h.="<span><div class='awc-name'>".htmlspecialchars($alias)."</div>";
+    $h.="<div class='awc-meta' style='font-family:monospace'>".htmlspecialchars($path)."</div></span>";
+    $h.="</div></td>";
+    $h.="<td class='center awc-nowrap'>".tailer_group_badge($group)."</td>";
+    $h.="<td><div class='awc-acts'>$delete</div></td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/** La pastille de couleur d'un groupe de journaux. */
+function tailer_group_badge($group):string{
+    static $colors=array(
+        "System"  =>"#006a62",
+        "Proxy"   =>"#865300",
+        "Nginx"   =>"#26a69a",
+        "Artica"  =>"#1c84c6",
+        "DNS"     =>"#263238",
+        "Security"=>"#ba1a1a",
+        "Mail"    =>"#006a62");
+    $c=$colors[$group] ?? "#263238";
+    return "<span class='awc-badge' style='background:$c'>".htmlspecialchars((string)$group)."</span>";
 }
 
 function add_file_form():bool{
@@ -459,7 +476,8 @@ function remove_file_js(){
     $md=$_GET["md"];
     $pathB64=isset($_GET["remove-file"]) ? $_GET["remove-file"] : "";
     $path=base64_decode($pathB64);
-    return $tpl->js_confirm_delete($path,"RemoveFile",$path,"$('#$md').remove();");
+    // Pentest 2026-11-04 : remove-file etait recopie sans encodage dans la page (XSS).
+    return $tpl->js_confirm_delete(req_html($path),"RemoveFile",$path,"$('#$md').remove();");
 }
 
 function remove_file():bool{

@@ -1,21 +1,21 @@
-<available_version>Available version</available_version>
-<CONNEXIONS_FILTERS_PRODUCTS>connections filters softwares</CONNEXIONS_FILTERS_PRODUCTS>
-<CONTENTS_FILTERS_PRODUCTS>contents filters sofwtares</CONTENTS_FILTERS_PRODUCTS>
-<CORE_PRODUCTS>core softwares</CORE_PRODUCTS>
-<current_version>Current version</current_version>
-<installation_lauched>Installation has been launched in background,
-you will see the status of the setup in few times</installation_lauched>
+<available_version>Dost&#281;pna wersja</available_version>
+<CONNEXIONS_FILTERS_PRODUCTS>Oprogramowanie filtr&#243;w po&#322;&#261;cze&#324;</CONNEXIONS_FILTERS_PRODUCTS>
+<CONTENTS_FILTERS_PRODUCTS>Oprogramowanie filtr&#243;w tre&#347;ci</CONTENTS_FILTERS_PRODUCTS>
+<CORE_PRODUCTS>Oprogramowanie podstawowe</CORE_PRODUCTS>
+<current_version>Bie&#380;&#261;ca wersja</current_version>
+<installation_lauched>Instalacja zosta&#322;a uruchomiona w tle,
+stan konfiguracji zobaczysz za chwil&#281;</installation_lauched>
 <install_upgrade>Instalacja lub aktualizacja</install_upgrade>
-<LICENSED_FILTERS_PRODUCTS>Commercial filters softwares</LICENSED_FILTERS_PRODUCTS>
-<MAIL_TOOLS>Mail tools</MAIL_TOOLS>
-<proxy_packages>Proxy softwares</proxy_packages>
-<refresh_index_file>Refresh index file (test connection)</refresh_index_file>
-<setup_index_explain>This section allow you to install applications that is not compiled or not installed correctly by your distribution[br]
-In some cases softwares must be comiled with specifics tokens to be more usefull.[br]
-This section allow you to send order to install softwares...</setup_index_explain>
-<smtp_packages>Messaging softwares</smtp_packages>
-<software>Software</software>
-<STATS_TOOLS>Statistics softwares</STATS_TOOLS>
-<stat_packages>Statistics softwares</stat_packages>
+<LICENSED_FILTERS_PRODUCTS>Komercyjne oprogramowanie filtruj&#261;ce</LICENSED_FILTERS_PRODUCTS>
+<MAIL_TOOLS>Narz&#281;dzia pocztowe</MAIL_TOOLS>
+<proxy_packages>Oprogramowanie proxy</proxy_packages>
+<refresh_index_file>Od&#347;wie&#380; plik indeksu (testuj po&#322;&#261;czenie)</refresh_index_file>
+<setup_index_explain>Ta sekcja umo&#380;liwia instalacj&#281; aplikacji, kt&#243;re nie s&#261; skompilowane lub nie s&#261; poprawnie zainstalowane przez Twoj&#261; dystrybucj&#281;[br]
+W niekt&#243;rych przypadkach oprogramowanie musi by&#263; skompilowane z okre&#347;lonymi tokenami, aby by&#322;o bardziej u&#380;yteczne.[br]
+Ta sekcja umo&#380;liwia wys&#322;anie polecenia instalacji oprogramowania...</setup_index_explain>
+<smtp_packages>Oprogramowanie do przesy&#322;ania wiadomo&#347;ci</smtp_packages>
+<software>Oprogramowanie</software>
+<STATS_TOOLS>Oprogramowanie statystyczne</STATS_TOOLS>
+<stat_packages>Oprogramowanie statystyczne</stat_packages>
 <system_packages>Pakiety systemowe</system_packages>
-<web_packages>web/groupware softwares</web_packages>
+<web_packages>Oprogramowanie web/groupware</web_packages>

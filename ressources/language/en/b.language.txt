@@ -479,7 +479,7 @@ Any school, college or university web site.[br]
 Many online communities.[br]
 </APP_CONCRETE5_TXT>
 <error_category_nomore5>Error category name cannot be less than 5 characters</error_category_nomore5>
-<history>history</history>
+<history>History</history>
 <verify_urls_databases>Verify artica URLs databases</verify_urls_databases>
 <verify_urls_databases_explain>When the main update task has downloaded databases,it will inject datas into mysql server.[br]
 If the server is busy this task will stop it's process.[br]
@@ -751,7 +751,7 @@ If you would rather do these things later, you can do so by following the links 
 <instroduction_enduser_proxy>This is your web proxy access Web interface.[br]With your account, you are able to use the Internet Proxy service with your browser.[br]
 Check the howto section in order to set your browser.</instroduction_enduser_proxy>
 <public_information>Public information</public_information>
-<what_to_do>What to do ?</what_to_do>
+<what_to_do>What to do?</what_to_do>
 <you_need_to_update_your_ip_address>You need to update your IP address</you_need_to_update_your_ip_address>
 <update_your_ip_address>Update your IP address</update_your_ip_address>	
 <banned_categories_explain>This section list all banned categories.[br]
@@ -2372,7 +2372,7 @@ This service is managed by the remote statistics appliance.</this_service_is_man
 <AsOwnMailBoxBackup>Can backup it's mailboxes</AsOwnMailBoxBackup>
 <mailboxes_backups>Mailboxes backups</mailboxes_backups>
 <mailboxes_backups_text>Backup or restore your IMAP mailboxes of your account or your remote IMAP mailboxes
-<∕mailboxes_backups_text>
+</mailboxes_backups_text>
 <mailboxes_backups_text_admin>Allows your members to backup content of their mailboxes (local or remote) 
 according privileges set in organizations.</mailboxes_backups_text_admin>
 <enable_backup_mailboxes_features>Activate Members mailbox backup feature</enable_backup_mailboxes_features>
@@ -4913,7 +4913,15 @@ example:
 10.33.206.1 - 255.255.255.0[br]
 </isInNet2_explain>
 <APP_RDPPROXY>RDS Proxy</APP_RDPPROXY>
-<APP_RDPPROXY_EXPLAIN>RDS Proxy allows you to set this server as an RDP gateway in order to allow some users to be connected to remote RDP/VNC services</APP_RDPPROXY_EXPLAIN>
+<APP_RDPPROXY_EXPLAIN>RDP Proxy allows you to set this server as an RDP gateway in order to allow some users to be connected to remote RDP, VNC and SSH services</APP_RDPPROXY_EXPLAIN>
+<APP_RDPPROXY_POLICIES_EXPLAIN>Policies define which users or Active Directory groups are allowed to connect through the RDS Proxy to which RDP, VNC and SSH targets, with optional time restrictions and session video recording.</APP_RDPPROXY_POLICIES_EXPLAIN>
+<RDP_NLA_MODE>Network Level Authentication</RDP_NLA_MODE>
+<RDP_NLA_NTLM>NLA with NTLM (default)</RDP_NLA_NTLM>
+<RDP_NLA_KERBEROS_NTLM>Kerberos, then NTLM</RDP_NLA_KERBEROS_NTLM>
+<RDP_NLA_KERBEROS>Kerberos only</RDP_NLA_KERBEROS>
+<RDP_NLA_TLS>No NLA (TLS only)</RDP_NLA_TLS>
+<RDP_NLA_MODE_EXPLAIN>How the RDS Proxy authenticates to this target. NTLM works with any Windows server, including one addressed by its IP address. Kerberos requires the target's DNS name and a domain the proxy can reach. Choose &quot;No NLA&quot; only for old servers that do not support NLA.</RDP_NLA_MODE_EXPLAIN>
+<rdpproxy_update_artica>This page needs a newer version of the Artica service: update Artica, then reload the page.</rdpproxy_update_artica>
 <activate_RDP_service>Activate RDP service</activate_RDP_service>
 <APP_RDPPROXY_AUTHHOOK>RDS Proxy authenticator</APP_RDPPROXY_AUTHHOOK>
 <test_this_script>Test this script</test_this_script>
@@ -8958,7 +8966,7 @@ Add here Active Directory groups using the browse button.</multiple_active_direc
 <enable_confirmation_establish_session>Confirm account establish a session</enable_confirmation_establish_session>
 <enable_confirmation_establish_session_explain>By default, after confirming account, the guest user must establish a session to the HotSpot using it's eMail address and password.[br]
 If turn to green, the link sent by mail will automatically establish a session without need to pass through the login form.[br]
-If the user is disconnected, it must regsiter again to the system.
+If the user is disconnected, it must register again to the system.
 </enable_confirmation_establish_session_explain>
 <send_syslog_logs>Send events by syslog</send_syslog_logs>
 <send_syslog_explain>By default statistics events logs are generated locally.[br]
@@ -10802,6 +10810,11 @@ For example, if you want Internet access going to the VPN connection.
 <OpenVPNBlockLocal_explain>If enabled, Block access to local LAN when the tunnel is active, except for the LAN gateway itself.[br]
 This is accomplished by routing the local LAN (except for the LAN gateway address) into the tunnel. 
 </OpenVPNBlockLocal_explain>
+<OpenVPNRedirectGateway2>Send Internet traffic through the VPN</OpenVPNRedirectGateway2>
+<OpenVPNRedirectGateway_explain2>When enabled, the client sends all its Internet traffic through the VPN tunnel instead of using its own connection.[br]
+This option does NOT cut the client off from its own local network: the route to its LAN stays direct, and so does the route to this VPN server.[br]
+To deny the client any access to its local network, enable Block access to local LAN below.[br]
+Note that the DHCP and DNS servers of the client are also reached outside the tunnel.</OpenVPNRedirectGateway_explain2>
 <logging_is_on_emergency>Logging is on emergency</logging_is_on_emergency>
 <logging_is_on_emergency_explain>The proxy logging feature is on emergency mode, this means no events are saved and no statistics are generated</logging_is_on_emergency_explain>
 <current_active_directory>Current Active Directory</current_active_directory>
@@ -11521,7 +11534,7 @@ If not, only Active Directory users that have Artica privileges can be logged</A
 The username will be not added in statistics and in proxy requests events.
 </AUTHWHITELIST_EXPLAIN>
 <SquidWhitelistAuthFrom_explain>You can define here [b]sources[/b] IP addresses (1.1.1.1), networks (1.1.1.0/24) or MAC addresses (00:0c:29:fe:9c:fe)</SquidWhitelistAuthFrom_explain>
-<SquidWhitelistAuthTo_explain>You can define here [b]destinations IP addresses (1.1.1.1), networks (1.1.1.0/24) or domains (domain.com for *.domain.com or ^domain.com for strict hostname)</SquidWhitelistAuthTo_explain>
+<SquidWhitelistAuthTo_explain>You can define here [b]destinations[/b] IP addresses (1.1.1.1), networks (1.1.1.0/24) or domains (domain.com for *.domain.com or ^domain.com for strict hostname)</SquidWhitelistAuthTo_explain>
 <for_everyone>For Everyone</for_everyone>
 <ssl_protocol_https_explain>
 [b]Install Trusted Certificates ![/b][br]
@@ -13230,3 +13243,28 @@ It could be caused by a network issue,the connection between proxy service and t
 
 
 
+
+<tcp_bbr>TCP BBR</tcp_bbr>
+<tcp_bbr_explain>TCP BBR is a congestion-control algorithm that keeps throughput high and queuing delay low when a link is loaded or loses packets.[br]It acts on the data this appliance sends: web pages and downloads delivered by the proxy to its users, especially remote sites reached over WAN or VPN links, and uploads sent to Internet servers.[br]When enabled, Artica switches new TCP connections to BBR and sets fq as the default queue discipline. Existing connections keep their current algorithm.[br]A compatible Linux kernel is required.</tcp_bbr_explain>
+<tcp_bbr_cluster_explain>When enabled, this setting applies to the load-balancer itself and is distributed to every HaCluster client. The load-balancer delivers the data to users, and each compatible client applies BBR locally using the Artica sysctl configuration engine.[br]While "Manage TCP BBR on the cluster" is off, the load-balancer and each client keep their own local setting.</tcp_bbr_cluster_explain>
+<enable_tcp_bbr>Enable TCP BBR</enable_tcp_bbr>
+<tcp_bbr_manage_cluster>Manage TCP BBR on the cluster</tcp_bbr_manage_cluster>
+<tcp_bbr_enable_cluster>Enable TCP BBR on the load-balancer and its clients</tcp_bbr_enable_cluster>
+<tcp_bbr_not_supported>Not supported</tcp_bbr_not_supported>
+<tcp_bbr_kernel_required>Compatible kernel required</tcp_bbr_kernel_required>
+<tcp_bbr_apply_error>Configured but could not be applied</tcp_bbr_apply_error>
+<tcp_bbr_managed_by_cluster>This setting is managed by the HaCluster load-balancer.</tcp_bbr_managed_by_cluster>
+<tcp_bbr_unmanaged>Not managed</tcp_bbr_unmanaged>
+<tcp_bbr_forced_on>Enabled on the cluster</tcp_bbr_forced_on>
+<tcp_bbr_forced_off>Disabled on the cluster</tcp_bbr_forced_off>
+<tcp_bbr_pending>Pending synchronization</tcp_bbr_pending>
+<tcp_bbr_daemon_too_old>Node software too old</tcp_bbr_daemon_too_old>
+<tcp_bbr_agent_too_old>Node HaCluster agent too old (1.1.20 required)</tcp_bbr_agent_too_old>
+<tcp_bbr_nodes_active>active on %n/%t nodes</tcp_bbr_nodes_active>
+<tcp_bbr_kernel_support>Kernel support</tcp_bbr_kernel_support>
+<tcp_bbr_supported>Supported</tcp_bbr_supported>
+<tcp_bbr_configured>Configured</tcp_bbr_configured>
+<tcp_bbr_algorithm>Active algorithm</tcp_bbr_algorithm>
+<tcp_bbr_qdisc>Default queue</tcp_bbr_qdisc>
+<certificate_name_csr_explain>Name of the certificate in the certificate center. Leave empty to use the Common Name. Set a different name to renew a certificate with a new private key while keeping the same Common Name: both certificates stay available, and you switch each service to the new one when it is signed.</certificate_name_csr_explain>
+<certificate_name_exists_hint>To renew a certificate with a new private key, keep the same Common Name and give the request a different Certificate name.</certificate_name_exists_hint>

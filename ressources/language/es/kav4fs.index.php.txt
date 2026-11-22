@@ -7,5 +7,5 @@ interceptar y analizar los intentos de acceso a los archivos, desinfectar y elim
 [li]Poner en cuarentena los archivos sospechosos e infectados.[/li]
 [li]Cree una copia de un objeto infectado en el almacenamiento de copia de seguridad antes de intentar desinfectar o eliminar para que sea posible restaurar dicho objeto.[/li]
 [/ul]</APP_KAV4FS_ABOUT>
-<APP_KAV4FS_TEXT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.</APP_KAV4FS_TEXT>
-<LICENSE_INSTALL>Install a license</LICENSE_INSTALL>
+<APP_KAV4FS_TEXT>Kaspersky Anti-virus for Linux File Server est&#225; dise&#241;ado para proteger servidores de archivos que ejecutan sistemas operativos Linux.</APP_KAV4FS_TEXT>
+<LICENSE_INSTALL>Instalar una licencia</LICENSE_INSTALL>

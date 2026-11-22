@@ -1,4 +1,4 @@
-<add_share>Add a folder</add_share>
+<add_share>Einen Ordner hinzuf&#252;gen</add_share>
 <enable_backup>Aktivieren Sie die Remote-Backup-Funktion</enable_backup>
-<enable_backup_text>If you turn to green this feature, Artica backup will browse this computer in order to backup remote folder you specifiy in this section</enable_backup_text>
-<remote_smb_share>Remote microsoft share (smb)</remote_smb_share>
+<enable_backup_text>Wenn Sie diese Funktion auf Gr&#252;n schalten, durchsucht Artica-Backup diesen Computer, um den in diesem Bereich angegebenen entfernten Ordner zu sichern</enable_backup_text>
+<remote_smb_share>Entfernte Microsoft-Freigabe (smb)</remote_smb_share>

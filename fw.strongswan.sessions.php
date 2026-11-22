@@ -5,6 +5,10 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc"); if (!iss
     }
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
+// Include INCONDITIONNEL de premier niveau (CLAUDE.md, awc-* regle 1):
+// place dans le bootstrap if(!class_exists("sockets")) ci-dessus il ne
+// s'executerait jamais, et la page mourrait sur awc_table_style() indefinie. // Service Pack 9
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus(); if (!$users->AsVPNManager) {
     exit();
 }
@@ -104,155 +108,103 @@ function main()
     $BytesReceived=$tpl->javascript_parse_text("{received}");
     $BytesSent=$tpl->javascript_parse_text("{sended}");
     
-    $html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    
-    
-    $TRCLASS=null;
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$conn_name}</th>";
-    
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$local_ip_address}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$userid}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>Remote vips / traffic selector</th>";
-
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$BytesReceived}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$BytesSent}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$since}</th>";
-
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    $xtpl=new templates();
-
-
-    
-    //$GLOBALS["CLASS_SOCKETS"]->getFrameWork("strongswan.php?refresh-sessions=yes");
+    // Les cellules etaient emises AU FIL DES CLES rencontrees dans la reponse
+    // vici, avec un $GLOBALS['bp'] pour arbitrer entre remote-vips et
+    // remote-ts. Une session a qui il manquait une cle decalait donc toutes
+    // les colonnes suivantes de la LIGNE, en silence -- un tableau a colonnes
+    // fixes exige une extraction par cles NOMMEES. La forme est celle de
+    // "vici list-sas" (voir exec.strongswan.sessions.php, qui lit $w['state'],
+    // $w['established'] et $w['remote-vips'] exactement de la meme facon).
     $sessions=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("strongSwanClientsArray"));
+    if(!is_array($sessions)){$sessions=array();}
 
+    $rows=array();
+    foreach($sessions as $v){
+        if(!is_array($v)){continue;}
+        foreach($v as $conn=>$w){
+            if(!is_array($w)){continue;}
+            $state=isset($w["state"])?(string)$w["state"]:"";
+            $rhost=isset($w["remote-host"])?(string)$w["remote-host"]:"";
+            $user=isset($w["remote-eap-id"])?(string)$w["remote-eap-id"]
+                 :(isset($w["remote-id"])?(string)$w["remote-id"]:"");
+            $since=isset($w["established"])?secondsToTime($w["established"]):"";
 
-    foreach ($sessions as $j => $v) {
-        $GLOBALS['bp']=0;
-        $GLOBALS['time']=0;
-        if (is_array($v)) {
-            $html[]="<tr class='$TRCLASS' >";
-            foreach ($v as $k => $w) {
-                $html[]="<td>{$k}</td>";
-                if (is_array($w)) {
-                    foreach ($w as $t=>$l) {
-
-                      
-                        
-
-                        if ($t=='state') {
-                            $html[]="<td>{$l}</td>";
-                        }
-                            
-                        if ($t=='remote-host') {
-                            $html[]="<td>{$l}</td>";
-                        }
-                        if ($t=='established') {
-                            $GLOBALS['time']=secondsToTime($l);
-
-                        }
-                        if ($t=='child-sas') {
-                            if (count($l)>=2){
-                                $x= count($l)-1;
-                                for($i = 0; $i < $x; ++$i) {
-                                    array_shift($l);
-                                }
-                                //print_r($l);
-                            }
-                        }
-                        
-                            
-        
-
-                        $username=null;
-                        if (array_key_exists('remote-eap-id', $w)) {
-                            if ($t=='remote-eap-id') {
-                                $username= "<td>{$l}</td>";
-                            }
-                        } else {
-                            if ($t=='remote-id') {
-                                $username="<td>{$l}</td>";
-                            }
-                        }
-
-                        $html[]=$username;
-
-                        if (is_array($l)) {
-                            foreach ($l as $p=>$o) {
-                                if ($p=='remote-vips') {
-                                    $html[]="<td>$o</td>";
-                                    $GLOBALS['bp']=1;
-                                }
-                                else{
-                                    if($GLOBALS['bp']==0) {
-                                        if (is_array($o)) {
-                                            foreach ($o as $e => $r) {
-                                                if ($e == 'remote-ts') {
-
-                                                    $html[] = "<td>{$r[0]}</td>";
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                if (is_array($o)) {
-                                    foreach ($o as $e=>$r) {
-                                        if ($e=='bytes-in') {
-                                            $kb=FormatBytes($r/1024);
-                                            $html[]="<td>{$kb}</td>";
-                                        }
-                                        if ($e=='bytes-out') {
-                                            $kb=FormatBytes($r/1024);
-                                            $html[]="<td>{$kb}</td>";
-                                        }
-                                        if ($e=='install-time') {
-                                            $html[]="<td>{$GLOBALS['time']}</td>";
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
+            // remote-vips vit au niveau de la CONNEXION; le selecteur de trafic
+            // distant vit dans la child-sa. On prefere le premier quand il
+            // existe -- c'est l'adresse reellement attribuee au client -- et on
+            // retombe sur le second, ce que faisait le drapeau $bp.
+            $vips="";
+            if(isset($w["remote-vips"])){
+                $vips=is_array($w["remote-vips"])?@implode(", ",$w["remote-vips"]):(string)$w["remote-vips"];
+            }
+            $in=0;$out=0;$ts="";
+            if(isset($w["child-sas"]) && is_array($w["child-sas"]) && count($w["child-sas"])>0){
+                // L'original ne gardait que la DERNIERE child-sa (il decalait le
+                // tableau jusqu'a n'en laisser qu'une): meme choix ici.
+                $sas=$w["child-sas"];
+                $last=end($sas);
+                if(is_array($last)){
+                    $in=isset($last["bytes-in"])?floatval($last["bytes-in"]):0;
+                    $out=isset($last["bytes-out"])?floatval($last["bytes-out"]):0;
+                    if(isset($last["remote-ts"]) && is_array($last["remote-ts"]) && isset($last["remote-ts"][0])){
+                        $ts=(string)$last["remote-ts"][0];
                     }
                 }
             }
-            $html[]="</tr>";
+            if($vips===""){$vips=$ts;}
+
+            $up=(strtoupper($state)==="ESTABLISHED");
+            $named=(trim($user)!=="");
+
+            $h ="<tr>";
+            // Pentest 2026-11-04 : connexion/utilisateur/hote distant (donnee externe) ; htmlspecialchars UTF-8 rendait "" sur du Latin-1 (XSS stockee).
+            $h.="<td><div class='awc-ident'>";
+            $h.="<span class='awc-ico".($up?"":" awc-ico-off")."'><i class='fas fa-shield-halved'></i></span>";
+            $h.="<span><span class='awc-name".($up?"":" awc-name-off")."'>".req_html((string)$conn)."</span>";
+            $h.="<div class='awc-meta'>".($named?req_html($user):"{unknown}")."</div></span></div></td>";
+            $h.="<td class='center'><span class='awc-badge ".($up?"awc-badge-on":"awc-badge-off")."'>"
+               .req_html($state!==""?$state:"-")."</span></td>";
+            $h.="<td class='awc-mono'>".req_html($rhost)."</td>";
+            $h.="<td class='awc-mono'>".($vips!==""?req_html($vips):"<span class='awc-none'>&mdash;</span>")."</td>";
+            $h.="<td class='center awc-mono'>".FormatBytes($in/1024)."</td>";
+            $h.="<td class='center awc-mono'>".FormatBytes($out/1024)."</td>";
+            $h.="<td class='awc-mono'>".($since!==""?req_html($since):"<span class='awc-none'>&mdash;</span>")."</td>";
+            $h.="</tr>";
+            $rows[]=$h;
         }
     }
 
-    
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{tunnel}</th>";
+    $html[]="<th class='center' nowrap>{status}</th>";
+    $html[]="<th nowrap>{remote_ip_address}</th>";
+    $html[]="<th nowrap>{local_ip_address}</th>";
+    $html[]="<th class='center' nowrap>{received}</th>";
+    $html[]="<th class='center' nowrap>{sended}</th>";
+    $html[]="<th nowrap>{since}</th>";
+    $html[]="</tr></thead><tbody id='ssws-rows'>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='7'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span>"
+           ."<span class='awc-pg' id='ssws-pager'></span></div>";
+    $html[]="</div></div>";
+
+    // CSS et pager HORS _ENGINE_parse_body; ICON_SCRIPTS_COMPILE() et non
+    // ICON_SCRIPTS (propriete d'instance, vide des qu'une autre instance a
+    // bati la ligne).
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>"
+        .awc_pager_js(50,"ssws-rows","ssws-pager");
+
+    echo "
 	<script>
-	NoSpinner();\n".@implode("\n", $tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable(
-	{
-	\"filtering\": {
-	\"enabled\": true
-	},
-	\"sorting\": {
-	\"enabled\": true
-	}
-	
-	}
-	
-	
-	); });
-	
 function CreateNewVPNClient(){
 	Loadjs('$page?ruleid-js=');
 }
@@ -269,8 +221,9 @@ function XGenerateVPNConfig(uid){
 }	
 
 	</script>";
-    
-    echo @implode("\n", $html);
+    // Le tableau a deja ete emis plus haut. Ce second echo @implode($html)
+    // reimprimait le MEME balisage une deuxieme fois, non parse -- une
+    // duplication silencieuse introduite par la conversion.
 }
 function secondsToTime($seconds) {
     $dtF = new \DateTime('@0');

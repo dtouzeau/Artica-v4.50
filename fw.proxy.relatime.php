@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 // Patch 125
 include_once(dirname(__FILE__)."/ressources/externals/GeoIP2/vendor/autoload.php");
 use GeoIp2\Database\Reader;
@@ -12,7 +15,14 @@ include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
 include_once(dirname(__FILE__)."/ressources/class.ip2host.inc");
 include_once(dirname(__FILE__)."/ressources/RealTimeParse.php");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
+include_once(dirname(__FILE__)."/ressources/class.netagents.tenants.inc");
+// Artica Meta : journal d'acces d'un noeud distant (/netagents/proxy/accesses/<id>) => droit Meta
+// exige en plus (sinon un simple AsProxyMonitor lisait le journal de n'importe quel client).
+natn_node_id_gate(array("meta-id-js","meta-id-popup","search-node"));
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 $EnableUfdbGuard=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUfdbGuard"));
 $EnableDNSDist=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist"));
@@ -136,7 +146,7 @@ function tabs(){
     if($SQUIDEnable==1) {
         $array["{proxy_events}"] = "fw.proxy.daemon.php";
     }
-    $array["{artica_events}"]="fw.system.watchdog.php";
+    $array["{artica_events}"]="fw.system.watchdog.php?microstart=yes";
 
     echo "<div class='row white-bg dashboard-header' style='margin-top:0px'>";
     echo $tpl->tabs_default($array);
@@ -148,8 +158,9 @@ function ip_js(){
     $page=CurrentPageName();
     $ip=$_GET["ip-js"];
     $ipencode=urlencode($ip);
-
-    $title=$tpl->_ENGINE_parse_body("{tcp_address}::$ip::ZOOM");
+    // Pentest 2026-11-04 : ip-js etait recopie sans encodage dans la page (XSS).
+    $ipT=req_html(req_html($ip));
+    $title=$tpl->_ENGINE_parse_body("{tcp_address}::$ipT::ZOOM");
     $tpl->js_dialog($title, "$page?ip-tabs=$ipencode");
 }
 
@@ -169,34 +180,32 @@ function ip_save(){
     $ip=$_GET["ip-view"];
     $md5=md5($ip);
     $ipencode=urlencode($ip);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM follow_ip WHERE ipaddr='$ip'");
-    $ID=intval($ligne["ID"]);
+
+    $existing=acls_api_get("/proxy/follow-ip?ipaddr=".urlencode($ip));
+    $ID=is_array($existing) ? intval($existing["id"] ?? 0) : 0;
 
     if($ID==0){
-        $q->QUERY_SQL("INSERT INTO follow_ip (ipaddr) VALUES ('$ip')");
-        if(!$q->ok){
-            echo $tpl->js_mysql_alert($q->mysql_error);
+        [$ok,$resp]=acls_api_send("POST","/proxy/follow-ip",["ipaddr"=>$ip]);
+        if(!$ok){
+            echo $tpl->js_mysql_alert($resp);
             return;
         }
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM follow_ip WHERE ipaddr='$ip'");
-        $ID=intval($ligne["ID"]);
+        $ID=intval($resp["id"] ?? 0);
         if($ID==0){
             echo $tpl->js_mysql_alert("Insertion failed");
             return;
         }
-
     }else{
-        $q->QUERY_SQL("DELETE FROM follow_ip WHERE ID=$ID");
+        acls_api_send("DELETE","/proxy/follow-ip/$ID");
     }
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR ."/squid.access.center.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR ."/squid.access.center.progress.log";
-    $ARRAY["CMD"]="squid2.php?global-logging-center=yes";
+    $ARRAY["CMD"]="/proxy/logs/apply";
     $ARRAY["TITLE"]="{reconfigure}";
     $ARRAY["AFTER"]="LoadAjax('ip-$md5','$page?ip-popup=$ipencode');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=ip-zoom-progress')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=ip-zoom-progress')";
 
     header("content-type: application/x-javascript");
     echo "$jsrestart";
@@ -208,37 +217,38 @@ function ip_popup(){
     $page=CurrentPageName();
     $ip=$_GET["ip-popup"];
     $ipencode=urlencode($ip);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $sql="CREATE TABLE IF NOT EXISTS `follow_ip` (
-			`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			`ipaddr` TEXT UNIQUE NOT NULL)";
-    $q->QUERY_SQL($sql);
 
+    $existing=acls_api_get("/proxy/follow-ip?ipaddr=".urlencode($ip));
+    $ID=is_array($existing) ? intval($existing["id"] ?? 0) : 0;
 
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM follow_ip WHERE ipaddr='$ip'");
-    $ID=intval($ligne["ID"]);
-
-    $html[]="<H1>$ip</H1>";
-    $html[]="<div id='ip-zoom-progress'></div>";
-    $html[]="<table class='table table-hover'><thead></thead><tbody>";
-    $html[]="<tr>";
-    if($ID==0) {
-        $html[] = "<td><strong>{follow_this_address}</strong><br><small>{acl_follow_this_address}</small></td>";
-        $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{enable_filter}", "Loadjs('$page?ip-view=$ipencode')",
-                "fas fa-eye", "AsProxyMonitor", 180, "btn-info") . "</td>";
-
+    // L'ancienne version enfermait ce bloc dans un tableau Bootstrap d'une seule
+    // ligne: c'etait de la MISE EN PAGE, pas des donnees. La carte awc rend la
+    // meme chose (libelle a gauche, bouton a droite) sans tableau.
+    $html[]="<div class='awc-wrap'><div class='awc-card' style='padding:16px'>";
+    $html[]="<div class='awc-ident' style='justify-content:space-between'>";
+    $html[]="<span>";
+    $html[]="<span class='awc-name'>".htmlspecialchars($ip)."</span>";
+    if($ID==0){
+        $html[]="<div class='awc-meta'>{follow_this_address} &mdash; {acl_follow_this_address}</div>";
     }else{
-        $html[] = "<td><strong>{unfollow_this_address}</strong><br><small>{acl_follow_this_address}</small></td>";
-        $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{disable}", "Loadjs('$page?ip-view=$ipencode')",
-                "fas fa-eye", "AsProxyMonitor", 180, "btn-danger") . "</td>";
-
-
+        $html[]="<div class='awc-meta'>{unfollow_this_address} &mdash; {acl_follow_this_address}</div>";
     }
+    $html[]="</span>";
+    $html[]="<span class='awc-nowrap'>";
+    if($ID==0){
+        $html[]=$tpl->button_autnonome("{enable_filter}","Loadjs('$page?ip-view=$ipencode')",
+            "fas fa-eye","AsProxyMonitor",180,"btn-info");
+    }else{
+        $html[]=$tpl->button_autnonome("{disable}","Loadjs('$page?ip-view=$ipencode')",
+            "fas fa-eye","AsProxyMonitor",180,"btn-danger");
+    }
+    $html[]="</span>";
+    $html[]="</div></div></div>";
 
-    $html[]="</tr>";
-    $html[]="</tbody></table>";
-
-    echo $tpl->_ENGINE_parse_body($html);
+    // La feuille awc ne passe PAS par _ENGINE_parse_body: sa regex #{(.+?)}#
+    // prendrait chaque corps de regle CSS pour un {token}.
+    echo awc_table_style().$tpl->_ENGINE_parse_body("<h1>".htmlspecialchars($ip)."</h1>"
+        ."<div id='ip-zoom-progress'></div>".@implode("\n",$html));
 
 }
 
@@ -247,7 +257,8 @@ function ip_tabs():bool{
     $page=CurrentPageName();
     $ip=$_GET["ip-tabs"];
     $ipencode=urlencode($ip);
-    $array[$ip]="$page?ip-popup-start=$ipencode";
+    // Pentest 2026-11-04 : ip-tabs etait recopie sans encodage dans la page (XSS).
+    $array[req_html($ip)]="$page?ip-popup-start=$ipencode";
     echo $tpl->tabs_default($array);
     return true;
 }
@@ -267,12 +278,15 @@ function ua_js(){
     $page=CurrentPageName();
 
     $title=$tpl->_ENGINE_parse_body("{browser}");
-    $tpl->js_dialog1($title, "$page?ua-popup={$_GET["ua-js"]}",550);
+    // Pentest 2026-11-04 : ua-js etait recopie sans encodage dans la page (XSS).
+    $uaenc=req_url($_GET["ua-js"]);
+    $tpl->js_dialog1($title, "$page?ua-popup=$uaenc",550);
 
 }
 
 function ua_popup(){
-    $ua=base64_decode($_GET["ua-popup"]);
+    // Pentest 2026-11-04 : ua-popup etait recopie sans encodage dans la page (XSS).
+    $ua=req_html(base64_decode($_GET["ua-popup"]));
     $html="<textarea style='width: 530px; height: 130px;font-size:16px'>$ua</textarea>";
     echo $html;
 }
@@ -280,20 +294,33 @@ function ua_popup(){
 function zoom(){
     $tpl=new template_admin();
     $GLOBALS["TPLZ"]=new template_admin();
-    $data=unserializeb64($_GET["data"]);
-    $html[]="<div class=ibox-content>";
-    $html[]="<table class='table table table-bordered'>";
+    // Pentest 2026-11-04 : data (tableau serialise) etait recopie sans encodage dans la page (XSS).
+    $rawdata=unserializeb64($_GET["data"]);
+    if(!is_array($rawdata)){$rawdata=array();}
+    $data=array();
+    foreach ($rawdata as $xk=>$xv){
+        if(is_array($xv) OR is_object($xv)){$xv="";}
+        $data[req_html($xk)]=req_html($xv);
+    }
+    foreach (array("acl_peer","bumprule","splicerule","bandwidth") as $xk){
+        if(isset($data[$xk])){$data[$xk]=intval($data[$xk]);}
+    }
+    // HTTP_CODE peut porter le lien host forgery construit par search() : on garde son texte.
+    if(isset($rawdata["HTTP_CODE"]) && is_string($rawdata["HTTP_CODE"])){$data["HTTP_CODE"]=req_html(strip_tags($rawdata["HTTP_CODE"]));}
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><tbody>";
 
 
     VERBOSE("URL = ".$data["URL"],__LINE__);
 
     if(isset($data["URL"])){
-        $data["URL"]=trim($data["URL"]);
-        $parse=parse_url($data["URL"]);
-        $jsurl="s_PopUp('{$data["URL"]}',1024,768,'');";
+        $rawURL=trim((string)$rawdata["URL"]);
+        $data["URL"]=req_html($rawURL);
+        $parse=parse_url($rawURL);
+        $jsurl="s_PopUp('".req_js($rawURL)."',1024,768,'');";
 
-            if (strlen($data["URL"]) > 80) {
-                $data["URL"] = $tpl->td_href(substr($data["URL"], 0, 77) . "...", $data["URL"], $jsurl);
+            if (strlen($rawURL) > 80) {
+                $data["URL"] = $tpl->td_href(req_html(substr($rawURL, 0, 77)) . "...", req_html($rawURL), $jsurl);
             }
 
         $hostname=$parse["host"];
@@ -439,9 +466,14 @@ function zoom(){
 
     if(isset($data["bandwidth"])){
         $squid_http_bandwidth_acls_id=trim($data["bandwidth"]);
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT rulename FROM squid_http_bandwidth_acls WHERE ID='$squid_http_bandwidth_acls_id'");
-        $rulename=$ligne["rulename"];
+        $bwrow=acls_api_get("/proxy/acls/sqlite/rule/".intval($squid_http_bandwidth_acls_id));
+        $rulename=is_array($bwrow) ? ($bwrow["aclname"] ?? "") : "";
+        if(empty($rulename)){
+            $bwlist=acls_api_get("/proxy/bandwidth/acls");
+            if(is_array($bwlist)){
+                foreach($bwlist as $bw){if(($bw["id"] ?? 0)==intval($squid_http_bandwidth_acls_id)){$rulename=$bw["ruleName"] ?? "";break;}}
+            }
+        }
         $bdwjs="Loadjs('fw.proxy.bandwidth.php?rule-id-js=$squid_http_bandwidth_acls_id')";
         $data["bandwidth"]="<i class='text-warning fas fa-sort-amount-down'></i>&nbsp;".$GLOBALS["TPLZ"]->td_href($rulename,"{view}",$bdwjs);
 
@@ -449,11 +481,13 @@ function zoom(){
 
     if(isset($data["authmec"])){
         $authmec=intval(trim($data["authmec"]));
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT rulename FROM squid_auth_schemes_acls WHERE ID='$authmec'");
+        $authlist=acls_api_get("/proxy/auth-schemes/acls");
+        $rulename="";
+        if(is_array($authlist)){
+            foreach($authlist as $ar){if(($ar["id"] ?? 0)==$authmec){$rulename=$ar["ruleName"] ?? "";break;}}
+        }
         $bdwjs="Loadjs('fw.proxy.auth_schemes.php?rule-id-js=$authmec')";
         unset($data["authmec"]);
-        $rulename=$ligne["rulename"];
         $data["{auth_mec_pref}"]="<i class='fas fa-user'></i>&nbsp;".$GLOBALS["TPLZ"]->td_href($rulename,"{view}",$bdwjs);
     }
 
@@ -476,19 +510,24 @@ function zoom(){
         if($key=="PROTO"){$key="{protocol}";}
         if($key=="category-name"){$key="{category_name}";}
         if($key=="SIZE"){$key="{size}";}
-
-        $html[]="<tr>
-		<td class=text-capitalize style='text-align: right'>$key:</td>
-		<td><strong>$val</strong></td>
-		</tr>";
-
+        $html[]=zoom_row($key,$val);
     }
 
+    $html[]="</tbody></table></div></div></div>";
 
+    // awc_table_style() est concatenee APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque corps de regle CSS pour un {token}.
+    echo awc_table_style().$GLOBALS["TPLZ"]->_ENGINE_parse_body(@implode("", $html));
 
+}
 
-    echo $GLOBALS["TPLZ"]->_ENGINE_parse_body(@implode("", $html)."</table></div>");
-
+/**
+ * Une ligne cle/valeur du detail d'une requete.
+ * La valeur est deja du HTML construit par zoom() (liens td_href, badges): elle
+ * ne peut pas etre echappee ici sans casser ces liens.
+ */
+function zoom_row($key,$val):string{
+    return "<tr><td class='awc-kv-k'>$key</td><td><span class='awc-name'>$val</span></td></tr>";
 }
 function WebFilterPolicy($data):array{
 
@@ -498,10 +537,13 @@ function WebFilterPolicy($data):array{
 
         if(is_numeric($data_rule)){
             if($data_rule>0){
-                $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+                $urlrlist=acls_api_get("/proxy/url-rewrite/acls");
+                $rulename="";
+                if(is_array($urlrlist)){
+                    foreach($urlrlist as $ur){if(($ur["id"] ?? 0)==intval($data_rule)){$rulename=$ur["ruleName"] ?? "";break;}}
+                }
                 $js="Loadjs('fw.proxy.urlrewrite.php?rule-id-js=$data_rule')";
-                $ligne=$q->mysqli_fetch_array("SELECT rulename FROM squid_url_rewrite_acls WHERE ID='$data_rule'");
-                $data["{web_filter_policies}"]=$tpl->td_href($ligne["rulename"],null,$js);
+                $data["{web_filter_policies}"]=$tpl->td_href($rulename,null,$js);
                 unset($data["webfilterpolicy"]);
                 return $data;
             }
@@ -539,7 +581,7 @@ function node_popup():bool{
     $html[]="<div class=\"row\"> 
 		<div class='ibox-content'>
 		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["PROXY_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
+      		<input type=\"text\" class=\"form-control\" value=\"".req_html($_SESSION["PROXY_SEARCH"] ?? "")."\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
       		<span class=\"input-group-btn\">
        		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
       	</span>
@@ -584,7 +626,7 @@ function search_file_popup(){
     $html[]="<div class=\"row\"> 
 		<div class='ibox-content'>
 		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["PROXY_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
+      		<input type=\"text\" class=\"form-control\" value=\"".req_html($_SESSION["PROXY_SEARCH"] ?? "")."\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
       		<span class=\"input-group-btn\">
        		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
       	</span>
@@ -634,12 +676,17 @@ function page(){
     if(preg_match("#^(5|6|7)\.#",$SquidVersion)){$isSquid5=true;}
 
     if($isSquid5) {
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $webfilters_sqacls = $q->QUERY_SQL("SELECT aclname,ID FROM webfilters_sqacls");
-        foreach ($webfilters_sqacls as $index => $ligne) {
-            $ID = $ligne["ID"];
-            $aclname = $ligne["aclname"];
-            $_SESSION["MAIN_ACCESS_RULES"][$ID] = $aclname;
+        $ruleorders=acls_api_get("/proxy/acls/sqlite/rules/orders");
+        if(is_array($ruleorders)){
+            foreach($ruleorders as $ro){
+                $rid=intval($ro["id"] ?? 0);
+                if($rid<=0){continue;}
+                if(isset($_SESSION["MAIN_ACCESS_RULES"][$rid])){continue;}
+                $row=acls_api_get("/proxy/acls/sqlite/rule/$rid");
+                if(is_array($row) && isset($row["aclname"])){
+                    $_SESSION["MAIN_ACCESS_RULES"][$rid]=$row["aclname"];
+                }
+            }
         }
     }
 
@@ -740,13 +787,14 @@ function search(){
     if(!isset($_GET["FinderList"])){$_GET["FinderList"]=null;}
 
     $SIMPLERULES=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $results=$q->QUERY_SQL("SELECT ID,aclname FROM webfilters_simpleacls");
-    foreach ($results as $index => $ligne) {
-        VERBOSE("$index]: ID: $ligne[ID] aclname: $ligne[aclname]",__LINE__);
-        $ID = $ligne["ID"];
-        $rulename = $ligne["aclname"];
-        $SIMPLERULES[$ID]=$rulename;
+    $simplelist=acls_api_get("/proxy/simple-acls");
+    if(is_array($simplelist)){
+        foreach($simplelist as $index=>$ligne){
+            $ID=intval($ligne["id"] ?? 0);
+            $rulename=$ligne["aclName"] ?? "";
+            VERBOSE("$index]: ID: $ID aclname: $rulename",__LINE__);
+            $SIMPLERULES[$ID]=$rulename;
+        }
     }
 
 
@@ -799,6 +847,7 @@ function search(){
 
     if($search_node==0){
         $uri = "/proxy/accesses/{$MAIN["MAX"]}/{$MAIN["TERM"]}/{$_GET["SearchString"]}/{$_GET["FinderList"]}/$DATE/$logfile/$ipaddr";
+        VERBOSE($uri,__LINE__);
         $data = $sock->REST_API($uri);
         $json=json_decode($data);
         if (json_last_error()> JSON_ERROR_NONE) {
@@ -821,12 +870,7 @@ function search(){
         );
 
         $json = json_decode(
-            $GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON(
-                "/netagents/proxy/accesses/$agentID",
-                $data
-            )
-        );
-
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/netagents/proxy/accesses/$agentID", $data));
         // Error check (netagent envelope)
         if (is_object($json) && isset($json->Status) && !$json->Status) {
             echo $tpl->_ENGINE_parse_body($tpl->div_error("Error: " . $json->Error));
@@ -878,34 +922,25 @@ function search(){
     $emergency_text = $tpl->_ENGINE_parse_body("{urgency_mode}");
     $theshield  = "The Shields";
 
+    // Cette fonction termine par un echo BRUT (pas de _ENGINE_parse_body): tout
+    // libelle doit donc etre traduit ici, sinon il s'affiche en {token} litteral.
+    $status_text=$tpl->_ENGINE_parse_body("{status}");
+    $browser_text=$tpl->_ENGINE_parse_body("{browser}");
+    $showing_text=$tpl->_ENGINE_parse_body("{showing}");
     $hotspot_text=$tpl->_ENGINE_parse_body("&nbsp;<i>({hotspot})</i>");
     $SquidLogUsersAgents=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidLogUsersAgents"));
     $webfiltering_error=$tpl->_ENGINE_parse_body("{webfiltering} {error}");
+    $strictdeny_rules=strictdeny_rules();
 
 
-    $html[]="
-
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>$zdate</th>";
-
-    if($SquidLogUsersAgents==1) {
-        $html[] = $tpl->_ENGINE_parse_body("<th>&nbsp;</th>");
-    }
-    $html[]="<th>$ipaddr</th>
-			<th>&nbsp;</th>
-            <th>$proto</th>
-            <th>$category</th>
-            <th>$uri</th>
-            <th>INFO/LINK</th>
-            <th>$destination</th>
-            <th>$size</th>
-            <th>$duration</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
+    $LABELS=array(
+        "date"=>$zdate,          "browser"=>$browser_text, "members"=>$ipaddr,
+        "status"=>$status_text,  "proto"=>$proto,          "category"=>$category,
+        "url"=>$uri,             "info"=>"INFO/LINK",      "destination"=>$destination,
+        "size"=>$size,           "duration"=>$duration);
+    $SHOWUA=($SquidLogUsersAgents==1);
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]=relatime_thead($SHOWUA,$LABELS);
     $banico="<i class='fas fa-ban'></i>";
     $alido="<i class='far fa-check-circle'></i>";
     //<i class="fab fa-internet-explorer"></i>
@@ -938,14 +973,13 @@ function search(){
 
 
     if(!isset($_SESSION["WEBFILTERINGS"])){
-        $q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-        $sql="SELECT ID,groupname FROM webfilter_rules ORDER BY zOrder";
-        $results=$q->QUERY_SQL($sql);
-        foreach ($results as $index=>$ligne){
-            $_SESSION["WEBFILTERINGS"][$ligne["ID"]]=$ligne["groupname"];
-
+        $_SESSION["WEBFILTERINGS"]=[];
+        $wfrules=acls_api_get("/webfilter/rules");
+        if(is_array($wfrules)){
+            foreach($wfrules as $ligne){
+                $_SESSION["WEBFILTERINGS"][intval($ligne["id"] ?? 0)]=$ligne["groupName"] ?? "";
+            }
         }
-
     }
     $zid=0;
     while (($line = fgets($file)) !== false) {
@@ -1004,7 +1038,7 @@ function search(){
         $codeToString = $logfileD->codeToString($zCode1);
         $SQUID_CODE = $zCode0;
         $URLSRC="";
-        $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"blur()\" ><i class='fas fa-question'></i></button>";
+        // $icon_ua a disparu: relatime_ua_button() construit le bouton, repli compris.
         $infos = null;
         $link_members = null;
         $category = null;
@@ -1013,6 +1047,11 @@ function search(){
         $acl_peer_id = 0;
         $peer_rule_from_id = null;
         $DESTINATION_TEXT = null;
+        $zcategory = "";
+        $MAC = "";
+        $mac = "";
+        $message = "";
+        $user_domain = "";
         $stylegreen = "style='color:rgb(26, 179, 148) !important'";
         $category_id = 0;
         $rule_text=$tpl->_ENGINE_parse_body("{rule}");
@@ -1022,9 +1061,8 @@ function search(){
             $DESTINATION_TEXT="<small>$outGoing&nbsp;";
         }
 
-        $zcategory = $tpl->icon_nothing();
-        $MAC = null;
-        $mac = null;$message = null;$user_domain = null;
+
+
         if ($PROTO == "CONNECT") {
             $color = "#BAB700";
             $PROTO = "SSL";
@@ -1048,13 +1086,21 @@ function search(){
         $hotspot = null;
         $NozCode = false;
         $first_error = null;
-        VERBOSE("First Code == {$zCode0} - {$zCode1} ERROR_EXT=$ERROR_EXT");
+        VERBOSE("First Code == [$zCode0] - $zCode1 ERROR_EXT=$ERROR_EXT",__LINE__);
         if ($zCode1 == 426) {
             $zCode0 = "Upgrade required";
         }
         if (preg_match("#TCP_MISS_ABORTED#", $zCode0)) {
             $zCode0 = "TCP Client aborted";
         }
+        if (preg_match("#ERR_STRICTDENY#i", $ERROR_EXT)) {
+            $ERROR_EXT="";
+            $color = "#D0080A";
+            $zCode0="StrictDeny";
+            $codeToString="";
+
+        }
+
 
         if ($zCode0 == "NONE_NONE" and $zCode1 == "409") {
             $NozCode = true;
@@ -1071,12 +1117,19 @@ function search(){
             $zCode0 = "Certificate";
             VERBOSE("Certificate == $color");
         }
+        if($zCode0=="TCP_TUNNEL" && $zCode1=="000"){
+            $NozCode = true;
+            $color = "#BAB700";
+            $zCode0 = "Certificate";
+            VERBOSE("Certificate == $color",__LINE__);
+        }
 
         if (preg_match("#TCP_TUNNEL_ABORTED#", $zCode0)) {
             $zCode0 = "Client close tunnel";
             $color = "#BAB700";
             $PROTO = "SSL";
         }
+
 
         $zCode0 = str_replace("TCP_TUNNEL", "SSL Connect", $zCode0);
 
@@ -1102,7 +1155,7 @@ function search(){
         }
         if ($MAC <> null) {
             $ArrayENC["MAC"] = $MAC;
-            $mac = "$MAC";
+            $mac = $MAC;
         }
 
         if($ERROR_EXT=="ERR_SECURE_ACCEPT_FAIL"){
@@ -1204,6 +1257,10 @@ function search(){
 
         }
 
+
+
+        //$strictdeny_rules
+
         if (isset($xTAGS["srcurl"])) {
             $URL = urldecode($xTAGS["srcurl"]);
         }
@@ -1245,6 +1302,19 @@ function search(){
             VERBOSE("RuleNumber: $RuleNumber",__LINE__);
             $simplerule=$SIMPLERULES[$RuleNumber];
         }
+        if(isset($xTAGS["strict-deny"])){
+            $RuleNumber=intval($xTAGS["strict-deny"]);
+            VERBOSE("strict-deny: $RuleNumber",__LINE__);
+            $simplerule=$strictdeny_rules[$RuleNumber];
+        }
+        if(isset($xTAGS["strictdenyallow"])){
+            $RuleNumber=intval($xTAGS["strictdenyallow"]);
+            VERBOSE("strictdenyallow: $RuleNumber",__LINE__);
+            $simplerule=$strictdeny_rules[$RuleNumber];
+        }
+
+
+
         if (isset($xTAGS["bandwidth"])) {
             $bandwidth = "&nbsp;<i class='text-warning fas fa-sort-amount-down'></i>";
         }
@@ -1283,6 +1353,7 @@ function search(){
             $SRN["CLOUDFLARE"] = "$theshield:Cloudflare";
             $SRN["MALWAREURL_MALWARES"] = "$theshield:MalwareURL";
             $SRN["MALWAREURL_PHISHING"] = "$theshield:MalwareURL";
+            $SRN["IDN_HOMOGRAPH"] = "$theshield:IDN homograph";
             $SRN["ARTICA"] = "$theshield:Artica";
             $SRN["EMERGENCY"] = "$theshield:$emergency_text";
             $SRN["WHITELIST"] = "$theshield:$whitelist_text";
@@ -1330,6 +1401,9 @@ function search(){
         if (isset($xTAGS["rblcache"])) {
             $zCode0 = "NO CACHE - RBL";
         }
+
+
+
         if (isset($xTAGS["rblcache"])) {
             if (isset($xTAGS["rblpass"])) {
                 $zCode0 = "NO CACHE ALLOW - RBL";
@@ -1370,19 +1444,23 @@ function search(){
             }
         }
         VERBOSE("Category = [$category_id] / zCategory=[$zcategory]", __LINE__);
-        if (intval($category_id) == 0) {
-            if (trim($zcategory) == null) {
-                VERBOSE("xTAGS[category] = [{$xTAGS["category"]}]", __LINE__);
+        if ( $category_id == 0  && $zcategory==""  ) {
+
+        }
+
+
+        if ($category_id == 0 && $zcategory=="") {
                 if (isset($xTAGS["category"])) {
+                    VERBOSE("xTAGS[category] = [{$xTAGS["category"]}]", __LINE__);
                     $category_id = intval($xTAGS["category"]);
                     if ($category_id > 0) {
                         $zcategory = categoryCodeTocatz($category_id);
                     }
                 }
             }
-        }
 
-        if (intval($category_id) == 0) {
+
+        if ($category_id == 0) {
             VERBOSE("Category --- >  $URL", __LINE__);
             $category_id = internal_category($URL);
             if ($category_id > 0) {
@@ -1573,46 +1651,12 @@ function search(){
             $domain_field=$URL;
         }
 
-        $html[] = "<tr>";
-        $html[] = "<td><span style='color:$color'>$date{$proxy_server}</span></td>";
+        $CELLS=array();
+        $CELLS["date"]="$date{$proxy_server}";
+        $CELLS["ua"]="";
 
         if ($SquidLogUsersAgents == 1) {
-            if ($UA <> null) {
-                $js = "Loadjs('fw.proxy.relatime.php?ua-js=" . base64_encode($UA) . "');";
-                $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" >
-                <i class='fas fa-browser'></i></button>";
-
-                if (preg_match("#Edge\/#", $UA)) {
-                    $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fab fa-edge'></i></button>";
-                }
-                if (preg_match("#Firefox\/#", $UA)) {
-                    $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fab fa-firefox'></i></button>";
-                }
-
-                if (preg_match("#Chrome/[0-9\.]+#", $UA)) {
-                    $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fab fa-chrome'></i></button>";
-                }
-
-                if (preg_match("#Safari/[0-9\.]+#", $UA)) {
-                    $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fab fa-chrome'></i></button>";
-                }
-                if (preg_match("#OPR/[0-9\.]+#", $UA)) {
-                    $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fab fa-opera'></i></button>";
-                }
-                if (preg_match("#Trident\/[0-9]+\.#", $UA)) {
-                    $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fab fa-internet-explorer'></i></button>";
-                }
-                if (preg_match("#MSIE\s+[0-9\.]+#", $UA)) {
-                    $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fab fa-internet-explorer'></i></button>";
-                }
-
-            }
-            if ($icon_ua == null) {
-                $icon_ua = "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\" ><i class='fas fa-browser'></i></button>";
-            }
-
-            $html[] = "<td><span class='center' width='1%'>$icon_ua</span></td>";
-
+            $CELLS["ua"]=relatime_ua_button($UA);
         }
 
         $geo=GeoIPCountry($ip);
@@ -1744,33 +1788,33 @@ function search(){
         $formatage1[]=$user_domain;
         $formatagetext=@implode("",$formatage1);
 
-        $html[] = "<td><span style='color:$color'>$formatagetext</span></td>
-				<td><span style='color:$color'>$theshield_ico$zCode0$codeToStringSEP$codeToString$avinfo$category$accessrule$simplerule</span>$message$first_error</td>
-                <td><span style='color:$color'>$PROTO</span></td>  
-                <td><span style='color:$color'>$zcategory</span></td>  
-                <td><span style='color:$color'>$itag$domain_field$infos</span></td>                  
-                <td nowrap class=center>$loupe&nbsp;&nbsp;$link</td>
-                <td>$ToCountry$DESTINATION_TEXT</td>
-                <td><span style='color:$color'>{$size}$bandwidth</span></td>  
-                <td><span style='color:$color'>{$duration}$durationunit$ptime</span></td>  
-                </tr>";
+        $CELLS["members"]=$formatagetext;
+        $CELLS["status"]="$theshield_ico$zCode0$codeToStringSEP$codeToString$avinfo$category$accessrule$simplerule$message$first_error";
+        $CELLS["proto"]=$PROTO;
+        $CELLS["category"]=$zcategory;
+        $CELLS["url"]="$itag$domain_field$infos";
+        $CELLS["info"]="$loupe&nbsp;&nbsp;$link";
+        $CELLS["destination"]="$ToCountry$DESTINATION_TEXT";
+        $CELLS["size"]="{$size}$bandwidth";
+        $CELLS["duration"]="{$duration}$durationunit$ptime";
+        $html[]=relatime_row($color,$SHOWUA,$CELLS);
 
 
     }
     fclose($file);
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='9'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</tbody></table>";
-    $html[]="<div style='font-size:10px'>".@file_get_contents("/usr/share/artica-postfix/ressources/logs/access.log.cmd")."</div>";
+    // L'ancienne version ouvrait le pied A L'INTERIEUR du corps du tableau puis
+    // refermait les deux dans le mauvais ordre: imbrication invalide, le
+    // navigateur deplacait le pied hors du corps. Son colspan valait de plus 9
+    // pour 10 colonnes -- 11 quand la colonne navigateur est active. Le pied awc
+    // n'est plus dans le tableau, donc plus aucun colspan a maintenir.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>$showing_text $c</span>";
+    $html[]="<span class='awc-pg' id='rt-pager'></span>";
+    $html[]="</div></div></div>";
+    $html[]="<div style='font-size:10px'>".htmlspecialchars((string)@file_get_contents("/usr/share/artica-postfix/ressources/logs/access.log.cmd"))."</div>";
     $html[]="<script>";
     $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
 
     $jstiny="";
     if(isset($_GET["notitle"])) {
@@ -1791,20 +1835,102 @@ function search(){
 
     $html[]=$jstiny;
     $html[]="</script>";
-    echo @implode("\n", $html);
+    // awc_pager_js() APRES le tableau (les <tr> doivent exister dans le DOM).
+    // Le rendu ne passe pas par _ENGINE_parse_body: la feuille peut etre
+    // concatenee directement.
+    echo awc_table_style().@implode("\n", $html).awc_pager_js(50,"rt-rows","rt-pager");
 
 
 
 }
 
+/**
+ * En-tete du tableau temps reel.
+ * La colonne d'etat HTTP n'avait AUCUN libelle (<th>&nbsp;</th>): rien n'indiquait
+ * ce qu'elle contenait. Elle porte desormais {status}.
+ * Les libelles arrivent DEJA traduits: search() termine par un echo brut.
+ */
+function relatime_thead($showUA,$labels):string{
+    $h ="<table class='awc-tbl'><thead><tr>";
+    $h.="<th>{$labels["date"]}</th>";
+    if($showUA){$h.="<th class='center'>{$labels["browser"]}</th>";}
+    $h.="<th>{$labels["members"]}</th>";
+    $h.="<th>{$labels["status"]}</th>";
+    $h.="<th>{$labels["proto"]}</th>";
+    $h.="<th>{$labels["category"]}</th>";
+    $h.="<th>{$labels["url"]}</th>";
+    $h.="<th class='center'>{$labels["info"]}</th>";
+    $h.="<th>{$labels["destination"]}</th>";
+    $h.="<th class='center'>{$labels["size"]}</th>";
+    $h.="<th class='center'>{$labels["duration"]}</th>";
+    $h.="</tr></thead><tbody id='rt-rows'>";
+    return $h;
+}
+
+/**
+ * Une requete du journal temps reel.
+ * Les cellules contiennent deja du HTML construit par la boucle d'analyse
+ * (liens td_href, icones, drapeaux de pays): rien ne peut y etre echappe ici
+ * sans casser ce balisage.
+ * $color est la couleur d'etat de la ligne (vert = cache, rouge = refus, ...).
+ */
+function relatime_row($color,$showUA,$cells):string{
+    $h ="<tr>";
+    $h.="<td class='awc-nowrap'><span style='color:$color'>{$cells["date"]}</span></td>";
+    if($showUA){$h.="<td class='center'>{$cells["ua"]}</td>";}
+    $h.="<td><span style='color:$color'>{$cells["members"]}</span></td>";
+    $h.="<td><span style='color:$color'>{$cells["status"]}</span></td>";
+    $h.="<td><span style='color:$color'>{$cells["proto"]}</span></td>";
+    $h.="<td><span style='color:$color'>{$cells["category"]}</span></td>";
+    $h.="<td><span style='color:$color'>{$cells["url"]}</span></td>";
+    $h.="<td class='center awc-nowrap'>{$cells["info"]}</td>";
+    $h.="<td>{$cells["destination"]}</td>";
+    $h.="<td class='center awc-nowrap'><span style='color:$color'>{$cells["size"]}</span></td>";
+    $h.="<td class='center awc-nowrap'><span style='color:$color'>{$cells["duration"]}</span></td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/**
+ * Bouton "navigateur" d'une ligne: ouvre la chaine User-Agent complete.
+ * Remplace huit copies du meme <button> qui ne differaient que par l'icone --
+ * dont une derniere, en repli, qui referencait $js hors de la portee ou il est
+ * defini (chaine vide au premier tour de boucle si l'agent etait absent).
+ */
+function relatime_ua_button($UA):string{
+    $UA=(string)$UA;
+    if(trim($UA)===""){
+        return "<button type='button' class='btn btn-white btn-icon' OnClick=\"blur()\"><i class='fas fa-question'></i></button>";
+    }
+    $ico="fas fa-browser";
+    $tests=array(
+        "#Edge\\/#"             =>"fab fa-edge",
+        "#Firefox\\/#"          =>"fab fa-firefox",
+        "#Chrome/[0-9\\.]+#"    =>"fab fa-chrome",
+        "#Safari/[0-9\\.]+#"    =>"fab fa-chrome",
+        "#OPR/[0-9\\.]+#"       =>"fab fa-opera",
+        "#Trident\\/[0-9]+\\.#" =>"fab fa-internet-explorer",
+        "#MSIE\\s+[0-9\\.]+#"   =>"fab fa-internet-explorer");
+    foreach($tests as $re=>$class){
+        if(preg_match($re,$UA)){$ico=$class;}
+    }
+    $js="Loadjs('fw.proxy.relatime.php?ua-js=".base64_encode($UA)."');";
+    return "<button type='button' class='btn btn-white btn-icon' OnClick=\"$js\"><i class='$ico'></i></button>";
+}
+
 function get_sslrulename($id):string{
     if(intval($id)==0){return "";}
     if(isset($GLOBALS["get_sslrulename"][$id])){return $GLOBALS["get_sslrulename"][$id];}
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT description FROM ssl_rules WHERE ID=$id");
-    if(!is_array($ligne)){return "";}
-    if(!isset($ligne["description"])){return "";}
-    $GLOBALS["get_sslrulename"][$id]=$ligne["description"];
+    if(!isset($GLOBALS["get_sslrulename_cache"])){
+        $list=acls_api_get("/proxy/ssl-rules");
+        $GLOBALS["get_sslrulename_cache"]=[];
+        if(is_array($list)){
+            foreach($list as $r){
+                $GLOBALS["get_sslrulename_cache"][intval($r["id"] ?? 0)]=$r["description"] ?? "";
+            }
+        }
+    }
+    $GLOBALS["get_sslrulename"][$id]=$GLOBALS["get_sslrulename_cache"][intval($id)] ?? "";
     return $GLOBALS["get_sslrulename"][$id];
 }
 
@@ -1827,51 +1953,70 @@ function categoryCodeTocatz($category){
 
 function GeoIPCountry($ipadddr):string{
 
-    if(preg_match("#^(.+?):[0-9]+#",$ipadddr,$re)){$ipadddr=$re[1];}
 
-    $mem=new lib_memcached();
-    if(!isset($GLOBALS["PHP_GEOIP_INSTALLED"])){
-        $GLOBALS["PHP_GEOIP_INSTALLED"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PHP_GEOIP_INSTALLED"));
+    if(isset($GLOBALS["GEO"][$ipadddr])){
+        return $GLOBALS["GEO"][$ipadddr];
     }
+
     if(!isset($GLOBALS["EnableGeoipUpdate"])){
-        $GLOBALS["EnableGeoipUpdate"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableGeoipUpdate"));
-    }
-
-    if($GLOBALS["PHP_GEOIP_INSTALLED"]==0){return "";}
-    if($GLOBALS["EnableGeoipUpdate"]==0){return "";}
-    if (!extension_loaded("maxminddb")) {return "";}
-
-
-
-    $value=unserialize($mem->getKey("GEOIP:$ipadddr"));
-    if(!is_array($value)){$value=array();}
-
-    if(!isset($value["countryCode"])) {
-        try {
-            $reader = new Reader('/usr/local/share/GeoIP/GeoLite2-Country.mmdb');
-            $record = $reader->country($ipadddr);
-            $value["countryCode"] = $record->country->isoCode;
-            $value["countryName"] = $record->country->name;
-            $mem->saveKey("GEOIP:$ipadddr",serialize($value),16000);
-        } catch (Exception $e) {
-
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/geoip/status"),true);
+        if(!isset($json["Status"])){
+        VERBOSE("EnableGeoipUpdate --> FALSE",__LINE__);
+            $GLOBALS["EnableGeoipUpdate"]=0;
             return "";
         }
+        if(!$json["Status"]){
+            VERBOSE("EnableGeoipUpdate --> FALSE",__LINE__);
+            $GLOBALS["EnableGeoipUpdate"]=0;
+            return "";
+        }
+        $GLOBALS["EnableGeoipUpdate"]=1;
     }
+    if($GLOBALS["EnableGeoipUpdate"]==0){
+        VERBOSE("EnableGeoipUpdate --> FALSE",__LINE__);
+        return "";}
 
+    if(preg_match("#^(.+?):[0-9]+#",$ipadddr,$re)){$ipadddr=$re[1];}
 
-    if ($value["countryCode"] == null) {return "";}
-    $countryCode=$value["countryCode"];
-    return $countryCode;
+    VERBOSE("EnableGeoipUpdate --> TRUE",__LINE__);
 
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/geoip/query/$ipadddr"),true);
+
+    if(isset($json["Info"]["Country"]["IsoCode"])){
+        $GLOBALS["GEO"][$ipadddr]=$json["Info"]["Country"]["IsoCode"];
+        return $GLOBALS["GEO"][$ipadddr];
+    }
+    $GLOBALS["GEO"][$ipadddr]="";
+
+    return $GLOBALS["GEO"][$ipadddr];
 
 }
 
+// internal_category_host ramène ce que la page connaît d'une requête (URL complète issue
+// de srcurl, "hôte:port" d'un CONNECT, pseudo-URL Squid "error:invalid-request") au seul
+// nom d'hôte. La route /category/get/{domain} n'accepte qu'UN segment de chemin : une URL
+// complète y tombait en 404 (notFoundHandler, invisible dans articarest.query.log).
+// Rend "" pour tout ce qui n'est pas un nom d'hôte ou une IPv4 : rien à catégoriser.
+function internal_category_host($url):string{
+    $url=trim((string)$url);
+    if($url==""){return "";}
+    if(strpos($url,"://")!==false){
+        $host=parse_url($url,PHP_URL_HOST);
+        $url=is_string($host)?$host:"";
+    }else{
+        $url=preg_replace("#[/?\#].*$#","",$url);
+        if(preg_match("#^(.+?):[0-9]+$#",$url,$re)){$url=$re[1];}
+    }
+    $url=strtolower(trim($url,"."));
+    if(!preg_match("#^[a-z0-9_-]+(\.[a-z0-9_-]+)+$#",$url)){return "";}
+    return $url;
+}
+
 function internal_category($url):int{
-    if(is_null($url)){
+    $url=internal_category_host($url);
+    if($url==""){
         return 0;
     }
-    if(preg_match("#^(.+?):[0-9]+#",$url,$re)){$url=$re[1];}
     if(isset($GLOBALS["internal_category"][$url])){return $GLOBALS["internal_category"][$url];}
     if(preg_match("#(artica|articatech)\.(fr|com|net)#",$url)){
         $GLOBALS["internal_category"][$url]=126;
@@ -1879,8 +2024,23 @@ function internal_category($url):int{
     if(preg_match("#(google|googleapis|googleoptimize)\.(fr|com|it|es|pl|nl|de|co\.uk|br|pt)#",$url)){
         $GLOBALS["internal_category"][$url]=17;
         return 17;}
+
+    $urlAPI="/category/get/".rawurlencode($url);
+    VERBOSE($urlAPI ,__LINE__);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API($urlAPI),true);
+    if(isset($json["Status"])){
+        if(isset($json["category_id"])){
+            if(intval($json["category_id"])>0){
+                $GLOBALS["internal_category"][$url]=$json["category_id"];
+                return  $GLOBALS["internal_category"][$url];
+            }
+        }
+    }
+
+
     if(!isset($GLOBALS["CATEGORIZE_INTERNAL"])){
-        $f=explode("\n",@file_get_contents("ressources/databases/categories.org"));
+        $GLOBALS["CATEGORIZE_INTERNAL"]=array("FIXED"=>array(),"regex"=>array());
+        $f=explode("\n",(string)@file_get_contents("ressources/databases/categories.org"));
         foreach ($f as $line){
             $line=trim($line);
             if(substr($line,0,1)=="#"){continue;}
@@ -1896,20 +2056,24 @@ function internal_category($url):int{
 
         }
     }
-    if(isset($GLOBALS["CATEGORIZE_INTERNAL"][$url])){
-        $GLOBALS["internal_category"][$url]=$GLOBALS["CATEGORIZE_INTERNAL"][$url];
-        return $GLOBALS["CATEGORIZE_INTERNAL"][$url];
+    // Les entrées "fixed/<domaine>/<catégorie>" sont rangées sous ["FIXED"] : les chercher à
+    // la racine ne trouvait jamais rien. intval : la catégorie peut manquer (null) et la
+    // fonction est typée int — un null rendu serait un TypeError en PHP 8.
+    if(isset($GLOBALS["CATEGORIZE_INTERNAL"]["FIXED"][$url])){
+        $GLOBALS["internal_category"][$url]=intval($GLOBALS["CATEGORIZE_INTERNAL"]["FIXED"][$url]);
+        return $GLOBALS["internal_category"][$url];
     }
     foreach ($GLOBALS["CATEGORIZE_INTERNAL"]["regex"] as $regex=>$cat){
         if(preg_match("#$regex#i",$url)){
-            $GLOBALS["internal_category"][$url]=$cat;
+            $GLOBALS["internal_category"][$url]=intval($cat);
             return $GLOBALS["internal_category"][$url];
         }
 
     }
 
 
-    VERBOSE($url ."(No category)",__LINE__);
+
+    VERBOSE($url ." <strong style='color:blue;font-size:18px'>(No category)</strong>",__LINE__);
     return 0;
 
 }
@@ -1921,16 +2085,32 @@ function peer_rule_from_id($id){
     if(isset($GLOBALS["peer_rule_from_id"][$id])){
         return strval($GLOBALS["peer_rule_from_id"][$id]);
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM squid_parents_acls WHERE aclid='$id'");
-    if(!$q->ok){
-        writelogs($q->mysql_error,__FILE__,__FUNCTION__,__LINE__);
+    $row=acls_api_get("/proxy/parents/acls/".intval($id));
+    if(!is_array($row) || !isset($row["ruleName"])){
         return "";
     }
-    if(!isset($ligne["rulename"])){
-        return "";
-    }
-    $rulename=$ligne["rulename"];
+    $rulename=$row["ruleName"];
     $GLOBALS["peer_rule_from_id"][$id]=$rulename;
     return $rulename;
+}
+function strictdeny_rules():array{
+
+    $resp=strictdeny_get("/proxy/strictdeny/list");
+    $results=is_array($resp["Rules"] ?? null) ? $resp["Rules"] : [];
+    if(count($results)==0){
+        return array();
+    }
+
+    $f=array();
+    foreach($results as $ligne){
+        $tag=intval($ligne["rule_tag"] ?? 0);
+        $rulename=$ligne["ruleName"] ?? "";
+        $f[$tag]=$rulename;
+    }
+    return $f;
+}
+function strictdeny_get($path){
+    $resp=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API($path),true);
+    if(!is_array($resp) || empty($resp["Status"])){ return null; }
+    return $resp;
 }

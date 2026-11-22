@@ -1,5 +1,7 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 include_once(dirname(__FILE__)."/class.mount.inc");
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 
 
@@ -103,7 +105,7 @@ class squid_ssl{
 
 
     public function build(){
-        if(!is_file("/etc/artica-postfix/settings/Daemons/AllowSquidWhitelistsSSL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowSquidWhitelistsSSL", 1);}
+        if(!artica_setting_exists("AllowSquidWhitelistsSSL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowSquidWhitelistsSSL", 1);}
         $SquidSSLUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidSSLUrgency"));
         if($SquidSSLUrgency==1){
             $f[]="# SSL Emergency mode !!! [".__LINE__."]";
@@ -346,25 +348,18 @@ class squid_ssl{
 
 
     private function SniGroups(){
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+        // acls.db is API-only — SNI groups via the acls backend (3-table JOIN server-side).
         $f=array();
-        $sql="SELECT webfilters_sqgroups.*
-		FROM webfilters_sqgroups, ssl_rules, sslrules_sqacllinks
-		WHERE sslrules_sqacllinks.aclid = ssl_rules.ID
-		AND sslrules_sqacllinks.gpid = webfilters_sqgroups.ID
-		AND webfilters_sqgroups.GroupType LIKE 'ssl_sni%'
-		AND webfilters_sqgroups.enabled =1
-		AND ssl_rules.enabled =1";
-        $results=$q->QUERY_SQL($sql);
-        if(!$q->ok){
-            $f[]="# !!!! MySQL Error !!!!";
+        $results=acls_api_get("/proxy/ssl/sni-groups");
+        if(!is_array($results)){
+            $f[]="# !!!! API Error !!!!";
             return $f;
         }
 
         foreach($results as $index=>$ligne) {
-            $GroupName=$ligne["GroupName"];
-            $GroupType=$ligne["GroupType"];
-            $ID=$ligne["ID"];
+            $GroupName=$ligne["groupName"];
+            $GroupType=$ligne["groupType"];
+            $ID=$ligne["id"];
             $f[]="# SNI Group $GroupName/$GroupType";
             $f[]=$this->SniGroupsItems($ID,$GroupType);
         }
@@ -388,12 +383,14 @@ class squid_ssl{
     }
 
     private function SniGroupsItems($ID,$GroupType="ssl_sni"){
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
         $f=array();
         $ForceRegex=false;
         if($GroupType=="ssl_sni_regex"){$ForceRegex=true;}
         $f[]="# id:$ID Type: $GroupType";
-        $results=$q->QUERY_SQL("SELECT * FROM webfilters_sqitems WHERE gpid=$ID AND enabled=1");
+        // acls.db is API-only — enabled group items via the acls backend.
+        $itemsApi=acls_api_get("/proxy/acls/sqlite/items?gpid=".intval($ID));
+        $results=array();
+        if(is_array($itemsApi)){foreach($itemsApi as $it){if(is_array($it) && intval($it["enabled"] ?? 0)==1){$results[]=$it;}}}
         $CountOf=0;
         foreach($results as $index=>$ligne) {
 
@@ -424,16 +421,18 @@ class squid_ssl{
     private function sslproxy_cert_error(){
         $this->ok=true;
         $squid_acls_groups=new squid_acls_groups();
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+        // acls.db is API-only (DB-lock contention) — rules fetched via the acls backend below.
         $f=array();
         $Types[1]="deny";
         $Types[2]="allow";
         $isSquid5=$this->isSquid5;
 
 
-        $sql="SELECT * FROM sslproxy_cert_error WHERE enabled=1 ORDER BY zOrder";
-        $results=$q->QUERY_SQL($sql);
-        if(!$q->ok){$this->ok=false;}
+        $results=acls_api_get("/proxy/cert-errors");
+        if(!is_array($results)){$results=array();$this->ok=false;}
+        $tmp=array();
+        foreach($results as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"] ?? 0)!=1){continue;}$rr["ID"]=intval($rr["id"] ?? 0);$rr["ruletype"]=intval($rr["ruleType"] ?? 0);$tmp[]=$rr;}
+        $results=$tmp;
         foreach($results as $index=>$ligne) {
             $aclid=$ligne["ID"];
             $annotate_transaction="";
@@ -456,9 +455,10 @@ class squid_ssl{
 
 
 
-        $sql="SELECT * FROM ssl_rules WHERE enabled=1 AND trust=1 ORDER BY zOrder";
-        $results=$q->QUERY_SQL($sql);
-        if(!$q->ok){$this->ok=false;}
+        $rawrules=acls_api_get("/proxy/ssl-rules");
+        if(!is_array($rawrules)){$rawrules=array();$this->ok=false;}
+        $results=array();
+        foreach($rawrules as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"] ?? 0)!=1){continue;}if(intval($rr["trust"] ?? 0)!=1){continue;}$rr["ID"]=intval($rr["id"] ?? 0);$results[]=$rr;}
 
         foreach($results as $index=>$ligne) {
             $aclid=$ligne["ID"];
@@ -480,11 +480,12 @@ class squid_ssl{
         $this->ok=true;
         $isSquid5=$this->isSquid5;
         $squid_acls_groups=new squid_acls_groups();
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+        // acls.db is API-only — enabled ssl_rules via the acls backend.
         $f=array();
-        $sql="SELECT * FROM ssl_rules WHERE enabled=1 ORDER BY zOrder";
-        $results=$q->QUERY_SQL($sql);
-        if(!$q->ok){$this->ok=false;}
+        $rawrules=acls_api_get("/proxy/ssl-rules");
+        if(!is_array($rawrules)){$rawrules=array();$this->ok=false;}
+        $results=array();
+        foreach($rawrules as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"] ?? 0)!=1){continue;}$rr["ID"]=intval($rr["id"] ?? 0);$rr["zOrder"]=intval($rr["xOrder"] ?? 0);$results[]=$rr;}
 
         $c=0;
         $Annotation_splice[0]="splicerule";
@@ -548,11 +549,12 @@ class squid_ssl{
 
         $this->ok=true;
         $squid_acls_groups=new squid_acls_groups();
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+        // acls.db is API-only — enabled bump ssl_rules via the acls backend.
         $f=array();
-        $sql="SELECT * FROM ssl_rules WHERE enabled=1 AND crypt=1 ORDER BY zOrder";
-        $results=$q->QUERY_SQL($sql);
-        if(!$q->ok){$this->ok=false;}
+        $rawrules=acls_api_get("/proxy/ssl-rules");
+        if(!is_array($rawrules)){$rawrules=array();$this->ok=false;}
+        $results=array();
+        foreach($rawrules as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"] ?? 0)!=1){continue;}if(intval($rr["crypt"] ?? 0)!=1){continue;}$rr["ID"]=intval($rr["id"] ?? 0);$results[]=$rr;}
 
 
         foreach($results as $index=>$ligne) {

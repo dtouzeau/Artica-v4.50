@@ -183,7 +183,7 @@ class pagebuilder{
 			if(preg_match("#curl\/[0-9\.]+#",$_SERVER['HTTP_USER_AGENT'])){
 				$IP=$_SERVER["REMOTE_ADDR"];
 				$file=basename($_SERVER["SCRIPT_FILENAME"]);
-				if($file=="miniadm.php"){die("DIE " .__FILE__." Line: ".__LINE__);}
+				if($file=="miniadm.php"){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 
 			}
 			$jquerys[]="jquery-1.8.3.js";

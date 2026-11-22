@@ -554,7 +554,7 @@ function reconfigure()
     $keepalived_global_settings = new keepalived_global_settings();
     $f[] = "global_defs {";
     //$f[]="   enable_script_security";
-    $f[] = "   max_auto_priority";
+    //$f[] = "   max_auto_priority";
 
     $f[] = "}";
     //Build VTI
@@ -729,7 +729,7 @@ function reconfigure()
         //$GLOBALS["CLASS_SOCKETS"]->SET_INFO("FAILOVER-YAML-CONFIG", serialize($yamlConfig));
         //CREATE CONF FILE
 
-        if (intval($count_services["tcount"]) > 0 && is_file("/usr/share/artica-postfix/bin/go-shield/go-failover-checker")) {
+        if (is_file("/usr/share/artica-postfix/bin/go-shield/go-failover-checker")) {
 
             $f[] = "vrrp_script chk_vi_{$ligne["ID"]} {";
             $f[] = "   script \"/usr/share/artica-postfix/bin/go-shield/go-failover-checker -instance={$ligne["ID"]}\"";
@@ -748,7 +748,16 @@ function reconfigure()
             if (!empty($ligne["timeout"])) {
                 $f[] = "   timeout {$ligne["timeout"]}";
             }
+            if (!empty($ligne["init_fail"])) {
+                if(intval($ligne["init_fail"])==1) {
+                    $f[] = "   init_fail";
+                }
+
+            }
             $f[] = "}";
+        }
+        if(intval($ligne["preempt_delay"]) > 0) {
+            $ligne["nopreempt"]=0;
         }
         if($ligne["nopreempt"] == 1) {
             $ligne["state"] = "BACKUP";
@@ -767,7 +776,10 @@ function reconfigure()
         $f[] = "   virtual_router_id {$ligne["virtual_router_id"]}";
         $f[] = "   priority {$ligne["priority"]}";
         $f[] = "   advert_int {$ligne["advert_int"]}";
-        if ($ligne["state"] == "BACKUP" && $ligne["nopreempt"] == 1) {
+        if(intval($ligne["preempt_delay"]) > 0) {
+            $f[] = "   preempt_delay {$ligne["preempt_delay"]}";
+        }
+        if ($ligne["state"] == "BACKUP" && $ligne["nopreempt"] == 1 && intval($ligne["preempt_delay"]) == 0) {
             $f[] = "   nopreempt";
         }
         if ($ligne["unicast_src_ip"] == 1) {
@@ -858,7 +870,7 @@ function reconfigure()
             }
             $f[] = "   }";
         }
-        if (intval($count_services["tcount"]) > 0) {
+        if (is_file("/usr/share/artica-postfix/bin/go-shield/go-failover-checker")) {
             $f[] = "   track_script {";
             $f[] = "     chk_vi_{$ligne["ID"]}";
             $f[] = "   }";
@@ -868,7 +880,7 @@ function reconfigure()
         if ($ligne["notifty_enable"] == 1) {
             $notify = "; {$ligne["notifty"]}";
         }
-        $f[] = "   notify \"/etc/keepalived/keepalived-state.sh$notify\"";
+        $f[] = "   notify \"/usr/share/artica-postfix/bin/go-shield/go-failover-checker --state$notify\"";
         $f[] = "}";
     }
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("FAILOVER-YAML-CONFIG", serialize($conf));
@@ -1006,6 +1018,7 @@ function sync_nodes($primary_node_id = 0, $secondary_node_id = 0)
         $array["virtual_router_id"] = intval($primary_node["virtual_router_id"]);
         $array["priority"] = intval($ligne["priority"]);
         $array["nopreempt"] = intval($ligne["nopreempt"]);
+        $array["preempt_delay"] = intval($ligne["preempt_delay"]);
         $array["advert_int"] = intval($primary_node["advert_int"]);
         $array["unicast_src_ip"] = intval($primary_node["unicast_src_ip"]);
         $array["enable_peers_ttl"] = intval($primary_node["enable_peers_ttl"]);
@@ -1021,6 +1034,7 @@ function sync_nodes($primary_node_id = 0, $secondary_node_id = 0)
         $array["rise"] = intval($primary_node["rise"]);
         $array["weight"] = intval($primary_node["weight"]);
         $array["timeout"] = intval($primary_node["timeout"]);
+        $array["init_fail"] = intval($primary_node["init_fail"]);
         $array["testDom"] = $primary_node["testDom"];
         $array["testDomDNS"]=$primary_node["testDomDNS"];
         $array["enableProxyCurl"] = intval($primary_node["enableProxyCurl"]);
@@ -1500,6 +1514,7 @@ function setup_nodes($data = null)
             $keepalived_node->use_vmac = intval($data["use_vmac"]);
             $keepalived_node->vmac_xmit_base = intval($data["vmac_xmit_base"]);
             $keepalived_node->nopreempt = intval($data["nopreempt"]);
+            $keepalived_node->preempt_delay = intval($data["preempt_delay"]);
             $keepalived_node->unicast_src_ip = $data["unicast_src_ip"];
             $keepalived_node->enable_peers_ttl = intval($data["enable_peers_ttl"]);
             $keepalived_node->min_peers_ttl = intval($data["min_peers_ttl"]);
@@ -1514,6 +1529,7 @@ function setup_nodes($data = null)
             $keepalived_node->rise = intval($data["rise"]);
             $keepalived_node->weight = intval($data["weight"]);
             $keepalived_node->timeout = intval($data["timeout"]);
+            $keepalived_node->init_fail = intval($data["init_fail"]);
             $keepalived_node->testDom = $data["testDom"];
             $keepalived_node->testDomDNS=$data["testDomDNS"];
             $keepalived_node->enableProxyCurl = intval($data["enableProxyCurl"]);
@@ -1576,15 +1592,8 @@ function setup_nodes($data = null)
             if (strlen($aggregated_vip_ids[0]) > 0) {
                 foreach ($aggregated_vip_ids as $id) {
                     $vip_info = $q->mysqli_fetch_array("SELECT COUNT(*) as Tcount, * FROM keepalived_virtual_interfaces WHERE synckey='{$data["VIP"]["{$id}"]['synckey']}'");
+                    // Carte du maître telle quelle : localize_nics() la traduit.
                     $dev = $data["VIP"]["{$id}"]['dev'];
-                    $array = $unix->NETWORK_ALL_INTERFACES();
-                    foreach ($array as $ifname => $ifconfig) {
-                        $ipaddress = $ifconfig["IPADDR"];
-                        if ($ipaddress == $data["VIP"]["{$id}"]['dev']) {
-                            $dev = $ifname;
-                            break;
-                        }
-                    }
                     if ($vip_info['Tcount'] > 0) {
                         $keepalived_vips = new keepalived_vips($ligne_count_nodes['ID'], $vip_info['ID']);
                         $keepalived_vips->primary_node_id = $ligne_count_nodes['ID'];
@@ -1632,6 +1641,7 @@ function setup_nodes($data = null)
                     }
                 }
             }
+            localize_nics();
             build_syslog();
             reconfigure();
             keepalived_syslog_secondary_node("[SETUP]: Report, {success}: ready for production mode 123-{$ligne_count_nodes['ID']}");
@@ -1656,6 +1666,7 @@ function setup_nodes($data = null)
         $keepalived_node->use_vmac = intval($data["use_vmac"]);
         $keepalived_node->vmac_xmit_base = intval($data["vmac_xmit_base"]);
         $keepalived_node->nopreempt = intval($data["nopreempt"]);
+        $keepalived_node->preempt_delay = intval($data["preempt_delay"]);
         $keepalived_node->unicast_src_ip = $data["unicast_src_ip"];
         $keepalived_node->enable_peers_ttl = intval($data["enable_peers_ttl"]);
         $keepalived_node->min_peers_ttl = intval($data["min_peers_ttl"]);
@@ -1670,6 +1681,7 @@ function setup_nodes($data = null)
         $keepalived_node->rise = intval($data["rise"]);
         $keepalived_node->weight = intval($data["weight"]);
         $keepalived_node->timeout = intval($data["timeout"]);
+        $keepalived_node->init_fail = intval($data["init_fail"]);
         $keepalived_node->testDom= $data["testDom"];
         $keepalived_node->testDomDNS=$data["testDomDNS"];
         $keepalived_node->enableProxyCurl = intval($data["enableProxyCurl"]);
@@ -1715,15 +1727,8 @@ function setup_nodes($data = null)
         $aggregated_vip_ids = explode(',', $data['aggregated_vip_ids']);
         if (strlen($aggregated_vip_ids[0]) > 0) {
             foreach ($aggregated_vip_ids as $id) {
+                // Carte du maître telle quelle : localize_nics() la traduit.
                 $dev = $data["VIP"]["{$id}"]['dev'];
-                $array = $unix->NETWORK_ALL_INTERFACES();
-                foreach ($array as $ifname => $ifconfig) {
-                    $ipaddress = $ifconfig["IPADDR"];
-                    if ($ipaddress == $data["VIP"]["{$id}"]['dev']) {
-                        $dev = $ifname;
-                        break;
-                    }
-                }
                 $keepalived_vips = new keepalived_vips();
                 $keepalived_vips->virtualip_id = 0;
                 $keepalived_vips->primary_node_id = $last_id;
@@ -1751,6 +1756,7 @@ function setup_nodes($data = null)
                 $keepalived_trackinterfaces->save(false, false);
             }
         }
+        localize_nics();
         build_syslog();
         reconfigure();
         restart();
@@ -1762,6 +1768,25 @@ function setup_nodes($data = null)
 
     }
 
+}
+
+// localize_nics : le maître envoie SES noms de cartes (eth0 sur Debian 12) ;
+// le daemon les remplace par ceux de ce serveur (ens192 sur Debian 13) avant
+// que reconfigure() n'écrive keepalived.conf. Sans cela keepalived refuse de
+// démarrer (« Non-existent interface specified in configuration »).
+function localize_nics(){
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/failover/nics/localize"));
+    if(!$json || !property_exists($json,"success") || !$json->success){
+        $error=($json && property_exists($json,"error")) ? $json->error : "no answer from the daemon";
+        keepalived_syslog_secondary_node("[SETUP]: network card names not adapted: $error");
+        return;
+    }
+    foreach ($json->changes as $c){
+        keepalived_syslog_secondary_node("[SETUP]: $c->table $c->column $c->from -> $c->to ($c->reason)");
+    }
+    foreach ($json->unresolved as $nic){
+        keepalived_syslog_secondary_node("[SETUP]: network card $nic does not exist on this server, set \"Rewrite interface\" on the primary node");
+    }
 }
 
 function action_delete_nodes_vips($data = null)

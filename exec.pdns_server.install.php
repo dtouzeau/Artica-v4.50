@@ -33,9 +33,6 @@ if($argv[1]=="--remove"){remove();exit();}
 if($argv[1]=="--enable"){install_services();exit();}
 if($argv[1]=="--install-ufdb"){install_ufdb();exit();}
 if($argv[1]=="--uninstall-ufdb"){uninstall_ufdb();exit();}
-if($argv[1]=="--install-poweradmin"){install_poweradmin();exit();}
-if($argv[1]=="--disable-poweradmin"){disable_poweradmin();exit();}
-if($argv[1]=="--enable-poweradmin"){enable_poweradmin();exit();}
 if($argv[1]=="--monit"){$GLOBALS["OUTPUT"]=true;exit();}
 if($argv[1]=="--install-recursor"){$GLOBALS["OUTPUT"]=true;install_recursor();exit();}
 if($argv[1]=="--uninstall-recursor"){$GLOBALS["OUTPUT"]=true;uninstall_recursor();exit();}
@@ -110,69 +107,11 @@ function install(){
 
 
 
-function install_poweradmin(){
-	$unix=new unix();
-	build_progress(15, "{downloading}");
-	$curl=new ccurl("http://articatech.net/download/poweradmin-2.1.7.tgz");
-	$curl->Timeout=2400;
-	$curl->WriteProgress=true;
-	$curl->ProgressFunction="download_pdns_progress";
-	$filetemp=$unix->FILE_TEMP().".tar.gz";
-	if(!$curl->GetFile($filetemp)){
-		build_progress(110, "{downloading} {failed2}");
-		@unlink($filetemp);
-		return;
-	}
-	
-	$md5New=md5_file($filetemp);
-	if($md5New<>"37d482228cf21088ea1fb1a444531b6a"){
-		build_progress(110, "{downloading} {failed2} {corrupted}");
-		@unlink($filetemp);
-		return;
-	}
-	
-	build_progress(50, "{extracting}");
-	
-	$tar=$unix->find_program("tar");
-	system("$tar -xhf $filetemp -C /");
-	
-	
-	if(!is_file("/usr/share/poweradmin/index.php")){
-		build_progress(110, "{installing} {failed}");
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PowerAdminInstalled", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePowerAdmin", 0);
-		return;
-	}
-	
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PowerAdminInstalled", 1);
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePowerAdmin", 1);
-	$php=$unix->LOCATE_PHP5_BIN();
-	
-	build_progress(90, "{reconfiguring}");
 
-	install_poweradmin_service();
-	build_progress(95, "{restarting_service}");
-	system("/etc/init.d/poweradmin restart");
-	build_progress(100, "{restarting_service} {done}");
-	
-	
-}
 
-function enable_poweradmin(){
-	build_progress(50, "{reconfiguring}");
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePowerAdmin", 1);
-	install_poweradmin_service();
-	build_progress(95, "{restarting_service}");
-	system("/etc/init.d/poweradmin restart");
-	build_progress(100, "{restarting_service} {done}");
-}
 
-function disable_poweradmin(){
-	build_progress(50, "{reconfiguring}");
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePowerAdmin", 0);
-	remove_service("/etc/init.d/poweradmin");
-	build_progress(100, "{disable_feature} {done}");
-}
+
+
 
 function uninstall_ufdb(){
 	$unix=new unix();
@@ -368,7 +307,6 @@ function install_services():bool{
 
 function remove(){
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePDNS", 0);
-	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePowerAdmin", 0);
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("DHCPDInPowerDNS", 0);
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PowerDNSEnableClusterSlave", 0);
 	
@@ -405,72 +343,7 @@ function remove_service($INITD_PATH){
 	if(is_file('/sbin/chkconfig')){shell_exec("/sbin/chkconfig --del " .basename($INITD_PATH)." >/dev/null 2>&1");}
 	if(is_file($INITD_PATH)){@unlink($INITD_PATH);}
 }
-function install_poweradmin_service(){
-	if(is_file("/etc/artica-postfix/WEBSECURITY_APPLIANCE")){return;}
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	$f[]="#!/bin/sh";
-	$f[]="### BEGIN INIT INFO";
-	$f[]="# Provides:          poweradmin";
-	$f[]="# Required-Start:    \$local_fs \$syslog \$network \$time \$pdns";
-	$f[]="# Required-Stop:     \$local_fs";
-	$f[]="# Should-Start:";
-	$f[]="# Should-Stop:";
-	$f[]="# Default-Start:     3 4 5";
-	$f[]="# Default-Stop:      0 1 6";
-	$f[]="# Short-Description: PowerDNS Webinterface";
-	$f[]="# chkconfig: 2345 11 89";
-	$f[]="# description: Extensible, configurable DNS PROXY daemon";
-	$f[]="### END INIT INFO";
-	$f[]="case \"\$1\" in";
-	$f[]=" start)";
-	
 
-	$f[]="   $php /usr/share/artica-postfix/exec.poweradmin.php --start \$2 \$3";
-	$f[]="	 exit 0";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]="  stop)";
-	$f[]="   $php /usr/share/artica-postfix/exec.poweradmin.php --stop \$2 \$3";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]=" restart)";
-	
-
-	$f[]="   $php /usr/share/artica-postfix/exec.poweradmin.php --restart \$2 \$3";
-	$f[]="	 exit 0";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]=" reload)";
-	$f[]="   $php /usr/share/artica-postfix/exec.poweradmin.php --restart \$2 \$3";
-	$f[]="	 exit 0";
-	$f[]="    ;;";
-	$f[]="";
-	$f[]="  *)";
-	$f[]="    echo \"Usage: \$0 {start|stop|restart} (+ '--verbose' for more infos)\"";
-	$f[]="    exit 1";
-	$f[]="    ;;";
-	$f[]="esac";
-	$f[]="exit 0\n";
-
-	$INITD_PATH="/etc/init.d/poweradmin";
-	echo "PDNS: [INFO] Writing $INITD_PATH with new config\n";
-	@unlink($INITD_PATH);
-	@file_put_contents($INITD_PATH, @implode("\n", $f));
-	@chmod($INITD_PATH,0755);
-
-	if(is_file('/usr/sbin/update-rc.d')){
-		shell_exec("/usr/sbin/update-rc.d -f " .basename($INITD_PATH)." defaults >/dev/null 2>&1");
-	}
-
-	if(is_file('/sbin/chkconfig')){
-		shell_exec("/sbin/chkconfig --add " .basename($INITD_PATH)." >/dev/null 2>&1");
-		shell_exec("/sbin/chkconfig --level 345 " .basename($INITD_PATH)." on >/dev/null 2>&1");
-	}
-
-
-
-}
 function install_pdns_server(){	
 
 	$unix=new unix();

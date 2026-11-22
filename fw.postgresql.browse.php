@@ -1,5 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// Inclusion INCONDITIONNELLE: awc_table_style()/awc_pager_js()/awc_search_bar() vivent ici.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.postgres.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -28,37 +30,38 @@ function popup(){
 	$table=$_GET["popup"];
 	$md=md5(time().$table);
 	$t=time();
-	$html[]="<div class=\"row\"> 
-		<div class='ibox-content'>
-			<div class=\"input-group\">
-	      		<input type=\"text\" class=\"form-control\" value=\"SELECT * FROM $table LIMIT 200\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
-	      		<span class=\"input-group-btn\"><button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:ss$t();\">Go!</button></span>
-	     	</div>
-    	</div>
-	</div>
-	<div id='$md'></div>
-		<script>
-		function Search$t(e){
-			if(!checkEnter(e) ){return;}
-			ss$t();
-		}
-		
+
+	// Meme barre que les tableaux awc (awc_search_bar); elle porte ici la REQUETE SQL
+	// et non un filtre, d'ou la valeur initiale posee en JavaScript -- la barre ne
+	// prend qu'un texte de substitution, pas de valeur.
+	$html=array();
+	$html[]=awc_search_bar("pgq-sql-$t","SELECT ...");
+	$html[]="<div id='$md'></div>";
+
+	// Valeur injectee dans un litteral JS: json_encode + HEX_TAG, pour que le nom de
+	// table (issu de $_GET) ne puisse pas sortir de la chaine ni du <script>.
+	$initial=json_encode("SELECT * FROM $table LIMIT 200",JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT);
+
+	// Script concatene APRES le parsing: _ENGINE_parse_body lirait chaque bloc {...}
+	// du JavaScript comme un jeton a traduire.
+	$js="<script>
+	(function(){
+		var inp=document.getElementById('pgq-sql-$t');
+		if(!inp){return;}
+		inp.value=$initial;
 		function ss$t(){
-			var ss=encodeURIComponent(base64_encode(document.getElementById('search-this-$t').value));
+			var ss=encodeURIComponent(base64_encode(inp.value));
 			LoadAjax('$md','$page?search='+ss);
 		}
-		
-		function Start$t(){
-			var ss=document.getElementById('search-this-$t').value;
-			ss$t();
-		}
-		Start$t();
-	</script>
-	
-	
-	";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+		inp.onkeypress=function(e){ if(checkEnter(e)){ ss$t(); } };
+		var go=document.getElementById('pgq-sql-$t-go');
+		if(go){ go.onclick=function(){ ss$t(); return false; }; }
+		window.ss$t=ss$t;
+		ss$t();
+	})();
+	</script>";
+
+	echo $tpl->search_block_css().$tpl->_ENGINE_parse_body(@implode("\n", $html)).$js;
 }
 
 function table(){
@@ -69,58 +72,51 @@ function table(){
     admin_tracks("Launching PostreSQL query [$sql] using the SQL Browser");
 	$results=$q->QUERY_SQL($sql);
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
-	
-	$html[]="<table id='table-postgresql-query' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	
-	$html[]="</thead>";
-	$html[]="<tbody>";
+
+	// En-tete: les noms de colonnes viennent de la requete, donc echappes.
+	$head=array();
 	$fieldTotal=0;
-	$html[]="<tr>";
 	while ($fieldTotal < pg_num_fields($results)){
-		$fieldName = pg_field_name($results, $fieldTotal);
-		$html[]="<th data-sortable=true class='text-capitalize'>{$fieldName}</th>";
+		$head[]="<th>".htmlspecialchars(pg_field_name($results, $fieldTotal))."</th>";
 		$fieldTotal++;
 	}
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-    $TRCLASS=null;
+	if($fieldTotal<1){$fieldTotal=1;}
+
+	// Les valeurs sont echappees: elles sortent de la base et etaient jusqu'ici
+	// injectees telles quelles dans la cellule.
+	$rows=array();
 	while ($row = pg_fetch_row($results)){
-		$md=md5(serialize($row));
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$count = count($row);
-		$y = 0;
-		while ($y < $count){
-			$c_row = current($row);
-			$html[]="<td>$c_row</td>";
-			next($row);
-			$y = $y + 1;
+		$cells=array();
+		foreach($row as $c_row){
+			$cells[]="<td class='awc-mono'>".htmlspecialchars((string)$c_row)."</td>";
 		}
-		
-		$html[]="</tr>";
+		$rows[]="<tr>".@implode("",$cells)."</tr>";
 	}
+	pg_free_result($results);
+	$total=count($rows);
 
-	pg_free_result($results);	
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='$fieldTotal'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-postgresql-query').footable( { 	\"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-	
-	
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]=@implode("",$head);
+	$html[]="</tr></thead><tbody id='pgq-rows'>";
+	if($total==0){
+		$html[]="<tr><td colspan='$fieldTotal'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $total / $total {records}</span>";
+	$html[]="<span class='awc-pg' id='pgq-pager'></span>";
+	$html[]="</div></div></div>";
+
+	// Feuille et scripts concatenes AUTOUR du parsing: la regex #{(.+?)}# de
+	// _ENGINE_parse_body lit chaque corps de regle CSS et chaque bloc JS comme un jeton.
+	$foot="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.awc_pager_js(50,"pgq-rows","pgq-pager")
+		.$foot;
+
 }
-
-

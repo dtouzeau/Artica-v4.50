@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/class.ldap-extern.inc");
 
 class squid_external_ldap_builder{
@@ -101,18 +103,18 @@ class squid_external_ldap_builder{
 		
 		
 		
-		$helper="/usr/share/artica-postfix/external_acl_squid_extldap.php";
-		@chmod($helper,0755);
-		
-		
+
 		$conf[]= "#--------- LDAP AUTH settings ( ".__CLASS__."/". __LINE__.")";
 		$conf[]= "#Authentification mode, building using squid compiled for $ldap_host:$ldap_port";
 		$conf[]= "auth_param basic program $SQUID_LDAP_AUTH -b \"$suffix\" -D \"$ldap_admin\" -w \"$ldap_password\" -f \"$user_filter\" -v 3 -h $ldap_host -p $ldap_port";
 		$conf[]= "auth_param basic children ".$this->auth_param_basic_children();
 		$conf[]= "auth_param basic realm $auth_banner";
 		$conf[]= $this->auth_params_basic_options();
-		$external_acl_childrens=$this->external_acl_childrens();
-		$conf[]= "external_acl_type ldap_group $external_acl_childrens %LOGIN $helper";
+		// Pas de "external_acl_type ldap_group" ici : le helper des groupes LDAP externes est
+		// désormais le binaire Go /usr/lib/squid3/extldap_group_helper, que seul articarest sait
+		// installer et configurer (squid/authenticate.go externalLdapBuilder()). Si ce
+		// générateur réécrit authenticate.conf, squid.EnsureNoDeprecatedAuthHelper()
+		// reconstruit la configuration côté Go dans les 5 minutes.
 		$conf[]= "acl ldapauth proxy_auth REQUIRED";
 		$GLOBALS["HTTP_ACCESS"]["LDAP_AUTH"]="http_access allow {$this->MyStandPort}ldapauth";
 		$conf[]= "";

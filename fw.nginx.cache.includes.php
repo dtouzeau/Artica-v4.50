@@ -2,8 +2,12 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
+// Pentest 2026-11-04 : serviceid etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["serviceid"])){$_GET["serviceid"]=intval($_GET["serviceid"]);}
 if(isset($_GET["service-js"])){service_js();exit;}
 if(isset($_GET["popup-main"])){popup_main();exit;}
 if(isset($_GET["popup-table"])){popup_table();exit;}
@@ -57,13 +61,13 @@ function compile_js_progress($ID,$final=null):string{
 
 }
 
+
 function rule_remove():bool{
     $md=$_GET["md"];
     $ID=intval($_GET["pattern-remove"]);
     $serviceid=intval($_GET["serviceid"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT pattern FROM enforce_cache WHERE ID=$ID");
-    $pattern=$ligne["pattern"];
+    $ligne=fetch_enforce_cache($ID);
+    $pattern=isset($ligne["pattern"]) ? $ligne["pattern"] : "";
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"enforce_cache","where"=>array("ID"=>"$ID")));
     $site=get_servicename($serviceid);
     echo "$('#$md').remove();\n";
@@ -77,31 +81,14 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
 
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
 function rule_enable():bool{
     $ID=intval($_GET["pattern-enable"]);
     $serviceid=intval($_GET["serviceid"]);
 
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT pattern,enabled FROM enforce_cache WHERE ID=$ID");
-    $pattern=$ligne["pattern"];
-    if(intval($ligne["enabled"])==1){
+    $ligne=fetch_enforce_cache($ID);
+    $pattern=isset($ligne["pattern"]) ? $ligne["pattern"] : "";
+    if(intval(isset($ligne["enabled"])?$ligne["enabled"]:0)==1){
        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"enforce_cache","set"=>array("enabled"=>"0"),"where"=>array("ID"=>"$ID")));
     }else{
         $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"enforce_cache","set"=>array("enabled"=>"1"),"where"=>array("ID"=>"$ID")));
@@ -116,17 +103,17 @@ function rule_popup():bool{
     $ruleid     = intval($_GET["popup-rule"]);
     $tpl        = new template_admin();
     $bt="{add}";
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM enforce_cache WHERE ID=$ruleid");
+    $ligne=fetch_enforce_cache($ruleid);
     if($ruleid>0){
         $bt="{apply}";
     }
-    if($ligne["maxmins"]==0){$ligne["maxmins"]=15;}
+    $maxmins=intval(isset($ligne["maxmins"])?$ligne["maxmins"]:0);
+    if($maxmins==0){$maxmins=15;}
     $form[]=$tpl->field_hidden("ruleid",$ruleid);
     $form[]=$tpl->field_hidden("serviceid",$serviceid);
-    $form[]=$tpl->field_numeric("maxmins","{child_ttl} ({minutes})",$ligne["maxmins"]);
-    $form[]=$tpl->field_checkbox("regex","{regex}",$ligne["regex"]);
-    $form[]=$tpl->field_text("pattern","{path}",$ligne["pattern"],true);
+    $form[]=$tpl->field_numeric("maxmins","{child_ttl} ({minutes})",$maxmins);
+    $form[]=$tpl->field_checkbox("regex","{regex}",isset($ligne["regex"])?$ligne["regex"]:0);
+    $form[]=$tpl->field_text("pattern","{path}",isset($ligne["pattern"])?$ligne["pattern"]:"",true);
     $html[]=$tpl->form_outside(null,$form,null,$bt,refresh_global($serviceid),"AsWebMaster");
     echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -204,9 +191,9 @@ function rule_save():bool{
 }
 
 function popup_main():bool{
-    $q=new lib_sqlite(NginxGetDB());
-    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS enforce_cache (ID INTEGER PRIMARY KEY AUTOINCREMENT,serviceid INTEGER NOT NULL DEFAULT 0, enabled INTEGER NOT NULL DEFAULT 1,pattern TEXT NOT NULL,regex INTEGER NOT NULL DEFAULT 1 )");
-
+    // Daemon owns the enforce_cache schema (nginxsites/DBConf.go FixTables); no
+    // CREATE TABLE IF NOT EXISTS needed PHP-side. Daemon's schema also includes
+    // the cacheid + maxmins columns the PHP DDL was missing.
     $serviceid  = intval($_GET["popup-main"]);
     $page       = CurrentPageName();
     echo "<div id='main-popup-$serviceid'></div>
@@ -253,11 +240,9 @@ function top_buttons():bool{
     $topbuttons[] = array("Loadjs('$page?enableall=yes&serviceid=$serviceid&function=$function')", ico_check, "{enable_all}");
    // $topbuttons[] = array("Loadjs('$page?rule-export-js=$serviceid')", ico_import, "{export}/{import}");
 
+    $compile_js_progress=compile_js_progress($serviceid);
+    $topbuttons[] = array($compile_js_progress, ico_save, "{apply}");
 
-    if(!isHarmpID()) {
-        $compile_js_progress=compile_js_progress($serviceid);
-        $topbuttons[] = array($compile_js_progress, ico_save, "{apply}");
-    }
     echo $tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
     return true;
 }
@@ -294,13 +279,14 @@ function popup_table2():bool{
     $search=$_GET["search"];
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
-    	    <th nowrap colspan='2'>{duration}</small></th>
+    	    <th nowrap colspan='2'>{duration}</th>
         	<th nowrap>{paths}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
@@ -314,30 +300,26 @@ function popup_table2():bool{
     if(isset($_SESSION[$KeyActive])){
         $OnlyActive=true;
     }
+
+    // Daemon API returns all rows for the service; we filter search/OnlyActive
+    // PHP-side because /nginx-db/query supports only column-equals.
+    $rows=fetch_enforce_cache_for_service($serviceid);
+    $needle=null;
     if($search<>null){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
-        $searchQ=" AND pattern LIKE '$search'";
+        $needle=strtolower(str_replace("*","",$search));
+        if($needle===""){$needle=null;}
+    }
+    $results=array();
+    foreach($rows as $r){
+        if($OnlyActive && intval(isset($r["enabled"])?$r["enabled"]:0)!=1){continue;}
+        if($needle!==null){
+            $hay=strtolower(isset($r["pattern"])?$r["pattern"]:"");
+            if(strpos($hay,$needle)===false){continue;}
+        }
+        $results[]=$r;
     }
 
-    $q=new lib_sqlite(NginxGetDB());
-    $searchE="";
-    if($OnlyActive){
-        $searchE=" AND enabled=1";
-    }
-
-
-    $query="SELECT * FROM enforce_cache WHERE serviceid=$serviceid$searchQ$searchE";
-
-    $results=$q->QUERY_SQL($query);
-
-    VERBOSE($query,__LINE__);
-
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
-    }
+    VERBOSE("enforce_cache serviceid=$serviceid search=$search OnlyActive=".intval($OnlyActive)." rows=".count($results),__LINE__);
 
     foreach ($results as $index=>$ligne){
 
@@ -374,11 +356,10 @@ function popup_table2():bool{
 				</tr>";
 
     }
-        $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('includecache-nginx-$serviceid','$page?top-buttons=$serviceid&function=$function');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
         }

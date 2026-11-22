@@ -1,5 +1,4 @@
-<importing_form_text_file>Import users from a text file</importing_form_text_file>
-<importuser_aliases_text>
-line must be: value1;value2;[carriage return]
-If you want to import aliases, add at the end all aliases with a comma separated.
+<importing_form_text_file>Importuj u&#380;ytkownik&#243;w z pliku tekstowego</importing_form_text_file>
+<importuser_aliases_text>wiersz musi mie&#263; posta&#263;: value1;value2;[powr&#243;t karetki]
+Je&#347;li chcesz zaimportowa&#263; aliasy, dodaj na ko&#324;cu wszystkie aliasy oddzielone przecinkiem.
 user;mail;id;password;cp;adress;mobile;phone;alias1,alias2,alias3...</importuser_aliases_text>

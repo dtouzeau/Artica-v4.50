@@ -61,7 +61,7 @@ function simulate_perform(){
 
     if (!is_resource($conn)) {
 
-        echo "jserror: Err.$errno $errstr";
+        echo (new template_admin())->post_error("Err.$errno $errstr");
         return;
 
     }
@@ -155,12 +155,13 @@ function fw_status():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/reverse-proxy/firewall/status"));
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/firewall/status"));
     $OUT=unserialize($json->Info);
     $status=false;
     if($OUT["STATUS"]=="true"){
         $status=true;
     }
+
 
     $EnableNginxFW=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginxFW"));
 
@@ -177,12 +178,12 @@ function fw_status():bool{
         $NGINX_FW_TIMESTAMP_TEXT="<br><small style='color:white;font-size:12px'>{since} $NGINX_FW_TIMESTAMP_TEXT</small>";
     }
 
-    $service_stop=$tpl->framework_buildjs("/reverse-proxy/firewall/stop",
+    $service_stop=$tpl->framework_buildjs("nginx:/reverse-proxy/firewall/stop",
         "nginxfw.stop.progress",
         "nginxfw.stop.txt",
         "progress-web-firewall");
 
-    $service_start=$tpl->framework_buildjs("/reverse-proxy/firewall/start",
+    $service_start=$tpl->framework_buildjs("nginx:/reverse-proxy/firewall/start",
         "nginxfw.start.progress",
         "nginxfw.start.txt",
         "progress-web-firewall");
@@ -288,31 +289,11 @@ function table(){
     $html[]="<div class=\"col-lg-3\">";
 
     $html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fas fa-ethernet fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {connections}</span>
-	<h2 class=\"font-bold\">".FormatNumber($ActiveConnections)."</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("lazur-bg","fas fa-ethernet","{connections}",FormatNumber($ActiveConnections));
 
 
     $html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fas fa-tachometer fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {requests}</span>
-	<h2 class=\"font-bold\">".FormatNumber($requests)."</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("lazur-bg","fas fa-tachometer","{requests}",FormatNumber($requests));
 
 
 

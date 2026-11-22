@@ -1,4 +1,4 @@
-<mailboxsize>Your mailbox size</mailboxsize>
-<receivemails>Receive mails</receivemails>
-<welcome>welcome</welcome>
-<your_organization>You are in the organization</your_organization>
+<mailboxsize>Ihre Postfachgr&#246;&#223;e</mailboxsize>
+<receivemails>E-Mails empfangen</receivemails>
+<welcome>willkommen</welcome>
+<your_organization>Sie befinden sich in der Organisation</your_organization>

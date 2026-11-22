@@ -1,22 +1,22 @@
-<add_computer_text>You can directly add a computer netbios name in order to serve it directly.[br]
-Set here the computer name...[br]
-If you don't want to add a computer, leave field blank...</add_computer_text>
+<add_computer_text>Puoi aggiungere direttamente un nome netbios del computer per servirlo direttamente.[br]
+Imposta qui il nome del computer...[br]
+Se non vuoi aggiungere un computer, lascia il campo vuoto...</add_computer_text>
 <add_computer_title>Aggiungi un nuovo computer</add_computer_title>
 <computer_name>Nome computer</computer_name>
-<configuration_success>Success set your server has PDC</configuration_success>
+<configuration_success>Server impostato con successo come PDC</configuration_success>
 <domain_controler>Controller di dominio</domain_controler>
-<howto1>Go onto a windows workstation.[br]Right click on computer and choose properties</howto1>
-<howto2>On Network identification tab,click on Properties[br]
-On "Indetification Changes" Click on "Member of domain" and set the domain/Workgroup you have choose in first step</howto2>
-<howto3>After few seconds,a pop-up ask to you the "root" username and password</howto3>
-<howto4>After few minutes,a pop-up will confirm you that the worksation is now a member of your new domain</howto4>
+<howto1>Vai su una workstation Windows.[br]Clicca con il tasto destro su Computer e scegli Propriet&#224;</howto1>
+<howto2>Nella scheda Identificazione di rete, clicca su Propriet&#224;[br]
+In &quot;Modifiche di identificazione&quot; clicca su &quot;Membro di un dominio&quot; e imposta il dominio/gruppo di lavoro scelto nel primo passaggio</howto2>
+<howto3>Dopo qualche secondo, un pop-up ti chiede il nome utente e la password di &quot;root&quot;</howto3>
+<howto4>Dopo qualche minuto, un pop-up ti confermer&#224; che la workstation &#232; ora membro del tuo nuovo dominio</howto4>
 <root_error_pass>Le password non coincidono</root_error_pass>
 <root_password>Password Amministratore Dominio Netbios</root_password>
 <root_password_field>Password Amministratore Dominio Netbios</root_password_field>
 <root_password_field2>Password Amministratore Dominio Netbios (conferma)</root_password_field2>
-<root_password_text>The user "root" will be used to connect workstations to your domain has the Netbios Domain Administrator, set the password of "root" user[br]
-Leave blank if you don't want to reset it</root_password_text>
-<server_name>Server name that will be shown on the network browsing area</server_name>
+<root_password_text>L'utente &quot;root&quot; verr&#224; utilizzato per connettere le workstation al tuo dominio come amministratore del dominio Netbios, imposta la password dell'utente &quot;root&quot;[br]
+Lascia vuoto se non vuoi reimpostarla</root_password_text>
+<server_name>Nome del server che verr&#224; mostrato nell'area di navigazione della rete</server_name>
 <welcome>Benvenuti nel wizard del controller di dominio</welcome>
-<welcome_text>This wizard helps you to create a PDC (Primary domain Controler) in  order to serve MS Windows Workstation that will connect on.</welcome_text>
+<welcome_text>Questa procedura guidata ti aiuta a creare un PDC (Primary Domain Controller) per servire le workstation MS Windows che si connetteranno.</welcome_text>
 <workgroup>Dominio NT</workgroup>

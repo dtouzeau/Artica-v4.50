@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Unbound DNS Manager — Group Overview.
  * Shows per-agent health status and allows pushing config from one agent to all others.
@@ -9,7 +11,7 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 if (!isset($GLOBALS["CLASS_SOCKETS"])) { $GLOBALS["CLASS_SOCKETS"] = new sockets(); }
 $users = new usersMenus();
-if (!$users->AsArticaMetaAdmin) { exit(); }
+if (!meta_can_view($users)) { exit(); }
 
 if (isset($_GET["gunbound-js"]))    { gunbound_js();          exit; }
 if (isset($_GET["status"]))         { gunbound_status();      exit; }
@@ -95,7 +97,7 @@ function gunbound_status(): void {
 
     $h = [];
     $h[] = "<div style='margin-top:10px'><h4><i class='fas fa-heartbeat'></i> {unbound_group_status}</h4></div>";
-    $h[] = "<table class='table table-striped'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "<thead><tr style='background:#f5f5f5'>";
     $h[] = "  <th>{hostname}</th>";
     $h[] = "  <th>{installed}</th>";
@@ -157,9 +159,9 @@ function gunbound_status(): void {
         $h[] = "  <td>$manageBtn</td>";
         $h[] = "</tr>";
     }
-    $h[] = "</tbody></table>";
+    $h[] = "</tbody></table></div></div></div>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 
 /** Push config form: select source agent, push to all others. */
@@ -309,7 +311,7 @@ function gunbound_render_results($tpl, int $total, int $success, int $failed, ar
 
     // Per-agent table
     if (!empty($results)) {
-        $h[] = "<table class='table table-striped table-condensed'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "  <thead><tr style='background:#f5f5f5'>";
         $h[] = "    <th style='width:1%'></th>";
         $h[] = "    <th>{hostname}</th>";
@@ -328,7 +330,7 @@ function gunbound_render_results($tpl, int $total, int $success, int $failed, ar
             }
             $h[] = "    <tr><td>$ico</td><td><strong>$hostname</strong></td><td>$cell</td></tr>";
         }
-        $h[] = "  </tbody></table>";
+        $h[] = "  </tbody></table></div></div></div>";
     }
 
     return implode("\n", $h);

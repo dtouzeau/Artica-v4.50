@@ -1,18 +1,24 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 $users=new usersMenus();if(!$users->AsSquidAdministrator){$users->pageDie();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_POST["HotSpotRedirectUI"])){Save();exit;}
+// Pentest 2026-11-04 : remove et uncheck etaient recopies sans encodage dans la page (XSS).
+foreach (array("remove","uncheck") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=intval($_GET[$xk]);}}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["uncheck"])){uncheck();exit;}
 if(isset($_GET["remove"])){remove();exit;}
 if(isset($_POST["remove"])){remove_perform();exit;}
 if(isset($_GET["delete-all"])){delete_all_js();exit;}
-if(isset($_POST["delete-all"])){delete_all_perform();exit;}
-if(isset($_GET["start-schedule"])){start_schedule();exit;}
-if(isset($_POST["start-schedule"])){start_schedule_save();exit;}
 if(isset($_GET["edit"])){edit_js();exit;}
 if(isset($_GET["edit-popup"])){edit_popup();exit;}
 if(isset($_POST["ID"])){edit_save();exit;}
@@ -30,7 +36,8 @@ function remove():bool{
     return $tpl->js_confirm_delete("{remove} $ID","remove",$ID,"$('#$md').remove();");
 }
 function remove_perform():bool{
-    $ID=$_POST["remove"];
+    // Pentest 2026-11-04 : ID etait concatene dans la requete.
+    $ID=intval($_POST["remove"]);
     $q=new lib_sqlite("/home/squid/hotspot/database.db");
     $memcached=new lib_memcached();
     $ligne=$q->mysqli_fetch_array("SELECT * FROM sessions WHERE sessionkey='forms$ID'");
@@ -154,20 +161,27 @@ function edit_save():bool{
     unset($_POST["ID"]);
     $q=new lib_sqlite("/home/squid/hotspot/database.db");
 
+    // Pentest 2026-11-04 : les NOMS de champs (cles du POST) etaient concatenes dans la requete :
+    // liste blanche des colonnes du formulaire, valeurs liees.
+    $allowed=array("enabled","label","format","mandatory","zorder");
+    $sqlparams=array();
     foreach ($_POST as $key=>$val){
+        if(!in_array($key,$allowed,true)){continue;}
         $fields[]=$key;
-        $val=$q->sqlite_escape_string2($val);
-        $fields_add[]="'$val'";
-        $fields_edit[]="$key = '$val'";
+        $fields_add[]="?";
+        $fields_edit[]="$key = ?";
+        $sqlparams[]=$val;
     }
+    if(count($sqlparams)==0){echo $tpl->post_error("No field");return false;}
 
     if($ID==0){
         $sql="INSERT OR IGNORE INTO forms (".@implode(",",$fields).") VALUES (".@implode(",",$fields_add).")";
 
     }else {
-        $sql = "UPDATE forms SET " . @implode(",", $fields_edit) . " WHERE ID='$ID'";
+        $sql = "UPDATE forms SET " . @implode(",", $fields_edit) . " WHERE ID=?";
+        $sqlparams[]=$ID;
     }
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$sqlparams);
     if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
     return true;
 }
@@ -183,7 +197,8 @@ function delete_all_js(){
 
 function uncheck(){
 
-    $ID=$_GET["uncheck"];
+    // Pentest 2026-11-04 : ID etait concatene dans la requete.
+    $ID=intval($_GET["uncheck"]);
     $q=new lib_sqlite("/home/squid/hotspot/database.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM sessions WHERE sessionkey='forms$ID'");
     $macaddress=$ligne["macaddress"];
@@ -247,17 +262,17 @@ function table():bool{
     $btns[] = "<label class=\"btn btn btn-info\" OnClick=\"$jsrestart;\"><i class='fa-solid fa-retweet'></i> {apply_settings} </label>";
     $btns[]="</div>";
 
-    $html[]="<table id='table-hotspot-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' colspan='2'>{label}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{format}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{mandatory}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize'>{enabled}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize'>{delete}</th>";
+    $html[]="<th>{label}</th>";
+    $html[]="<th>{format}</th>";
+    $html[]="<th class='awc-nowrap'>{mandatory}</th>";
+    $html[]="<th>{enabled}</th>";
+    $html[]="<th>{delete}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='hotspotforms-rows'>";
 
     $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `forms` (
 			`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -296,14 +311,14 @@ function table():bool{
 
         }
         //
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%' nowrap><i class='fa-solid fa-pen-field'></i></td>";
         $html[]="<td width=99%>".$tpl->td_href("$label",null,"Loadjs('$page?edit=$ID')")."</td>";
         $html[]="<td style='width:1%' nowrap>$format$values_link</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>$mandatory_ico</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>".$tpl->icon_check($enabled,
-                "Loadjs('$page?uncheck=$ID')","AsHotSpotManager")."</td>";
+                "Loadjs('$page?uncheck=$ID')",null,"AsHotSpotManager")."</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>".$tpl->icon_delete("Loadjs('$page?remove=$ID&md=$md')",
                 "AsHotSpotManager")."</center></td>";
         $html[]="</tr>";
@@ -311,7 +326,7 @@ function table():bool{
     }
 
     $html[]="</tbody>";
-    $html[]="</table>";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='hotspotforms-pager'></span></div></div></div>";
 
     $TINY_ARRAY["TITLE"]="{custom_form}";
     $TINY_ARRAY["ICO"]="fa-brands fa-wpforms";
@@ -327,6 +342,8 @@ function table():bool{
 	</script>";
 
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"hotspotforms-rows","hotspotforms-pager");
     return true;
 }

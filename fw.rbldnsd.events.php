@@ -102,10 +102,12 @@ function search(){
 	foreach ($json->Events as $line){
 		$line=trim($line);
         if(!preg_match("#^(.+?)\s+([0-9]+)\s+([0-9:]+)\s+.*?\]:(.+)#",$line,$re)){continue;}
-        $month=$re[1];
+        $month=req_html($re[1]);
         $day=$re[2];
         $time=$re[3];
-        $line=trim($re[4]);
+        // Pentest 2026-11-04 : ligne du journal rbldnsd (donnee externe) affichee sans encodage (XSS stockee).
+        // Encodee avant les decorations : les motifs ci-dessous ne portent que sur du texte simple.
+        $line=req_html(trim($re[4]));
         $sdate=date('Y')."-$month-$day $time";
         $ico="<span class='label label-default'>{unknown}</span>";
         $stime=$tpl->time_to_date($sdate,true);
@@ -185,7 +187,7 @@ function search(){
             $ico="<span class='label label-danger'>{error}</span>";
             $des="Source $m[1]";
             if(isset($SOURCES[$m[1]])){
-                $des=$SOURCES[$m[1]];
+                $des=req_html($SOURCES[$m[1]]);
             }
             $line=" HTTP error <strong>$m[2]</strong> From <strong>$des</strong>";
 

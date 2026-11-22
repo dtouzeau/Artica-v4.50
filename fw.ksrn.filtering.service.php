@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
@@ -179,7 +180,7 @@ function restart_js():string{
     $ARRAY["TITLE"]="{KSRN} {restarting_service}";
     $ARRAY["AFTER"]="LoadAjaxSilent('ksrn-status','$page?ksrn-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-ksrn-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ksrn-restart')";
 }
 
 function emergency_enable(){

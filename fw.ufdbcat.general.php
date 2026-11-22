@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
@@ -60,7 +61,7 @@ function table(){
 	$ARRAY["TITLE"]="{restarting_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-squid-service','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-ufdbcat-restart');";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ufdbcat-restart');";
 	
 	$security="AsSquidAdministrator";
 	

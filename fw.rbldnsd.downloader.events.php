@@ -104,8 +104,10 @@ function search(){
 
         $level=$lineJS->level;
         $sdate=$tpl->time_to_date($lineJS->time,true);
-        $ico="<label class='label label-default'>$level</label>";
-        $line=$lineJS->message;
+        $ico="<label class='label label-default'>".req_html($level)."</label>";
+        // Pentest 2026-11-04 : message du journal rbldnsd (donnee externe : sources et flux telecharges) affiche sans encodage (XSS stockee).
+        // Encode avant les decorations : les motifs ci-dessous ne portent que sur du texte simple.
+        $line=req_html($lineJS->message);
         if(isset($tooltips[$level])){
             $ico=$tooltips[$level];
         }
@@ -190,7 +192,7 @@ function search(){
             $ico="<span class='label label-danger'>{error}</span>";
             $des="Source $m[1]";
             if(isset($SOURCES[$m[1]])){
-                $des=$SOURCES[$m[1]];
+                $des=req_html($SOURCES[$m[1]]);
             }
             $line=" HTTP error <strong>$m[2]</strong> From <strong>$des</strong>";
 

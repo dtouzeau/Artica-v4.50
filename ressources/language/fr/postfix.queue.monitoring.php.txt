@@ -8,12 +8,10 @@ La file d'attente active est quelque peu analogue &agrave; un syst&egrave;me d'e
 <deferred_text>Lorsque tous les b&eacute;n&eacute;ficiaires d'un message sont livr&eacute;s, et, que pour certains b&eacute;n&eacute;ficiaires la livraison a &eacute;chou&eacute; pour une raison transitoire (il pourra r&eacute;ussir plus tard), 
 le message est plac&eacute; dans la file d'attente diff&eacute;r&eacute;e</deferred_text>
 <incoming>La file d'attente &quot;entrante&quot;</incoming>
-<incoming_text>
-All new mail entering the Postfix queue is written by the cleanup service into the "incoming" queue.[br]
-New queue files are created owned by the "postfix" user with an access bitmask (or mode) of 0600.[br]
-Once a queue file is ready for further processing the cleanup service changes the queue file mode to 0700 and notifies the queue manager of new mail arrival.[br]
-The queue manager ignores incomplete queue files whose mode is 0600, as these are still being written by cleanup. 
-</incoming_text>
+<incoming_text>Tout nouveau courrier entrant dans la file d'attente Postfix est &#233;crit par le service cleanup dans la file &#171; incoming &#187;.[br]
+Les nouveaux fichiers de file d'attente sont cr&#233;&#233;s sous la propri&#233;t&#233; de l'utilisateur &#171; postfix &#187; avec un masque de bits d'acc&#232;s (ou mode) de 0600.[br]
+Une fois qu'un fichier de file d'attente est pr&#234;t pour un traitement ult&#233;rieur, le service cleanup change le mode du fichier en 0700 et notifie au gestionnaire de file l'arriv&#233;e de nouveau courrier.[br]
+Le gestionnaire de file ignore les fichiers de file incomplets dont le mode est 0600, car ceux-ci sont encore en cours d'&#233;criture par cleanup.</incoming_text>
 <maildrop>File d'attente &quot;maildrop&quot;</maildrop>
 <maildrop_text>Cette section repr&eacute;sente les message qui sont pass&eacute;s &agrave; travers Postfix.[br]Les messages peuvent &ecirc;tre ajout&eacute; dans la file d'attente &quot;maildrop&quot;.[br]
 M&ecirc;me si le service postfix est stopp&eacute;.[br]Ils seront analys&eacute;s au d&eacute;marrage de Postfix.[br]

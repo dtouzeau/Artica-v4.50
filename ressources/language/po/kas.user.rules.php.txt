@@ -1,11 +1,9 @@
 <action_killmail>Eliminar</action_killmail>
-<action_prepend>Prepend the subject with text</action_prepend>
-<action_quarantine>Save into my Spam Quarantine area</action_quarantine>
-<org_antispam_rules>Default organization antispam rules</org_antispam_rules>
-<prepend_text>Prepend text</prepend_text>
-<spam_detection_rate>When detection rate exceed</spam_detection_rate>
-<spam_rules_intro>
-Kaspersky analyzes all incoming mail and assigns each message a score between 0 and 100, 
-where 0 is not spam and 100 is definitely spam.[br]
-You can define 2 rules that could correspond to your need.[br]
-</spam_rules_intro>
+<action_prepend>Anexar texto ao in&#237;cio do assunto</action_prepend>
+<action_quarantine>Guardar na minha &#225;rea de quarentena de spam</action_quarantine>
+<org_antispam_rules>Regras antispam predefinidas da organiza&#231;&#227;o</org_antispam_rules>
+<prepend_text>Anexar texto ao in&#237;cio</prepend_text>
+<spam_detection_rate>Quando a taxa de dete&#231;&#227;o exceder</spam_detection_rate>
+<spam_rules_intro>O Kaspersky analisa todo o correio recebido e atribui a cada mensagem uma pontua&#231;&#227;o entre 0 e 100,
+onde 0 n&#227;o &#233; spam e 100 &#233; definitivamente spam.[br]
+Pode definir 2 regras que possam corresponder &#224; sua necessidade.[br]</spam_rules_intro>

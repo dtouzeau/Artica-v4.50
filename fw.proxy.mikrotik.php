@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.nics.inc");
@@ -8,11 +9,7 @@ if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["mikrotik-status-ports"])){mikrotik_status_ports();exit;}
 if(isset($_GET["mikrotik-status-fw"])){mikrotik_status_fw();exit;}
 
-if(isset($_GET["radius-config"])){radius_config();exit;}
 if(isset($_POST["MikrotikInterface"])){Save();exit;}
-if(isset($_POST["radiusserver"])){SaveRadius();exit;}
-if(isset($_POST["SquidExternLDAPAUTH"])){SaveRemoteLDAP();exit;}
-if(isset($_GET["remote-ldap-status"])){remote_ldap_status();exit;}
 if(isset($_GET["mikrotik-rules"])){mikrotik_rules();exit;}
 if(isset($_GET["mikrotik-rules-js"])){mikortik_rules_js();exit;}
 page();
@@ -244,7 +241,7 @@ function status(){
     $ARRAY["AFTER"]="LoadAjax('mikrotik-status-port','$page?mikrotik-status-ports=yes');LoadAjax('mikrotik-status-fw','$page?mikrotik-status-fw=yes');";
     $ARRAY["TITLE"]="{reconfigure}";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mikrotik-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mikrotik-restart')";
 
     $MikrotikInterface=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MikrotikInterface");
     $SquidMikrotikMaskerade=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidMikrotikMaskerade"));

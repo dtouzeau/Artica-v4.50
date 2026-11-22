@@ -1,7 +1,18 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){
-    if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}
+    if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
 if(isset($_GET["popup"])){popup();exit;}
@@ -26,8 +37,13 @@ function remove_js(){
 }
 
 function remove(){
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("useCGuardCategories",0);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cguard.php?remove=yes");
+    // articarest /categories/cguard/remove : catégories, bases et réglages CGuard (synchrone).
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/cguard/remove"));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        echo (is_object($json) && isset($json->Error))?$json->Error:"articarest: ".json_last_error_msg();
+        return;
+    }
+    admin_tracks("Remove the CGuard categories service");
 
 
 }
@@ -44,7 +60,7 @@ function getlist_popup(){
     $tpl=new template_admin();
     $TRCLASS=null;
     $t=time();
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
 
@@ -58,7 +74,7 @@ function getlist_popup(){
     $CguardCatzData=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CguardCatzData")));
 
     foreach ($CguardCatzData as $ID=>$array){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         if(!isset($array["ITEMS"])){continue;}
         $NAME=$array["NAME"];
         $DESC=$array["DESC"];
@@ -79,14 +95,13 @@ function getlist_popup(){
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
     $html[]="
 <script>
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }
 
 function popup(){
@@ -96,11 +111,11 @@ function popup(){
     $t=time();
     $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/cguard.validator.progress";
     $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/cguard.validator.logs";
-    $ARRAY["CMD"]="cguard.php?validator=yes";
+    $ARRAY["CMD"]="/categories/cguard/validate";
     $ARRAY["TITLE"]="{checking}";
     $ARRAY["AFTER"]="dialogInstance4.close();LoadAjax('table-loader-catz-pages','fw.proxy.categories.services.php?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsafter="Loadjs('fw.progress.php?content=$prgress&mainid=cguard-progress-$t')";
+    $jsafter="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=cguard-progress-$t')";
 
     $use_lemnia_cloud_service=$tpl->_ENGINE_parse_body("{use_lemnia_cloud_service_explain}");
     $url="https://artica.cguard-protect.com/FR/?uid=$uuid";

@@ -2,12 +2,13 @@
 
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_POST["ID"])){dnsrules_save();exit;}
 if(isset($_GET["search-form"])){search_squid();exit;}
 if(isset($_GET["search-proxy"])){search_proxy();exit();}
-if(isset($_GET["delete"])){delete();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["dns-params"])){dns_params();exit;}
 if(isset($_GET["dns-rules"])){dnsrules_start();exit;}
@@ -44,14 +45,6 @@ function tabs(){
 
     echo $tpl->tabs_default($array);
 }
-function delete():bool{
-    $hostname=$_GET["delete"];
-    $sock=new sockets();
-    $sock->getFrameWork("squid2.php?ipdns-delete=$hostname");
-    $md=$_GET["md"];
-    echo "$('#$md').remove();\n";
-    return true;
-}
 function dnsrules_enable():bool{
     $ID=intval($_GET["dns-rules-enabled"]);
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/hacluster/client/dns/backend/rules/$ID/toggle", new stdClass()));
@@ -85,7 +78,7 @@ function dnsrules_delete_confirm():bool{
 function page():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $html=$tpl->page_header("{dns_settings}","fas fa-database","{dns_settings_proxy_explain}",
+    $html=$tpl->page_header("{dns_settings}",ico_database,"{dns_settings_proxy_explain}",
         "$page?tabs=yes","proxy-dns-cache","proxydns-progress");
 
 
@@ -100,7 +93,8 @@ function page():bool{
 }
 function dnsrules_popup(){
     $ID=intval($_GET["dns-rules-popup"]);
-    $function=$_GET["function"];
+    // Ce nom part directement dans le $jsafter de la modale.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $tpl=new template_admin();
     $jsafter="dialogInstance1.close();$function();";
     if($ID>0){
@@ -158,7 +152,8 @@ function dnsrules_save():bool{
 
 function dnsrules_js():bool{
     $ID=intval($_GET["dns-rules-id"]);
-    $function=$_GET["function"];
+    // Ce nom est propage dans l'URL de la modale, qui le remet dans un $jsafter.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $page=CurrentPageName();
     $tpl=new template_admin();
 
@@ -183,7 +178,8 @@ function dnsrules_start():bool{
     return true;
 }
 function dnsrules_btns():bool{
-    $function=$_GET["function"];
+    // Meme durcissement que dnsrules_table(): ce nom part dans un OnClick.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $page=CurrentPageName();
     $tpl=new template_admin();
     $topbuttons[]=array("Loadjs('$page?dns-rules-id=0&function=$function');",
@@ -194,7 +190,6 @@ function dnsrules_btns():bool{
 function dnsrules_table():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $t=time();
     $addon="";
     $hacluster=false;
     if(isset($_GET["hacluster"])){
@@ -211,67 +206,29 @@ function dnsrules_table():bool{
             echo $tpl->_ENGINE_parse_body($tpl->div_warning("{use_local_dns_service}||{dnsrules_only_dnsdist}"));
             return true;
         }
-
-
-
-
     }
 
-
-
-    $function=$_GET["function"];
+    // Ce nom de fonction JavaScript est reinjecte dans des attributs OnClick.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/client/dns/backend/rules"));
     $results=array();
     if(isset($json->success) && $json->success && is_array($json->data)){
         $results=$json->data;
     }
-    $search=$_GET["search"];
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:20px'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{source}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{dns_servers}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' >{enabled}</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    $TRCLASS=null;
-    foreach ($results as $index=>$ligne) {
-        $md=md5(json_encode($ligne));
+    // La saisie servait DIRECTEMENT de motif a preg_match: un "#" rompait le
+    // delimiteur (avertissement PHP, aucun filtrage) et une construction comme
+    // "(a+)+b" ouvrait un deni de service par retour arriere. preg_quote la
+    // ramene a une recherche litterale, qui est ce que l'utilisateur attend.
+    $search=preg_quote(trim((string)($_GET["search"] ?? "")),"#");
 
+    $rows=array();
+    foreach ($results as $ligne) {
         if(strlen($search)>1){
-            if(!preg_match("#$search#",serialize($ligne))){
-                continue;
-            }
+            if(!preg_match("#$search#i",serialize($ligne))){continue;}
         }
-
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-        $sitename=$ligne->sitename;
-        $sitename=str_replace("\n",", ",$sitename );
-        $ID=intval($ligne->ID);
-        $destination=$ligne->dnsservers;
-        $destination=str_replace("\n",", ",$destination );
-
-        $enabled=$tpl->icon_check(intval($ligne->enabled),"Loadjs('$page?dns-rules-enabled=$ID$addon')",null,"AsSquidAdministrator");
-        $delete=$tpl->icon_delete("Loadjs('$page?dns-rules-delete=$ID&md=$md$addon')","AsSquidAdministrator");
-
-        $sitename=$tpl->td_href("$sitename",null,"Loadjs('$page?dns-rules-id=$ID$addon');");
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%' class='center' nowrap><i class='".ico_server."'</td>";
-        $html[]="<td style='width:70%' class='left'><strong>$sitename</strong></td>";
-        $html[]="<td style='width:30%' class='left' nowrap>$destination</td>";
-        $html[]="<td style='width:1%' class='center' nowrap>$enabled</td>";
-        $html[]="<td style='width:1%' class='center' nowrap>$delete</td>";
-        $html[]="</tr>";
-
-
+        $rows[]=dnsrules_row($ligne,$page,$addon,$tpl);
     }
+    $shown=count($rows);
 
     $jsafter=$tpl->framework_buildjs(
         "/hacluster/client/dns/backend/restart",
@@ -279,10 +236,10 @@ function dnsrules_table():bool{
         "HaClusterBackendDNS.log",
         "proxydns-progress");
 
+    $topbuttons=array();
     $topbuttons[]=array("Loadjs('$page?dns-rules-id=0&function=$function');",
         ico_plus,"{new_rule}");
     $topbuttons[] = array($jsafter, ico_retweet, "{apply config}");
-
 
     $TINY_ARRAY["TITLE"]="{dns_forwarding_rules}";
     $TINY_ARRAY["ICO"]="far fa-exchange";
@@ -294,23 +251,63 @@ function dnsrules_table():bool{
         $headsjs="LoadAjaxSilent('proxy-dns-hacluster-btns','$page?proxy-dns-hacluster-btns=yes&function=$function');";
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{source}</th>";
+    $html[]="<th>{dns_servers}</th>";
+    $html[]="<th class='center'>{enabled}</th>";
+    $html[]="<th class='center'>{delete}</th>";
+    $html[]="</tr></thead><tbody id='pxdns-rules-rows'>";
+    if($shown==0){
+        $html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $shown</span>";
+    $html[]="<span class='awc-pg' id='pxdns-rules-pager'></span>";
+    $html[]="</div></div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table><script>NoSpinner();\n";
-    $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
-    $html[]=$headsjs;
-    $html[]="</script>";
+    // Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n$headsjs\n</script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .$script
+        .awc_pager_js(50,"pxdns-rules-rows","pxdns-rules-pager");
     return true;
+}
+
+/**
+ * Une regle de redirection DNS. La premiere colonne ne contenait qu'une icone
+ * et son balisage etait casse -- "<i class='fa-server'</td>", sans ">" ni
+ * fermeture: le navigateur avalait la cellule suivante. Elle devient la pastille
+ * d'identite de la source.
+ */
+function dnsrules_row($ligne,$page,$addon,$tpl):string{
+    $md=md5(json_encode($ligne));
+    $ID=intval($ligne->ID);
+    // Ces deux champs viennent du daemon et partaient bruts dans le HTML.
+    $sitename=htmlspecialchars(str_replace("\n",", ",(string)$ligne->sitename));
+    $destination=htmlspecialchars(str_replace("\n",", ",(string)$ligne->dnsservers));
+
+    $enabled=$tpl->icon_check(intval($ligne->enabled),"Loadjs('$page?dns-rules-enabled=$ID$addon')",null,"AsSquidAdministrator");
+    $delete=$tpl->icon_delete("Loadjs('$page?dns-rules-delete=$ID&md=$md$addon')","AsSquidAdministrator");
+    $link=$tpl->td_href("<span class='awc-name'>$sitename</span>",null,"Loadjs('$page?dns-rules-id=$ID$addon');");
+
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='".(intval($ligne->enabled)==1?"awc-ico":"awc-ico awc-ico-off")."'><i class='".ico_server."'></i></span>";
+    $h.="<span>$link</span>";
+    $h.="</div></td>";
+    $h.="<td class='awc-mono'>".($destination!==""?$destination:"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="<td class='center'>$enabled</td>";
+    $h.="<td class='center'><div class='awc-acts'>$delete</div></td>";
+    $h.="</tr>";
+    return $h;
 }
 
 
@@ -358,17 +355,18 @@ echo $tpl->_ENGINE_parse_body($html);
 
 }
 function search_proxy(){
-    $t=time();
-
     $tpl=new template_admin();
     $page=CurrentPageName();
 
+    // Ce nom de fonction JavaScript etait insere BRUT dans le rappel de fin de
+    // tache: un lien fabrique executait du code dans la session en cours.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $jsrestart=$tpl->framework_buildjs(
         "/squidclient/ipcache",
         "squid.ipcache.progress",
         "squid.ipcache.log",
         "table-squid-records-restart",
-        "{$_GET["function"]}();document.getElementById('table-squid-records-restart').innerHTML='';"
+        "$function();document.getElementById('table-squid-records-restart').innerHTML='';"
 
     );
 
@@ -377,98 +375,63 @@ function search_proxy(){
 			<label class=\"btn btn btn-info\" OnClick=\"$jsrestart\"><i class='fas fa-sync'></i> {refresh} </label>
 			</div>");
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" style='margin-top:20px'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{hostname}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{ipaddr}</th>";
-    $html[]="<th data-sortable=false>{TTL}</th>";
-    $html[]="</tr>";
+    // La saisie etait transformee en MOTIF d'expression reguliere: seuls "."
+    // et "*" etaient traites, si bien qu'une parenthese ou un "#" rompait le
+    // motif. On echappe tout, puis on re-autorise le seul joker attendu.
+    $searchRaw=trim((string)($_GET["search-proxy"] ?? ""));
+    $search=str_replace("\\*",".*?",preg_quote($searchRaw,"#"));
 
-
-    $TRCLASS=null;
-    $search="";
-
-    if(isset($_GET["search-proxy"])) {
-        $search = $_GET["search-proxy"];
-        $search = str_replace( ".", "\.",$search);
-        $search = str_replace( "*", ".*?",$search);
-    }
-
+    // Le releve complet du cache DNS de Squid n'est plus reconstruit toutes les
+    // 3 minutes par le daemon : la page le demande ici (reconstruit seulement
+    // s'il a plus de 2 minutes).
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/squidclient/ipcache?wait=1");
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidClientIPCache"));
-    $Entries=0;
-    $Requests=0;
-    $Misses=0;
-    $Hits=0;
+    $Entries=0;$Requests=0;$Misses=0;$Hits=0;
+    $rows=array();
 
-    if($json) {
-        $Entries=$json->Entries;
-        $Requests=$json->Requests;
-        $Misses=$json->Misses;
-        $Hits=$json->Hits;
+    if(is_object($json)) {
+        $Entries=intval($json->Entries ?? 0);
+        $Requests=intval($json->Requests ?? 0);
+        $Misses=intval($json->Misses ?? 0);
+        $Hits=intval($json->Hits ?? 0);
 
-    $c=0;
-    foreach ($json->Records as $hostname=>$classes) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-        if(strlen($hostname)<3){
-            continue;
-        }
-        $isok=1;
-        $status="text-default";
-        $flags = "<span class='label label-primary'>Positive</span>";
-        $Ips=array();
-        $zIps=array();
-        foreach ($classes as $class) {
-            $zIps[$class->IpAddr]=$class->IpAddr;
-            if($class->Status){
-                $status="text-success";
+        $c=0;
+        $records=(isset($json->Records) && (is_array($json->Records) || is_object($json->Records)))?$json->Records:array();
+        foreach ($records as $hostname=>$classes) {
+            if(strlen($hostname)<3){continue;}
+            // Le filtre etait applique sur $class -- la variable de la boucle
+            // INTERNE, lue APRES sa fermeture: elle ne portait donc que la
+            // derniere entree, et n'existait pas du tout si la liste etait
+            // vide. Le filtre porte desormais sur l'ensemble des entrees.
+            if(strlen($searchRaw)>1){
+                if(!preg_match("#$search#is","$hostname".json_encode($classes))){continue;}
             }
-            if($class->TTL==0){
-                $flags = "<span class='label label-default'>{expired}</span>";
-                $status="text-default";
-            }else{
-                $flags = "<span class='label label-primary'>Positive {$class->TTL}</span>";
-            }
+            $c++;
+            if($c>250){break;}
+            $rows[]=pxdns_cache_row($hostname,$classes);
         }
-        foreach ($zIps as $ip=>$none) {
-            $Ips[]=$ip;
-        }
-
-        if(strlen($search)>1){
-            if(!preg_match("#$search#is","$hostname".json_encode($class))){
-                continue;
-            }
-        }
-
-        $c++;
-        if($c>250){
-            break;
-        }
-        $md = md5(json_encode($classes));
-        $ipaddrs=@implode(", ", $Ips);
-        $html[] = "<tr class='$TRCLASS' id='$md'>";
-        $html[] = "<td nowrap><i class='fas fa-server'></i>&nbsp;$hostname</td>";
-        $html[] = "<td style='width:1%;' nowrap><strong class='$status'>$ipaddrs</strong></td>";
-        $html[] = "<td style='width:1%;' nowrap>$flags</td>";
-        $html[] = "</tr>";
-
     }
+    $shown=count($rows);
+
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{hostname}</th>";
+    $html[]="<th>{ipaddr}</th>";
+    $html[]="<th class='center'>{TTL}</th>";
+    // Le <tbody> ouvrant n'etait jamais emis alors que le </tbody> l'etait,
+    // et le pied portait un colspan de 5 pour trois colonnes.
+    $html[]="</tr></thead><tbody id='pxdns-cache-rows'>";
+    if($shown==0){
+        $html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
     }
-    $html[] = "</tbody>";
-    $html[] = "<tfoot>";
-
-    $html[] = "<tr>";
-    $html[] = "<td colspan='5'>";
-    $html[] = "<ul class='pagination pull-right'></ul>";
-    $html[] = "</td>";
-    $html[] = "</tr>";
-    $html[] = "</tfoot>";
-    $html[] = "</table>";
-
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $shown</span>";
+    $html[]="<span class='awc-pg' id='pxdns-cache-pager'></span>";
+    $html[]="</div></div></div>";
 
     $exp2=null;
     $DoNotUseLocalDNSCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DoNotUseLocalDNSCache"));
@@ -476,14 +439,14 @@ function search_proxy(){
         $exp2="<br><strong>{proxy_use_unbound_text}</strong>";
     }
     $zDNS=array();
-    $f=explode("\n",@file_get_contents("/etc/squid3/dns.conf"));
+    $f=explode("\n",(string)@file_get_contents("/etc/squid3/dns.conf"));
     foreach ($f as $line){
         if(!preg_match("#^dns_nameservers (.+)#",$line,$re)){continue;}
         $nameservers=explode(" ",$re[1]);
         foreach ($nameservers as $dns){
             $dns=trim($dns);
             if($dns==null){continue;}
-            $zDNS[]=$dns;
+            $zDNS[]=htmlspecialchars($dns);
         }
 
     }
@@ -497,49 +460,85 @@ function search_proxy(){
         $addTitle=$tpl->FormatNumber($Entries)." {records}";
     }
     if($Requests>0){
-        $Hits=$tpl->FormatNumber($Hits);
-        $Misses=$tpl->FormatNumber($Misses);
-        $sub="<br>".$tpl->FormatNumber($Requests)." {requests}, {$Hits} {cached}, $Misses {not_cached}";
+        $sub="<br>".$tpl->FormatNumber($Requests)." {requests}, ".$tpl->FormatNumber($Hits)." {cached}, "
+            .$tpl->FormatNumber($Misses)." {not_cached}";
     }
 
-    $TINY_ARRAY["TITLE"]="{APP_PROXY} $addTitle DNS &laquo;$search&raquo;";
+    // Le titre affichait la saisie apres sa transformation en motif; il montre
+    // desormais ce que l'utilisateur a reellement tape, echappe.
+    $TINY_ARRAY["TITLE"]="{APP_PROXY} $addTitle DNS &laquo;".htmlspecialchars($searchRaw)."&raquo;";
     $TINY_ARRAY["ICO"]="fa-solid fa-cabinet-filing";
     $TINY_ARRAY["EXPL"]="{dns_cache_proxy_find}$exp2$sub";
     $TINY_ARRAY["BUTTONS"]=@implode("",$btns);
 
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n$headsjs\n</script>";
 
-
-    $html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } )
-});
-setTimeout('FootableRemoveEmpty()', 2000);
-$headsjs
-</script>";
-
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"pxdns-cache-rows","pxdns-cache-pager");
     die();
 }
+
+/**
+ * Une entree du cache DNS du proxy: le nom resolu, ses adresses et l'etat de
+ * son bail. L'etat et le libelle etaient recalcules a chaque adresse et seul
+ * le dernier survivait -- c'est conserve, mais rendu explicite.
+ */
+function pxdns_cache_row($hostname,$classes):string{
+    $md=md5(json_encode($classes));
+    $status="text-default";
+    $flags="<span class='awc-badge awc-badge-off'>{expired}</span>";
+    $zIps=array();
+    if(is_array($classes) || is_object($classes)){
+        foreach ($classes as $class) {
+            if(!is_object($class)){continue;}
+            $ip=(string)($class->IpAddr ?? "");
+            if($ip!==""){$zIps[$ip]=$ip;}
+            if(isset($class->Status) && $class->Status){$status="text-success";}
+            if(intval($class->TTL ?? 0)==0){
+                $flags="<span class='awc-badge awc-badge-off'>{expired}</span>";
+                $status="text-default";
+            }else{
+                $flags="<span class='awc-badge awc-badge-on'>Positive ".intval($class->TTL)."</span>";
+            }
+        }
+    }
+
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-server'></i></span>";
+    $h.="<span class='awc-name'>".htmlspecialchars((string)$hostname)."</span>";
+    $h.="</div></td>";
+    $h.="<td class='awc-mono'>".(count($zIps)>0
+        ?"<strong class='$status'>".htmlspecialchars(@implode(", ",$zIps))."</strong>"
+        :"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="<td class='center'>$flags</td>";
+    $h.="</tr>";
+    return $h;
+}
+
 function statistics(){
     $js4="Loadjs('fw.rrd.php?img=squiddnsq')";
     $tpl=new template_admin();
     $page=CurrentPageName();
     $RRD_SQUID_IDNS_QUERIES=$tpl->FormatNumber(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RRD_SQUID_IDNS_QUERIES")));
-    $html[]="<table style='margin-top:20px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:70%'>
-        <H1>{DNS_QUERIES} $RRD_SQUID_IDNS_QUERIES</H1>
-<div id='dns-graph-queries'></div></td>";
-    $html[]="<td style='width:30%;vertical-align: top'><div id='dns-graph-queries-table' style='margin-left:20px'></div></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td colspan=2><center style='margin-top:30px'>
-    <a href='#' OnClick=\"javascript:$js4\">
-    <img src='img/squid/squiddnsq-hourly.flat.png'></a></center></td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+
+    // Mise en page en flex: les cellules etaient figees a 70%/30%, ce qui
+    // ecrasait le tableau de repartition sur un ecran etroit.
+    $html=array();
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;margin-top:20px'>";
+    $html[]="<div style='flex:1 1 520px;min-width:0'>";
+    $html[]="<h1>{DNS_QUERIES} $RRD_SQUID_IDNS_QUERIES</h1>";
+    $html[]="<div id='dns-graph-queries'></div>";
+    $html[]="</div>";
+    $html[]="<div style='flex:1 1 300px;min-width:0'><div id='dns-graph-queries-table'></div></div>";
+    $html[]="</div>";
+    // <center> est un element retire du standard: le centrage passe en style.
+    $html[]="<div style='text-align:center;margin-top:30px'>";
+    $html[]="<a href='#' OnClick=\"javascript:$js4\"><img src='img/squid/squiddnsq-hourly.flat.png' style='max-width:100%'></a>";
+    $html[]="</div>";
     $html[]="<script>";
     $html[]="Loadjs('$page?dns-graph-queries=yes');";
     $html[]="</script>";
@@ -547,15 +546,23 @@ function statistics(){
 
 }
 
+/**
+ * La repartition des requetes DNS telle que le daemon la publie.
+ * unserialize() rend false sur une valeur absente ou tronquee: les deux
+ * fonctions bouclaient dessus sans garde ("foreach() argument must be of type
+ * array|object" -- fatal sous PHP 8).
+ */
+function pxdns_stats_details():array{
+    $DNS=@unserialize(base64_decode((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RRD_SQUID_IDNS_STATS")));
+    if(!is_array($DNS) || !isset($DNS["DETAILS"]) || !is_array($DNS["DETAILS"])){return array();}
+    return $DNS["DETAILS"];
+}
+
 function statistics_chart_dns(){
     $page=CurrentPageName();
+    $PieData=pxdns_stats_details();
+    if(count($PieData)==0){return true;}
 
-    $PieData=array();
-    $tpl=new template_admin();
-    $DNS=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RRD_SQUID_IDNS_STATS")));
-    foreach ($DNS["DETAILS"] as $des=>$rqs){
-        $PieData[$des]=$rqs;
-    }
     $highcharts=new highcharts();
     $highcharts->container="dns-graph-queries";
     $highcharts->PieDatas=$PieData;
@@ -566,17 +573,33 @@ function statistics_chart_dns(){
     echo "LoadAjax('dns-graph-queries-table','$page?dns-graph-queries-table=yes');";
     return true;
 }
+
 function statistics_chart_dns_table(){
     $tpl=new template_admin();
-    $html[]="<table style='margin-top:60px'>";
-    $DNS=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RRD_SQUID_IDNS_STATS")));
-    foreach ($DNS["DETAILS"] as $des=>$rqs){
-        $PieData[$des]=$rqs;
-        $html[]="<tr>";
-        $html[]="<td style='width:70%;text-align:right' nowrap>$des:</td>";
-        $html[]="<td style='width:30%;padding-left:10px'><strong>".$tpl->FormatNumber($rqs)."</strong></td>";
-        $html[]="</tr>";
+    $details=pxdns_stats_details();
+
+    $rows=array();
+    foreach ($details as $des=>$rqs){
+        $rows[]=pxdns_stat_row($des,$tpl->FormatNumber($rqs));
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+
+    $html=array();
+    $html[]="<div class='awc-card' style='margin-top:20px'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><tbody>";
+    if(count($rows)==0){
+        $html[]="<tr><td><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
+}
+
+/** Un type de requete DNS et son compte. */
+function pxdns_stat_row($label,$value):string{
+    $h ="<tr>";
+    $h.="<td>".htmlspecialchars((string)$label)."</td>";
+    $h.="<td class='awc-right awc-nowrap'><strong>$value</strong></td>";
+    $h.="</tr>";
+    return $h;
 }

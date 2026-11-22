@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class acls_wizards{
     public $TableLink="";
@@ -12,9 +13,10 @@ class acls_wizards{
     }
 
     public function add_group_all():bool{
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE GroupType='all' ORDER BY ID");
-        $groupid=intval($ligne["ID"]);
+        // acls.db is API-only — find an existing "all" group via the acls backend.
+        $groups=acls_api_get("/proxy/acls/sqlite/groups/all?type=all");
+        $groupid=0;
+        if(is_array($groups)){foreach($groups as $g){if(is_array($g)){$groupid=intval($g["id"] ?? 0);break;}}}
         if($groupid==0){
             $groupid=$this->add_group("Everynone","all");
         }
@@ -84,52 +86,38 @@ class acls_wizards{
     }
 
     public function add_group_netbiosname($GroupName,$domain):bool{
-        $md=md5("$GroupName,netbiosname".time());
-        $sqladd="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,`acltpl`,`params`,`PortDirection`,`tplreset`) VALUES ('$GroupName','netbiosname','1','$md','$domain','0',0);";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $q->QUERY_SQL($sqladd);
-        if(!$q->ok) {
-            $this->mysql_error=$q->mysql_error;
+        // acls.db is API-only — create the netbiosname group, then store the domain in params.
+        $groupid=$this->add_group($GroupName,"netbiosname");
+        if($groupid==0){return false;}
+        list($ok,$data)=acls_api_send("PUT","/proxy/acls/sqlite/group/$groupid",["params"=>$domain]);
+        if(!$ok){
+            $this->mysql_error=is_string($data)?$data:"unable to set group params";
             return false;
-        }
-
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE acltpl='$md'");
-        $groupid=intval($ligne["ID"]);
-        if($groupid==0) {
-            $this->mysql_error = "Unable to find group id from $md";
-            return 0;
         }
         return $this->LinkGroupToAcl($groupid);
 
     }
 
     private function add_group($GroupName,$GroupType):int{
-        $params=md5("$GroupName$GroupType".time());
-        $sqladd="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,`acltpl`,`params`,`PortDirection`,`tplreset`) VALUES ('$GroupName','$GroupType','1','0','$params','0',0);";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $q->QUERY_SQL($sqladd);
-        if(!$q->ok) {
-            $this->mysql_error=$q->mysql_error;
-            return false;
+        // acls.db is API-only — create the group via the acls backend (returns the new id).
+        list($ok,$data)=acls_api_send("POST","/proxy/acls/sqlite/group",["name"=>$GroupName,"type"=>$GroupType]);
+        if(!$ok){
+            $this->mysql_error=is_string($data)?$data:"unable to create group";
+            return 0;
         }
-
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='$params'");
-        $groupid=intval($ligne["ID"]);
-        if($groupid==0) {
-            $this->mysql_error = "Unable to find group id from $params";
+        $groupid=is_array($data)?intval($data["id"] ?? 0):0;
+        if($groupid==0){
+            $this->mysql_error="Unable to get new group id";
             return 0;
         }
         return $groupid;
     }
 
     private function LinkGroupToAcl($groupid):bool{
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $md5 = md5($this->aclid . $groupid);
-        $sql = "INSERT OR IGNORE INTO $this->TableLink (zmd5,aclid,gpid,zOrder) VALUES('$md5','$this->aclid','$groupid',1)";
-
-        $q->QUERY_SQL($sql);
-        if (!$q->ok) {
-            $this->mysql_error = $q->mysql_error;
+        // acls.db is API-only — create the ACL link via the acls backend.
+        list($ok,$data)=acls_api_send("POST","/proxy/acls/sqlite/link",["table"=>$this->TableLink,"aclid"=>$this->aclid,"gpid"=>intval($groupid)]);
+        if(!$ok){
+            $this->mysql_error=is_string($data)?$data:"unable to link group";
             return false;
         }
         return true;
@@ -144,20 +132,18 @@ class acls_wizards{
     }
 
     private function add_items($gpid,$list):bool{
-        $date=date("Y-m-d H:i:s");
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid='$gpid'");
-
+        // acls.db is API-only — replace the group items via the acls backend bulk endpoint
+        // (mode replace_all = DELETE-then-INSERT, mirroring the original).
         $tb=explode(",",$list);
-        $SQ=array();
+        $items=array();
         foreach ($tb as $category_id) {
-            $SQ[]="('$gpid','$category_id','$date','DNS Wizard',1)";
+            $category_id=trim($category_id);
+            if($category_id===""){continue;}
+            $items[]=array("pattern"=>$category_id,"enabled"=>1,"uid"=>"DNS Wizard");
         }
-
-        $sql="INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) VALUES ".@implode(",", $SQ);
-        $q->QUERY_SQL($sql);
-        if(!$q->ok) {
-            $this->mysql_error=$q->mysql_error;
+        list($ok,$data)=acls_api_send("POST","/proxy/acls/sqlite/items/bulk",["gpid"=>intval($gpid),"items"=>$items,"mode"=>"replace_all"]);
+        if(!$ok){
+            $this->mysql_error=is_string($data)?$data:"unable to add items";
             return false;
         }
         return true;

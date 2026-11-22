@@ -105,8 +105,6 @@ function postfix_verify_files():bool{
 
 
 function start():bool{
-
-    $php5=$GLOBALS["CLASS_UNIX"]->LOCATE_PHP5_BIN();
     postfix_verify_files();
     build_progress("Loading LDAP config",15);
     LoadLDAPDBs();
@@ -117,12 +115,11 @@ function start():bool{
     relay_recipient_maps_build();
 //	$hashT=new main_hash_table();
 //	$hashT->mydestination();
-    shell_exec("/usr/sbin/artica-phpfpm-service -postfix-transport");
+    shell_exec("/usr/local/sbin/artica-postfix -postfix-transport");
 
-    build_progress("Building perso_settings",80);
     build_progress("{tls_title}",85);
     $sock=new sockets();
-    $sock->REST_API("/postfix/tls/{$GLOBALS["POSTFIX_INSTANCE_ID"]}");
+    $sock->REST_API_POSTFIX("/postfix/tls/{$GLOBALS["POSTFIX_INSTANCE_ID"]}");
 
 
 
@@ -138,6 +135,7 @@ function start():bool{
 function relay_recipient_maps_build(){
     $relay_recipient_maps=array();
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
 
     if(count($ActiveDirectoryConnections)>0){
         foreach ($ActiveDirectoryConnections as $index=>$HASH){

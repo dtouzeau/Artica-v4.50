@@ -6,8 +6,6 @@ if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_POST["postgresqlPort"])){Save();exit;}
-if(isset($_GET["ufdbconf-popup"])){ufdbconf_popup();exit;}
-if(isset($_GET["ufdbdebug-popup"])){ufdbdebug_popup();exit;}
 if(isset($_GET["graph1"])){graph1();exit;}
 if(isset($_GET["remove-database-ask"])){remove_database_ask();exit;}
 if(isset($_GET["statscom-super-top-status"])){status_top();exit;}
@@ -28,19 +26,18 @@ function tabs(){
 
 }
 
-function remove_database_ask(){
+function remove_database_ask():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
 
+    $jsrestart=$tpl->framework_buildjs(
+    "/postgresql/removedb",
+    "postgres.remove.progress",
+    "postgres.remove.progress.log",
+    "postgress-statscom-restart",
+    "LoadAjax('table-postgresqlstatus','$page?tabs=yes');");
 
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/postgres.remove.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/postgres.remove.progress.txt";
-    $ARRAY["CMD"]="postgres.php?remove-database=yes";
-    $ARRAY["TITLE"]="{REMOVE_DATABASE}";
-    $ARRAY["AFTER"]="LoadAjax('table-postgresqlstatus','$page?tabs=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=postgress-statscom-restart');";
-    $tpl->js_confirm_delete("{REMOVE_DATABASE}<hr>{rebuild_database_warn}","none",$tpl->javascript_parse_text("{database}"),$jsrestart);
+    return $tpl->js_confirm_delete("{REMOVE_DATABASE}<hr>{rebuild_database_warn}","none",$tpl->javascript_parse_text("{database}"),$jsrestart);
 }
 
 function status(){
@@ -285,7 +282,7 @@ function table(){
         $tpl->widget_style1("navy-bg", "fas fa-alarm-clock", "{retention} ($STATSCOM_DISTANCE_TABLE)", $tpl->FormatNumber($RtMDays)."/$InfluxAdminRetentionTime {days}") .
         "</td>";
     $html[] = "<td style='padding:2px;width:33%'>" .
-        $tpl->widget_style1("navy-bg", "fas fa-database", "{data_size}", $tables_size) .
+        $tpl->widget_style1("navy-bg", ico_database, "{data_size}", $tables_size) .
         "</td>";
     $html[] = "<td style='padding:2px;width:33%'>" . $tpl->widget_style1("navy-bg", "fas fa-server", "{daily_volume}", "$tables_size_day/{day}")."</td>";
 

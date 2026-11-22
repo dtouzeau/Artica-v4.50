@@ -103,12 +103,15 @@ function ParseRealTime($line):array{
     $DESTINATION="";
     $durationunit = "s";
         if ( $GLOBALS["Enablehacluster"] == 0) {
+
             if (preg_match("#^[A-Za-z]+\s+[0-9]+\s+[0-9:]+\s+(.+?)\s+squid\[[0-9]+\]:(.+)#", $line, $re)) {
+               echo "<H1>Matches1</H1>";
                 $ProxyName = $re[1] . "/";
                 $line = trim($re[2]);
             }
             if(preg_match("#^[A-Za-z]+\s+[0-9:]+\s+[0-9:]+\s+(.+?)\s+\(squid.*?:\s+(.+)#",$line,$re)){
                 $ProxyName = $re[1] . "/";
+                echo "<H1>Matches2</H1>";
                 $line = trim($re[2]);
             }
         }
@@ -116,6 +119,8 @@ function ParseRealTime($line):array{
     if (strpos($line,":::")>0){
         return ParseRealTimeStats($line);
     }
+
+
 
     if (preg_match("#iface=\"(.+?)\"#", $line, $re)) {
         $IFACE_TEXT=$re[1];
@@ -127,6 +132,7 @@ function ParseRealTime($line):array{
             $UA = null;
         }
     }
+
     if (preg_match("#exterr=\"(.*?)\|(.*?)\"#", $line, $re)) {
         $ERROR_EXT = trim($re[1]);
         if (preg_match("#^30[0-9]+:http#", $ERROR_EXT)) {
@@ -145,9 +151,13 @@ function ParseRealTime($line):array{
     }
 
     $TR = preg_split("/[\s]+/", $line);
+
     if (count($TR) < 5) {
         return array();
     }
+
+
+
     if (strpos("  $TR[2]", "squid[") > 0) {
         $OLDTR = $TR;
         $TR = array();
@@ -190,14 +200,20 @@ function ParseRealTime($line):array{
         $DESTINATION = $TR[8];
 
 
+
         $xADDONS = null;
         $XMAC = null;
         if (isset($TR[10])) {
             $XMAC = $TR[10];
         }
-        if (isset($TR[11])) {
+        if (isset($TR[11]) && strpos($TR[11], 'sni=') === false) {
             $xADDONS = $TR[11];
         }
+        if ( isset($TR[12]) && strpos($TR[12],'%0D%0A') >0 ){
+            $xADDONS = $TR[12];
+        }
+
+
 
     } else {
         $URL="";
@@ -230,7 +246,13 @@ function ParseRealTime($line):array{
 
         $ip = $TR[7];
         $zCode = explode("/", $TR[8]);
-        $ArrayENC["PROXY_CODE"] = $TR[8];
+
+        if(strpos($zCode[1],":")>0) {
+            $DESTINATION=$zCode[1];
+        }
+
+
+        $ArrayENC["PROXY_CODE"] = $zCode[0];
         $size = $TR[9];
         if(isset($TR[10])) {
             $PROTO = $TR[10];

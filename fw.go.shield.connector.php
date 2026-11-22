@@ -17,7 +17,6 @@ if(isset($_POST["SavePost"])){Save();exit;}
 if(isset($_GET["go-shield-connector-status"])){status();exit;}
 if(isset($_GET["emergency-enable"])){emergency_enable();exit;}
 if(isset($_GET["logfile-js"])){logfile_js();exit;}
-if(isset($_GET["go-shield-connector-form-server"])){ksrn_form_server();exit;}
 if(isset($_GET["enable-ufdbguard-temp"])){enable_ufdbguard_temp();exit;}
 if(isset($_GET["enable-connector-temp"])){enable_connector_temp();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -517,31 +516,12 @@ function status():bool{
     if($SQUIDEnable==0) {
         return true;
     }
-
-
-    if($MacToUidUrgency==0) {
-        $Go_Shield_Connector_Addr = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Addr"));
-        $Go_Shield_Connector_Port = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Port"));
-        if ($Go_Shield_Connector_Addr == null) {
-            $Go_Shield_Connector_Addr = "127.0.0.1";
-        }
-        if ($Go_Shield_Connector_Port == 0) {
-            $Go_Shield_Connector_Port = 3333;
-        }
-        $connection = fsockopen($Go_Shield_Connector_Addr, $Go_Shield_Connector_Port, $errno, $errstr, 1);
-        if (!is_resource($connection)) {
-            echo $tpl->widget_rouge("{failed_to_connect}", "$errstr<br><small class=text-white>$Go_Shield_Connector_Addr:$Go_Shield_Connector_Port</small>");
-        }else {
-            fclose($connection);
-        }
-    }
     $refresh = "LoadAjaxSilent('go-shield-connector-status','$page?go-shield-connector-status=yes');";
 
-
-
     //Web-Filtering mode ( with UFDB )
-    if($EnableUfdbGuard==1) {
+
         $data = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/goshield/connector/status"));
+
         $bsini = new Bs_IniHandler();
         $bsini->loadString($data->Info);
         $Go_Shield_Connector_Addr = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Connector_Addr"));
@@ -554,21 +534,23 @@ function status():bool{
         }
         VERBOSE("ADDR $Go_Shield_Connector_Addr Port $Go_Shield_Connector_Port", __LINE__);
 
-        echo $tpl->SERVICE_STATUS($bsini, "GO_SHIELD_CONNECTOR", restart_js(), null, $refresh);
+        echo $tpl->SERVICE_STATUS($bsini, "GO_SHIELD_CONNECTOR_PROXY", restart_js(), null, $refresh);
 
-     $jsonVer=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/goshield/connector/version"));
+
         //$Go_Shield_Connector_Version=$json->Info->Version;
-        $go_shield_connector_src = $jsonVer->Info->md5_src;
-        $go_shield_connector_dst =$jsonVer->Info->md5_dst;
+        if(isset($data->binaries)) {
+            $go_shield_connector_src = $data->binaries->md5_src;
+            $go_shield_connector_dst = $data->binaries->md5_dst;
 
-        if ($go_shield_connector_src <> $go_shield_connector_dst) {
-            $btn[0]["name"] = "{fix_it}";
-            $btn[0]["icon"] = ico_play;
-            $btn[0]["js"] = $jsRestart;
-            $html[] = "<hr>";
-            $html[] = $tpl->widget_jaune("{need_update_ksrn}", "{update2}", $btn);
+            if ($go_shield_connector_src <> $go_shield_connector_dst) {
+                $btn[0]["name"] = "{fix_it}";
+                $btn[0]["icon"] = ico_play;
+                $btn[0]["js"] = $jsRestart;
+                $html[] = "<hr>";
+                $html[] = $tpl->widget_jaune("{need_update_ksrn}", "{update2}", $btn);
+            }
         }
-    }
+
     if($GoShieldConnectorDisableACL==1){
         echo $tpl->div_warning("{ERROR_GO_CONNECTOR_STOPPED}");
     }
@@ -587,13 +569,15 @@ function status():bool{
         return false;
 
     }
+    $addon="";
+    if(isset($data->Version)) {
+        if (strlen($data->Version) > 1) {
+            $addon = "$('#go-shield-connector-version').html('v$data->Version');";
+        }
+    }
 
 
-    $data = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/goshield/proxy/connector/status"));
-    $bsini = new Bs_IniHandler();
-    $bsini->loadString($data->Info);
-    echo $tpl->SERVICE_STATUS($bsini, "GO_SHIELD_CONNECTOR_PROXY", restart_js(), null, $refresh);
-    echo "<script>LoadAjaxSilent('go-shield-client-top','$page?top-status=yes');</script>";
+    echo "<script>LoadAjaxSilent('go-shield-client-top','$page?top-status=yes');$addon</script>";
 
     echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -607,11 +591,8 @@ function top_buttons(){
     $GoShieldConnectorEmergency  = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldConnectorEmergency"));
     $GoShieldConnectorDisableACL = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldConnectorDisableACL"));
     $EnableUfdbGuard=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUfdbGuard"));
-    $Go_Shield_Connector_Version=trim($libmem->getKey("Go-Shield-Connector-Version"));
-    VERBOSE("Go-Shield-Connector-Version = $Go_Shield_Connector_Version",__LINE__);
-    if(trim($Go_Shield_Connector_Version==null)){
-        $Go_Shield_Connector_Version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("GO_SHIELD_CONNECTOR_VERSION");
-    }
+    $Go_Shield_Connector_Version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("GO_SHIELD_CONNECTOR_VERSION");
+
     $page=CurrentPageName();
 
 
@@ -620,7 +601,7 @@ function top_buttons(){
             $Go_Shield_Connector_Version="v$Go_Shield_Connector_Version";
         }
 
-        $TINY_ARRAY["TITLE"]="Proxy {connector} $Go_Shield_Connector_Version";
+        $TINY_ARRAY["TITLE"]="Proxy {connector} <span id='go-shield-connector-version'>$Go_Shield_Connector_Version</span>";
         $TINY_ARRAY["ICO"]="fad fa-exchange-alt";
         $TINY_ARRAY["EXPL"]="{go_shield_connector_explain}";
         $TINY_ARRAY["BUTTONS"]=null;
@@ -683,7 +664,7 @@ function top_buttons(){
         $Go_Shield_Connector_Version="v$Go_Shield_Connector_Version";
     }
 
-    $TINY_ARRAY["TITLE"]="Proxy {connector} $Go_Shield_Connector_Version";
+    $TINY_ARRAY["TITLE"]="Proxy {connector} <span id='go-shield-connector-version'>$Go_Shield_Connector_Version</span>";
     $TINY_ARRAY["ICO"]="fad fa-exchange-alt";
     $TINY_ARRAY["EXPL"]="{go_shield_connector_explain}";
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);

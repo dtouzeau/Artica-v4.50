@@ -16,30 +16,30 @@ if(isset($_POST["client-certificate-delete-client"])){client_certificate_client_
 if(isset($_GET["client-certificate-delete-js"])){client_certificate_client_delete_js();exit;}
 if(isset($_POST["client_create_client"])){client_certificate_client_save();exit;}
 if(isset($_GET["client-certificates-list"])){client_certificate_list();exit;}
-if(isset($_GET["client-certificates-list2"])){client_certificate_list2();exit;}
 if(isset($_GET["client-certificate-create-js"])){client_certificate_create_js();exit;}
 if(isset($_GET["client-certificate-create-popup"])){client_certificate_create_popup();exit;}
 if(isset($_GET["pfx"])){client_certificate_download_pfx();exit;}
 
 www_js();
+
+
+
 function client_certificate_client_delete_js(){
     $ID=intval($_GET["client-certificate-delete-js"]);
-    $q                          = new lib_sqlite(NginxGetDB());
     $md=$_GET["md"];
-    $ligne = $q->mysqli_fetch_array("SELECT ClientName FROM nginx_clients_certs WHERE ID='$ID'");
-    $CertificateName = $ligne["ClientName"];
+    $ligne=fetch_nginx_client_cert($ID);
+    $CertificateName=isset($ligne["ClientName"])?$ligne["ClientName"]:"";
     $tpl=new template_admin();
     $tpl->js_confirm_delete("#$ID: $CertificateName","client-certificate-delete-client",$ID,"$('#$md').remove();");
 
 }
 function client_certificate_client_delete_perform():bool{
     $ID=intval($_POST["client-certificate-delete-client"]);
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne = $q->mysqli_fetch_array("SELECT ClientName,certid FROM nginx_clients_certs WHERE ID='$ID'");
-    $CertificateName = $ligne["ClientName"];
-    $certid             = $ligne["certid"];
-    $ligneCert          = $q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID='$certid'");
-    $certificate_server = $ligneCert["CertificateName"];
+    $ligne=fetch_nginx_client_cert($ID);
+    $CertificateName=isset($ligne["ClientName"])?$ligne["ClientName"]:"";
+    $certid=isset($ligne["certid"])?intval($ligne["certid"]):0;
+    $ligneCert=fetch_nginx_server_cert($certid);
+    $certificate_server=isset($ligneCert["CertificateName"])?$ligneCert["CertificateName"]:"";
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"nginx_clients_certs","where"=>["ID"=>$ID]]);
     admin_tracks("Remove Client Certificate $CertificateName from $certificate_server");
     return true;
@@ -50,9 +50,8 @@ function client_certificate_create_js():bool{
     $ID=intval($_GET["client-certificate-create-js"]);
     if(!isset($_GET["function"])){$_GET["function"]=null;}
     $function=$_GET["function"];
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne = $q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID='$ID'");
-    $CertificateName = $ligne["CertificateName"];
+    $ligne=fetch_nginx_server_cert($ID);
+    $CertificateName=isset($ligne["CertificateName"])?$ligne["CertificateName"]:"";
     return $tpl->js_dialog_modal("$CertificateName: {create_client_certificate}","$page?client-certificate-create-popup=$ID&function=$function");
 }
 function client_certificate_server_js():bool{
@@ -67,9 +66,8 @@ function client_certificate_client_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["client_create_client"]);
-    $q      = new lib_sqlite(NginxGetDB());
-    $ligne  = $q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID='$ID'");
-    $CertificateName=$ligne["CertificateName"];
+    $ligne=fetch_nginx_server_cert($ID);
+    $CertificateName=isset($ligne["CertificateName"])?$ligne["CertificateName"]:"";
     $username=$_POST["username"];
     $CertificateMaxDays=$_POST["CertificateMaxDays"];
     $HarmpID=HarmpID();
@@ -104,9 +102,8 @@ function client_certificate_create_popup():bool{
     if(!isset($_GET["function"])){$_GET["function"]=null;}
     $function=$_GET["function"];
     $ID=intval($_GET["client-certificate-create-popup"]);
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne = $q->mysqli_fetch_array("SELECT CertificateName,ca_crt FROM nginx_servers_certs WHERE ID='$ID'");
-    $ca_crt=base64_decode($ligne["ca_crt"]);
+    $ligne=fetch_nginx_server_cert($ID);
+    $ca_crt=base64_decode(isset($ligne["ca_crt"])?$ligne["ca_crt"]:"");
     $CLIENT_CERT_CLIENT_TEMP=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CLIENT_CERT_CLIENT_TEMP"));
     $array=openssl_x509_parse($ca_crt);
     $openssl_x509_read=openssl_x509_read($ca_crt);
@@ -174,17 +171,16 @@ function client_certificate_server_popup():bool{
 }
 function client_certificate_download_pfx():bool{
     $ID=intval($_GET["pfx"]);
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne = $q->mysqli_fetch_array("SELECT ClientName,certid,user_pfx,user_key,user_crt FROM nginx_clients_certs WHERE ID='$ID'");
-    $CertificateName = $ligne["ClientName"];
-    $certid             = $ligne["certid"];
-    $ligneCert          = $q->mysqli_fetch_array("SELECT ca_key,CertificateName FROM nginx_servers_certs WHERE ID='$certid'");
-    $certificate_server = $ligneCert["CertificateName"];
-    $user_key=base64_decode($ligneCert["ca_key"]);
+    $ligne=fetch_nginx_client_cert($ID);
+    $CertificateName=isset($ligne["ClientName"])?$ligne["ClientName"]:"";
+    $certid=isset($ligne["certid"])?intval($ligne["certid"]):0;
+    $ligneCert=fetch_nginx_server_cert($certid);
+    $certificate_server=isset($ligneCert["CertificateName"])?$ligneCert["CertificateName"]:"";
+    $user_key=base64_decode(isset($ligneCert["ca_key"])?$ligneCert["ca_key"]:"");
 
 
-    $user_crt=base64_decode($ligne["user_crt"]);
-    $user_pfx=base64_decode($ligne["user_pfx"]);
+    $user_crt=base64_decode(isset($ligne["user_crt"])?$ligne["user_crt"]:"");
+    $user_pfx=base64_decode(isset($ligne["user_pfx"])?$ligne["user_pfx"]:"");
    // $user_key=base64_decode($ligne["user_key"]);
     $final_content=$user_pfx;
 
@@ -284,27 +280,21 @@ function parameters_popup2():bool{
     $ssl_client_certificate     = $sockngix->GET_INFO("ssl_client_certificate");
     $EnableClientCertificate    = $sockngix->GET_INFO("EnableClientCertificate");
     $OptionalClientCertificate= $sockngix->GET_INFO("OptionalClientCertificate");
-    $db                         = NginxGetDB();
-    $q                          = new lib_sqlite($db);
 
     $servicename=get_servicename($ID);
     $CERTS=array();
-    if($q->TABLE_EXISTS("nginx_servers_certs")){
-        $results=$q->QUERY_SQL("SELECT * FROM nginx_servers_certs ORDER BY CertificateName");
-       if(!$q->ok){
-           echo $q->mysql_error;
-       }
-        foreach ($results as $index=>$ligne){
-            $CERTS[$ligne["ID"]]=$ligne["CertificateName"];
-        }
+    // Daemon owns the nginx_servers_certs schema (FixTables); no TABLE_EXISTS guard needed.
+    foreach (fetch_nginx_server_certs_ordered() as $ligne){
+        $CERTS[$ligne["ID"]]=$ligne["CertificateName"];
     }
 
-    $q=new lib_sqlite(CertificateDatabase());
-    $results=$q->QUERY_SQL("SELECT * FROM sslcertificates WHERE ServerCert=1 ORDER BY CommonName");
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    foreach ($results as $index=>$ligne){
-        $CERTS["CC:".$ligne["ID"]]=$ligne["CommonName"];
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    foreach ($cdb->dropdown(["ServerCertOnly"=>true]) as $r){
+        if((string)($r->Kind ?? "")!=="cert"){continue;}
+        $CERTS["CC:".intval($r->ID)]=(string)($r->CommonName ?? "");
     }
+    if($cdb->lastError!==""){echo $tpl->div_error($cdb->lastError);}
 
     $js[]="Loadjs('fw.nginx.sites.php?success-js=yes');";
     $js[]="LoadAjax('www-parameters-$ID','fw.nginx.sites.php?www-parameters2=$ID');";
@@ -354,18 +344,6 @@ function SaveParameters():bool{
     return admin_tracks("Reverse-Proxy: $servicename Edit Client Certificate enabled={$_POST["EnableClientCertificate"]}, certificate={$_POST["certificate"]}");
 }
 
-function CertificateDatabase():string{
-    $db="/home/artica/SQLITE/certificates.db";
-    if(isset($_SESSION["HARMPID"])){
-        $gpid=intval($_SESSION["HARMPID"]);
-        if($gpid>0){
-            $db="/home/artica/SQLITE/certificates.$gpid.db";
-        }
-    }
-    VERBOSE("Database: $db",__LINE__);
-    return $db;
-}
-
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
@@ -387,21 +365,6 @@ function HarmpID():int{
     }
     return intval($_SESSION["HARMPID"]);
 }
-
-function isHarmpID():bool{
-    $HarmpID=HarmpID();
-    if($HarmpID==0){return false;}
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
-
 
 function client_certificate_list():bool{
     $page                       = CurrentPageName();

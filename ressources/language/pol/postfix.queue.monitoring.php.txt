@@ -1,38 +1,31 @@
-<active>The "active" queue</active>
-<active_text>
-The queue manager is a delivery agent scheduler; it works to ensure fast and fair delivery of mail to all destinations within designated resource limits.[br]
-The active queue is somewhat analogous to an operating system's process run queue. Messages in the active queue are ready to be sent (runnable), but are not necessarily in the process of being sent (running). 
-</active_text>
-<body_message>Body message</body_message>
-<body_message_text>Display message source</body_message_text>
-<create_time>Create time</create_time>
-<deferred>The "deferred" queue</deferred>
-<deferred_text>
-When all the deliverable recipients for a message are delivered, and for some recipients delivery failed for a transient reason (it might succeed later), 
-the message is placed in the deferred queue</deferred_text>
-<incoming>The "incoming" queue</incoming>
-<incoming_text>
-All new mail entering the Postfix queue is written by the cleanup service into the "incoming" queue.[br]
-New queue files are created owned by the "postfix" user with an access bitmask (or mode) of 0600.[br]
-Once a queue file is ready for further processing the cleanup service changes the queue file mode to 0700 and notifies the queue manager of new mail arrival.[br]
-The queue manager ignores incomplete queue files whose mode is 0600, as these are still being written by cleanup. 
-</incoming_text>
-<maildrop>The "maildrop" queue</maildrop>
-<maildrop_text>
-Messages that have been submitted via the Postfix sendmail command, but not yet brought into the main Postfix queue by the pickup service, await processing in the "maildrop" queue.[br]
-Messages can be added to the "maildrop" queue even when the Postfix system is not running.[br]
-They will begin to be processed once Postfix is started.
-The "maildrop" queue is drained by the single threaded pickup service scanning the queue directory periodically or when notified of new message arrival by the postdrop program.[br]
-The postdrop program is a setgid helper that allows the unprivileged Postfix sendmail program to inject mail into the "maildrop" queue and to notify the pickup(8) service of its arrival.[br]
-All mail that enters the main Postfix queue does so via the cleanup service.[br] The cleanup service is responsible for envelope and header rewriting, header and body regular expression checks, automatic bcc recipient processing, milter content processing, and reliable insertion of the message into the Postfix "incoming" queue. 
-</maildrop_text>
-<message_arrival_time>Message arrival time</message_arrival_time>
-<message_size>Message size</message_size>
-<named_attribute>Named attribute</named_attribute>
-<original_recipient>Original recipient</original_recipient>
-<routing_info>Postfix routing info</routing_info>
-<routing_info_text>Display information about postfix used fields</routing_info_text>
-<sender_fullname>sender full name</sender_fullname>
-<show_mail>View message</show_mail>
-<show_queue>Display the list of mails stored</show_queue>
-<too_late_or_no_queue_files>All messages are gone, you have clicked too late on the function... No messages stored...</too_late_or_no_queue_files>
+<active>Kolejka &quot;active&quot;</active>
+<active_text>Mened&#380;er kolejki to harmonogram agent&#243;w dostarczania; dzia&#322;a, aby zapewni&#263; szybkie i sprawiedliwe dostarczanie poczty do wszystkich miejsc docelowych w wyznaczonych limitach zasob&#243;w.[br]
+Kolejka active jest w pewnym sensie analogiczna do kolejki uruchomieniowej proces&#243;w systemu operacyjnego. Wiadomo&#347;ci w kolejce active s&#261; gotowe do wys&#322;ania (uruchamialne), ale niekoniecznie s&#261; w trakcie wysy&#322;ania (uruchomione).</active_text>
+<body_message>Tre&#347;&#263; wiadomo&#347;ci</body_message>
+<body_message_text>Wy&#347;wietl &#378;r&#243;d&#322;o wiadomo&#347;ci</body_message_text>
+<create_time>Czas utworzenia</create_time>
+<deferred>Kolejka &quot;deferred&quot;</deferred>
+<deferred_text>Gdy wszyscy dostarczalni odbiorcy wiadomo&#347;ci zostan&#261; obs&#322;u&#380;eni, a dla niekt&#243;rych odbiorc&#243;w dostarczenie nie powiod&#322;o si&#281; z przyczyny przej&#347;ciowej (mo&#380;e si&#281; powie&#347;&#263; p&#243;&#378;niej), 
+wiadomo&#347;&#263; jest umieszczana w kolejce deferred</deferred_text>
+<incoming>Kolejka &quot;incoming&quot;</incoming>
+<incoming_text>Ca&#322;a nowa poczta wchodz&#261;ca do kolejki Postfix jest zapisywana przez us&#322;ug&#281; cleanup w kolejce &quot;incoming&quot;.[br]
+Nowe pliki kolejki s&#261; tworzone jako w&#322;asno&#347;&#263; u&#380;ytkownika &quot;postfix&quot; z mask&#261; bitow&#261; dost&#281;pu (lub trybem) 0600.[br]
+Gdy plik kolejki jest gotowy do dalszego przetwarzania, us&#322;uga cleanup zmienia tryb pliku kolejki na 0700 i powiadamia mened&#380;era kolejki o nadej&#347;ciu nowej poczty.[br]
+Mened&#380;er kolejki ignoruje niekompletne pliki kolejki, kt&#243;rych tryb to 0600, poniewa&#380; s&#261; one wci&#261;&#380; zapisywane przez cleanup.</incoming_text>
+<maildrop>Kolejka &quot;maildrop&quot;</maildrop>
+<maildrop_text>Wiadomo&#347;ci przes&#322;ane za pomoc&#261; polecenia sendmail Postfix, ale jeszcze nie wprowadzone do g&#322;&#243;wnej kolejki Postfix przez us&#322;ug&#281; pickup, oczekuj&#261; na przetworzenie w kolejce &quot;maildrop&quot;.[br]
+Wiadomo&#347;ci mo&#380;na dodawa&#263; do kolejki &quot;maildrop&quot; nawet wtedy, gdy system Postfix nie jest uruchomiony.[br]
+Zaczn&#261; by&#263; przetwarzane po uruchomieniu Postfix.
+Kolejka &quot;maildrop&quot; jest opr&#243;&#380;niana przez jednow&#261;tkow&#261; us&#322;ug&#281; pickup okresowo skanuj&#261;c&#261; katalog kolejki lub po powiadomieniu o nadej&#347;ciu nowej wiadomo&#347;ci przez program postdrop.[br]
+Program postdrop to pomocnik setgid, kt&#243;ry umo&#380;liwia nieuprzywilejowanemu programowi sendmail Postfix wstrzykiwanie poczty do kolejki &quot;maildrop&quot; i powiadamianie us&#322;ugi pickup(8) o jej nadej&#347;ciu.[br]
+Ca&#322;a poczta wchodz&#261;ca do g&#322;&#243;wnej kolejki Postfix przechodzi przez us&#322;ug&#281; cleanup.[br] Us&#322;uga cleanup odpowiada za przepisywanie koperty i nag&#322;&#243;wk&#243;w, sprawdzanie wyra&#380;e&#324; regularnych nag&#322;&#243;wka i tre&#347;ci, automatyczne przetwarzanie odbiorc&#243;w bcc, przetwarzanie tre&#347;ci milter oraz niezawodne wstawianie wiadomo&#347;ci do kolejki &quot;incoming&quot; Postfix.</maildrop_text>
+<message_arrival_time>Czas nadej&#347;cia wiadomo&#347;ci</message_arrival_time>
+<message_size>Rozmiar wiadomo&#347;ci</message_size>
+<named_attribute>Atrybut nazwany</named_attribute>
+<original_recipient>Oryginalny odbiorca</original_recipient>
+<routing_info>Informacje o routingu Postfix</routing_info>
+<routing_info_text>Wy&#347;wietl informacje o polach u&#380;ywanych przez postfix</routing_info_text>
+<sender_fullname>pe&#322;na nazwa nadawcy</sender_fullname>
+<show_mail>Wy&#347;wietl wiadomo&#347;&#263;</show_mail>
+<show_queue>Wy&#347;wietl list&#281; przechowywanych wiadomo&#347;ci</show_queue>
+<too_late_or_no_queue_files>Wszystkie wiadomo&#347;ci znikn&#281;&#322;y, klikn&#261;&#322;e&#347; za p&#243;&#378;no na funkcj&#281;... Brak przechowywanych wiadomo&#347;ci...</too_late_or_no_queue_files>

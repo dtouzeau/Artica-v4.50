@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 
 
 
@@ -92,9 +93,12 @@ function tabs(){
 function rule_delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$md5=$_GET["delete-rule-js"];
+	$md5=strval($_GET["delete-rule-js"]);
+	// Pentest 2026-11-04 : delete-rule-js etait concatene dans la requete.
+	if(!preg_match('/^[a-f0-9]{32}$/',$md5)){$md5="";}
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_backup WHERE zmd5='$md5'");
+	$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_backup WHERE zmd5=?",array($md5));
+	$ligne=isset($r[0]) ? $r[0] : array();
 	$mailfrom=$ligne["mailfrom"];
 	$mailto=$ligne["mailto"];
 	$type=$ligne["retentiontime"];
@@ -104,9 +108,10 @@ function rule_delete_js(){
 	$tpl->js_confirm_delete($title, "delete", $md5,"$('#$md5').remove()");
 }
 function rule_delete_perform(){
-	$md5=$_POST["delete"];
+	$md5=strval($_POST["delete"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$q->QUERY_SQL("DELETE FROM mimedefang_backup WHERE zmd5='$md5'");
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM mimedefang_backup WHERE zmd5=?",array($md5));
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -114,12 +119,15 @@ function rule_delete_perform(){
 function rule_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$md5=$_GET["rule-js"];
+	$md5=strval($_GET["rule-js"]);
+	// Pentest 2026-11-04 : rule-js etait concatene dans la requete.
+	if(!preg_match('/^[a-f0-9]{32}$/',$md5)){$md5="";}
 	$title="{new_rule}";
 	timeslist();
 	if($md5<>null){
 		$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_backup WHERE zmd5='$md5'");
+		$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_backup WHERE zmd5=?",array($md5));
+		$ligne=isset($r[0]) ? $r[0] : array();
 		$mailfrom=$ligne["mailfrom"];
 		$mailto=$ligne["mailto"];
 		$type=$ligne["retentiontime"];
@@ -136,28 +144,35 @@ function rule_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$zmd5=$_POST["zmd5"];
+	$zmd5=strval($_POST["zmd5"]);
+	// Pentest 2026-11-04 : zmd5/mailfrom/mailto/retention etait concatene dans la requete.
+	if($zmd5<>"" && !preg_match('/^[a-f0-9]{32}$/',$zmd5)){echo "Invalid rule identifier\n";return;}
+	$mailfrom=strval($_POST["mailfrom"]);
+	$mailto=strval($_POST["mailto"]);
+	$retention=strval($_POST["retention"]);
 	if($zmd5==null){
 		$zmd5=md5($_POST["mailfrom"].$_POST["mailto"]);
 		$ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_backup WHERE zmd5='$zmd5'");
-		if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
-		$q->QUERY_SQL("INSERT INTO mimedefang_backup(zmd5,mailfrom,mailto,`retentiontime`) VALUES ('$zmd5','{$_POST["mailfrom"]}','{$_POST["mailto"]}','{$_POST["retention"]}')");
+		// Pentest 2026-11-04 : mailfrom/mailto etait recopie sans encodage dans la page (XSS).
+		if($ligne["zmd5"]<>null){echo req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
+		$q->QUERY_SQL_PARAMS("INSERT INTO mimedefang_backup(zmd5,mailfrom,mailto,`retentiontime`) VALUES (?,?,?,?)",array($zmd5,$mailfrom,$mailto,$retention));
 		if(!$q->ok){echo $q->mysql_error;}
 		return;
 	}
 	
 	$new_zmd5=md5($_POST["mailfrom"].$_POST["mailto"]);
 	if($new_zmd5==$zmd5){
-		$q->QUERY_SQL("UPDATE mimedefang_backup SET `retentiontime`='{$_POST["retention"]}' WHERE zmd5='$zmd5'");
+		$q->QUERY_SQL_PARAMS("UPDATE mimedefang_backup SET `retentiontime`=? WHERE zmd5=?",array($retention,$zmd5));
 		if(!$q->ok){echo $q->mysql_error;}
 		return;
 	}
 	
 	$ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_backup WHERE zmd5='$new_zmd5'");
-	if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
+	// Pentest 2026-11-04 : mailfrom/mailto etait recopie sans encodage dans la page (XSS).
+	if($ligne["zmd5"]<>null){echo req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
 	
 	$q->QUERY_SQL("DELETE FROM mimedefang_backup WHERE zmd5='$zmd5'");
-	$q->QUERY_SQL("INSERT INTO mimedefang_backup(zmd5,mailfrom,mailto,`retentiontime`) VALUES ('$new_zmd5','{$_POST["mailfrom"]}','{$_POST["mailto"]}','{$_POST["retention"]}')");
+	$q->QUERY_SQL_PARAMS("INSERT INTO mimedefang_backup(zmd5,mailfrom,mailto,`retentiontime`) VALUES (?,?,?,?)",array($new_zmd5,$mailfrom,$mailto,$retention));
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -167,7 +182,9 @@ function rule_save(){
 function popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$md5=$_GET["popup"];
+	$md5=strval($_GET["popup"]);
+	// Pentest 2026-11-04 : popup etait concatene dans la requete.
+	if(!preg_match('/^[a-f0-9]{32}$/',$md5)){$md5="";}
 	$title="{new_rule}";
 	$bt="{add}";
 	timeslist();
@@ -222,7 +239,7 @@ function table_rules(){
 	$prgress=base64_encode(serialize($ARRAY));
 	$add="Loadjs('$page?rule-js=',true);";
 	
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedf-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedf-restart')";
 	
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:10px'>";
 	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>";
@@ -239,7 +256,8 @@ function table_rules(){
 	$html[]="</thead>";
 	$html[]="<tbody>";
 	
-	$jsAfter="LoadAjax('table-loader-webhttp-rules','$page?table=yes&eth={$_GET["eth"]}');";
+	// Pentest 2026-11-04 : eth etait recopie sans encodage dans la page (XSS).
+	$jsAfter="LoadAjax('table-loader-webhttp-rules','$page?table=yes&eth=".req_url($_GET["eth"] ?? "")."');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
 	
 	

@@ -16,4 +16,4 @@ Pour ce faire vous devrez cr&eacute;er 2 utilisateurs robots.[br][br]
 <robot>robots bogofilter</robot>
 <spam_action>Action lors de la d&eacute;tection d'un spam</spam_action>
 <spam_action_text>Quand bogofilter d&eacute;tecte des messages dont le score est sup&eacute;rieur &agrave;</spam_action_text>
-<type>type</type>
+<type>Type</type>

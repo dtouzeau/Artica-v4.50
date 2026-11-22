@@ -14,8 +14,6 @@ if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["rules"])){rules();exit;}
 if(isset($_GET["rules-start"])){rules_start();exit;}
 if(isset($_POST["set_real_ip_from"])){Save();exit;}
-if(isset($_GET["updatesoft-js"])){updatesoft_js();exit;}
-if(isset($_GET["updatesoft-popup"])){updatesoft_popup();exit;}
 if(isset($_GET["new-rule"])){new_rule_js();exit;}
 if(isset($_GET["new-rule-popup"])){new_rule_popup();exit;}
 if(isset($_POST["FType"])){new_rule_save();exit;}
@@ -176,8 +174,12 @@ function ruleid_save(){
     $tpl->CLEAN_POST();
     $q=new lib_sqlite("/home/artica/SQLITE/smokeping.db");
     $ID=intval($_POST["ID"]);
+    // Pentest 2026-11-04 : le nom des champs POST etait concatene dans la requete (nom de colonne).
+    $allowedCols=$q->FIELDS_LIST_FOR_QUERY("smokeping");
+    if(!is_array($allowedCols)){$allowedCols=array();}
     foreach ($_POST as $key=>$val){
         if($key=="ID"){continue;}
+        if(!in_array($key,$allowedCols,true)){continue;}
         $ffields[]="`$key`";
         $ffvals[]="'".$q->sqlite_escape_string2($val)."'";
         $ffedit[]="`$key`='".$q->sqlite_escape_string2($val)."'";

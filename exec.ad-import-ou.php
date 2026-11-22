@@ -34,8 +34,7 @@
 	
 	$ad=new wad($ou);
 	$ad->Perform_import();
-	$sock=new sockets();
-	$sock->getFrameWork("cmd.php?postfix-hash-tables=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables");
 	
 	
 function distri($ou){

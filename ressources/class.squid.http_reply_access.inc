@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class http_reply_access{
 	
@@ -45,8 +46,10 @@ class http_reply_access{
 			return;
 		}
 		
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$results=$q->QUERY_SQL("SELECT * FROM http_reply_access WHERE enabled=1 ORDER BY zorder");
+		// acls.db is API-only — enabled http_reply_access rules via the acls backend.
+		$raw=acls_api_get("/proxy/reply-access");
+		$results=array();
+		if(is_array($raw)){foreach($raw as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"]??0)!=1){continue;}$results[]=array("ID"=>intval($rr["id"]??0),"rulename"=>(string)($rr["ruleName"]??""),"allow"=>intval($rr["allow"]??0));}}
 		$squid_acls_groups=new squid_acls_groups();
 
 		foreach ($results as $index=>$ligne){

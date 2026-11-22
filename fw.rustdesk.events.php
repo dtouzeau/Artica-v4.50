@@ -73,7 +73,8 @@ function search(){
 	foreach ($data as $line){
 		$line=trim($line);
 
-        $line=str_replace('\"',"&quot;",$line);
+        // Pentest 2026-11-04 : message/service syslog (donnee externe) affiches sans encodage (XSS stockee).
+        $line=str_replace('\"','"',$line);
         $FTime=0;
         $PID=0;
         $msg=null;
@@ -100,7 +101,8 @@ function search(){
         if($FTime==0){continue;}
         $zDate=$tpl->time_to_date($FTime,true);
         $level=strtolower($LEVEL);
-        $ServiceIco=$SERVICE;
+        $ServiceIco=req_html($SERVICE);
+        $msg=req_html($msg);
         if(isset($SERVICEz[$SERVICE])) {
             $ServiceIco = $SERVICEz[$SERVICE];
         }
@@ -122,7 +124,7 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/docker.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/docker.syslog.pattern"))."</i></div>";
 	echo $tpl->_ENGINE_parse_body($html);
 	return true;
 	

@@ -1,7 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
-
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["container-move"])){container_move();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -20,19 +22,19 @@ function js(){
     return $tpl->js_dialog2("{access_rules}", "$page?table-start=yes&service=$serviceid&serviceid=$serviceid&md5=");
 }
 
+
+
+
 function container_move():bool{
-    $q=new lib_sqlite(NginxGetDB());
 	$tpl=new template_admin();
-	$ID=$_GET["container-move"];
+	$ID=intval($_GET["container-move"]);
 	$dir=$_GET["dir"];
 	$table="webdav_access";
     $serviceid=intval($_GET["serviceid"]);
-	$sql="SELECT serviceid,zorder FROM `$table` WHERE ID='$ID'";
 
-	$results=$q->QUERY_SQL($sql);$ligne=$results[0];
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
-	$CurrentOrder=$ligne["zorder"];
-    $serviceid=intval($ligne["serviceid"]);
+	$ligne=fetch_webdav_access($ID);
+	$CurrentOrder=isset($ligne["zorder"])?$ligne["zorder"]:0;
+    $serviceid=intval(isset($ligne["serviceid"])?$ligne["serviceid"]:$serviceid);
 
 	if($dir==0){
 		$NextOrder=$CurrentOrder-1;
@@ -44,12 +46,11 @@ function container_move():bool{
 
 	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$NextOrder],"where"=>["ID"=>$ID]]);
 
-	$results=$q->QUERY_SQL("SELECT ID FROM `$table` WHERE serviceid=$serviceid ORDER by zorder");
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return false;}
+	$rows=fetch_webdav_access_by_service($serviceid);
 	$c=1;
-	foreach ($results as $index=>$ligne){
-		$ID=$ligne["ID"];
-		$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$c],"where"=>["ID"=>$ID]]);
+	foreach ($rows as $index=>$ligne){
+		$rid=$ligne["ID"];
+		$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>$table,"set"=>["zorder"=>$c],"where"=>["ID"=>$rid]]);
 		$c++;
 	}
     echo "Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');";
@@ -67,12 +68,12 @@ function table_start():bool{
 }
 function delete_js():bool{
 	$tpl=new template_admin();
-	$ID=$_GET["delete"];
+	$ID=intval($_GET["delete"]);
 	$md5=$_GET["md5"];
-    $q=new lib_sqlite(NginxGetDB());
-	$ligne=$q->mysqli_fetch_array("SELECT `item`,serviceid FROM webdav_access WHERE ID=$ID");
-    $serviceid=$ligne["serviceid"];
-	return $tpl->js_confirm_delete("{$ligne["item"]}", "delete", "$ID","$('#$md5').remove();Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');LoadAjaxSilent('webcontent-site-$serviceid','fw.nginx.site.content.php?content-id=$serviceid');");
+	$ligne=fetch_webdav_access($ID);
+    $serviceid=isset($ligne["serviceid"])?$ligne["serviceid"]:0;
+    $item=isset($ligne["item"])?$ligne["item"]:"";
+	return $tpl->js_confirm_delete($item, "delete", "$ID","$('#$md5').remove();Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');LoadAjaxSilent('webcontent-site-$serviceid','fw.nginx.site.content.php?content-id=$serviceid');");
 }
 function delete():bool{
     $ID=$_POST["delete"];
@@ -99,13 +100,12 @@ function id_popup():bool{
 	$title="{new_item}";
 	
 	$btname="{add}";
-	$q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
+	$ligne=array();
 	if($ID>0){
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM webdav_access WHERE ID=$ID");
+		$ligne=fetch_webdav_access($ID);
 		$btname="{apply}";
-		$title="{$ligne["item"]}";
-		$serviceid=$ligne["serviceid"];
-		
+		$title=isset($ligne["item"])?$ligne["item"]:"";
+		$serviceid=isset($ligne["serviceid"])?$ligne["serviceid"]:$serviceid;
 	}
 	$js="dialogInstance3.close();LoadAjax('webdav_access-$serviceid','$page?table=$serviceid');Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');LoadAjaxSilent('webcontent-site-$serviceid','fw.nginx.site.content.php?content-id=$serviceid');";
 	
@@ -118,8 +118,8 @@ function id_popup():bool{
 	
 	$form[]=$tpl->field_hidden("ID", $ID);
 	$form[]=$tpl->field_hidden("serviceid", $serviceid);
-	$form[]=$tpl->field_text("ipaddr", "{ipaddr}", $ligne["item"]);
-	$form[]=$tpl->field_checkbox_toogle("allow", "{rule}", intval($ligne["allow"]), $accepttypes);
+	$form[]=$tpl->field_text("ipaddr", "{ipaddr}", isset($ligne["item"])?$ligne["item"]:"");
+	$form[]=$tpl->field_checkbox_toogle("allow", "{rule}", intval(isset($ligne["allow"])?$ligne["allow"]:0), $accepttypes);
 	echo $tpl->form_outside($title, $form,"{ngx_stream_access_module}",$btname,"$js","AsSystemWebMaster");
 	return true;
 }
@@ -165,7 +165,7 @@ function table():bool{
     $serviceid=intval($_GET["table"]);
     $topbuttons[] = array("Loadjs('$page?id-js=0&serviceid=$serviceid&md5=')", ico_plus, "{new_rule}");
     $html[]=$tpl->th_buttons($topbuttons);
-	$html[]="<table id='table-webdav_access-{$_GET["table"]}' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
@@ -178,18 +178,9 @@ function table():bool{
 
 	
 
-	$q=new lib_sqlite(NginxGetDB());
-	
-	
-	$sql="CREATE TABLE IF NOT EXISTS `webdav_access` ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, `zorder` INTEGER, `serviceid` INTEGER, `allow` INTEGER, `item` text )";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "$q->mysql_error (".__LINE__.")\n$sql\n";}
-	$q->QUERY_SQL("CREATE INDEX IF NOT EXISTS KeyService ON webdav_access (serviceid,zorder)");
-	
-	
-	
-	$results=$q->QUERY_SQL("SELECT * FROM webdav_access WHERE serviceid='$serviceid' ORDER BY zorder");
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return false;}
+	// Daemon owns the webdav_access schema and KeyService index
+	// (nginxsites/DBConf.go FixTables); PHP-side CREATE statements removed.
+	$results=fetch_webdav_access_by_service($serviceid);
 
 	$STATUS[0]="<span class='label label-danger'>{deny}</span>";
 	$STATUS[1]="<span class='label label-primary'>{allow}</span>";
@@ -197,7 +188,7 @@ function table():bool{
 	
 	$TRCLASS=null;
 	foreach ($results as $md5=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$md5=md5(serialize($ligne));
 		$ID=$ligne["ID"];
 		$item=trim($ligne["item"]);
@@ -217,39 +208,12 @@ function table():bool{
 		$html[]="</tr>";
 	}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div></div></div>";
 	$html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-webdav_access-{$_GET["table"]}').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style().$tpl->_ENGINE_parse_body($html);
     return true;
 
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
 }

@@ -1,12 +1,17 @@
 <?php
-define(td1prc ,  "widht=1% class='center' style='vertical-align:middle' nowrap");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
-include_once(dirname(__FILE__)."/ressources/class.firehol.inc");
-include_once(dirname(__FILE__)."/ressources/class.iptables.inc");
+include_once(dirname(__FILE__)."/ressources/class.firewall.api.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-if(isset($_POST["ruleid"])){save();exit;}
+// Les autres pages du pare-feu (fw.nat.php, fw.rules.php) vérifient ce droit
+// côté serveur ; celle-ci ne le faisait qu'à travers form_outside, c'est-à-dire
+// dans le navigateur.
+$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+
+// Verrou de la politique Artica Meta "firewall" : regles tenues = options en lecture seule.
+include_once(dirname(__FILE__)."/ressources/class.firewall.meta.inc");
+if(isset($_POST["ruleid"])){if(firewall_meta_holds("rules")){echo firewall_meta_refuse_post();exit;}save();exit;}
 
 page();
 
@@ -14,8 +19,6 @@ page();
 
 function page(){
     $ruleid     = intval($_GET["rule-id"]);
-    $eth        = $_GET["eth"];
-    $function   = $_GET["function"];
     $q          = new lib_sqlite("/home/artica/SQLITE/firewall.db");
     $ligne      = $q->mysqli_fetch_array("SELECT accepttype FROM iptables_main WHERE ID='$ruleid'");
     $accepttype = $ligne["accepttype"];
@@ -34,7 +37,7 @@ function page(){
 }
 
 function page_MARK($ruleid){
-    $tpl    = new template_admin();
+    $tpl    = new template_admin();if(firewall_meta_holds("rules")){firewall_meta_lock_form($tpl);echo firewall_meta_banner("rules",$tpl);}
     $q          = new lib_sqlite("/home/artica/SQLITE/firewall.db");
     $ligne      = $q->mysqli_fetch_array("SELECT * FROM iptables_main WHERE ID='$ruleid'");
 
@@ -49,10 +52,9 @@ function page_MARK($ruleid){
 }
 
 function page_TPROXY($ruleid){
-    $tpl    = new template_admin();
+    $tpl    = new template_admin();if(firewall_meta_holds("rules")){firewall_meta_lock_form($tpl);echo firewall_meta_banner("rules",$tpl);}
     $q          = new lib_sqlite("/home/artica/SQLITE/firewall.db");
 
-    if(!$q->FIELD_EXISTS("iptables_main","ForwardToPort")){$q->QUERY_SQL("ALTER TABLE iptables_main ADD ForwardToPort INTEGER NOT NULL DEFAULT 0"); }
 
 
 
@@ -74,35 +76,24 @@ function save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["ruleid"]);
-    unset($_POST["ruleid"]);
-
-    foreach ($_POST as $key=>$val){
-
-        $tt[]="`$key`='$val'";
-
-    }
-
-    $sql="UPDATE iptables_main SET ".@implode(", ",$tt)." WHERE ID=$ID";
-    $q          = new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}
-
+    if($ID==0){return;}
+    $data=array();
+    if(isset($_POST["MARK"])){$data["mark"]=intval($_POST["MARK"]);}
+    if(isset($_POST["ForwardTo"])){$data["forwardto"]=trim((string)$_POST["ForwardTo"]);}
+    if(isset($_POST["ForwardNIC"])){$data["forwardnic"]=(string)$_POST["ForwardNIC"];}
+    if(isset($_POST["ForwardToPort"])){$data["forwardtoport"]=intval($_POST["ForwardToPort"]);}
+    if(isset($_POST["xt_ratelimit"])){$data["xt_ratelimit"]=intval($_POST["xt_ratelimit"]);}
+    if(isset($_POST["xt_ratelimit_dir"])){$data["xt_ratelimit_dir"]=(string)$_POST["xt_ratelimit_dir"];}
+    $e=fwapi_error(fwapi_send("PUT","rules/$ID/options",$data));
+    if($e!=""){echo $tpl->post_error($e);}
 }
 
 function page_xtables(){
-    $tpl                    = new template_admin();
+    $tpl                    = new template_admin();if(firewall_meta_holds("rules")){firewall_meta_lock_form($tpl);echo firewall_meta_banner("rules",$tpl);}
     $ruleid                 = intval($_GET["rule-id"]);
     $APP_XTABLES_INSTALLED  = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_XTABLES_INSTALLED");
     $q                      = new lib_sqlite("/home/artica/SQLITE/firewall.db");
 
-    if(!$q->FIELD_EXISTS("iptables_main","xt_ratelimit")){
-        $q->QUERY_SQL("ALTER TABLE iptables_main ADD xt_ratelimit INTEGER NOT NULL DEFAULT 0");
-        $q->QUERY_SQL("ALTER TABLE iptables_main ADD xt_ratelimit_dir TEXT NOT NULL DEFAULT 'src'");
-    }
-
-    if(!$q->TABLE_EXISTS("xt_ratelimit")){
-        $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS xt_ratelimit (pattern TEXT,limit integer,enabled INTEGER NOT NULL DEFAULT 1,ruleid INTEGER NOT NULL DEFAULT 0)");
-    }
 
 
     $ligne                  = $q->mysqli_fetch_array("SELECT * FROM iptables_main WHERE ID='$ruleid'");

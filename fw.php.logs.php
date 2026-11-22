@@ -1,19 +1,25 @@
 <?php
+// Post SP10 - 13/10/2026
 if(!isset($_SESSION["PHPSEVNTS"])){$_SESSION["PHPSEVNTS"]="";}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["form"])){form();exit;}
 if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["download"])){download_phplog();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
+// Le repartiteur ?enable-firewall= appelait enable_firewall(), qui n'est
+// definie NI ici NI ailleurs: l'URL repondait un fatal « Call to undefined
+// function ». Vestige d'un copier-coller de la famille Suricata, ou la
+// fonction bascule un drapeau dans suricata_sig -- sans rapport avec les
+// journaux PHP.
 page();
 
 
@@ -167,9 +173,14 @@ function table():bool{
         if(strpos($content,'Uncaught Error:')>0){$text_class="text-danger font-bold";}
         if(strpos("  $content",'PHP Parse error')>0){$text_class="text-danger font-bold";}
 
+        // Pentest 2026-11-04 : contenu du journal PHP (donnee externe) affiche sans encodage (XSS stockee).
+        // Encode apres la classification (les motifs cherches contiennent des guillemets).
+        $content=req_html($content);
+        $date=req_html($date);
         if(preg_match("#\[.*?try (.+?)\]#",$content,$re)){
+            $tryurl=req_js(html_entity_decode($re[1],ENT_QUOTES,"ISO-8859-1"));
             $srep=$tpl->td_href("{SAMBA_ERROR_CLICK}","{SAMBA_ERROR_CLICK}",
-                "s_PopUpFull('{$re[1]}','1024','900');");
+                "s_PopUpFull('$tryurl','1024','900');");
             $content=str_replace("try {$re[1]}","<small>$srep</small>"
                 ,$content);
         }

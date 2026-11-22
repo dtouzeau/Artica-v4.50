@@ -84,6 +84,7 @@ class external_acl_squid_ldap{
 		if(!isset($GLOBALS["ActiveDirectoryConnections"])){
 			if($GLOBALS["DEBUG_GROUPS"]){$this->WLOG("[QUERY]: [".__FUNCTION__."/".__LINE__."] OPEN ActiveDirectoryConnections");}
 			$GLOBALS["ActiveDirectoryConnections"]=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$GLOBALS["ActiveDirectoryConnections"]=array();}
 		}
 		if(!$GLOBALS["ActiveDirectoryConnections"]){
 			if($GLOBALS["DEBUG_GROUPS"]){$this->WLOG("[QUERY]: [".__FUNCTION__."/".__LINE__."] ActiveDirectoryConnections Not an array");}
@@ -341,6 +342,7 @@ private function ADLdap_init(){
 	    if(isset($GLOBALS["AdConnectionsSSL"])){return $GLOBALS["AdConnectionsSSL"];}
         $CONNECTIONS=array();
         $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
        if($ActiveDirectoryConnections){
            if(count($ActiveDirectoryConnections)>0) {
                foreach ($ActiveDirectoryConnections as $index => $main) {

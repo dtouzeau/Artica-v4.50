@@ -1,38 +1,35 @@
-<ACTIVATE_OCS_AGENT_SERVICE>Activate agent service</ACTIVATE_OCS_AGENT_SERVICE>
-<add_new_package>Add a new package in database</add_new_package>
-<affected>Affected</affected>
-<APP_OCSI_LINUX_CLIENT>Ocsinventory unified agent for UNIX</APP_OCSI_LINUX_CLIENT>
-<APP_OCSI_LINUX_CLIENT_TEXT>Ocsinventory unified agent for UNIX is the Linux Network Agent for OCS Inventory, click here to set mandatories settings</APP_OCSI_LINUX_CLIENT_TEXT>
-<automatic_computers_injection>Automatic computers injection</automatic_computers_injection>
-<automatic_computers_injection_explain>Automatic computers injection will update Artica LDAP database with the OCS Database.[br]
-Each X minutes, it check if there is new computers updated.[br]
-When a new computer sends it's datas, and being added to the OCS Database, Artica will replicate informations to the LDAP database.[br]
-In this case, DNS, Network services will be automatically updated.[br]
-If you want to disable this feature, set parameter to 0</automatic_computers_injection_explain>
+<ACTIVATE_OCS_AGENT_SERVICE>Ativar o servi&#231;o do agente</ACTIVATE_OCS_AGENT_SERVICE>
+<add_new_package>Adicionar um novo pacote na base de dados</add_new_package>
+<affected>Afetado</affected>
+<APP_OCSI_LINUX_CLIENT>Agente unificado Ocsinventory para UNIX</APP_OCSI_LINUX_CLIENT>
+<APP_OCSI_LINUX_CLIENT_TEXT>O agente unificado Ocsinventory para UNIX &#233; o Agente de Rede Linux para o OCS Inventory, clique aqui para definir as configura&#231;&#245;es obrigat&#243;rias</APP_OCSI_LINUX_CLIENT_TEXT>
+<automatic_computers_injection>Inje&#231;&#227;o autom&#225;tica de computadores</automatic_computers_injection>
+<automatic_computers_injection_explain>A inje&#231;&#227;o autom&#225;tica de computadores atualizar&#225; a base de dados LDAP do Artica com a base de dados OCS.[br]
+A cada X minutos, verifica se h&#225; novos computadores atualizados.[br]
+Quando um novo computador envia os seus dados e &#233; adicionado &#224; base de dados OCS, o Artica replicar&#225; as informa&#231;&#245;es para a base de dados LDAP.[br]
+Neste caso, os servi&#231;os DNS e de rede ser&#227;o atualizados automaticamente.[br]
+Se quiser desativar esta funcionalidade, defina o par&#226;metro como 0</automatic_computers_injection_explain>
 <certificate>Certificado</certificate>
 <download_certificate>Descarregar certificado</download_certificate>
-<EXECUTE>Execute</EXECUTE>
+<EXECUTE>Executar</EXECUTE>
 <last_com>%C3%9Altima ligaç%C3£o</last_com>
 <LAUNCH>Iniciar</LAUNCH>
-<OCS_ADD_PACKAGE_EXPLAIN>OCS Agents requires that you package is in zip compressed format, you can specify 2 orders about a zip package.[br]
-[b]Store[/b] will extract only the package in the specified path.[br]
-[b]Execute[/b]Will extract package and execute the specified command lines tokens.[br]
-[b]Launch[/b]Will extract package and execute just the executable file specified (eg a bat/sh file).
-</OCS_ADD_PACKAGE_EXPLAIN>
-<ocs_affect_packages_computers>Launch deployment of this package to target computers</ocs_affect_packages_computers>
-<OCS_AGENT>OCS AGent</OCS_AGENT>
-<OCS_AGENT_INSTALL_1>Download the zipped file, extract it and run OcsAgentSetup.exe on client computer..</OCS_AGENT_INSTALL_1>
-<OCS_AGENT_INSTALL_2>Validate license agreement by clicking I agree button</OCS_AGENT_INSTALL_2>
-<OCS_AGENT_INSTALL_3>Fill in OCS Inventory NG Communication server address and port.[br]
-If you do not wish to use Microsoft Internet Explorer proxy settings (because your proxy requires authentication for example), 
-enable No Proxy checkbox.[br]
- The miscellaneous field allows you to pass the agent other command line arguments (cf Agent's command line switches). Then click Next button.
-</OCS_AGENT_INSTALL_3>
-<OCS_AGENT_INSTALL_4>Choose destination folder, C:\Program Files\OCS Inventory Agent by default, and click Install button.</OCS_AGENT_INSTALL_4>
-<OCS_AGENT_INSTALL_5>Click Close button to register OCS inventory NG agent service into System.</OCS_AGENT_INSTALL_5>
-<OCS_AGENT_INSTALL_CACERT>Do not forget to copy the certificat file to the installation directory of the agent.[br]File name must be cacert.pem[br]eg:C:\Program Files\OCS Inventory Agent\cacert.pem[br]
-You will find the certificat in the certificate tab on this section.</OCS_AGENT_INSTALL_CACERT>
-<OCS_AGENT_INSTALL_TITLE>Manually installing Service version of Agent.</OCS_AGENT_INSTALL_TITLE>
+<OCS_ADD_PACKAGE_EXPLAIN>Os agentes OCS requerem que o seu pacote esteja em formato zip comprimido, pode especificar 2 ordens sobre um pacote zip.[br]
+[b]Store[/b] extrair&#225; apenas o pacote no caminho especificado.[br]
+[b]Execute[/b] extrair&#225; o pacote e executar&#225; os tokens de linha de comandos especificados.[br]
+[b]Launch[/b] extrair&#225; o pacote e executar&#225; apenas o ficheiro execut&#225;vel especificado (ex. um ficheiro bat/sh).</OCS_ADD_PACKAGE_EXPLAIN>
+<ocs_affect_packages_computers>Iniciar a implementa&#231;&#227;o deste pacote nos computadores de destino</ocs_affect_packages_computers>
+<OCS_AGENT>Agente OCS</OCS_AGENT>
+<OCS_AGENT_INSTALL_1>Transfira o ficheiro comprimido, extraia-o e execute OcsAgentSetup.exe no computador cliente.</OCS_AGENT_INSTALL_1>
+<OCS_AGENT_INSTALL_2>Valide o contrato de licen&#231;a clicando no bot&#227;o Concordo</OCS_AGENT_INSTALL_2>
+<OCS_AGENT_INSTALL_3>Introduza o endere&#231;o e a porta do servidor de comunica&#231;&#227;o OCS Inventory NG.[br]
+Se n&#227;o pretender usar as defini&#231;&#245;es de proxy do Microsoft Internet Explorer (porque o seu proxy requer autentica&#231;&#227;o, por exemplo), ative a caixa No Proxy.[br]
+ O campo diversos permite-lhe passar ao agente outros argumentos da linha de comandos (cf. op&#231;&#245;es da linha de comandos do agente). Depois clique no bot&#227;o Seguinte.</OCS_AGENT_INSTALL_3>
+<OCS_AGENT_INSTALL_4>Escolha a pasta de destino, C:\Program Files\OCS Inventory Agent por predefini&#231;&#227;o</OCS_AGENT_INSTALL_4>
+<OCS_AGENT_INSTALL_5>Clique no bot&#227;o Fechar para registar o servi&#231;o do agente OCS inventory NG no sistema.</OCS_AGENT_INSTALL_5>
+<OCS_AGENT_INSTALL_CACERT>N&#227;o se esque&#231;a de copiar o ficheiro de certificado para o diret&#243;rio de instala&#231;&#227;o do agente.[br]O nome do ficheiro deve ser cacert.pem[br]ex.: C:\Program Files\OCS Inventory Agent\cacert.pem[br]
+Encontrar&#225; o certificado no separador de certificados desta sec&#231;&#227;o.</OCS_AGENT_INSTALL_CACERT>
+<OCS_AGENT_INSTALL_TITLE>Instala&#231;&#227;o manual da vers&#227;o de servi&#231;o do agente.</OCS_AGENT_INSTALL_TITLE>
 <OCS_AGENT_INTRO>Quando o Agente OCS Inventory NG é lançado, ele consulta o servidor de Comunicaç%C3£o usando o protocolo HTTP.[br]
 O servidor n%C3£o pode responder a nada (n%C3£o h%C3¡ tempo para um invent%C3¡rio e nenhum pacote a implantar), e o agente p%C3¡ra [br].
 Caso contr%C3¡rio, o servidor pode responder que o Agente tem de o fazer:
@@ -43,36 +40,31 @@ O servidor s%C3%B3 responde a isto se a data do %C3%BAltimo invent%C3¡rio na ba
 O servidor s%C3%B3 responde se o computador for eleito para executar IPDISCOVERY (ver Utilizando a funç%C3£o de descoberta de IP)[/li].
 [li]Implantar um pacote: O agente contacta o servidor de implementaç%C3£o usando o protocolo HTTPS para obter o ficheiro de informaç%C3£o, descarrega fragmentos de pacote do reposit%C3%B3rio, reconstr%C3%B3i o pacote e lança-o.[/li]
 [/ul]</OCS_AGENT_INTRO>
-<ocs_certificate_explain>If you want to use remote deployement, you need to generate a certificate.
-[br]Remote computers requiress SSL access to validate server before trying to download from it, you need SSL certificates for use with your server.[br]
-You can use http://www.cacert.org  services: they sign your certificates, and provide one certificate aiming to be used with many FOSS projects, 
-because it's free instead of paid certificates like the ones from Thawte or Verisign.[br]
-First, you need to generate a private key and a CSR.[br]Fill the form below that requires mandatories informations to generate this private key.
-</ocs_certificate_explain>
-<ocs_certificate_explain_self>If you want to use remote deployement, you need to generate a certificate.[br]
-This section helps you to generate a slef-signed certificate</ocs_certificate_explain_self>
-<ocs_computer_is_not_in_ldap>This computer is not stored in the Artica Database.[br]You click here in order to add it.</ocs_computer_is_not_in_ldap>
-<OCS_CONNECTED_COMPUTERS_TEXT>This section display your computers connected to the inventory service</OCS_CONNECTED_COMPUTERS_TEXT>
-<OCS_COULD_NOT_RESOLVE_SSLHOST>It seems that this server name is not in your private DNS!, please, verify if the server is resolved by your computers.</OCS_COULD_NOT_RESOLVE_SSLHOST>
-<OCS_CSR_HOWTO>Copy and paste these lines in the cacert.org website in order to generate the public certificate</OCS_CSR_HOWTO>
-<ocs_download_certificate_text>Download the certificate and save it in the OCS Agent installation directory</ocs_download_certificate_text>
-<OCS_MUST_CREATE_CERTIFICATE_CSR_FIRST>You need to obtain a valid Server Certificate first, follow instructions display in the help icon</OCS_MUST_CREATE_CERTIFICATE_CSR_FIRST>
-<OCS_PACKAGE_INFOS>This section display packages available for deployements to remote computers</OCS_PACKAGE_INFOS>
-<OCS_PACKAGE_NO_CERT_SERVER>You did not set server name in the certificate section, the package cannot be created</OCS_PACKAGE_NO_CERT_SERVER>
-<OCS_SERVER_ADDRESS>OCS server address</OCS_SERVER_ADDRESS>
-<ocs_web_params>Web server/interface</ocs_web_params>
-<ocs_web_params_text>Set parameters of the web server and the interface of OCS Inventory</ocs_web_params_text>
+<ocs_certificate_explain>Se quiser usar a implementa&#231;&#227;o remota, precisa de gerar um certificado.[br]Os computadores remotos requerem acesso SSL para validar o servidor antes de tentar transferir dele; precisa de certificados SSL para usar com o seu servidor.[br]
+Pode usar os servi&#231;os de http://www.cacert.org: assinam os seus certificados e fornecem um certificado destinado a ser usado com muitos projetos FOSS, porque &#233; gratuito em vez de pago como os da Thawte ou Verisign.[br]
+Primeiro, precisa de gerar uma chave privada e um CSR.[br]Preencha o formul&#225;rio abaixo que requer informa&#231;&#245;es obrigat&#243;rias para gerar esta chave privada.</ocs_certificate_explain>
+<ocs_certificate_explain_self>Se quiser usar a implementa&#231;&#227;o remota, precisa de gerar um certificado.[br]
+Esta sec&#231;&#227;o ajuda-o a gerar um certificado autoassinado</ocs_certificate_explain_self>
+<ocs_computer_is_not_in_ldap>Este computador n&#227;o est&#225; armazenado na base de dados do Artica.[br]Clique aqui para o adicionar.</ocs_computer_is_not_in_ldap>
+<OCS_CONNECTED_COMPUTERS_TEXT>Esta sec&#231;&#227;o exibe os seus computadores ligados ao servi&#231;o de invent&#225;rio</OCS_CONNECTED_COMPUTERS_TEXT>
+<OCS_COULD_NOT_RESOLVE_SSLHOST>Parece que este nome de servidor n&#227;o est&#225; no seu DNS privado! Verifique se o servidor &#233; resolvido pelos seus computadores.</OCS_COULD_NOT_RESOLVE_SSLHOST>
+<OCS_CSR_HOWTO>Copie e cole estas linhas no site cacert.org para gerar o certificado p&#250;blico</OCS_CSR_HOWTO>
+<ocs_download_certificate_text>Transfira o certificado e guarde-o no diret&#243;rio de instala&#231;&#227;o do agente OCS</ocs_download_certificate_text>
+<OCS_MUST_CREATE_CERTIFICATE_CSR_FIRST>Precisa de obter primeiro um certificado de servidor v&#225;lido, siga as instru&#231;&#245;es exibidas no &#237;cone de ajuda</OCS_MUST_CREATE_CERTIFICATE_CSR_FIRST>
+<OCS_PACKAGE_INFOS>Esta sec&#231;&#227;o exibe os pacotes dispon&#237;veis para implementa&#231;&#245;es em computadores remotos</OCS_PACKAGE_INFOS>
+<OCS_PACKAGE_NO_CERT_SERVER>N&#227;o definiu o nome do servidor na sec&#231;&#227;o do certificado, o pacote n&#227;o pode ser criado</OCS_PACKAGE_NO_CERT_SERVER>
+<OCS_SERVER_ADDRESS>Endere&#231;o do servidor OCS</OCS_SERVER_ADDRESS>
+<ocs_web_params>Servidor web/interface</ocs_web_params>
+<ocs_web_params_text>Definir os par&#226;metros do servidor web e da interface do OCS Inventory</ocs_web_params_text>
 <packages>Pacotes</packages>
-<PACKAGE_AFFECT_HOWTO>Click on the checkbox near computers in order to launch the package deployement</PACKAGE_AFFECT_HOWTO>
-<PROLOG_FREQ>Frequency connections</PROLOG_FREQ>
-<PROLOG_FREQ_HELP>Number of hours between two run of the agent (useful for the service). Therefore, the agent will contact (not necessary send an inventory if inventory is not older than
-FREQUENCY days) ocs server every X hours.</PROLOG_FREQ_HELP>
-<STORE>Store</STORE>
-<system_os_mini>O.S.</system_os_mini>
+<PACKAGE_AFFECT_HOWTO>Clique na caixa junto aos computadores para iniciar a implementa&#231;&#227;o do pacote</PACKAGE_AFFECT_HOWTO>
+<PROLOG_FREQ>Frequ&#234;ncia das liga&#231;&#245;es</PROLOG_FREQ>
+<PROLOG_FREQ_HELP>N&#250;mero de horas entre duas execu&#231;&#245;es do agente (&#250;til para o servi&#231;o). Portanto, o agente contactar&#225; (n&#227;o necessariamente enviar&#225; um invent&#225;rio se o invent&#225;rio n&#227;o tiver mais de FREQUENCY dias) o servidor ocs a cada X horas.</PROLOG_FREQ_HELP>
+<STORE>Armazenar</STORE>
+<system_os_mini>S.O.</system_os_mini>
 <upload_certificate>Carregar certificado</upload_certificate>
 <upload_server_certificate>Certificado de Servidor de Carregamento</upload_server_certificate>
-<upload_server_certificate_text_ocs>Save your generated certificate to a file name server.crt on your computer, 
-upload it to the server using browse button and make the SSL deployment service available</upload_server_certificate_text_ocs>
-<UseFusionInventoryAgents>Use Fusion Inventory Agents</UseFusionInventoryAgents>
-<UseFusionInventoryAgents_text>Use the Agents instead the orginal OCS Inventory Agents.[br]This requires only one web server</UseFusionInventoryAgents_text>
-<use_self_signed_certificate>Use self-signed certificate</use_self_signed_certificate>
+<upload_server_certificate_text_ocs>Guarde o seu certificado gerado num ficheiro com o nome server.crt no seu computador, carregue-o para o servidor usando o bot&#227;o procurar e disponibilize o servi&#231;o de implementa&#231;&#227;o SSL</upload_server_certificate_text_ocs>
+<UseFusionInventoryAgents>Usar agentes Fusion Inventory</UseFusionInventoryAgents>
+<UseFusionInventoryAgents_text>Usar os Agentes em vez dos Agentes originais do OCS Inventory.[br]Isto requer apenas um servidor web</UseFusionInventoryAgents_text>
+<use_self_signed_certificate>Usar certificado autoassinado</use_self_signed_certificate>

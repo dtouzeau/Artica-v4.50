@@ -1,4 +1,4 @@
-<BUILD_CLUSTER>Build cluster</BUILD_CLUSTER>
+<BUILD_CLUSTER>Crear cl&#250;ster</BUILD_CLUSTER>
 <WIZARD_CLUSTER_CYRUS_EXPLAIN>Este asistente le ayudar%C3¡ a crear un servidor de buzones activo/pasivo en su red.[br]
 Para establecer esta estructura necesita un segundo servidor Artica en funcionamiento con servicio IMAP[br].
 Este segundo servidor de Artica ser%C3¡ la réplica/esclavo de los buzones.[br]
@@ -9,12 +9,11 @@ Si la operaci%C3%B3n de enlace es un éxito los 2 servidores artica (Maestro y e
 Podr%C3¡ volver al modo aut%C3%B3nomo para no perder el correo en una operaci%C3%B3n fallida.[br][br]
 Entonces, es el momento de iniciar el primer procedimiento.[br]
 Rellene el siguiente formulario estableciendo las credenciales del servidor remoto.[br]Esto ayudar%C3¡ a Artica a hablar con el servidor remoto para comprobar su estado.[br]</WIZARD_CLUSTER_CYRUS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Slave/replica informations</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>The target server is ready</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>This server is ready to be a replica/slave after clicking on the "build cluster" button the Master and the Slave
-will be notified to be linked in order to build a cluster configuration.[br]
-Your Master should be behind a Firewall with NAT, it is necessary to define which IP address/Server name the replica must use.
-In the form below, put the Ip address of your server act has a Master. 
-</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_WELCOME>Welcome on the Wizard for Clustering mailboxes</WIZARD_CLUSTER_CYRUS_WELCOME>
-<WIZARD_CLUSTER_ERROR>The wizard is blocked, it encounter some error, try to fix it ans restart the operation</WIZARD_CLUSTER_ERROR>
+<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Informaci&#243;n del esclavo/r&#233;plica</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>El servidor de destino est&#225; listo</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>Este servidor est&#225; listo para ser una r&#233;plica/esclavo. Despu&#233;s de hacer clic en el bot&#243;n &quot;crear cl&#250;ster&quot;, se notificar&#225; al maestro y al esclavo
+para que se vinculen y creen una configuraci&#243;n de cl&#250;ster.[br]
+Su maestro deber&#237;a estar detr&#225;s de un cortafuegos con NAT, es necesario definir qu&#233; direcci&#243;n IP/nombre de servidor debe usar la r&#233;plica.
+En el siguiente formulario, indique la direcci&#243;n IP de su servidor que act&#250;a como maestro.</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_WELCOME>Bienvenido al asistente para agrupar buzones</WIZARD_CLUSTER_CYRUS_WELCOME>
+<WIZARD_CLUSTER_ERROR>El asistente est&#225; bloqueado, ha encontrado alg&#250;n error, intente corregirlo y reinicie la operaci&#243;n</WIZARD_CLUSTER_ERROR>

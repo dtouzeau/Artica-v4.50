@@ -35,6 +35,8 @@ function CallBack(){
         }
     }
     if($CallBackFunction_text=="()"){$CallBackFunction_text=null;}
+    // Pentest 2026-11-04 : CallBackFunction decode (base64) etait recopie sans encodage dans la page (XSS).
+    if(!is_null($CallBackFunction_text) && !preg_match('#^[A-Za-z0-9_]+\(\)$#',$CallBackFunction_text)){$CallBackFunction_text="blur()";}
     return $CallBackFunction_text;
 }
 
@@ -107,7 +109,8 @@ function popup(){
 
 
 	$form[]=$tpl->field_text("fullhostname", "{hostname}", $_GET["hostname"],true);
-	$form[]=$tpl->field_ipaddr("ipaddr", "{ipaddr}", $_GET["ipaddr"]);
+	// Pentest 2026-11-04 : ipaddr etait recopie sans encodage dans la page (XSS).
+	$form[]=$tpl->field_ipaddr("ipaddr", "{ipaddr}", $_GET["ipaddr"] ?? "");
 	$form[]=$tpl->field_text("proxyalias", "{proxy_alias}", null,false,"{my_proxy_aliases_text}");
 	$form[]=$tpl->field_text("hostalias1", "{alias} 1", null);
 	$form[]=$tpl->field_text("hostalias2", "{alias} 2", null);
@@ -157,7 +160,7 @@ function save(){
 
 	$ipClass=new IP();
 	if(!$ipClass->IsvalidMAC($_POST["mac"])){
-		echo "MAC: {$_POST["mac"]} Invalid!\n";
+		echo "MAC: ".req_html($_POST["mac"])." Invalid!\n";
 		return;
 	}
 

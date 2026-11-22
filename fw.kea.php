@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
@@ -6,9 +7,6 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["range1"])){dhcp_save();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_GET["config-file-js"])){config_file_js();exit;}
-if(isset($_GET["config-file-popup"])){config_file_popup();exit;}
-if(isset($_POST["configfile"])){config_file_save();exit;}
 if(isset($_GET["kea-status-top"])){top_status();exit;}
 if(isset($_GET["interfaces"])){interfaces();exit;}
 if(isset($_GET["Params"])){Params_js();exit;}
@@ -70,7 +68,8 @@ function dhcp_relay_new_save():bool{
     }
 
     $rulename=$_POST["rulename"];
-    $q->QUERY_SQL("INSERT INTO dhcpd_relays (interface,rulename) VALUES ('$interface','$rulename')");
+    // Pentest 2026-11-04 : interface et rulename etaient concatenes dans la requete.
+    $q->QUERY_SQL_PARAMS("INSERT INTO dhcpd_relays (interface,rulename) VALUES (?,?)",array($interface,$rulename));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -92,50 +91,20 @@ function top_status(){
     $html[]="
     <div class=\"col-lg-4\">
 	<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fa fa-desktop fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {computers_number} </span>
-	<h2 class=\"font-bold\">$DHCPD_COUNT_OF_QUERIES</h2>
-	</div>
-	</div>
-	</div>
+	".$tpl->widget_style1("lazur-bg","fa fa-desktop","{computers_number}","$DHCPD_COUNT_OF_QUERIES")."
 	</div>
 	<!-- -------------------------------------------------------------------------------------------------- -->
 	
 	<!-- ------------------------------------------------------------------------------------------------- -->
 	<div class=\"col-lg-4\">
-	    <div class=\"widget style1 navy-bg\">
-	        <div class=\"row\">
-	            <div class=\"col-xs-4\">
-	                <i class=\"fas fa-laptop fa-5x\"></i>
-	            </div>
-	            <div class=\"col-xs-8 text-right\">
-	                <span> {leases} </span>
-	                <h2 class=\"font-bold\">$dhcpd_leases</h2>
-	            </div>
-	        </div>
-	    </div>
+	    ".$tpl->widget_style1("navy-bg","fas fa-laptop","{leases}","$dhcpd_leases")."
     </div>
 	<!-- -------------------------------------------------------------------------------------------------- -->
 	";
 
     if($dhcpd_free<>null){
         $html[]="	<div class=\"col-lg-4\">
-	    <div class=\"widget style1 navy-bg\">
-	        <div class=\"row\">
-	            <div class=\"col-xs-4\">
-	                <i class=\"fas fa-pause fa-5x\"></i>
-	            </div>
-	            <div class=\"col-xs-8 text-right\">
-	                <span> {free} IP</span>
-	                <h2 class=\"font-bold\">$dhcpd_free</h2>
-	            </div>
-	        </div>
-	    </div>
+	    ".$tpl->widget_style1("navy-bg","fas fa-pause","{free} IP","$dhcpd_free")."
     </div>
 	<!-- -------------------------------------------------------------------------------------------------- -->
 	";
@@ -255,7 +224,8 @@ function interfaces(){
        
         $nic=new system_nic($interface);
 
-        $results=$q->QUERY_SQL("SELECT ID,rulename FROM dhcpd_relays WHERE interface='$interface'");
+        // Pentest 2026-11-04 : interface etait concatene dans la requete.
+        $results=$q->QUERY_SQL_PARAMS("SELECT ID,rulename FROM dhcpd_relays WHERE interface=?",array($interface));
         if($results){
             foreach ($results as $ligne){
                 $interfaceR="Relay:{$ligne["ID"]}";
@@ -454,32 +424,5 @@ function status(){
 	
 }
 
-function config_file_js(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$users=new usersMenus();
-	if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();return;}
-	$tpl->js_dialog6("{APP_DHCP} >> {config_file}", "$page?config-file-popup=yes",1000);
 
-}
-function config_file_save(){
-
-	$data=url_decode_special_tool($_POST["configfile"]);
-	@file_put_contents("/usr/share/artica-postfix/ressources/logs/web/dhcpd.config", $data);
-}
-
-function config_file_popup(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$sock=new sockets();
-	$sock->getFrameWork("dhcpd.php?config-file=yes");
-	$data=@file_get_contents("/usr/share/artica-postfix/ressources/logs/web/dhcpd.config");
-	$form[]=$tpl->field_textareacode("configfile", null, $data);
-
-    $jsafter=$tpl->framework_buildjs("/dhcpd/service/restart",
-        "dhcpd.progress","dhcpd.progress.txt","progress-dhcp-restart");
-
-	echo $tpl->form_outside("{config_file}", @implode("", $form),null,"{apply}",$jsafter,"AsSystemAdministrator");
-
-}
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}

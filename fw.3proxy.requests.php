@@ -4,6 +4,7 @@ include_once(dirname(__FILE__)."/ressources/class.logfile_daemon.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
+include_once(dirname(__FILE__)."/ressources/class.3proxy.inc");
 if(!ifisright()){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
@@ -24,7 +25,7 @@ function zoom_js(){
 }
 function zoom(){
 
-	$data=unserialize(base64_decode($_GET["data"]));
+	$data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
 $html[]="<div class=ibox-content>";
 $html[]="<table class='table table table-bordered'>";
 	while (list ($key,$val) = each ($data)){
@@ -53,33 +54,17 @@ function whitelist_js(){
 	$md=$_GET["md"];
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$sql="SELECT * FROM webfilter_whitelists WHERE pattern='$familysite'";
-	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$ligne=$q->mysqli_fetch_array($sql);
-	$ID=intval($ligne["ID"]);
-	if($ID>0){
-		$enabled=intval($ligne["enabled"]);
-		if($enabled==1){
-			$q->QUERY_SQL("UPDATE webfilter_whitelists SET enabled=0 WHERE ID=$ID");
-			if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-		}else{
-			$q->QUERY_SQL("UPDATE webfilter_whitelists SET enabled=1 WHERE ID=$ID");
-			if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-		}
-
-		$GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?reload=yes");
-		header("content-type: application/x-javascript");
-		echo "LoadAjaxSilent('btn-$md','$page?button=yes&md=$md&familysite=$familysiteenc')";
-		
-		return;
-		
-	}
-	$sql="INSERT INTO webfilter_whitelists (pattern,enabled,`type`) VALUES('$familysite','1',1)";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?reload=yes");
+	// La reponse est evaluee comme du JavaScript par Loadjs, y compris la
+	// branche d'erreur : poser l'en-tete AVANT tout retour anticipe.
 	header("content-type: application/x-javascript");
+	// Chercher-puis-inverser-ou-creer est une SEULE operation cote daemon :
+	// la page enchainait un SELECT puis un UPDATE, que deux clics rapproches
+	// pouvaient croiser (le second lisait l'etat d'avant le premier).
+	$answer=dnswhitelist_toggle($familysite);
+	$e=uproxy_error($answer);
+	if($e!=""){$tpl->js_error($e);return;}
+
+	$GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/reconfigure");
 	echo "LoadAjaxSilent('btn-$md','$page?button=yes&md=$md&familysite=$familysiteenc')";
 	
 }
@@ -107,11 +92,8 @@ function button_white(){
 	$tpl=new template_admin();
 	$familysiteEnc=urlencode($familysite);
 	$md=$_GET["md"];
-	$sql="SELECT * FROM webfilter_whitelists WHERE pattern='$familysite'";
-	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$ligne=$q->mysqli_fetch_array($sql);
-	$ID=intval($ligne["ID"]);
-	$enabled=intval($ligne["enabled"]);
+	$state=dnswhitelist_state($familysite);
+	$enabled=intval($state["Enabled"]);
 	
 	
 	$js="Loadjs('$page?whitelist-js=$familysiteEnc&md=$md')";

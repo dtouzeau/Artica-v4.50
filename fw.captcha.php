@@ -24,7 +24,6 @@ if($GLOBALS["VERBOSE"]){
 
 // ── Security headers ─────────────────────────────────────────────────────────
 header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; font-src 'self' data: fonts.gstatic.com; style-src 'self' 'unsafe-inline' fonts.googleapis.com; img-src 'self' data:");
-header("X-Frame-Options: SAMEORIGIN");
 header("X-Content-Type-Options: nosniff");
 header("X-XSS-Protection: 1; mode=block");
 
@@ -314,8 +313,11 @@ function refresh(){
     $f[]="<meta HTTP-EQUIV=\"Expires\" CONTENT=\"-1\">";
     $f[]="<meta http-equiv=\"refresh\" content=\"2\">";
     $f[]="<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\">";
-    $f[]="<link rel='icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
-    $f[]="<link rel='shortcut icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
+    if(function_exists("brand_favicon_tag")){
+        $f[]=brand_favicon_tag("");
+    }else{
+        $f[]="<link rel='icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
+    }
     $f[]="<title>{please_wait}....</title>";
     $f[]=new_css();
     $f[]="<script src=\"/fingerprint/query\"></script>";
@@ -388,8 +390,11 @@ function captcha($return=false,$error=null){
     $f[]="<meta HTTP-EQUIV=\"Pragma\" CONTENT=\"no-cache\">";
     $f[]="<meta HTTP-EQUIV=\"Expires\" CONTENT=\"-1\">";
     $f[]="<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, user-scalable=no\">";
-    $f[]="<link rel='icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
-    $f[]="<link rel='shortcut icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
+    if(function_exists("brand_favicon_tag")){
+        $f[]=brand_favicon_tag("");
+    }else{
+        $f[]="<link rel='icon' href='ressources/templates/default/favicon.ico' type='image/x-icon' />";
+    }
     $f[]="<title>$TitleOfArticaPageSafe</title>";
     $f[]=new_css();
     $f[]="<script src=\"/fingerprint/query\"></script>";

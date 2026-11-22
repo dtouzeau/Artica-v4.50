@@ -41,7 +41,7 @@ $GLOBALS["PGREP_BIN"]=$unix->find_program("pgrep");
 $GLOBALS["SHUTDOWN_BIN"]=$unix->find_program("shutdown");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $GLOBALS["CLASS_UNIX"]=new unix();
-$GLOBALS["CLEANCMD"]="{$GLOBALS["nohup"]} {$GLOBALS["LOCATE_PHP5_BIN"]} /usr/share/artica-postfix/exec.clean.logs.php --urgency >/dev/null 2>&1 &";
+// CLEANCMD (ex exec.clean.logs.php --urgency, jamais execute ici) : la chaine d urgence est logrotate.UrgencyTask d articarest (GET /logrotate/urgency).
 
 $sock=null;
 $unix=null;

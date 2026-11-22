@@ -4,10 +4,13 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.maincf.multi.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : instance-id etait recopie sans encodage dans la page (XSS). C'est un entier.
+if(isset($_GET["instance-id"])){$_GET["instance-id"]=intval($_GET["instance-id"]);}
 if(isset($_GET["postfix-smtpd-checktls"])){SMTPDCheckTLS();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["message_size_limit"])){section_mime_save();}
 if(isset($_POST["instance_id"])){save();exit;}
+if(isset($_POST["PostfixOpenLDAPLocalAuth"])){section_auth_ldap_save();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table-flat"])){table_flat();exit;}
 if(isset($_GET["section-headers"])){section_header();exit;}
@@ -15,6 +18,10 @@ if(isset($_GET["section-headers-popup"])){section_headers_popup();exit;}
 
 if(isset($_GET["section-interfaces"])){section_interfaces();exit;}
 if(isset($_GET["section-interfaces-popup"])){section_interfaces_popup();exit;}
+
+if(isset($_GET["section-local-ldap-js"])){section_auth_ldap();exit;}
+if(isset($_GET["section-local-ldap-popup"])){section_auth_ldap_popup();exit;}
+
 
 if(isset($_GET["section-safety"])){section_safety();exit;}
 if(isset($_GET["section-safety-popup"])){section_safety_popup();exit;}
@@ -153,9 +160,9 @@ function table(){
 
 function GetInstanceID():int{
     $instance_id=0;
-    if(isset($_GET["instance-id"])){
-        if(intval($_GET["instance-id"])>0) {
-            return intval($_GET["instance-id"]);
+    if(isset($_REQUEST["instance-id"])){
+        if(intval($_REQUEST["instance-id"])>0) {
+            return intval($_REQUEST["instance-id"]);
         }
     }
     return $instance_id;
@@ -171,6 +178,12 @@ function section_interfaces():bool{
     $page=CurrentPageName();
     $instance_id=GetInstanceID();
     return $tpl->js_dialog2("{listen_ports}/{nics}","$page?section-interfaces-popup=yes&instance-id=$instance_id");
+}
+function section_auth_ldap():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $instance_id=GetInstanceID();
+    return $tpl->js_dialog2("{authenticate} {local_ldap_service}","$page?section-local-ldap-popup=yes&instance-id=$instance_id");
 }
 function section_safety():bool{
     $tpl=new template_admin();
@@ -226,7 +239,7 @@ function section_others():bool{
     return $tpl->js_dialog2("{other_settings}","$page?section-others-popup=yes&instance-id=$instance_id");
 
 }
-function section_others_popup(){
+function section_others_popup():bool{
     $tpl=new template_admin();
     $instance_id=GetInstanceID();
     $main=new maincf_multi($instance_id);
@@ -236,8 +249,10 @@ function section_others_popup(){
     if(!is_numeric($enable_original_recipient)){$enable_original_recipient=1;}
     $undisclosed_recipients_header=$main->GET("undisclosed_recipients_header");
     if($undisclosed_recipients_header==null){$undisclosed_recipients_header="To: undisclosed-recipients:;";}
+    $disable_dns_lookups=intval($main->GET('disable_dns_lookups'));
 
     $form[]=$tpl->field_hidden("instance_id",$instance_id);
+    $form[]=$tpl->field_checkbox("disable_dns_lookups","{disable_dns_lookups}",$disable_dns_lookups,false,"{disable_dns_lookups_explain}");
     $form[]=$tpl->field_text("undisclosed_recipients_header", "{undisclosed_recipients_header}", $undisclosed_recipients_header,true,"{undisclosed_recipients_header_text}");
     $form[]=$tpl->field_text("smtpd_discard_ehlo_keywords", "{smtpd_discard_ehlo_keywords}", $smtpd_discard_ehlo_keywords,false,"{smtpd_discard_ehlo_keywords_explain}");
     $form[]=$tpl->field_checkbox("enable_original_recipient","{enable_original_recipient}",$enable_original_recipient,false,"{enable_original_recipient_text}");
@@ -302,7 +317,7 @@ function section_mime_save(){
     $_POST["message_size_limit"]=$_POST["message_size_limit"]*1000;
     $main->SET_INFO("message_size_limit",$_POST["message_size_limit"]);
     $sock=new sockets();
-    $data=json_decode($sock->REST_API("/postfix/smtpd/mimes/$instance_id"));
+    $data=json_decode($sock->REST_API_POSTFIX("/postfix/smtpd/mimes/$instance_id"));
     if(!$data->Status){
         echo $tpl->post_error($data->Error);
     }
@@ -341,6 +356,38 @@ function section_mime_popup():bool{
     echo $tpl->form_outside(null, $form,null,"{apply}","dialogInstance2.close();LoadAjax('postfix-table-flat','$page?table-flat=yes');","AsPostfixAdministrator");
     return true;
 }
+function section_auth_ldap_popup():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $instance_id=GetInstanceID();
+    $main=new maincf_multi($instance_id);
+    $PostfixOpenLDAPLocalAuth=intval($main->GET("PostfixOpenLDAPLocalAuth"));
+
+    echo $tpl->BigCircleCheckbox(
+        "instance-id:$instance_id|PostfixOpenLDAPLocalAuth",
+        "{enable_ldap_authentication}",
+        "{enable_ldap_authentication_smtp}",
+        $PostfixOpenLDAPLocalAuth,
+        "dialogInstance2.close();LoadAjax('postfix-table-flat','$page?table-flat=yes');LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');");
+    return true;
+}
+
+
+function section_auth_ldap_save():bool{
+    $page=CurrentPageName();
+    $instance_id=GetInstanceID();
+    $main=new maincf_multi($instance_id);
+    $main->SET("PostfixOpenLDAPLocalAuth",$_POST["PostfixOpenLDAPLocalAuth"]);
+    if(intval($_POST["PostfixOpenLDAPLocalAuth"])==1){
+        $main->SET("PostFixSmtpSaslEnable",1);
+    }else{
+        $main->SET("PostFixSmtpSaslEnable",0);
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/saslauthd/apply/$instance_id");
+    return admin_tracks("SMTP set authentication using local LDAP to {$_POST["PostfixOpenLDAPLocalAuth"]}");
+
+}
+
 function section_safety_popup():bool{
     $tpl=new template_admin();
     $instance_id=GetInstanceID();
@@ -373,7 +420,6 @@ function section_safety_popup():bool{
     $form[]=$tpl->field_checkbox("reject_forged_mails","{reject_forged_mails}",$reject_forged_mails,false,"{reject_forged_mails_text}");
     $form[]=$tpl->field_checkbox("EnableGenericrDNSClients","{EnableGenericrDNSClients}",$EnableGenericrDNSClients,false,"{EnableGenericrDNSClients_text}");
     $form[]=$tpl->field_checkbox("EnablePostfixInternalDomainsCheck","{EnablePostfixInternalDomainsCheck}",$EnablePostfixInternalDomainsCheck,false,"{EnablePostfixInternalDomainsCheck_text}");
-
     echo $tpl->form_outside(null, $form,"{smtpd_client_restrictions_text}","{apply}",reconfigure_js($instance_id),"AsPostfixAdministrator");
     return true;
 }
@@ -416,7 +462,7 @@ function reconfigure_js($instance_id):string{
     }
 
     return "dialogInstance2.close();LoadAjax('postfix-table-flat','$page?table-flat=yes');$function".$tpl->framework_buildjs(
-        "postfix.php?reconfigure=yes&instance-id=$instance_id",
+        "/postfix/reconfigure/$instance_id",
         "POSTFIX_COMPILES.$instance_id",
         "POSTFIX_COMPILES.$instance_id.txt",
         "progress-postfix-mainconf"
@@ -467,6 +513,8 @@ function table_flat():bool{
     $PostfixEnableProxyProtocol=intval($main->GET_INFO("PostfixEnableProxyProtocol"));
     $RestrictToOutgoingDomains=intval($main->GET("RestrictToOutgoingDomains"));
     $RestrictToOutgoingDomainsLists=$main->GET('RestrictToOutgoingDomainsLists');
+    $disable_dns_lookups=intval($main->GET('disable_dns_lookups'));
+
     //$RestrictToOutgoingDomainsErrorMsg=$main->GET('RestrictToOutgoingDomainsErrorMsg');
 
 	$smtpd_banner=$main->GET('smtpd_banner');
@@ -559,6 +607,19 @@ function table_flat():bool{
     }
 
     $tpl->table_form_section("{smtp_authentication}");
+    $EnableOpenLDAP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAP"));
+    $PostfixOpenLDAPLocalAuth=intval($main->GET("PostfixOpenLDAPLocalAuth"));
+    if($EnableOpenLDAP==0){
+        $PostfixOpenLDAPLocalAuth=0;
+    }
+    if($EnableOpenLDAP==0){
+        $tpl->table_form_field_bool("{local_ldap}",0, ico_database);
+    }else{
+        $tpl->table_form_field_js("Loadjs('$page?section-local-ldap-js=yes&instance-id=$instance_id')","AsPostfixAdministrator");
+        $tpl->table_form_field_bool("{local_ldap}",$PostfixOpenLDAPLocalAuth, ico_database);
+    }
+
+
     $tpl->table_form_field_js("Loadjs('$page?section-auth=yes&instance-id=$instance_id')","AsPostfixAdministrator");
 
 
@@ -631,6 +692,14 @@ function table_flat():bool{
 //	$form[]=$tpl->field_section("{other_settings}");
     $tpl->table_form_field_js("Loadjs('$page?section-others=yes&instance-id=$instance_id')","AsPostfixAdministrator");
 
+    if ($disable_dns_lookups==1){
+        $dns_lookups=0;
+    }else{
+        $dns_lookups=1;
+    }
+    $tpl->table_form_field_bool("{dns_lookups}",$dns_lookups,ico_database);
+
+
     if(strlen($undisclosed_recipients_header)>1){
         $tpl->table_form_field_text("{undisclosed_recipients_header}", "$undisclosed_recipients_header", ico_user);
     }
@@ -642,7 +711,7 @@ function table_flat():bool{
 
 
     $final[]="<div id='postfix-smtpd-checktls'></div>";
-    $final[]=$tpl->table_form_compile();
+    $final[]=$tpl->table_form_compile(2);
     echo @implode("\n",$final);
 
     if($instance_id>0){
@@ -654,7 +723,7 @@ function table_flat():bool{
     $TINY_ARRAY["TITLE"]="{APP_POSTFIX} v$POSTFIX_VERSION <small>$instancename</small>";
     $TINY_ARRAY["ICO"]="fas fa-mail-bulk";
     $TINY_ARRAY["EXPL"]="{APP_POSTFIX_TEXT}";
-    $TINY_ARRAY["URL"]="instance-postffix-settings-$instance_id";
+    $TINY_ARRAY["URL"]="postfix-main-params-$instance_id";
     $TINY_ARRAY["BUTTONS"]=null;
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
@@ -666,16 +735,17 @@ function table_flat():bool{
 
 function SMTPDCheckTLS():bool{
     $tpl=new template_admin();
-    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/postfix/smtpd/checktls"));
+    $data=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/smtpd/checktls"));
 
     $tls_widget=$tpl->widget_micro("gray-bg", ico_certificate, "TLS:25","{inactive2}");
     $ssl_widget=$tpl->widget_micro("gray-bg", ico_certificate, "SSL:465","{inactive2}");
 
     if(!property_exists($data,"Info")){
-        echo "<table style='width:100%'><tr>
-        <td style='width:50%'>$tls_widget</td>
-        <td style='width:50%;padding-left:5px'>$ssl_widget</td>
-        ";
+        // Le <table>/<tr> n'etait jamais ferme (la fonction retourne juste apres):
+        // le fragment injecte laissait un tableau ouvert dans le DOM.
+        echo "<div style='display:flex;flex-wrap:wrap;gap:5px'>"
+            ."<div style='flex:1 1 240px;min-width:0'>$tls_widget</div>"
+            ."<div style='flex:1 1 240px;min-width:0'>$ssl_widget</div></div>";
         return false;
     }
 
@@ -706,10 +776,9 @@ function SMTPDCheckTLS():bool{
 
 
 
-    echo "<table style='width:100%'><tr>
-        <td style='width:50%'>$tls_widget</td>
-        <td style='width:50%;padding-left:5px'>$ssl_widget</td>
-        ";
+    echo "<div style='display:flex;flex-wrap:wrap;gap:5px'>"
+        ."<div style='flex:1 1 240px;min-width:0'>$tls_widget</div>"
+        ."<div style='flex:1 1 240px;min-width:0'>$ssl_widget</div></div>";
     return true;
 }
 
@@ -746,24 +815,24 @@ function save(){
         $PostfixBinInterfaces = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PostfixBinInterfaces"));
         if ($_POST["PostfixBinInterfaces"] <> $PostfixBinInterfaces) {
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("PostfixBinInterfaces", $_POST["PostfixBinInterfaces"]);
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?postfix-interfaces=yes");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/interfaces");
         }
     }
 
     if(isset($_POST["PostfixEnableSubmission"])) {
         if ($_POST["PostfixEnableSubmission"] <> $PostfixEnableSubmission) {
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?artica-filter-reload=yes&instance-id=$instance_id");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/articafilter/$instance_id");
         }
     }
     if(isset($_POST["myhostname"])) {
         if ($MyHostname <> $_POST["myhostname"]) {
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("postfix.php?myhostname=yes&instance-id=$instance_id");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/myhostname/$instance_id");
         }
     }
 
     if(isset($_POST["PostfixPostmaster"])) {
         if ($PostfixPostmaster <> $_POST["PostfixPostmaster"]) {
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?postfix-hash-aliases=yes&instance-id=$instance_id");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables/aliases/$instance_id");
         }
     }
     if(isset($_POST["luser_relay"])) {
@@ -785,7 +854,7 @@ function save(){
 		if($oldvalue<>$val){$main->SET_INFO($key, $val);$reboot=true;}
 	}
 	if($reboot){
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("cmd.php?postfix-smtpd-restrictions=yes&instance-id=$instance_id");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/smtpd/restrictions/$instance_id");
 		
 	}
 	

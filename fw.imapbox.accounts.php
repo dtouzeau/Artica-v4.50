@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.imap-read.inc");
@@ -48,7 +51,7 @@ function member_mailboxes_delete_popup(){
     $ARRAY["TITLE"]="{remove} {mailbox_archives} $mailbox_id";
     $ARRAY["AFTER"]="dialogInstance3.close();$('#$md').remove();";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=suppr-$t')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=suppr-$t')";
 
     $html[]="<div id='suppr-$t'></div>
     <script>$jsrestart</script>";
@@ -167,7 +170,8 @@ function member_mailboxes_table(){
         //<i class="fas fa-user-check"></i>
         //<i class="fas fa-user"></i>
 
-        if($remote_folder=="__ALL__"){$remote_folder="{all_folders}";}
+        // Pentest 2026-11-04 : remote_folder (donnee externe) affiche sans encodage (XSS stockee).
+        if($remote_folder=="__ALL__"){$remote_folder="{all_folders}";}else{$remote_folder=req_html($remote_folder);}
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%' nowrap><span style='font-weight:bold'>".
@@ -210,14 +214,16 @@ function member_mailboxes_save(){
 
     if(function_exists("imap_open")) {
         if (!$ImapRead = new ImapRead($_POST["hostname"], $_POST["username"], $_POST["password"], $folder = 'INBOX', $_POST["remote_port"], 'notls')) {
-            echo "jserror:$ImapRead->imap_error";
+            echo (new template_admin())->post_error("$ImapRead->imap_error");
             return;
         }
     }
 
 
 
+    // Pentest 2026-11-04 : les noms de champs du POST etaient concatenes dans la requete (identifiants filtres).
     foreach ($_POST as $key=>$val){
+        if(!preg_match('#^[A-Za-z0-9_]+$#',(string)$key)){continue;}
         $val=$q->sqlite_escape_string2($val);
         $ADDF[]="`$key`";
         $ADDV[]="'$val'";
@@ -226,16 +232,16 @@ function member_mailboxes_save(){
     }
 
     $sqladd="INSERT INTO mailboxes (".@implode(",",$ADDF).") VALUES (".@implode(",",$ADDV).")";
-    $sqleditr="UPDATE mailboxes SET ".@implode(",",$ADDM);
+    $sqleditr="UPDATE mailboxes SET ".@implode(",",$ADDM)." WHERE id=$id";
 
     if($id>0) {
         $q->QUERY_SQL($sqleditr);
-        if(!$q->ok){echo "jserror:$q->mysql_error<br>$sqleditr";return false;}
+        if(!$q->ok){echo (new template_admin())->post_error("$q->mysql_error<br>$sqleditr");return false;}
         return;
     }
 
     $q->QUERY_SQL($sqladd);
-    if(!$q->ok){echo "jserror:$q->mysql_error<br>$sqladd";}
+    if(!$q->ok){echo (new template_admin())->post_error("$q->mysql_error<br>$sqladd");}
     return true;
 
 }
@@ -457,7 +463,9 @@ function member_save(){
     $tpl->CLEAN_POST();
     $q=new lib_sqlite("/home/artica/SQLITE/imapbox.db");
 
+    // Pentest 2026-11-04 : les noms de champs du POST etaient concatenes dans la requete (identifiants filtres).
     foreach ($_POST as $key=>$val){
+        if(!preg_match('#^[A-Za-z0-9_]+$#',(string)$key)){continue;}
         $val=$q->sqlite_escape_string2($val);
         $ADDF[]="`$key`";
         $ADDV[]="'$val'";
@@ -466,16 +474,16 @@ function member_save(){
     }
 
     $sqladd="INSERT INTO accounts (".@implode(",",$ADDF).") VALUES (".@implode(",",$ADDV).")";
-    $sqleditr="UPDATE accounts SET ".@implode(",",$ADDM);
+    $sqleditr="UPDATE accounts SET ".@implode(",",$ADDM)." WHERE id=$id";
 
     if($id>0) {
         $q->QUERY_SQL($sqleditr);
-        if(!$q->ok){echo "jserror:$q->mysql_error";return false;}
+        if(!$q->ok){echo (new template_admin())->post_error("$q->mysql_error");return false;}
         return;
     }
 
     $q->QUERY_SQL($sqladd);
-    if(!$q->ok){echo "jserror:$q->mysql_error";}
+    if(!$q->ok){echo (new template_admin())->post_error("$q->mysql_error");}
     return true;
 
 }

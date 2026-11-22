@@ -2,6 +2,16 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+
+// Pentest 2026-11-04 : aucune action de la page (synchro, suppression, effacement,
+// lecture des copies) ne verifiait de droit. Meme droit que les autres pages du reverse proxy.
+$users=new usersMenus();
+if(!$users->AsWebMaster){exit();}
+// Budgets de l'apercu en ligne : definis AVANT l'aiguillage (?view= sort par exit plus bas).
+define("WEBCOPY_INLINE_MAX_FILE",2*1024*1024);
+define("WEBCOPY_INLINE_MAX_TOTAL",12*1024*1024);
 
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -17,8 +27,6 @@ if(isset($_POST["sync"])){sync_perform();exit;}
 if(isset($_GET["rule-id"])){rule_id_js();exit();}
 if(isset($_GET["view"])){view();exit;}
 if(isset($_GET["view2"])){view2();exit;}
-if(isset($_GET["script"])){view_script();exit;}
-if(isset($_GET["img"])){view_img();exit;}
 if(isset($_GET["erase-js"])){erase_js();exit;}
 if(isset($_GET["not-found-js"])){not_found_js();exit;}
 if(isset($_GET["not-found-popup"])){not_found_popup();exit;}
@@ -26,294 +34,239 @@ if(isset($_POST["erase"])){erase_perform();exit;}
 
 page();
 
-function view2(){
-    $encoded_path=$_GET["view2"];
-    $path=base64_decode($encoded_path);
-    $fname=base64_decode($_GET["fname"]);
-    $addon=$_GET["addon"];
-    $addon=str_replace("..","",$addon);
-    $fname=str_replace("..","",$fname);
-    if($GLOBALS["VERBOSE"]){
-        VERBOSE("$path -- $fname",__LINE__);
+// Pentest 2026-11-04 : resout un chemin sous /home/artica/WebCopy (realpath, liens compris) ; "" s'il en sort ou n'existe pas.
+function webcopy_safe_path($file):string{
+    $root=realpath("/home/artica/WebCopy");
+    $real=realpath((string)$file);
+    if($root===false || $real===false){return "";}
+    if(strpos($real,$root."/")!==0){return "";}
+    return $real;
+}
+// Pentest 2026-11-04 : une copie de site est du contenu ETRANGER (pages, scripts, SVG
+// aspires sur Internet). Elle etait servie telle quelle sur l'origine de la console :
+// ses scripts tournaient avec la session de l'administrateur (XSS stockee).
+// Elle est maintenant rendue dans une iframe sandbox SANS allow-same-origin : origine
+// opaque, aucun acces a la session ni au DOM de la console. Une origine opaque
+// n'envoie pas le cookie de session, donc les JS/CSS sont inclus dans le document et
+// les images passees en data: ; les liens entre pages remontent par postMessage.
 
+// Chemin local d'une ressource de la copie, ou "" s'il sort de /home/artica/WebCopy.
+function webcopy_file($encoded_path,$fname):string{
+    $fname=(string)$fname;
+    if(strpos($fname,"?")!==false){$fname=substr($fname,0,strpos($fname,"?"));}
+    if(strpos($fname,"#")!==false){$fname=substr($fname,0,strpos($fname,"#"));}
+    $path=base64_decode((string)$encoded_path);
+    $file=str_replace("//","/","/home/artica/WebCopy/$path/$fname");
+    $file=webcopy_safe_path($file);
+    if($file==="" || !is_file($file)){return "";}
+    return $file;
+}
+
+// Traduit un lien de la page copiee en (chemin encode, nom de fichier) dans la copie.
+// Meme logique que l'ancienne reecriture : "../<site>/<url>" vise un autre site de la
+// meme copie (httrack), le reste est relatif a la racine du site courant.
+function webcopy_resolve($encoded_path,$href){
+    $href=trim((string)$href);
+    if($href=="" || $href[0]=="#"){return null;}
+    if(preg_match("#^[a-z][a-z0-9+.-]*:#i",$href)){return null;}   // http:, data:, javascript:, mailto: ...
+    if(substr($href,0,2)=="//"){return null;}
+    if(preg_match("#^\.\./([^/]+)/(.+)#",$href,$re)){
+        preg_match("#^([0-9]+)/#",base64_decode((string)$encoded_path),$rs);
+        if(!isset($rs[1])){return null;}
+        $xst=parse_url("http://{$re[1]}/{$re[2]}");
+        if(!isset($xst["path"])){return null;}
+        return array(base64_encode("{$rs[1]}/{$re[1]}"),$xst["path"]);
     }
+    $xst=parse_url("http://www.data.com/$href");
+    if(!isset($xst["path"])){return null;}
+    return array((string)$encoded_path,$xst["path"]);
+}
+
+function webcopy_inline_read($file,&$budget){
+    $size=@filesize($file);
+    if($size===false || $size>WEBCOPY_INLINE_MAX_FILE || $size>$budget){return null;}
+    $data=@file_get_contents($file);
+    if($data===false){return null;}
+    $budget-=strlen($data);
+    return $data;
+}
+
+// Document HTML autonome a placer dans le srcdoc de l'iframe.
+function webcopy_inline_doc($content,$encoded_path):string{
+    $content=(string)$content;
+    if(!mb_check_encoding($content,"UTF-8")){$content=mb_convert_encoding($content,"UTF-8","ISO-8859-1");}
+    $budget=WEBCOPY_INLINE_MAX_TOTAL;
+    $doc=new DOMDocument();
+    $prev=libxml_use_internal_errors(true);
+    $doc->loadHTML('<?xml encoding="UTF-8">'.$content);
+    libxml_clear_errors();
+    libxml_use_internal_errors($prev);
+    foreach (iterator_to_array($doc->childNodes) as $child){
+        if($child->nodeType==XML_PI_NODE){$doc->removeChild($child);}
+    }
+    $xpath=new DOMXpath($doc);
+
+    foreach (iterator_to_array($xpath->query("//script[@src]")) as $node){
+        $res=webcopy_resolve($encoded_path,$node->getAttribute("src"));
+        if($res===null){continue;}
+        $node->removeAttribute("src");
+        $file=webcopy_file($res[0],$res[1]);
+        if($file===""){continue;}
+        $js=webcopy_inline_read($file,$budget);
+        if($js===null){continue;}
+        $node->appendChild($doc->createTextNode(str_ireplace("</script","<\\/script",$js)));
+    }
+
+    foreach (iterator_to_array($xpath->query("//link[@href]")) as $node){
+        if(stripos($node->getAttribute("rel"),"stylesheet")===false){continue;}
+        $res=webcopy_resolve($encoded_path,$node->getAttribute("href"));
+        if($res===null){continue;}
+        $file=webcopy_file($res[0],$res[1]);
+        $css=($file==="")?null:webcopy_inline_read($file,$budget);
+        if($css===null){$node->parentNode->removeChild($node);continue;}
+        $style=$doc->createElement("style");
+        $style->appendChild($doc->createTextNode(str_ireplace("</style","<\\/style",$css)));
+        $node->parentNode->replaceChild($style,$node);
+    }
+
+    $mimes=array("png"=>"image/png","jpg"=>"image/jpeg","jpeg"=>"image/jpeg","gif"=>"image/gif",
+        "webp"=>"image/webp","svg"=>"image/svg+xml","ico"=>"image/x-icon","bmp"=>"image/bmp");
+    foreach (iterator_to_array($xpath->query("//img[@src]")) as $node){
+        $res=webcopy_resolve($encoded_path,$node->getAttribute("src"));
+        if($res===null){continue;}
+        $node->removeAttribute("srcset");
+        $ext=strtolower(pathinfo($res[1],PATHINFO_EXTENSION));
+        $file=webcopy_file($res[0],$res[1]);
+        $data=($file==="" || !isset($mimes[$ext]))?null:webcopy_inline_read($file,$budget);
+        if($data===null){$node->removeAttribute("src");continue;}
+        $node->setAttribute("src","data:{$mimes[$ext]};base64,".base64_encode($data));
+    }
+
+    foreach (iterator_to_array($xpath->query("//a[@href]")) as $node){
+        $res=webcopy_resolve($encoded_path,$node->getAttribute("href"));
+        if($res===null){continue;}
+        if(!preg_match("#\.(html?|txt)$#i",$res[1])){continue;}
+        $node->setAttribute("href","#");
+        $node->setAttribute("data-wc-e",$res[0]);
+        $node->setAttribute("data-wc-f",base64_encode($res[1]));
+    }
+
+    $nav="document.addEventListener('click',function(e){var a=e.target.closest?e.target.closest('a[data-wc-e]'):null;if(!a){return;}e.preventDefault();parent.postMessage({wcE:a.getAttribute('data-wc-e'),wcF:a.getAttribute('data-wc-f')},'*');});";
+    $script=$doc->createElement("script");
+    $script->appendChild($doc->createTextNode($nav));
+    $body=$doc->getElementsByTagName("body")->item(0);
+    if($body===null){$body=$doc->documentElement;}
+    if($body!==null){$body->appendChild($script);}
+    return (string)$doc->saveHTML();
+}
+
+// Page de la console : une iframe sandbox plein ecran, et la navigation entre pages.
+function webcopy_frame_page($content,$encoded_path,$title):bool{
+    $page=CurrentPageName();
+    $srcdoc=req_html(webcopy_inline_doc($content,$encoded_path));
+    $pagejs=req_js($page);
+    header("X-Content-Type-Options: nosniff");
+    echo "<!DOCTYPE html><html><head><meta charset='utf-8'><title>".req_html($title)."</title>";
+    echo "<style>html,body{margin:0;height:100%;overflow:hidden}iframe{border:0;width:100%;height:100%;display:block}</style></head><body>";
+    echo "<iframe id='webcopy-frame' sandbox='allow-scripts' referrerpolicy='no-referrer' srcdoc=\"$srcdoc\"></iframe>";
+    echo "<script>(function(){var fr=document.getElementById('webcopy-frame');";
+    echo "window.addEventListener('message',function(e){if(e.source!==fr.contentWindow||!e.data||typeof e.data!=='object'){return;}";
+    echo "var d=e.data;if(typeof d.wcE!=='string'||typeof d.wcF!=='string'||d.wcE.length>2048||d.wcF.length>2048){return;}";
+    echo "location.href='$pagejs?view2='+encodeURIComponent(d.wcE)+'&fname='+encodeURIComponent(d.wcF);});})();</script>";
+    echo "</body></html>";
+    return true;
+}
+
+function view2(){
+    $encoded_path=(string)$_GET["view2"];
+    $fname=base64_decode((string)$_GET["fname"]);
+    $addon=isset($_GET["addon"])?str_replace("..","",(string)$_GET["addon"]):"";
+    $fname=str_replace("..","",$fname);
     if($addon<>null){
         if($fname=="/index.html"){$fname="/$addon";}
     }
-
-    if(strpos($fname,"?")>0){$ttr=explode("?",$fname);$fname=$ttr[0];}
-    $index_file="/home/artica/WebCopy/$path/$fname";
-    $index_file=str_replace("//","/",$index_file);
-    if(!is_file($index_file)){
-        if($GLOBALS["VERBOSE"]){
-            VERBOSE("$index_file -- NOT FOUND",__LINE__);
-        }
+    $index_file=webcopy_file($encoded_path,$fname);   // Pentest 2026-11-04 : chemin et nom venaient de la requete (lecture de n'importe quel fichier)
+    if($index_file===""){
         http_response_code(404);
+        echo "<html><head></head><body><H1>404 Not Found</H1></body></html>";
         return false;
-
     }
-    $content= @file_get_contents($index_file);
-    $content=view_parse($content,$encoded_path);
-    echo $content;
-    return true;
-}
-function view_script(){
-    $encoded_path=$_GET["script"];
-    $path=base64_decode($encoded_path);
-    $fname=base64_decode($_GET["fname"]);
-    if(strpos($fname,"?")>0){$ttr=explode("?",$fname);$fname=$ttr[0];}
-    $index_file="/home/artica/WebCopy/$path/$fname";
-
-    if(!is_file($index_file)){
-        http_response_code(404);
-        return false;
-
-    }
-    if(preg_match("#\.js$#",$fname)){
-        header("content-type: application/x-javascript");
-    }
-    if(preg_match("#\.css$#",$fname)){
-        header("content-type: text/css");
-    }
-
-
-    echo @file_get_contents($index_file);
-    return true;
-}
-function view_img(){
-    $encoded_path=$_GET["img"];
-    $path=base64_decode($encoded_path);
-    $fname=base64_decode($_GET["fname"]);
-    if(strpos($fname,"?")>0){$ttr=explode("?",$fname);$fname=$ttr[0];}
-    $index_file="/home/artica/WebCopy/$path/$fname";
-    $index_file=str_replace("//","/",$index_file);
-
-    if(!is_file($index_file)){
-        http_response_code(404);
-        return false;
-
-    }
-    $content_type=mime_content_type($index_file);
-    header("content-type: $content_type");
-    ob_clean();
-    flush();
-    readfile( $index_file );
-    return true;
-}
-
-function view_replace_links($content,$encoded_path,$href,$type=null){
-    if(isset($GLOBALS["ALREADY_URL"][$href])){return $content;}
-    if($href==null){return $content;}
-    if($href=="#"){return $content;}
-    if(strpos(" $href","'")>0){return $content;}
-    if(preg_match("#^http.*?:#",$href)){return $content;}
-    $page=CurrentPageName();
-    if(strpos(" $href",$page)>0){return $content;}
-    $decoded_path=base64_decode($encoded_path);
-    preg_match("#^([0-9]+)\/(.+)#",$decoded_path,$re);
-    $siteid=$re[1];
-    $orginalpath=$re[2];
-    $href=trim($href);
-    if(preg_match("#^\.\.\/(.+?)\/(.+)#",$href,$re)){
-        $newsite=$re[1];
-        $url=$re[2];
-        $newEncodedPath=base64_encode("$siteid/$newsite");
-        $simulkate_uri="http://$newsite/$url";
-        $xst=parse_url($simulkate_uri);
-        if(isset($xst["path"])){$url=$xst["path"];}
-
-        $GLOBALS["ALREADY_URL"][$href]=true;
-        if(preg_match("#\.(css|js)$#",$url)) {
-            return str_replace($href, "$page?script=$newEncodedPath&fname=" . base64_encode($url)."&addon=", $content);
-        }
-        if(preg_match("#\.(jpeg|gif|png|jpg)$#",$url)) {
-            return str_replace($href, "$page?img=$newEncodedPath&fname=" . base64_encode($url)."&addon=", $content);
-        }
-        if(preg_match("#\.(txt|html)$#",$url)) {
-            return str_replace($href, "$page?view2=$newEncodedPath&fname=" . base64_encode($url)."&addon=", $content);
-        }
-        echo "\n\n\n$href --> script=$newEncodedPath&fname=$url FAILED\n";
-        return $content;
-    }
-
-    $url=$href;
-    $simulkate_uri="http://www.data.com/$href";
-    $xst=parse_url($simulkate_uri);
-    if(isset($xst["path"])){$url=$xst["path"];}
-
-    if(preg_match("#\.(css|js)$#",$url)) {
-        return str_replace($href, "$page?script=$encoded_path&fname=" . base64_encode($url)."&addon=", $content);
-    }
-    if(preg_match("#\.(jpeg|gif|png|jpg)$#",$url)) {
-        return str_replace($href, "$page?img=$encoded_path&fname=" . base64_encode($url)."&addon=", $content);
-    }
-    if(preg_match("#\.(txt|html)$#",$url)) {
-        return str_replace($href, "$page?view2=$encoded_path&fname=" . base64_encode($url)."&addon=", $content);
-    }
-    return $content;
-
-}
-
-function view_exploded_js($content,$encoded_path){
-
-    $scontent=explode("\n",$content);
-    foreach ($scontent as $line) {
-        $line = trim($line);
-        if (preg_match("#var\s+(STATIC_BASE|ASSETS_BASE).*?=.*?'(.+?)'#i", $line, $re)) {
-            $content = view_replace_links($content, $encoded_path, $re[2]);
-            continue;
-        }
-        if (preg_match('#channel-url="(.+?)"#', $line, $re)) {
-            $content = view_replace_links($content, $encoded_path, $re[1]);
-            continue;
-        }
-        if (preg_match("#var\s+[0-9a-zA-Z]+=\"(.+?)\"#", $line, $re)) {
-            $content = view_replace_links($content, $encoded_path, $re[1]);
-            continue;
-        }
-        if (preg_match("#prototype\..*?_path.*?=.*?\"(.+?)\"#", $line, $re)) {
-            $content = view_replace_links($content, $encoded_path, $re[1]);
-            continue;
-        }
-        if (preg_match("#background-image:.*?url.*?\((.+?)\)#i", $line, $re)) {
-            $content = view_replace_links($content, $encoded_path, $re[1]);
-            continue;
-        }
-    }
-    return $content;
-}
-
-function view_parse($content,$encoded_path):string{
-    $doc = new DOMDocument();
-    $content=view_exploded_js($content,$encoded_path);
-    $doc->loadHTML($content);
-    $xpath = new DOMXpath($doc);
-    $nodes = $xpath->query('//a');
-    $nodes2= $xpath->query('//img');
-    $nodes4=$xpath->query('//script');
-    $stylesheets = $xpath->query("//*[name() = 'link' or name() = 'style']");
-
-    foreach($stylesheets as $tag)  {
-        $nodeName=$tag->nodeName;
-            switch (strtolower($tag->nodeName)) {
-                case "link":
-                    $rel=trim($tag->getAttribute("rel"));
-                    $type=trim($tag->getAttribute("type"));
-                    $url = trim($tag->getAttribute("href"));
-                    $content=view_replace_links($content,$encoded_path,$url,$type);
-                    break;
-
-                default:
-                    $content=view_replace_links($content,$encoded_path,$url,$type);
-            }
-    }
-
-
-
-    foreach($nodes4 as $nodes5) {
-        $href=trim($nodes5->getAttribute('src'));
-        $content=view_replace_links($content,$encoded_path,$href);
-    }
-
-    foreach($nodes2 as $nodes3) {
-        $href=trim($nodes3->getAttribute('src'));
-        $content=view_replace_links($content,$encoded_path,$href);
-
-    }
-
-
-    $ALREADY=array();
-    foreach($nodes as $node) {
-        $href=trim($node->getAttribute('href'));
-        $content=view_replace_links($content,$encoded_path,$href);
-    }
-
-    return $content;
-
+    return webcopy_frame_page(@file_get_contents($index_file),$encoded_path,basename($fname));
 }
 
 function view(){
 
     $ID=intval($_GET["view"]);
+    $hostname=null;
     $enforceuri=base64_decode($_GET["src"]);
     if(preg_match("#^http.*?\/\/#",$enforceuri)){
         $hh=parse_url($enforceuri);
         $hostname=$hh["host"];
     }
     if($hostname==null){
-        echo "<html><head>$hostname</head><body><H1>($enforceuri) 404 Not Found</H1></body></html>";
+        // Pentest 2026-11-04 : src etait recopie sans encodage dans la page (XSS).
+        echo "<html><head></head><body><H1>(".req_html($enforceuri).") 404 Not Found</H1></body></html>";
         return false;
     }
 
     $path="$ID/$hostname";
     $encoded_path=base64_encode($path);
-    $index_file="/home/artica/WebCopy/$path/index.html";
-    if(!is_file($index_file)){
-        echo "<html><head>$hostname</head><body><H1>404 Not Found</H1></body></html>";
+    $index_file=webcopy_safe_path("/home/artica/WebCopy/$path/index.html");   // Pentest 2026-11-04 : hostname vient de src
+    if($index_file==="" || !is_file($index_file)){
+        echo "<html><head>".req_html($hostname)."</head><body><H1>404 Not Found</H1></body></html>";
         return false;
 
     }
-    $content= @file_get_contents($index_file);
-    $content=view_parse($content,$encoded_path);
-    echo $content;
-    return true;
+    return webcopy_frame_page(@file_get_contents($index_file),$encoded_path,$hostname);
 }
 function not_found_js(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $ID=intval($_GET["not-found-js"]);
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID='$ID'");
-    $enforceuri=$ligne["enforceuri"];
+    $ligne=fetch_httrack_site($ID);
+    $enforceuri=isset($ligne["enforceuri"])?$ligne["enforceuri"]:"";
     $tpl->js_dialog1("$enforceuri {files_not_found}","$page?not-found-popup=$ID");
 }
 function not_found_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $ID=intval($_GET["not-found-popup"]);
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT notfound FROM httrack_sites WHERE ID='$ID'");
+    $ligne=fetch_httrack_site($ID);
     $t=time();
-    $notfound=unserialize(base64_decode($ligne["notfound"]));
+    // unserialize() rend FALSE sur une valeur absente ou corrompue: le foreach
+    // qui suit levait alors une TypeError en PHP 8.
+    $notfound=@unserialize(base64_decode((string)($ligne["notfound"] ?? "")));
+    if(!is_array($notfound)){$notfound=array();}
 
-    $html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{urls}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $TRCLASS=null;
+    // Le tableau n'ouvrait AUCUN <tbody>.
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{urls}</th>";
+    $html[]="</tr></thead><tbody>";
+    // La premiere cellule portait DEUX attributs style (le second ignore) et la
+    // seconde un width=99% NON QUOTE contenant un %.
     foreach ($notfound as $url=>$none){
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-
-        $md=md5($url);
-
-
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap><i class='fa-solid fa-bug'></i></td>";
-        $html[]="<td style='vertical-align:middle;' width=99% nowrap>$url</td>";
-        $html[]="</tr>";
-
+        $html[]="<tr id='".md5((string)$url)."'>"
+            ."<td><div class='awc-ident'>"
+            ."<span class='awc-ico'><i class='fa-solid fa-bug'></i></span>"
+            ."<span class='awc-name awc-mono' style='word-break:break-all'>"
+            .htmlspecialchars((string)$url)."</span>"
+            ."</div></td></tr>";
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    if(count($notfound)==0){
+        $html[]="<tr><td class='awc-empty'>{no_data}</td></tr>";
+    }
+    $html[]="</tbody></table></div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
 
 }
 
 function enable_js():bool{
     $ID=intval($_GET["enable-js"]);
     $tpl=new template_admin();
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enabled,enforceuri FROM httrack_sites WHERE ID='$ID'");
-
-    $enforceuri=$ligne["enforceuri"];
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
-    if(intval($ligne["enabled"])==0){$enable=1;}else{$enable=0;}
+    $ligne=fetch_httrack_site($ID);
+    $enforceuri=isset($ligne["enforceuri"])?$ligne["enforceuri"]:"";
+    if(intval(isset($ligne["enabled"])?$ligne["enabled"]:0)==0){$enable=1;}else{$enable=0;}
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"httrack_sites","set"=>["enabled"=>$enable],"where"=>["ID"=>$ID]]);
     admin_tracks("Set WebCopy enable=$enable for $enforceuri reversed website");
@@ -323,15 +276,14 @@ function enable_js():bool{
 function sync_js(){
     $function=$_GET["function"];
     $ID=intval($_GET["sync-js"]);
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $tpl=new template_admin();
-    $ligne=$q->mysqli_fetch_array("SELECT enabled,enforceuri FROM httrack_sites WHERE ID='$ID'");
+    $ligne=fetch_httrack_site($ID);
 
-    if($ligne["enabled"]==0){
+    if(intval(isset($ligne["enabled"])?$ligne["enabled"]:0)==0){
         $tpl->js_error("{this_feature_is_disabled}");
         return false;
     }
-    $enforceuri=$ligne["enforceuri"];
+    $enforceuri=isset($ligne["enforceuri"])?$ligne["enforceuri"]:"";
 
     $launch=$tpl->framework_buildjs(
         "nginx.php?webcopy-sync=$ID",
@@ -347,9 +299,8 @@ function sync_js(){
 
 function sync_perform(){
     $ID=intval($_POST["sync"]);
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enabled,enforceuri FROM httrack_sites WHERE ID='$ID'");
-    $enforceuri=$ligne["enforceuri"];
+    $ligne=fetch_httrack_site($ID);
+    $enforceuri=isset($ligne["enforceuri"])?$ligne["enforceuri"]:"";
     admin_tracks("Running WebCopy synchronization for $enforceuri service");
 
 
@@ -358,10 +309,9 @@ function sync_perform(){
 function delete_js(){
     $ID=intval($_GET["delete-js"]);
     $tpl=new template_admin();
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID='$ID'");
+    $ligne=fetch_httrack_site($ID);
     $md=$_GET["md"];
-    $servicename=$ligne["enforceuri"];
+    $servicename=isset($ligne["enforceuri"])?$ligne["enforceuri"]:"";
     $jsafter="$('#$md').remove();";
     $tpl->js_confirm_delete("WebCopy #$ID ( $servicename )","delete",$ID,$jsafter);
 }
@@ -369,10 +319,9 @@ function erase_js(){
     $ID=intval($_GET["erase-js"]);
     $function=$_GET["function"];
     $tpl=new template_admin();
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID='$ID'");
+    $ligne=fetch_httrack_site($ID);
     $md=$_GET["md"];
-    $servicename=$ligne["enforceuri"];
+    $servicename=isset($ligne["enforceuri"])?$ligne["enforceuri"]:"";
 
     $launch=$tpl->framework_buildjs(
         "nginx.php?erase-sync=$ID",
@@ -389,26 +338,18 @@ function erase_js(){
 }
 function erase_perform(){
     $ID=intval($_POST["erase"]);
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID='$ID'");
-
-    if(!$q->FIELD_EXISTS("httrack_sites","actiondel")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD actiondel INTEGER NOT NULL DEFAULT 0");
-    }
-    $serviceid=intval($ligne["enforceuri"]);
+    $ligne=fetch_httrack_site($ID);
+    // Daemon owns the httrack_sites.actiondel migration (DBConf.go FixTables);
+    // PHP-side ALTER TABLE no longer needed.
+    $serviceid=intval(isset($ligne["enforceuri"])?$ligne["enforceuri"]:0);
     admin_tracks("$serviceid mirrored website content cleaned");
 }
 
 function delete_perform(){
     $ID=intval($_POST["delete"]);
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID='$ID'");
-
-    if(!$q->FIELD_EXISTS("httrack_sites","actiondel")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD actiondel INTEGER NOT NULL DEFAULT 0");
-    }
-
-    $serviceid=intval($ligne["enforceuri"]);
+    $ligne=fetch_httrack_site($ID);
+    // Daemon owns the httrack_sites.actiondel migration (DBConf.go FixTables).
+    $serviceid=intval(isset($ligne["enforceuri"])?$ligne["enforceuri"]:0);
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?webcopy-delete=$ID");
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"httrack_sites","set"=>["actiondel"=>"1"],"where"=>["ID"=>$ID]]);
     admin_tracks("$serviceid mirrored website removed");
@@ -447,19 +388,13 @@ function events_search(){
     $filename=PROGRESS_DIR."/webcopy.syslog";
     $date_text=$tpl->_ENGINE_parse_body("{date}");
     $events=$tpl->_ENGINE_parse_body("{events}");
-    $html[]="
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>$date_text</th>
-        	<th>PID</th>
-        	<th nowrap>{websites}</th>
-        	<th>$events</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+        ."<table class='awc-tbl awc-tbl-compact'><thead><tr>"
+        ."<th class='center'>$date_text</th>"
+        ."<th class='center'>PID</th>"
+        ."<th>{websites}</th>"
+        ."<th>$events</th>"
+        ."</tr></thead><tbody id='wcev-rows'>";
     $data=explode("\n",@file_get_contents($filename));
     if(count($data)>3){$_SESSION["SMTP_NOTIFS_SEARCH"]=$_GET["search"];}
     krsort($data);
@@ -494,26 +429,33 @@ function events_search(){
 
 
         if(!isset($SERVICES[$serviceid])) {
-            $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID=$serviceid");
-            $enforceuri=$ligne["enforceuri"];
+            $ligne=fetch_httrack_site($serviceid);
+            $enforceuri=isset($ligne["enforceuri"])?$ligne["enforceuri"]:"";
             $urls=parse_url($enforceuri);
-            $SERVICES[$serviceid]=$urls["host"];
+            $SERVICES[$serviceid]=isset($urls["host"])?$urls["host"]:"";
         }
         $www=$SERVICES[$serviceid];
-        if($www==null){$www=="{unknown}";}
+        // "==" au lieu de "=": la comparaison etait evaluee puis jetee, le repli
+        // {unknown} ne s'appliquait donc JAMAIS.
+        if($www==null){$www="{unknown}";}
 
-        $html[]="<tr>
-				<td style='width:1%' nowrap>$date</td>
-				<td style='width:1%' nowrap>$pid</td>
-				<td style='width:1%' nowrap>$www</td>
-				<td>$line</td>
-				</tr>";
+        $html[]="<tr>"
+            ."<td class='center awc-nowrap awc-mono'>".htmlspecialchars($date)."</td>"
+            ."<td class='center awc-nowrap awc-mono'>".htmlspecialchars($pid)."</td>"
+            ."<td class='awc-nowrap'>".htmlspecialchars($www)."</td>"
+            ."<td>$line</td>"
+            ."</tr>";
 
     }
 
-    $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/smtpd.syslog.pattern")."</i></div>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='wcev-pager'></span></div>";
+    $html[]="</div></div>";
+    // Le motif relu du fichier partait BRUT dans la page.
+    $html[]="<div><i>".htmlspecialchars((string)@file_get_contents(PROGRESS_DIR."/smtpd.syslog.pattern"))."</i></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .awc_pager_js(100,"wcev-rows","wcev-pager");
 
 
 
@@ -557,24 +499,18 @@ function list_table(){
     $bts[]="<label class=\"btn btn btn-info\" OnClick=\"$sync\"><i class='fal fa-sync-alt'></i> {synchronize} </label>";
 
     $bts[]="</div>";
-    $html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{websites}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{last_update}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{synchronize}</th>";
-    $html[]="<th data-sortable=false>{enable}</th>";
-    $html[]="<th data-sortable=false>{empty}</th>";
-    $html[]="<th data-sortable=false>{delete}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // Les quatre colonnes d'action -- consulter, synchroniser, activer, vider,
+    // supprimer -- tiennent desormais dans une seule colonne d'actions.
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{websites}</th>";
+    $html[]="<th class='center'>{size}</th>";
+    $html[]="<th class='center'>{last_update}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
+    $html[]="</tr></thead><tbody id='wc-rows'>";
 
 
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $results = $q->QUERY_SQL("SELECT * FROM httrack_sites ORDER BY ID DESC");
+    $results = fetch_httrack_sites_all();
 
     $TRCLASS=null;
 
@@ -582,16 +518,12 @@ function list_table(){
     foreach($results as $index=>$ligne) {
         $md=md5(serialize($ligne));
         $time_text=$tpl->icon_nothing();
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
+        $TRCLASS=null;
         $ID=$ligne["ID"];
 
         $serviceid=intval($ligne["serviceid"]);
-        $NGInxligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$serviceid");
-        $servicename=$NGInxligne["servicename"];
+        $NGInxligne=fetch_nginx_service_row($serviceid);
+        $servicename=isset($NGInxligne["servicename"])?$NGInxligne["servicename"]:"";
         $enforceuri=$ligne["enforceuri"];
         $enforceuri_enc=base64_encode($enforceuri);
         $js="Loadjs('fw.nginx.httrack.php?ruleid=$ID&function=$function')";
@@ -614,7 +546,8 @@ function list_table(){
             $delete=$tpl->icon_nothing();
         }
         $notfound_ico=null;
-        $notfound=unserialize(base64_decode($ligne["notfound"]));
+        $notfound=@unserialize(base64_decode((string)($ligne["notfound"] ?? "")));
+        if(!is_array($notfound)){$notfound=array();}
         $CountOfNotFound=count($notfound);
         if($CountOfNotFound>0){
             $notfound_ico="&nbsp;<small class='text-warning'><i class='text-warning fa-solid fa-light-emergency-on'></i> $CountOfNotFound {files_not_found}</small>";
@@ -625,16 +558,19 @@ function list_table(){
             $downloaded_status="<br><small><i class='fa-solid fa-file-circle-info'></i>&nbsp;$downloaded_status</small>";
         }
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='vertical-align:middle;' width=99% nowrap>$enforceuri$notfound_ico$downloaded_status</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$view</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$size</td>";
-        $html[]="<td style='vertical-align:middle;' class='left' style='width:1%' nowrap>$time_text</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$sync</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$enabled</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$icon_erase</td>";
-        $html[]="<td style='vertical-align:middle;' class='center' style='width:1%' nowrap>$delete</td>";
-        $html[]="</tr>";
+        // SEPT des huit cellules portaient DEUX attributs style, le second etant
+        // silencieusement ignore par le navigateur -- donc les largeurs 1%
+        // n'ont jamais rien fait. La premiere avait un width=99% non quote.
+        $html[]="<tr id='$md'>"
+            ."<td><div class='awc-ident'>"
+            ."<span class='awc-ico'><i class='fad fa-copy'></i></span>"
+            ."<span><div class='awc-name'>$enforceuri</div>"
+            ."<div class='awc-meta'>$notfound_ico$downloaded_status</div></span>"
+            ."</div></td>"
+            ."<td class='center awc-nowrap awc-mono'>$size</td>"
+            ."<td class='center awc-nowrap awc-mono'>$time_text</td>"
+            ."<td><div class='awc-acts'>$view$sync$enabled$icon_erase$delete</div></td>"
+            ."</tr>";
     }
 
 
@@ -648,13 +584,17 @@ function list_table(){
     $TINY_ARRAY["BUTTONS"]=@implode("",$bts);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $html[]="</tbody>";
-    $html[]="</table>";
-    $html[]="";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($results)."</span>"
+           ."<span class='awc-pg' id='wc-pager'></span></div>";
+    $html[]="</div></div>";
     $html[]="<script>";
     $html[]="$jstiny;\nNoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .awc_pager_js(100,"wc-rows","wc-pager");
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?webcopy-syncall=yes");
 
 }
@@ -670,12 +610,14 @@ function table(){
     $search=str_replace("**","*",$search);
     $search=str_replace("*","%",$search);
 
-    $q      = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne  = $q->mysqli_fetch_array("SELECT count(*) as tcount FROM httrack_sites WHERE enabled=1");
-    $tcount = intval($ligne["tcount"]);
-
-    $ligne  = $q->mysqli_fetch_array("SELECT SUM(size) as tsize FROM httrack_sites");
-    $tsize = intval($ligne["tsize"]);
+    // Daemon API gives all httrack_sites rows; we count enabled and SUM(size)
+    // PHP-side because /nginx-db/list has no aggregate functions.
+    $rows=fetch_httrack_sites_all();
+    $tcount=0;$tsize=0;
+    foreach($rows as $r){
+        if(intval(isset($r["enabled"])?$r["enabled"]:0)===1){$tcount++;}
+        $tsize += intval(isset($r["size"])?$r["size"]:0);
+    }
 
     $html[]="<div style='margin-top:20px'>&nbsp;</div>";
     $html[]="<table style='width:50%'>";

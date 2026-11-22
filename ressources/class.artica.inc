@@ -33,7 +33,6 @@ class artica_general{
 	var $spfmilterEnabled=0;
 	var $EnableSyslogMysql=1;
 	var $MimeDefangEnabled=0;
-	var $DkimFilterEnabled;
 	var $ArticaUsbBackupKeyID="NONE";
 	var $RoundCubeLightHTTPD;
 	var $RoundCubeHTTPEngineEnabled=0;
@@ -161,30 +160,6 @@ class artica_general{
 	  	
 		}
 	
-	function SaveProxySettings(){
-		$conf="[PROXY]\n";
-		$conf=$conf."ArticaProxyServerName=$this->ArticaProxyServerName\n";
-		$conf=$conf."ArticaProxyServerPort=$this->ArticaProxyServerPort\n";
-		$conf=$conf."ArticaProxyServerUsername=$this->ArticaProxyServerUsername\n";
-		$conf=$conf."ArticaProxyServerUserPassword=$this->ArticaProxyServerUserPassword\n";
-		$conf=$conf."ArticaProxyServerEnabled=$this->ArticaProxyServerEnabled\n";
-		
-		if(trim($this->ArticaProxyServerUserPassword)<>null){$p=":$this->ArticaProxyServerUserPassword";}
-		if(trim($this->ArticaProxyServerUsername)<>null){$at="$this->ArticaProxyServerUsername$p@";}
-		if(trim($this->ArticaProxyServerPort)<>null){$port=":$this->ArticaProxyServerPort";}
-		
-		$uri="http://$at$this->ArticaProxyServerName$port";
-		if($this->ArticaProxyServerEnabled=='yes'){
-			echo $uri."\n----------------------------------------------\n";
-		}
-		$conf=$conf."ArticaCompiledProxyUri=$uri\n";
-		$sock=new sockets();
-		$sock->SaveConfigFile($conf,"ArticaProxySettings");
-		$sock->getFrameWork("cmd.php?compile-proxy=yes");
-		$EnableStreamCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableStreamCache"));
-		if($EnableStreamCache==1){$sock->getFrameWork("squid.php?videocache-restart=yes"); }
-		
-	}
 	
 	function SaveSettings2(){
 		if(!function_exists("ldap_connect")){return array();}
@@ -226,11 +201,10 @@ class artica_general{
 	  
 	
 		if($this->EnableAmavisDaemon==1){
-			writelogs("EnableAmavisDaemon is active, disable spamassassin,clamav,MimeDefang,DKIMFIlter,MilterSpy,MailArchiver",__CLASS__.'/'.__FUNCTION__,__FILE__);
+			writelogs("EnableAmavisDaemon is active, disable spamassassin,clamav,MimeDefang,MilterSpy,MailArchiver",__CLASS__.'/'.__FUNCTION__,__FILE__);
 			$this->SpamAssMilterEnabled=0;
 			$this->ClamavMilterEnabled=0;
 			$this->MimeDefangEnabled=0;
-			$this->DkimFilterEnabled=0;
 			$this->EnableMilterSpyDaemon=0;
 			}
 			
@@ -238,7 +212,6 @@ class artica_general{
 			$this->EnableAmavisDaemon=0;
 			$this->ClamavMilterEnabled=0;
 			$this->SpamAssMilterEnabled=0;
-			$this->DkimFilterEnabled=0;
 			}
 			
 		$sock=new sockets();
@@ -276,7 +249,7 @@ class artica_general{
 		$upd["spfmilterEnabled"][0]=$this->spfmilterEnabled;
 		if(function_exists("artica_get_memory_usage")){artica_get_memory_usage();}
 		$upd["EnableSyslogMysql"][0]=$this->EnableSyslogMysql;
-		$upd["DkimFilterEnabled"][0]=$this->DkimFilterEnabled;
+
 		
 		
 		$upd["EnableMonitorix"][0]=$this->EnableMonitorix;

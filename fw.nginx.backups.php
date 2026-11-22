@@ -1,13 +1,16 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_POST["NginxBackupMaxSize"])){parameters_save();exit;}
 if(isset($_GET["remove-all"])){remove_all_js();exit;}
 if(isset($_POST["remove-all"])){remove_all_perform();exit;}
 if(isset($_GET["upload-backup"])){file_uploaded_js();exit;}
-if(isset($_GET["template-import"])){template_import_js();exit;}
 if(isset($_GET["template-import-popup"])){template_import_popup();exit;}
 if(isset($_GET["file-uploaded"])){template_import_uploaded();exit;}
 if(isset($_GET["parameters-js"])){parameters_js();exit;}
@@ -22,18 +25,13 @@ if(isset($_GET["restore-db-js"])){restore_db_js();exit;}
 if(isset($_GET["restore-db-popup"])){restore_db_popup();exit;}
 
 if(isset($_GET["restore-popup"])){restore_popup();exit;}
-if(isset($_GET["restore-saved"])){restore_saved();exit;}
 
 if(isset($_GET["popup-main"])){popup_main();exit;}
-if(isset($_GET["popup-table"])){popup_table();exit;}
 if(isset($_GET["search"])){search();exit;}
-if(isset($_GET["pattern-enable"])){rule_enable();exit;}
 
 if(isset($_GET["enable-rule-js"])){enable_feature();}
 if(isset($_GET["top-buttons"])){top_buttons();exit;}
 if(isset($_GET["disableall"])){rule_disable_all();exit;}
-if(isset($_GET["enableall"])){rule_enable_all();exit;}
-if(isset($_GET["OnlyActive"])){OnlyActive();exit;}
 if(isset($_GET["download"])){download();exit;}
 if(isset($_GET["remove"])){remove_js();exit;}
 if(isset($_POST["remove"])){remove_perform();exit;}
@@ -57,6 +55,7 @@ function remove_all_js():bool{
     return $tpl->js_confirm_delete("{delete_all_backups_ask}","remove-all","yes","$function()");
 }
 function remove_all_perform():bool{
+    if(!fw_progress_page_priv("AsWebMaster")){return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/remove-all_backups");
     return admin_tracks("Removing all reverse-proxy backup containers");
 }
@@ -180,17 +179,23 @@ function parameters_save():bool{
     return admin_tracks("Saving Reverse-Proxy backup parameters");
 }
 function file_uploaded_js():bool{
+    // Same privilege as the other writes of this page (restore, restore-db, remove: AsWebMaster).
+    if(!fw_progress_page_priv("AsWebMaster")){return false;}
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $filename=$_GET["uploadedfname"];
-    if(strlen($filename)<2){
+    // The daemon copies the named upload into the snapshots directory, as root, then deletes
+    // it: only the plain name of a file present in ressources/conf/upload may be sent.
+    $name=(string)($_GET["uploadedfname"] ?? "");
+    $updir=dirname(__FILE__)."/ressources/conf/upload";
+    if(strlen($name)<2 || $name!==basename($name) || $name==="." || $name===".."
+        || preg_match('/[\x00-\x1f\x7f\\\\]/',$name) || is_link("$updir/$name") || !is_file("$updir/$name")){
         return $tpl->js_error("No file given");
     }
-    $function=$_GET["function"];
-    $filename=base64_encode($filename);
+    $function=preg_replace('/[^A-Za-z0-9_]/',"",(string)($_GET["function"] ?? ""));
+    $filename=base64_encode($name);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/import/backup/$filename");
-    echo "dialogInstance5.close();$function();";
-    return admin_tracks("Uploaded {$_GET["file-uploaded"]} reverse-proxy backup source");
+    echo "dialogInstance5.close();".($function!==""?"$function();":"");
+    return admin_tracks("Uploaded $name reverse-proxy backup source");
 }
 function template_js():bool{
     $ID  = intval($_GET["template-js"]);
@@ -209,17 +214,20 @@ function remove_js():bool{
     return $tpl->js_confirm_delete($filename,"remove",$filename,"$('#$md').remove();");
 }
 function remove_perform():bool{
-    $filename=$_POST["remove"];
+    if(!fw_progress_page_priv("AsWebMaster")){return false;}
+    // A plain backup name only: it is joined to a REST path (the daemon confines it too).
+    $filename=fw_progress_restseg($_POST["remove"]);
+    if($filename===""){return false;}
     $sock=new sockets();
     $sock->REST_API_NGINX("/reverse-proxy/delete/backup/$filename");
     return admin_tracks("Deleted reverse-proxy backup container $filename");
 
 }
+
+
 function template_remove_perform():bool{
     $tplid=intval($_POST["template-remove"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT tpname FROM nginx_templates WHERE ID=$tplid");
-    $tpname=$ligne["tpname"];
+    $tpname=fetch_template_name($tplid);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"nginx_templates","where"=>array("ID"=>"$tplid")));
     return admin_tracks("Removed reverse-proxy template $tpname configuration");
 }
@@ -246,19 +254,17 @@ function template_import_uploaded():bool{
     if(!is_array($ligne)){
         return $tpl->js_error("{corrupted}",__FUNCTION__,__FILE__,__LINE__);
     }
-    $q                          = new lib_sqlite(NginxGetDB());
-
-    $Keys = array();
-    $vals = array();
     unset($ligne["ID"]);
-    foreach ($ligne as $key => $value) {
-        $Keys[] = $key;
-        $vals[] = sprintf("'%s'", $value);
-    }
-    $sql = sprintf("INSERT INTO nginx_templates (%s) VALUES (%s)", implode(",", $Keys), implode(",", $vals));
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {
-        return $tpl->js_error($q->mysql_error,__FUNCTION__,__FILE__,__LINE__);
+
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array(
+        "action"=>"insert",
+        "table"=>"nginx_templates",
+        "values"=>$ligne,
+    ));
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        $err=is_array($data) && isset($data["error"]) ? strval($data["error"]) : "import failed";
+        return $tpl->js_error($err,__FUNCTION__,__FILE__,__LINE__);
     }
     header("content-type: application/x-javascript");
     echo "dialogInstance5.close();\n";
@@ -271,32 +277,20 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
 function restore_db_popup():bool{
     $page=CurrentPageName();
-    $function=$_GET["function"];
-    $function0=$_GET["function0"];
-    $filename     = $_GET["restore-db-popup"];
+    // The restore link is signed for this session: build it only for whom may run it,
+    // and from a file name that stays one path segment (sent raw: the daemon does not
+    // decode %-escapes, see fw_progress_restseg).
+    if(!fw_progress_page_priv("AsWebMaster")){return false;}
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
+    $function0=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function0"] ?? ""));
+    $filename     = fw_progress_restseg($_GET["restore-db-popup"] ?? "");
+    if($filename===""){return fw_progress_bad_value("restore-db-popup");}
     $tpl=new template_admin();
     $t=time();
     $form[]=$tpl->field_hidden("restore-db",$filename);
-    $refresh=$tpl->framework_buildjs("nginx:/reverse-proxy/restore/database/$filename","nginx.backup.restore.progress","nginx.backup.restore.progress.log","Restore$t","dialogInstance5.close();$function();$function0()");
+    $refresh=$tpl->framework_buildjs("nginx:/reverse-proxy/restore/database/$filename","nginx.backup.restore.progress","nginx.backup.restore.progress.log","Restore$t","dialogInstance5.close();$function();$function0()",null,null,"AsWebMaster");
     $html[]="<div id='Restore$t'></div>";
     $html[]=$tpl->div_warning("{restore} DB $filename||{restore_database_explain_reverse_backup}");
     $html[]=$tpl->form_outside(null,$form,"","{restore} DB",$refresh,"AsWebMaster");
@@ -311,9 +305,11 @@ function restore_db_save():bool{
 }
 function restore_popup():bool{
     $page=CurrentPageName();
-    $function=$_GET["function"];
-    $function0=$_GET["function0"];
-    $filename     = $_GET["restore-popup"];
+    if(!fw_progress_page_priv("AsWebMaster")){return false;}
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
+    $function0=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function0"] ?? ""));
+    $filename     = fw_progress_restseg($_GET["restore-popup"] ?? "");
+    if($filename===""){return fw_progress_bad_value("restore-popup");}
     $tpl=new template_admin();
     $t=time();
     $DisableBuildNginxConfig=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableBuildNginxConfig"));
@@ -321,7 +317,7 @@ function restore_popup():bool{
     $form[]=$tpl->field_hidden("restore",$filename);
     $form[]=$tpl->field_checkbox("DisableBuildNginxConfig","{DenyHaproxyConf}",$DisableBuildNginxConfig);
 
-    $refresh=$tpl->framework_buildjs("nginx:/reverse-proxy/restore/backup/$filename","nginx.backup.restore.progress","nginx.backup.restore.progress.log","Restore$t","dialogInstance5.close();$function();$function0()");
+    $refresh=$tpl->framework_buildjs("nginx:/reverse-proxy/restore/backup/$filename","nginx.backup.restore.progress","nginx.backup.restore.progress.log","Restore$t","dialogInstance5.close();$function();$function0()",null,null,"AsWebMaster");
     $html[]="<div id='Restore$t'></div>";
     $html[]=$tpl->div_warning("{restore} $filename||{restore_explain_reverse_backup}");
     $html[]=$tpl->form_outside(null,$form,"","{restore}",$refresh,"AsWebMaster");
@@ -385,7 +381,8 @@ function search():bool{
     $NginxBackuprestored=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxBackuprestored");
 
 $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{backup}</th>
@@ -393,7 +390,7 @@ $html[]="
         	<th nowrap>{download}</th>
         	<th nowrap>{restore} DB</th>
         	<th nowrap>{restore}</th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{delete}</th>
         </tr>
 	<tbody>
 ";
@@ -446,17 +443,20 @@ $html[]="
 
     }
 
-        $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('backup-nginx-btns','$page?top-buttons=yes&function=$function&function0=$function0');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
 }
 function download():bool{
+    if(!fw_progress_page_priv("AsWebMaster")){return false;}
+    // A plain backup name only: it is joined to a REST path AND to PROGRESS_DIR below,
+    // where it is read then deleted (no "../", no "/").
+    $filename=fw_progress_restseg($_GET["download"]);
+    if($filename===""){return false;}
     $sock=new sockets();
-    $filename=$_GET["download"];
     $data=$sock->REST_API_NGINX("/reverse-proxy/download/backup/$filename");
     $json=json_decode($data);
     if (json_last_error()> JSON_ERROR_NONE) {

@@ -1,9 +1,9 @@
-<ArchiveMail>Save mail into specific quarantine area</ArchiveMail>
-<aveserver_intro_global>Define here the global rules</aveserver_intro_global>
-<delete_mail>Delete the mail</delete_mail>
-<NotifyFrom>Notifiy sender</NotifyFrom>
-<NotifyFromAddress>FROM Address for notifications</NotifyFromAddress>
+<ArchiveMail>Zapisz wiadomo&#347;&#263; w okre&#347;lonym obszarze kwarantanny</ArchiveMail>
+<aveserver_intro_global>Zdefiniuj tutaj regu&#322;y globalne</aveserver_intro_global>
+<delete_mail>Usu&#324; wiadomo&#347;&#263;</delete_mail>
+<NotifyFrom>Powiadom nadawc&#281;</NotifyFrom>
+<NotifyFromAddress>Adres FROM dla powiadomie&#324;</NotifyFromAddress>
 <NotifyMessage>Komunikat powiadamiaj%C4%85cy</NotifyMessage>
-<NotifyMessageSubject>Subject Message</NotifyMessageSubject>
-<NotifyTo>Notify recipient</NotifyTo>
-<when_found_virus>When scanner detect viruses</when_found_virus>
+<NotifyMessageSubject>Temat wiadomo&#347;ci</NotifyMessageSubject>
+<NotifyTo>Powiadom odbiorc&#281;</NotifyTo>
+<when_found_virus>Gdy skaner wykryje wirusy</when_found_virus>

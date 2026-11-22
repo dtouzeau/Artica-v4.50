@@ -53,12 +53,22 @@ function Run():bool{
     $users=new usersMenus();
     header("content-type: application/x-javascript");
     if(!$users->AsSystemAdministrator){
-        echo $tpl->javascript_parse_text("alert('{ERROR_NO_PRIVS}');");
+        $tpl->js_error("{ERROR_NO_PRIVS}");
         return admin_tracks("Unprivilegied Access on $page");
     }
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/vmtools/savediskparams");
+    // Un refus du daemon (route absente, accès) ne doit pas faire disparaître
+    // l'alerte : les clés ne sont remises à zéro qu'une fois l'appel accepté.
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/vmtools/savediskparams"));
+    if(!is_object($json) || !property_exists($json,"Status") || !$json->Status){
+        $err=(is_object($json) && property_exists($json,"Error"))?(string)$json->Error:"";
+        $tpl->js_error($err==""?"{error}":$err);
+        return false;
+    }
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("VM_DISK_SLOW",0);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DiskVMMustOptimize",0);
-    echo "dialogInstance10.close();";
+    echo "dialogInstance10.close();\n";
+    // La cloche n'a pas de rafraîchissement périodique : sans ce rechargement,
+    // l'alerte et son compteur restaient affichés jusqu'au rechargement de la page.
+    echo "LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
     return admin_tracks("Saving Disk optimizations for Virtual machines");
 }

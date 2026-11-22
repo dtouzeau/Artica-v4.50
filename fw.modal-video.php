@@ -3,12 +3,14 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 
 $id=md5(serialize($_GET));
 $page=basename(__FILE__);
-$title=base64_decode($_GET["title"]);
-$icon=base64_decode($_GET["icon"]);
-$subtitle=base64_decode($_GET["subtitle"]);
-$jsafter=base64_decode($_GET["jsafter"]);
-$defaultvalue=base64_decode($_GET["defaultvalue"]);
-$videoid=base64_decode($_GET["video"]);
+// Pentest 2026-11-04 : title, subtitle et video etaient recopies tels quels
+// dans la page et dans un lien javascript: (XSS reflechi). Le texte est encode
+// et l'identifiant YouTube reduit a son alphabet ; jsafter, icon et
+// defaultvalue n'etaient pas utilises. video arrive en clair (js_show_video),
+// le base64_decode d'origine ne rendait donc jamais l'identifiant.
+$title=req_html(base64_decode($_GET["title"] ?? ""));
+$subtitle=req_html(base64_decode($_GET["subtitle"] ?? ""));
+$videoid=preg_replace('#[^A-Za-z0-9_-]#','',strval($_GET["video"] ?? ""));
 $tpl=new template_admin();
 $cancel=$tpl->_ENGINE_parse_body("{close}");
 

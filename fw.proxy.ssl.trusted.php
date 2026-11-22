@@ -1,4 +1,11 @@
 <?php
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
@@ -13,9 +20,6 @@ if(isset($_GET["rule-js"])){rule_js();exit;}
 if(isset($_GET["popup-rule"])){rule_popup();exit;}
 if(isset($_POST["certificate"])){rule_save();exit;}
 
-if(isset($_GET["rule-export-js"])){rule_export_js();exit;}
-if(isset($_GET["rule-export-popup"])){rule_export_popup();exit;}
-if(isset($_POST["importid"])){rule_export_save();exit;}
 
 service_js();
 function service_js(){
@@ -90,24 +94,20 @@ function rule_save():bool{
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->CLEAN_POST();
     $certificate     = trim($_POST["certificate"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM sslcertificates WHERE CommonName='$certificate'");
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    [$exists,$ID]=$cdb->exists($certificate);
+    if($cdb->lastError!==""){
+        echo $tpl->post_error($cdb->lastError);
         return false;
     }
-    $ID=intval($ligne["ID"]);
-    if($ID==0){
-        $tb=array();
-        foreach ($ligne as $key=>$value){
-            $tb[]="$key=$value";
-        }
-
-        echo $tpl->post_error("certificate [$certificate] not found".implode(",\n",$tb));
+    if(!$exists || $ID==0){
+        echo $tpl->post_error("certificate [$certificate] not found");
         return false;
     }
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $q->QUERY_SQL("INSERT INTO sslproxy_cafile (certid,CommonName) VALUES ('$ID','$certificate');");
+    // Pentest 2026-11-04 : certificate etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("INSERT INTO sslproxy_cafile (certid,CommonName) VALUES (?,?);",array(intval($ID),$certificate));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -141,14 +141,14 @@ function popup_table(){
     $html[]="</div>";
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>
 	<thead>
     	<tr>
         	<th nowrap>{certificates}</th>
         	<th nowrap>{delete}</small></th>
         </tr>
   	</thead>
-	<tbody>
+	<tbody id='ssltrusted-rows'>
 ";
 
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
@@ -226,19 +226,11 @@ function popup_table(){
     }
 
         $html[]="</tbody>";
-        $html[]="<tfoot>";
-
-        $html[]="<tr>";
-        $html[]="<td colspan='2'>";
-        $html[]="<ul class='pagination pull-right'></ul>";
-        $html[]="</td>";
-        $html[]="</tr>";
-        $html[]="</tfoot>";
-        $html[]="</table>";
+        $html[]="";
+        $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='ssltrusted-pager'></span></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-        $html[]="$(document).ready(function() { $('#$tableid').footable( { \"filtering\": { \"enabled\": true";
-        $html[]="},\"sorting\": { \"enabled\": false },";
-        $html[]="\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"ssltrusted-rows","ssltrusted-pager");
         }

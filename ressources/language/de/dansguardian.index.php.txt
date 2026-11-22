@@ -1,358 +1,312 @@
-<add_address>Add a new IP address</add_address>
-<add_address_dansguardian>Add a ip group or a single IP to match a rule</add_address_dansguardian>
-<add_category>Add category</add_category>
-<add_extension>Add extension</add_extension>
-<add_site>Add site</add_site>
+<add_address>Eine neue IP-Adresse hinzuf&#252;gen</add_address>
+<add_address_dansguardian>Eine IP-Gruppe oder eine einzelne IP hinzuf&#252;gen, um einer Regel zu entsprechen</add_address_dansguardian>
+<add_category>Kategorie hinzuf&#252;gen</add_category>
+<add_extension>Erweiterung hinzuf&#252;gen</add_extension>
+<add_site>Seite hinzuf&#252;gen</add_site>
 <adult>Website f%C3%BCr Erwachsene von erotischer bis harter Pornografie.</adult>
-<agressif>aggressive sites.</agressif>
-<astrology>Astrology</astrology>
-<audio-video>audio and video sites.</audio-video>
-<badwords>Swear Words</badwords>
-<bannedextensionlist>Files types</bannedextensionlist>
-<bannedextensionlist_explain>It contains a list of file extensions that will be banned. This can be used to restrict users from downloading screen savers, executable files, viruses, and so forth.</bannedextensionlist_explain>
-<BannedMimetype>Mime type</BannedMimetype>
-<BannedMimetype_explain>It contains a list of MIME-types that will be banned.[br]If a URL request returns a MIME-type in this list, DansGuardian will
-  block it. This can be used to block movies, but shouldn't be used to graphic image files or text/html, etc</BannedMimetype_explain>
-<bannedphraselist>Banned Phrase list</bannedphraselist>
-<bannedphraselist_explain>It contains a list of phrases that will result in banning a page.[br]</bannedphraselist_explain>
-<bannedregexpurllist>Banned Regex Pur List</bannedregexpurllist>
-<bannedregexpurllist_explain>It contains a list of regular expression URLs that will be banned.[br]
-This can be used to restrict users from downloading screen savers, executable files, viruses, and so forth.
-</bannedregexpurllist_explain>
-<banned_catgories_text>Select categories you want to bann in this rule</banned_catgories_text>
-<black_ip_group>Computers banned list</black_ip_group>
-<black_ip_group_text>Ban computers access to Internet by IP address</black_ip_group_text>
+<agressif>aggressive Seiten.</agressif>
+<astrology>Astrologie</astrology>
+<audio-video>Audio- und Videoseiten.</audio-video>
+<badwords>Schimpfw&#246;rter</badwords>
+<bannedextensionlist>Dateitypen</bannedextensionlist>
+<bannedextensionlist_explain>Sie enth&#228;lt eine Liste von Dateierweiterungen, die gesperrt werden. Dies kann verwendet werden, um Benutzer am Herunterladen von Bildschirmschonern, ausf&#252;hrbaren Dateien, Viren usw. zu hindern.</bannedextensionlist_explain>
+<BannedMimetype>MIME-Typ</BannedMimetype>
+<BannedMimetype_explain>Sie enth&#228;lt eine Liste von MIME-Typen, die gesperrt werden.[br]Wenn eine URL-Anfrage einen MIME-Typ aus dieser Liste zur&#252;ckgibt, blockiert DansGuardian ihn. Dies kann verwendet werden, um Filme zu blockieren, sollte aber nicht f&#252;r Grafikbilddateien oder text/html usw. verwendet werden</BannedMimetype_explain>
+<bannedphraselist>Liste gesperrter Phrasen</bannedphraselist>
+<bannedphraselist_explain>Sie enth&#228;lt eine Liste von Phrasen, die zur Sperrung einer Seite f&#252;hren.[br]</bannedphraselist_explain>
+<bannedregexpurllist>Liste gesperrter Regex-URLs</bannedregexpurllist>
+<bannedregexpurllist_explain>Sie enth&#228;lt eine Liste von URLs mit regul&#228;ren Ausdr&#252;cken, die gesperrt werden.[br]
+Dies kann verwendet werden, um Benutzer am Herunterladen von Bildschirmschonern, ausf&#252;hrbaren Dateien, Viren usw. zu hindern.</bannedregexpurllist_explain>
+<banned_catgories_text>W&#228;hlen Sie die Kategorien aus, die Sie in dieser Regel sperren m&#246;chten</banned_catgories_text>
+<black_ip_group>Liste gesperrter Computer</black_ip_group>
+<black_ip_group_text>Computern den Internetzugang nach IP-Adresse sperren</black_ip_group_text>
 <blog>Blogseiten oder pers%C3%B6nliche Webseiten, einschlie%C3%9Flich Webseiten, die keine eigene Domain haben, wie mydomain.ispdomain.com, squarspace.</blog>
-<build_dansguardian_databases>Build Dansguardian tables & databases</build_dansguardian_databases>
+<build_dansguardian_databases>DansGuardian-Tabellen &amp; -Datenbanken erstellen</build_dansguardian_databases>
 <categories>Kategorien</categories>
-<categories_enabled>Enabled Categories:</categories_enabled>
-<categories_explain>Set here banned web sites per categories. This is the [b]Blacklist[/b] section.</categories_explain>
+<categories_enabled>Aktivierte Kategorien:</categories_enabled>
+<categories_explain>Legen Sie hier gesperrte Websites pro Kategorie fest. Dies ist der Abschnitt [b]Blacklist[/b].</categories_explain>
 <category>Kategorie</category>
-<categorydisplaythreshold>Category display threshold</categorydisplaythreshold>
-<categorydisplaythreshold_text>This option only applies to pages blocked by weighted phrase filtering.[br]
-Defines the minimum score that must be accumulated within a particular category in order for it to show up on the block pages' category list.
-[br]All categories under which the page scores positively will be logged; those that were not displayed to the user appear in brackets.[br]
--1 = display only the highest scoring category
-[br]0 = display all categories (default)
-[br]above 0 = minimum score for a category to be displayed</categorydisplaythreshold_text>
-<chat>Chats, communications related sites</chat>
-<cleaning>Sites to disinfect, update and protect computers.</cleaning>
-<conspiracy>Conspiracy related sites</conspiracy>
-<content_scanner>Parse engine</content_scanner>
-<content_scanner_text>Define the web pages scanner behavior</content_scanner_text>
-<createlistcachefiles>Create list cache files</createlistcachefiles>
-<createlistcachefiles_text>
-[b]Build banned site list and banned url list cache files.[/b][br]
-This will compare the date stamp of the list file with the date stamp of the cache file and will recreate as needed.[br]
-If a bsl or bul .processed file exists, then that will be used instead.[br]
-It will increase process start speed by 300%.  On slow computers this will be significant.[br]
-Fast computers do not need this option.
-</createlistcachefiles_text>
-<create_new_category>Create a new category</create_new_category>
-<create_new_category_text>Give the name of your new category</create_new_category_text>
-<dangerous_material>Sites which describe how to make bomb and dangerous material.</dangerous_material>
-<danseguardian_simple_intro>
-DansGuardian is designed to be completely flexible and allows you to tailor the filtering to your exact needs.[br]
-It can be as draconian or as unobstructive as you want.
-[br]The default settings are geared towards what a primary school might want but DansGuardian puts you in control of what you want to block.
-[br]DansGuardian is a true web content filter.
-</danseguardian_simple_intro>
-<dansguardian_status>DansGuardian service status</dansguardian_status>
-<dansguardian_tables_error>DansGuardian Mysql tables error !</dansguardian_tables_error>
-<dansguardian_tables_error_text>It seems that Artica did not find DansGuardian tables in mysql for storing settings[br]
-You need to fix it in order to use web filtering</dansguardian_tables_error_text>
+<categorydisplaythreshold>Schwellenwert f&#252;r die Kategorieanzeige</categorydisplaythreshold>
+<categorydisplaythreshold_text>Diese Option gilt nur f&#252;r Seiten, die durch die Filterung gewichteter Phrasen blockiert werden.[br]
+Definiert die Mindestpunktzahl, die innerhalb einer bestimmten Kategorie erreicht werden muss, damit sie in der Kategorienliste der Blockseiten erscheint.
+[br]Alle Kategorien, unter denen die Seite positiv abschneidet, werden protokolliert; jene, die dem Benutzer nicht angezeigt wurden, erscheinen in Klammern.[br]
+-1 = nur die Kategorie mit der h&#246;chsten Punktzahl anzeigen
+[br]0 = alle Kategorien anzeigen (Standard)
+[br]&#252;ber 0 = Mindestpunktzahl, damit eine Kategorie angezeigt wird</categorydisplaythreshold_text>
+<chat>Chats, Seiten mit Bezug zu Kommunikation</chat>
+<cleaning>Seiten zum Desinfizieren, Aktualisieren und Sch&#252;tzen von Computern.</cleaning>
+<conspiracy>Seiten mit Bezug zu Verschw&#246;rungstheorien</conspiracy>
+<content_scanner>Parsing-Engine</content_scanner>
+<content_scanner_text>Das Verhalten des Webseiten-Scanners definieren</content_scanner_text>
+<createlistcachefiles>Listen-Cache-Dateien erstellen</createlistcachefiles>
+<createlistcachefiles_text>[b]Cache-Dateien f&#252;r die Liste der gesperrten Seiten und URLs erstellen.[/b][br]
+Dies vergleicht den Zeitstempel der Listendatei mit dem Zeitstempel der Cache-Datei und erstellt diese bei Bedarf neu.[br]
+Wenn eine .processed-Datei (bsl oder bul) existiert, wird diese stattdessen verwendet.[br]
+Es erh&#246;ht die Startgeschwindigkeit des Prozesses um 300 %. Auf langsamen Computern ist dies erheblich.[br]
+Schnelle Computer ben&#246;tigen diese Option nicht.</createlistcachefiles_text>
+<create_new_category>Eine neue Kategorie erstellen</create_new_category>
+<create_new_category_text>Geben Sie den Namen Ihrer neuen Kategorie an</create_new_category_text>
+<dangerous_material>Seiten, die beschreiben, wie man Bomben und gef&#228;hrliches Material herstellt.</dangerous_material>
+<danseguardian_simple_intro>DansGuardian ist so konzipiert, dass es vollst&#228;ndig flexibel ist und es Ihnen erm&#246;glicht, die Filterung genau an Ihre Bed&#252;rfnisse anzupassen.[br]
+Es kann so drakonisch oder so unaufdringlich sein, wie Sie m&#246;chten.
+[br]Die Standardeinstellungen sind auf das ausgerichtet, was eine Grundschule ben&#246;tigen k&#246;nnte, aber DansGuardian gibt Ihnen die Kontrolle dar&#252;ber, was Sie blockieren m&#246;chten.
+[br]DansGuardian ist ein echter Webinhaltsfilter.</danseguardian_simple_intro>
+<dansguardian_status>DansGuardian-Dienststatus</dansguardian_status>
+<dansguardian_tables_error>Fehler bei den DansGuardian-MySQL-Tabellen!</dansguardian_tables_error>
+<dansguardian_tables_error_text>Es scheint, dass Artica die DansGuardian-Tabellen in MySQL zum Speichern der Einstellungen nicht gefunden hat[br]
+Sie m&#252;ssen dies beheben, um die Webfilterung verwenden zu k&#246;nnen</dansguardian_tables_error_text>
 <dans_add_rule_text>Geben Sie der neuen Regel f%C3%BCr die Web-Filterung einen Namen</dans_add_rule_text>
-<dating>Dating, matching site for single person</dating>
-<deepurlanalysis>Deep url analysis</deepurlanalysis>
-<deepurlanalysis_text>When enabled, DansGuardian looks for URLs within URLs, checking against the banned site list and
-banned url list.[br]
-This can be used, for example, to block images originating from banned sites from appearing in Google Images search results, as the original URLs are
-embedded in the thumbnail GET requests.</deepurlanalysis_text>
-<deletedownloadedtempfiles>Delete downloaded temp files</deletedownloadedtempfiles>
-<deletedownloadedtempfiles_text>
-Delete file cache after user completes download[br]
-When a file gets save to temp it stays there until it is deleted.[br]
-You can choose to have the file deleted when the user makes a sucessful download.[br]
-This will mean if they click on the link to download from the temp store a second time it will give a 404 error.[br]
-You should configure something to delete old files in temp to stop it filling up.
-</deletedownloadedtempfiles_text>
+<dating>Dating-, Partnervermittlungsseite f&#252;r Singles</dating>
+<deepurlanalysis>Tiefe URL-Analyse</deepurlanalysis>
+<deepurlanalysis_text>Wenn aktiviert, sucht DansGuardian nach URLs innerhalb von URLs und pr&#252;ft diese gegen die Liste der gesperrten Seiten und URLs.[br]
+Dies kann zum Beispiel verwendet werden, um zu verhindern, dass Bilder von gesperrten Seiten in den Suchergebnissen der Google-Bildersuche erscheinen, da die urspr&#252;nglichen URLs in die GET-Anfragen der Thumbnails eingebettet sind.</deepurlanalysis_text>
+<deletedownloadedtempfiles>Heruntergeladene tempor&#228;re Dateien l&#246;schen</deletedownloadedtempfiles>
+<deletedownloadedtempfiles_text>Dateicache l&#246;schen, nachdem der Benutzer den Download abgeschlossen hat[br]
+Wenn eine Datei im tempor&#228;ren Speicher gespeichert wird, bleibt sie dort, bis sie gel&#246;scht wird.[br]
+Sie k&#246;nnen w&#228;hlen, dass die Datei gel&#246;scht wird, wenn der Benutzer einen erfolgreichen Download durchf&#252;hrt.[br]
+Das bedeutet, wenn er ein zweites Mal auf den Link zum Herunterladen aus dem tempor&#228;ren Speicher klickt, erh&#228;lt er einen 404-Fehler.[br]
+Sie sollten etwas konfigurieren, um alte Dateien im tempor&#228;ren Speicher zu l&#246;schen, damit dieser nicht voll&#228;uft.</deletedownloadedtempfiles_text>
 <description>Beschreibung</description>
-<domainsforsale>parked domains - domains that are for sale</domainsforsale>
-<download>Download manager</download>
-<download_text>Define the behavior when your users download content</download_text>
+<domainsforsale>geparkte Domains &#8211; Domains, die zum Verkauf stehen</domainsforsale>
+<download>Download-Manager</download>
+<download_text>Das Verhalten festlegen, wenn Ihre Benutzer Inhalte herunterladen</download_text>
 <drogue>Sites zu harten und weichen Drogen. Hier k%C3%B6nnen Sie Drogen kaufen, herstellen oder sich %C3%BCber die Vorteile von Drogen austauschen.</drogue>
-<drugadvocacy>Drug Advocacy</drugadvocacy>
-<edit_your_weighted_category>Edit your Weighted Category phrase list</edit_your_weighted_category>
-<embeddedurlweight>Embedded Url Weight</embeddedurlweight>
-<embeddedurlweight_text>
-When set to something greater than zero, this option causes URLs embedded within a page's HTML (from links, image tags, etc.) to be extracted and checked against the
-banned site list and banned url list.[br]
-Each link to a banned page causes the amount set here to be added to the page's weighting.[br]
-The behaviour of this option with regards to multiple occurrences of a site/URL is affected by the weighted phrase mode setting.[br]
-[br]Set to 0 to disable. (Defaults to 0.)
-[br][i]WARNING: This option is highly CPU intensive![/i]
-</embeddedurlweight_text>
-<enable_clamav>Enable antivirus</enable_clamav>
-<enable_clamav_text>If you enable this feature, each content downloaded by Dansguardian will be scanned by ClamAV antivirus scanner</enable_clamav_text>
-<enable_user_button>Enable user button</enable_user_button>
-<enable_user_button_text>This feature allow you to add a button in the banned web page.[br]
-You must select wich user can add the blocked web site in the exclusion list trough a button</enable_user_button_text>
-<ExceptionSiteList>Exceptions Sites</ExceptionSiteList>
-<ExceptionSiteList_explain>Contains a list of domain endings that if found in the requested URL, will not be filtered.</ExceptionSiteList_explain>
-<ExeptionFileSiteList>Exception file site list</ExeptionFileSiteList>
-<ExeptionFileSiteList_explain>Allow banned files from these web sites</ExeptionFileSiteList_explain>
-<extension>Extension</extension>
-<extensions_rules>Downloaded files rules</extensions_rules>
-<failed_start_service>Failed Start service</failed_start_service>
+<drugadvocacy>Drogenbef&#252;rwortung</drugadvocacy>
+<edit_your_weighted_category>Ihre Phrasenliste f&#252;r gewichtete Kategorien bearbeiten</edit_your_weighted_category>
+<embeddedurlweight>Gewicht eingebetteter URLs</embeddedurlweight>
+<embeddedurlweight_text>Wenn dieser Wert gr&#246;&#223;er als null ist, bewirkt diese Option, dass in den HTML-Code einer Seite eingebettete URLs (aus Links, Bild-Tags usw.) extrahiert und gegen die Liste der gesperrten Seiten und URLs gepr&#252;ft werden.[br]
+Jeder Link zu einer gesperrten Seite bewirkt, dass der hier festgelegte Betrag zur Gewichtung der Seite hinzugef&#252;gt wird.[br]
+Das Verhalten dieser Option bei mehrfachem Vorkommen einer Seite/URL wird durch die Einstellung des Modus f&#252;r gewichtete Phrasen beeinflusst.[br]
+[br]Auf 0 setzen, um zu deaktivieren. (Standard ist 0.)
+[br][i]WARNUNG: Diese Option ist sehr CPU-intensiv![/i]</embeddedurlweight_text>
+<enable_clamav>Antivirus aktivieren</enable_clamav>
+<enable_clamav_text>Wenn Sie diese Funktion aktivieren, wird jeder von DansGuardian heruntergeladene Inhalt vom ClamAV-Virenscanner gescannt</enable_clamav_text>
+<enable_user_button>Benutzer-Schaltfl&#228;che aktivieren</enable_user_button>
+<enable_user_button_text>Mit dieser Funktion k&#246;nnen Sie eine Schaltfl&#228;che auf der gesperrten Webseite hinzuf&#252;gen.[br]
+Sie m&#252;ssen ausw&#228;hlen, welcher Benutzer die blockierte Website &#252;ber eine Schaltfl&#228;che zur Ausschlussliste hinzuf&#252;gen kann</enable_user_button_text>
+<ExceptionSiteList>Ausnahme-Seiten</ExceptionSiteList>
+<ExceptionSiteList_explain>Enth&#228;lt eine Liste von Dom&#228;nenendungen, die, wenn sie in der angeforderten URL gefunden werden, nicht gefiltert werden.</ExceptionSiteList_explain>
+<ExeptionFileSiteList>Liste der Ausnahme-Dateiseiten</ExeptionFileSiteList>
+<ExeptionFileSiteList_explain>Gesperrte Dateien von diesen Websites zulassen</ExeptionFileSiteList_explain>
+<extension>Erweiterung</extension>
+<extensions_rules>Regeln f&#252;r heruntergeladene Dateien</extensions_rules>
+<failed_start_service>Dienststart fehlgeschlagen</failed_start_service>
 <filehosting>Websites, die Dateien speichern (Bilder, Videos, ...)</filehosting>
-<files_restrictions>Banned files</files_restrictions>
-<filter_ip_group>IP Address Authentication</filter_ip_group>
-<filter_ip_group_explain>You can use IP Addresses to identify your users and match them to a rule.[br]
-This is a simple way to quickly authenticate computers without having to set up a complex authentication system.[br]
-Note that there are some disadvantages to this system:
+<files_restrictions>Gesperrte Dateien</files_restrictions>
+<filter_ip_group>IP-Adressen-Authentifizierung</filter_ip_group>
+<filter_ip_group_explain>Sie k&#246;nnen IP-Adressen verwenden, um Ihre Benutzer zu identifizieren und sie einer Regel zuzuordnen.[br]
+Dies ist eine einfache M&#246;glichkeit, Computer schnell zu authentifizieren, ohne ein komplexes Authentifizierungssystem einrichten zu m&#252;ssen.[br]
+Beachten Sie, dass dieses System einige Nachteile hat:
 [ul]
-[li]You MUST have static IP addresses set for the computers[/li]
-[li]IP addresses can be spoofed and users can therefore join themselves to a less rule.[/li]
-[/ul]
-</filter_ip_group_explain>
-<filter_ip_group_text>You can use IP Addresses to identify your users and match them to a rule.</filter_ip_group_text>
-<financial>Sites relative financial information.</financial>
-<forcequicksearch>Force quick search</forcequicksearch>
-<forcequicksearch_text>[b]Force Quick Search rather than DFA search algorithm [/b][br]
-The current DFA implementation is not totally 16-bit character compatible
-but is used by default as it handles large phrase lists much faster.[br]
-If you wish to use a large number of 16-bit character phrases then enable this option.</forcequicksearch_text>
-<forums>Forums site.</forums>
+[li]Sie M&#220;SSEN statische IP-Adressen f&#252;r die Computer festlegen[/li]
+[li]IP-Adressen k&#246;nnen gef&#228;lscht werden, sodass sich Benutzer einer Regel mit weniger Einschr&#228;nkungen zuordnen k&#246;nnen.[/li]
+[/ul]</filter_ip_group_explain>
+<filter_ip_group_text>Sie k&#246;nnen IP-Adressen verwenden, um Ihre Benutzer zu identifizieren und sie einer Regel zuzuordnen.</filter_ip_group_text>
+<financial>Seiten mit Finanzinformationen.</financial>
+<forcequicksearch>Schnellsuche erzwingen</forcequicksearch>
+<forcequicksearch_text>[b]Schnellsuche statt DFA-Suchalgorithmus erzwingen[/b][br]
+Die aktuelle DFA-Implementierung ist nicht vollst&#228;ndig 16-Bit-zeichenkompatibel, wird aber standardm&#228;&#223;ig verwendet, da sie gro&#223;e Phrasenlisten viel schneller verarbeitet.[br]
+Wenn Sie eine gro&#223;e Anzahl von 16-Bit-Zeichenphrasen verwenden m&#246;chten, aktivieren Sie diese Option.</forcequicksearch_text>
+<forums>Foren-Seite.</forums>
 <gambling>Gl%C3%BCcksspiel- und Spieleseiten, Casino, etc.</gambling>
 <games>Spieleseiten (Flash- und Online-Spiele)</games>
-<goodphrases>Good Phrases to balance out bad phrases tagged on a page</goodphrases>
-<googlesearches>Google Searches</googlesearches>
-<gore>Gore related sites</gore>
-<groupmode>Filter group mode</groupmode>
-<groupmode_0>banned</groupmode_0>
-<groupmode_1>filtered</groupmode_1>
-<groupmode_2>unfiltered (exception)</groupmode_2>
-<groupmode_text>This option determines whether members of this group have their web access unfiltered, filtered, or banned.
-[br]This mechanism replaces the "Banned User List" and "Exception User List" files from previous versions.
-Only filter groups with a mode of "filtered" need to define phrase, URL, site, extension,mimetype and PICS lists;
-[br]in other modes, these options are ignored to conserve memory.[br]
-Defaults to "banned" if unspecified.
-[br]Unauthenticated users are treated as being in the first filter group.
-</groupmode_text>
+<goodphrases>Gute Phrasen, um schlechte, auf einer Seite markierte Phrasen auszugleichen</goodphrases>
+<googlesearches>Google-Suchen</googlesearches>
+<gore>Seiten mit Bezug zu Gewaltdarstellungen</gore>
+<groupmode>Filtergruppenmodus</groupmode>
+<groupmode_0>gesperrt</groupmode_0>
+<groupmode_1>gefiltert</groupmode_1>
+<groupmode_2>ungefiltert (Ausnahme)</groupmode_2>
+<groupmode_text>Diese Option bestimmt, ob der Webzugriff der Mitglieder dieser Gruppe ungefiltert, gefiltert oder gesperrt ist.
+[br]Dieser Mechanismus ersetzt die Dateien &quot;Banned User List&quot; und &quot;Exception User List&quot; aus fr&#252;heren Versionen.
+Nur Filtergruppen mit dem Modus &quot;filtered&quot; m&#252;ssen Phrasen-, URL-, Site-, Erweiterungs-, MIME-Typ- und PICS-Listen definieren;
+[br]in anderen Modi werden diese Optionen ignoriert, um Speicher zu sparen.[br]
+Standardm&#228;&#223;ig &quot;banned&quot;, wenn nicht angegeben.
+[br]Nicht authentifizierte Benutzer werden so behandelt, als geh&#246;rten sie zur ersten Filtergruppe.</groupmode_text>
 <groupname>Name der Gruppe</groupname>
-<groupname_text>
-Used to fill in the -FILTERGROUP- placeholder in the HTML template file, and to name the group in the access logs Defaults to empty string
-</groupname_text>
-<hacking>Hacking sites.</hacking>
-<hexdecodecontent>Hex decoding</hexdecodecontent>
-<hexdecodecontent_text>When a document is scanned it can optionally convert %XX to chars.[br]
-If you find documents are getting past the phrase filtering due to encoding then enable.[br]
-However this can break Big5 and other 16-bit texts.</hexdecodecontent_text>
-<idtheft>Limit access to ID theft tutorial sites</idtheft>
-<illegaldrugs>Illegal Drugs</illegaldrugs>
-<initialtrickledelay>Initial Trickle delay</initialtrickledelay>
-<initialtrickledelay_text>
-This is the number of seconds a browser connection is left waiting before first being sent *something* to keep it alive.
-The *something* depends on the download manager chosen.[br]
-Do not choose a value too low or normal web pages will be affected.[br]
-A value between 20 and 110 would be sensible[br]
-This may be ignored by the configured download manager.
-</initialtrickledelay_text>
-<intolerance>Intolerance related sites</intolerance>
-<ip_artica_server>address of this server</ip_artica_server>
-<ip_start>Start from IP</ip_start>
-<ip_to>End to IP</ip_to>
-<legaldrugs>Legal drugs (alcool,tobacco)</legaldrugs>
-<liste_bu>A french list for educational sites. VERY locally oriented. may help libraries.</liste_bu>
-<main_rules_category_user_edit>
-set here web sites you want to block example if you want to block http://www.badboys.com, set "badboys.com" if you want to block an IP address set "128.11.213.81"
-</main_rules_category_user_edit>
-<malware>malware (trojan, virus, spyware) and rogue anti-malware websites</malware>
-<marketingware>Very special marketing sites</marketingware>
-<maxagechildren>Max age Children</maxagechildren>
-<maxagechildren_text>
-Sets the maximum age of a child process before it croaks it.[br]
-This is the number of connections they handle before exiting.[br]
-On large sites you might want to try 10000.
-</maxagechildren_text>
+<groupname_text>Wird verwendet, um den Platzhalter -FILTERGROUP- in der HTML-Vorlagendatei zu f&#252;llen und die Gruppe in den Zugriffsprotokollen zu benennen. Standardm&#228;&#223;ig leere Zeichenfolge</groupname_text>
+<hacking>Hacking-Seiten.</hacking>
+<hexdecodecontent>Hex-Dekodierung</hexdecodecontent>
+<hexdecodecontent_text>Wenn ein Dokument gescannt wird, kann es optional %XX in Zeichen umwandeln.[br]
+Wenn Sie feststellen, dass Dokumente die Phrasenfilterung aufgrund der Kodierung umgehen, dann aktivieren.[br]
+Dies kann jedoch Big5 und andere 16-Bit-Texte besch&#228;digen.</hexdecodecontent_text>
+<idtheft>Zugriff auf Tutorial-Seiten zum Identit&#228;tsdiebstahl beschr&#228;nken</idtheft>
+<illegaldrugs>Illegale Drogen</illegaldrugs>
+<initialtrickledelay>Anf&#228;ngliche Trickle-Verz&#246;gerung</initialtrickledelay>
+<initialtrickledelay_text>Dies ist die Anzahl der Sekunden, die eine Browserverbindung wartet, bevor *etwas* gesendet wird, um sie am Leben zu halten.
+Das *etwas* h&#228;ngt vom gew&#228;hlten Download-Manager ab.[br]
+W&#228;hlen Sie keinen zu niedrigen Wert, sonst werden normale Webseiten beeintr&#228;chtigt.[br]
+Ein Wert zwischen 20 und 110 w&#228;re sinnvoll[br]
+Dies kann vom konfigurierten Download-Manager ignoriert werden.</initialtrickledelay_text>
+<intolerance>Seiten mit Bezug zu Intoleranz</intolerance>
+<ip_artica_server>Adresse dieses Servers</ip_artica_server>
+<ip_start>Start-IP</ip_start>
+<ip_to>End-IP</ip_to>
+<legaldrugs>Legale Drogen (Alkohol, Tabak)</legaldrugs>
+<liste_bu>Eine franz&#246;sische Liste f&#252;r Bildungsseiten. SEHR lokal ausgerichtet. Kann Bibliotheken helfen.</liste_bu>
+<main_rules_category_user_edit>Legen Sie hier Websites fest, die Sie blockieren m&#246;chten. Beispiel: Wenn Sie http://www.badboys.com blockieren m&#246;chten, setzen Sie &quot;badboys.com&quot;; wenn Sie eine IP-Adresse blockieren m&#246;chten, setzen Sie &quot;128.11.213.81&quot;</main_rules_category_user_edit>
+<malware>Malware (Trojaner, Viren, Spyware) und betr&#252;gerische Anti-Malware-Websites</malware>
+<marketingware>Sehr spezielle Marketing-Seiten</marketingware>
+<maxagechildren>Max. Alter der Kindprozesse</maxagechildren>
+<maxagechildren_text>Legt das maximale Alter eines Kindprozesses fest, bevor er beendet wird.[br]
+Dies ist die Anzahl der Verbindungen, die sie bearbeiten, bevor sie sich beenden.[br]
+Auf gro&#223;en Seiten m&#246;chten Sie vielleicht 10000 versuchen.</maxagechildren_text>
 <maxchildren>Sohn-Prozess Max.</maxchildren>
-<maxchildren_text>
-sets the maximum number of processes to spawn to handle the incoming connections.[br]
-Max value usually 250 depending on OS.[br]
-On large sites you might want to try 180
-</maxchildren_text>
-<maxcontentfilecachescansize>Max content file cache scan size</maxcontentfilecachescansize>
-<maxcontentfilecachescansize_text>
-This is only used if you use a content scanner plugin such as AV[br]
-This is the max size file that DG will download
-# so that it can be scanned or virus checked.[br]
-This value must be greater or equal to "Max content ram cache scan size".[br]
-The size is in Kibibytes - eg 10240 = 10Mb
-</maxcontentfilecachescansize_text>
-<maxcontentfiltersize>Max Content Filter Size</maxcontentfiltersize>
-<maxcontentfiltersize_text>
-Sometimes web servers label binary files as text which can be very large which causes a huge drain on memory and cpu resources.[br]
-To counter this, you can limit the size of the document to be filtered and get it to just pass it straight through.[br]
-This setting also applies to content regular expression modification.[br]
-The value must not be higher than "max content ram cache scan size" The size is in Kibibytes - eg 2048 = 2Mb, use 0 to set it to "max content ram cache scan size"
-</maxcontentfiltersize_text>
-<maxcontentramcachescansize>Max content ram cache scan size</maxcontentramcachescansize>
-<maxcontentramcachescansize_text>
-This is only used if you use a content scanner plugin such as AV[br]
-This is the max size of file that DG will download and cache in RAM.[br]
-After this limit is reached it will cache to disk
-[br]This value must be less than or equal to "Max Content Filter Size".[br]
-The size is in Kibibytes - eg 10240 = 10Mb, use 0 to set it to "Max Content Filter Size"
-[br]This option may be ignored by the configured download manager.
-</maxcontentramcachescansize_text>
-<maxips>Max IPs</maxips>
-<maxips_text>Sets the maximum number client IP addresses allowed to connect at once.[br]
-Use this to set a hard limit on the number of users allowed to concurrently browse the web.[br]
-Set to 0 for no limit, and to disable the IP cache process.</maxips_text>
-<maxsparechildren>Max Spare children</maxsparechildren>
-<maxsparechildren_text>Sets the maximum number of processes to have doing nothing.[br]
- When this many are spare it will cull of them.[br]
-On large sites you might want to try 64.</maxsparechildren_text>
-<maxuploadsize>Max Upload Size</maxuploadsize>
-<maxuploadsize_text>
-[b]POST protection (web upload and forms)[/b][br]
-does not block forms without any file upload, i.e. this is just for blocking or limiting uploads measured in kibibytes after MIME encoding and header bumph.
-[ul][li]use 0 for a complete block[/li][li]use higher (e.g. 512 = 512Kbytes) for limiting[/li][li]use -1 for no blocking[/li]
-[/ul]
-</maxuploadsize_text>
-<minchildren>Minimum children</minchildren>
-<minchildren_text>
-sets the minimum number of processes to spawn to handle the incoming connections.[br]
-On large sites you might want to try 32.
-</minchildren_text>
-<minsparechildren>Min processes</minsparechildren>
-<minsparechildren_text>Sets the minimum number of processes to be kept ready to handle connections.
-[br]On large sites you might want to try 8.</minsparechildren_text>
-<mixed_adult>Websites which contains adult sections unstructured</mixed_adult>
-<mobile-phone>Sites for mobile phone (rings, etc).</mobile-phone>
+<maxchildren_text>Legt die maximale Anzahl von Prozessen fest, die gestartet werden, um die eingehenden Verbindungen zu bearbeiten.[br]
+Maximalwert &#252;blicherweise 250, je nach Betriebssystem.[br]
+Auf gro&#223;en Seiten m&#246;chten Sie vielleicht 180 versuchen</maxchildren_text>
+<maxcontentfilecachescansize>Max. Scangr&#246;&#223;e f&#252;r Inhalts-Datei-Cache</maxcontentfilecachescansize>
+<maxcontentfilecachescansize_text>Dies wird nur verwendet, wenn Sie ein Content-Scanner-Plugin wie AV nutzen[br]
+Dies ist die maximale Dateigr&#246;&#223;e, die DG herunterl&#228;dt,
+# damit sie gescannt oder auf Viren gepr&#252;ft werden kann.[br]
+Dieser Wert muss gr&#246;&#223;er oder gleich &quot;Max content ram cache scan size&quot; sein.[br]
+Die Gr&#246;&#223;e wird in Kibibytes angegeben &#8211; z. B. 10240 = 10 MB</maxcontentfilecachescansize_text>
+<maxcontentfiltersize>Max. Inhaltsfiltergr&#246;&#223;e</maxcontentfiltersize>
+<maxcontentfiltersize_text>Manchmal kennzeichnen Webserver Bin&#228;rdateien als Text, was sehr gro&#223; sein kann und die Speicher- und CPU-Ressourcen stark belastet.[br]
+Um dem entgegenzuwirken, k&#246;nnen Sie die Gr&#246;&#223;e des zu filternden Dokuments begrenzen und es einfach direkt durchleiten lassen.[br]
+Diese Einstellung gilt auch f&#252;r die Modifikation von Inhalten per regul&#228;rem Ausdruck.[br]
+Der Wert darf nicht h&#246;her sein als &quot;max content ram cache scan size&quot;. Die Gr&#246;&#223;e wird in Kibibytes angegeben &#8211; z. B. 2048 = 2 MB, verwenden Sie 0, um sie auf &quot;max content ram cache scan size&quot; zu setzen</maxcontentfiltersize_text>
+<maxcontentramcachescansize>Max. Scangr&#246;&#223;e f&#252;r Inhalts-RAM-Cache</maxcontentramcachescansize>
+<maxcontentramcachescansize_text>Dies wird nur verwendet, wenn Sie ein Content-Scanner-Plugin wie AV nutzen[br]
+Dies ist die maximale Dateigr&#246;&#223;e, die DG herunterl&#228;dt und im RAM zwischenspeichert.[br]
+Nach Erreichen dieses Limits wird auf die Festplatte zwischengespeichert
+[br]Dieser Wert muss kleiner oder gleich &quot;Max Content Filter Size&quot; sein.[br]
+Die Gr&#246;&#223;e wird in Kibibytes angegeben &#8211; z. B. 10240 = 10 MB, verwenden Sie 0, um sie auf &quot;Max Content Filter Size&quot; zu setzen
+[br]Diese Option kann vom konfigurierten Download-Manager ignoriert werden.</maxcontentramcachescansize_text>
+<maxips>Max. IPs</maxips>
+<maxips_text>Legt die maximale Anzahl von Client-IP-Adressen fest, die sich gleichzeitig verbinden d&#252;rfen.[br]
+Verwenden Sie dies, um eine harte Grenze f&#252;r die Anzahl gleichzeitig surfender Benutzer festzulegen.[br]
+Auf 0 setzen f&#252;r kein Limit und um den IP-Cache-Prozess zu deaktivieren.</maxips_text>
+<maxsparechildren>Max. freie Prozesse</maxsparechildren>
+<maxsparechildren_text>Legt die maximale Anzahl von Prozessen fest, die nichts tun.[br]
+ Wenn so viele frei sind, werden einige davon entfernt.[br]
+Auf gro&#223;en Seiten m&#246;chten Sie vielleicht 64 versuchen.</maxsparechildren_text>
+<maxuploadsize>Maximale Upload-Gr&#246;&#223;e</maxuploadsize>
+<maxuploadsize_text>[b]POST-Schutz (Web-Upload und Formulare)[/b][br]
+blockiert keine Formulare ohne Datei-Upload, d. h. dies dient nur zum Blockieren oder Begrenzen von Uploads, gemessen in Kibibytes nach MIME-Kodierung und Header-Overhead.
+[ul][li]0 f&#252;r eine vollst&#228;ndige Blockierung verwenden[/li][li]h&#246;here Werte (z. B. 512 = 512 KByte) zur Begrenzung verwenden[/li][li]-1 f&#252;r keine Blockierung verwenden[/li]
+[/ul]</maxuploadsize_text>
+<minchildren>Minimale Kindprozesse</minchildren>
+<minchildren_text>Legt die minimale Anzahl von Prozessen fest, die gestartet werden, um die eingehenden Verbindungen zu bearbeiten.[br]
+Auf gro&#223;en Seiten m&#246;chten Sie vielleicht 32 versuchen.</minchildren_text>
+<minsparechildren>Min. freie Prozesse</minsparechildren>
+<minsparechildren_text>Legt die minimale Anzahl von Prozessen fest, die bereitgehalten werden, um Verbindungen zu bearbeiten.
+[br]Auf gro&#223;en Seiten m&#246;chten Sie vielleicht 8 versuchen.</minsparechildren_text>
+<mixed_adult>Websites, die unstrukturierte Bereiche f&#252;r Erwachsene enthalten</mixed_adult>
+<mobile-phone>Seiten f&#252;r Mobiltelefone (Klingelt&#246;ne usw.).</mobile-phone>
 <music>Sites zum Musik%C3%B6kosystem, z. B. zum Herunterladen von Musikdateien, Sites zur Musikausbildung, zur Kultur und Geschichte der Musik, zur F%C3%B6rderung von Musikwerken</music>
-<naughtynesslimit>Naughtiness limit</naughtynesslimit>
-<naughtynesslimit_text>
-This the limit over which the page will be blocked.[br]
-Each weighted phrase is given a value either positive or negative and the values added up.[br]
-Phrases to do with good subjects will have negative values, and bad subjects will have positive values. [br]
-See the weighted phrase list section for examples.[br]
-[b]As a guide:[/b]50 is for young children,  100 for old children,  160 for young adults.
-</naughtynesslimit_text>
-<news>news sites</news>
-<nudism>Nudism</nudism>
-<peer2peer>Peer to Peer websites</peer2peer>
-<performances>Performances</performances>
-<performances_text>Set daemon settings according your server performances</performances_text>
-<personals>Couples,dateing,personals related sites</personals>
-<phishing>Phishing sites</phishing>
-<phrasefiltermode>Phrase Filter mode</phrasefiltermode>
-<phrasefiltermode_0>raw only</phrasefiltermode_0>
-<phrasefiltermode_1>smart only</phrasefiltermode_1>
-<phrasefiltermode_2>both of the above</phrasefiltermode_2>
-<phrasefiltermode_3>meta/title</phrasefiltermode_3>
-<phrasefiltermode_text>[b]Smart, Raw and Meta/Title phrase content filtering options[/b][br]
-Smart is where the multiple spaces and HTML are removed before phrase filtering[br]
-Raw is where the raw HTML including meta tags are phrase filtered
-[br]Meta/Title is where only meta and title tags are phrase filtered (v. quick)</phrasefiltermode_text>
+<naughtynesslimit>Naughtiness-Grenze</naughtynesslimit>
+<naughtynesslimit_text>Dies ist die Grenze, ab der die Seite blockiert wird.[br]
+Jeder gewichteten Phrase wird ein Wert (positiv oder negativ) zugewiesen und die Werte werden aufsummiert.[br]
+Phrasen zu guten Themen haben negative Werte, schlechte Themen positive Werte. [br]
+Beispiele finden Sie im Abschnitt zur Liste gewichteter Phrasen.[br]
+[b]Als Richtwert:[/b] 50 f&#252;r kleine Kinder, 100 f&#252;r &#228;ltere Kinder, 160 f&#252;r junge Erwachsene.</naughtynesslimit_text>
+<news>Nachrichtenseiten</news>
+<nudism>Nudismus</nudism>
+<peer2peer>Peer-to-Peer-Websites</peer2peer>
+<performances>Leistung</performances>
+<performances_text>Daemon-Einstellungen entsprechend der Leistung Ihres Servers festlegen</performances_text>
+<personals>Seiten zu Paaren, Dating und Kontaktanzeigen</personals>
+<phishing>Phishing-Seiten</phishing>
+<phrasefiltermode>Phrasenfilter-Modus</phrasefiltermode>
+<phrasefiltermode_0>nur Raw</phrasefiltermode_0>
+<phrasefiltermode_1>nur Smart</phrasefiltermode_1>
+<phrasefiltermode_2>beide der oben genannten</phrasefiltermode_2>
+<phrasefiltermode_3>Meta/Title</phrasefiltermode_3>
+<phrasefiltermode_text>[b]Optionen f&#252;r Inhaltsfilterung von Phrasen: Smart, Raw und Meta/Title[/b][br]
+Smart bedeutet, dass mehrfache Leerzeichen und HTML vor der Phrasenfilterung entfernt werden[br]
+Raw bedeutet, dass das rohe HTML einschlie&#223;lich Meta-Tags phrasengefiltert wird
+[br]Meta/Title bedeutet, dass nur Meta- und Title-Tags phrasengefiltert werden (sehr schnell)</phrasefiltermode_text>
 <pornography>Pornografie</pornography>
-<preforkchildren>Prefork children</preforkchildren>
-<preforkchildren_text>Sets the minimum number of processes to spawn when it runs out
-On large sites you might want to try 10.</preforkchildren_text>
-<preservecase>Lower casing options</preservecase>
-<preservecase_0>force lower case (default)</preservecase_0>
-<preservecase_1>do not change case</preservecase_1>
-<preservecase_2>scan first in lower case, then in original case</preservecase_2>
-<preservecase_text>When a document is scanned the uppercase letters are converted to lower case in order to compare them with the phrases.[br]
-However this can break Big5 and other 16-bit texts.[br]
-If needed preserve the case. </preservecase_text>
-<proxies>Proxy services (phproxy,cgiproxy,lists of proxies)</proxies>
+<preforkchildren>Prefork-Kindprozesse</preforkchildren>
+<preforkchildren_text>Legt die minimale Anzahl der zu startenden Prozesse fest, wenn sie aufgebraucht sind
+Auf gro&#223;en Seiten m&#246;chten Sie vielleicht 10 versuchen.</preforkchildren_text>
+<preservecase>Optionen f&#252;r Kleinschreibung</preservecase>
+<preservecase_0>Kleinschreibung erzwingen (Standard)</preservecase_0>
+<preservecase_1>Gro&#223;-/Kleinschreibung nicht &#228;ndern</preservecase_1>
+<preservecase_2>zuerst in Kleinbuchstaben scannen, dann in der Originalschreibweise</preservecase_2>
+<preservecase_text>Wenn ein Dokument gescannt wird, werden die Gro&#223;buchstaben in Kleinbuchstaben umgewandelt, um sie mit den Phrasen zu vergleichen.[br]
+Dies kann jedoch Big5 und andere 16-Bit-Texte besch&#228;digen.[br]
+Falls erforderlich, die Gro&#223;-/Kleinschreibung beibehalten.</preservecase_text>
+<proxies>Proxy-Dienste (phproxy, cgiproxy, Proxy-Listen)</proxies>
 <publicite>Anzeige.</publicite>
-<radio>Internet radio sites</radio>
+<radio>Internetradio-Seiten</radio>
 <reaffected>Websites, die umgewidmet wurden, nicht mehr verf%C3%BCgbar sind oder noch online sind, deren Inhalte aber geleert wurden und den Providern als Werbung dienen.</reaffected>
-<redirector>redirector sites, which are used to circumvent filtering.</redirector>
-<restrictions>Restrictions</restrictions>
-<reverseaddresslookups>Reverse address lookups</reverseaddresslookups>
-<reverseaddresslookups_text>[b]Reverse lookups for banned site and URLs.[/b][br]
-If set to on, DansGuardian will look up the forward DNS for an IP URL address and search for both in the banned site and URL lists.
-[br]This would prevent a user from simply entering the IP for a banned address.[br]
-It will reduce searching speed somewhat so unless you have a local caching DNS server, leave it off and use the Blanket IP Block option in the bannedsitelist file instead.</reverseaddresslookups_text>
-<rta>Restricted To Adults</rta>
-<rules_text>Define web filtering rules.[br]This rules will be applied to user's scope</rules_text>
-<rule_behavior>Rule behavior</rule_behavior>
-<safelabel>Safe Labels</safelabel>
-<scancleancache>Scan clean cache</scancleancache>
-<scancleancache_text>Clean cache for content (AV) scan results[br]
-By default, to save CPU, files scanned and found to be clean are inserted into the clean cache and NOT scanned again for a while.[br]
-If you don't like this then choose to disable it.</scancleancache_text>
-<secretsocieties>Secret societies, lodges and fraternal organizations</secretsocieties>
-<sect>Sect</sect>
-<select_ip_family>Select the IP model</select_ip_family>
-<select_rule>Select rule</select_rule>
+<redirector>Redirector-Seiten, die zur Umgehung der Filterung verwendet werden.</redirector>
+<restrictions>Einschr&#228;nkungen</restrictions>
+<reverseaddresslookups>Reverse-Adress-Lookups</reverseaddresslookups>
+<reverseaddresslookups_text>[b]Reverse-Lookups f&#252;r gesperrte Seiten und URLs.[/b][br]
+Wenn aktiviert, schl&#228;gt DansGuardian das Forward-DNS f&#252;r eine IP-URL-Adresse nach und sucht beide in den Listen der gesperrten Seiten und URLs.
+[br]Dies w&#252;rde verhindern, dass ein Benutzer einfach die IP f&#252;r eine gesperrte Adresse eingibt.[br]
+Es verringert die Suchgeschwindigkeit etwas; lassen Sie es daher deaktiviert, sofern Sie keinen lokalen Caching-DNS-Server haben, und verwenden Sie stattdessen die Option Blanket IP Block in der Datei bannedsitelist.</reverseaddresslookups_text>
+<rta>Auf Erwachsene beschr&#228;nkt</rta>
+<rules_text>Web-Filterregeln definieren.[br]Diese Regeln werden auf den Geltungsbereich des Benutzers angewendet</rules_text>
+<rule_behavior>Regelverhalten</rule_behavior>
+<safelabel>Sichere Labels</safelabel>
+<scancleancache>Sauberen Scan-Cache</scancleancache>
+<scancleancache_text>Cache f&#252;r Inhalts-Scan-Ergebnisse (AV) leeren[br]
+Um CPU zu sparen, werden gescannte und als sauber befundene Dateien standardm&#228;&#223;ig in den Clean-Cache eingef&#252;gt und eine Zeit lang NICHT erneut gescannt.[br]
+Wenn Ihnen das nicht gef&#228;llt, k&#246;nnen Sie es deaktivieren.</scancleancache_text>
+<secretsocieties>Geheimgesellschaften, Logen und br&#252;derliche Organisationen</secretsocieties>
+<sect>Sekte</sect>
+<select_ip_family>Das IP-Modell ausw&#228;hlen</select_ip_family>
+<select_rule>Regel ausw&#228;hlen</select_rule>
 <sexual_education>Websites, die %C3%BCber sexuelle Aufkl%C3%A4rung sprechen und als Pornos missverstanden werden k%C3%B6nnen</sexual_education>
-<shopping>Any shopping, selling center</shopping>
-<showweightedfound>Show weighted phrases found</showweightedfound>
-<showweightedfound_text>If enabled then the phrases found that made up the total which excedes the naughtyness limit will be logged and, if the reporting level is
-high enough,reported</showweightedfound_text>
-<sport>Sports related sites</sport>
-<strict_redirector>Same as redirector, but with google, yahoo, and other cache/images search robots.</strict_redirector>
-<strong_redirector>Same as strict_redirector, but, for google, yahoo, we are only blocking terms.</strong_redirector>
-<template_explain>The HTML Template File is the most common way of delivering a blocked page message to a user.[br]
-It delivers a blocked page message quickly and cleanly to all web browsers, and does almost nothing else.[br]
-It's just regular HTML; there's no special syntax.[br] You can edit it with any text editor.</template_explain>
-<template_label>Modifying the HTML Template</template_label>
-<translation>Translation services</translation>
-<travel>Travel & Vacation sites</travel>
-<tricheur>Sites which are designed to explains cheating on exams.</tricheur>
-<trickledelay>Trickle Delay</trickledelay>
-<trickledelay_text>
-This is the number of seconds a browser connection is left waiting before being sent more *something* to keep it alive.
-The *something* depends on the download manager chosen.[br]
-This may be ignored by the configured download manager.
-</trickledelay_text>
-<upstreamfilter>Convert upstream filter blocking pages to DansGuardian block pages</upstreamfilter>
-<urlcacheage>URL cache age</urlcacheage>
-<urlcacheage_text>Age before they are stale and should be ignored in seconds[br]
-0 = never, 900 = recommended = 15 mins</urlcacheage_text>
-<urlcachenumber>URL Cache number</urlcachenumber>
-<urlcachenumber_text>Positive (clean) result caching for URLs[br]
-Caches good pages so they don't need to be scanned again.[br]
-[br]It also works with AV plugins.
-[ul][li]0 = off (recommended for ISPs with users with disimilar browsing)[/li]
-[li]1000 = recommended for most users[/li]
-[li]5000 = suggested max upper limit[/li]
-[li]If you're using an AV plugin then use at least 5000.[/li]
+<shopping>Jegliches Einkaufs- oder Verkaufszentrum</shopping>
+<showweightedfound>Gefundene gewichtete Phrasen anzeigen</showweightedfound>
+<showweightedfound_text>Wenn aktiviert, werden die gefundenen Phrasen, die die Summe oberhalb der Naughtyness-Grenze ergeben haben, protokolliert und, wenn die Berichtsstufe hoch genug ist, gemeldet</showweightedfound_text>
+<sport>Sportbezogene Seiten</sport>
+<strict_redirector>Wie redirector, aber mit Google, Yahoo und anderen Cache-/Bildsuchrobotern.</strict_redirector>
+<strong_redirector>Wie strict_redirector, aber f&#252;r Google, Yahoo blockieren wir nur Begriffe.</strong_redirector>
+<template_explain>Die HTML-Vorlagendatei ist die h&#228;ufigste Methode, um einem Benutzer eine Meldung &#252;ber eine blockierte Seite zu &#252;bermitteln.[br]
+Sie &#252;bermittelt eine Meldung &#252;ber eine blockierte Seite schnell und sauber an alle Webbrowser und tut sonst fast nichts.[br]
+Es ist einfach regul&#228;res HTML; es gibt keine spezielle Syntax.[br] Sie k&#246;nnen sie mit jedem Texteditor bearbeiten.</template_explain>
+<template_label>HTML-Vorlage &#228;ndern</template_label>
+<translation>&#220;bersetzungsdienste</translation>
+<travel>Reise- &amp; Urlaubsseiten</travel>
+<tricheur>Seiten, die das Schummeln bei Pr&#252;fungen erkl&#228;ren.</tricheur>
+<trickledelay>Trickle-Verz&#246;gerung</trickledelay>
+<trickledelay_text>Dies ist die Anzahl der Sekunden, die eine Browserverbindung wartet, bevor *etwas* gesendet wird, um sie am Leben zu halten.
+Das *etwas* h&#228;ngt vom gew&#228;hlten Download-Manager ab.[br]
+Dies kann vom konfigurierten Download-Manager ignoriert werden.</trickledelay_text>
+<upstreamfilter>Blockierseiten des Upstream-Filters in DansGuardian-Blockseiten umwandeln</upstreamfilter>
+<urlcacheage>URL-Cache-Alter</urlcacheage>
+<urlcacheage_text>Alter, bevor sie veraltet sind und ignoriert werden sollten, in Sekunden[br]
+0 = nie, 900 = empfohlen = 15 Minuten</urlcacheage_text>
+<urlcachenumber>URL-Cache-Anzahl</urlcachenumber>
+<urlcachenumber_text>Caching positiver (sauberer) Ergebnisse f&#252;r URLs[br]
+Speichert gute Seiten zwischen, damit sie nicht erneut gescannt werden m&#252;ssen.[br]
+[br]Funktioniert auch mit AV-Plugins.
+[ul][li]0 = aus (empfohlen f&#252;r ISPs mit Benutzern mit unterschiedlichem Surfverhalten)[/li]
+[li]1000 = f&#252;r die meisten Benutzer empfohlen[/li]
+[li]5000 = vorgeschlagene maximale Obergrenze[/li]
+[li]Wenn Sie ein AV-Plugin verwenden, dann mindestens 5000.[/li]
 [/ul]</urlcachenumber_text>
-<url_rules>URL/Domains rules</url_rules>
-<violence>Violence related sites</violence>
-<warez>Warez sites.</warez>
-<warezhacking>Warez & hacking related sites</warezhacking>
-<weapons>Weapons related sites</weapons>
-<webiste>Internet web site</webiste>
-<webmail>Webmail sites (hotmail like...)</webmail>
+<url_rules>URL-/Dom&#228;nen-Regeln</url_rules>
+<violence>Seiten mit Bezug zu Gewalt</violence>
+<warez>Warez-Seiten.</warez>
+<warezhacking>Warez- &amp; Hacking-bezogene Seiten</warezhacking>
+<weapons>Waffenbezogene Seiten</weapons>
+<webiste>Internet-Website</webiste>
+<webmail>Webmail-Seiten (wie Hotmail...)</webmail>
 <website>Internetauftritt</website>
-<weightedphraselist>Weighted phrase list</weightedphraselist>
-<weightedphraselist_explain>It contains a list of phrases with a corresponding positive or negative value.[br]
-As phrases are encountered in a page, the total "value" of the page will be calculated based on these values;[br]
-Good phrases will have negative values and bad phrases will have positive values.[br]
-One the Naughtyness Limit has been reached (defined in global settings, the page will be blocked).
-</weightedphraselist_explain>
-<weightedphraselist_text>list of phrases with a corresponding positive or negative value.
-Phrases detected in a page...</weightedphraselist_text>
-<weightedphrasemode>Weighted phrase mode</weightedphrasemode>
-<weightedphrasemode_0>Do not use the weighted phrase feature</weightedphrasemode_0>
-<weightedphrasemode_1>Normal weighted phrase operation.</weightedphrasemode_1>
-<weightedphrasemode_2>Each weighted phrase found only counts once on a page</weightedphrasemode_2>
-<weighted_phrases_list_explain>
-Phrases you add will be assigned a point score and will be combined by DansGuardian to assign a total score for the web page being accessed.[br]
-The total score required for DansGuardian to block the page is configured in global settings or in each rule settings.[br]
-This system allows pages to be blocked much more accurately.[br]
-[b]For example a web site containing the phrases sex and education would be allowed through the filter because the phrase education would be assigned a negative score 
-to cancel out the score caused by the phrase sex.[/b][br]
-In the field you can set one word eg "slut" and a score: 10 for example.[br]
-You can set a rule that force to match [b]several words[/b] for one score.[br] If you set slut,horny and score to 50,means you Add 50 to the count when the strings 'slut' and 'horny' are found on the same page
-
-</weighted_phrases_list_explain>
-<white_ip_group>Computers White list</white_ip_group>
-<white_ip_group_text>Allow computers to pass trough all rules without any content filtering</white_ip_group_text>
-<your_category>Your category</your_category>
+<weightedphraselist>Liste gewichteter Phrasen</weightedphraselist>
+<weightedphraselist_explain>Sie enth&#228;lt eine Liste von Phrasen mit einem entsprechenden positiven oder negativen Wert.[br]
+Wenn Phrasen auf einer Seite vorkommen, wird der Gesamt-&quot;Wert&quot; der Seite anhand dieser Werte berechnet;[br]
+Gute Phrasen haben negative Werte und schlechte Phrasen positive Werte.[br]
+Sobald die Naughtyness-Grenze erreicht ist (in den globalen Einstellungen definiert), wird die Seite blockiert.</weightedphraselist_explain>
+<weightedphraselist_text>Liste von Phrasen mit einem entsprechenden positiven oder negativen Wert.
+In einer Seite erkannte Phrasen...</weightedphraselist_text>
+<weightedphrasemode>Modus f&#252;r gewichtete Phrasen</weightedphrasemode>
+<weightedphrasemode_0>Die Funktion f&#252;r gewichtete Phrasen nicht verwenden</weightedphrasemode_0>
+<weightedphrasemode_1>Normaler Betrieb der gewichteten Phrasen.</weightedphrasemode_1>
+<weightedphrasemode_2>Jede gefundene gewichtete Phrase z&#228;hlt nur einmal pro Seite</weightedphrasemode_2>
+<weighted_phrases_list_explain>Die von Ihnen hinzugef&#252;gten Phrasen erhalten eine Punktzahl und werden von DansGuardian kombiniert, um eine Gesamtpunktzahl f&#252;r die aufgerufene Webseite zu ermitteln.[br]
+Die f&#252;r DansGuardian erforderliche Gesamtpunktzahl zum Blockieren der Seite wird in den globalen Einstellungen oder in den Einstellungen jeder Regel konfiguriert.[br]
+Dieses System erm&#246;glicht eine wesentlich pr&#228;zisere Blockierung von Seiten.[br]
+[b]Beispielsweise w&#252;rde eine Website, die die Phrasen sex und education enth&#228;lt, den Filter passieren, weil der Phrase education eine negative Punktzahl zugewiesen w&#252;rde, um die durch die Phrase sex verursachte Punktzahl auszugleichen.[/b][br]
+Im Feld k&#246;nnen Sie ein Wort z. B. &quot;slut&quot; und eine Punktzahl festlegen: zum Beispiel 10.[br]
+Sie k&#246;nnen eine Regel festlegen, die das &#220;bereinstimmen [b]mehrerer W&#246;rter[/b] f&#252;r eine Punktzahl erzwingt.[br] Wenn Sie slut,horny und die Punktzahl auf 50 setzen, bedeutet das, dass Sie 50 zum Z&#228;hler addieren, wenn die Zeichenfolgen 'slut' und 'horny' auf derselben Seite gefunden werden</weighted_phrases_list_explain>
+<white_ip_group>Computer-Whitelist</white_ip_group>
+<white_ip_group_text>Computern erlauben, alle Regeln ohne jegliche Inhaltsfilterung zu durchlaufen</white_ip_group_text>
+<your_category>Ihre Kategorie</your_category>

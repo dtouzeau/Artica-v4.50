@@ -6,7 +6,6 @@ if(isset($_GET["uninstall-js"])){uninstall_js();exit;}
 if(isset($_POST["unstall-confirm"])){uninstall_confirm();exit;}
 if(isset($_GET["flat-config"])){flat_config();exit;}
 if(isset($_GET["suricata-top"])){top_widgets();exit;}
-if(isset($_POST["SnortRulesCode"])){Save_gen();exit;}
 if(isset($_GET["suricata-status"])){suricata_status();exit;}
 if(isset($_GET["main"])){main();exit;}
 if(isset($_GET["pf-ring-infos"])){pf_ring_infos();exit;}

@@ -3,6 +3,20 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.greensql.inc");
+// Pentest 2026-11-04 E-03/E-06 : noms de table et identifiants venaient du
+// client sans controle (lecture et UPDATE d'une table arbitraire).
+$users=new usersMenus(); if(!$users->AsSquidAdministrator && !$users->AsFirewallManager){exit();}
+function greensql_table($v):string{
+    $v=strval($v);
+    return in_array($v,array("mysql_rules","pgsql_rules"),true) ? $v : "";
+}
+if(isset($_GET["tbl"])){$_GET["tbl"]=greensql_table($_GET["tbl"]);}
+if(isset($_GET["table"])){$_GET["table"]=greensql_table($_GET["table"]);}
+if(isset($_POST["table"])){$_POST["table"]=greensql_table($_POST["table"]);}
+foreach(array("enable","rule-popup","rule-js","delete") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
+if(isset($_POST["ID"])){$_POST["ID"]=intval($_POST["ID"]);}
+// Pentest 2026-11-04 : table-start etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["table-start"])){$_GET["table-start"]=greensql_table($_GET["table-start"]);}
 
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -26,11 +40,13 @@ function rule_js(){
 	$DBTYPES["pgsql_rules"]="PostgreSQL";
 	$zcommand=$_GET["zcommand"];
 	
-	$title="{$DBTYPES[$table]}: {new_rule} $zcommand";
+	// Pentest 2026-11-04 : zcommand etait recopie sans encodage dans la page (XSS).
+	$zcommandHtml=req_html(req_html($zcommand)); // titre de fenetre : javascript_parse_text() decode une fois les entites
+	$title="{$DBTYPES[$table]}: {new_rule} $zcommandHtml";
 	if($ID>0){
 		$q=new lib_sqlite("/home/artica/SQLITE/greensql.db");
 		$ligne=$q->mysqli_fetch_array("SELECT * FROM $table WHERE ID='$ID'");
-		$title="{$DBTYPES[$table]}:$zcommand {rule} $ID {$ligne["pattern"]}";
+		$title="{$DBTYPES[$table]}:$zcommandHtml {rule} $ID {$ligne["pattern"]}";
 	}
 	
 	$tpl->js_dialog2($title, "$page?rule-popup=$ID&tbl=$table&zcommand=".urlencode($zcommand));
@@ -80,11 +96,13 @@ function rule_delete(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	if(!preg_match("#^(.+?):([0-9]+)#",$_POST["delete"],$re)){
-		echo "{$_POST["delete"]} No such right pattern...";
+		// Pentest 2026-11-04 : delete etait recopie sans encodage dans la page (XSS).
+		echo req_html($_POST["delete"])." No such right pattern...";
 	}
 	
-	$table=$re[1];
+	$table=greensql_table($re[1]);
 	$ID=intval($re[2]);
+	if($table==""){return;}
 	
 	$q=new lib_sqlite("/home/artica/SQLITE/greensql.db");
 	$q->QUERY_SQL("DELETE FROM $table WHERE ID=$ID");
@@ -112,7 +130,9 @@ function rule_popup(){
 	$fBTNS["True Constants"]="true constants";
 	$fBTNS["Brute Force"]="bruteforce functions";
 	$zcommand=$_GET["zcommand"];
-	$title="{$DBTYPES["$table"]}: {new_rule}: $zcommand";
+	// Pentest 2026-11-04 : zcommand etait recopie sans encodage dans la page (XSS).
+	$zcommandHtml=req_html($zcommand);
+	$title="{$DBTYPES["$table"]}: {new_rule}: $zcommandHtml";
 	
 	$refresh="LoadAjax('table-greensql-tablestart','$page?table=$table&zcommand=".urlencode($zcommand)."');";
 	
@@ -123,7 +143,7 @@ function rule_popup(){
 	if($ID>0){
 		$q=new lib_sqlite("/home/artica/SQLITE/greensql.db");
 		$ligne=$q->mysqli_fetch_array("SELECT * FROM `$table` WHERE ID='$ID'");
-		$title="{$DBTYPES[$table]}: $zcommand {rule} $ID";
+		$title="{$DBTYPES[$table]}: $zcommandHtml {rule} $ID";
 		$btn="{apply}";
 		$js=null;
 	}
@@ -284,7 +304,8 @@ function table(){
 	
 	
 	
-	$results=$q->QUERY_SQL("SELECT * FROM `{$_GET["table"]}` WHERE zcommand='{$_GET["zcommand"]}' ORDER BY pattern");
+	if($_GET["table"]==""){return;}
+	$results=$q->QUERY_SQL_PARAMS("SELECT * FROM `{$_GET["table"]}` WHERE zcommand=? ORDER BY pattern",array(strval($_GET["zcommand"])));
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
 	
 	$TRCLASS=null;

@@ -1,82 +1,82 @@
 <accounts>Sus cuentas</accounts>
-<ACTION_PROBABLE_MODE>When found probable SPAM or Virus</ACTION_PROBABLE_MODE>
-<ACTION_PROBABLE_MODE_SUBJECT>if pass, SPAM prepend subject with</ACTION_PROBABLE_MODE_SUBJECT>
-<ACTION_SPAM_MODE>When found a spam or a virus</ACTION_SPAM_MODE>
-<ACTION_SPAM_SUBJECT>if pass, for SPAM prepend subject width</ACTION_SPAM_SUBJECT>
+<ACTION_PROBABLE_MODE>Cuando se encuentra probable SPAM o virus</ACTION_PROBABLE_MODE>
+<ACTION_PROBABLE_MODE_SUBJECT>si pasa, para SPAM anteponer al asunto con</ACTION_PROBABLE_MODE_SUBJECT>
+<ACTION_SPAM_MODE>Cuando se encuentra spam o virus</ACTION_SPAM_MODE>
+<ACTION_SPAM_SUBJECT>si pasa, para SPAM anteponer al asunto</ACTION_SPAM_SUBJECT>
 <APP_AMAVISD_NEW_TEXT>Configure el filtro de correo Anti-spam/Antivirus</APP_AMAVISD_NEW_TEXT>
-<APP_OPENVPN_TEXT>Configure Virtual Private Network to access to your network</APP_OPENVPN_TEXT>
-<APP_ROUNDCUBE_TEXT>Configure & administrate RoundCube webMail settings</APP_ROUNDCUBE_TEXT>
-<artica_performances>Artica performances</artica_performances>
-<artica_performances_text>Personalize some parameters to reduce or increase performances modules</artica_performances_text>
+<APP_OPENVPN_TEXT>Configurar la red privada virtual para acceder a su red</APP_OPENVPN_TEXT>
+<APP_ROUNDCUBE_TEXT>Configurar y administrar la configuraci&#243;n de RoundCube webMail</APP_ROUNDCUBE_TEXT>
+<artica_performances>Rendimiento de Artica</artica_performances>
+<artica_performances_text>Personalizar algunos par&#225;metros para reducir o aumentar el rendimiento de los m&#243;dulos</artica_performances_text>
 <build>Construya</build>
-<building_kaspersky>Building Kaspersky plugins....</building_kaspersky>
+<building_kaspersky>Construyendo plugins de Kaspersky....</building_kaspersky>
 <clamav_av>Antivirus ClamAV</clamav_av>
-<clamav_av_text>Get status of your Open Source antivirus</clamav_av_text>
-<disable_startup>Disable automatically loading this section</disable_startup>
+<clamav_av_text>Obtener el estado de su antivirus de c&#243;digo abierto</clamav_av_text>
+<disable_startup>Desactivar la carga autom&#225;tica de esta secci&#243;n</disable_startup>
 <distri>Distribuci&oacute;n</distri>
 <domain_controler>Controlador de Dominio</domain_controler>
-<domain_controler_text>Make this server has a domain controler in order to serve MS Windows workstations</domain_controler_text>
-<enable_kaspersky>Enable Kaspersky Plugins</enable_kaspersky>
-<enable_kaspersky_antispam>Enable Kaspersky Anti-Spam on this server</enable_kaspersky_antispam>
-<enable_kaspersky_antivirus>Enable Kaspersky Anti-virus on this server</enable_kaspersky_antivirus>
-<enable_kaspersky_text>Enable disable Kaspersky Anti-spam and/or Kaspersky Antivirus plugins on your server</enable_kaspersky_text>
-<failed_fetchmail>Unable to compile these rules, please investigate if you have fill all fields or use the Artica Form on www.artica.fr to create a support ticket</failed_fetchmail>
-<first_settings>First Settings</first_settings>
-<first_settings_text>You have just installed artica, start here in order to create first settings...</first_settings_text>
-<install_applis>Artica applications</install_applis>
+<domain_controler_text>Hacer que este servidor sea un controlador de dominio para servir a las estaciones de trabajo MS Windows</domain_controler_text>
+<enable_kaspersky>Activar los plugins de Kaspersky</enable_kaspersky>
+<enable_kaspersky_antispam>Activar Kaspersky Anti-Spam en este servidor</enable_kaspersky_antispam>
+<enable_kaspersky_antivirus>Activar Kaspersky Anti-virus en este servidor</enable_kaspersky_antivirus>
+<enable_kaspersky_text>Activar o desactivar los plugins Kaspersky Anti-spam y/o Kaspersky Antivirus en su servidor</enable_kaspersky_text>
+<failed_fetchmail>No se pueden compilar estas reglas, compruebe si ha rellenado todos los campos o use el formulario de Artica en www.artica.fr para crear un ticket de soporte</failed_fetchmail>
+<first_settings>Primeros ajustes</first_settings>
+<first_settings_text>Acaba de instalar artica, comience aqu&#237; para crear los primeros ajustes...</first_settings_text>
+<install_applis>Aplicaciones de Artica</install_applis>
 <install_applis_text>Actualice su sistema Artica e instale nuevos servicios Artica en su sistema</install_applis_text>
 <isp_account>Su nombre de usuario ISP</isp_account>
 <isp_address_mail>Su direcci&oacute;n de correo ISP</isp_address_mail>
 <isp_password>Su contrase&ntilde;a ISP</isp_password>
-<isp_pop3_server>Your POP/IMAP ISP mail server address</isp_pop3_server>
-<isp_smtp_server>Your ISP SMTP server</isp_smtp_server>
-<kaspersky_av_text>Get status of Kaspersky antivirus products</kaspersky_av_text>
-<local_account>Account on Artica</local_account>
+<isp_pop3_server>Direcci&#243;n de su servidor de correo POP/IMAP del ISP</isp_pop3_server>
+<isp_smtp_server>Su servidor SMTP del ISP</isp_smtp_server>
+<kaspersky_av_text>Obtener el estado de los productos antivirus de Kaspersky</kaspersky_av_text>
+<local_account>Cuenta en Artica</local_account>
 <local_email>Su direcci&oacute;n de correo local</local_email>
 <local_mail>Direcci&oacute;n de correo local</local_mail>
 <local_password>Su contrase&ntilde;a local</local_password>
 <manage_backups>Configure sus copias de respaldo</manage_backups>
-<manage_backups_text>Prevent loosing datas and set your backup datas process</manage_backups_text>
+<manage_backups_text>Evitar la p&#233;rdida de datos y configurar su proceso de copia de seguridad de datos</manage_backups_text>
 <manage_services>Administrar servicios del sistema</manage_services>
-<manage_services_text>See all services status and versions and perform start/stop operations</manage_services_text>
-<messaging_text>Set your messaging system and configure your Postfix</messaging_text>
+<manage_services_text>Ver el estado y las versiones de todos los servicios y realizar operaciones de inicio/parada</manage_services_text>
+<messaging_text>Configurar su sistema de mensajer&#237;a y configurar su Postfix</messaging_text>
 <nfs_share>Directorios compartidos NFS</nfs_share>
-<nfs_share_text>Share folder using the NFS Linux (Network File System) protocol</nfs_share_text>
+<nfs_share_text>Compartir carpeta usando el protocolo NFS de Linux (Network File System)</nfs_share_text>
 <nic_settings>Configuraci&oacute;n de red</nic_settings>
-<nic_settings_text>Set your IP configuration</nic_settings_text>
-<play_with_isp>Play with your ISP</play_with_isp>
-<play_with_isp_text>Use this server has a real mail server between you and your ISP  (aol,free,yahoo..)...</play_with_isp_text>
-<postfix_plugins_text>Enable and disable services that hook Postfix routing mail</postfix_plugins_text>
+<nic_settings_text>Establecer su configuraci&#243;n IP</nic_settings_text>
+<play_with_isp>Trabajar con su ISP</play_with_isp>
+<play_with_isp_text>Usar este servidor como un servidor de correo real entre usted y su ISP (aol, free, yahoo...)...</play_with_isp_text>
+<postfix_plugins_text>Activar y desactivar los servicios que se enganchan al enrutamiento de correo de Postfix</postfix_plugins_text>
 <postfix_smtp_reports>Reportes de correo</postfix_smtp_reports>
-<postfix_smtp_reports_text>Receive emails reports of an over-view of postfix activity during the day</postfix_smtp_reports_text>
-<postmaster>Postmaster mailbox</postmaster>
-<postmaster_explain>Set here the email address of the user that will receive server notifications :</postmaster_explain>
-<postmaster_text>Define here user that will be receive administrator's notifications</postmaster_text>
-<relay>relay</relay>
-<relay_mail>Is the domain of your local address is stored on this server ? If yes leave the field blank, if no set the real mail server address that store the local adress mailbox</relay_mail>
+<postfix_smtp_reports_text>Recibir informes por correo con una visi&#243;n general de la actividad de postfix durante el d&#237;a</postfix_smtp_reports_text>
+<postmaster>Buz&#243;n de postmaster</postmaster>
+<postmaster_explain>Establezca aqu&#237; la direcci&#243;n de correo del usuario que recibir&#225; las notificaciones del servidor:</postmaster_explain>
+<postmaster_text>Defina aqu&#237; el usuario que recibir&#225; las notificaciones del administrador</postmaster_text>
+<relay>rel&#233;</relay>
+<relay_mail>&#191;El dominio de su direcci&#243;n local est&#225; almacenado en este servidor? Si es as&#237;, deje el campo en blanco; si no, establezca la direcci&#243;n real del servidor de correo que almacena el buz&#243;n de la direcci&#243;n local</relay_mail>
 <relay_server>Servidor smtp remoto</relay_server>
 <remote_account>Su cuenta ISP</remote_account>
-<repository_manager>Install and maintain</repository_manager>
-<repository_manager_text>Install repositories applications and modules by your repository manager</repository_manager_text>
+<repository_manager>Instalar y mantener</repository_manager>
+<repository_manager_text>Instalar aplicaciones y m&#243;dulos de repositorios mediante su gestor de repositorios</repository_manager_text>
 <samba_audit>Ver estad&iacute;sticas de Samba</samba_audit>
-<samba_audit_text>Get events of your share directories and perform analysis</samba_audit_text>
+<samba_audit_text>Obtener eventos de sus directorios compartidos y realizar an&#225;lisis</samba_audit_text>
 <section_security_text>Configuraci&oacute;n de Antivirus y copias de seguridad</section_security_text>
 <security>Seguridad</security>
-<send_auth>ISP Sent mail authentification</send_auth>
-<send_auth_text>Did your ISP request authentification for sending mail ? if yes set the account and password in order to help postfix authenticate to your ISP SMTP mail server before sending mails[br]
-In opposite case, set fields blank</send_auth_text>
+<send_auth>Autenticaci&#243;n de env&#237;o de correo del ISP</send_auth>
+<send_auth_text>&#191;Su ISP solicita autenticaci&#243;n para enviar correo? Si es as&#237;, establezca la cuenta y la contrase&#241;a para que postfix se autentique en el servidor SMTP de su ISP antes de enviar correos[br]
+En caso contrario, deje los campos en blanco</send_auth_text>
 <softwares>Programas</softwares>
 <softwares_mangement_text>Mostrar informaci&oacute;n de los programas y los nuevos programas instalados</softwares_mangement_text>
 <ssl_certificate>Certificado SSL</ssl_certificate>
-<ssl_certificate_text>Change information in the SSL certificate of all services</ssl_certificate_text>
+<ssl_certificate_text>Cambiar la informaci&#243;n del certificado SSL de todos los servicios</ssl_certificate_text>
 <success_apply_kas>Éxito en aplicar la configuraci%C3%B3n a los Plugins de kaspersky. Ahora puede cerrar esta ventana...</success_apply_kas>
 <sysinfos>Sistemas de informaci&oacute;n</sysinfos>
 <sysinfos_text>Ver detalle del sistema e informaci&oacute;n</sysinfos_text>
 <system_information>Informaci&oacute;n del sistema</system_information>
 <system_information_text>Mostrar y editar informaci&oacute;n de sus computadoras</system_information_text>
 <system_memory>Mostrar memoria</system_memory>
-<system_memory_text>Display usage of your computer memory</system_memory_text>
-<usefull_links>Usefull links</usefull_links>
-<welcome_kaspersky>Welcome on Kaspersky Activation wizard.[br]This wizard helps you to enable anti-spam features and antivirus features on your mail server</welcome_kaspersky>
+<system_memory_text>Mostrar el uso de la memoria de su equipo</system_memory_text>
+<usefull_links>Enlaces &#250;tiles</usefull_links>
+<welcome_kaspersky>Bienvenido al asistente de activaci&#243;n de Kaspersky.[br]Este asistente le ayuda a activar las funciones anti-spam y antivirus en su servidor de correo</welcome_kaspersky>
 <wizard>Asistentes</wizard>
 <wizard_section_text>Le ayuda a configurar su servidor</wizard_section_text>

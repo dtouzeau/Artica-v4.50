@@ -29,6 +29,9 @@ define("ico_link","fa-solid fa-link");
 define("ico_unlink","fa-solid fa-link-slash");
 define("ico_watchdog","fa-solid fa-shield-dog");
 define("ico_file_zip","fa-solid fa-file-zipper");
+define("ico_cloud_slash","fa-solid fa-cloud-slash");
+define("ico_cloud_down","fa-solid fa-cloud-arrow-down");
+
 define("ico_meta","fa-brands fa-meta");
 define("ico_download_animated","fa-solid fa-download fa-bounce");
 define("ico_repeat_1","fa-solid fa-arrows-repeat-1");
@@ -53,13 +56,17 @@ define("ico_containers","fa-solid fa-truck-container");
 define("ico_scanner_gun","fa-solid fa-scanner-gun");
 define("ico_refresh","fa-solid fa-rotate");
 define("ico_refresh_animate","fa-solid fa-rotate fa-spin");
-
 define("ico_storage","fa-solid fa-boxes-packing");
 define("ico_stop","fa-solid fa-stop");
 define("ico_run","fa-solid fa-play");
 define("ico_forward","far fa-share-all");
 define("ico_ssl","fa-brands fa-expeditedssl");
 define("ico_clock","fa-solid fa-clock-rotate-left");
+define("ico_mail","fa-solid fa-envelope");
+define("ico_info","fa-solid fa-circle-info");
+define("ico_delete","fa-solid fa-trash-can");
+define("ico_warning","fa-solid fa-triangle-exclamation");
+define("ico_note","fa-solid fa-notes");
 define("ico_clock_desk","fa-regular fa-clock-desk");
 define("ico_clock_wait","fa-solid fa-hourglass-clock");
 define("ico_language","fa-solid fa-language");
@@ -112,6 +119,7 @@ define("ico_form","fa-regular fa-input-text");
 define("ico_groups_settings","fa-solid fa-users-gear");
 define("ico_groups_finders","fa-regular fa-users-viewfinder");
 define("ico_script","fa-duotone fa-scroll");
+define("ico_outmail","fa-solid fa-inbox-out");
 define("ico_params","fas fa-cogs");
 define("ico_field","fa-solid fa-pen-field");
 define("ico_microsoft","fab fa-windows");
@@ -184,6 +192,9 @@ define("ico_plug","fas fa-plug");
 define("ico_clouds","fa-solid fa-clouds");
 define("ico_laptop_down","fa-solid fa-laptop-arrow-down");
 define("ico_radar","fa-solid fa-radar");
+define("ico_book", "fas fa-book");
+
+
 
 function UserAgentToIcon($UA):string{
     if (preg_match("# OPR\/[0-9\.]+#", $UA)) {return "fab fa-opera";}

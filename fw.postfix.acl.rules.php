@@ -1,5 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.dnsdist.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
@@ -14,17 +16,26 @@ $GLOBALS["POSTFIX_RULES"][5]="<strong>{BCC}</strong><br>{BCC_help}";
 $GLOBALS["POSTFIX_RULES"][6]="<strong>{PREPEND}</strong><br>{POSTFIX_REGEX_PREPEND}";
 $GLOBALS["POSTFIX_RULES"][7]="<strong>{backup_messages}</strong><br>{backup_messages_explain}";
 $GLOBALS["POSTFIX_RULES"][8]="<strong>{REJECT} {and} {firewall_rules}<br>{reject_firewall_temp}";
-$GLOBALS["POSTFIX_RULES"][10]="<strong>DKIM<br>{dkim_about}";
+$GLOBALS["POSTFIX_RULES"][10]="<strong>DKIM</strong><br>{dkim_about}";
+$GLOBALS["POSTFIX_RULES"][11]="<strong>ARC</strong><br>{arc_about}";
+$GLOBALS["POSTFIX_RULES"][12]="<strong>{greylisting}</strong><br>{greylisting_about}";
+$GLOBALS["POSTFIX_RULES"][13]="<strong>DLP</strong><br>{dlp_about}";
 
-$GLOBALS["POSTFIX_RULES_STATUS"][1]="label-primary";
-$GLOBALS["POSTFIX_RULES_STATUS"][2]="label-info";
-$GLOBALS["POSTFIX_RULES_STATUS"][3]="label-danger";
-$GLOBALS["POSTFIX_RULES_STATUS"][4]="label-danger";
-$GLOBALS["POSTFIX_RULES_STATUS"][5]="label-pink";
-$GLOBALS["POSTFIX_RULES_STATUS"][6]="label-warning";
-$GLOBALS["POSTFIX_RULES_STATUS"][7]="label-info";
-$GLOBALS["POSTFIX_RULES_STATUS"][8]="label-danger";
-$GLOBALS["POSTFIX_RULES_STATUS"][10]="label-info";
+// Couleur de fond du verdict. awc-badge impose color:#fff, seul le fond porte le
+// sens: vert = laisse passer, sarcelle = annote/observe, ambre = retarde,
+// rouge = bloque, prune = duplique (BCC/DLP).
+$GLOBALS["POSTFIX_RULES_STATUS"][1]="#26a69a";
+$GLOBALS["POSTFIX_RULES_STATUS"][2]="#006a62";
+$GLOBALS["POSTFIX_RULES_STATUS"][3]="#ba1a1a";
+$GLOBALS["POSTFIX_RULES_STATUS"][4]="#ba1a1a";
+$GLOBALS["POSTFIX_RULES_STATUS"][5]="#7b3f8c";
+$GLOBALS["POSTFIX_RULES_STATUS"][6]="#865300";
+$GLOBALS["POSTFIX_RULES_STATUS"][7]="#006a62";
+$GLOBALS["POSTFIX_RULES_STATUS"][8]="#ba1a1a";
+$GLOBALS["POSTFIX_RULES_STATUS"][10]="#006a62";
+$GLOBALS["POSTFIX_RULES_STATUS"][11]="#006a62";
+$GLOBALS["POSTFIX_RULES_STATUS"][12]="#865300";
+$GLOBALS["POSTFIX_RULES_STATUS"][13]="#7b3f8c";
 $GLOBALS["POSTFIX_RULES_TITLE"][1]="{ACCEPT}";
 $GLOBALS["POSTFIX_RULES_TITLE"][2]="{INFO}";
 $GLOBALS["POSTFIX_RULES_TITLE"][3]="{DISCARD}";
@@ -34,11 +45,15 @@ $GLOBALS["POSTFIX_RULES_TITLE"][6]="{PREPEND}";
 $GLOBALS["POSTFIX_RULES_TITLE"][7]="{backup_messages}";
 $GLOBALS["POSTFIX_RULES_TITLE"][8]="{REJECT}/{firewall}";
 $GLOBALS["POSTFIX_RULES_TITLE"][10]="DKIM";
+$GLOBALS["POSTFIX_RULES_TITLE"][11]="ARC";
+$GLOBALS["POSTFIX_RULES_TITLE"][12]="{greylisting}";
+$GLOBALS["POSTFIX_RULES_TITLE"][13]="DLP";
 
 
 
 if(isset($_GET["rule-safesearch"])){rule_safesearch();exit;}
 if(isset($_GET["rule-dkim_options"])){rule_dkim();exit;}
+if(isset($_GET["rule-greylist_options"])){rule_greylist();exit;}
 if(isset($_GET["replace-rule"])){replace_rule();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -63,14 +78,23 @@ if(isset($_GET["enable-js"])){rule_enable();exit;}
 if(isset($_GET["acl-rule-move"])){rule_move();exit;}
 if(isset($_GET["default-js"])){default_js();exit;}
 if(isset($_GET["default-popup"])){default_popup();exit;}
-if(isset($_POST["ProxyDefaultUncryptSSL"])){ProxyDefaultUncryptSSL_save();exit;}
 if(isset($_GET["filltable"])){filltable();exit;}
-if(isset($_GET["rule-cache"])){rule_cache();exit;}
 if(isset($_GET["view-rules"])){view_rules_js();exit;}
 if(isset($_GET["view-rules-popup"])){view_rules_popup();exit;}
 if(isset($_POST["dkimOptions"])){dkimOptions_save();exit;}
+if(isset($_POST["greylistOptions"])){greylistOptions_save();exit;}
 if(isset($_GET["reload"])){Reload();exit;}
 page();
+
+// articarest wraps every response in {"success":bool,"data":...}. Unwrap to the
+// payload (object for a single rule, array for a list, {id} for create) so the
+// flat accesses below keep working. Falls back to the raw decode for any legacy
+// flat endpoint, so this is safe to apply uniformly.
+function acl_json($resp){
+    $j=json_decode((string)$resp);
+    if(is_object($j)&&isset($j->success)&&isset($j->data)){return $j->data;}
+    return $j;
+}
 
 function rule_dkim()
 {
@@ -80,10 +104,9 @@ function rule_dkim()
     $page=CurrentPageName();
     $tpl=new template_admin();
     $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `actionvalue` FROM postfix_rules WHERE ID='$ID'");
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    $actionvalue=unserialize(base64_decode($ligne["actionvalue"]));
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    if(!is_object($json)||!isset($json->id)){echo $tpl->div_error("Failed to load rule $ID");return false;}
+    $actionvalue=unserialize(base64_decode($json->actionValue));
     $dkimDomain=trim($actionvalue["dkimDomain"]);
     $dkimSelector=trim($actionvalue["dkimSelector"]);
     //$dkimPrivateKey=trim($actionvalue["dkimPrivateKey"]);
@@ -144,9 +167,10 @@ function filltable(){
     $tpl=new template_admin();
     $uncrypt_ssl=$tpl->javascript_parse_text("{uncrypt_websites}");
     $trust_ssl=$tpl->javascript_parse_text("{trust_ssl}");
-    $ID=$_GET["filltable"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM postfix_rules WHERE ID='$ID'");
+    $ID=intval($_GET["filltable"]);
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    if(!is_object($json)||!isset($json->id)){return;}
+    $ligne=["crypt"=>0,"trust"=>0,"enabled"=>intval($json->enabled),"ID"=>$json->id];
     $crypt=$ligne["crypt"];
     $enabled=intval($ligne["enabled"]);
     if($crypt==1 OR ($ligne["trust"]==1)){$ACCESSEnabled=1;}
@@ -167,48 +191,55 @@ function filltable(){
     $img=$tpl->_ENGINE_parse_body(icon_status($crypt,$enabled,$objects));
     $explain=$tpl->_ENGINE_parse_body($explain);
     header("content-type: application/x-javascript");
-    echo "document.getElementById('ssl-rule-icon-$ID').innerHTML=\"$img\";\n";
-    echo "document.getElementById('ssl-rule-text-$ID').innerHTML=\"$explain\";\n";
+    // Pentest 2026-11-04 : explication de la regle (noms d'objets) inseree brute dans une chaine JS (XSS stockee).
+    // req_js() garde le fragment HTML intact pour innerHTML mais rien ne peut fermer la chaine.
+    echo "document.getElementById('ssl-rule-icon-$ID').innerHTML=\"".req_js($img)."\";\n";
+    echo "document.getElementById('ssl-rule-text-$ID').innerHTML=\"".req_js($explain)."\";\n";
 }
 function rule_delete_js():bool{
 
     $ID=intval($_GET["rule-delete-js"]);
     $md="acl-$ID";
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM postfix_rules WHERE ID='$ID'");
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    $rulename=(is_object($json)&&isset($json->ruleName))?$json->ruleName:"#$ID";
     $tpl=new template_admin();
-    return $tpl->js_confirm_delete("{rule} {$ligne["rulename"]}","rule-delete",$ID,"$('#$md').remove();");
+    return $tpl->js_confirm_delete("{rule} $rulename","rule-delete",$ID,"$('#$md').remove();");
 }
 function rule_delete_perform():bool{
     header("content-type: application/x-javascript");
     $ID=intval($_POST["rule-delete"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM postfix_rules WHERE ID='$ID'");
-    $rulename=$ligne["rulename"];
-    $q->QUERY_SQL("DELETE FROM postfix_rules WHERE ID='$ID'");
-    $q->QUERY_SQL("DELETE FROM postfix_sqacllinks WHERE aclid='$ID'");
+    // Fetch name before deleting (for audit trail); DELETE endpoint cascades postfix_sqacllinks
+    $jsonGet=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    $rulename=(is_object($jsonGet)&&isset($jsonGet->ruleName))?$jsonGet->ruleName:"#$ID";
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_DELETE("/postfix/acls/$ID");
     return admin_tracks("Delete SMTP Artica Milter rule $rulename");
-    $GLOBALS["CLASS_SOCKETS"]->MILTER_API("/reload");
 }
 function rule_enable():bool{
     $page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $ID=intval($_GET["enable-js"]);
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM postfix_rules WHERE ID='$ID'");
-    $enabled_src=intval($ligne["enabled"]);
+    $jsonGet=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    if(!is_object($jsonGet)||!isset($jsonGet->id)){
+        header("content-type: application/x-javascript");
+        echo "alert('Failed to load rule $ID');";
+        return false;
+    }
+    $enabled_src=intval($jsonGet->enabled);
     if($enabled_src==0){
-        $js="$( \"#acl-{$_GET["enable-js"]}\" ).removeClass( \"text-muted\" );";
+        $js="$( \"#acl-$ID\" ).removeClass( \"text-muted\" );";
         $enabled=1;
     }else{
-        $js="$( \"#acl-{$_GET["enable-js"]}\" ).addClass( \"text-muted\" );";
+        $js="$( \"#acl-$ID\" ).addClass( \"text-muted\" );";
         $enabled=0;
     }
 
-    $q->QUERY_SQL("UPDATE postfix_rules SET enabled='$enabled' WHERE ID='{$_GET["enable-js"]}'");
-
-
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
+    $putData=["enabled"=>$enabled];
+    $jsonPut=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_PUT_JSON("/postfix/acls/$ID",$putData));
+    if(!is_object($jsonPut)){
+        header("content-type: application/x-javascript");
+        echo "alert('Failed to update rule $ID');";
+        return false;
+    }
 
     header("content-type: application/x-javascript");
     echo "// ID = $ID, src=$enabled_src, enabled =$enabled\n";
@@ -222,9 +253,9 @@ function change_method_js():bool{
     $tpl=new template_admin();
     $ID=intval($_GET["ch-method-js"]);
     $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `rulename` FROM postfix_rules WHERE ID='$ID'");
-    $tpl->js_dialog2("{rule}: {change_method} {$ligne["rulename"]}","$page?ch-method-popup=$ID&function=$function");
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    $rulename=(is_object($json)&&isset($json->ruleName))?$json->ruleName:"#$ID";
+    $tpl->js_dialog2("{rule}: {change_method} $rulename","$page?ch-method-popup=$ID&function=$function");
     return true;
 }
 function change_method_popup():bool{
@@ -233,9 +264,9 @@ function change_method_popup():bool{
     $ID=intval($_GET["ch-method-popup"]);
     $function=$_GET["function"];
     $functionenc=urlencode($function);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `rulename`,ruletype FROM postfix_rules WHERE ID='$ID'");
-    $ruletype=intval($ligne["ruletype"]);
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    if(!is_object($json)||!isset($json->id)){echo $tpl->div_error("Failed to load rule $ID");return false;}
+    $ruletype=intval($json->ruleType);
 
     fillRulesList_explain();
     $RULESSWITH=fillRules_canchange();
@@ -266,14 +297,15 @@ function change_method_save():bool{
     $tpl=new template_admin();
     $ID=intval($_POST["ch-rule"]);
     $ruletype2=intval($_POST["ruletype"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `rulename`,ruletype FROM postfix_rules WHERE ID='$ID'");
-    $ruletype=intval($ligne["ruletype"]);
-    $rulename=$ligne["rulename"];
+    // Fetch current name/type for audit trail
+    $jsonGet=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    $ruletype=(is_object($jsonGet)&&isset($jsonGet->ruleType))?intval($jsonGet->ruleType):0;
+    $rulename=(is_object($jsonGet)&&isset($jsonGet->ruleName))?$jsonGet->ruleName:"#$ID";
 
-    $q->QUERY_SQL("UPDATE postfix_rules SET ruletype=$ruletype2 WHERE ID=$ID");
-    if(!$q->ok){
-        $tpl->post_error($q->mysql_error);
+    $putData=["ruleType"=>$ruletype2];
+    $jsonPut=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_PUT_JSON("/postfix/acls/$ID",$putData));
+    if(!is_object($jsonPut)){
+        $tpl->post_error("Failed to update rule $ID");
         return false;
     }
     admin_tracks("Change DNS Firewall $rulename rule method from type $ruletype to $ruletype2");
@@ -285,10 +317,10 @@ function rule_js():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_GET_XSS();
     $function=$_GET["function"];
-    $ID=$_GET["rule-id-js"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `rulename` FROM postfix_rules WHERE ID='$ID'");
-    $tpl->js_dialog("{rule}: $ID {$ligne["rulename"]}","$page?rule-tabs=$ID&function=$function");
+    $ID=intval($_GET["rule-id-js"]);
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    $rulename=(is_object($json)&&isset($json->ruleName))?$json->ruleName:"#$ID";
+    $tpl->js_dialog("{rule}: $ID $rulename","$page?rule-tabs=$ID&function=$function");
     return true;
 }
 function default_js():bool{
@@ -309,15 +341,20 @@ function rule_tabs(){
     $array["{objects}"]="fw.proxy.acls.objects.php?rule-id=$ID&TableLink=postfix_sqacllinks&RefreshTable=$RefreshTable&RefreshFunction=$RefreshFunction&function=$function";
 
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `ruletype` FROM postfix_rules WHERE ID='$ID'");
-    $ruletype=$ligne["ruletype"];
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    $ruletype=(is_object($json)&&isset($json->ruleType))?intval($json->ruleType):1;
     if($ruletype==2 OR $ruletype==3 OR $ruletype==4 OR $ruletype==9){unset($array["{cache}"]);}
     if($ruletype==9){
         $array["SafeSearch(s)"]="$page?rule-safesearch=$ID&function=$function";
     }
-    if($ruletype==10){
+    if($ruletype==10 OR $ruletype==11){
         $array["{options}"]="$page?rule-dkim_options=$ID&function=$function";
+    }
+    if($ruletype==12){
+        $array["{options}"]="$page?rule-greylist_options=$ID&function=$function";
+    }
+    if($ruletype==13){
+        $array["{options}"]="fw.postfix.acl.rules.dlp.php?rule-dlp_options=$ID&function=$function";
     }
     echo $tpl->tabs_default($array);
 
@@ -328,23 +365,23 @@ function rule_settings():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $function=$_GET["function"];
-    $ID=$_GET["rule-settings"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM postfix_rules WHERE ID='$ID'");
+    $ID=intval($_GET["rule-settings"]);
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    if(!is_object($json)||!isset($json->id)){echo $tpl->div_error("Failed to load rule $ID");return false;}
+    $ruletype=intval($json->ruleType);
     $form[]=$tpl->field_hidden("ID", $ID);
-    $ruletype=intval($ligne["ruletype"]);
-    $form[]=$tpl->field_checkbox("enabled","{enabled}",$ligne["enabled"],true);
+    $form[]=$tpl->field_checkbox("enabled","{enabled}",$json->enabled,true);
 
-    $form[]=$tpl->field_text("rulename", "{rule_name}", $ligne["rulename"],true);
+    $form[]=$tpl->field_text("rulename", "{rule_name}", $json->ruleName,true);
     if($ruletype==2){
-        $form[]=$tpl->field_text("actionvalue", "{text_to_add_in_the_event}", $ligne["actionvalue"],true);
+        $form[]=$tpl->field_text("actionvalue", "{text_to_add_in_the_event}", $json->actionValue,true);
     }
 
     if($ruletype==6){
-        $form[]=$tpl->field_text("actionvalue", "{PREPEND}", $ligne["actionvalue"],true);
+        $form[]=$tpl->field_text("actionvalue", "{PREPEND}", $json->actionValue,true);
     }
     if($ruletype==5){
-        $form[]=$tpl->field_text("actionvalue", "{recipients}", $ligne["actionvalue"],true);
+        $form[]=$tpl->field_text("actionvalue", "{recipients}", $json->actionValue,true);
     }
 
     $rulevalue_explain=null;
@@ -358,58 +395,117 @@ function rule_settings():bool{
         $jsafter = "$function();";
     }
 
-    $html=$tpl->form_outside("{rule} {$ligne["rulename"]}", $form,$GLOBALS["POSTFIX_RULES"][$ruletype],"{apply}",$jsafter,"AsPostfixAdministrator");
+    $html=$tpl->form_outside("{rule} ".$json->ruleName, $form,$GLOBALS["POSTFIX_RULES"][$ruletype],"{apply}",$jsafter,"AsPostfixAdministrator");
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
 
 function patch_table():bool{
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-    $sql="CREATE TABLE IF NOT EXISTS `postfix_rules` (`ID` INTEGER PRIMARY KEY AUTOINCREMENT,`rulename` TEXT,enabled INTEGER DEFAULT 1,actionvalue TEXT NOT NULL DEFAULT '',instanceid INTEGER NOT NULL DEFAULT 0 ,ruletype INTEGER DEFAULT 1,zOrder INTEGER DEFAULT 1)";
-    $q->QUERY_SQL($sql);
-
-
-    if(!$q->FIELD_EXISTS("postfix_rules","instanceid")){
-        $q->QUERY_SQL("ALTER TABLE postfix_rules ADD instanceid INTEGER NOT NULL DEFAULT 0");
-    }
-    if(!$q->FIELD_EXISTS("postfix_rules","actionvalue")){
-        $q->QUERY_SQL("ALTER TABLE postfix_rules ADD actionvalue TEXT NOT NULL DEFAULT ''");
-    }
-
-
-    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `postfix_sqacllinks` (
-			`zmd5` TEXT PRIMARY KEY ,
-			`aclid` INTEGER,
-			`negation` INTEGER NOT NULL DEFAULT 0,
-			`direction` INTEGER,
-			`gpid` INTEGER,
-			`zOrder` INT NOT NULL DEFAULT 1)");
-
-
-
+    // Schema is now managed by the articarest Go daemon; this function is intentionally a no-op.
     return true;
-
 }
 
 function dkimOptions_save()
 {
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["dkimOptions"];
+    $ID=intval($_POST["dkimOptions"]);
     unset($_POST["dkimOptions"]);
+    $dkimDomain=$_POST["dkimDomain"];
+    $dkimSelector=$_POST["dkimSelector"];
     unset($_POST["dkimPrivateKey"]);
-    $edit_fields=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
     $data=base64_encode(serialize($_POST));
 
-    $sql="UPDATE postfix_rules SET actionvalue='$data' WHERE ID='$ID'";
-    patch_table();
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;return false;}
-    //$GLOBALS["CLASS_SOCKETS"]->DKIM_GEN_KEY($_POST["dkimDomain"],$_POST["dkimSelector"]);
-    $GLOBALS["CLASS_SOCKETS"]->MILTER_API("/createPK/{$_POST["dkimDomain"]}/{$_POST["dkimSelector"]}");
+    $putData=["actionValue"=>$data];
+    $jsonPut=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_PUT_JSON("/postfix/acls/$ID",$putData));
+    if(!is_object($jsonPut)){echo "Failed to save DKIM options for rule $ID";return false;}
+
+    $GLOBALS["CLASS_SOCKETS"]->MILTER_API("/createPK/$dkimDomain/$dkimSelector");
+    $GLOBALS["CLASS_SOCKETS"]->MILTER_API("/reload");
+    return true;
+}
+
+function rule_greylist()
+{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $ID=intval($_GET["rule-greylist_options"]);
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    if(!is_object($json)||!isset($json->id)){echo $tpl->div_error("Failed to load rule $ID");return false;}
+
+    $av=array();
+    if(isset($json->actionValue)&&strlen($json->actionValue)>3){
+        $tmp=@unserialize(base64_decode($json->actionValue));
+        if(is_array($tmp)){$av=$tmp;}
+    }
+    // Defaults mirror greylisting.DefaultConfig() in the artica-milter daemon.
+    $delay=isset($av["delay_seconds"])?intval($av["delay_seconds"]):300;
+    $accepted=isset($av["accepted_ttl_seconds"])?intval($av["accepted_ttl_seconds"]):2592000;
+    $pending=isset($av["pending_ttl_seconds"])?intval($av["pending_ttl_seconds"]):86400;
+    $cachettl=isset($av["cache_ttl_seconds"])?intval($av["cache_ttl_seconds"]):900;
+    $cleanup=isset($av["cleanup_interval_seconds"])?intval($av["cleanup_interval_seconds"]):3600;
+    $authmode=isset($av["auth_mode"])?$av["auth_mode"]:"spf_or_dkim_with_dmarc";
+    $rejectcode=isset($av["reject_code"])?$av["reject_code"]:"451";
+    $rejecttext=isset($av["reject_text"])?$av["reject_text"]:"4.7.1 Greylisted, please retry later";
+    $failmode=isset($av["fail_mode"])?$av["fail_mode"]:"cache_only";
+    $store=isset($av["store_authenticated_allow"])?intval($av["store_authenticated_allow"]):1;
+    $cidr=(isset($av["allowlist_cidr"])&&is_array($av["allowlist_cidr"]))?@implode("\n",$av["allowlist_cidr"]):"";
+    $hosts=(isset($av["allowlist_hostnames"])&&is_array($av["allowlist_hostnames"]))?@implode("\n",$av["allowlist_hostnames"]):"";
+
+    // auth_mode: only the behaviours that differ in v1 (SPF/DMARC, no inbound DKIM verify).
+    $authOptions=array(
+        "spf_or_dkim_with_dmarc"=>"{greylist_auth_dmarc}",
+        "strict_all"=>"{greylist_auth_strict}",
+        "none"=>"{greylist_auth_none}");
+    $failOptions=array("cache_only"=>"cache_only","fail_open"=>"fail_open","fail_closed"=>"fail_closed");
+
+    $form[]=$tpl->field_hidden("greylistOptions",$ID);
+    $form[]=$tpl->field_text("delay_seconds","{greylist_delay}",$delay,true);
+    $form[]=$tpl->field_array_hash_simple($authOptions,"auth_mode","{greylist_auth_mode}",$authmode,true);
+    $form[]=$tpl->field_checkbox("store_authenticated_allow","{greylist_store_auth}",$store,true);
+    $form[]=$tpl->field_array_hash_simple($failOptions,"fail_mode","{greylist_fail_mode}",$failmode,true);
+    $form[]=$tpl->field_text("reject_code","{greylist_reject_code}",$rejectcode,true);
+    $form[]=$tpl->field_text("reject_text","{greylist_reject_text}",$rejecttext,true);
+    $form[]=$tpl->field_text("accepted_ttl_seconds","{greylist_accepted_ttl}",$accepted,true);
+    $form[]=$tpl->field_text("pending_ttl_seconds","{greylist_pending_ttl}",$pending,true);
+    $form[]=$tpl->field_text("cache_ttl_seconds","{greylist_cache_ttl}",$cachettl,true);
+    $form[]=$tpl->field_text("cleanup_interval_seconds","{greylist_cleanup_interval}",$cleanup,true);
+    $form[]=$tpl->field_textarea("allowlist_cidr","{greylist_allowlist_cidr}",$cidr,"100%","100px");
+    $form[]=$tpl->field_textarea("allowlist_hostnames","{greylist_allowlist_hostnames}",$hosts,"100%","100px");
+
+    $jsafter[]="BootstrapDialog1.close()";
+    $jsafter[]="dialogInstance2.close()";
+    $jsafter[]="RefreshPostfixRules()";
+    $jsafters=@implode(";",$jsafter);
+    echo $tpl->form_outside("{greylisting}",$form,"{greylist_options_explain}","{apply}",$jsafters,"AsPostfixAdministrator",true);
+    return true;
+}
+
+function greylistOptions_save()
+{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $ID=intval($_POST["greylistOptions"]);
+    unset($_POST["greylistOptions"]);
+
+    // Checkbox: ensure an explicit 0/1 is always serialized.
+    $_POST["store_authenticated_allow"]=(isset($_POST["store_authenticated_allow"])&&$_POST["store_authenticated_allow"])?"1":"0";
+
+    // Allowlists are entered one entry per line; serialize them as PHP arrays so the
+    // Go side (greylisting.ParseConfig -> toStringSlice) reads them as string slices.
+    foreach(array("allowlist_cidr","allowlist_hostnames") as $k){
+        $lines=preg_split('/\r\n|\r|\n/',(string)(isset($_POST[$k])?$_POST[$k]:""));
+        $arr=array();
+        foreach($lines as $l){$l=trim($l);if($l!=""){$arr[]=$l;}}
+        $_POST[$k]=$arr;
+    }
+
+    // Field names are the actionValue map keys the daemon's getGreylistOptions reads.
+    $data=base64_encode(serialize($_POST));
+    $putData=array("actionValue"=>$data);
+    $jsonPut=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_PUT_JSON("/postfix/acls/$ID",$putData));
+    if(!is_object($jsonPut)){echo "Failed to save greylisting options for rule $ID";return false;}
 
     $GLOBALS["CLASS_SOCKETS"]->MILTER_API("/reload");
     return true;
@@ -418,20 +514,21 @@ function dkimOptions_save()
 function rule_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["ID"];
+    $ID=intval($_POST["ID"]);
     unset($_POST["ID"]);
-    $edit_fields=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
-    foreach ($_POST as $key=>$val){
-        $add_fields[]="`$key`";
-        $add_values[]="'$val'";
-        $edit_fields[]="`$key`='$val'";
+    // Map snake_case POST keys to camelCase API fields
+    $fieldMap=["rulename"=>"ruleName","actionvalue"=>"actionValue","instanceid"=>"instanceID","ruletype"=>"ruleType","enabled"=>"enabled"];
+    $putData=[];
+    foreach($_POST as $key=>$val){
+        $apiKey=isset($fieldMap[$key])?$fieldMap[$key]:$key;
+        $putData[$apiKey]=$val;
     }
-    $sql="UPDATE postfix_rules SET ".@implode(",", $edit_fields)." WHERE ID='$ID'";
-    patch_table();
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    // articarest expects integers for these fields (json: cannot unmarshal string into int)
+    foreach(["enabled","instanceID","ruleType"] as $ik){ if(isset($putData[$ik])){ $putData[$ik]=intval($putData[$ik]); } }
+
+    $jsonPut=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_PUT_JSON("/postfix/acls/$ID",$putData));
+    if(!is_object($jsonPut)){echo "Failed to save rule $ID";return false;}
     $GLOBALS["CLASS_SOCKETS"]->MILTER_API("/reload");
     return true;
 }
@@ -444,7 +541,7 @@ function view_rules_js(){
 function view_rules_popup(){
     $tpl=new template_admin();
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/service/rules"));
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/service/rules"));
 
     if(!$json->Status){
         echo $tpl->div_error($json->Error);
@@ -464,7 +561,7 @@ function view_rules_popup(){
     
     $html[]="
 <script> 
-    NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+    NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."
 </script>";
     echo $tpl->_ENGINE_parse_body($html);
 }
@@ -475,7 +572,8 @@ function new_rule_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $title="{new_rule}";
-    return $tpl->js_dialog($title,"$page?newrule-popup=yes");
+    $instanceid=intval($_GET["instance-id"]);
+    return $tpl->js_dialog($title,"$page?newrule-popup=yes&instance-id=$instanceid");
 
 }
 
@@ -508,6 +606,8 @@ function fillRulesList_explain():bool{
     $GLOBALS["POSTFIX_RULES"][4]="<strong>{REJECT}</strong><br>{POSTFIX_REGEX_REJECT}";
     $GLOBALS["POSTFIX_RULES"][5]="<strong>{BCC}</strong><br>{BCC_help}";
     $GLOBALS["POSTFIX_RULES"][6]="<strong>{PREPEND}</strong><br>{POSTFIX_REGEX_PREPEND}";
+    $GLOBALS["POSTFIX_RULES"][12]="<strong>{greylisting}</strong><br>{greylisting_about}";
+    $GLOBALS["POSTFIX_RULES"][13]="<strong>DLP</strong><br>{dlp_about}";
     return true;
 }
 function fillRules_canchange():array{
@@ -521,50 +621,17 @@ function fillRules_canchange():array{
 
 function rule_move(){
     $tpl=new template_admin();
-    $ID=$_GET["acl-rule-move"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT zOrder FROM postfix_rules WHERE `ID`='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-    $xORDER_ORG=intval($ligne["zOrder"]);
-    $xORDER=$xORDER_ORG;
+    $ID=intval($_GET["acl-rule-move"]);
+    $dir=intval($_GET["acl-rule-dir"]);  // 1=up (lower order), 0=down (higher order)
+    if($GLOBALS["VERBOSE"]){echo "$ID, dir=$dir;\n";}
 
-
-    if($_GET["acl-rule-dir"]==1){$xORDER=$xORDER_ORG-1;}
-    if($_GET["acl-rule-dir"]==0){$xORDER=$xORDER_ORG+1;}
-    if($xORDER<0){$xORDER=0;}
-    $sql="UPDATE postfix_rules SET zOrder=$xORDER WHERE `ID`='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-    if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-    if($_GET["acl-rule-dir"]==1){
-        $xORDER2=$xORDER+1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE postfix_rules SET zOrder=$xORDER2 WHERE `ID`<>'$ID' AND zOrder=$xORDER";
-        $q->QUERY_SQL($sql);
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
+    $putData=["dir"=>$dir];
+    $jsonPut=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_PUT_JSON("/postfix/acls/$ID/move",$putData));
+    if(!is_object($jsonPut)){
+        echo "alert('".$tpl->javascript_parse_text("Failed to move rule $ID")."');";
+        return;
     }
-    if($_GET["acl-rule-dir"]==0){
-        $xORDER2=$xORDER-1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE postfix_rules SET zOrder=$xORDER2 WHERE `ID`<>'{$_GET["acl-rule-move"]}' AND zOrder=$xORDER";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-    }
-
-    $c=0;
-    $sql="SELECT ID FROM postfix_rules ORDER BY zOrder";
-    $results = $q->QUERY_SQL($sql);
-
-    foreach($results as $index=>$ligne) {
-        $q->QUERY_SQL("UPDATE postfix_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}");
-        if($GLOBALS["VERBOSE"]){echo "UPDATE postfix_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}\n";}
-        $c++;
-    }
+    if($GLOBALS["VERBOSE"]){echo "PUT /postfix/acls/$ID/move dir=$dir\n";}
 
     $GLOBALS["CLASS_SOCKETS"]->MILTER_API("/reload");
 }
@@ -613,24 +680,18 @@ function reload():bool{
 function table():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $instanceid=intval($_GET["instanceid"]);
-    $function=$_GET["function"];
+    $instanceid=intval($_GET["instance-id"]);
+    // Sanitize to a JS identifier: $function is interpolated into an inline <script>
+    // (RefreshPostfixRules) and a hidden input — raw $_GET would be a reflected XSS.
+    $function=preg_replace('/[^a-zA-Z0-9_]/','',(string)($_GET["function"]??''));
     $html[]="<input type='hidden' id='proxy-acls-bugs-function' value='$function'>";
-    $html[]="<table id='table-ssl-proxy-rules' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{requests}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{rulename}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>{events}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>{enabled}</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{rulename}</th>";
+    $html[]="<th class='center'>{status}</th>";
+    $html[]="<th class='center'>{requests}</th>";
+    $html[]="<th style='text-align:right'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='pfxacl-rows'>";
 
     $array_help["TITLE"]="{inactive2}";
     $array_help["content"]="{inactive_acl_why}";
@@ -639,48 +700,43 @@ function table():bool{
 
     $status_inactive=$tpl->td_href("<span class='label'>{inactive2}</span>","{explain}","LoadAjax('artica-modal-dialog','fw.popup.php?array=$scontent')");
 
-    $jsAfter="LoadAjax('table-firewall-rules','$page?table=yes&eth={$_GET["eth"]}');";
+    $jsAfter="LoadAjax('table-firewall-rules','$page?table=yes&instance-id=$instanceid');";
     $GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
     $squid_acls_groups=new squid_acls_groups();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-
-    $sql="SELECT * FROM postfix_rules WHERE instanceid=$instanceid ORDER BY zOrder";
-    if(isset($_GET["search"])){
-        $search=$_GET["search"];
-        if($search<>null){
-            $search="*$search*";
-            $search=str_replace("**","*",$search);
-            $search=str_replace("*","%",$search);
-            $sql="SELECT * FROM postfix_rules WHERE WHERE instanceid=$instanceid and rulename LIKE '$search' ORDER BY zOrder";
-
-        }
+    $apiUrl="/postfix/acls?instanceID=$instanceid";
+    if(isset($_GET["search"])&&trim($_GET["search"])<>null){
+        $apiUrl.="&search=".urlencode(trim($_GET["search"]));
     }
-
-    $results=$q->QUERY_SQL($sql);
+    $apiJson=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API($apiUrl));
+    $results=(is_array($apiJson))?$apiJson:[];
     $TRCLASS=null;
 
     $tdmid="style='vertical-align:middle;width:1%'";
     $qPost=new postgres_sql();
     foreach($results as $index=>$ligne) {
-        if($TRCLASS=="footable-odd "){$TRCLASS=null;}else{$TRCLASS="footable-odd ";}
+        $TRCLASS=null;
         $ACCESSEnabled=1;
-        $ruletype=$ligne["ruletype"];
-        $enabled=intval($ligne["enabled"]);
-        $ID=$ligne["ID"];
-        $rulename=$tpl->utf8_encode($ligne["rulename"]);
+        $ruletype=intval($ligne->ruleType);
+        $enabled=intval($ligne->enabled);
+        $ID=intval($ligne->id);
+        $rulename=$tpl->utf8_encode($ligne->ruleName);
         $class="text-primary";
         $CountRequest=true;
 
-        if ($ruletype == 2 OR $ruletype == 5 OR $ruletype == 6 ){
+        // matchedrules makes per-rule counts accurate for continue-action rules
+        // (INFO/BCC/PREPEND/BACKUP), so they are now counted like every other type.
+        // ruletype 10 rows are DKIM signing config, not ACL actions — no events.
+        // ruletype 11 rows are ARC sealing config, same — no events.
+        // ruletype 12 rows are greylisting config, same — no events.
+        if ($ruletype == 10 OR $ruletype == 11 OR $ruletype == 12){
             $CountRequest=false;
         }
 
 
         $please_specify_an_object=$tpl->_ENGINE_parse_body("{please_specify_an_object}");
-        $label_status=$GLOBALS["POSTFIX_RULES_STATUS"][$ruletype];
-        $label_title=$GLOBALS["POSTFIX_RULES_TITLE"][$ruletype];
-        $status="<span class='label $label_status'>$label_title</span>";
+        $label_status=isset($GLOBALS["POSTFIX_RULES_STATUS"][$ruletype])?$GLOBALS["POSTFIX_RULES_STATUS"][$ruletype]:"#263238";
+        $label_title=isset($GLOBALS["POSTFIX_RULES_TITLE"][$ruletype])?$GLOBALS["POSTFIX_RULES_TITLE"][$ruletype]:"#$ruletype";
+        $status="<span class='awc-badge' style='background:$label_status'>$label_title</span>";
 
         $TTEXT=array();
         $TTEXT[]=$GLOBALS["POSTFIX_RULES"][$ruletype];
@@ -703,13 +759,13 @@ function table():bool{
         $up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
         $down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
         $rulename=$tpl->utf8_decode($rulename);
-        $check=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')");
+        $check=$tpl->icon_check($enabled,"Loadjs('$page?enable-js=$ID')");
         $rulerow=$tpl->td_href($rulename,"{click_to_edit}",$js);
         $logs=$tpl->icon_nothing();
         $requests=$tpl->icon_nothing();
         VERBOSE("Rule $ID CountRequest = $CountRequest",__LINE__);
         if($CountRequest){
-            $qligne=$qPost->mysqli_fetch_array("SELECT COUNT(*) AS tcount FROM articamilter WHERE ruleid=$ID");
+            $qligne=$qPost->mysqli_fetch_array("SELECT COUNT(*) AS tcount FROM articamilter WHERE ruleid=$ID OR '$ID' = ANY(string_to_array(matchedrules, ','))");
             if(!$qPost->ok){
                 VERBOSE("ERROR: $qPost->mysql_error",__LINE__);
             }
@@ -719,21 +775,12 @@ function table():bool{
         if($enabled==0){
             $class="text-muted";
         }
-        $html[]="<tr style='vertical-align:middle' class='$TRCLASS' id='acl-$ID'>";
-        $html[]="<td $tdmid class=\"$class\" nowrap>$status</td>";
-        $html[]="<td $tdmid class=\"text-right\" width='1%' nowrap><span class='$class'>$requests</span></td>";
-        $html[]="<td $tdmid nowrap><span class='$class'>$rulerow</span></td>";
-        $html[]="<td style='vertical-align:middle;width:99%' class=\"$class\">$explain</span></td>";
-        $html[]="<td $tdmid class='center'>$logs</td>";
-        $html[]="<td $tdmid class='center'>$check</td>";
-        $html[]="<td $tdmid class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
-        $html[]="<td $tdmid class='center'>$delete</td>";
-        $html[]="</tr>";
+        $html[]=pfxacl_row($ID,$rulerow,$explain,$status,$requests,$enabled,$logs.$check.$up.$down.$delete);
     }
 
     $requests=$tpl->icon_nothing();
     $logs=$tpl->icon_nothing();
-    $status="<span class='label label-primary'>{FORWARD}</span>";
+    $status="<span class='awc-badge awc-badge-on'>{FORWARD}</span>";
     $qligne=$qPost->mysqli_fetch_array("SELECT COUNT(*) AS tcount FROM articamilter WHERE ruleid=0");
     if(!$qPost->ok){
         VERBOSE("ERROR: $qPost->mysql_error",__LINE__);
@@ -745,33 +792,22 @@ function table():bool{
     }
     $rulerow="{default}";
     $class="";
-    if($TRCLASS=="footable-odd "){$TRCLASS=null;}else{$TRCLASS="footable-odd ";}
-    $html[]="<tr style='vertical-align:middle' class='$TRCLASS' id='acl-0'>";
-    $html[]="<td $tdmid class=\"$class\" nowrap>$status</td>";
-    $html[]="<td $tdmid class=\"text-right\" width='1%' nowrap><span class='$class'>$requests</span></td>";
-    $html[]="<td $tdmid nowrap><span class='$class'>$rulerow</span></td>";
-    $html[]="<td style='vertical-align:middle;width:99%' class=\"$class\">{finally_allow_all} {and} {forward_messages_to} {APP_POSTFIX}</span></td>";
-    $html[]="<td $tdmid class='center'>$logs</td>";
-    $html[]="<td $tdmid class='center'>&nbsp;</td>";
-    $html[]="<td $tdmid class='center' nowrap>&nbsp;</center></td>";
-    $html[]="<td $tdmid class='center'>&nbsp;</td>";
-    $html[]="</tr>";
+    $TRCLASS=null;
+    // La regle implicite de fin de chaine: elle n'est pas dans la base, elle est
+    // cablee dans la configuration generee, d'ou l'absence d'action.
+    $html[]=pfxacl_row(0,"{default}",
+        "{finally_allow_all} {and} {forward_messages_to} {APP_POSTFIX}",
+        $status,$requests,1,$logs);
 
-
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span class='awc-pg' id='pfxacl-pager'></span>";
+    $html[]="</div></div></div>";
 
 
     $add="Loadjs('$page?newrule-js=yes&function=$function&instance-id=$instanceid',true);";
     $topbuttons[] = array($add, ico_plus, "{new_rule}");
+    $topbuttons[] = array("Loadjs('fw.postfix.acl.rules.dlp.php?dlp-templates-js=yes&function=$function&instance-id=$instanceid')", ico_configure, "{dlp_templates}");
     $topbuttons[] = array("Loadjs('$page?reload=yes');", ico_refresh, "{reload_service}");
 
     $TINY_ARRAY["TITLE"]="{APP_POSTFIX}&nbsp;&raquo;&nbsp;{ACLS}";
@@ -782,26 +818,47 @@ function table():bool{
 
     $html[]="
 <script> 
-    function RefreshPostfixRules(){ {$_GET["function"]}(); }
+    function RefreshPostfixRules(){ {$function}(); }
     $jstiny
-    NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+    NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."
 </script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .awc_pager_js(50,"pfxacl-rows","pfxacl-pager");
     return true;
 }
 
-
+/**
+ * Une regle ACL: nom en identite, portee et explication en sous-titre (la colonne
+ * "description" occupait 99% de la largeur et ecrasait tout le reste), type de
+ * verdict, nombre de messages vus, actions.
+ * L'ordre des colonnes suit celui des autres tableaux d'entites: l'identite
+ * d'abord, les mesures ensuite, les actions a droite.
+ */
+function pfxacl_row($ID,$rulename,$explain,$status,$requests,$enabled,$actions):string{
+    $ID=intval($ID);
+    $h ="<tr id='acl-$ID'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='".($enabled?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-list'></i></span>";
+    $h.="<span><span class='".($enabled?"awc-name":"awc-name awc-name-off")."'>$rulename</span>";
+    if(trim((string)$explain)!==""){$h.="<div class='awc-meta'>$explain</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='center'>$status</td>";
+    $h.="<td class='center awc-mono'>$requests</td>";
+    $h.="<td><div class='awc-acts'>$actions</div></td>";
+    $h.="</tr>";
+    return $h;
+}
 
 
 function EXPLAIN_THIS_RULE($ID){
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM postfix_rules WHERE ID='$ID'");
-
-    if(!$q->ok){return $q->mysql_error;}
-    $ruletype=intval($ligne["ruletype"]);
-    $actionvalue=$ligne["actionvalue"];
+    $ID=intval($ID);
+    $json=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/acls/$ID"));
+    if(!is_object($json)||!isset($json->id)){return "Failed to load rule $ID";}
+    $ruletype=intval($json->ruleType);
+    $actionvalue=$json->actionValue??"";
     $jsafter=base64_encode("RefreshPostfixRules()");
 
     if($ruletype==6){
@@ -827,6 +884,26 @@ function EXPLAIN_THIS_RULE($ID){
             $actionvalue = " <i class='$ico'></i>&nbsp;sign (dkim) outbound emails&nbsp;{with_the_value} &laquo;$txt&raquo;";
         }
     }
+    if($ruletype==11){
+        if(strlen($actionvalue)>3) {
+            $ico=ico_certificate;
+            $actionvalue = unserialize(base64_decode($actionvalue));
+            $txt="Domain={$actionvalue["dkimDomain"]} Selector={$actionvalue["dkimSelector"]}";
+            $actionvalue = " <i class='$ico'></i>&nbsp;seal (arc) emails&nbsp;{with_the_value} &laquo;$txt&raquo;";
+        }
+    }
+    if($ruletype==12){
+        if(strlen($actionvalue)>3) {
+            $ico=ico_clock;
+            $av = @unserialize(base64_decode($actionvalue));
+            if(is_array($av)){
+                $gdelay=isset($av["delay_seconds"])?$av["delay_seconds"]:"300";
+                $gauth=isset($av["auth_mode"])?$av["auth_mode"]:"spf_or_dkim_with_dmarc";
+                $txt="delay={$gdelay}s auth_bypass=$gauth";
+                $actionvalue = " <i class='$ico'></i>&nbsp;greylist unknown senders&nbsp;{with_the_value} &laquo;$txt&raquo;";
+            }
+        }
+    }
 
 
     $name="&nbsp;{then} <strong>{$GLOBALS["POSTFIX_RULES_TITLE"][$ruletype]} $actionvalue</strong>";
@@ -834,20 +911,26 @@ function EXPLAIN_THIS_RULE($ID){
 }
 
 function new_rule_save():bool{
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    patch_table();
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
 
     unset($_POST["newrule"]);
 
-    foreach ($_POST as $key=>$val){
-        $add_fields[]="`$key`";
-        $add_values[]="'$val'";
+    // Map snake_case POST keys to camelCase API fields
+    $fieldMap=["rulename"=>"ruleName","actionvalue"=>"actionValue","instanceid"=>"instanceID","ruletype"=>"ruleType","enabled"=>"enabled"];
+    $postData=[];
+    foreach($_POST as $key=>$val){
+        $apiKey=isset($fieldMap[$key])?$fieldMap[$key]:$key;
+        $postData[$apiKey]=$val;
     }
-    $sql="INSERT INTO postfix_rules (".@implode(",", $add_fields).") VALUES (".@implode(",", $add_values).")";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error."<hr>$sql";return false;}
+    // articarest expects integers for these fields (json: cannot unmarshal string into int)
+    foreach(["instanceID","ruleType","enabled"] as $ik){ if(isset($postData[$ik])){ $postData[$ik]=intval($postData[$ik]); } }
+
+    $jsonPost=acl_json($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_POST_JSON("/postfix/acls",$postData));
+    if(!is_object($jsonPost)||!isset($jsonPost->id)){
+        echo "Failed to create rule".(is_object($jsonPost)&&isset($jsonPost->error)?": ".$jsonPost->error:"");
+        return false;
+    }
     return admin_tracks_post("Create a new SMTP Firewall rule");
 }
 
@@ -872,9 +955,9 @@ function default_rule(){
     $UnBoundCacheNEGTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheNEGTTL"));
     $EnableUnboundLogQueries=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundLogQueries"));
 
-    if($UnBoundCacheMinTTL==0){$UnBoundCacheMinTTL=3600;}
+
     if($UnBoundCacheMAXTTL==0){$UnBoundCacheMAXTTL=172800;}
-    if($UnBoundCacheNEGTTL==0){$UnBoundCacheNEGTTL=3600;}
+    if($UnBoundCacheNEGTTL==0){$UnBoundCacheNEGTTL=30;}
 
     if($UnBoundCacheMinTTL==-1){$UnBoundCacheMinTTL=0;}
     if($UnBoundCacheMAXTTL==-1){$UnBoundCacheMAXTTL=0;}

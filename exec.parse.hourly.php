@@ -144,14 +144,10 @@ function ROTATE(){
 
     $backupdir="{$GLOBALS["LogFileDeamonLogDir"]}/mainsize-backup";
     ROTATE_DIR($backupdir);
-
     $backupdir="{$GLOBALS["LogFileDeamonLogDir"]}/access-backup";
     ROTATE_DIR($backupdir);
-
     $backupdir="{$GLOBALS["LogFileDeamonLogDir"]}/webfilter-backup";
     ROTATE_DIR($backupdir);
-
-
     $backupdir="{$GLOBALS["LogFileDeamonLogDir"]}/volume-backup";
     ROTATE_DIR($backupdir);
 

@@ -5,8 +5,6 @@ include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 if(isset($_POST["pfx-password"])){$tpl=new template_admin();$tpl->CLEAN_POST();$_SESSION["pfx-password"]=$_POST["pfx-password"];exit;}
-if(isset($_GET["password-posted"])){PasswordPosted();exit;}
-if(isset($_GET["password-form"])){PasswordForm();exit;}
 if(isset($_GET["array"])){parse_array();exit;}
 js();
 
@@ -30,7 +28,6 @@ function js(){
     }
 
     if(!$users->AsCertifsManager){$tpl->js_no_privileges();return; }
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("openssl.php?patch-sql=yes$Addon");
 	$tpl->js_dialog6("{server_certificate}", "$page?popup=yes&certid=$certid&function=$function","700");
 
 }
@@ -69,11 +66,6 @@ function file_uploaded():bool{
         return $tpl->js_error("Error: $file not a txt or crt or der or pem or cer file");
     }
 
-    $q=new lib_sqlite(GetDatabase());
-    if (!$q->FIELD_EXISTS("sslcertificates", "ServerCert")) {
-        $q->QUERY_SQL("ALTER TABLE sslcertificates ADD ServerCert INTEGER NOT NULL DEFAULT 0");
-    }
-
     $sock=new sockets();
     $data=$sock->REST_API("/certificate/certserver/$file");
     $json=json_decode($data);
@@ -90,16 +82,6 @@ function file_uploaded():bool{
     }
     echo @implode("\n",$f);
     return true;
-}
-function GetDatabase():string{
-    $db="/home/artica/SQLITE/certificates.db";
-    if(isset($_SESSION["HARMPID"])){
-        $gpid=intval($_SESSION["HARMPID"]);
-        if($gpid>0){
-            $db="/home/artica/SQLITE/certificates.$gpid.db";
-        }
-    }
-    return $db;
 }
 
 

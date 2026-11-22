@@ -56,7 +56,9 @@ function CicapEnabled()
         if (is_file($initd)) {
             cluster_events(2, "Reconfiguring ICAP AV service", null, __LINE__);
             $unix->CICAP_SERVICE_EVENTS("Reconfiguring ICAP service",__FILE__,__LINE__);
-            shell_exec("$php /usr/share/artica-postfix/exec.c-icap.php --reconfigure");
+            // exec.c-icap.php supprime : reconfiguration portee dans articarest.
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=180;
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/cicap/reconfigure?wait=1");
             return;
         }
         cluster_events(2, "{installing} ICAP AV service...", null, __LINE__);

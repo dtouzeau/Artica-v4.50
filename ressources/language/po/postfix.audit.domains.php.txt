@@ -1,2 +1,2 @@
-<audit_text_1>This page provide a synthesis of all keys allowing various Domains
-It allows you, in partnership with the postfix documentation, to check if the correspondences tables are exact</audit_text_1>
+<audit_text_1>Esta p&#225;gina fornece uma s&#237;ntese de todas as chaves que permitem v&#225;rios dom&#237;nios.
+Permite-lhe, em conjunto com a documenta&#231;&#227;o do Postfix, verificar se as tabelas de correspond&#234;ncia est&#227;o exatas</audit_text_1>

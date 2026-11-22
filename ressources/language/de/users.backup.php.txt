@@ -1,14 +1,14 @@
-<backup_text>This area allows you to find old mails backuped[br]use the query form in order to found mails</backup_text>
-<dont_know>Don't know</dont_know>
-<mail_backup_lost>Mail source is lost</mail_backup_lost>
-<mail_backup_lost_text>The file source has been probably delete from Disk, you not able to resend this mail, only display it</mail_backup_lost_text>
-<q_from>I was sended</q_from>
-<q_to>I was recieved</q_to>
-<resend_mail>Resend this mail</resend_mail>
-<resend_mail_success>Success resend</resend_mail_success>
-<resend_mail_text>Resend this mail in original mode</resend_mail_text>
-<resend_mail_text_success>The command has been successfully sended to daemon, Check mailboxes</resend_mail_text_success>
-<search_messages_that>Search my messages that</search_messages_that>
-<with_body>With these words in body</with_body>
-<with_email>matching this email address</with_email>
-<with_subject>matching this subject</with_subject>
+<backup_text>In diesem Bereich k&#246;nnen Sie alte gesicherte E-Mails finden[br]Verwenden Sie das Abfrageformular, um E-Mails zu finden</backup_text>
+<dont_know>Unbekannt</dont_know>
+<mail_backup_lost>Mail-Quelle ist verloren</mail_backup_lost>
+<mail_backup_lost_text>Die Quelldatei wurde wahrscheinlich von der Festplatte gel&#246;scht, Sie k&#246;nnen diese E-Mail nicht erneut senden, sondern nur anzeigen</mail_backup_lost_text>
+<q_from>Ich habe gesendet</q_from>
+<q_to>Ich habe empfangen</q_to>
+<resend_mail>Diese E-Mail erneut senden</resend_mail>
+<resend_mail_success>Erfolgreich erneut gesendet</resend_mail_success>
+<resend_mail_text>Diese E-Mail im Originalmodus erneut senden</resend_mail_text>
+<resend_mail_text_success>Der Befehl wurde erfolgreich an den Daemon gesendet, pr&#252;fen Sie die Postf&#228;cher</resend_mail_text_success>
+<search_messages_that>Meine Nachrichten suchen, die</search_messages_that>
+<with_body>mit diesen W&#246;rtern im Text</with_body>
+<with_email>mit dieser E-Mail-Adresse &#252;bereinstimmend</with_email>
+<with_subject>mit diesem Betreff &#252;bereinstimmend</with_subject>

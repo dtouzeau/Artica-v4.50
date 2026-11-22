@@ -1,10 +1,18 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dnsfilter.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
-if(isset($_GET["single-page"])){page_single();}
+// Sans exit;, page_single() rendait sa sortie PUIS l'execution continuait dans
+// les dispatchs suivants et finissait dans page(): deux pages concatenees dans
+// une seule reponse.
+if(isset($_GET["single-page"])){page_single();exit;}
 if(isset($_GET["SearchIpsources"])){sources_search();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["delete"])){source_item_delete();exit;}
@@ -24,11 +32,31 @@ if(isset($_GET["sources-item-delete-js"])){source_item_delete_js();exit;}
 page();
 
 
+/**
+ * Le nom de la fonction de rafraichissement transmis dans l'URL.
+ *
+ * Il repart dans des OnClick et dans des $jsafter, sans echappement.
+ * search_block n'engendre jamais autre chose que "ss<time>".
+ * Renvoie "" quand il n'y a rien a appeler: "$function();" avec un nom vide
+ * produit le litteral "();", une SyntaxError qui avorte tout le bloc.
+ */
+function dnsfr_function():string{
+	return preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+}
+/** L'appel de rafraichissement, ou une chaine vide. */
+function dnsfr_call():string{
+	$fname=dnsfr_function();
+	return ($fname==="")?"":"$fname();";
+}
 
 function delete_js(){
 	$tpl=new template_admin();
-	$js="$('#{$_GET["md"]}').remove();";
-	$tpl->js_confirm_delete($_GET["rule"], "delete-rule", $_GET["delete-js"],$js);
+	// $md repart dans un selecteur jQuery: c'est un md5.
+	$md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
+	$js=($md==="")?"":"$('#{$md}').remove();";
+	// Le nom de la regle est affiche dans la boite de confirmation.
+	$rule=htmlspecialchars((string)($_GET["rule"] ?? ""));
+	$tpl->js_confirm_delete($rule, "delete-rule", intval($_GET["delete-js"]),$js);
 	
 }
 function delete_rule(){
@@ -62,7 +90,7 @@ function source_add_js(){
     $sql="SELECT groupname FROM webfilter_rules WHERE ID=$ID";
     $ligne=$q->mysqli_fetch_array($sql);
     $rulename=$ligne["groupname"];
-    $function=$_GET["function"];
+    $function=dnsfr_function();
     $tpl->js_dialog2($rulename. " {sources} {new_item}", "$page?sources-add-popup=$ID&function=$function",650);
 }
 
@@ -81,15 +109,22 @@ function source_item_delete_js(){
 }
 function source_item_delete(){
 
-    $GET=unserialize(base64_decode($_POST["delete"]));
-    $ipaddr=$GET["sources-item-delete-js"];
-    $ruleid=$GET["ruleid"];
+    // allowed_classes=false (PHP 7.0+): sans cette option unserialize() instancie
+    // toute classe nommee dans le parametre. Le retour est teste: false["..."]
+    // est un avertissement PHP 8 suivi d'une valeur nulle.
+    $raw=base64_decode((string)($_POST["delete"] ?? ""),true);
+    $GET=($raw===false)?false:@unserialize($raw,array("allowed_classes"=>false));
+    if(!is_array($GET)){$GET=array();}
+    $ipaddr=(string)($GET["sources-item-delete-js"] ?? "");
+    $ruleid=intval($GET["ruleid"] ?? 0);
     if($ipaddr==null){
         echo "IP Address is null!";
         return;
     }
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-    $q->QUERY_SQL("DELETE FROM webfilter_ipsources WHERE ipaddr='$ipaddr' AND ruleid='$ruleid'");
+    // $ipaddr partait BRUT dans le WHERE.
+    $ipaddrsql=$q->sqlite_escape_string2($ipaddr);
+    $q->QUERY_SQL("DELETE FROM webfilter_ipsources WHERE ipaddr='$ipaddrsql' AND ruleid='$ruleid'");
     if(!$q->ok){echo "$q->mysql_error";}
 }
 
@@ -98,18 +133,20 @@ function source_item_js(){
     $tpl=new template_admin();
     $page=CurrentPageName();
 
-    $ipaddr=$_GET["sources-item-js"];
-    $ruleid=$_GET["ruleid"];
-    $function=$_GET["function"];
+    $ipaddr=(string)($_GET["sources-item-js"] ?? "");
+    // $ruleid partait BRUT dans le WHERE.
+    $ruleid=intval($_GET["ruleid"] ?? 0);
+    $function=dnsfr_function();
     $ipaddrenc=urlencode($ipaddr);
 
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-    $sql="SELECT groupname FROM webfilter_rules WHERE ID=$ruleid";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $rulename=$ligne["groupname"];
+    $ligne=$q->mysqli_fetch_array("SELECT groupname FROM webfilter_rules WHERE ID=$ruleid");
+    if(!is_array($ligne)){$ligne=array();}
+    // Nom de regle et adresse partaient BRUTS dans le titre de la modale.
+    $rulename=htmlspecialchars((string)($ligne["groupname"] ?? ""));
 
-
-    $tpl->js_dialog2($rulename. " {sources} $ipaddr", "$page?sources-item-popup=$ipaddrenc&function=$function&ruleid=$ruleid",650);
+    $tpl->js_dialog2($rulename." {sources} ".htmlspecialchars($ipaddr),
+        "$page?sources-item-popup=$ipaddrenc&function=$function&ruleid=$ruleid",650);
 
 }
 
@@ -138,31 +175,41 @@ function source_item_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $ruleid=intval($_GET["ruleid"]);
-    $function=$_GET["function"];
-    $ipaddr=$_GET["sources-item-popup"];
+    $ipaddr=(string)($_GET["sources-item-popup"] ?? "");
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-    $ligne=$q->mysqli_fetch_array("SELECT description FROM webfilter_ipsources WHERE ruleid=$ruleid AND ipaddr='$ipaddr'");
+    // $ipaddr partait BRUT dans le WHERE.
+    $ipaddrsql=$q->sqlite_escape_string2($ipaddr);
+    $ligne=$q->mysqli_fetch_array("SELECT description FROM webfilter_ipsources WHERE ruleid=$ruleid AND ipaddr='$ipaddrsql'");
+    if(!is_array($ligne)){$ligne=array();}
+
+    // Sans nom de fonction, "$function();" produisait "();" -- une SyntaxError
+    // qui emportait aussi la fermeture de la modale et le rechargement.
+    $after="dialogInstance2.close();LoadAjax('table-loader-dnsfilterd-rules','$page?table=yes');".dnsfr_call();
 
     $form[]=$tpl->field_hidden("ruleid", $ruleid);
     $form[]=$tpl->field_hidden("ipaddr", $ipaddr);
-    $form[]=$tpl->field_text("description", "{description}", $ligne["description"],true);
-    echo $tpl->form_outside("$ipaddr", $form,null,"{apply}",
-        "dialogInstance2.close();LoadAjax('table-loader-dnsfilterd-rules','$page?table=yes');$function();","AsDnsAdministrators",true);
+    $form[]=$tpl->field_text("description", "{description}", (string)($ligne["description"] ?? ""),true);
+    echo $tpl->_ENGINE_parse_body(
+        $tpl->form_outside(htmlspecialchars($ipaddr), $form,null,"{apply}",$after,"AsDnsAdministrator",true)
+    );
 
 }
 
 function source_item_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ruleid=$_POST["ruleid"];
-    $ipaddr=$_POST["ipaddr"];
-    $description=$_POST["description"];
+    $ruleid=intval($_POST["ruleid"]);
+    $ipaddr=(string)($_POST["ipaddr"] ?? "");
+    $description=(string)($_POST["description"] ?? "");
 
 
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
+    // Seul $description etait echappe: $ipaddr et $ruleid partaient bruts dans
+    // le meme UPDATE.
     $description=$q->sqlite_escape_string2($description);
-    $q->QUERY_SQL("UPDATE webfilter_ipsources SET description='$description' WHERE ipaddr='$ipaddr' AND ruleid='$ruleid'");
-    if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";}
+    $ipaddrsql=$q->sqlite_escape_string2($ipaddr);
+    $q->QUERY_SQL("UPDATE webfilter_ipsources SET description='$description' WHERE ipaddr='$ipaddrsql' AND ruleid='$ruleid'");
+    if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo (new template_admin())->post_error("$q->mysql_error");}
 
 }
 
@@ -170,18 +217,19 @@ function source_item_save(){
 function source_add_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $ruleid=$_GET["sources-add-popup"];
+    // Pentest 2026-11-04 : sources-add-popup etait concatene dans la requete.
+    $ruleid=intval($_GET["sources-add-popup"]);
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
 
     $sql="SELECT groupname FROM webfilter_rules WHERE ID=$ruleid";
     $ligne=$q->mysqli_fetch_array($sql);
     $rulename=$ligne["groupname"];
-    $function=$_GET["function"];
+    $function=dnsfr_function();
 
     $form[]=$tpl->field_hidden("ruleid", $ruleid);
     $form[]=$tpl->field_textareacode("sources", null, null);
     echo $tpl->form_outside("$rulename {sources}", $form,"{DNSFILTERD_SOURCES_EXPLAIN}","{add}",
-        "dialogInstance2.close();LoadAjax('table-loader-dnsfilterd-rules','$page?table=yes');$function();","AsDnsAdministrators",true);
+        "dialogInstance2.close();LoadAjax('table-loader-dnsfilterd-rules','$page?table=yes');$function();","AsDnsAdministrator",true);
 }
 
 function sources_search(){
@@ -189,7 +237,7 @@ function sources_search(){
     $page=CurrentPageName();
     $ruleid=intval($_GET["SearchIpsources"]);
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-    $function=$_GET["function"];
+    $function=dnsfr_function();
     $t=time();
 
     $html[]="
@@ -201,59 +249,79 @@ function sources_search(){
 
 
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=false width=1%>DEL</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-    $TRCLASS=null;
-    $search=trim($_GET["search"]);
-    if($search==null) {
+    // Le terme partait TEL QUEL dans deux LIKE: une simple quote suffisait a
+    // detourner la requete.
+    $search=trim((string)($_GET["search"] ?? ""));
+    if($search===""){
         $results = $q->QUERY_SQL("SELECT * FROM webfilter_ipsources WHERE ruleid='$ruleid' ORDER BY ipaddr");
     }else{
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
-        $results = $q->QUERY_SQL("SELECT * FROM webfilter_ipsources WHERE (ruleid='$ruleid') AND 
-        ( (ipaddr LIKE '$search') OR (description LIKE '$search') ) ORDER BY ipaddr");
+        $like=$q->sqlite_escape_string2(str_replace("*","%",$search));
+        $results = $q->QUERY_SQL("SELECT * FROM webfilter_ipsources WHERE (ruleid='$ruleid') AND
+        ( (ipaddr LIKE '%$like%') OR (description LIKE '%$like%') ) ORDER BY ipaddr");
     }
+    if(!is_array($results)){$results=array();}
 
-
-	foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $description=$ligne["description"];
-        $ipaddr=$ligne["ipaddr"];
-        $ipaddrenc=urlencode($ipaddr);
-        $md=md5(serialize($ligne));
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td width='1%' nowrap><strong>".$tpl->td_href($ipaddr,null,"Loadjs('$page?sources-item-js=$ipaddrenc&function=$function&ruleid=$ruleid')")."</strong></td>";
-        $html[]="<td>$description</td>";
-        $html[]="<td>". $tpl->icon_delete("Loadjs('$page?sources-item-delete-js=$ipaddrenc&ruleid=$ruleid&md=$md')","AsDnsAdministrator")."</td>";
-        $html[]="</tr>";
-
+    $rows=array();
+    foreach ($results as $ligne){
+        $rows[]=dnsfr_source_row($ligne,$ruleid,$function,$tpl,$page);
     }
+    $c=count($rows);
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='3'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
+    $html[]="<thead><tr>";
+    $html[]="<th nowrap>{ipaddr}</th>";
+    $html[]="<th>{description}</th>";
+    $html[]="<th style='text-align:right'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='dnsfrsrc-rows'>";
+    if($c==0){
+        $html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    // Le <tfoot> portait un pager footable jamais alimente: l'init ciblait
+    // #table-<time>, un id qu'aucun <table> de cette page ne porte. Et son
+    // bloc <script> n'etait JAMAIS FERME -- il manquait le </script>.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} $c {items}</span>";
+    $html[]="<span class='awc-pg' id='dnsfrsrc-pager'></span>";
+    $html[]="</div></div></div>";
 
-	echo $tpl->_ENGINE_parse_body($html);
+    // Le <script> est concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body lisait la configuration JSON de footable comme des
+    // {tokens}.
+    $script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .$script
+        .awc_pager_js(50,"dnsfrsrc-rows","dnsfrsrc-pager");
+}
+
+/**
+ * Une source IP autorisee pour une regle.
+ *
+ * L'id md5 de la <tr> est conserve: la suppression le reutilise.
+ * Adresse et description viennent de la base et partaient BRUTES dans le HTML.
+ */
+function dnsfr_source_row($ligne,$ruleid,$function,$tpl,$page):string{
+    $description=(string)($ligne["description"] ?? "");
+    $ipaddr=(string)($ligne["ipaddr"] ?? "");
+    $ipaddrenc=urlencode($ipaddr);
+    $md=md5(serialize($ligne));
+
+    $h ="<tr id='$md'>";
+    $h.="<td style='width:1%' nowrap><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-network-wired'></i></span>";
+    $h.="<span class='awc-name'>"
+       .$tpl->td_href(htmlspecialchars($ipaddr),"{click_to_edit}","Loadjs('$page?sources-item-js=$ipaddrenc&function=$function&ruleid=$ruleid')")
+       ."</span></div></td>";
+    $h.="<td>".($description!==""?htmlspecialchars($description):"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="<td><div class='awc-acts'>"
+       .$tpl->icon_delete("Loadjs('$page?sources-item-delete-js=$ipaddrenc&ruleid=$ruleid&md=$md')","AsDnsAdministrator")
+       ."</div></td>";
+    $h.="</tr>";
+    return $h;
 }
 
 
@@ -285,7 +353,10 @@ function sources_save(){
         }
 
 		if(!$ipClass->isIPAddressOrRange($line)){continue;}
-		$q->QUERY_SQL("INSERT INTO webfilter_ipsources (ruleid,ipaddr,description) VALUES ($ruleid,'$line','$description')");
+		// $line est valide par isIPAddressOrRange(), mais $description sort du
+		// texte saisi et partait BRUTE dans l'INSERT.
+		$descsql=$q->sqlite_escape_string2($description);
+		$q->QUERY_SQL("INSERT INTO webfilter_ipsources (ruleid,ipaddr,description) VALUES (".intval($ruleid).",'$line','$descsql')");
 		if(!$q->ok){echo $q->mysql_error;return;}
 		
 	}
@@ -376,7 +447,7 @@ function table(){
 	$ARRAY["CMD"]="dnsfilterd.php?compile-rules=yes";
 	$ARRAY["TITLE"]="{apply_webiltering_rules}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=dnsfilterd-progress')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=dnsfilterd-progress')";
 	
 	$add="Loadjs('fw.dns.filterd.rules.edit.php?ID=-1')";
 	
@@ -391,7 +462,7 @@ function table(){
 
 
 	
-	$html[]="<table id='table-filtragewebrules-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' >$order</th>";
@@ -404,7 +475,7 @@ function table(){
 	$html[]="<th data-sortable=false width=1%>$delete</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='dnsfrules-rows'>";
 	
 	
 	$sock=new dnsfiltersocks();
@@ -413,7 +484,7 @@ function table(){
 	if(!is_numeric($DefaultPosition)){$DefaultPosition=0;}
 	
 	if($DefaultPosition==0){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$html[]=DefaultRule($TRCLASS);
 	}
 	
@@ -427,7 +498,7 @@ function table(){
 	$t=time();
 	
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$ID=$ligne["ID"];
 		$md5=md5($ligne["ID"]);
 		$endofrule_text=null;
@@ -481,7 +552,9 @@ function table(){
 		$styleupd="style='border:0px;margin:0px;padding:0px;background-color:transparent'";
 		$up=imgsimple("arrow-up-32.png","","RuleDansUpDown('{$ligne['ID']}',1)");
 		$down=imgsimple("arrow-down-32.png","","RuleDansUpDown('{$ligne['ID']}',0)");
-		$zorder="<table $styleupd><tr><td $styleupd>$down</td $styleupd><td $styleupd>$up</td></tr></table>";
+		// Un <table> imbrique servait a coller les deux fleches, avec un
+		// "</td $styleupd>" -- des attributs sur une balise FERMANTE.
+		$zorder="<span class='awc-nowrap'>$down&nbsp;$up</span>";
 	
 	
 		$LigneCount=$q->mysqli_fetch_array("SELECT count(*) as tcount FROM webfilter_ipsources WHERE ruleid={$ligne['ID']}");
@@ -520,42 +593,46 @@ function table(){
 		}
 	
 		if($DefaultPosition==1){
-			if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+			$TRCLASS=null;
 			$html[]=DefaultRule($TRCLASS);
 		}
 	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='8'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-filtragewebrules-rules').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
+	// Le <tfoot> portait un pager footable jamais alimente: l'init ciblait
+	// #table-filtragewebrules-rules, un id qu'aucun <table> de cette page ne
+	// porte.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span class='awc-pg' id='dnsfrules-pager'></span>";
+	$html[]="</div></div></div>";
 
+	// Le <script> est concatene APRES l'analyse: la regex #{(.+?)}# de
+	// _ENGINE_parse_body lisait la configuration JSON de footable ET les corps
+	// des deux fonctions ci-dessous comme des {tokens}. RuleGroupUpDown est
+	// appelee par les fleches de chaque ligne: elle DOIT etre definie.
+	$js=array();
+	$js[]="NoSpinner();";
+	$js[]=$tpl->ICON_SCRIPTS_COMPILE();
+	$js[]="var xRuleGroupUpDown$t= function (obj) {";
+	$js[]="\tvar res=obj.responseText;";
+	$js[]="\tif(res.length>3){alert(res);return;}";
+	$js[]="}";
+	$js[]="function RuleGroupUpDown$t(ID,direction){";
+	$js[]="\tvar XHR = new XHRConnection();";
+	$js[]="\tXHR.appendData('rule-order', ID);";
+	$js[]="\tXHR.appendData('direction', direction);";
+	$js[]="\tXHR.sendAndLoad('$page', 'POST',xRuleGroupUpDown$t);";
+	$js[]="}";
+	$script="<script>".@implode("\n",$js)."</script>";
 
-$html[]="
-var xRuleGroupUpDown$t= function (obj) {
-	var res=obj.responseText;
-	if(res.length>3){alert(res);return;}
-	
-}		
-function RuleGroupUpDown$t(ID,direction){
-		var XHR = new XHRConnection();
-		XHR.appendData('rule-order', ID);
-		XHR.appendData('direction', direction);
-		XHR.sendAndLoad('$page', 'POST',xRuleGroupUpDown$t);
-	}";
+	// La sortie n'etait PAS analysee: les en-tetes et libelles en {token} de ce
+	// tableau s'affichaient litteralement. Et depuis que le <script> est sorti
+	// de $html, il faut l'emettre explicitement -- sans quoi les fleches
+	// monter/descendre appelleraient une fonction inexistante.
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.$script
+		.awc_pager_js(50,"dnsfrules-rows","dnsfrules-pager");
 
-$html[]="</script>";
-	
-	echo @implode("\n", $html);
-	
 }
 
 function save(){
@@ -659,14 +736,16 @@ function DefaultRule($TRCLASS){
 function move_rule(){
 
 	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$sql="SELECT zOrder FROM webfilter_rules WHERE `ID`='{$_POST["rule-order"]}'";
+	// Pentest 2026-11-04 : rule-order etait concatene dans la requete.
+	$ruleOrderID=intval($_POST["rule-order"]);
+	$sql="SELECT zOrder FROM webfilter_rules WHERE `ID`='$ruleOrderID'";
 	$ligne=$q->mysqli_fetch_array($sql);
 	$xORDER_ORG=$ligne["zOrder"];
 	$xORDER=$xORDER_ORG;
 	if($_POST["direction"]==1){$xORDER=$xORDER_ORG-1;}
 	if($_POST["direction"]==0){$xORDER=$xORDER_ORG+1;}
 	if($xORDER<0){$xORDER=0;}
-	$sql="UPDATE webfilter_rules SET zOrder=$xORDER WHERE `ID`='{$_POST["rule-order"]}'";
+	$sql="UPDATE webfilter_rules SET zOrder=$xORDER WHERE `ID`='$ruleOrderID'";
 	$q->QUERY_SQL($sql);
 	if(!$q->ok){echo $q->mysql_error;;return;}
 	
@@ -674,7 +753,7 @@ function move_rule(){
 	if($_POST["direction"]==1){
 		$xORDER2=$xORDER+1;
 		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE webfilter_rules SET zOrder=$xORDER2 WHERE `ID`<>'{$_POST["rule-order"]}' AND zOrder=$xORDER";
+		$sql="UPDATE webfilter_rules SET zOrder=$xORDER2 WHERE `ID`<>'$ruleOrderID' AND zOrder=$xORDER";
 		$q->QUERY_SQL($sql);
 		//echo $sql."\n";
 		if(!$q->ok){echo $q->mysql_error;return;}
@@ -682,7 +761,7 @@ function move_rule(){
 	if($_POST["direction"]==0){
 		$xORDER2=$xORDER-1;
 		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE webfilter_rules SET zOrder=$xORDER2 WHERE `ID`<>'{$_POST["rule-order"]}' AND zOrder=$xORDER";
+		$sql="UPDATE webfilter_rules SET zOrder=$xORDER2 WHERE `ID`<>'$ruleOrderID' AND zOrder=$xORDER";
 		$q->QUERY_SQL($sql);
 		//echo $sql."\n";
 		if(!$q->ok){echo $q->mysql_error;return;}

@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -81,15 +83,16 @@ function events_searcher():bool{
     $text["info"]="text-muted";
 
     $html[]="
-<table class=\"table table-hover\">
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
-        	<th>{date}</th>
-        	<th>{level}</th>
+        	<th class='center'>{date}</th>
+        	<th class='center'>{level}</th>
         	<th>{events}</th>
         </tr>
   	</thead>
-	<tbody>
+	<tbody id='rev-rows'>
 ";
 
     $MAIN=$tpl->format_search_protocol($_GET["search"]);
@@ -103,11 +106,19 @@ function events_searcher():bool{
     if (json_last_error()> JSON_ERROR_NONE) {
         echo $tpl->div_error("{error}<hr>".json_last_error_msg());
     }
-    if(!$json->Status){
-        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+    // json_decode() rend NULL quand le daemon ne repond pas: lire ->Status et
+    // ->Logs dessus est une erreur fatale en PHP 8. Les deux verifications
+    // precedentes signalaient l'erreur sans INTERROMPRE la fonction.
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}<hr>"
+            .(is_object($json) && isset($json->Error)?htmlspecialchars($json->Error):"")));
+        return false;
     }
+    $logs=(isset($json->Logs) && is_array($json->Logs))?$json->Logs:array();
 
-    foreach ($json->Logs as $line){
+    // $json est REAFFECTE dans la boucle ci-dessous: on itere donc une copie
+    // figee, prise avant, plutot que la propriete d'un objet qui n'existe plus.
+    foreach ($logs as $line){
         $textclass=null;
         if(strlen($line)<5){
             continue;
@@ -118,10 +129,11 @@ function events_searcher():bool{
         }
         if(!property_exists($json,"level")){continue;}
 
+        // Pentest 2026-11-04 : niveau et message du journal (donnee externe) affiches sans encodage (XSS stockee).
         $level=$json->level;
         $FTime=$tpl->time_to_date($json->time,true);
-        $level_label="<label class='label label-default'>$level</label>";
-        $message=$json->message;
+        $level_label="<label class='label label-default'>".req_html($level)."</label>";
+        $message=req_html($json->message);
         if(isset($tooltips[$level])){
             $level_label=$tooltips[$level];
         }
@@ -657,8 +669,15 @@ function events_searcher():bool{
 				</tr>";
 
     }
-    $html[]="</tbody></table>";
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='rev-pager'></span></div>";
+    $html[]="</div></div>";
+
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .awc_pager_js(100,"rev-rows","rev-pager");
     return true;
 
 }

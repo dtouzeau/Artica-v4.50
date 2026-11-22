@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 include_once(dirname(__FILE__)."/class.squid.externals.acls.childrens.inc");
 class squid_ntlm{
     private $SquidUrgency;
@@ -184,9 +185,14 @@ class squid_ntlm{
             return @implode("\n", $CONF) . "\n\n";
         }
 
-        $this->ldap_auth_ad_update();
+        // Installs/updates /lib/squid3/artica-proxy-auth (articarest squid/proxy_auth_helper.go).
+        $program="auth_param basic program /lib/squid3/artica-proxy-auth";
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/auth/ldap-ad/helper"));
+        if(is_object($json) && property_exists($json,"Program") && strlen($json->Program)>0){
+            $program=$json->Program;
+        }
 
-        $conf[]= "auth_param basic program /lib/squid3/artica-proxy-auth";
+        $conf[]= $program;
         $conf[]= "auth_param basic children ".$this->auth_param_basic_children();
         $conf[]= "auth_param basic realm Active Directory Identification";
         $conf[]=$this->auth_params_basic_options();
@@ -194,46 +200,6 @@ class squid_ntlm{
         return @implode("\n", $conf) . "\n\n";
 
 
-    }
-    private function ldap_auth_syslog($text){
-        if(!function_exists("syslog")){return false;}
-        openlog("artica-proxy-auth", LOG_PID , LOG_SYSLOG);
-        syslog(LOG_INFO, $text);
-        closelog();
-    }
-    public function ldap_auth_ad_update():bool{
-        $src="/usr/share/artica-postfix/bin/artica-proxy-auth";
-        if(!is_file("/lib/squid3/artica-proxy-auth")){
-            @copy($src,"/lib/squid3/artica-proxy-auth");
-            @chmod("/lib/squid3/artica-proxy-auth",0755);
-            return true;
-        }
-        $md5In=md5_file($src);
-        $md5out=md5_file("/lib/squid3/artica-proxy-auth");
-        $this->ldap_auth_syslog("[UPDATE]: Source: $md5In Destination: $md5out");
-        if($md5In==$md5out){
-            $this->ldap_auth_syslog("[UPDATE]: No change");
-            return true;
-        }
-        $unix=new unix();
-        $cp=$unix->find_program("cp");
-        $squidbin=$unix->LOCATE_SQUID_BIN();
-        shell_exec("/usr/sbin/artica-phpfpm-service -reload-proxy");
-        for($i=0;$i<5;$i++){
-            $this->ldap_auth_syslog("[UPDATE]: Updating binary...$i/5");
-            shell_exec("$cp -f  $src /lib/squid3/artica-proxy-auth");
-            $md5out=md5_file("/lib/squid3/artica-proxy-auth");
-            if($md5In==$md5out){
-                $this->ldap_auth_syslog("[UPDATE]: Updating binary [Success]...$i/5");
-                @chmod("/lib/squid3/artica-proxy-auth",0755);
-                shell_exec("/usr/sbin/artica-phpfpm-service -reload-proxy");
-                return true;
-            }
-            shell_exec("/usr/sbin/artica-phpfpm-service -reload-proxy");
-            usleep(800);
-        }
-        $this->ldap_auth_syslog("[UPDATE]: Updating binary [FAILED]...$i/5");
-        return false;
     }
     private function AuthParentPort():string{
 
@@ -1221,9 +1187,14 @@ class squid_ntlm{
         $myFullHostname=$this->hostname_g();
 
 
+        // 0640, pas 0755 : le keytab porte la cle du compte machine AD. Squid le lit
+        // sous cache_effective_user (squid), qui en est proprietaire. Valeur identique
+        // aux deux sites Go (msktutils/keytab.go secureKeytab) : les ecrivains doivent
+        // s'accorder, sinon le mode bascule a chaque passage. Le 4e ecrivain historique,
+        // exec.kerbauth.php, a ete supprime.
         @chown("/etc/squid3/krb5.keytab","squid");
         @chgrp("/etc/squid3/krb5.keytab","squid");
-        @chmod("/etc/squid3/krb5.keytab",0755);
+        @chmod("/etc/squid3/krb5.keytab",0640);
 
 
 
@@ -1250,7 +1221,7 @@ class squid_ntlm{
 
     private function hostname_g():string{
 
-        if(is_file("/etc/artica-postfix/settings/Daemons/myhostname")){
+        if(artica_setting_exists("myhostname")){
             $results=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
             if(strlen($results)>2){return $results;}
         }

@@ -1,19 +1,19 @@
-<about>Nmap is a security scanner originally written by Gordon Lyon (Fyodor).[br]
-It may be used to discover computers and services on a computer network,
-thus creating a "map" of the network.[br]
-Just like many simple port scanners, Nmap is capable of discovering passive services on a network despite
-the fact that such services aren't advertising themselves with a service discovery protocol.[br]
-In addition Nmap may be able to determine various details about the remote computers.[br]
-These include operating system, device type, uptime, software product used to run a service,
-exact version number of that product, presence of some firewall techniques and, on a local area network, even vendor of the remote network card.</about>
-<add_network>Add a new network to scan</add_network>
-<add_network_text>add IP range to scan in order to discover new remote computers</add_network_text>
-<ip>TCP/IP Address</ip>
-<mask>Network mask</mask>
-<networks_list>Networks list</networks_list>
-<NmapRotateMinutes>Pooling time (in minutes)</NmapRotateMinutes>
-<NmapScanEnabled>Enable scanning your network</NmapScanEnabled>
-<nmap_logs>NMAP events</nmap_logs>
-<nmap_logs_text>See events ordered by artica</nmap_logs_text>
-<perform_scan>Perform scan</perform_scan>
-<perform_scan_text>Perform a scan now and broacast your networks to discover nodes</perform_scan_text>
+<about>Nmap to skaner bezpiecze&#324;stwa pierwotnie napisany przez Gordona Lyona (Fyodor).[br]
+Mo&#380;e by&#263; u&#380;ywany do wykrywania komputer&#243;w i us&#322;ug w sieci komputerowej,
+tworz&#261;c w ten spos&#243;b &quot;map&#281;&quot; sieci.[br]
+Podobnie jak wiele prostych skaner&#243;w port&#243;w, Nmap potrafi wykrywa&#263; pasywne us&#322;ugi w sieci pomimo
+faktu, &#380;e takie us&#322;ugi nie og&#322;aszaj&#261; si&#281; za pomoc&#261; protoko&#322;u wykrywania us&#322;ug.[br]
+Dodatkowo Nmap mo&#380;e okre&#347;li&#263; r&#243;&#380;ne szczeg&#243;&#322;y dotycz&#261;ce zdalnych komputer&#243;w.[br]
+Obejmuj&#261; one system operacyjny, typ urz&#261;dzenia, czas dzia&#322;ania, produkt oprogramowania u&#380;ywany do uruchomienia us&#322;ugi,
+dok&#322;adny numer wersji tego produktu, obecno&#347;&#263; niekt&#243;rych technik firewall oraz, w sieci lokalnej, nawet producenta zdalnej karty sieciowej.</about>
+<add_network>Dodaj now&#261; sie&#263; do skanowania</add_network>
+<add_network_text>Dodaj zakres IP do skanowania, aby wykry&#263; nowe komputery zdalne</add_network_text>
+<ip>Adres TCP/IP</ip>
+<mask>Maska sieci</mask>
+<networks_list>Lista sieci</networks_list>
+<NmapRotateMinutes>Czas odpytywania (w minutach)</NmapRotateMinutes>
+<NmapScanEnabled>W&#322;&#261;cz skanowanie sieci</NmapScanEnabled>
+<nmap_logs>Zdarzenia NMAP</nmap_logs>
+<nmap_logs_text>Zobacz zdarzenia uporz&#261;dkowane przez artica</nmap_logs_text>
+<perform_scan>Wykonaj skanowanie</perform_scan>
+<perform_scan_text>Wykonaj skanowanie teraz i rozg&#322;o&#347; w swoich sieciach, aby wykry&#263; w&#281;z&#322;y</perform_scan_text>

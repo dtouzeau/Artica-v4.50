@@ -1,13 +1,13 @@
-<all_quarantines_text>You are a full system administrator and you can query quarantine trough all organizations</all_quarantines_text>
-<build_report_for>Build report for</build_report_for>
-<enable_artica_quarantine_robots_explain>This robot is used to send to your users an HTML report of quarantines stored on this server</enable_artica_quarantine_robots_explain>
-<enable_artica_report_robots_explain>This robot is used to send to your users a report of all current white & black lists address stored on this server</enable_artica_report_robots_explain>
-<enable_html_reports>Enable HTML email reports</enable_html_reports>
-<explain>Explain</explain>
-<externalLink>External link</externalLink>
-<ou_quarantine_reports_explain>If you turn to green this feature, all users stored by your organization will receive automatically an eMail with a reports of their quarantine storage status.[br]
-In this case, they could be restore, delete, display email trough this sended report</ou_quarantine_reports_explain>
-<quarantine_reports_text>Send quarantine/backup HTML emails reports to your users</quarantine_reports_text>
-<quarantine_robots>On-Demand Reports</quarantine_robots>
-<quarantine_robots_text>Set email addresses that users can send to in order to receive their quarantine report</quarantine_robots_text>
-<timetosendreport>Send report each day AT</timetosendreport>
+<all_quarantines_text>Es usted un administrador completo del sistema y puede consultar la cuarentena a trav&#233;s de todas las organizaciones</all_quarantines_text>
+<build_report_for>Generar informe para</build_report_for>
+<enable_artica_quarantine_robots_explain>Este robot se utiliza para enviar a sus usuarios un informe HTML de las cuarentenas almacenadas en este servidor</enable_artica_quarantine_robots_explain>
+<enable_artica_report_robots_explain>Este robot se utiliza para enviar a sus usuarios un informe de todas las direcciones de listas blancas y negras actuales almacenadas en este servidor</enable_artica_report_robots_explain>
+<enable_html_reports>Habilitar informes de correo HTML</enable_html_reports>
+<explain>Explicaci&#243;n</explain>
+<externalLink>Enlace externo</externalLink>
+<ou_quarantine_reports_explain>Si pone en verde esta funci&#243;n, todos los usuarios almacenados por su organizaci&#243;n recibir&#225;n autom&#225;ticamente un correo con un informe del estado de su almacenamiento de cuarentena.[br]
+En este caso, podr&#225;n restaurar, eliminar y mostrar el correo a trav&#233;s de este informe enviado</ou_quarantine_reports_explain>
+<quarantine_reports_text>Env&#237;e informes HTML por correo de cuarentena/copia de seguridad a sus usuarios</quarantine_reports_text>
+<quarantine_robots>Informes a demanda</quarantine_robots>
+<quarantine_robots_text>Establezca las direcciones de correo a las que los usuarios pueden enviar para recibir su informe de cuarentena</quarantine_robots_text>
+<timetosendreport>Enviar informe cada d&#237;a A LAS</timetosendreport>

@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 if(!isset($GLOBALS["AS_ROOT"])){if(posix_getuid()==0){$GLOBALS["AS_ROOT"]=true;}else{$GLOBALS["AS_ROOT"]=false;}}
 include_once(dirname(__FILE__)."/class.squid.inc");;
 include_once(dirname(__FILE__)."/class.resolv.conf.inc");

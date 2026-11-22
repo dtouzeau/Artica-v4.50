@@ -1,5 +1,5 @@
 <Delete_messages>Borrar Mensajes</Delete_messages>
-<Delete_messages_text>whether the message will be deleted after being downloaded.</Delete_messages_text>
+<Delete_messages_text>si el mensaje se eliminar&#225; despu&#233;s de ser descargado.</Delete_messages_text>
 <Domain>Dominio</Domain>
 <Domain_text>Su dominio de Hotmail hotmail.com (por defecto 'hotmail.com', b&aacute;sicamente lo que est&aacute; despu&eacute;s de la @ en su direcci&oacute;n)</Domain_text>
 <getlive_about>GetLive es una utilidad que obtiene el correo electr&oacute;nico de tu cuenta de Hotmail / cuenta de Windows Live.[br]
@@ -7,4 +7,4 @@ Rellene el siguiente formulario para obtener todos los mensajes de Hotmail y pon
 <MarkRead>Marcar como leido</MarkRead>
 <MarkRead_text>el mensaje sera marcado como leido despues de que se este descargando</MarkRead_text>
 <password_text>Su password de Hotmail</password_text>
-<username_text>Your Hotmail UserName (without @something)</username_text>
+<username_text>Su nombre de usuario de Hotmail (sin @algo)</username_text>

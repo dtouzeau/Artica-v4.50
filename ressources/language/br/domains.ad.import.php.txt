@@ -1,28 +1,27 @@
-<administrator>Administrator</administrator>
+<administrator>Administrador</administrator>
 <admin_dn>Conta do administrador</admin_dn>
-<admin_dn_text>Give the Active Directory Administrator account and password.[br]Usually, the Administrator has "Administrator" name is stored in cn="Administrator,cn=Users,..."
-[br]You can give here the name of the Administrator or the full "DN" path
-[br]The suffix is the first branch of your Active Directory Branch.[br]Usually if your server is named has server.domain.tld,the suffix will be "dc=server,dc=domain,dc=tld"
-</admin_dn_text>
+<admin_dn_text>Indique a conta e a senha do administrador do Active Directory.[br]Normalmente, o administrador tem o nome &quot;Administrator&quot; e &#233; armazenado em cn=&quot;Administrator,cn=Users,...&quot;
+[br]Voc&#234; pode indicar aqui o nome do administrador ou o caminho &quot;DN&quot; completo
+[br]O sufixo &#233; o primeiro ramo do seu ramo Active Directory.[br]Normalmente, se o seu servidor se chama server.domain.tld, o sufixo ser&#225; &quot;dc=server,dc=domain,dc=tld&quot;</admin_dn_text>
 <ad_server>Endereço do servidor Active Directory</ad_server>
-<ad_server_text>Give here the IP address or server name of your Active Directory/MS Exchange server</ad_server_text>
+<ad_server_text>Indique aqui o endere&#231;o IP ou o nome do servidor do seu servidor Active Directory/MS Exchange</ad_server_text>
 <bdu>Mau nome de usu%C3¡rio ou senha</bdu>
 <cls>N%C3£o pôde se ligar ao servidor do Active Directory</cls>
 <connected>Conex%C3£o bemâ%80%91sucedida</connected>
-<err_unkown>Warning unable to logon with following</err_unkown>
-<failed>Connection Failed</failed>
-<iar>Insufficient access rights.</iar>
-<importation_completed>Importation task completed</importation_completed>
-<import_ad_title>Active Directory Members Importation</import_ad_title>
-<local_group>Select your local group</local_group>
-<local_group_text>Select in the list the Artica local group that will store your active directory users</local_group_text>
-<perform_importation>Perform the importation task</perform_importation>
-<remote_org>Select Remote organization</remote_org>
-<remote_org_text>Select the container that store users you want to import</remote_org_text>
-<restart_importation>Restart new importation</restart_importation>
+<err_unkown>Aviso: n&#227;o foi poss&#237;vel fazer login com o seguinte</err_unkown>
+<failed>Falha na conex&#227;o</failed>
+<iar>Direitos de acesso insuficientes.</iar>
+<importation_completed>Tarefa de importa&#231;&#227;o conclu&#237;da</importation_completed>
+<import_ad_title>Importa&#231;&#227;o de membros do Active Directory</import_ad_title>
+<local_group>Selecione seu grupo local</local_group>
+<local_group_text>Selecione na lista o grupo local Artica que armazenar&#225; seus usu&#225;rios do Active Directory</local_group_text>
+<perform_importation>Realizar a tarefa de importa&#231;&#227;o</perform_importation>
+<remote_org>Selecionar organiza&#231;&#227;o remota</remote_org>
+<remote_org_text>Selecione o cont&#234;iner que armazena os usu&#225;rios que voc&#234; deseja importar</remote_org_text>
+<restart_importation>Reiniciar nova importa&#231;&#227;o</restart_importation>
 <server_name>Endereço do servidor</server_name>
 <server_port>Porta de escuta</server_port>
 <suffix>Sufixo do Active Directory</suffix>
-<ucl>Unable to connect to the LDAP server specified[br]please,verify if ldap daemon is running or the ldap server address</ucl>
-<unable_to_connect>Unable to connect to the Active Directory server specified</unable_to_connect>
+<ucl>N&#227;o foi poss&#237;vel conectar ao servidor LDAP especificado[br]verifique se o daemon ldap est&#225; em execu&#231;&#227;o ou o endere&#231;o do servidor ldap</ucl>
+<unable_to_connect>N&#227;o foi poss&#237;vel conectar ao servidor Active Directory especificado</unable_to_connect>
 <users>Membros</users>

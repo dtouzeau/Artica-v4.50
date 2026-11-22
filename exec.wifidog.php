@@ -1409,7 +1409,7 @@ function buildconfig(){
 	$Checking_squid=Checking_squid($SquidHotSpotPort);
 	if(!$Checking_squid){
 		if($GLOBALS["OUTPUT"]){echo "Configuring...: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]}: Reconfiguring proxy...\n";}
-		shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+		system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 		if($GLOBALS["OUTPUT"]){echo "Configuring...: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]}: Restarting Proxy...\n";}
 		shell_exec("/etc/init.d/squid restart --force {$GLOBALS["SCRIPT_SUFFIX"]}");
 	}
@@ -1427,7 +1427,7 @@ function buildconfig(){
 		build_progress("{reconfiguring}",63);
 		if(!$Checking_squid){
 			if($GLOBALS["OUTPUT"]){echo "Configuring...: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]}: Reconfiguring proxy...\n";}
-			shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+			system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 			if($GLOBALS["OUTPUT"]){echo "Configuring...: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]}: Restarting Proxy...\n";}
 			shell_exec("/etc/init.d/squid restart --force {$GLOBALS["SCRIPT_SUFFIX"]}");
 		}
@@ -2079,7 +2079,7 @@ function RECONFIGURE_PROGRESS($aspid=false){
 	if($ArticaHotSpotEmergency==0){
 		if($proxyRestart==1){
 			build_progress_reconfigure("{reconfigure_proxy_service}",50);
-			system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+			system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 		}
 		
 		build_progress_reconfigure("{reconfiguring} {webserver}",60);

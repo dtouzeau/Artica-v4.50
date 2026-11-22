@@ -1,12 +1,15 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.hacluster-backends.inc");
 include_once(dirname(__FILE__) . "/ressources/class.logfile_daemon.inc");
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
 if(isset($_GET["explain"])){explain_js();exit;}
 if(isset($_GET["explain-popup"])){explain_popup();exit;}
+if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["search"])){search();exit;}
 page();
 
@@ -35,62 +38,38 @@ function explain_popup(){
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$t=time();
-	if(!isset($_SESSION["HACLUSTER_CNX"])){$_SESSION["HACLUSTER_CNX"]="";}
-	
-	$html="
-
-	<div class=\"row\"> 
-		<div class='ibox-content'>
-		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["HACLUSTER_CNX"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
-      		<span class=\"input-group-btn\">
-       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
-      	</span>
-     </div>
-    </div>
-</div>
-	<div class='row'><div id='progress-firehol-restart'></div>
-	<div class='ibox-content'>
-
-	<div id='table-loader'></div>
-
-	</div>
-	</div>
-	<script>
-	$.address.state('/');
-	$.address.value('/hacluster-connections');
-		function Search$t(e){
-			if(!checkEnter(e) ){return;}
-			ss$t();
-		}
-		
-		function ss$t(){
-			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
-			LoadAjax('table-loader','$page?search='+ss);
-		}
-		
-		function Start$t(){
-			var ss=document.getElementById('search-this-$t').value;
-			ss$t();
-			
-		}
-		Start$t();
-	</script>";
+	$html=$tpl->page_header(
+		"{trace_connexions}",
+		ico_eye,
+		"{hacluster_connections_explain}",
+		"$page?start=yes",
+		"hacluster-connections",
+		"progress-firehol-restart",false,
+		"table-hacluster-connections"
+	);
 
 	if(isset($_GET["main-page"])){
-		$tpl=new template_admin("{APP_HACLUSTER}",$html);
+		$tpl=new template_admin("{APP_HACLUSTER} {trace_connexions}",$html);
 		echo $tpl->build_firewall();
 		return;
 	}
-	
 	echo $tpl->_ENGINE_parse_body($html);
+}
 
+function start():bool{
+	$page=CurrentPageName();
+	$tpl=new template_admin();
+	$html=array();
+	$html[]="<div style='margin-top:10px'>";
+	$html[]=$tpl->search_block($page,"","","","");
+	$html[]="</div>";
+	echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+	return true;
 }
 
 function search(){
 
-	$sock=new sockets();
+
 	$tpl=new template_admin();
     $search=$tpl->query_pattern(trim(strtolower($_GET["search"])));
     if(strlen($search["S"])<2){$search["S"]="*";}
@@ -98,10 +77,7 @@ function search(){
     $ss=urlencode(base64_encode($search["S"]));
 
 
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-
-    $sql="SELECT *  FROM `hacluster_backends` ORDER BY bweight";
-    $results = $q->QUERY_SQL($sql);
+    $results=hacluster_db_list_backends("bweight", "ASC");
     foreach ($results as $index=>$ligne) {
         $ID = $ligne["ID"];
         $listen_ip = $ligne["listen_ip"];
@@ -115,33 +91,16 @@ function search(){
     $data=$GLOBALS["CLASS_SOCKETS"]->REST_API($EndPoint);
 
 
-	$date_text=$tpl->_ENGINE_parse_body("{date}");
-	$html[]=$tpl->_ENGINE_parse_body("
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>$date_text</th>
-        	<th>PID</th>
-        	<th>{client}</th>
-        	<th>{type}</th>
-        	<th>{website}</th>
-        	<th colspan=4>{backend}</th>
-        	<th>{size}</th>
-        	<th>{connections}</th>
-        	<th>{duration}</th>
-        	<th>{status}</th>
-        </tr>
-  	</thead>
-	<tbody>
-");
+    $rows=array();
+    if(!isset($MAIN_BACKENDS)){ $MAIN_BACKENDS=array(); }
     $page=CurrentPageName();
     $json=json_decode($data);
     if (json_last_error()> JSON_ERROR_NONE) {
-        echo $tpl->div_error("Decoding: ".strlen($data)." bytes<hr>$data".json_last_error_msg());
+        echo $tpl->div_error("Decoding: ".strlen($data)." bytes<hr>".htmlspecialchars($data).json_last_error_msg())."<script>NoSpinner();</script>";
         return false;
     }
     if(!$json->Status){
-        echo $tpl->div_error($json->Error);
+        echo $tpl->div_error($json->Error)."<script>NoSpinner();</script>";
         return false;
     }
 
@@ -151,7 +110,8 @@ function search(){
 
     $icoArrow=ico_arrow_right;
     $icoIface=ico_nic;
-    foreach ($json->Logs as $line) {
+    $logs=isset($json->Logs) && is_array($json->Logs) ? $json->Logs : array();
+    foreach ($logs as $line) {
         $line = trim($line);
         $line=str_replace("\u003c","<",$line);
         if(!preg_match("#rt-requests=<(.+?)>rt-requests#", $line,$re)){
@@ -160,7 +120,7 @@ function search(){
         $jsonLine=json_decode($re[1]);
 
         if (json_last_error()> JSON_ERROR_NONE) {
-            echo "<strong style='color:red;'>$re[1]</strong>";
+            VERBOSE("[$re[1]] unparsable",__LINE__);
             VERBOSE("[$re[1]] ".json_last_error_msg(),__LINE__);
            continue;
         }
@@ -214,31 +174,65 @@ function search(){
         }
         list($status,$class)=TERMINAISON($termination_state,$status_code);
 
-		$html[]="<tr>
-				<td $class style='width:1%' nowrap>$FTime</td>
-				<td $class style='width:1%' nowrap>$pid</td>
-				<td $class style='width:1%' nowrap>$client</td>
-				<td $class style='width:1%' nowrap>$PROTO</td>
-				<td $class style='width:99%'>$http_request_uri_without_query</td>
-				<td $class style='width:1%' nowrap><i class='$icoIface'></i></td>
-				<td $class style='width:1%'>$outface</td>
-				<td $class style='width:1%' nowrap><i class='$icoArrow'></i></td>
-				<td $class nowrap>$BackendAddr&nbsp;$backendname</td>
-				<td $class style='width:1%' nowrap>$bytes</td>
-				<td $class nowrap style='width:1%;text-align:right;padding-right:5px'>$connexions</td>
-				<td $class style='width:1%' nowrap>$time</td>	
-				<td $class style='width:1%' nowrap>$status</td>
-				</tr>";
-		
+        $rows[]=hacluster_cnx_row($class,$FTime,$client,$PROTO,$http_request_uri_without_query,$outface,$BackendAddr,$backendname,$bytes,$time,$status);
 	}
-	
-	$html[]="</tbody></table>";
 
-	echo $tpl->_ENGINE_parse_body($html);
-	
-	
-	
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+	$html[]="<th class='awc-nowrap'>{date}</th>";
+	$html[]="<th class='awc-nowrap'>{client}</th>";
+	$html[]="<th class='awc-nowrap'>{type}</th>";
+	$html[]="<th>{website}</th>";
+	$html[]="<th class='awc-nowrap'>{backend}</th>";
+	$html[]="<th class='awc-nowrap' style='text-align:right'>{size}</th>";
+	$html[]="<th class='awc-nowrap' style='text-align:right'>{duration}</th>";
+	$html[]="<th class='center'>{status}</th>";
+	$html[]="</tr></thead><tbody id='awc-rows'>";
+	if(count($rows)==0){ $html[]="<tr><td colspan='8'><div class='awc-empty'>{no_data}</div></td></tr>"; }
+	else { $html[]=implode("\n",$rows); }
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>{showing} ".count($rows)." / $MAX {items}</span><span class='awc-pg' id='awc-pager'></span></div>";
+	$html[]="</div></div>";
+
+	// TINY : titre + boutons, emis en DERNIER, apres le tableau (skill §2, §7d)
+	$page=CurrentPageName();
+	$topbuttons=array();
+	$topbuttons[]=array("LoadAjax('table-hacluster-connections','$page?start=yes')",ico_refresh,"{refresh}");
+	$TINY=array();
+	$TINY["TITLE"]="{APP_HACLUSTER}&nbsp;&raquo;&nbsp;{trace_connexions}";
+	$TINY["ICO"]=ico_eye;
+	$TINY["EXPL"]="{hacluster_connections_explain}";
+	$TINY["URL"]="hacluster-connections";
+	$TINY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+	$tiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY)))."');";
+
+	// CSS, scripts et pager concatenes AUTOUR du parse, jamais dedans (skill §17 regle 1)
+	$css="<style>.hcx-st{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:3px 7px;border-radius:4px;color:#fff;background:#26a69a}
+.hcx-st-danger{background:#ba1a1a}.hcx-st-warning{background:#865300}
+.hcx-uri{word-break:break-all}</style>";
+	$js="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$tiny</script>";
+	echo awc_table_style().$css.$tpl->_ENGINE_parse_body(@implode("\n",$html)).$js.awc_pager_js(50);
 }
+
+// une ligne du journal (skill §13b). $backendname est deja du HTML (td_href), $status un {token}.
+function hacluster_cnx_row(string $class,string $FTime,$client,$PROTO,$uri,$outface,$BackendAddr,string $backendname,$bytes,$time,$status):string{
+	$badge="hcx-st";
+	if(strpos($class,"text-danger")!==false){ $badge.=" hcx-st-danger"; }
+	if(strpos($class,"text-warning")!==false){ $badge.=" hcx-st-warning"; }
+	$h ="<tr>";
+	$h.="<td class='awc-nowrap awc-mono'>".htmlspecialchars($FTime)."</td>";
+	$h.="<td class='awc-nowrap'><span class='awc-seen'>".htmlspecialchars((string)$client)."</span></td>";
+	$h.="<td class='awc-nowrap'><span class='awc-tag'>".htmlspecialchars((string)$PROTO)."</span></td>";
+	$h.="<td class='hcx-uri' $class>".htmlspecialchars((string)$uri)."</td>";
+	$h.="<td class='awc-nowrap'><div class='awc-chip'><span class='awc-chip-ico'><i class='".ico_nic."'></i></span><span>".htmlspecialchars((string)$outface)." <i class='".ico_arrow_right."'></i> <span class='awc-mono'>".htmlspecialchars((string)$BackendAddr)."</span> $backendname</span></div></td>";
+	$h.="<td class='awc-nowrap awc-mono' style='text-align:right'>".htmlspecialchars((string)$bytes)."</td>";
+	$h.="<td class='awc-nowrap awc-mono' style='text-align:right'>".htmlspecialchars((string)$time)."</td>";
+	$h.="<td class='center'><span class='$badge'>$status</span></td>";
+	$h.="</tr>";
+	return $h;
+}
+
 function TERMINAISON($termination_state,$status_code=0):array{
 
     if($status_code>0){

@@ -1,5 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 include_once(dirname(__FILE__)."/ressources/class.user.inc");
 include_once(dirname(__FILE__)."/ressources/class.contacts.inc");
@@ -7,107 +9,109 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 
 
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["stat-js"])){stat_js();exit;}
-if(isset($_GET["build-stats"])){stats_gen_popup();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["new-js"])){new_js();exit;}
-if(isset($_GET["new-popup"])){new_popup();exit;}
-if(isset($_GET["new-organization"])){new_organization();exit;}
-if(isset($_GET["new-group"])){new_group();exit;}
 if(isset($_GET["events-head"])){events_head();exit;}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["status-table"])){status_table();exit;}
 if(isset($_GET["status-graph"])){status_graph();exit;}
-if(isset($_GET["delete-js"])){delete_report_js();exit;}
-if(isset($_POST["delete"])){delete_report_perform();exit;}
 page();
 
 
 
 
-function delete_report_js(){
-    $email=$_GET["delete-js"];
-    $tablename=$_GET["tablename"];
-    $tpl=new template_admin();
-    $tpl->js_confirm_delete("{delete_report} $email","delete",$tablename,"dialogInstance1.close();");
+/**
+ * Le demon renvoie soit un token i18n nu (ex. postfix.members.error.database, voir membersFail dans
+ * postfix/maillog/MembersApi.go), soit de la prose fabriquee par REST_API_POSTFIX lui-meme pour un
+ * echec de TRANSPORT ("Error Connecting to the REST API server...", "404 Not found..."). Comme
+ * _ENGINE_parse_body ne substitue que du texte de la forme {token}, un token nu s'affichait tel quel
+ * a l'ecran. On ne met entre accolades QUE ce qui ressemble a un identifiant de token (pas d'espace,
+ * forme point/underscore) -- jamais la prose, qui deviendrait un second charabia si on l'entourait
+ * d'accolades a son tour.
+ */
+function pfxsm_error_text($err){
+    $err=(string)($err ?? "{error}");
+    if($err!=="" && strpos($err," ")===false && preg_match('/^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z0-9_]+)*$/',$err)){
+        return "{".$err."}";
+    }
+    return $err;
 }
 
-function delete_report_perform(){
-    $tablename=$_POST["delete"];
-    $q=new postgres_sql();
-    $q->QUERY_SQL("DROP TABLE $tablename");
-    if(!$q->ok){echo $q->mysql_error;}
+/**
+ * container/container2 finissent dans un id de conteneur Highcharts et dans du JavaScript emis
+ * directement (LoadAjax('...')) -- deux contextes JS sans le moindre echappement. Ce sont des ids
+ * DOM generes par la page elle-meme: on les CONTRAINT plutot que de les echapper, ce qui est plus
+ * strict et ne peut pas etre contourne par un encodage astucieux.
+ */
+function pfxsm_safe_container_id($raw,$fallback){
+    $raw=(string)$raw;
+    if($raw!=="" && preg_match('/^[A-Za-z0-9_-]+$/',$raw)){
+        return $raw;
+    }
+    return $fallback;
 }
-
 
 function tabs(){
+    // Le rapport est calcule a la volee par le demon: plus d'identifiant de table a transporter.
     $email=$_GET["tabs"];
     $emailenc=urlencode($email);
-    $table_name=str_replace("@","",strtolower($email));
-    $table_name=str_replace(".","",$table_name);
-    $table_name=str_replace("-","",$table_name);
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $array["{status}"]="$page?status=$emailenc&tablename=$table_name";
-    $array["{events}"]="$page?events-head=$emailenc&tablename=$table_name";
+    $array["{status}"]="$page?status=$emailenc";
+    $array["{events}"]="$page?events-head=$emailenc";
     echo $tpl->tabs_default($array);
 }
 
 function status(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new postgres_sql();
-    $tablename=$_GET["tablename"];
+    $sock=$GLOBALS["CLASS_SOCKETS"];
+
     $email=$_GET["status"];
-    $emailen=urlencode($email);
+    $emailenc=urlencode($email);
     $md5=md5($email);
-    $ligne=$q->mysqli_fetch_array("SELECT zdate FROM $tablename ORDER by zdate LIMIT 1");
 
-    $date_start=$tpl->time_to_date(strtotime($ligne["zdate"]));
-    if(!$q->ok){echo $q->mysql_error_html(true);}
-    $ligne=$q->mysqli_fetch_array("SELECT zdate FROM $tablename ORDER by zdate DESC LIMIT 1");
-    $date_to=$tpl->time_to_date(strtotime($ligne["zdate"]));
+    $raw=$sock->REST_API_POSTFIX("/postfix/maillog/members/summary?email=".urlencode($email));
+    $js=json_decode($raw,true);
+    if(!is_array($js) || !isset($js["status"]) || $js["status"]!==true){
+        echo $tpl->_ENGINE_parse_body("<div class='awc-wrap'>".pfxsm_error_text($js["Error"] ?? "{error}")."</div>");
+        return;
+    }
 
-
-    $ligne=$q->mysqli_fetch_array("SELECT SUM(hits) as refused FROM $tablename WHERE refused=1");
-    $refused=intval($ligne["refused"]);
-    $refused=FormatNumber($refused);
-
-    $ligne=$q->mysqli_fetch_array("SELECT SUM(hits) as sent FROM $tablename WHERE sent=1");
-    $sent=intval($ligne["sent"]);
-    $sent=FormatNumber($sent);
-
+    $row=is_array($js["rows"] ?? null)?$js["rows"]:array();
+    $sentN=intval($row["sent"] ?? 0);
+    $refusedN=intval($row["refused"] ?? 0);
 
     $html[]="";
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td valing='top' style='padding:0px' width='95%' valign='top'>";
-    $html[]="<H1>{period} $date_start {to} $date_to</H1><div style='margin-top:-16px;text-align:right'></div><small>$email</small></div>";
-    $html[]="</td>";
-    $html[]="<td valing='top' style='padding:0px' width='5%' valign='middle'>";
-    $html[]=$tpl->button_autnonome("{delete_report}","Loadjs('$page?delete-js=$emailen&tablename=$tablename')","fa fa-trash",null,0,"btn-danger");
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td valing='top' style='padding:3px' width='50%' valign='top'>";
-    $html[]=$tpl->widget_h("red","fa-thumbs-down",$refused,"{refused}");
-    $html[]="</td>";
-    $html[]="<td valing='top' style='padding:3px' width='50%' valign='top'>";
-    $html[]=$tpl->widget_h("green","fa-thumbs-up",$sent,"{sent}");
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td valing='top' style='padding:3px' width='50%' valign='top'><div id='$md5-2'></div></td>";
-    $html[]="<td valing='top' style='padding:3px' width='50%' valign='top'><div id='$md5-1'></div></td>";
-    $html[]="</tr>";
-    $html[]="</table>
+    // Mise en page en flex. Le bloc de titre fermait un </div> qu'il n'avait pas
+    // ouvert, et les tuiles etaient figees a 50% chacune.
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:10px;align-items:center'>";
+    $html[]="<div style='flex:1 1 320px;min-width:0'>";
+    if($sentN==0 && $refusedN==0){
+        $html[]="<h1>".htmlspecialchars((string)$email)."</h1><small>{no_activity_in_period}</small>";
+    }else{
+        $date_start=!empty($row["first_seen"])?$tpl->time_to_date(strtotime($row["first_seen"])):"-";
+        $date_to=!empty($row["last_seen"])?$tpl->time_to_date(strtotime($row["last_seen"])):"-";
+        $html[]="<h1>{period} $date_start {to} $date_to</h1><small>".htmlspecialchars((string)$email)."</small>";
+    }
+    $html[]="</div>";
+    $html[]="</div>";
+
+    if(!empty($js["window"]["clamped"])){
+        $html[]="<div class='alert alert-warning'>{period_clamped}</div>";
+    }
+
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start;margin-top:6px'>";
+    $html[]="<div style='flex:1 1 300px;min-width:0'>".$tpl->widget_h("red","fa-thumbs-down",FormatNumber($refusedN),"{refused}")."</div>";
+    $html[]="<div style='flex:1 1 300px;min-width:0'>".$tpl->widget_h("green","fa-thumbs-up",FormatNumber($sentN),"{sent}")."</div>";
+    $html[]="</div>";
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start'>";
+    $html[]="<div style='flex:1 1 300px;min-width:0'><div id='$md5-2'></div></div>";
+    $html[]="<div style='flex:1 1 300px;min-width:0'><div id='$md5-1'></div></div>";
+    $html[]="</div>
 <script>
-    Loadjs('$page?status-graph=yes&tablename=$tablename&container=$md5-1&container2=$md5-2');
-    
+    Loadjs('$page?status-graph=yes&email=$emailenc&container=$md5-1&container2=$md5-2');
+
 </script>
 
 ";
@@ -117,98 +121,99 @@ function status(){
 
 
 function events_head(){
+    // Le rapport n'accepte pas de requete libre cote demon: on charge directement le rapport,
+    // il n'y a plus de recherche SQL a brancher ici.
+    $email=$_GET["events-head"];
+    $emailenc=urlencode($email);
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $tablename=$_GET["tablename"];
-   echo $tpl->search_block($page,"postgres",$tablename,null,"&tablename=$tablename");
-
-
+    $t=time();
+    $html[]="<div style='margin:10px' id='pfxsm-events-$t'></div>";
+    $html[]="<script>LoadAjax('pfxsm-events-$t','$page?search=yes&email=$emailenc');</script>";
+    echo $tpl->_ENGINE_parse_body($html);
 }
 
 function search(){
     $tpl=new template_admin();
-    $table=$_GET["tablename"];
-    $page=CurrentPageName();
-    $search=$_GET["search"];
-    $querys=$tpl->query_pattern($search);
-    $MAX=$querys["MAX"];
-    if($MAX==0){$MAX=150;}
-    $q=new postgres_sql();
-    $t=time();
-    $sql="SELECT * FROM $table {$querys["Q"]} ORDER BY zdate desc LIMIT $MAX";
+    $sock=$GLOBALS["CLASS_SOCKETS"];
+    $email=$_GET["email"];
+    $limit=250;
+    $offset=intval($_GET["offset"] ?? 0);
 
-    $results = $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." $sql<br>$q->mysql_error");return;}
-
-    if(pg_num_rows($results)==0){
-
-        echo $tpl->FATAL_ERROR_SHOW_128("{no_data}");
+    $raw=$sock->REST_API_POSTFIX("/postfix/maillog/members/report?email=".urlencode($email)."&limit=$limit&offset=$offset");
+    $js=json_decode($raw,true);
+    if(!is_array($js) || !isset($js["status"]) || $js["status"]!==true){
+        echo $tpl->_ENGINE_parse_body("<div class='awc-wrap'>".pfxsm_error_text($js["Error"] ?? "{error}")."</div>");
         return;
     }
 
-    $TRCLASS=null;
-    $html[]="<table id='table$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0px'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
+    $window=is_array($js["window"] ?? null)?$js["window"]:array();
+    $days=intval($window["days"] ?? 0);
+    $rows=is_array($js["rows"] ?? null)?$js["rows"]:array();
 
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{time}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{messages}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{sender}</center></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{reason}</th>";
-
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-        $md=md5(serialize($ligne));
-        $id=$ligne["id"];
-        $color="#000000";
-        $zdate=$tpl->time_to_date(strtotime($ligne["zdate"]),true);
-//hits,frommail,refused,sent,reason
-        $hits=FormatNumber($ligne["hits"]);
-        $mailfrom=$ligne["frommail"];
-        $refused=$ligne["refused"];
-        $sent=$ligne["sent"];
-        $reason=$ligne["reason"];
-        $class=null;
-        if($sent==1){
-            $class="text-success";
-        }
-
-        if($refused==1){
-            $class="text-danger";
-        }
-
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%' nowrap class='$class'>{$zdate}</td>";
-        $html[]="<td style='width:1%' nowrap class='$class'>{$hits}</td>";
-        $html[]="<td style='width:1%' nowrap class='$class'>{$mailfrom}</td>";
-        $html[]="<td style='width:99%' nowrap class='$class'>$reason</td>";
-
-        $html[]="</tr>";
+    $head[]="<div class='awc-wrap'>";
+    $head[]="<div style='margin-bottom:8px'>".sprintf($tpl->_ENGINE_parse_body("{showing_last_days}"),$days)."</div>";
+    if(!empty($window["clamped"])){
+        $head[]="<div class='alert alert-warning'>{period_clamped}</div>";
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    if(count($rows)==0){
+        $head[]="<div>{no_activity_in_period}</div></div>";
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$head));
+        return;
+    }
 
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="<small>$sql</small>
-			<script>
-			NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-			$(document).ready(function() { $('#table$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-			</script>";
+    $html=$head;
+    $html[]="<div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{correspondent}</th>";
+    $html[]="<th>{direction}</th>";
+    $html[]="<th class='center'>{messages}</th>";
+    $html[]="<th>{time}</th>";
+    $html[]="</tr></thead><tbody id='pfxsm-rows'>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    foreach($rows as $ligne){
+        $md=md5(serialize($ligne));
+        $correspondent=$ligne["correspondent"] ?? "";
+        $direction=(($ligne["direction"] ?? "")==="in")?"{inbound}":"{outbound}";
+        $reason=$ligne["reason"] ?? "";
+        $hits=FormatNumber($ligne["hits"] ?? 0);
+        $refused=intval($ligne["refused"] ?? 0);
+        $sent=intval($ligne["sent"] ?? 0);
+        $zdate=$tpl->time_to_date(strtotime($ligne["hour"] ?? ""),true);
 
+        $html[]=pfxsm_event_row($md,$correspondent,$direction,$reason,$hits,$zdate,$refused,$sent);
+    }
+
+    $html[]="</tbody></table></div>";
+    if(!empty($js["truncated"])){
+        $html[]="<div class='alert alert-warning' style='margin-top:8px'>{results_truncated}</div>";
+    }
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span class='awc-pg' id='pfxsm-pager'></span>";
+    $html[]="</div></div>";
+    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js(100,"pfxsm-rows","pfxsm-pager");
+
+}
+
+/**
+ * Une seule requete demon pour /members/reasons, partagee par status_graph() (le camembert) et
+ * status_table() (le tableau) -- avant, la meme requete SQL etait dupliquee dans les deux fonctions.
+ * $window est renseignee par reference avec la fenetre effectivement calculee.
+ */
+function memberReasonsRows($email,&$window){
+    $sock=$GLOBALS["CLASS_SOCKETS"];
+    $raw=$sock->REST_API_POSTFIX("/postfix/maillog/members/reasons?email=".urlencode($email));
+    $js=json_decode($raw,true);
+    if(!is_array($js) || !isset($js["status"]) || $js["status"]!==true){
+        return array("error"=>($js["Error"] ?? "{error}"));
+    }
+    $window=is_array($js["window"] ?? null)?$js["window"]:array();
+    return array("rows"=>is_array($js["rows"] ?? null)?$js["rows"]:array());
 }
 
 function status_graph(){
@@ -216,29 +221,45 @@ function status_graph(){
 
     $tpl=new template_admin();
     $page=CurrentPageName();
+    $email=$_GET["email"];
+    $emailenc=urlencode($email);
 
-    $q=new postgres_sql();
-    $tablename=$_GET["tablename"];
-    $results=$q->QUERY_SQL("SELECT SUM(hits) as t,reason FROM $tablename  WHERE refused=1 group by reason ORDER BY t desc LIMIT 20");
-    while ($ligne = pg_fetch_assoc($results)) {
-        if($GLOBALS["VERBOSE"]){echo $ligne["reason"]."\t".$ligne["t"]."\n";}
+    $window=array();
+    $result=memberReasonsRows($email,$window);
+    if(isset($result["error"])){
+        echo $tpl->_ENGINE_parse_body("<div class='awc-wrap'>".pfxsm_error_text($result["error"])."</div>");
+        return;
+    }
 
-        if(preg_match("#SecuriteInfo\.com\.(.*?)\.UNOFFICIAL#",$ligne["reason"],$re)){
-            $ligne["reason"]=$re[1];
+    $PieData=array();
+    foreach($result["rows"] as $ligne){
+        $reason=(string)($ligne["reason"] ?? "");
+        if($GLOBALS["VERBOSE"]){echo $reason."\t".$ligne["total"]."\n";}
+
+        if(preg_match("#SecuriteInfo\.com\.(.*?)\.UNOFFICIAL#",$reason,$re)){
+            $reason=$re[1];
         }
 
-        $PieData[$ligne["reason"]]=$ligne["t"];
+        $PieData[$reason]=intval($ligne["total"] ?? 0);
     }
 
 
+    // container/container2 sont des ids de conteneur DOM generes par la page (status()); recus ici
+    // via $_GET puisque cette route peut etre appelee directement. Ils finissent l'un dans un id
+    // Highcharts, l'autre interpole tel quel dans un LoadAjax('...') EMIS en JavaScript -- deux
+    // contextes sans le moindre echappement. On les CONTRAINT a un id sur plutot que de les
+    // echapper (plus strict, non contournable par un encodage).
+    $container=pfxsm_safe_container_id($_GET["container"] ?? "","pfxsm-chart-".md5($email));
+    $container2=pfxsm_safe_container_id($_GET["container2"] ?? "","pfxsm-table-".md5($email));
+
     $highcharts=new highcharts();
-    $highcharts->container=$_GET["container"];
+    $highcharts->container=$container;
     $highcharts->PieDatas=$PieData;
     $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle="TOP {refused}";
-    $highcharts->Title=$tpl->_ENGINE_parse_body("TOP {refused}/{description}");
+    $highcharts->PiePlotTitle=$tpl->_ENGINE_parse_body("{top} {refused}");
+    $highcharts->Title=$tpl->_ENGINE_parse_body("{top} {refused}/{description}");
     echo $highcharts->BuildChart();
-    echo "\nLoadAjax('{$_GET["container2"]}','$page?status-table=yes&tablename=$tablename')";
+    echo "\nLoadAjax('$container2','$page?status-table=yes&email=$emailenc')";
 
 
 
@@ -246,123 +267,67 @@ function status_graph(){
 
 function status_table(){
     $tpl=new template_admin();
+    $email=$_GET["email"];
 
-    $html[]="<table class='table table-striped'>";
-    $html[]="<tr>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
     $html[]="<th>{reason}</th>";
-    $html[]="<th>{hits}</th>";
-    $html[]="</tr>";
-    $q=new postgres_sql();
-    $tablename=$_GET["tablename"];
-    $results=$q->QUERY_SQL("SELECT SUM(hits) as t,reason FROM $tablename  WHERE refused=1 group by reason ORDER BY t desc LIMIT 20");
-    while ($ligne = pg_fetch_assoc($results)) {
-        if($GLOBALS["VERBOSE"]){echo $ligne["reason"]."\t".$ligne["t"]."\n";}
-        $hits=$ligne["t"];
-        $reason=$ligne["reason"];
+    $html[]="<th style='text-align:right'>{hits}</th>";
+    $html[]="</tr></thead><tbody>";
+
+    $window=array();
+    $result=memberReasonsRows($email,$window);
+    if(isset($result["error"])){
+        $html[]="</tbody></table></div></div></div>";
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
+        echo $tpl->_ENGINE_parse_body("<div class='awc-wrap'>".pfxsm_error_text($result["error"])."</div>");
+        return;
+    }
+
+    foreach($result["rows"] as $ligne){
+        if($GLOBALS["VERBOSE"]){echo ($ligne["reason"] ?? "")."\t".($ligne["total"] ?? "")."\n";}
+        $hits=$ligne["total"] ?? 0;
+        $reason=(string)($ligne["reason"] ?? "");
         $reason_text=$reason;
         if(preg_match("#SecuriteInfo\.com\.(.*?)\.UNOFFICIAL#",$reason_text,$re)){
             $reason_text=$re[1];
         }
 
-        $js2="Loadjs('fw.postfix.transactions.php?second-query=".base64_encode("WHERE reason='$reason'")."&title=".urlencode("{see_messages_with}:$reason")."')";
-
-        $hits=FormatNumber($hits);
-        $html[]="<tr>";
-        $html[]="<td>".$tpl->td_href($reason_text,"{see_messages_with}","blur()")."</td>";
-        $html[]="<td style='width:1%' nowrap>{$hits}</td>";
-        $html[]="</tr>";
+        $html[]=pfxsm_reason_row($tpl,$reason_text,FormatNumber($hits));
     }
-    $html[]="</table>";
-    $html[]="<script>";
-
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-}
-
-
-
-function stat_js(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $email=$_GET["stat-js"];
-    $emailenc=urlencode($email);
-    $table_name=$_GET["tablename"];
-    $q=new postgres_sql();
-
-
-    $ligne=$q->mysqli_fetch_array("SELECT count(*) as approximate_row_count from $table_name;");
-    if($GLOBALS["VERBOSE"]){echo "*********************\n";print_r($ligne);}
-    $Rows=intval($ligne["approximate_row_count"]);
-
-
-
-    if($Rows==0){
-
-        if(isset($_GET["stats-builded"])){
-            $tpl->js_error("$table_name $q->mysql_error");
-            return;
-        }
-
-
-        $tpl->js_dialog1("{ARTICA_STATISTICS}","$page?build-stats=$emailenc&tablename=$table_name");
-        return;
-    }
-    $tpl->js_dialog1("{ARTICA_STATISTICS} $email","$page?tabs=$emailenc&tablename=$table_name",1600);
-
-
-
-}
-
-function stats_gen_popup(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $email=$_GET["build-stats"];
-    $emailenc=urlencode($email);
-    $uuid=md5($email);
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/smtp.stats.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/smtp.stats.progress.log";
-    $ARRAY["CMD"]="postfix2.php?smtp-member-stats=$emailenc";
-    $ARRAY["TITLE"]="{building}";
-    $ARRAY["AFTER"]="Loadjs('$page?stat-js=$emailenc&stats-builded=yes&tablename={$_GET["tablename"]}')";
-    $prgress=base64_encode(serialize($ARRAY));
-    $task="Loadjs('fw.progress.php?content=$prgress&mainid=$uuid');";
-
-    $html[]="
-<H1>$email</H1><H2>{building_statistics}....</H2>
-<div id='$uuid'></div><script>$task</script>";
-
-    echo $tpl->_ENGINE_parse_body($html);
-
-
+    $html[]="</tbody></table></div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }
 
 
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	if(!isset($_GET["t"])){$t=time();}else{$t=$_GET["t"];}
+	// Pentest 2026-11-04 : t recopie dans des ids et du JS : entier seulement.
+	if(!isset($_GET["t"])){$t=time();}else{$t=intval($_GET["t"]);}
+	// Pentest 2026-11-04 : recherche memorisee en session recopiee sans encodage dans value="" (XSS stockee).
 	if($_SESSION["MEMBERS_SEARCH"]==null){$_SESSION["MEMBERS_SEARCH"]="";}
-	
+
 	$html[]="
 	<div class=\"row border-bottom white-bg dashboard-header\">
 		<div class=\"col-sm-12\"><h1 class=ng-binding>{my_members}</h1></div>
 	</div>
-		
 
-	<div class=\"row\"> 
+
+	<div class=\"row\">
 		<div class='ibox-content'>
 		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["MEMBERS_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
+      		<input type=\"text\" class=\"form-control\" value=\"".req_html($_SESSION["MEMBERS_SEARCH"])."\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
       		<span class=\"input-group-btn\">
-       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:TableLoaderMyMemberearch();\">Go!</button>
+       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:TableLoaderMyMemberearch();\">{go}!</button>
       	</span>
      </div>
     </div>
-</div>	
-	
-	
-	
-		
+</div>
+
+
+
+
 	<div class='row'><div id='progress-firehol-restart'></div>";
 
 	$html[]="<div class='ibox-content'>
@@ -371,9 +336,9 @@ function page(){
 
 	</div>
 	</div>
-		
-		
-		
+
+
+
 <script>
 	$.address.state('/');
 	$.address.value('smtp-members-statistics');
@@ -382,26 +347,26 @@ function page(){
 			if(!checkEnter(e) ){return;}
 			TableLoaderMyMemberearch();
 		}
-		
+
 		function TableLoaderMyMemberearch(){
 			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
 			LoadAjax('table-loader-my-members','$page?table=yes&t=$t&search='+ss+'&function=TableLoaderMyMemberearch');
 		}
-		
+
 		function Start$t(){
 			var ss=document.getElementById('search-this-$t').value;
 			TableLoaderMyMemberearch();
 		}
 		Start$t();
 	</script>";
-	
+
 	if(isset($_GET["main-page"])){
 		$tpl=new template_admin("SMTP: {members_stats}",$html);
 		echo $tpl->build_firewall();
 		return;
-	}	
+	}
 
-	
+
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 
 }
@@ -409,76 +374,92 @@ function page(){
 function table(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$ldap=new clladp();
+	$sock=$GLOBALS["CLASS_SOCKETS"];
+
 	$stringtofind=url_decode_special_tool($_GET["search"]);
-	$stringtofind="*$stringtofind*";
-	$stringtofind=str_replace("**", "*", $stringtofind);
-	$stringtofind=str_replace("**", "*", $stringtofind);
-    $stringtofind=str_replace("*", "%", $stringtofind);
+	$stringtofind=str_replace("*","",$stringtofind);   // le demon fait lui-meme la recherche par sous-chaine
 
+	$raw=$sock->REST_API_POSTFIX("/postfix/maillog/members?search=".urlencode($stringtofind)."&limit=250");
+	$js=json_decode($raw,true);
+	if(!is_array($js) || !isset($js["status"]) || $js["status"]!==true){
+		echo $tpl->_ENGINE_parse_body("<div class='awc-wrap'>".pfxsm_error_text($js["Error"] ?? "{error}")."</div>");
+		return;
+	}
 
-	$html[]=$tpl->_ENGINE_parse_body("
-			<table id='table-smtp-members' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=false class='text-capitalize' data-type='text' width=1%>&nbsp;</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{email}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</th>";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{email}</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pfxsmm-rows'>";
 
-	
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-    $TRCLASS=null;
-    $q=new postgres_sql();
-    $results=$q->QUERY_SQL("SELECT * FROM smtp_users WHERE tomail LIKE '$stringtofind' ORDER BY tomail LIMIT 250");
-    if($results) {
-        while ($ligne = pg_fetch_assoc($results)) {
+	foreach($js["rows"] as $ligne){
+		$tomail=$ligne["address"];
+		$tomailenc=urlencode($tomail);
+		// Sans identifiant de table, et sans icone de suppression: plus rien n'est materialise.
+		$jsclick="Loadjs('$page?tabs=$tomailenc')";
+		$html[]=pfxsm_member_row($tpl,$tomail,$jsclick,$tpl->icon_nothing());
+	}
 
-            $tomail = $ligne["tomail"];
-            $table_name = str_replace("@", "", strtolower($tomail));
-            $table_name = str_replace(".", "", $table_name);
-            $table_name = str_replace("-", "", $table_name);
-            $tomailenc = urlencode($tomail);
-            if ($TRCLASS == "footable-odd") {
-                $TRCLASS = null;
-            } else {
-                $TRCLASS = "footable-odd";
-            }
-            $js = "Loadjs('$page?stat-js=$tomailenc&tablename=$table_name')";
-            $delete = $tpl->icon_nothing();
-            if ($q->TABLE_EXISTS($table_name)) {
-                $delete = $tpl->icon_delete("Loadjs('$page?delete-js=$tomailenc&tablename=$table_name')");
-            }
+	$html[]="</tbody></table></div>";
+	if(!empty($js["truncated"])){
+		// La requete demande toujours limit=250: sur un relais a 50000 membres la page montrait
+		// les 250 premiers par ordre alphabetique et AVAIT L'AIR complete -- seule la recherche
+		// permettait de deviner qu'il en manquait. On ne construit pas de pagination ici (portee
+		// plus large, non demandee) : on se contente de dire la limite au lieu de la taire.
+		$html[]="<div class='alert alert-warning' style='margin-top:8px'>{results_truncated}</div>";
+	}
+	$html[]="<div class='awc-foot'><span class='awc-pg' id='pfxsmm-pager'></span></div></div></div>";
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
-
-            $html[] = "<tr class='$TRCLASS'>";
-            $html[] = "<td class=\"center\" width='1%'><i class='far fa-users'></i></td>";
-            $html[] = "<td class=\"\">" . $tpl->td_href($tomail, "{click_to_edit}", $js) . "</td>";
-            $html[] = "<td  width='1%' class=\"center\">$delete</td>";
-            $html[] = "</tr>";
-
-        }
-    }
-
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='3'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-smtp-members').footable({ \"filtering\": { \"enabled\": true },\"sorting\": {\"enabled\": true } } ); });
-</script>";
-echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.awc_pager_js(50,"pfxsmm-rows","pfxsmm-pager");
 
 }
 
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}
+
+/**
+ * Un evenement du rapport: correspondant + direction en identite, motif en sous-titre. Le motif
+ * occupait une colonne a 99% marquee nowrap -- il debordait au lieu de se replier.
+ * Correspondant et motif viennent du rapport du demon et sont deja normalises cote Go.
+ */
+function pfxsm_event_row($md,$correspondent,$direction,$reason,$hits,$zdate,$refused,$sent):string{
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='".($refused==1?"awc-ico awc-ico-off":"awc-ico")."'><i class='fas fa-envelope'></i></span>";
+    $h.="<span><span class='awc-name'>".htmlspecialchars((string)$correspondent)."</span>";
+    if(trim((string)$reason)!==""){$h.="<div class='awc-meta'>".htmlspecialchars((string)$reason)."</div>";}
+    $h.="</span></div></td>";
+    $h.="<td>".$direction."</td>";
+    $h.="<td class='center'>".($refused==1
+        ?"<span class='awc-badge' style='background:#ba1a1a'>$hits</span>"
+        :"<span class='awc-seen'>$hits</span>")."</td>";
+    $h.="<td class='awc-mono'>".htmlspecialchars((string)$zdate)."</td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/** Un motif de refus du rapport, avec son nombre d'occurrences. */
+function pfxsm_reason_row($tpl,$reason_text,$hits):string{
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico awc-ico-off'><i class='fas fa-circle-xmark'></i></span>";
+    $h.="<span><span class='awc-name'>".$tpl->td_href(htmlspecialchars((string)$reason_text),"{see_messages_with}","blur()")."</span></span>";
+    $h.="</div></td>";
+    $h.="<td style='text-align:right'><span class='awc-seen'>$hits</span></td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/** Un destinataire suivi: son adresse ouvre son rapport. */
+function pfxsm_member_row($tpl,$tomail,$js,$delete):string{
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-users'></i></span>";
+    $h.="<span><span class='awc-name'>".$tpl->td_href(htmlspecialchars((string)$tomail),"{click_to_edit}",$js)."</span></span>";
+    $h.="</div></td>";
+    $h.="<td><div class='awc-acts'>$delete</div></td>";
+    $h.="</tr>";
+    return $h;
+}

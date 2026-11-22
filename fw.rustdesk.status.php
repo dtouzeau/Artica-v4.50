@@ -3,7 +3,7 @@
 	include_once('ressources/class.users.menus.inc');
 	if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 	$user=new usersMenus();
-	if(!$user->AsAnAdministratorGeneric){die("DIE " .__FILE__." Line: ".__LINE__);}
+	if(!$user->AsAnAdministratorGeneric){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 	
 	if(isset($_GET["table"])){table();exit;}
 	if(isset($_GET["service-status"])){services_status();exit;}
@@ -19,7 +19,6 @@
     if(isset($_GET["change-key-ask"])){section_change_key_ask();exit;}
     if(isset($_POST["change-key"])){section_change_key_save();exit;}
     if(isset($_POST["DockerExportTime"])){section_export_save();exit;}
-    if(isset($_POST["WorkDir"])){section_workingdir_save();exit;}
 	
 page();
 

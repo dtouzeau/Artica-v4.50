@@ -123,18 +123,32 @@ function tabs(){
 }
 function table_start():bool{
     $page=CurrentPageName();
+    $tpl=new template_admin();
     $html[]="<div id='hotspot-top-status'>&nbsp;</div>";
-    $html[]="<table style='width:100%;'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:240px;vertical-align: top'>";
-    $html[]="<div id='hotspot-service-status'></div>";
-    $html[]="</td>";
-    $html[]="<td style='width:100%;vertical-align: top;padding-left: 10px'>";
-    $html[]="<div id='hotspot-main-status' style='margin-top: 10px'></div>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<script>LoadAjaxSilent('hotspot-main-status','$page?table=yes');</script>";
+    // L'ancienne version disposait la vignette de service et le contenu dans un
+    // <table> de MISE EN PAGE (colonne gauche figee a 240px). En flex, le
+    // contenu reprend la largeur quand la fenetre retrecit.
+    $html[]="<div style='display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap'>";
+    $html[]="<div id='hotspot-service-status' style='flex:0 0 240px;max-width:100%'></div>";
+    $html[]="<div id='hotspot-main-status' style='flex:1 1 380px;min-width:0;margin-top:10px'></div>";
+    $html[]="</div>";
+
+    // La vignette de service vient de la page « statut », qui porte l'unique
+    // implementation (handler ?hotspot-web-status=yes -> SERVICE_STATUS). La
+    // dupliquer ici ferait deux vignettes a maintenir pour un seul service.
+    //
+    // Sans cette ligne le div de gauche restait VIDE: la conversion du <table>
+    // de mise en page vers flex avait garde le conteneur et perdu son
+    // chargement. Symptome: 240px de large, 0 de haut, aucune requete reseau
+    // pour lui -- donc indiscernable d'une panne du daemon, alors que rien ne
+    // le demandait jamais.
+    //
+    // RefreshInterval_js et non LoadAjaxSilent: l'etat d'un service change tout
+    // seul (watchdog, redemarrage), et le div sert de sentinelle -- changer
+    // d'onglet le retire du DOM et le timer s'arrete de lui-meme.
+    $refresh=$tpl->RefreshInterval_js("hotspot-service-status",
+        "fw.proxy.hotspot.status.php","hotspot-web-status=yes");
+    $html[]="<script>LoadAjaxSilent('hotspot-main-status','$page?table=yes');\n$refresh</script>";
     echo implode("\n",$html);
     return true;
 }
@@ -397,7 +411,9 @@ function form_jsrestart():string{
         "hotspot-web.progress",
         "hotspot-web.log",
         "progress-hotspot-restart",
-        "LoadAjaxSilent('hotspot-top-status','$page?hotspot-top-status=yes');",
+        // The table is reloaded again once the restart is over: Start() is what
+        // recomputes the Captive Portal API state shown in the Service card.
+        "LoadAjaxSilent('hotspot-top-status','$page?hotspot-top-status=yes');LoadAjaxSilent('hotspot-main-status','$page?table=yes');",
         "");
 }
 function form_service_popup():bool{
@@ -420,9 +436,13 @@ function form_service_popup():bool{
 
         $form[]=  $tpl->field_interfaces("HotSpotBindInterface", "{interface}", $HotSpotBindInterface);
         $form[] = $tpl->field_numeric("HotSpotListenPort","{http_port}",$HotSpotListenPort);
-        $form[] = $tpl->field_checkbox("HotSpotListenEnableSSL","{UseSSL}",$HotSpotListenEnableSSL,"HotSpotListenSSLPort,HotSpotListenSSLCertificate");
+        $form[] = $tpl->field_checkbox("HotSpotListenEnableSSL","{UseSSL}",$HotSpotListenEnableSSL,"HotSpotListenSSLPort,HotSpotListenSSLCertificate,EnableHotSpotCaptiveAPI");
         $form[] = $tpl->field_numeric("HotSpotListenSSLPort","{ssl_port}",$HotSpotListenSSLPort);
         $form[] = $tpl->field_certificate("HotSpotListenSSLCertificate","{ssl_certificate}",$HotSpotListenSSLCertificate);
+        // RFC 8908 API announced by DHCP option 114: published by articarest only
+        // when the certificate above is valid for a public name.
+        $EnableHotSpotCaptiveAPI=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableHotSpotCaptiveAPI"));
+        $form[] = $tpl->field_checkbox("EnableHotSpotCaptiveAPI","{hotspot_captive_api}",$EnableHotSpotCaptiveAPI,false,"{hotspot_captive_api_explain}");
     }
     $form[]=$tpl->field_hidden("HotSpotTemplateID",4);
 
@@ -733,6 +753,19 @@ function table():bool{
             $tpl->table_form_field_text("{UseSSL}","$HotSpotBindInterface:$HotSpotListenSSLPort <small style='text-transform:none'>($HotSpotListenSSLCertificate)</small>",ico_ssl);
         }
     }
+    if($EnableNginx==0){
+        // What articarest actually publishes (URL), or why it does not (reason token).
+        $CaptiveAPIURL=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotCaptiveAPIURL"));
+        $CaptiveAPIReason=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotCaptiveAPIReason"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableHotSpotCaptiveAPI"))==0){
+            $tpl->table_form_field_bool("{hotspot_captive_api}",0,ico_ssl);
+        }elseif($CaptiveAPIURL<>""){
+            $tpl->table_form_field_text("{hotspot_captive_api}","<small style='text-transform:none'>".htmlspecialchars($CaptiveAPIURL)."</small>",ico_ssl);
+        }else{
+            if(!preg_match('/^\{[a-z0-9_]+\}$/',$CaptiveAPIReason)){$CaptiveAPIReason="{hotspot_captive_api_needs_https}";}
+            $tpl->table_form_field_text("{hotspot_captive_api}","<span class='label label-warning'>$CaptiveAPIReason</span>",ico_ssl);
+        }
+    }
     $tpl->table_form_field_js("Loadjs('$page?browser-redirect-js=yes')");
     $tpl->table_form_field_bool("{CaptivePortalDetectionURLs}",$EnableHotSpotBrowsersRedirects,ico_ie);
 
@@ -959,26 +992,20 @@ function Save():bool{
 function top_satus():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $tds="width:33%;padding-left:5px;vertical-align:top";
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='$tds'>";
-    $html[]=top_status_ad();
-    $html[]="</td>";
-    $html[]="<td style='$tds'>";
-    $html[]=top_status_ldap();
-    $html[]="</td>";
+    // Les trois vignettes d'authentification occupaient chacune 33% d'une ligne
+    // de <table>: au-dessous de ~700px elles s'ecrasaient. Le flex les fait
+    // passer a la ligne.
+    $html[]="<div style='display:flex;gap:5px;flex-wrap:wrap;align-items:stretch'>";
+    $html[]=hotspot_top_cell(top_status_ad());
+    $html[]=hotspot_top_cell(top_status_ldap());
+    $html[]=hotspot_top_cell(top_status_voucher());
+    $html[]="</div>";
 
-    $html[]="<td style='$tds'>";
-    $html[]=top_status_voucher();
-    $html[]="</td>";
-
-
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<script>LoadAjaxSilent('last-config','$page?last-config=yes');";
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // Bloc de script concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque corps d'accolade JavaScript pour un
+    // {token}.
+    $script="<script>LoadAjaxSilent('last-config','$page?last-config=yes');</script>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
     return true;
 }
 
@@ -1030,19 +1057,19 @@ function top_status_ldap():string{
 
     if($EnableOpenLDAP==0) {
 
-        return $tpl->widget_h("gray","fas fa-database","{uninstalled}","{authentication}: {local_ldap}","minheight:150px");
+        return $tpl->widget_h("gray",ico_database,"{uninstalled}","{authentication}: {local_ldap}","minheight:150px");
 
     }
 
     if($HotSpotAuthentLocalLDAP==0) {
         $button["name"] = "{install_feature}";
         $button["js"] = "Loadjs('$page?hotspot-tokey-enabled=HotSpotAuthentLocalLDAP&value=1');";
-        return $tpl->widget_h("gray","fas fa-database","{disabled}","{authentication}: {local_ldap}",$button);
+        return $tpl->widget_h("gray",ico_database,"{disabled}","{authentication}: {local_ldap}",$button);
     }
 
     $button["name"] = "{uninstall}";
     $button["js"] = "Loadjs('$page?hotspot-tokey-enabled=HotSpotAuthentLocalLDAP&value=0');";
-    return $tpl->widget_h("green","fas fa-database","{active2}","{authentication}: {local_ldap}",$button);
+    return $tpl->widget_h("green",ico_database,"{active2}","{authentication}: {local_ldap}",$button);
 
 }
 
@@ -1121,4 +1148,14 @@ function top_status_ad():string{
     $button["name"] = "{uninstall}";
     $button["js"] = "Loadjs('$page?hotspot-tokey-enabled=HotSpotAuthentAD&value=0');";
     return $tpl->widget_h("green","fab fab fa-windows","{active2}","{active_directory_authentication}",$button);
+}
+
+/**
+ * Une vignette de la bande d'etat des methodes d'authentification.
+ * Remplace les <td style='width:33%'> de l'ancien tableau de mise en page: la
+ * vignette occupe un tiers de la largeur mais ne descend jamais sous 220px,
+ * donc elle passe a la ligne au lieu de s'ecraser.
+ */
+function hotspot_top_cell($widget):string{
+    return "<div style='flex:1 1 33%;min-width:220px;padding-left:5px'>$widget</div>";
 }

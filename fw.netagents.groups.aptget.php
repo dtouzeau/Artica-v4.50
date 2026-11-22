@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Netagent Group APT Upgradable Packages
  * Merges upgradable packages from all agents in a group into a single view.
@@ -8,6 +10,9 @@
  *       POST /netagents/packages/upgrade/group/{gpid}/{name}
  *       POST /netagents/packages/upgrade/group/all/{gpid}
  *       POST /netagents/packages/apt-update/group/{gpid}
+ *       POST /netagents/packages/dist-upgrade/group/{gpid}
+ * Group actions run as Meta APT fleet jobs (job_id in the answer): progress in
+ * fw.netagents.packages.fleet.php?job-js=<job_id>.
  */
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 include_once dirname(__FILE__) . '/ressources/class.sockets.inc';
@@ -31,6 +36,25 @@ if(isset($_POST["apt-update"])){apt_update();exit;}
 if(isset($_GET["top-buttons"])){top_buttons();exit;}
 js();
 
+// Fleet APT job started by a group action (job_id in the daemon answer): link and auto-open
+// of the job view of fw.netagents.packages.fleet.php.
+function aptget_job_id($json):string{
+    if(!is_object($json)){return "";}
+    return preg_replace('/[^a-z0-9\-]/','',strtolower(strval($json->job_id ?? "")));
+}
+function aptget_job_link($json):string{
+    $id=aptget_job_id($json);
+    if($id===""){return "";}
+    $tpl=new template_admin();
+    $label=$tpl->javascript_parse_text("{netagents_aptfleet_view_progress}");
+    return " &middot; <a href=\"javascript:blur();\" OnClick=\"Loadjs(\\'fw.netagents.packages.fleet.php?job-js=$id\\')\" style=\"font-weight:bold\">$label</a>";
+}
+function aptget_job_open($json):string{
+    $id=aptget_job_id($json);
+    if($id===""){return "";}
+    return "\nLoadjs('fw.netagents.packages.fleet.php?job-js=$id');";
+}
+
 function gpid():int{
     return intval($_GET["gpid"] ?? $_POST["gpid"] ?? 0);
 }
@@ -39,7 +63,7 @@ function js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_can_view($users)){
         return $tpl->js_error("{no_privileges}");
     }
     $gpid=gpid();
@@ -148,7 +172,11 @@ function table():bool{
     }
 
     // Sort: most agents affected first, then alphabetically
-    uasort($merged,fn($a,$b)=>count($b["agents"])-count($a["agents"])?:strcmp($a["name"],$b["name"]));
+    // Plancher PHP 7.3: pas de fonction flechee (elle casse tout le fichier).
+    uasort($merged,function($a,$b){
+        $d=count($b["agents"])-count($a["agents"]);
+        return $d?:strcmp($a["name"],$b["name"]);
+    });
 
     $html=[];
     if(!empty($errors)){
@@ -164,7 +192,7 @@ function table():bool{
     }
 
     $t=time();
-    $html[]="<table id='table-pkg-$gpid-$t' class='footable table table-stripped' data-page-size='100'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead><tr>";
     $html[]="<th data-sortable=false style='width:1%'>&nbsp;</th>";
     $html[]="<th data-sortable=true data-type='text'>{package_name}</th>";
@@ -191,19 +219,19 @@ function table():bool{
             if(!$found) continue;
         }
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $nameEnc=urlencode($name);
         $upgradeJs="Loadjs('$page?upgrade-single-js=yes&gpid=$gpid&name=$nameEnc')";
-        $btn=$tpl->button_inline("{upgrade}",$upgradeJs,"fas fa-arrow-circle-up","AsArticaMetaAdmin",0,"btn-primary","small");
+        $btn=$tpl->button_inline("{upgrade}",$upgradeJs,"fas fa-arrow-circle-up","AsMetaAdmin",0,"btn-primary","small");
 
         // Agent count badge with tooltip listing hostnames + current version
         $agentCount=count($agentList);
-        $agentTooltip=htmlspecialchars(implode(", ",array_map(fn($a)=>$a["hostname"]." (".$a["version"].")",$agentList)));
+        $agentTooltip=htmlspecialchars(implode(", ",array_map(function($a){ return $a["hostname"]." (".$a["version"].")"; },$agentList)));
         $agentBadge="<span class='badge' style='background:#1c84c6;color:#fff' title='$agentTooltip'>$agentCount</span>";
 
         // Deduplicate versions (agents may have differing installed versions)
-        $versions=array_unique(array_map(fn($a)=>$a["version"],$agentList));
+        $versions=array_unique(array_map(function($a){ return $a["version"]; },$agentList));
         $versionCell=htmlspecialchars(implode(", ",$versions));
 
         if($newVersion!==""&&!in_array($newVersion,$versions)){
@@ -224,19 +252,18 @@ function table():bool{
 
     $html[]="</tbody>";
     $html[]="<tfoot><tr><td colspan='6'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
     $html[]="<script>";
     $html[]="LoadAjax('aptgetupgradesiglebuts','$page?top-buttons=$gpid&function=$function');";
     $html[]="NoSpinner();";
     $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function(){ $('#table-pkg-$gpid-$t').footable({";
     $html[]="  'filtering':{'enabled':false},";
     $html[]="  'sorting':{'enabled':true},";
     $html[]="  'paging':{'size':{$GLOBALS['FOOTABLE_PSIZE']}}";
     $html[]="});});";
     $html[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$html));
     return true;
 }
 
@@ -284,7 +311,7 @@ function dist_upgrade():void{
     }
     $triggered=intval($json->triggered??0);
     $msg=isset($json->message)?addslashes($json->message):"{success}";
-    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg</div>';";
+    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg".aptget_job_link($json)."</div>';".aptget_job_open($json);
     admin_tracks("Meta: group $gpid dist-upgrade triggered on $triggered agents");
 }
 
@@ -336,7 +363,7 @@ function upgrade_single():void{
     }
     $msg=addslashes($json->message??"{success}");
     $agents=intval($json->total_agents??0);
-    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $nameSafe: $msg</div>';";
+    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $nameSafe: $msg".aptget_job_link($json)."</div>';".aptget_job_open($json);
     admin_tracks("Meta: group $gpid upgraded package $name on $agents agents");
 }
 
@@ -383,7 +410,7 @@ function upgrade_all():void{
     }
     $msg=addslashes($json->message??"{success}");
     $agents=intval($json->total_agents??0);
-    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg</div>';";
+    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg".aptget_job_link($json)."</div>';".aptget_job_open($json);
     admin_tracks("Meta: group $gpid upgrade-all triggered on $agents agents");
 }
 
@@ -454,6 +481,6 @@ function apt_update():void{
         return;
     }
     $msg=addslashes($json->message??"{success}");
-    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg</div>';";
+    echo "document.getElementById('pkg-result-$gpid').innerHTML='<div class=\"alert alert-success\"><i class=\"fas fa-check-circle\"></i> $msg".aptget_job_link($json)."</div>';".aptget_job_open($json);
     admin_tracks("Meta: group $gpid apt-get update triggered");
 }

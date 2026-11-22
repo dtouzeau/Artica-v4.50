@@ -1,4 +1,11 @@
 <?php
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Advanced Routing Management for remote netagents.
  * Loaded as a tab from fw.netagents.network.php tabs() via:
@@ -30,7 +37,7 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
 }
 
 $users=new usersMenus();
-if(!$users->AsArticaMetaAdmin){exit();}
+if(!meta_can_view($users)){exit();}
 
 // POST dispatchers
 if(isset($_POST["table-save"]))     {table_save();       exit;}
@@ -249,6 +256,11 @@ function routing_capabilities():void{
     }
 
     $h=[];
+    // Agent injoignable : netagents a servi la derniere copie recue, pour cet
+    // onglet comme pour les tables, routes et regles affichees en dessous.
+    if(!empty($caps->meta_stale)){
+        $h[]=netagent_stale_banner($caps->meta_cached_at ?? 0,true);
+    }
     $items=[
         "IPv4"            =>($caps->ipv4 ?? false),
         "IPv6"            =>($caps->ipv6 ?? false),
@@ -296,7 +308,7 @@ function routing_inspect_tab():void{
     $h[]="<i class='fas fa-layer-group'></i>&nbsp; {routing_tables}";
     $h[]="</h5></div><div class='ibox-content'>";
     if(is_array($tables)&&count($tables)>0){
-        $h[]="<table class='table table-stripped'><thead><tr>";
+        $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'><thead><tr>";
         $h[]="<th>ID</th><th>{name}</th><th>{type}</th>";
         $h[]="</tr></thead><tbody>";
         foreach($tables as $t){
@@ -309,7 +321,7 @@ function routing_inspect_tab():void{
             $rowStyle=$builtIn?"style='color:#999'":"";
             $h[]="<tr $rowStyle><td>$tid</td><td><span style='font-family:monospace'>$tname</span></td><td>$typeBadge</td></tr>";
         }
-        $h[]="</tbody></table>";
+        $h[]="</tbody></table></div></div></div>";
     }else{
         $h[]=$tpl->div_info("{no_data}");
     }
@@ -321,7 +333,7 @@ function routing_inspect_tab():void{
     $h[]="<i class='fas fa-route'></i>&nbsp; {routes}";
     $h[]="</h5></div><div class='ibox-content'>";
     if(is_array($routes)&&count($routes)>0){
-        $h[]="<table class='table table-stripped'><thead><tr>";
+        $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'><thead><tr>";
         $h[]="<th>{destination}</th><th>{gateway}</th><th>{interface}</th><th>{type}</th>";
         $h[]="<th>Scope</th><th>Metric</th><th>Protocol</th><th>Table</th>";
         $h[]="</tr></thead><tbody>";
@@ -344,7 +356,7 @@ function routing_inspect_tab():void{
             $h[]="<tr><td>$dst</td><td>$gw</td><td>$iface</td><td>$type</td>";
             $h[]="<td>$scope</td><td>$metric</td><td>$proto</td><td>$tbl</td></tr>";
         }
-        $h[]="</tbody></table>";
+        $h[]="</tbody></table></div></div></div>";
     }else{
         $h[]=$tpl->div_info("{no_data}");
     }
@@ -356,7 +368,7 @@ function routing_inspect_tab():void{
     $h[]="<i class='fas fa-gavel'></i>&nbsp; {policy_rules}";
     $h[]="</h5></div><div class='ibox-content'>";
     if(is_array($rules)&&count($rules)>0){
-        $h[]="<table class='table table-stripped'><thead><tr>";
+        $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'><thead><tr>";
         $h[]="<th>Priority</th><th>Source</th><th>{destination}</th><th>FWMark</th>";
         $h[]="<th>{interface}</th><th>Table</th><th>Action</th>";
         $h[]="</tr></thead><tbody>";
@@ -375,7 +387,7 @@ function routing_inspect_tab():void{
             $h[]="<tr $rowStyle><td>$prio</td><td>$src</td><td>$dst</td><td>$fwmarkStr</td>";
             $h[]="<td>$iif</td><td>$tbl</td><td>$act</td></tr>";
         }
-        $h[]="</tbody></table>";
+        $h[]="</tbody></table></div></div></div>";
     }else{
         $h[]=$tpl->div_info("{no_data}");
     }
@@ -400,7 +412,7 @@ function routing_inspect_tab():void{
             $h[]="<div class='col-md-3' style='margin-bottom:10px'>";
             $h[]="<div class='panel panel-default' style='margin-bottom:0'>";
             $h[]="<div class='panel-heading' style='padding:8px 12px'>";
-            $h[]="<span style='font-family:monospace;font-weight:bold'>$lname</span> $stateBadge";
+            $h[]="<span style='font-weight:bold'>$lname</span> $stateBadge";
             $h[]="</div><div class='panel-body' style='padding:8px 12px;font-size:12px'>";
             $h[]="MTU: $lmtu";
             if(is_array($addrs)){
@@ -414,7 +426,7 @@ function routing_inspect_tab():void{
     }
 
     $h[]="<script>NoSpinner();</script>";
-    echo $tpl->_ENGINE_parse_body(implode("\n",$h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$h));
 }
 
 // ── TAB: TABLES ──────────────────────────────────────────────────────────
@@ -450,7 +462,7 @@ function routing_tables_tab():void{
     }
 
     $t=time();
-    $h[]="<table id='table-$t' class='table table-stripped'>";
+    $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[]="<thead><tr>";
     $h[]="<th>ID</th><th>{name}</th><th>{type}</th><th>{actions}</th>";
     $h[]="</tr></thead><tbody>";
@@ -458,7 +470,7 @@ function routing_tables_tab():void{
     $TRCLASS=null;
     foreach($json as $tbl){
         if(!is_object($tbl)) continue;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $tid=intval($tbl->id ?? 0);
         $tname=htmlspecialchars($tbl->name ?? '');
@@ -483,7 +495,7 @@ function routing_tables_tab():void{
         $h[]="</tr>";
     }
 
-    $h[]="</tbody></table>";
+    $h[]="</tbody></table></div></div></div>";
     $h[]="<script>NoSpinner();</script>";
     echo $tpl->_ENGINE_parse_body(implode("\n",$h));
 }
@@ -648,7 +660,7 @@ function routing_routes_tab():void{
         $h[]="<div class='ibox'><div class='ibox-title'><h5>";
         $h[]="<i class='fas fa-route'></i>&nbsp; $safeTbl $familyBadge";
         $h[]="</h5></div><div class='ibox-content'>";
-        $h[]="<table class='table table-stripped'><thead><tr>";
+        $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'><thead><tr>";
         $h[]="<th>{destination}</th><th>{gateway}</th><th>{interface}</th>";
         $h[]="<th>{type}</th><th>Metric</th><th>Src</th><th style='width:1%'></th>";
         $h[]="</tr></thead><tbody>";
@@ -685,7 +697,7 @@ function routing_routes_tab():void{
             $h[]="<td>$metric</td><td>$psrc</td><td nowrap>$delBtn</td></tr>";
         }
 
-        $h[]="</tbody></table></div></div>";
+        $h[]="</tbody></table></div></div></div></div></div>";
     }
 
     $h[]="<script>NoSpinner();</script>";
@@ -952,7 +964,7 @@ function routing_rules_tab():void{
         return;
     }
 
-    $h[]="<table class='table table-stripped'><thead><tr>";
+    $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'><thead><tr>";
     $h[]="<th>Priority</th><th>Source</th><th>{destination}</th><th>FWMark</th>";
     $h[]="<th>{interface}</th><th>Table</th><th>Action</th><th style='width:1%'></th>";
     $h[]="</tr></thead><tbody>";
@@ -960,7 +972,7 @@ function routing_rules_tab():void{
     $TRCLASS=null;
     foreach($json as $r){
         if(!is_object($r)) continue;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $prio=intval($r->priority ?? 0);
         $isSystem=in_array($prio,[0,32766,32767]);
@@ -993,7 +1005,7 @@ function routing_rules_tab():void{
         $h[]="<td>$fwmarkStr</td><td>$iif</td><td>$tbl</td><td>$act</td><td nowrap>$delBtn</td></tr>";
     }
 
-    $h[]="</tbody></table>";
+    $h[]="</tbody></table></div></div></div>";
     $h[]="<script>NoSpinner();</script>";
     echo $tpl->_ENGINE_parse_body(implode("\n",$h));
 }
@@ -1217,7 +1229,7 @@ function plan_form():void{
     $h[]="<div id='rt-plan-result-$id'></div>";
 
     $h[]="<p style='margin-bottom:8px'>{description}:</p>";
-    $h[]="<textarea id='rt-plan-json-$id' class='form-control' rows='15' style='font-family:monospace;font-size:12px'>";
+    $h[]="<textarea id='rt-plan-json-$id' class='form-control' rows='15' style='font-size:12px'>";
     $h[]=htmlspecialchars($template);
     $h[]="</textarea>";
 

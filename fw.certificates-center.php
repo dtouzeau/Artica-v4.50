@@ -1,9 +1,14 @@
 <?php
+// Service Pack 9 2026-10-10
 # SP206
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+// cert_view_*() : vue en trois onglets d'un certificat, partagee avec fw.nginx.AppClientMTLS.php
+include_once(dirname(__FILE__)."/ressources/class.certificates.view.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
 
@@ -45,6 +50,9 @@ if(isset($_GET["display-csr-popup"])){display_csr_popup();exit;}
 if(isset($_GET["certificate-js"])){certificate_js();exit;}
 if(isset($_GET["certificate-popup"])){certificate_tab();exit;}
 if(isset($_GET["certificate-settings"])){certificate_settings();exit;}
+if(isset($_GET["certificate-view-overview"])){certcenter_view_overview();exit;}
+if(isset($_GET["certificate-view-key"])){certcenter_view_key();exit;}
+if(isset($_GET["certificate-view-raw"])){certcenter_view_raw();exit;}
 if(isset($_GET["certificate-csr-verify"])){certificate_csr_verify();exit;}
 if(isset($_GET["certificate-csr"])){certificate_csr();exit;}
 if(isset($_GET["certificate-crt"])){certificate_crt();exit;}
@@ -62,12 +70,13 @@ if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["delete"])){delete();exit;}
 if(isset($_GET["getdb"])){getdb();exit;}
 if(isset($_GET["analyze-js"])){analyze_js();exit;}
-if(isset($_GET["letsencrypt-dns-js"])){letsencrypt_dns_js();exit;}
-if(isset($_GET["letsencrypt-dnskey-js"])){letsencrypt_dns_key_js();exit;}
-if(isset($_GET["letsencrypt-dnskey-popup"])){letsencrypt_dns_key_popup();exit;}
+
+
+
 if(isset($_GET["download"])){export_single_certificate();exit;}
 if(isset($_GET["download-cert"])){download_certificate();exit;}
 if(isset($_GET["download-pfx"])){download_pfx();exit;}
+if(isset($_GET["generate-x509-js"])){certificate_generate_js();exit;}
 
 if(isset($_GET["subcertificates-js"])){subcertificates_only_js();exit;}
 if(isset($_GET["subcertificates"])){subcertificates_start();exit;}
@@ -113,7 +122,7 @@ function patch_database():bool{
 
     }
     if(!$json->Status){
-        return $tpl->js_error($json->Error);
+        return $tpl->js_error(crt_meta_error($json->Error));
     }
     echo "$function();";
     return true;
@@ -129,7 +138,7 @@ function create_pfx():bool{
     $CommonName=$_GET["create-pfx"];
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/certificate/pfx/create/$CommonName/$gpid"));
     if(!$json->Status){
-        return $tpl->js_error($json->Error);
+        return $tpl->js_error(crt_meta_error($json->Error));
     }
     echo "$function();";
     return true;
@@ -151,7 +160,7 @@ function repair_database():bool{
 
     }
     if(!$json->Status){
-        return $tpl->js_error($json->Error);
+        return $tpl->js_error(crt_meta_error($json->Error));
     }
     echo "$function();";
     return true;
@@ -160,23 +169,23 @@ function repair_database():bool{
 function change_cert_js(){
     $page       = CurrentPageName();
     $tpl        = new template_admin();
-    $q          = new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb        = new CertificatesDB();
     $ID         = intval($_GET["change-cert-js"]);
-    $sql        = "SELECT CommonName FROM sslcertificates WHERE ID=$ID";
-    $ligne      = $q->mysqli_fetch_array($sql);
-    $CommonName = $ligne["CommonName"];
+    $row        = $cdb->getById($ID);
+    $CommonName = is_object($row) ? $row->CommonName : "";
     $tpl->js_dialog2("$CommonName","$page?change-cert-popup=$ID");
 
 }
 function change_cert_popup(){
     $page       = CurrentPageName();
     $tpl        = new template_admin();
-    $q          = new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb        = new CertificatesDB();
     $ID         = intval($_GET["change-cert-popup"]);
-    $sql        = "SELECT CommonName FROM sslcertificates WHERE ID=$ID";
-    $ligne      = $q->mysqli_fetch_array($sql);
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    $CommonName = $ligne["CommonName"];
+    $row        = $cdb->getById($ID);
+    if($cdb->lastError !== ""){echo $tpl->div_error($cdb->lastError);}
+    $CommonName = is_object($row) ? $row->CommonName : "";
     $jsafter="dialogInstance1.close();dialogInstance2.close();LoadAjax('table-loader-sslcerts-service','$page?table=yes');";
     $tpl->field_hidden("ChangeCert",$ID);
     $form[]=$tpl->field_text("CommonName","{commonName}",$CommonName);
@@ -185,24 +194,28 @@ function change_cert_popup(){
 }
 function change_cert_save(){
     $tpl        = new template_admin();
-    $q          = new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb        = new CertificatesDB();
     $ID         = intval($_POST["ChangeCert"]);
     $CommonName = trim($_POST["CommonName"]);
-    if($CommonName==null){echo "jserror:" . $tpl->javascript_parse_text("{your_query_is_empty}");return false;}
+    if($CommonName==null){echo (new template_admin())->post_error("" . $tpl->javascript_parse_text("{your_query_is_empty}"));return false;}
     $CommonName = str_replace("'","_",$CommonName);
     $CommonName = replace_accents($CommonName);
-    $q->QUERY_SQL("UPDATE sslcertificates SET CommonName='$CommonName' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:" . $tpl->javascript_parse_text($q->mysql_error);return false;}
+    if(!$cdb->update($ID, ["CommonName"=>$CommonName])){
+        echo (new template_admin())->post_error(crt_meta_error($cdb->lastError));
+        return false;
+    }
     return true;
 }
 //dialogInstance$number.close();
 
 function subcertificates_pks12():bool{
     $ID=intval($_GET["subcertificates-pks12"]);
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
     $return=null;
-    $sql="SELECT commonName,pks12 FROM subcertificates WHERE ID=$ID";
-    $ligne=$q->mysqli_fetch_array($sql);
+    $row=$cdb->subGetById($ID);
+    $ligne=is_object($row) ? (array)$row : array("commonName"=>"","pks12"=>"");
     $final_content=base64_decode($ligne["pks12"]);
     if($GLOBALS["VERBOSE"]){
         echo "PKS12: $ID: {$ligne["commonName"]} = {$ligne["pks12"]}<br>";
@@ -229,10 +242,11 @@ function subcertificates_pks12():bool{
 function subcertificates_crt(){
     $tpl = new template_admin();
     $ID = intval($_GET["subcertificates-crt"]);
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT certid,srca,crt FROM subcertificates WHERE ID=$ID";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $row=$cdb->subGetById($ID);
+    if($cdb->lastError !== ""){echo $tpl->div_error($cdb->lastError);}
+    $ligne=is_object($row) ? (array)$row : array("crt"=>"","commonName"=>"");
     $certificateData=base64_decode($ligne["crt"]);
     $commonName=$ligne["commonName"];
     $form[]=$tpl->field_textarea("csr", null,$certificateData,"664px");
@@ -241,10 +255,11 @@ function subcertificates_crt(){
 function subcertificates_privkey(){
     $tpl = new template_admin();
     $ID = intval($_GET["subcertificates-privkey"]);
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT certid,srca,crt FROM subcertificates WHERE ID=$ID";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $row=$cdb->subGetById($ID);
+    if($cdb->lastError !== ""){echo $tpl->div_error($cdb->lastError);}
+    $ligne=is_object($row) ? (array)$row : array("certid"=>0,"srca"=>"","commonName"=>"");
     $certid=intval($ligne["certid"]);
     $certificateData=base64_decode($ligne["srca"]);
 
@@ -257,19 +272,20 @@ function subcertificates_privkey(){
 function subcertificates_verify(){
     $tpl = new template_admin();
     $ID=intval($_GET["subcertificates-verify"]);
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT certid,srca,crt FROM subcertificates WHERE ID=$ID";
-    $ligne=$q->mysqli_fetch_array($sql);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $row=$cdb->subGetById($ID);
+    if($cdb->lastError !== ""){echo $tpl->div_error($cdb->lastError);}
+    $ligne=is_object($row) ? (array)$row : array("certid"=>0,"crt"=>"","srca"=>"");
     $certid=$ligne["certid"];
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
     $CertificatePath=PROGRESS_DIR."/certificate.pem";
     $KeyPath=PROGRESS_DIR."/cakey.pem";
     $crtdata=base64_decode($ligne["crt"]);
     @file_put_contents($CertificatePath,$crtdata);
 
-    $sql="SELECT crt FROM sslcertificates WHERE ID='$certid'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    $rowMaster=$cdb->getById(intval($certid));
+    $ligne=is_object($rowMaster) ? (array)$rowMaster : array("crt"=>"");
     @file_put_contents($KeyPath,$ligne["crt"]);
 
     $cmd="/usr/bin/openssl verify -purpose sslserver -CAfile $KeyPath -verbose  $CertificatePath 2>&1";
@@ -302,20 +318,22 @@ function autorenew_save():bool{
 
 function subcertificates_masterInfo($Masterid){
     $tpl=new template_admin();
-    $q = new lib_sqlite(GetDatabase());
-    $sql = "SELECT CommonName,ID FROM sslcertificates WHERE ID='$Masterid'";
-    $ligne = $q->mysqli_fetch_array($sql);
-    return $ligne;
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->getById(intval($Masterid));
+    if(!is_object($row)){return array();}
+    return (array)$row;
 }
 
 function subcertificates_settings(){
     $tpl = new template_admin();
     $page = CurrentPageName();
-    $q = new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $ID = intval($_GET["subcertificates-settings"]);
-    $sql = "SELECT * FROM subcertificates WHERE ID='$ID'";
-    $ligne = $q->mysqli_fetch_array($sql);
-    $Masterid=$ligne["certid"];
+    $row = $cdb->subGetById($ID);
+    $ligne = is_object($row) ? (array)$row : array();
+    $Masterid=$ligne["certid"] ?? 0;
     $html[]="<div class='ibox-content'><table style='width:100%' class='table'>";
     $MasterInfo=subcertificates_masterInfo($Masterid);
     $html[]="<tr>";
@@ -449,7 +467,8 @@ function page():bool{
     $Addon=null;
     if(isset($_GET["HarmpID"])){
         $_SESSION["HARMPID"]=intval($_GET["HarmpID"]);
-        $Addon="&HarmpID={$_GET["HarmpID"]}";
+        // Pentest 2026-11-04 : HarmpID etait recopie sans encodage dans la page (XSS).
+        $Addon="&HarmpID=".intval($_GET["HarmpID"]);
     }else{
         if(isset($_SESSION["HARMPID"])){
             $Addon="&HarmpID={$_SESSION["HarmpID"]}";
@@ -472,17 +491,6 @@ function page():bool{
     $tpl=new templates();
     echo $tpl->_ENGINE_parse_body($html);
     return true;
-}
-function GetDatabase(){
-    $db="/home/artica/SQLITE/certificates.db";
-    if(isset($_SESSION["HARMPID"])){
-        $gpid=intval($_SESSION["HARMPID"]);
-        if($gpid>0){
-            $db="/home/artica/SQLITE/certificates.$gpid.db";
-        }
-    }
-    VERBOSE("Database: $db",__LINE__);
-    return $db;
 }
 function subcertificates_only_js(){
     $tpl=new template_admin();
@@ -520,12 +528,14 @@ function subcertificates_delete_js(){
     $tpl = new template_admin();
     $ID=intval($_GET["del-server-certificate"]);
     $md=$_GET["md"];
-    $q = new lib_sqlite(GetDatabase());
-    $ligne=$q->mysqli_fetch_array("SELECT commonName,organizationName,emailAddress FROM subcertificates WHERE ID=$ID");
-    if(!$q->ok){
-        $tpl->js_mysql_alert($q->mysql_error);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->subGetById($ID);
+    if($cdb->lastError !== ""){
+        $tpl->js_mysql_alert($cdb->lastError);
         return;
     }
+    $ligne = is_object($row) ? (array)$row : array("commonName"=>"","organizationName"=>"","emailAddress"=>"");
     $commonName=$ligne["commonName"];
     $organizationName=$ligne["organizationName"];
     $emailAddress=$ligne["emailAddress"];
@@ -534,9 +544,9 @@ function subcertificates_delete_js(){
 }
 function subcertificates_delete():bool{
     $ID=intval($_POST["del-server-certificate"]);
-    $q = new lib_sqlite(GetDatabase());
-    $q->QUERY_SQL("DELETE FROM subcertificates WHERE ID=$ID");
-    if(!$q->ok){echo $q->mysql_error."\n";return false;}
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    if(!$cdb->subDelete($ID)){echo $cdb->lastError."\n";return false;}
     return true;
 }
 function subcertificates_new_server_js():bool{
@@ -593,7 +603,7 @@ function subcertificates_new_client_save(){
 function  subcertificates_top_buttons():bool{
     $users=new usersMenus();
     $certid  = intval($_GET["subcertificates-top-buttons"]);
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $tpl        = new template_admin();
     $page       = CurrentPageName();
     $sslclient=0;
@@ -645,12 +655,15 @@ function  subcertificates_top_buttons():bool{
         }
     }
 
-    echo $tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
+    if(count($topbuttons)==0){return true;}
+    echo $tpl->table_buttons($topbuttons);   // déjà traduit
     return true;
 }
 function subcertificates_new_client_popup(){
+    if(!fw_progress_page_priv("AsCertifsManager")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
-    $certid=$_GET["certid"];
+    $certid=fw_progress_seg($_GET["certid"] ?? "");
+    if($certid===""){return fw_progress_bad_value("certid");}
     $function=$_GET["function"];
     $page=CurrentPageName();
     $array_country_codes=array();
@@ -680,18 +693,15 @@ function subcertificates_new_client_popup(){
     $countOfLIne=count($ligne);
     VERBOSE("Count of lines: $countOfLIne",__LINE__);
     if($countOfLIne<5) {
-        $q = new lib_sqlite(GetDatabase());
-        if (!$q->FIELD_EXISTS("sslcertificates", "subjectAltName")) {
-            $q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectAltName TEXT");
-            $q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectAltName1 TEXT");
-            $q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectAltName2 TEXT");
-        }
+        include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+        $cdb = new CertificatesDB();
         VERBOSE("Get CommonName,CountryName, localityName,OrganizationName,OrganizationalUnit From $certid",__LINE__);
-        $ligne = $q->mysqli_fetch_array("SELECT * FROM sslcertificates WHERE ID=$certid");
+        $row = $cdb->getById(intval($certid));
+        $ligne = is_object($row) ? (array)$row : array();
 
         $field="crt";
-        if($ligne["UsePrivKeyCrt"]==0){$field="SquidCert";}
-        $crtdata=$ligne[$field];
+        if(($ligne["UsePrivKeyCrt"] ?? 0)==0){$field="SquidCert";}
+        $crtdata=$ligne[$field] ?? "";
         $openssl_x509_parse=openssl_x509_parse($crtdata);
         if(isset($openssl_x509_parse["subject"]["C"])){
             $ligne["CountryName"]=$openssl_x509_parse["subject"]["C"];
@@ -712,9 +722,9 @@ function subcertificates_new_client_popup(){
             $ligne["emailAddress"]=$openssl_x509_parse["subject"]["emailAddress"];
         }
 
-        if (!$q->ok) {
-            VERBOSE($q->mysql_error,__LINE__);
-            echo $tpl->div_error($q->mysql_error);
+        if ($cdb->lastError !== "") {
+            VERBOSE($cdb->lastError,__LINE__);
+            echo $tpl->div_error($cdb->lastError);
         }
     }
 
@@ -746,7 +756,7 @@ function subcertificates_new_client_popup(){
         $tbl[]="</tr>";
     }else{
         if($ligne["CountryName"]==null){$ligne["CountryName"]="US";}
-        $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $ligne["CountryName"]);
+        $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $array_country_codes2[$ligne["CountryName"]] ?? $ligne["CountryName"]);
     }
     if($ligne["stateOrProvinceName"]<>null){
         if($ligne["stateOrProvinceName"]==null){$ligne["stateOrProvinceName"]="New York";}
@@ -826,7 +836,8 @@ function subcertificates_new_client_popup(){
 }
 function subcertificates_new_server_popup(){
     $tpl=new template_admin();
-    $certid=$_GET["certid"];
+    // Pentest 2026-11-04 : certid etait recopie sans encodage dans la page (XSS).
+    $certid=intval($_GET["certid"]);
     $function=$_GET["function"];
     $page=CurrentPageName();
     $myhostname=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname");
@@ -850,19 +861,12 @@ function subcertificates_new_server_popup(){
     if(!is_array($ligne)){$ligne=array();}
 
     if(count($ligne)<5) {
-        $q = new lib_sqlite(GetDatabase());
-
-        if (!$q->FIELD_EXISTS("sslcertificates", "subjectAltName")) {
-            $q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectAltName TEXT");
-            $q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectAltName1 TEXT");
-            $q->QUERY_SQL("ALTER TABLE sslcertificates ADD subjectAltName2 TEXT");
-        }
-
-        $ligne = $q->mysqli_fetch_array("SELECT CommonName,CountryName,
-    localityName,OrganizationName,OrganizationalUnit,stateOrProvinceName,subjectAltName,subjectAltName1,subjectAltName2,CertificateMaxDays,levelenc FROM sslcertificates WHERE ID=$certid");
-
-        if (!$q->ok) {
-            echo $tpl->div_error($q->mysql_error);
+        include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+        $cdb = new CertificatesDB();
+        $row = $cdb->getById(intval($certid));
+        $ligne = is_object($row) ? (array)$row : array();
+        if ($cdb->lastError !== "") {
+            echo $tpl->div_error($cdb->lastError);
         }
     }
 
@@ -886,7 +890,7 @@ function subcertificates_new_server_popup(){
     $form[]=$tpl->field_text("subjectAltName", "{subjectAltName}", $ligne["subjectAltName"],true,null);
     $form[]=$tpl->field_text("subjectAltName1", "{subjectAltName} (1)", $ligne["subjectAltName1"],true,null);
     $form[]=$tpl->field_text("subjectAltName2", "{subjectAltName} (2)", $ligne["subjectAltName2"],false,null);
-    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $ligne["CountryName"]);
+    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $array_country_codes2[$ligne["CountryName"]] ?? $ligne["CountryName"]);
     $form[]=$tpl->field_text("stateOrProvinceName", "{stateOrProvinceName}", $ligne["stateOrProvinceName"]);
     $form[]=$tpl->field_text("localityName", "{localityName}", $ligne["localityName"]);
     $form[]=$tpl->field_text("OrganizationName", "{organizationName}", $ligne["OrganizationName"]);
@@ -919,7 +923,8 @@ function subcertificates_table():bool{
 
     $certid=intval($_GET["subcertificates-table"]);
     $function=$_GET["function"];
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
     $tpl=new template_admin();
     $page=CurrentPageName();
     $sock=new sockets();
@@ -940,19 +945,16 @@ function subcertificates_table():bool{
 
     $html[]="</div>";
     $html[]="<div class='ibox-content' style='padding:0px;margin-top:5px;'>";
-    $html[]="<table class='table table-over'>";
-    $html[]="<tr style='background-color: #CCCCCC'>";
-    $html[]="<th>{type}</th>";
-    $html[]="<th>{expire}</th>";
-    $html[]="<th>{CommonName}</th>";
-    $html[]="<th>OU</th>";
-    $html[]="<th>{emailAddress}</th>";
-    $html[]="<th>DOWN</th>";
-    $html[]="<th>DEL</th>";
-    $html[]="</tr>";
+    $rawResults=$cdb->subList(intval($certid));
+    $results=array();
+    foreach($rawResults as $r){ $results[]=(array)$r; }
+    usort($results,function($a,$b){
+        $ca=intval($a["Certype"] ?? 0); $cb=intval($b["Certype"] ?? 0);
+        if($ca!==$cb){return $ca<=>$cb;}
+        return strcmp((string)($a["commonName"] ?? ""),(string)($b["commonName"] ?? ""));
+    });
 
-    $results=$q->QUERY_SQL("SELECT * FROM subcertificates WHERE certid='$certid' ORDER BY Certype,commonName ASC");
-
+    $rows=array();
     foreach ($results as $index=>$ligne) {
         $md=md5(serialize($ligne));
 
@@ -961,41 +963,132 @@ function subcertificates_table():bool{
         $commonName=$ligne["commonName"];
         $organizationName=$ligne["organizationName"];
         $emailAddress=$ligne["emailAddress"];
-        $type="<span class='label label-info'>{client_certificate}</span>";
+        $badge="<span class='awc-badge awc-badge-off'>{client_certificate}</span>";
         $DateTo=$ligne["DateTo"];
         $err="";
+        $failed=false;
         $commonName=$tpl->td_href($commonName,null,"Loadjs('$page?show-server-certificate=$ID&md=$md')");
         if($Certype==1){
-            $type="<span class='label label-primary'>{server_certificate}</span>";
+            $badge="<span class='awc-badge awc-badge-on'>{server_certificate}</span>";
             $data=$sock->REST_API("/certificate/server/$ID/$gpid");
             $json=json_decode($data);
-            if(!$json->Status){
-                $type="<span class='label label-danger'>{server_certificate}</span>";
-                $err="<br><small class=text-danger>$json->Error</small>";
+            if(!is_object($json) OR !$json->Status){
+                $failed=true;
+                $badge="<span class='awc-badge' style='background:#ba1a1a'>{server_certificate}</span>";
+                $errMsg=is_object($json)?strval($json->Error):"{error}";
+                $err="<span style='display:block;font-size:12px;color:#ba1a1a;margin-top:2px'>"
+                    .htmlspecialchars($errMsg)."</span>";
             }
         }
-        $del=$tpl->icon_delete("Loadjs('$page?del-server-certificate=$ID&md=$md')","AsCertifsManager");
-        $download=$tpl->icon_nothing();
+        $del=crt_tip($tpl->icon_delete("Loadjs('$page?del-server-certificate=$ID&md=$md')","AsCertifsManager"),"{crt_tip_delete_server}");
+        $download="";
         $DateToT=$tpl->time_to_date($DateTo);
-        if( strlen($ligne["pks12"])>50) {
-            $download = $tpl->icon_download("document.location.href='$page?subcertificates-pks12=$ID'", "AsCertifsManager");
+        if( strlen(strval($ligne["pks12"]))>50) {
+            $download = crt_tip($tpl->icon_download("document.location.href='$page?subcertificates-pks12=$ID'", "AsCertifsManager"),"{crt_tip_pfx_download}");
         }
-        $html[]="<tr id='$md'>";
-        $html[]="<td style='width:1%' nowrap>$type</td>";
-        $html[]="<td style='width:1%' nowrap>$DateToT</td>";
-        $html[]="<td>$commonName$err</td>";
-        $html[]="<td>$organizationName</td>";
-        $html[]="<td>$emailAddress</td>";
-        $html[]="<td style='width:1%' nowrap>$download</td>";
-        $html[]="<td style='width:1%' nowrap>$del</td>";
-        $html[]="</tr>";
+
+        $meta=array();
+        if(strlen(trim(strval($organizationName)))>0){$meta[]=htmlspecialchars($organizationName);}
+        if(strlen(trim(strval($emailAddress)))>0){$meta[]=htmlspecialchars($emailAddress);}
+
+        $h ="<tr>";
+        $h.="<td>".crt_ident(ico_certificate,$commonName,$meta,$failed).$err."</td>";
+        $h.="<td class='center'>$badge</td>";
+        $h.="<td class='awc-mono' nowrap>$DateToT</td>";
+        $h.="<td>".crt_acts(array($download,$del))."</td>";
+        $h.="</tr>";
+        $rows[]=$h;
     }
 
-    $html[]="</table>";
+    $html[]=crt_table_open(array(
+        "<th>{CommonName}</th>",
+        "<th class='center'>{type}</th>",
+        "<th>{expire}</th>",
+        "<th style='text-align:right'>{actions}</th>"),"crt-rows-sub");
+    if(count($rows)==0){
+        $html[]=crt_table_empty(4);
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $totalSub=count($rows);
+    $html[]=crt_table_close($totalSub,$totalSub,"{certificates}","crt-pager-sub");
+
     $html[]="</div>";
     $html[]="<script>$btns</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js(25,"crt-rows-sub","crt-pager-sub");
     return true;
+}
+
+/* Socle des tableaux d'entites: le cadre, la carte et le pager viennent de
+ * awc_table_style() / awc_pager_js() (class.statistics_appliance.inc, partages). */
+
+/** En-tete + ouverture du tableau. */
+function crt_table_open($columns,$rowsId):string{
+    $h=array();
+    $h[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $h[]="<table class='awc-tbl'><thead><tr>";
+    foreach($columns as $col){ $h[]=$col; }
+    $h[]="</tr></thead><tbody id='$rowsId'>";
+    return @implode("\n",$h);
+}
+
+/** Pied du tableau: compteur a gauche, pager a droite. */
+function crt_table_close($shown,$total,$unit,$pagerId):string{
+    $h=array();
+    $h[]="</tbody></table></div>";
+    $h[]="<div class='awc-foot'>";
+    $h[]="<span>{showing} $shown / $total $unit</span>";
+    $h[]="<span class='awc-pg' id='$pagerId'></span>";
+    $h[]="</div></div></div>";
+    return @implode("\n",$h);
+}
+
+/** Ligne vide normalisee (jamais un <tbody> vide). */
+function crt_table_empty($colspan):string{
+    return "<tr><td colspan='$colspan'><div class='awc-empty'>{no_data}</div></td></tr>";
+}
+
+/** Bloc d'identite: pastille d'icone, nom (deja rendu, il porte son lien), metadonnees. */
+function crt_ident($ico,$name,$meta=array(),$off=false):string{
+    $icocls=$off?"awc-ico awc-ico-off":"awc-ico";
+    $namecls=$off?"awc-name awc-name-off":"awc-name";
+    $h ="<div class='awc-ident'>";
+    $h.="<span class='$icocls'><i class='$ico'></i></span>";
+    $h.="<span><span class='$namecls'>$name</span>";
+    $out=array();
+    foreach($meta as $m){
+        if(is_null($m)){continue;}
+        if(strlen(trim(strip_tags(strval($m))))==0){continue;}
+        $out[]=$m;
+    }
+    if(count($out)>0){
+        $h.="<div class='awc-meta'>".@implode(" &middot; ",$out)."</div>";
+    }
+    $h.="</span></div>";
+    return $h;
+}
+
+/** Cellule d'actions alignee a droite. */
+function crt_acts($items):string{
+    if(!is_array($items)){$items=array($items);}
+    $out=array();
+    foreach($items as $i){
+        if(is_null($i)){continue;}
+        if(strlen(trim($i))==0){continue;}
+        $out[]=$i;
+    }
+    return "<div class='awc-acts'>".@implode("",$out)."</div>";
+}
+
+// Wraps a row action with a hover tooltip explaining what it does.
+// The $token is resolved later by _ENGINE_parse_body(); double quotes keep
+// translations containing an apostrophe from cutting the attribute.
+function crt_tip($button,$token):string{
+    if(is_null($button)){return "";}
+    if(strlen(trim($button))==0){return "";}
+    return "<span class='crt-tip' title=\"$token\">$button</span>";
 }
 
 function certificate_new_js():bool{
@@ -1009,95 +1102,11 @@ function certificate_new_js():bool{
 
 
 
-function letsencrypt_dns_key_js(){
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $ID=intval($_GET["letsencrypt-dnskey-js"]);
-
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $CommonName=$ligne["CommonName"];
-    $tpl->js_dialog1("$CommonName: {LETSENCRYPT_CERTIFICATE}", "$page?letsencrypt-dnskey-popup=$ID");
-}
-
-function letsencrypt_dns_key_popup(){
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $ID=intval($_GET["letsencrypt-dnskey-popup"]);
-
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $CommonName=$ligne["CommonName"];
-    $letsencrypt_dns_key=$ligne["letsencrypt_dns_key"];
-    $letsencrypt_dns_key_text=$tpl->_ENGINE_parse_body("{letsencrypt_dns_key}");
-    $letsencrypt_dns_key_text=str_replace("%d","_acme-challenge.$CommonName",$letsencrypt_dns_key_text);
-    $letsencrypt_dns_key_text=str_replace("%s","$letsencrypt_dns_key",$letsencrypt_dns_key_text);
-
-    if(isset($_SESSION["HARMPID"])) {
-        $gpid = intval($_SESSION["HARMPID"]);
-        if ($gpid > 0) {
-            $Addon="&HarmpID=$gpid";
-        }
-    }
 
 
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/letsencrypt.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/letsencrypt.log";
-    $ARRAY["CMD"]="openssl.php?letsencrypt-dns=$ID$Addon";
-    $ARRAY["TITLE"]="Let’s Encrypt {$ligne["CommonName"]}";
-    $ARRAY["AFTER"]="LoadAjax('table-loader-sslcerts-service','$page?table=yes');dialogInstance1.close();";
 
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=letsencrypt-$ID')";
 
-    $html[]="<div id='letsencrypt-$ID'></div>";
 
-    $form[]=$tpl->field_info("CommonName", "{CommonName}", $ligne["CommonName"],true,null);
-    $form[]=$tpl->field_info("emailAddress", "{emailAddress}", $ligne["emailAddress"],true);
-    $form[]=$tpl->field_info("API", "{API_KEY}", $ligne["letsencrypt_dns_key"],true);
-    $form[]=$tpl->field_hidden("UseLetsEncrypt", 1);
-    $form[]=$tpl->field_hidden("ID", $ID);
-    $html[]=$tpl->form_outside("{$ligne["CommonName"]} - Let’s Encrypt", $form,$letsencrypt_dns_key_text,"{create_certificate}",$jsrestart,"AsCertifsManager");
-    echo $tpl->_ENGINE_parse_body($html);
-
-}
-
-function letsencrypt_dns_js(){
-    header("content-type: application/x-javascript");
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $ID=intval($_GET["letsencrypt-dns-js"]);
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->FIELD_EXISTS("sslcertificates","letsencrypt_dns_key")){
-        $q->QUERY_SQL("ALTER TABLE sslcertificates ADD letsencrypt_dns_key TEXT");
-    }
-    if(isset($_SESSION["HARMPID"])) {
-        $gpid = intval($_SESSION["HARMPID"]);
-        if ($gpid > 0) {
-            $Addon="&HarmpID=$gpid";
-        }
-    }
-
-    $letsencrypt_dns_key=$ligne["letsencrypt_dns_key"];
-    if($letsencrypt_dns_key==null){
-        $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/letsencrypt.progress";
-        $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/letsencrypt.log";
-        $ARRAY["CMD"]="openssl.php?letsencrypt-dns-key=$ID$Addon";
-        $ARRAY["TITLE"]="Let’s Encrypt {$ligne["CommonName"]} DNS...";
-        $ARRAY["AFTER"]="Loadjs('$page?letsencrypt-dnskey-js=$ID')";
-        $prgress=base64_encode(serialize($ARRAY));
-        $jsrestart="\nLoadjs('fw.progress.php?content=$prgress&mainid=letsencrypt-$ID');\n";
-        echo $jsrestart;
-        return;
-    }
-
-    echo "Loadjs('$page?letsencrypt-dnskey-js=$ID');";
-
-}
 
 
 
@@ -1107,17 +1116,21 @@ function letsencrypt_dns_js(){
 function delete_js(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $Certificate=$_GET["delete-js"];
-    $js="$('#{$_GET["id"]}').remove();";
-    $tpl->js_confirm_delete($Certificate, "delete", $Certificate,$js);
+    // Pentest 2026-11-04 : delete-js et id etaient recopies sans encodage dans la page (XSS).
+    $Certificate=(string)$_GET["delete-js"];
+    $domid=preg_replace('#[^A-Za-z0-9_-]#','',(string)($_GET["id"] ?? ""));
+    $js="$('#$domid').remove();";
+    $tpl->js_confirm_delete(req_html($Certificate), "delete", $Certificate,$js);
 
 }
 function delete(){
-    $q=new lib_sqlite(GetDatabase());
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM sslcertificates WHERE CommonName='{$_POST["delete"]}'");
-    $certid=$ligne["ID"];
-    $q->QUERY_SQL("DELETE FROM subcertificates WHERE certid=$certid");
-    $q->QUERY_SQL("DELETE FROM sslcertificates WHERE CommonName='{$_POST["delete"]}'");
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    [$exists,$certid] = $cdb->exists($_POST["delete"]);
+    if(!$exists){return;}
+    if(!$cdb->delete(intval($certid))){
+        echo (new template_admin())->post_error(crt_meta_error($cdb->lastError));
+    }
 }
 
 function display_csr_js():bool{
@@ -1142,19 +1155,23 @@ function certificate_js():bool{
     $CertificateGet=$_GET["certificate-js"];
     $certificate=urlencode($CertificateGet);
     if(isset($_GET["function"])){$function=$_GET["function"];}
-    return $tpl->js_dialog1("{certificate} $CertificateGet", "$page?certificate-popup=$certificate&function=$function&certificate=$certificate");
+    // Pentest 2026-11-04 : certificate-js etait recopie sans encodage dans la page (XSS).
+    $CertificateT=req_html(req_html($CertificateGet));
+    return $tpl->js_dialog1("{certificate} $CertificateT", "$page?certificate-popup=$certificate&function=$function&certificate=$certificate",950);
 }
 function subcertificates_tabs(){
     $ID=intval($_GET["subcertificates-tab"]);
     $tpl=new template_admin();
     $page=CurrentPageName();
 
-    $q = new lib_sqlite(GetDatabase());
-    $ligne=$q->mysqli_fetch_array("SELECT commonName,organizationName,emailAddress FROM subcertificates WHERE ID=$ID");
-    if(!$q->ok){
-        $tpl->js_mysql_alert($q->mysql_error);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->subGetById($ID);
+    if(!is_object($row)){
+        $tpl->js_mysql_alert($cdb->lastError);
         return;
     }
+    $ligne = (array)$row;
     $commonName=$ligne["commonName"];
 
 
@@ -1167,12 +1184,13 @@ function subcertificates_tabs(){
 }
 
 function subcertificates_info(){
-    $ID=$_GET["subcertificates-info"];
-    $q=new lib_sqlite(GetDatabase());
+    $ID=intval($_GET["subcertificates-info"]);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->subGetById($ID);
+    $ligne = is_object($row) ? (array)$row : array();
 
-    $ligne=$q->mysqli_fetch_array("SELECT crt FROM subcertificates WHERE ID=$ID");
-
-    $crt=base64_decode($ligne["crt"]);
+    $crt=base64_decode($ligne["crt"] ?? "");
 
 
     $passin=null;
@@ -1199,14 +1217,15 @@ function subcertificates_info(){
 }
 function certificate_tab(){
     $function=$_GET["function"];
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT `crt`,`csr`,`Generated`,`SquidCert`,`UsePrivKeyCrt`,`UseGodaddy`,`UseLetsEncrypt`,`AsRoot`,ID,srca  FROM sslcertificates WHERE CommonName='{$_GET["certificate-popup"]}'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->getByCommonName($_GET["certificate-popup"]);
+    $ligne = is_object($row) ? (array)$row : array();
 
-    $UseLetsEncrypt=intval($ligne["UseLetsEncrypt"]);
-    $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"]);
-    $AsRoot=intval($ligne["AsRoot"]);
-    $ID=intval($ligne["ID"]);
+    $UseLetsEncrypt=intval($ligne["UseLetsEncrypt"] ?? 0);
+    $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"] ?? 0);
+    $AsRoot=intval($ligne["AsRoot"] ?? 0);
+    $ID=intval($ligne["ID"] ?? 0);
 
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -1247,18 +1266,21 @@ function certificate_flat2():bool{
     $function=$_GET["function"];
     $gpid=intval($_SESSION["HARMPID"]);
     $sock=new sockets();
-    $q=new lib_sqlite(GetDatabase());
-    $refreshEncoded=base64_encode("LoadAjax('certificate-flat-$ID','$page?certificate-flat2=$ID&function=$function')");
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    // Pentest 2026-11-04 : la page Let's Encrypt executait le JavaScript recu en
+    // base64 dans function2 ; il est maintenant signe pour la session.
+    $refreshEncoded=signed_html_token("LoadAjax('certificate-flat-$ID','$page?certificate-flat2=$ID&function=$function')");
 
-    if (!$q->FIELD_EXISTS("sslcertificates", "ServerCert")) {
-        $q->QUERY_SQL("ALTER TABLE sslcertificates ADD ServerCert INTEGER NOT NULL DEFAULT 0");
+    $row = $cdb->getById($ID);
+    if(!is_object($row)){
+        echo $tpl->div_error($cdb->lastError."<br>Please restart the REST API service..");
     }
-
-
-    $sql="SELECT `crt`,`csr`,`Generated`,bundle,`SquidCert`,`UsePrivKeyCrt`,`UseGodaddy`,`UseLetsEncrypt`,`AsRoot`,Squidkey,privkey,ID,srca,ServerCert,CABundleProvider  FROM sslcertificates WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error."<br>Please restart the REST API service..");
+    $ligne = is_object($row) ? (array)$row : array();
+    // Held by Artica Meta: the stored PEM is shown, never edited here (the daemon answers 423).
+    $metaHeld=crt_meta_held($ligne);
+    if($metaHeld){
+        $tpl->table_form_field_text("{ccmeta_badge}","{ccmeta_held_short}",ico_lock);
     }
 
     $TextType="{official_certificate}";
@@ -1267,7 +1289,7 @@ function certificate_flat2():bool{
     $UseLetsEncrypt=intval($ligne["UseLetsEncrypt"]);
     $CABundleProvider=base64_decode($ligne["CABundleProvider"]);
     $TypeAddon="";
-    if($UseLetsEncrypt==1){
+    if($UseLetsEncrypt==1 && !$metaHeld){
         $TextType=array();
         $js="Loadjs('fw.certificates-center.letsencrypt.php?ID=$ID&function=$function&function2=$refreshEncoded')";
         $TextType["BUTTON"]["VALUE"] = "{LETSENCRYPT_CERTIFICATE}";
@@ -1313,7 +1335,7 @@ function certificate_flat2():bool{
                 $csr_text = $csr_error;
                 $Error = true;
             }
-            $tpl->table_form_field_js("Loadjs('$page?csr-js=$ID')", "AsCertifsManager");
+            crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?csr-js=$ID')", "AsCertifsManager");
             $tpl->table_form_field_text("{CERTIFICATE_REQUEST}", $csr_text, ico_certificate, $Error);
         } else {
             if($UseLetsEncrypt==0) {
@@ -1359,24 +1381,24 @@ function certificate_flat2():bool{
             $key_text=$csr_error;
             $Error=true;
         }
-        $tpl->table_form_field_js("Loadjs('$page?crt-js=$ID&function=$function')","AsCertifsManager");
+        crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?crt-js=$ID&function=$function')","AsCertifsManager");
         $tpl->table_form_field_text("{certificate}",$csr_text,ico_certificate,$Error);
-        $tpl->table_form_field_js("Loadjs('$page?privkey-js=$ID&function=$function')","AsCertifsManager");
+        crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?privkey-js=$ID&function=$function')","AsCertifsManager");
         $tpl->table_form_field_text("{privkey}",$key_text,ico_certificate,$Error);
 
     }else{
         if (strlen($crt)<50) {
-            $tpl->table_form_field_js("Loadjs('$page?crt-js=$ID&function=$function')","AsCertifsManager");
+            crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?crt-js=$ID&function=$function')","AsCertifsManager");
             $tpl->table_form_field_text("{certificate}", "{missing}", ico_certificate, true);
         }else{
             $StrlenOfCrt=strlen($crt);
-            $tpl->table_form_field_js("Loadjs('$page?crt-js=$ID&function=$function')","AsCertifsManager");
+            crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?crt-js=$ID&function=$function')","AsCertifsManager");
             $tpl->table_form_field_text("{certificate}", "[OK] $StrlenOfCrt bytes", ico_certificate);
         }
 
         if (strlen($privkey)<50) {
             if($ServerCert==0) {
-                $tpl->table_form_field_js("Loadjs('$page?privkey-js=$ID&function=$function')", "AsCertifsManager");
+                crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?privkey-js=$ID&function=$function')", "AsCertifsManager");
                 $tpl->table_form_field_text("{privkey}", "{missing}", ico_certificate, true);
             }
         }
@@ -1402,21 +1424,21 @@ function certificate_flat2():bool{
                 $srca_text = $csr_error;
                 $Error = true;
             }
-            $tpl->table_form_field_js("Loadjs('$page?srca-js=$ID&function=$function')", "AsCertifsManager");
+            crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?srca-js=$ID&function=$function')", "AsCertifsManager");
             $tpl->table_form_field_text("{ROOT_CERT}", $srca_text, ico_certificate, $Error);
 
         } else {
             if($UseLetsEncrypt==0) {
-                $tpl->table_form_field_js("Loadjs('$page?srca-js=$ID&function=$function')", "AsCertifsManager");
+                crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?srca-js=$ID&function=$function')", "AsCertifsManager");
                 $tpl->table_form_field_text("{ROOT_CERT}", "{none}", ico_certificate, false);
             }
         }
         if (strlen($bundle) > 50) {
             $csr_text = "[OK] " . strlen($bundle) . " bytes";
-            $tpl->table_form_field_js("Loadjs('$page?bundle-js=$ID&function=$function')", "AsCertifsManager");
+            crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?bundle-js=$ID&function=$function')", "AsCertifsManager");
             $tpl->table_form_field_text("{certificate_chain}", $csr_text, ico_certificate);
         } else {
-            $tpl->table_form_field_js("Loadjs('$page?bundle-js=$ID&function=$function')", "AsCertifsManager");
+            crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?bundle-js=$ID&function=$function')", "AsCertifsManager");
             $tpl->table_form_field_text("{certificate_chain}", "{none}", ico_certificate);
         }
 
@@ -1425,7 +1447,7 @@ function certificate_flat2():bool{
 
     }
     if($UsePrivKeyCrt==1) {
-        $tpl->table_form_field_js("Loadjs('$page?CABundleProvider-js=$ID&function=$function')", "AsCertifsManager");
+        crt_meta_field_js($tpl,$metaHeld,"Loadjs('$page?CABundleProvider-js=$ID&function=$function')", "AsCertifsManager");
         if (strlen($CABundleProvider) > 50) {
             $csr_text = "[OK] " . strlen($CABundleProvider) . " bytes";
             $tpl->table_form_field_text("{CABundleProvider}", $csr_text, ico_certificate);
@@ -1442,7 +1464,8 @@ function certificate_flat2():bool{
 function certificate_crt(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $function=$_GET["function"];
     $tt=time();
     $return=null;
@@ -1450,16 +1473,15 @@ function certificate_crt(){
     $ID=intval($_GET["ID"]);
     $CommonNameURL=urlencode($CommonName);
     $button_save="{apply}";
-    $sql="SELECT `crt`,`SquidCert`,`UsePrivKeyCrt`,`UseGodaddy`  FROM sslcertificates WHERE CommonName='$CommonName'";
     if($ID>0){
-        $sql="SELECT `crt`,`SquidCert`,`UsePrivKeyCrt`,`UseGodaddy`  FROM sslcertificates WHERE ID=$ID";
+        $row = $cdb->getById($ID);
+    }else{
+        $row = $cdb->getByCommonName($CommonName);
     }
-
-
-    $ligne=$q->mysqli_fetch_array($sql);
+    $ligne = is_object($row) ? (array)$row : array();
 
     $field="crt";
-    if($ligne["UsePrivKeyCrt"]==0){
+    if(($ligne["UsePrivKeyCrt"] ?? 0)==0){
         $field="SquidCert";
         $button_upload=null;
         $button_save=null;
@@ -1496,13 +1518,14 @@ function certificate_crt_verify(){
 
 
     $CommonName=$_GET["certificate-crt-verify"];
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT `crt`,`SquidCert`,`UsePrivKeyCrt`,`UseGodaddy`  FROM sslcertificates WHERE CommonName='$CommonName'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->getByCommonName($CommonName);
+    $ligne = is_object($row) ? (array)$row : array();
 
     $field="crt";
-    if($ligne["UsePrivKeyCrt"]==0){$field="SquidCert";}
-    if($ligne["UseGodaddy"]==1){$field="crt";}
+    if(($ligne["UsePrivKeyCrt"] ?? 0)==0){$field="SquidCert";}
+    if(($ligne["UseGodaddy"] ?? 0)==1){$field="crt";}
 
     @mkdir("/usr/share/artica-postfix/ressources/conf/upload",0755,true);
     $filepath=dirname(__FILE__)."/ressources/conf/upload/Cert.pem";
@@ -1555,24 +1578,25 @@ function certificate_srca():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $sock=new sockets();
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $tt=time();
     $return=null;
     $CommonName=$_GET["certificate-srca"];
     $CommonNameURL=urlencode($CommonName);
     $function=$_GET["function"];
     $button_save="{apply}";
-    $sql="SELECT `srca` FROM sslcertificates WHERE CommonName='$CommonName'";
     $ID=intval($_GET["ID"]);
 
     if($ID>0){
-        $sql="SELECT `srca`  FROM sslcertificates WHERE ID='$ID'";
+        $row = $cdb->getById($ID);
+    }else{
+        $row = $cdb->getByCommonName($CommonName);
     }
-
-    $ligne=$q->mysqli_fetch_array($sql);
+    $ligne = is_object($row) ? (array)$row : array();
     $field="srca";
-    if(!$q->ok){echo $q->mysql_error_html(true);}
-    if($ligne["UsePrivKeyCrt"]==0){$button_save=null;}
+    if(!is_object($row) && $cdb->lastError!==""){echo $tpl->div_error(htmlspecialchars($cdb->lastError));}
+    if(($ligne["UsePrivKeyCrt"] ?? 0)==0){$button_save=null;}
 
     $Expose_content=$ligne[$field];
     $Expose_content=str_replace("\\n", "\n", $Expose_content);
@@ -1602,31 +1626,34 @@ function certificate_srca():bool{
 }
 
 function SAVE_CONTENT(){
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $tpl=new template_admin();
     $CommonName=$_POST["SAVE_CONTENT"];
     $ID=intval($_POST["ID"]);
     $field=$_POST["field"];
     $content=url_decode_special_tool($_POST["content"]);
-    $content=$q->sqlite_escape_string2($content);
-    $sql="UPDATE sslcertificates SET `$field`='$content' WHERE CommonName='$CommonName'";
-    if($ID>0){
-        $sql="UPDATE sslcertificates SET `$field`='$content' WHERE ID='$ID'";
+    if($ID<=0){
+        [$exists,$existsId] = $cdb->exists($CommonName);
+        if(!$exists){echo $tpl->div_error("certificate $CommonName not found");return;}
+        $ID = $existsId;
     }
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);return;}
+    if(!$cdb->update(intval($ID), array($field=>$content))){
+        echo $tpl->div_error(crt_meta_error_html($cdb->lastError));
+        return;
+    }
     certificate_extract_crt($CommonName);
 }
 
 function certificate_privkey():bool{
     $page=CurrentPageName();
     $CommonName=$_GET["certificate-privkey"];
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $ID=intval($_GET["ID"]);
     if($ID==0) {
-        $sql = "SELECT ID FROM sslcertificates WHERE CommonName='$CommonName'";
-        $ligne = $q->mysqli_fetch_array($sql);
-        $ID = $ligne["ID"];
+        [$exists,$existsId] = $cdb->exists($CommonName);
+        $ID = intval($existsId);
     }
     echo "<div id='DIVKEY{$ID}'></div><script>LoadAjax('DIVKEY{$ID}','$page?certificate-privkey2=$ID');</script>";
     return true;
@@ -1636,23 +1663,24 @@ function certificate_privkey2():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $function=$_GET["function"];
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $tt=time();
     $return=null;
-    $ID=$_GET["certificate-privkey2"];
+    $ID=intval($_GET["certificate-privkey2"]);
     $button_save="{apply}";
-    $sql="SELECT ID,`CommonName`,`privkey`,`Squidkey`,`UsePrivKeyCrt`,`UseGodaddy`  FROM sslcertificates WHERE ID='$ID'";
-    VERBOSE($sql,__LINE__);
-    $ligne=$q->mysqli_fetch_array($sql);
-    $CommonName=$ligne["CommonName"];
-    $ID=$ligne["ID"];
+    VERBOSE("getById($ID)",__LINE__);
+    $row = $cdb->getById($ID);
+    $ligne = is_object($row) ? (array)$row : array();
+    $CommonName=$ligne["CommonName"] ?? "";
+    $ID=intval($ligne["ID"] ?? $ID);
     $field="privkey";
-    if(!$q->ok){echo $q->mysql_error_html(true);}
-    if($ligne["UsePrivKeyCrt"]==0){
+    if(!is_object($row) && $cdb->lastError!==""){echo $tpl->div_error(htmlspecialchars($cdb->lastError));}
+    if(($ligne["UsePrivKeyCrt"] ?? 0)==0){
         $button_save=null;
         $field="Squidkey";
-        if(strlen($ligne[$field])<10){
-            if(strlen($ligne["privkey"])>10){$field="privkey";}
+        if(strlen($ligne[$field] ?? "")<10){
+            if(strlen($ligne["privkey"] ?? "")>10){$field="privkey";}
         }
     }
     VERBOSE("$field == ". strlen($ligne[$field]). " Bytes",__LINE__);
@@ -1677,21 +1705,23 @@ return true;
 function certificate_provider_bundle_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $tt=time();
     $return="";
     $CommonName=$_GET["CABundleProvider"];
     $function=$_GET["function"];
     $button_save="{apply}";
-    $sql="SELECT `CABundleProvider`  FROM sslcertificates WHERE CommonName='$CommonName'";
     $ID=intval($_GET["ID"]);
     if($ID>0){
-        $sql="SELECT `CABundleProvider` FROM sslcertificates WHERE ID='$ID'";
+        $row = $cdb->getById($ID);
+    }else{
+        $row = $cdb->getByCommonName($CommonName);
     }
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);}
+    $ligne = is_object($row) ? (array)$row : array();
+    if(!is_object($row) && $cdb->lastError!==""){echo $tpl->div_error(htmlspecialchars($cdb->lastError));}
 
-    $CABundleProvider=str_replace("\\n", "\n", base64_decode($ligne["CABundleProvider"]));
+    $CABundleProvider=str_replace("\\n", "\n", base64_decode($ligne["CABundleProvider"] ?? ""));
     $form[]=$tpl->field_hidden("SAVE_CABUNDLE", $CommonName);
     $form[]=$tpl->field_hidden("ID", $ID);
     $form[]=$tpl->field_hidden("field", "CABundleProvider");
@@ -1705,18 +1735,20 @@ function certificate_provider_bundle_popup(){
 	</script>";
 }
 function certificate_provider_bundle_save():bool{
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $tpl=new template_admin();
     $CommonName=$_POST["SAVE_CABUNDLE"];
     $ID=intval($_POST["ID"]);
     $content=url_decode_special_tool($_POST["content"]);
     $content=base64_encode($content);
-    $sql="UPDATE sslcertificates SET `CABundleProvider`='$content' WHERE CommonName='$CommonName'";
-    if($ID>0){
-        $sql="UPDATE sslcertificates SET `CABundleProvider`='$content' WHERE ID='$ID'";
+    if($ID<=0){
+        [$exists,$existsId] = $cdb->exists($CommonName);
+        if(!$exists){echo $tpl->div_error("certificate $CommonName not found");return false;}
+        $ID = intval($existsId);
     }
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $q->mysql_error_html(true);
+    if(!$cdb->update($ID, array("CABundleProvider"=>$content))){
+        echo $tpl->div_error(crt_meta_error_html($cdb->lastError));
         return false;
     }
     return admin_tracks("Save Certificate CA Bundle Provider for $CommonName/$ID");
@@ -1724,22 +1756,24 @@ function certificate_provider_bundle_save():bool{
 function certificate_bundle():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $tt=time();
     $return="";
     $CommonName=$_GET["certificate-bundle"];
     $CommonNameURL=urlencode($CommonName);
     $function=$_GET["function"];
     $button_save="{apply}";
-    $sql="SELECT `bundle`  FROM sslcertificates WHERE CommonName='$CommonName'";
     $ID=intval($_GET["ID"]);
     if($ID>0){
-        $sql="SELECT `bundle` FROM sslcertificates WHERE ID='$ID'";
+        $row = $cdb->getById($ID);
+    }else{
+        $row = $cdb->getByCommonName($CommonName);
     }
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);}
+    $ligne = is_object($row) ? (array)$row : array();
+    if(!is_object($row) && $cdb->lastError!==""){echo $tpl->div_error(htmlspecialchars($cdb->lastError));}
 
-    $ligne["bundle"]=str_replace("\\n", "\n", $ligne["bundle"]);
+    $ligne["bundle"]=str_replace("\\n", "\n", $ligne["bundle"] ?? "");
     $form[]=$tpl->field_hidden("SAVE_CONTENT", $CommonName);
     $form[]=$tpl->field_hidden("ID", $ID);
     $form[]=$tpl->field_hidden("field", "bundle");
@@ -1771,18 +1805,18 @@ function certificate_bundle_verify(){
 
 
     $CommonName=$_GET["certificate-bundle-verify"];
-    $q=new lib_sqlite(GetDatabase());
-    if(!$q->FIELD_EXISTS("sslcertificates","CertPassword","artica_backup")){$sql="ALTER TABLE `sslcertificates` ADD `CertPassword` VARCHAR(40)";$q->QUERY_SQL($sql,'artica_backup');}
-    $sql="SELECT `crt`,`srca`,`CertPassword`,`UsePrivKeyCrt`,`privkey`,`SquidCert`,`Squidkey`,`bundle`  FROM sslcertificates WHERE CommonName='$CommonName'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->getByCommonName($CommonName);
+    $ligne = is_object($row) ? (array)$row : array();
 
     $certificate_path=dirname(__FILE__)."/ressources/conf/upload/Cert.pem";
     $main_path=dirname(__FILE__)."/ressources/conf/upload";
     $CAFile=dirname(__FILE__)."/ressources/conf/upload/CaFile.pem";
 
-    $ligne["srca"]=str_replace("\\n", "\n", $ligne["srca"]);
-    $ligne["bundle"]=str_replace("\\n", "\n", $ligne["bundle"]);
-    $ligne["crt"]=str_replace("\\n", "\n", $ligne["crt"]);
+    $ligne["srca"]=str_replace("\\n", "\n", $ligne["srca"] ?? "");
+    $ligne["bundle"]=str_replace("\\n", "\n", $ligne["bundle"] ?? "");
+    $ligne["crt"]=str_replace("\\n", "\n", $ligne["crt"] ?? "");
 
     @file_put_contents($CAFile, $ligne["srca"]."\n".$ligne["bundle"]);
     @file_put_contents($certificate_path, $ligne["crt"]);
@@ -1825,10 +1859,10 @@ function certificate_bundle_verify(){
 
 function certificate_privkey_verify(){
     $CommonName=$_GET["certificate-privkey-verify"];
-    $q=new lib_sqlite(GetDatabase());
-    if(!$q->FIELD_EXISTS("sslcertificates","CertPassword","artica_backup")){$sql="ALTER TABLE `sslcertificates` ADD `CertPassword` TEXT NULL";$q->QUERY_SQL($sql,'artica_backup');}
-    $sql="SELECT `crt`,`CertPassword`,`UsePrivKeyCrt`,`privkey`,`SquidCert`,`Squidkey`  FROM sslcertificates WHERE CommonName='$CommonName'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
+    $row = $cdb->getByCommonName($CommonName);
+    $ligne = is_object($row) ? (array)$row : array();
 
 
 
@@ -1890,16 +1924,21 @@ function certificate_srca_verify(){
 	}</script>";
 
     $CommonName=$_GET["certificate-srca-verify"];
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT `srca`,`SquidCert`,`bundle`,`UsePrivKeyCrt`,`crt` FROM sslcertificates WHERE CommonName='$CommonName'";
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     $t=$_GET["t"];
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);return;}
+    $row = $cdb->getByCommonName($CommonName);
+    if(!is_object($row)){
+        $tpl=new template_admin();
+        echo $tpl->div_error(htmlspecialchars($cdb->lastError));
+        return;
+    }
+    $ligne = (array)$row;
     $tt=time();
 
-    if($ligne["UsePrivKeyCrt"]==0){echo "<div class='alert alert-success'>Self-Signed certificate</div>";return;}
+    if(($ligne["UsePrivKeyCrt"] ?? 0)==0){echo "<div class='alert alert-success'>Self-Signed certificate</div>";return;}
 
-    if(strlen($ligne["srca"])<50){
+    if(strlen($ligne["srca"] ?? "")<50){
         $sock=new sockets();
         echo "<div class='alert alert-danger'>No content</div>";
         return;
@@ -1964,34 +2003,37 @@ function certificate_privkey_js():bool{
     $tpl    = new template_admin();
     $page   = CurrentPageName();
     $ID     = intval($_GET["privkey-js"]);
-    $q      = new lib_sqlite(GetDatabase());
-    $sql    ="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne  = $q->mysqli_fetch_array($sql);
-    $CommonName=urlencode($ligne["CommonName"]);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb    = new CertificatesDB();
+    $row    = $cdb->getById($ID);
+    $ligne  = is_object($row) ? (array)$row : array();
+    $CommonName=urlencode($ligne["CommonName"] ?? "");
     $function=$_GET["function"];
-    return $tpl->js_dialog5("{$ligne["CommonName"]} {certificate}","$page?certificate-privkey=$CommonName&ID=$ID&function=$function");
+    return $tpl->js_dialog5(($ligne["CommonName"] ?? "")." {certificate}","$page?certificate-privkey=$CommonName&ID=$ID&function=$function");
 }
 function certificate_crt_js():bool{
     $tpl    = new template_admin();
     $page   = CurrentPageName();
     $ID     = intval($_GET["crt-js"]);
-    $q      = new lib_sqlite(GetDatabase());
-    $sql    ="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne  = $q->mysqli_fetch_array($sql);
-    $CommonName=urlencode($ligne["CommonName"]);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb    = new CertificatesDB();
+    $row    = $cdb->getById($ID);
+    $ligne  = is_object($row) ? (array)$row : array();
+    $CommonName=urlencode($ligne["CommonName"] ?? "");
     $function=$_GET["function"];
-    return $tpl->js_dialog5("{$ligne["CommonName"]} {certificate}","$page?certificate-crt=$CommonName&ID=$ID&function=$function");
+    return $tpl->js_dialog5(($ligne["CommonName"] ?? "")." {certificate}","$page?certificate-crt=$CommonName&ID=$ID&function=$function");
 }
 function certificate_srca_js():bool{
     $tpl    = new template_admin();
     $page   = CurrentPageName();
     $ID     = intval($_GET["srca-js"]);
     $function=$_GET["function"];
-    $q      = new lib_sqlite(GetDatabase());
-    $sql    ="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne  = $q->mysqli_fetch_array($sql);
-    $CommonName=urlencode($ligne["CommonName"]);
-    return $tpl->js_dialog5("{$ligne["CommonName"]} {certificate}","$page?certificate-srca=$CommonName&ID=$ID&function=$function");
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb    = new CertificatesDB();
+    $row    = $cdb->getById($ID);
+    $ligne  = is_object($row) ? (array)$row : array();
+    $CommonName=urlencode($ligne["CommonName"] ?? "");
+    return $tpl->js_dialog5(($ligne["CommonName"] ?? "")." {certificate}","$page?certificate-srca=$CommonName&ID=$ID&function=$function");
 }
 function autorenew_js():bool{
     $tpl    = new template_admin();
@@ -2010,11 +2052,12 @@ function certificate_csr_js():bool{
     $page   = CurrentPageName();
     $ID     = intval($_GET["csr-js"]);
     $function=$_GET["function"];
-    $q      = new lib_sqlite(GetDatabase());
-    $sql    ="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne  = $q->mysqli_fetch_array($sql);
-    $CommonName=urlencode($ligne["CommonName"]);
-    return $tpl->js_dialog5("{$ligne["CommonName"]} {CSR}","$page?certificate-csr=$CommonName&ID=$ID&function=$function");
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb    = new CertificatesDB();
+    $row    = $cdb->getById($ID);
+    $ligne  = is_object($row) ? (array)$row : array();
+    $CommonName=urlencode($ligne["CommonName"] ?? "");
+    return $tpl->js_dialog5(($ligne["CommonName"] ?? "")." {CSR}","$page?certificate-csr=$CommonName&ID=$ID&function=$function");
 
 }
 function certificate_bundle_js():bool{
@@ -2022,11 +2065,12 @@ function certificate_bundle_js():bool{
     $page   = CurrentPageName();
     $function=$_GET["function"];
     $ID     = intval($_GET["bundle-js"]);
-    $q      = new lib_sqlite(GetDatabase());
-    $sql    ="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne  = $q->mysqli_fetch_array($sql);
-    $CommonName=urlencode($ligne["CommonName"]);
-    return $tpl->js_dialog5("{$ligne["CommonName"]} {certificate_chain}","$page?certificate-bundle=$CommonName&ID=$ID&function=$function");
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb    = new CertificatesDB();
+    $row    = $cdb->getById($ID);
+    $ligne  = is_object($row) ? (array)$row : array();
+    $CommonName=urlencode($ligne["CommonName"] ?? "");
+    return $tpl->js_dialog5(($ligne["CommonName"] ?? "")." {certificate_chain}","$page?certificate-bundle=$CommonName&ID=$ID&function=$function");
 
 }
 function certificate_provider_bundle_js():bool{
@@ -2034,11 +2078,12 @@ function certificate_provider_bundle_js():bool{
     $page   = CurrentPageName();
     $function=$_GET["function"];
     $ID     = intval($_GET["CABundleProvider-js"]);
-    $q      = new lib_sqlite(GetDatabase());
-    $sql    ="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne  = $q->mysqli_fetch_array($sql);
-    $CommonName=urlencode($ligne["CommonName"]);
-    return $tpl->js_dialog5("{$ligne["CommonName"]} {CABundleProvider}","$page?CABundleProvider=$CommonName&ID=$ID&function=$function");
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb    = new CertificatesDB();
+    $row    = $cdb->getById($ID);
+    $ligne  = is_object($row) ? (array)$row : array();
+    $CommonName=urlencode($ligne["CommonName"] ?? "");
+    return $tpl->js_dialog5(($ligne["CommonName"] ?? "")." {CABundleProvider}","$page?CABundleProvider=$CommonName&ID=$ID&function=$function");
 
 }
 
@@ -2046,28 +2091,25 @@ function certificate_provider_bundle_js():bool{
 function certificate_csr():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
     $tt=time();
     $return=null;
     $commonName=$_GET["certificate-csr"];
     $CommonNameURL=urlencode($commonName);
-    $sql="SELECT `csr`,`UsePrivKeyCrt`,`UseGodaddy`,domains FROM sslcertificates WHERE CommonName='$commonName'";
     if(isset($_GET["ID"])){
-        $sql="SELECT * FROM sslcertificates WHERE ID='{$_GET["ID"]}'";
+        $row = $cdb->getById(intval($_GET["ID"]));
+    }else{
+        $row = $cdb->getByCommonName($commonName);
     }
-
-
-
-
-
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);}
-    $domains=$ligne["domains"];
+    $ligne = is_object($row) ? (array)$row : array();
+    if(!is_object($row) && $cdb->lastError!==""){echo $tpl->div_error(htmlspecialchars($cdb->lastError));}
+    $domains=$ligne["domains"] ?? "";
 
     $html[]="<div id='$tt-verify' style='margin-top:20px'></div>";
     $html[]=$tpl->div_explain("{CSR}||{csr_ssl_explain}");
-    $html[]="<textarea style='width: 817px;height: 406px;font-size: 15px;padding-left:80px;padding-top:15px'>{$ligne["csr"]}</textarea>";
-    $report=certifcate_csr_parse($ligne["csr"],$ligne["privkey"]);
+    $html[]="<textarea style='width: 817px;height: 406px;font-size: 15px;padding-left:80px;padding-top:15px'>".($ligne["csr"] ?? "")."</textarea>";
+    $report=certifcate_csr_parse($ligne["csr"] ?? "",$ligne["privkey"] ?? "");
     echo $report;
 
 
@@ -2095,21 +2137,21 @@ function certifcate_csr_parse($csr,$privkey):string{
 
 function certificate_csr_verify(){
     $CommonName=$_GET["certificate-csr-verify"];
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT `csr` ,`UsePrivKeyCrt`,`UseGodaddy` FROM sslcertificates WHERE CommonName='$CommonName'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $row=$cdb->getByCommonName($CommonName);
+    $ligne=is_object($row) ? (array)$row : array();
 
 
     $NOT_BUILD=false;
-    if($ligne["UsePrivKeyCrt"]==1){$NOT_BUILD=true;}
-    if($ligne["UseGodaddy"]==1){$NOT_BUILD=true;}
+    if(($ligne["UsePrivKeyCrt"] ?? 0)==1){$NOT_BUILD=true;}
+    if(($ligne["UseGodaddy"] ?? 0)==1){$NOT_BUILD=true;}
 
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){senderror($q->mysql_error);return;}
+    if(!is_object($row)){senderror($cdb->lastError);return;}
     $tt=time();
 
     if(!$NOT_BUILD){
-        if(strlen($ligne["csr"])<50){
+        if(strlen($ligne["csr"] ?? "")<50){
             $tpl=new template_admin();
             $cleanCN=preg_replace('/[^a-zA-Z0-9.*_\-]/','',$CommonName);
             $buildJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON(
@@ -2118,7 +2160,8 @@ function certificate_csr_verify(){
             ));
             if(is_object($buildJson) && !empty($buildJson->success)){
                 echo "<p class='text-success'><i class='fas fa-check-circle'></i> CSR generated for ".htmlspecialchars($cleanCN)."</p>";
-                $ligne=$q->mysqli_fetch_array($sql);
+                $row=$cdb->getByCommonName($CommonName);
+                $ligne=is_object($row) ? (array)$row : array();
             } else {
                 $err=is_object($buildJson)?htmlspecialchars($buildJson->error ?? 'unknown error'):'connection error';
                 echo $tpl->_ENGINE_parse_body($tpl->div_error($err));
@@ -2159,16 +2202,17 @@ function certificate_csr_verify(){
 }
 
 function parse_certificate_artica($commonName):array{
-    $q = new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb = new CertificatesDB();
     if(!is_numeric($commonName)) {
-        $sql = "SELECT UsePrivKeyCrt,crt,SquidCert FROM sslcertificates WHERE CommonName='$commonName'";
+        $row = $cdb->getByCommonName($commonName);
     }else{
-        $sql = "SELECT UsePrivKeyCrt,crt,SquidCert FROM sslcertificates WHERE ID='$commonName'";
+        $row = $cdb->getById(intval($commonName));
     }
-    $ligne = $q->mysqli_fetch_array($sql);
-    if(!$q->ok){
-        writelogs($q->mysql_error." [$commonName]",__FUNCTION__,__FILE__,__LINE__);
+    if(!is_object($row)){
+        writelogs($cdb->lastError." [$commonName]",__FUNCTION__,__FILE__,__LINE__);
     }
+    $ligne = is_object($row) ? (array)$row : array();
 
 
     VERBOSE("Parse Certificate $commonName",__LINE__);
@@ -2193,310 +2237,196 @@ function parse_certificate_artica($commonName):array{
     return $array;
 }
 
+// Certificat genere (ou Let's Encrypt) : lecture seule, vue en trois onglets
+// partagee (ressources/class.certificates.view.inc).
+//
+// L'ancienne version ecrivait, a chaque affichage, la cle privee dans
+// ressources/logs/web/ca.key et le certificat dans cert.der -- un repertoire
+// servi par le serveur web, et deux fichiers que rien ne relisait.
 function certificate_settings_locked():bool{
-    $tpl = new template_admin();
-    $page = CurrentPageName();
-    $sock = new sockets();
-    $q = new lib_sqlite(GetDatabase());
-    $btname = null;
-    $commonName = $_GET["certificate-settings"];
-    $commonNameEnc = urlencode($commonName);
-    $sql = "SELECT * FROM sslcertificates WHERE CommonName='$commonName'";
-    $ligne = $q->mysqli_fetch_array($sql);
-    $ID=$ligne["ID"];
-
-    $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"]);
-    $CaContent=$ligne["privkey"];
-
-    $field="crt";
-    if($UsePrivKeyCrt==0){
-        $CaContent=$ligne["Squidkey"];
-        $field="SquidCert";
+    $page=CurrentPageName();
+    $commonName=urlencode((string)$_GET["certificate-settings"]);
+    $banner="";
+    if(isset($GLOBALS["CRT_META_HELD"][(string)$_GET["certificate-settings"]])){
+        $tpl=new template_admin();
+        // crt_css() outside the token parser: the dialog may open without the table's styles.
+        $banner=crt_css().$tpl->_ENGINE_parse_body(crt_meta_banner());
     }
-    $ligne[$field]=str_replace("\\n", "\n", $ligne[$field]);
-    $array=openssl_x509_parse($ligne[$field]);
-    $openssl_x509_read=openssl_x509_read($ligne[$field]."\n".$CaContent);
-    if(empty($openssl_x509_read)) {
-        echo $tpl->div_error('x509 cert could not be read');
-    }
-    $capth="/usr/share/artica-postfix/ressources/logs/web/ca.key";
-    $cer="/usr/share/artica-postfix/ressources/logs/web/cert.der";
-    @file_put_contents($capth,$CaContent);
-    @file_put_contents($cer,$ligne[$field]);
-
-    $validTo_time_t = $array["validTo_time_t"];
-    $purposes=$array["purposes"];
-    $basicConstraints=$array["extensions"]["basicConstraints"];
-    $keyUsage=$array["extensions"]["keyUsage"];
-    $extendedKeyUsage=$array["extensions"]["extendedKeyUsage"];
-    $subjectAltName=$array["extensions"]["subjectAltName"];
-    $issuer_CN=$array["issuer"]["CN"];
-    $LetsEncrypt=false;
-    if($issuer_CN=="Let's Encrypt Authority X3"){
-        $LetsEncrypt=True;
-    }
-
-    $table2[]="<table style='width:100%' class='table'>";
-
-    $table2[]="<tr>";
-    $table2[]="<td style='width:1%' nowrap><strong>{expire}:</strong></td>";
-    $table2[]="<td><span class='label label-primary'>".$tpl->time_to_date($validTo_time_t)."</span></td>";
-    $table2[]="</tr>";
-    $table2[]="<tr>";
-    $table2[]="<td style='width:1%' nowrap><strong>{CA_CERTIFICATE}:</strong></td>";
-
-    if(preg_match("#CA:TRUE#",$basicConstraints)){
-        $table2[]="<td><span class='label label-primary'>{yes}</span></td>";
-    }else{
-        $table2[]="<td><span class='label label'>{no}</span></td>";
-    }
-    $table2[]="</tr>";
-
-    $purposesTR["sslclient"]="SSL client";
-    $purposesTR["sslserver"]="SSL server";
-    $purposesTR["nssslserver"]="Netscape SSL server";
-    $purposesTR["smimesign"]="S/MIME signing";
-    $purposesTR["smimeencrypt"]="S/MIME encryption";
-    $purposesTR["crlsign"]="CRL signing";
-    $purposesTR["any"]="Any Purpose";
-    $purposesTR["ocsphelper"]="OCSP helper";
-    $purposesTR["timestampsign"]="Time Stamp signing";
-
-    foreach ($purposes as $index=>$sub){
-        if(trim($sub[2])==null){continue;}
-        $text=$sub[2];
-        if(isset($purposesTR[$sub[2]])){$text=$purposesTR[$sub[2]];}
-        $table2[]="<tr>";
-        $table2[]="<td style='width:1%' nowrap><strong>$text:</strong></td>";
-
-
-        if (intval($sub[0]) === 1) {
-            $table2[]="<td><span class='label label-primary'>{yes} </span></td>";
-        } else {
-            $table2[]="<td><span class='label label'>{no}</span></td>";
-        }
-        $table2[]="</tr>";
-    }
-
-
-    $keyUsageAr=explode(",",$keyUsage);
-    $extendedKeyUsageAr=explode(",",$extendedKeyUsage);
-    $table2[]="<tr>";
-    $table2[]="<td style='width:1%;vertical-align:top !important' nowrap ><strong>{KeyUsage}:</strong></td>";
-
-    foreach ($keyUsageAr as $word){
-        $word=trim($word);
-        $keyUsageBr[]="<div style='margin-top:3px'><span class='label label-primary'>$word</span></div>";
-
-    }
-    foreach ($extendedKeyUsageAr as $word){
-        $word=trim($word);
-        $keyUsageBr[]="<div style='margin-top:3px'><span class='label label-warning'>$word</span></div>";
-
-    }
-    $table2[]="<td>".@implode(" ",$keyUsageBr)."</td>";
-    $table2[]="</tr>";
-
-    $subjectAltNameAr=explode(",",$subjectAltName);
-    foreach ($subjectAltNameAr as $word){
-        $word=trim($word);
-        $subjectAltNameBr[]="<div style='margin-top:3px'>$word</div>";
-
-    }
-    $table2[]="<tr>";
-    $table2[]="<td style='width:1%;vertical-align:top !important' nowrap ><strong>{subjectAltName}:</strong></td>";
-    $table2[]="<td>".@implode(" ",$subjectAltNameBr)."</td>";
-    $table2[]="</tr>";
-
-    $table2[]="</table>";
-
-    $html[]="<div class='ibox-content'>
-    <table style='width:100%'>
-    <tr>
-    <td style='vertical-align: top;width:50%'>
-    <table style='width:100%' class='table'>";
-
-    if($ligne["CommonName"]==null){$ligne["CommonName"]=$array["CN"];}
-    $html[]="<tr style='background: #d1dade'>";
-    $html[]="<td style='width:1%' nowrap colspan='2'><strong>{issuer}</strong></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='width:1%' nowrap><strong>{CommonName}:</strong></td>";
-    $html[]="<td>$issuer_CN</td>";
-    $html[]="</tr>";
-
-    if($array["issuer"]["C"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{countryName}:</strong></td>";
-        $html[]="<td>{$array["issuer"]["C"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($array["issuer"]["O"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{organizationName}:</strong></td>";
-        $html[]="<td>{$array["issuer"]["O"]}</td>";
-        $html[]="</tr>";
-
-    }
-    $html[]="<tr style='background: #d1dade'>";
-    $html[]="<td style='width:1%' nowrap colspan='2'><strong>{certificate}</strong></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='width:1%' nowrap><strong>{CommonName}:</strong></td>";
-    $html[]="<td nowrap>{$ligne["CommonName"]} &nbsp;
-    <a class='btn btn-white btn-bitbucket' 
-        OnClick=\"Loadjs('$page?change-cert-js=$ID');\">
-            <i class='fa fa-wrench'></i></a>
-    </td>";
-    $html[]="</tr>";
-    if($ligne["CountryName"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{countryName}:</strong></td>";
-        $html[]="<td>{$ligne["CountryName"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($ligne["stateOrProvinceName"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{stateOrProvinceName}:</strong></td>";
-        $html[]="<td>{$ligne["stateOrProvinceName"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($ligne["localityName"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{localityName}:</strong></td>";
-        $html[]="<td>{$ligne["localityName"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($ligne["OrganizationName"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{organizationName}:</strong></td>";
-        $html[]="<td>{$ligne["OrganizationName"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($ligne["OrganizationalUnit"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{organizationalUnitName}:</strong></td>";
-        $html[]="<td>{$ligne["OrganizationalUnit"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($ligne["emailAddress"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{emailAddress}:</strong></td>";
-        $html[]="<td>{$ligne["emailAddress"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($ligne["levelenc"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{level_encryption}:</strong></td>";
-        $html[]="<td>{$ligne["levelenc"]}</td>";
-        $html[]="</tr>";
-
-    }
-    if($ligne["CertificateMaxDays"]<>null){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{CertificateMaxDays}:</strong></td>";
-        $html[]="<td>{$ligne["CertificateMaxDays"]} ({days}</td>";
-        $html[]="</tr>";
-
-    }
-
-    if(!IfCertisCA($ligne[$field])){
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><strong>{type}:</strong></td>";
-        $html[]="<td><strong>{server_certificate}</strong></td>";
-        $html[]="</tr>";
-    }
-
-
-    $html[]="</table>
-    </td><td style='vertical-align: top;width:50%;padding-left: 15px'>".@implode("\n",$table2)."</td>
-    </tr>
-    </table>";
-
-
-    $html[]="</div>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo $banner.cert_view_tabs(array(
+        "overview"=>"$page?certificate-view-overview=$commonName",
+        "key"=>"$page?certificate-view-key=$commonName",
+        "raw"=>"$page?certificate-view-raw=$commonName",
+    ));
     return true;
 }
+
+// PEM public d'un certificat du centre ; $ligne recoit sa ligne en base.
+// UsePrivKeyCrt=1 : certificat officiel dans « crt », sinon auto-signe dans
+// « SquidCert » -- colonnes en PEM brut, avec parfois des « \n » litteraux.
+function certcenter_view_load($commonName,&$ligne):string{
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $row=$cdb->getByCommonName((string)$commonName);
+    $ligne=is_object($row)?(array)$row:array();
+    $field="SquidCert";
+    if(intval(isset($ligne["UsePrivKeyCrt"])?$ligne["UsePrivKeyCrt"]:0)==1){$field="crt";}
+    $pem=isset($ligne[$field])?(string)$ligne[$field]:"";
+    return str_replace("\\n","\n",$pem);
+}
+
+function certcenter_view_uid($commonName):string{
+    return "cc-".substr(md5((string)$commonName),0,12);
+}
+
+function certcenter_view_overview():bool{
+    $commonName=(string)$_GET["certificate-view-overview"];
+    $ligne=array();
+    $pem=certcenter_view_load($commonName,$ligne);
+    $error="";
+    $x509=cert_view_parse_pem($pem,$error);
+    if($error<>""){echo $error;return false;}
+    echo cert_view_overview_html($pem,$x509,certcenter_view_uid($commonName),certcenter_view_rows($ligne,$x509));
+    return true;
+}
+
+function certcenter_view_key():bool{
+    $commonName=(string)$_GET["certificate-view-key"];
+    $ligne=array();
+    $pem=certcenter_view_load($commonName,$ligne);
+    $error="";
+    $x509=cert_view_parse_pem($pem,$error);
+    if($error<>""){echo $error;return false;}
+    echo cert_view_key_html($pem,$x509,certcenter_view_uid($commonName));
+    return true;
+}
+
+function certcenter_view_raw():bool{
+    $commonName=(string)$_GET["certificate-view-raw"];
+    $ligne=array();
+    $pem=certcenter_view_load($commonName,$ligne);
+    $error="";
+    $x509=cert_view_parse_pem($pem,$error);
+    if($error<>""){echo $error;return false;}
+    echo cert_view_raw_html($pem,$x509,certcenter_view_uid($commonName));
+    return true;
+}
+
+// Ce que le centre sait du certificat et que le PEM ignore : sa nature, comme
+// l'affichait l'ancienne vue, et les parametres enregistres a la generation.
+function certcenter_view_rows($ligne,$x509):array{
+    return array(
+        array("{type}",certcenter_view_type($x509)),
+        array("{certificates_stored_settings}",certcenter_view_stored($ligne)),
+    );
+}
+
+function certcenter_view_type($x509):string{
+    $bc="";
+    if(isset($x509["extensions"]["basicConstraints"])){$bc=(string)$x509["extensions"]["basicConstraints"];}
+    if(preg_match("#CA:TRUE#i",$bc)){
+        return "<span class='certv-pill is-accent'><i class='fa-solid fa-building-shield'></i>{CA_CERTIFICATE}</span>";
+    }
+    return "<span class='certv-pill'><i class='fa-solid fa-server'></i>{server_certificate}</span>";
+}
+
+// Nom commun enregistre (renommable, change-cert-js), niveau de chiffrement et
+// duree demandes a la generation.
+function certcenter_view_stored($ligne):string{
+    $page=CurrentPageName();
+    $ID=intval(isset($ligne["ID"])?$ligne["ID"]:0);
+    $cn=cert_view_h(isset($ligne["CommonName"])?$ligne["CommonName"]:"");
+    $users=new usersMenus();
+    if($ID>0 && $users->AsCertifsManager && !crt_meta_held($ligne)){
+        $cn.="<a href=\"javascript:blur();\" class='certv-act' title=\"{modify}\" OnClick=\"Loadjs('$page?change-cert-js=$ID');\"><i class='fa-regular fa-pen'></i></a>";
+    }
+    $facts=cert_view_fact("{CommonName}",$cn);
+    $levelenc=intval(isset($ligne["levelenc"])?$ligne["levelenc"]:0);
+    if($levelenc>0){
+        $facts.=cert_view_fact("{level_encryption}","$levelenc bits");
+    }
+    $days=intval(isset($ligne["CertificateMaxDays"])?$ligne["CertificateMaxDays"]:0);
+    if($days>0){
+        $facts.=cert_view_fact("{CertificateMaxDays}","$days {days}");
+    }
+    return "<div class='certv-facts'>$facts</div>";
+}
+
 function certificate_settings_locked_empty():bool{
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    include_once(dirname(__FILE__)."/ressources/class.certificates.view.inc");
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $sock=new sockets();
-    $q=new lib_sqlite(GetDatabase());
+    $cdb=new CertificatesDB();
     $id=intval($_GET["certificate-locked-not-uploaded"]);
-    $sql="SELECT * FROM sslcertificates WHERE ID='$id'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
-    }
-    $function=$_GET["function"];
-
-    $db=file_get_contents(dirname(__FILE__) . '/ressources/databases/ISO-3166-Codes-Countries.txt');
-    $tbl=explode("\n",$db);
-    foreach ($tbl as $line){
-        if(preg_match('#(.+?);\s+([A-Z]{1,2})#',$line,$regs)){
-            $regs[2]=trim($regs[2]);
-            $regs[1]=trim($regs[1]);
-            $array_country_codes["{$regs[1]}_{$regs[2]}"]=$regs[1];
-            $array_country_codes2[$regs[2]]="{$regs[1]}_{$regs[2]}";
-        }
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
+    $row=$cdb->getById($id);
+    $ligne = is_object($row) ? (array)$row : array();
+    if($cdb->lastError!==""){
+        echo $tpl->div_error($cdb->lastError);
+        return false;
     }
 
-    if(strlen($ligne["csr"])>50) {
-        $tpl->table_form_field_js("Loadjs('$page?csr-js=$id&function=$function')","AsCertifsManager");
-        $tpl->table_form_field_button("{CSR}","{view} {CSR}",ico_certificate);
+    $actions=array();
+    $csr=isset($ligne["csr"])?(string)$ligne["csr"]:"";
+    $crt=isset($ligne["crt"])?(string)$ligne["crt"]:"";
 
+    if(strlen($csr)>50){
+        $actions[]=array(
+            "TITLE"=>"{cert_pending_view_csr}",
+            "SUB"=>"{cert_pending_view_csr_sub}",
+            "JS"=>"Loadjs('$page?csr-js=$id&function=$function')",
+            "ICO"=>"fa-solid fa-code",
+            "VARIANT"=>"teal",
+        );
     }
-    if(strlen($ligne["crt"])<50){
-        $tpl->table_form_field_js("s_PopUpFull('https://cyberdef360.com/store/ssl-certificates','1024','900');");
-        $tpl->table_form_field_button("class:btn-blue:{generate_certificate}","{obtain_an_official_certificate}",ico_link);
-        $tpl->table_form_field_js("Loadjs('fw.certificates-center.import.cert.php?certid=$id&function=$function')","AsCertifsManager");
-        $tpl->table_form_field_button("{import}","{import_set_certificates} (*.zip)",ico_file_zip);
-        $CommonName=urlencode($ligne["CommonName"]);
-        $tpl->table_form_field_js("Loadjs('fw.certificates-center.import.360.php?CommonName=$CommonName&certid=$id&function=$function')","AsCertifsManager");
-        $tpl->table_form_field_button("{import}","{import_certificates_from_cyberdef360} (*.pem)",ico_certificate);
-
+    if(strlen($crt)<50){
+        $actions[]=array(
+            "TITLE"=>"{cert_pending_buy_ssl}",
+            "SUB"=>"{cert_pending_buy_ssl_sub}",
+            "JS"=>"s_PopUpFull('https://cyberdef360.com/store/ssl-certificates','1024','900');",
+            "ICO"=>"fa-solid fa-arrow-trend-up",
+            "VARIANT"=>"emerald",
+            "BADGE"=>"{cert_pending_ca_badge}",
+        );
+        $actions[]=array(
+            "TITLE"=>"{cert_pending_import_zip}",
+            "SUB"=>"{cert_pending_import_zip_sub}",
+            "JS"=>"Loadjs('fw.certificates-center.import.cert.php?certid=$id&function=$function')",
+            "ICO"=>"fa-solid fa-file-arrow-up",
+            "VARIANT"=>"blue",
+        );
+        $CommonName=urlencode(isset($ligne["CommonName"])?(string)$ligne["CommonName"]:"");
+        $actions[]=array(
+            "TITLE"=>"{cert_pending_import_360}",
+            "SUB"=>"{cert_pending_import_360_sub}",
+            "JS"=>"Loadjs('fw.certificates-center.import.360.php?CommonName=$CommonName&certid=$id&function=$function')",
+            "ICO"=>"fa-solid fa-file-lines",
+            "VARIANT"=>"indigo",
+            "BADGE"=>"{cert_pending_sync_pem}",
+        );
     }
 
-
-    $tpl->table_form_field_js("");
-    $tpl->table_form_field_text("{CommonName}", $ligne["CommonName"],ico_earth);
-    $tpl->table_form_field_text("{countryName}", $ligne["CountryName"],ico_flag);
-    $tpl->table_form_field_text("{stateOrProvinceName}", $ligne["stateOrProvinceName"],ico_location);
-    $tpl->table_form_field_text("{localityName}", $ligne["localityName"],ico_city);
-    $tpl->table_form_field_text("{organizationName}", $ligne["OrganizationName"],ico_sitemap);
-    $tpl->table_form_field_text("{organizationalUnitName}", $ligne["OrganizationalUnit"],ico_group);
-    $tpl->table_form_field_text("{emailAddress}", $ligne["emailAddress"],ico_email);
-    $tpl->table_form_field_text("{level_encryption}", $ligne["levelenc"],ico_certificate);
-    $tpl->table_form_field_text("{CertificateMaxDays}", $ligne["CertificateMaxDays"]." {days}",ico_timeout);
-    echo $tpl->table_form_compile();
-
-
-
-return true;
+    echo cert_pending_html($ligne,$actions);
+    return true;
 }
 function certificate_settings(){
+    if(!fw_progress_page_priv("AsCertifsManager")){return false;}   // task link signed for this session: built only for whom may run it
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
     $function=$_GET["function"];
     $tpl=new template_admin();
     $page=CurrentPageName();
     $sock=new sockets();
-    $q=new lib_sqlite(GetDatabase());
+    $cdb=new CertificatesDB();
     $btname=null;
     $commonName=$_GET["certificate-settings"];
-    $commonNameEnc=urlencode($commonName);
-    $sql="SELECT * FROM sslcertificates WHERE CommonName='$commonName'";
 
-    $ligne=$q->mysqli_fetch_array($sql);
-    $ID=intval($ligne["ID"]);
-    $Generated=intval($ligne["Generated"]);
-    $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"]);
+    $row=$cdb->getByCommonName($commonName);
+    $ligne = is_object($row) ? (array)$row : array();
+    // Held by the Artica Meta "certificates" policy: read-only view, whatever its state.
+    if(crt_meta_held($ligne)){return certificate_settings_locked();}
+    $ID=intval($ligne["ID"] ?? 0);
+    $Generated=intval($ligne["Generated"] ?? 0);
+    $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"] ?? 0);
 
     if($UsePrivKeyCrt==1){
         VERBOSE("Certificate is an official certificate",__LINE__);
@@ -2555,23 +2485,9 @@ function certificate_settings(){
     $ENC[2048]=2048;
     $ENC[4096]=4096;
 
-    if(isset($_SESSION["HARMPID"])) {
-        $gpid = intval($_SESSION["HARMPID"]);
-        if ($gpid > 0) {
-            $Addon="&HarmpID=$gpid";
-        }
-    }
+    $jsrestart="Loadjs('$page?generate-x509-js=$ID&function=".urlencode($function)."')";
 
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/openssl.x509.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/openssl.x509.log";
-    $ARRAY["CMD"]="openssl.php?generate-x509=$commonNameEnc$Addon";
-    $ARRAY["TITLE"]="{certificate} {$ligne["CommonName"]}";
-    $ARRAY["AFTER"]="LoadAjax('table-loader-sslcerts-service','$page?table=yes');";
-
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-generate-cert-restart')";
-
-    $html="<div id='progress-generate-cert-restart'></div>";
+    $html="";
     $form[]=$tpl->field_hidden("SETTINGS", "True");
 
     if($UsePrivKeyCrt==1){$SelfSigned=0;}else{$SelfSigned=1;}
@@ -2593,7 +2509,7 @@ function certificate_settings(){
 
 
     $form[]=$tpl->field_text("CommonName", "{CommonName}", $ligne["CommonName"],true,null);
-    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $ligne["CountryName"]);
+    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $array_country_codes2[$ligne["CountryName"]] ?? $ligne["CountryName"]);
     $form[]=$tpl->field_text("stateOrProvinceName", "{stateOrProvinceName}", $ligne["stateOrProvinceName"]);
     $form[]=$tpl->field_text("localityName", "{localityName}", $ligne["localityName"]);
     $form[]=$tpl->field_text("OrganizationName", "{organizationName}", $ligne["OrganizationName"]);
@@ -2622,34 +2538,64 @@ function certificate_settings(){
     echo $html;
 }
 
+// (Re)generates a self-signed certificate from its stored settings: CA, server
+// certificate, CSR and PFX, by the daemon (classcerts.BuildCSR).
+function certificate_generate_js():bool{
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsCertifsManager){return $tpl->js_no_privileges();}
+    $ID=intval($_GET["generate-x509-js"]);
+    $function=$_GET["function"] ?? "";
+    $cdb=new CertificatesDB();
+    $row=$cdb->getById($ID);
+    if(!is_object($row)){return $tpl->js_error("$ID: not found $cdb->lastError");}
+    $CommonName=$row->CommonName;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=120;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/certificate/build-csr",
+        array("common_name"=>$CommonName)));
+    if(!is_object($json)){return $tpl->js_error("articarest: no answer");}
+    if(empty($json->success)){return $tpl->js_error(crt_meta_error($json->error ?? "unknown error"));}
+    admin_tracks("Generated the self-signed certificate $CommonName");
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('table-loader-sslcerts-service','fw.certificates-center.php?table=yes');\n";
+    if(preg_match('#^[A-Za-z0-9_]+$#',$function)){echo "$function();\n";}
+    return true;
+}
+
 function certificate_settings_save():bool{
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $q=new lib_sqlite(GetDatabase());
+    $cdb=new CertificatesDB();
     foreach ($_POST as $num=>$vl){
-        $vl=url_decode_special_tool($vl);
-        $_POST[$num]=$q->sqlite_escape_string2($vl);
+        $_POST[$num]=url_decode_special_tool($vl);
     }
 
     $CommonName=$_POST["CommonName"];
     if($_POST["SelfSigned"]==0){$_POST["UsePrivKeyCrt"]=1;}else{$_POST["UsePrivKeyCrt"]=0;}
 
+    [$exists,$existsId]=$cdb->exists($CommonName);
+    if(!$exists || $existsId<=0){
+        echo $tpl->div_error("$CommonName: not found");
+        return true;
+    }
 
-    $sql="UPDATE `sslcertificates` SET
-	CountryName='{$_POST["CountryName"]}',
-	stateOrProvinceName='{$_POST["stateOrProvinceName"]}',
-	CertificateMaxDays='{$_POST["CertificateMaxDays"]}',
-	OrganizationName='{$_POST["OrganizationName"]}',
-	OrganizationalUnit='{$_POST["OrganizationalUnit"]}',
-	emailAddress='{$_POST["emailAddress"]}',
-	localityName='{$_POST["localityName"]}',
-	levelenc='{$_POST["levelenc"]}',
-	UsePrivKeyCrt='{$_POST["UsePrivKeyCrt"]}',
-	CertificateMaxDays='{$_POST["CertificateMaxDays"]}',
-	password='{$_POST["password"]}'
-	WHERE CommonName='$CommonName'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);}
+    $fields=[
+        "CountryName"         => $_POST["CountryName"] ?? "",
+        "stateOrProvinceName" => $_POST["stateOrProvinceName"] ?? "",
+        "CertificateMaxDays"  => $_POST["CertificateMaxDays"] ?? "",
+        "OrganizationName"    => $_POST["OrganizationName"] ?? "",
+        "OrganizationalUnit"  => $_POST["OrganizationalUnit"] ?? "",
+        "emailAddress"        => $_POST["emailAddress"] ?? "",
+        "localityName"        => $_POST["localityName"] ?? "",
+        "levelenc"            => $_POST["levelenc"] ?? "",
+        "UsePrivKeyCrt"       => $_POST["UsePrivKeyCrt"],
+        "password"            => $_POST["password"] ?? "",
+    ];
+    if(!$cdb->update($existsId,$fields)){
+        echo $tpl->div_error(crt_meta_error_html($cdb->lastError));
+    }
     return true;
 
 }
@@ -2658,7 +2604,6 @@ function certificate_settings_save():bool{
 function certificate_new_popup():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $sock=new sockets();
     $OnlyCSR=false;
     if(isset($_GET["OnlyCSR"])){$OnlyCSR=true;}
     $function=$_GET["function"];
@@ -2675,19 +2620,8 @@ function certificate_new_popup():bool{
     if(!is_numeric($ligne["CertificateMaxDays"])){$ligne["CertificateMaxDays"]=730;}
     if(!is_numeric($ligne["levelenc"])){$ligne["levelenc"]=4096;}
 
-    if(isset($_SESSION["HARMPID"])) {
-        $gpid = intval($_SESSION["HARMPID"]);
-        if ($gpid > 0) {
-            $Addon="&HarmpID=$gpid";
-        }
-    }
-
-    $sock->getFrameWork("openssl.php?copy-csr=yes$Addon");
-    $data=@file_get_contents("/usr/share/artica-postfix/ressources/logs/web/Myprivkey.csr");
-    @unlink("/usr/share/artica-postfix/ressources/logs/web/Myprivkey.csr");
-
     if($ligne["CommonName"]==null){
-        $ligne["CommonName"]=$sock->getFrameWork("system.php?hostname-g=yes");
+        $ligne["CommonName"]=php_uname('n');
     }
     $array_country_codes=array();
     $db=file_get_contents(dirname(__FILE__) . '/ressources/databases/ISO-3166-Codes-Countries.txt');
@@ -2713,7 +2647,10 @@ function certificate_new_popup():bool{
         $form[]=$tpl->field_certificate("OnlyCSRID","{based_on_certificate}",null);
     }
     $form[]=$tpl->field_text("CommonName", "{CommonName}", $ligne["CommonName"],true,null);
-    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $ligne["CountryName"]);
+    // Nom de la ligne dans le centre, distinct du CN : vide = le CN. Permet un second
+    // CSR (nouvelle clé) pour le même nom d'hôte que le certificat en service.
+    $form[]=$tpl->field_text("CertificateName", "{certificate_name}", "",false,"{certificate_name_csr_explain}");
+    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $array_country_codes2[$ligne["CountryName"]] ?? $ligne["CountryName"]);
     $form[]=$tpl->field_text("stateOrProvinceName", "{stateOrProvinceName}", $ligne["stateOrProvinceName"]);
     $form[]=$tpl->field_text("localityName", "{localityName}", $ligne["localityName"]);
     $form[]=$tpl->field_text("OrganizationName", "{organizationName}", $ligne["OrganizationName"]);
@@ -2721,7 +2658,7 @@ function certificate_new_popup():bool{
     $form[]=$tpl->field_text("emailAddress", "{emailAddress}", $ligne["emailAddress"]);
     $form[]=$tpl->field_array_hash($ENC, "levelenc", "{level_encryption}", $ligne["levelenc"]);
     $form[]=$tpl->field_numeric("CertificateMaxDays","{CertificateMaxDays} ({days})",$ligne["CertificateMaxDays"]);
-    $form[]=$tpl->field_tags("domains","{domains}",$ligne["domains"]);
+    $form[]=crt_domains_field($tpl,$ligne["domains"] ?? "");
 
     $title_form="{new_certificate}";
     $button_name="{generate certificate}";
@@ -2732,20 +2669,12 @@ function certificate_new_popup():bool{
         $button_name="{generate_csr}";
     }
     $html=$html. $tpl->form_outside($title_form, $form,$EXPLAIN,$button_name,$jsafter,"AsCertifsManager");
-    echo $html;
+    echo crt_domains_style().$html;
     return true;
 }
 
 function form_search():bool{
     $Addon=null;
-    if(isset($_GET["HarmpID"])){
-        $_SESSION["HARMPID"]=intval($_GET["HarmpID"]);
-        $Addon="&HarmpID={$_GET["HarmpID"]}";
-    }else{
-        if(isset($_SESSION["HARMPID"])){
-            $Addon="&HarmpID={$_SESSION["HarmpID"]}";
-        }
-    }
     $tpl=new template_admin();
     $page=CurrentPageName();
     $options["WIDTH"]=460;
@@ -2754,52 +2683,23 @@ function form_search():bool{
 }
 
 function PatchTables():bool{
-    $q=new lib_sqlite(GetDatabase());
-
-    $sql="CREATE TABLE IF NOT EXISTS `sslcertificates` (
-    `ID` INTEGER PRIMARY KEY AUTOINCREMENT,    `CommonName` TEXT UNIQUE,    `DateFrom` text,    `DateTo` text,    `CountryName` TEXT,    `stateOrProvinceName` TEXT,    `localityName` TEXT,    `OrganizationName` TEXT,    `OrganizationalUnit` TEXT,    `CompanyName`  TEXT,    `emailAddress` TEXT,    `levelenc` INTEGER NOT NULL DEFAULT '4096',    `CertificateMaxDays` INTEGER,    `IsClientCert` INTEGER,    `AsProxyCertificate` INTEGER,    `UsePrivKeyCrt` INTEGER,    `UseGodaddy` INTEGER,    `UseLetsEncrypt` INTEGER,    `easyrsa` INTEGER ,    `DynamicCert` TEXT,    `DynamicDer` TEXT,    `DerContent` TEXT,    `csr` TEXT,    `srca` TEXT,    `der` TEXT,    `privkey` TEXT,    `pks12` TEXT,    `keyPassword` TEXT,    `crt` TEXT,    `Squidkey` TEXT,    `SquidCert` TEXT,    `bundle` TEXT,    `clientkey` TEXT,    `clientcert` TEXT,    `easyrsabackup` BLOB,    `CertPassword` TEXT,    `password` TEXT
-  )";
-    $q->QUERY_SQL($sql);
-
-
-    if (!$q->FIELD_EXISTS("sslcertificates", "AsRoot")) {
-        $q->QUERY_SQL("ALTER TABLE sslcertificates ADD AsRoot INTEGER NOT NULL DEFAULT 0");
-    }
-    if (!$q->FIELD_EXISTS("sslcertificates", "Generated")) {
-        $q->QUERY_SQL("ALTER TABLE sslcertificates ADD Generated INTEGER NOT NULL DEFAULT 0");
-    }
-
-    $TextesPaths=array("subjectAltName","subjectAltName1","subjectAltName2","CertificateCenterCSR");
-    foreach ($TextesPaths as $field) {
-        if (!$q->FIELD_EXISTS("sslcertificates", $field)) {
-            $q->QUERY_SQL("ALTER TABLE sslcertificates ADD $field TEXT NOT NULL DEFAULT ''");
-        }
-    }
+    // Schema is auto-patched by the Go daemon (csqlite.PatchSSLTable) on every connect.
     return true;
 }
 
 
 
 function table():bool{
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
     $tpl=new template_admin();
-    $function="";
-    if(isset($_GET["HarmpID"])){}
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $page=CurrentPageName();
     PatchTables();
-    $q=new lib_sqlite(GetDatabase());
+    $cdb=new CertificatesDB();
 
 
     $Addon="";
-    if(isset($_GET["HarmpID"])){
-        $Addon="&HarmpID={$_GET["HarmpID"]}";
-    }
     $users=new usersMenus();
-    if(isset($_SESSION["HARMPID"])){
-        if($_SESSION["HARMPID"]>0){
-            $users->AsCertifsManager=true;
-        }
-    }
     if(isset($_GET["t"])) {
         $t = $_GET["t"];
     }else{
@@ -2813,54 +2713,28 @@ function table():bool{
     $organizationalUnitName=$tpl->_ENGINE_parse_body("{organizationalUnitName}");
     $emailAddress=$tpl->javascript_parse_text("{emailAddress}");
 
-    $bts[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-
+    // Boutons de l'en-tête : méthode commune table_buttons() (même rendu que les autres pages),
+    // le menu {actions} passe par SUB. Sans le droit, les boutons sont affichés verrouillés.
+    $topbuttons=array();
+    $topbuttons[]=array("Loadjs('fw.selfsigned.php?function=$function')",ico_plus,"{SELF_ROOT_CERT}","AsCertifsManager");
+    $topbuttons[]=array("Loadjs('fw.certificates-center.php?new-certificate-js=yes&OnlyCSR=yes&function=$function')",ico_plus,"{new_certificate} (CSR)","AsCertifsManager");
+    $topbuttons[]=array("Loadjs('fw.certificates-center.letsencrypt.php?function=$function&wizard=1')",ico_plus,"{LETSENCRYPT_CERTIFICATE}","AsCertifsManager");
+    $filters=array();
     if($users->AsCertifsManager){
-        $bts[]="<label class=\"btn btn btn-blue\" OnClick=\"Loadjs('fw.selfsigned.php?function=$function')\"><i class='fa fa-plus'></i> {SELF_ROOT_CERT} </label>";
-
-        $add="Loadjs('fw.certificates-center.php?new-certificate-js=yes&OnlyCSR=yes&function=$function');";
-        $bts[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_certificate} (CSR)</label>";
-
-
-        $addLetsEncrypt="Loadjs('fw.certificates-center.letsencrypt.php?function=$function')";
-        if(!isReverse()){
-            $addLetsEncrypt="Loadjs('fw.certificates-center.letsencrypt.dns.php?function=$function')";
-        }
-        $bts[]="<label class=\"btn btn-info\" OnClick=\"$addLetsEncrypt\"><i class='fa fa-plus'></i> {LETSENCRYPT_CERTIFICATE} </label>";
-
-
-
-    $filters["{import} PFX"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.pfx.php?function=$function');";
-    $filters["{import} p7r - p7b"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.p7r.php?function=$function');";
-    $filters["{import_set_certificates} (zip)"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.cert.php?function=$function');";
-     $filters["{import} {server_certificate}"]=ico_import."||Loadjs('fw.certificates-center.import.servercert.php?function=$function');";
-    $filters["{generate_csr}"]="fas fa-file-certificate||Loadjs('fw.certificates-center.php?new-certificate-js=yes&OnlyCSR=yes&function=$function');";
-    $filters["{autorenew} Let`s Encrypt"]=ico_refresh."||Loadjs('$page?autorenew-js=yes&function=$function');";
-
+        $filters["{import} PFX"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.pfx.php?function=$function');";
+        $filters["{import} p7r - p7b"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.p7r.php?function=$function');";
+        $filters["{import_set_certificates} (zip)"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.cert.php?function=$function');";
+        $filters["{import} {server_certificate}"]=ico_import."||Loadjs('fw.certificates-center.import.servercert.php?function=$function');";
+        $filters["{generate_csr}"]="fas fa-file-certificate||Loadjs('fw.certificates-center.php?new-certificate-js=yes&OnlyCSR=yes&function=$function');";
+        $filters["{autorenew} Let`s Encrypt"]=ico_refresh."||Loadjs('$page?autorenew-js=yes&function=$function');";
+        $filters["{trusted_certificates}"]="fas fa-shield-check||Loadjs('fw.certificates-center.truststore.php?js=yes');";
+        $filters["SPACER"]=true;
     }
-
-    $filters["SPACER"]=true;
-    $filters["{import} {database}"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.php?function=$function&function=$function');";
+    $filters["{import} {database}"]="far fa-cloud-download||Loadjs('fw.certificates-center.import.php?function=$function');";
     $filters["{export} {database}"]="far fa-cloud-upload||document.location.href='$page?getdb=yes&function=$function'";
-
-    $bts[]=$tpl->button_dropdown_table("{actions}",$filters,"AsCertifsManager");
-    $bts[]="</div>";
-    $html[]="<table id='table-firewall-rules' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true style='width:1%'></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$CommonName</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$expire</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$Organization</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$emailAddress</th>";
-    $html[]="<th data-sortable=false>PFX</th>";
-    $html[]="<th data-sortable=false>{download2}</th>";
-    $html[]="<th data-sortable=false>{export}</th>";
-    $html[]="<th data-sortable=false>Del.</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $topbuttons["SUB"]=$filters;
+    $topbuttons["SUB_TITLE"]="{actions}";
+    $bts=array($tpl->table_buttons($topbuttons,"AsCertifsManager"));
     $sock=new sockets();
     $jsAfter="LoadAjax('table-loader-proxy-outgoingaddr','$page?table=yes');";
     $GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
@@ -2868,203 +2742,170 @@ function table():bool{
 
 
 
-    $sql="SELECT *  FROM sslcertificates ORDER BY CommonName LIMIT 250";
     $search="";
     if(isset($_GET["search"])){$search=trim($tpl->CLEAN_BAD_XSS($_GET["search"]));}
-    if(strlen($search)>0){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
 
-        $fields=array("CountryName","stateOrProvinceName","OrganizationName","OrganizationalUnit","emailAddress","localityName");
-        foreach ($fields as $ff){
-            $tt[]=" OR ($ff LIKE '$search')";
-        }
-        $sql="SELECT *  FROM sslcertificates WHERE ( (CommonName LIKE '$search')".@implode($tt)." )  ORDER BY CommonName LIMIT 250";
-    }
-
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){
-
-        if(preg_match("#file is not a database#",$q->mysql_error)){
-            $ico=ico_support;
-            $js="Loadjs('$page?repair-database=yes&function=$function');";
-            $button=$tpl->button_autnonome("{repair_database}",$js, $ico, "AsCertifsManager",300,"btn-danger");
-            echo $tpl->div_error($q->mysql_error."<br>$sql<div style='text-align:right'>$button</div>");
-            return true;
-        }
-
+    $rowsLean=$cdb->listAll($search);
+    if($cdb->lastError!==""){
         $ico=ico_support;
         $js="Loadjs('$page?patch-database=yes&function=$function');";
         $button=$tpl->button_autnonome("{repair_database}",$js, $ico, "AsCertifsManager",300,"btn-danger");
-        echo $tpl->div_error($q->mysql_error."<br>$sql<div style='text-align:right'>$button</div>");
+        echo $tpl->div_error($cdb->lastError."<div style='text-align:right'>$button</div>");
         return true;
+    }
+
+    // Hydrate with full blobs (PEM data) for the per-row computations below.
+    $results=array();
+    foreach($rowsLean as $r){
+        $idForFetch=intval(is_object($r)?($r->ID ?? 0):($r["ID"] ?? 0));
+        if($idForFetch<=0){continue;}
+        $full=$cdb->getById($idForFetch);
+        if(is_object($full)){
+            $results[]=(array)$full;
+        }
     }
 
     VERBOSE("RESULTS = ".count($results)." entries...",__LINE__);
     $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
-    $TRCLASS=null;
+    $rows=array();
+    $K=array("total"=>0,"expired"=>0,"soon"=>0,"roots"=>0,"roots_self"=>0,"le"=>0,"linked"=>0);
     foreach ($results as $index=>$ligne){
-        $square_class="text-navy";
-        $pproxy=array();
         $ID=intval($ligne["ID"]);
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $CommonName=$ligne["CommonName"];
-        $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"]);
-        $UseLetsEncrypt=intval($ligne["UseLetsEncrypt"]);
+        $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"] ?? 0);
+        $UseLetsEncrypt=intval($ligne["UseLetsEncrypt"] ?? 0);
         if(!isset($ligne["ServerCert"])){$ligne["ServerCert"]=0;}
         $CommonNameEnc=urlencode($CommonName);
-        $aclid=md5($CommonName);
-        $pks12=strlen($ligne["pks12"]);
-        $DateToText=null;
+        $pks12=strlen($ligne["pks12"] ?? "");
         $treste=null;
-        $AsRoot=intval($ligne["AsRoot"]);
-        $DateFrom=$ligne["DateFrom"];
-        $DateTo=$ligne["DateTo"];
-        if($DateTo=="0000-00-00"){$DateTo=null;}
-        $Generated=$ligne["Generated"];
-        $crt=$ligne["crt"];
-        $SquidCert=$ligne["SquidCert"];
-        $privkey=$ligne["privkey"];
-        $Squidkey=$ligne["Squidkey"];
+        $AsRoot=intval($ligne["AsRoot"] ?? 0);
+        $DateTo=$ligne["DateTo"] ?? "";
+        if($DateTo=="0000-00-00"){$DateTo="";}
+        $Generated=$ligne["Generated"] ?? 0;
+        $crt=$ligne["crt"] ?? "";
+        $SquidCert=$ligne["SquidCert"] ?? "";
+        $privkey=$ligne["privkey"] ?? "";
+        $Squidkey=$ligne["Squidkey"] ?? "";
         $ServerCert=intval($ligne["ServerCert"]);
-        $csr=$ligne["csr"];
+        $csr=$ligne["csr"] ?? "";
 
         if($UsePrivKeyCrt==1){$SquidCert=$crt;$Squidkey=$privkey;}
-        $icon2=null;$icon3=null;
-        $icon="<span class='label label-success'>{SelfSignedCert}</span>";
-        if($UsePrivKeyCrt==1){$icon="<span class='label label-primary'>{official_certificate}</span>";}
 
-        if($Generated==0){
+        $metaHeld=crt_meta_held($ligne);
+        if($Generated==0 && !$metaHeld){
             if(IfCertisCA($SquidCert)){
-                $q->QUERY_SQL("UPDATE sslcertificates SET Generated=1,AsRoot=1 WHERE ID=$ID");
+                $cdb->update($ID,["Generated"=>1,"AsRoot"=>1]);
                 $AsRoot=1;
             }else{
-                $q->QUERY_SQL("UPDATE sslcertificates SET Generated=1,AsRoot=0 WHERE ID=$ID");
+                $cdb->update($ID,["Generated"=>1,"AsRoot"=>0]);
             }
         }
 
-        if($AsRoot==1){
-            $icon2="&nbsp;<span class='label label-info'>{ROOT_CERT}</span>";
-            if($ServerCert==1){
-                $icon2="&nbsp;<span class='label label-info'>{server_certificate}</span>";
-            }
-        }
-        if(strlen($Squidkey)<50){
-            $icon3="&nbsp;<span class='label label-warning'>{missing_private_key}</span>";
-            if($ServerCert==1){
-                $icon3="";
-            }
-        }
-
-        if(isset($_SESSION["HARMPID"])) {
-            $gpid = intval($_SESSION["HARMPID"]);
-            if ($gpid > 0) {
-                $Addon="&HarmpID=$gpid";
-            }
-        }
-
-        if($DateTo==null){
-            $sock->getFrameWork("openssl.php?extract-infos=$ID$Addon");
-        }
-
-        VERBOSE("DateTo:$DateTo",__LINE__);
-        $iconStatus="";
-        if($DateTo<>null){
-            $t1=time();
-            $t2=strtotime($DateTo);
-            if($t1>$t2){
-                $iconStatus="&nbsp;<span class='label label-danger'>{expired}</span>";
-            }
-            if($t2>$t1) {
-                $treste = "(" . $tpl->javascript_parse_text(distanceOfTimeInWords($t1, $t2)) . ")";
-                $treste_mins = distanceMinStrings($DateTo);
-                if ($treste_mins < 4320) {
-                    $iconStatus = "&nbsp;<span class='label label-danger'>{expire_soon}</span>";
-
-                }
-            }
-        }else{
-            $DateTo=$tpl->icon_nothing();
-        }
-        $ID=$ligne["ID"];
+        $CertficateData=$UsePrivKeyCrt==0 ? $SquidCert : $crt;
         $js="Loadjs('$page?certificate-js=$CommonNameEnc&ID=$ID&function=$function')";
 
-
+        // Type badges and the data-type keys the TINY "type" filter matches on.
+        $badges=array();$types=array();
         if($UseLetsEncrypt==1){
-            $icon="<span class='label label-info'>{LETSENCRYPT_CERTIFICATE}</span>";
-            if(strlen($ligne["crt"])<50){
-                $js="Loadjs('fw.certificates-center.letsencrypt.php?ID=$ID&function=$function')";
-                $icon="<span class='label label-default'>{LETSENCRYPT_CERTIFICATE}</span>";
+            $types[]="letsencrypt";
+            $badges[]=crt_badge("{LETSENCRYPT_CERTIFICATE}",strlen($crt)<50?"gray":"cyan");
+            if(strlen($crt)<50){$js="Loadjs('fw.certificates-center.letsencrypt.php?ID=$ID&function=$function')";}
+        }elseif(strlen($csr)>50 && strlen($CertficateData)<50){
+            $types[]="csr";
+            $badges[]=crt_badge("{CSR}","gray");
+            $badges[]=crt_badge("{waiting_registration}","amber");
+        }elseif(strlen($CertficateData)<10){
+            $badges[]=crt_badge("{not_generated}","gray");
+        }elseif($UsePrivKeyCrt==1){
+            $types[]="official";
+            $badges[]=crt_badge("{official_certificate}","green");
+        }else{
+            $types[]="selfsigned";
+            $badges[]=crt_badge("{SelfSignedCert}","blue");
+        }
+        if($AsRoot==1){
+            if($ServerCert==1){
+                $badges[]=crt_badge("{server_certificate}","indigo");
+            }else{
+                $types[]="root";
+                $badges[]=crt_badge("{ROOT_CERT}","indigo");
+                $K["roots"]++;
+                if(in_array("selfsigned",$types)){$K["roots_self"]++;}
+            }
+        }
+        if(strlen($Squidkey)<50 && $ServerCert==0 && !in_array("csr",$types)){
+            $badges[]=crt_badge("{missing_private_key}","amber");
+        }
+        if($UseLetsEncrypt==1){$K["le"]++;}
+        if($metaHeld){
+            $types[]="meta";
+            array_unshift($badges,crt_meta_badge());
+        }
+
+        // Expiration state. "soon" = within crt_soon_days(): with the former 3-day
+        // threshold a certificate 7 days from expiry counted as "valid" and the
+        // Expired/Urgent tile said "Nothing to renew" (RWE, 2026-11-16).
+        $state="none";
+        if($DateTo<>""){
+            $t1=time();
+            $t2=strtotime($DateTo);
+            if($t2!==false && $t1>$t2){$state="expired";$K["expired"]++;}
+            if($t2!==false && $t2>$t1){
+                $state="valid";
+                $treste=$tpl->javascript_parse_text(distanceOfTimeInWords($t1,$t2));
+                if(($t2-$t1)<crt_soon_days()*86400){$state="soon";$K["soon"]++;}
             }
         }
 
-        $field="crt";
-        if($UsePrivKeyCrt==0){$field="SquidCert";}
-        $CertficateData=$ligne[$field];
-
-        if(strlen($ligne[$field])<10){
-            if($UseLetsEncrypt==0) {
-                $icon = "<span class='label'>{not_generated}</span>";
-            }
-        }
-        $href=$tpl->td_href($CommonName, "{click_to_edit}",$js);
+        $href=$tpl->td_href(crt_e($CommonName),"{click_to_edit}",$js);
         $idrow=md5($CommonNameEnc);
 
-        VERBOSE("CSR: ".strlen($csr),__LINE__);
-        VERBOSE("CRT: ".strlen($CertficateData),__LINE__);
-        VERBOSE("KEY: ".strlen($Squidkey),__LINE__);
-
-        if(strlen($csr)>50){
-            if( strlen($CertficateData)<50 ){
-                $icon2=null;$icon3="<span class='label label-warning'>{waiting_registration}</span>";
-                $icon = "<span class='label'>{CSR}</span>";
-
-            }
-        }
-
         $ous=array();
-        if(strlen($ligne["OrganizationName"])>2){
-            $ous[]= $ligne["OrganizationName"];
-        }
-        if(strlen($ligne["OrganizationalUnit"])>2){
-            $ous[]= $ligne["OrganizationalUnit"];
-        }
+        if(strlen($ligne["OrganizationName"])>2){$ous[]=crt_e($ligne["OrganizationName"]);}
+        if(strlen($ligne["OrganizationalUnit"])>2){$ous[]=crt_e($ligne["OrganizationalUnit"]);}
+        $meta=array();
+        // Nom de ligne distinct du CN (renouvellement avec nouvelle clé) : afficher le CN.
+        $SubjectCN=trim(strval($ligne["SubjectCN"] ?? ""));
+        if($SubjectCN<>"" && strcasecmp($SubjectCN,$CommonName)<>0){$meta[]="<span class='awc-mono'>CN: ".crt_e($SubjectCN)."</span>";}
+        if(count($ous)>0){$meta[]=@implode(" &middot; ",$ous);}
+        if(strlen(trim(strval($ligne["emailAddress"])))>0){$meta[]="<span class='awc-mono'>".crt_e($ligne["emailAddress"])."</span>";}
+
+        $sitesFor=td_sitesbyCert($CommonName,$ID);
+        if($sitesFor<>""){$K["linked"]++;}
         $CommonNameDiv=md5($CommonName);
-        if($ligne["OrganizationName"]==null){$ligne["OrganizationName"]="<i class='fa fa-minus'></i>";}
-        if($ligne["OrganizationalUnit"]==null){$ligne["OrganizationalUnit"]="<i class='fa fa-minus'></i>";}
-        if($ligne["emailAddress"]==null){$ligne["emailAddress"]="<i class='fa fa-minus'></i>";}
-        if($DateTo==null){$DateTo="<i class='fa fa-minus'></i>";}
-        $html[]="<tr class='$TRCLASS' id='$idrow'>";
-        $html[]="<td style='width:1%' nowrap>$icon</td>";
-        $html[]="<td>$href{$icon2}{$icon3}</td>";
-        $html[]="<td>$DateTo$iconStatus&nbsp;<small>$treste</small></td>";
-        $html[]="<td>". @implode("&nbsp;|&nbsp;",$ous)."</td>";
-        $html[]="<td><span id='certdiv-$CommonNameDiv'>". td_sitesbyCert($CommonName)."</span></td>";
-        $html[]="<td style='width:1%' nowrap >{$ligne["emailAddress"]}</td>";
 
         if($pks12>50) {
-            $html[] = "<td class='center' style='width:1%' nowrap>" . $tpl->icon_archive("document.location.href='$page?download-pfx=$ID'", "AsCertifsManager") . "</td>";
+            $pfx=crt_tip($tpl->icon_archive("document.location.href='$page?download-pfx=$ID'", "AsCertifsManager"),"{crt_tip_pfx_download}");
+        }elseif($metaHeld){
+            $pfx=crt_meta_locked_act("fa-solid fa-gears");
         }else{
-            $html[] = "<td class='center' style='width:1%' nowrap>" . $tpl->icon_run("Loadjs('$page?create-pfx=$CommonNameEnc&function=$function')") . "</td>";
+            $pfx=crt_tip($tpl->icon_run("Loadjs('$page?create-pfx=$CommonNameEnc&function=$function')"),"{crt_tip_pfx_create}");
         }
-
-        $html[]="<td class='center' style='width:1%' nowrap>". $tpl->icon_download("document.location.href='$page?download-cert=$ID'","AsCertifsManager") ."</td>";
-
-        $html[]="<td class='center' style='width:1%' nowrap>". $tpl->icon_export("document.location.href='$page?download=$CommonNameEnc'","AsCertifsManager") ."</td>";
-
-
+        $view="<a href='javascript:blur();' class='ak-act' title=\"{crt_tip_view}\" OnClick=\"$js\"><i class='fa-regular fa-eye'></i></a>";
+        $renew="";
+        if($UseLetsEncrypt==1 && $metaHeld){
+            $renew=crt_meta_locked_act("fa-solid fa-arrows-rotate");
+        }elseif($UseLetsEncrypt==1 && $users->AsCertifsManager){
+            $renew="<a href='javascript:blur();' class='ak-act crt-act-renew' title=\"{crt_tip_renew}\" OnClick=\"Loadjs('fw.certificates-center.letsencrypt.php?ID=$ID&function=$function')\"><i class='fa-solid fa-arrows-rotate'></i></a>";
+        }
+        $dl=crt_tip($tpl->icon_download("document.location.href='$page?download-cert=$ID'","AsCertifsManager"),"{crt_tip_pem}");
+        $ex=crt_tip($tpl->icon_export("document.location.href='$page?download=$CommonNameEnc'","AsCertifsManager"),"{crt_tip_export}");
         $jsDel="Loadjs('$page?delete-js=$CommonNameEnc&id=$idrow')";
-        if($PowerDNSEnableClusterSlave==1){
-            $jsDel="";
-        }
+        if($PowerDNSEnableClusterSlave==1){$jsDel="";}
+        $del=crt_tip($tpl->icon_delete($jsDel,"AsCertifsManager"),"{crt_tip_delete}");
+        if($metaHeld){$del=crt_meta_locked_act("fa-solid fa-trash-can");}
 
-        $html[]="<td class='center' style='width:1%' nowrap>". $tpl->icon_delete($jsDel,"AsCertifsManager") ."</td>";
-        $html[]="</tr>";
-
+        $dtype=@implode(" ",$types);
+        $h ="<tr data-state='$state' data-type='$dtype'>";
+        $h.="<td>".crt_ident("fa-solid fa-fingerprint",$href,$meta)."<div class='crt-badges'>".@implode("",$badges)."</div></td>";
+        $h.="<td nowrap>".crt_status_cell($state,$DateTo,$treste)."</td>";
+        $h.="<td><span id='certdiv-$CommonNameDiv'>".crt_services_cell($sitesFor)."</span></td>";
+        $h.="<td nowrap>".crt_keytype($CertficateData)."</td>";
+        $h.="<td>".crt_acts(array($view,$renew,$pfx,$dl,$ex,$del))."</td>";
+        $h.="</tr>";
+        $rows[]=$h;
     }
-    $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
+    $K["total"]=count($rows);
     if($PowerDNSEnableClusterSlave==1){
         $bts=array();
     }
@@ -3072,42 +2913,290 @@ function table():bool{
     $TINY_ARRAY["TITLE"]="{certificates_center}";
     $TINY_ARRAY["ICO"]=ico_certificate;
     $TINY_ARRAY["EXPL"]="{ssl_certificates_center_text}";
-    $TINY_ARRAY["BUTTONS"]=@implode("",$bts);
+    $TINY_ARRAY["BUTTONS"]=siem_tiny_filters(crt_tiny_filters($results,$K),@implode("",$bts));
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
+    $html[]="<div class='crt'>";
+    $html[]=crt_kpis($K,$users->AsCertifsManager);
+    $html[]=crt_table_open(array(
+        "<th>{crt_col_host}</th>",
+        "<th>{crt_col_status}</th>",
+        "<th>{crt_col_services}</th>",
+        "<th>{key_type}</th>",
+        "<th style='text-align:right'>{actions}</th>"),"crt-rows-main");
+    if(count($rows)==0){
+        $html[]=crt_table_empty(5);
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]=crt_table_close($K["total"],$K["total"],"{certificates}","crt-pager-main");
+    $html[]=crt_expired_banner($K["expired"]);
+    $html[]="</div>";
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
     $html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$jstiny
 </script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().siem_tiny_filters_style().crt_css()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js(50,"crt-rows-main","crt-pager-main")
+        .crt_filter_js();
     return true;
 }
-function td_sitesbyCert($CommonName):string{
+
+// A function, not a define(): top-level statements below the dispatcher never run first.
+function crt_soon_days():int{return 30;}
+
+// Artica Meta "certificates" policy (spec netagents 2026-11-19 6): a row whose metaid column is
+// filled is held by Meta. The daemon refuses delete, renew, replace and rename (423 managed by
+// Artica Meta); attaching it to a service stays allowed. Held names are remembered for the
+// read-only view of the same request.
+function crt_meta_held($ligne):bool{
+    if(!is_array($ligne)){return false;}
+    $held=trim(strval($ligne["metaid"] ?? ""))<>"";
+    if($held && isset($ligne["CommonName"])){$GLOBALS["CRT_META_HELD"][(string)$ligne["CommonName"]]=true;}
+    return $held;
+}
+function crt_meta_badge():string{
+    return "<span class='ak-tag crt-meta' title=\"{ccmeta_held_tip}\"><i class='fa-solid fa-diagram-project'></i>{ccmeta_badge}</span>";
+}
+// A row action the Meta lock forbids: shown greyed out, with the reason as tooltip.
+function crt_meta_locked_act($ico):string{
+    return "<span class='crt-tip' title=\"{ccmeta_held_tip}\"><a href='javascript:blur();' class='ak-act crt-act-off' aria-disabled='true'><i class='$ico'></i></a></span>";
+}
+function crt_meta_banner():string{
+    return "<div class='crt-meta-banner'><i class='fa-solid fa-diagram-project'></i><div>{ccmeta_cert_banner}</div></div>";
+}
+// Edit link of a stored PEM field: none on a held row.
+function crt_meta_field_js($tpl,$held,$js,$priv=null){
+    if($held){return;}
+    $tpl->table_form_field_js($js,$priv);
+}
+// Daemon refusal of a held row ("managed by Artica Meta", HTTP 423) -> translated token;
+// any other error unchanged. For post_error()/js_error(), which resolve tokens.
+function crt_meta_error($msg):string{
+    if(strcasecmp(trim(strval($msg)),"managed by Artica Meta")==0){return "{ccmeta_cert_refused}";}
+    return strval($msg);
+}
+// Same, as HTML for div_error(): the token translated, anything else escaped.
+function crt_meta_error_html($msg):string{
+    $e=crt_meta_error($msg);
+    if($e=="{ccmeta_cert_refused}"){
+        $tpl=new template_admin();
+        return $tpl->_ENGINE_parse_body($e);
+    }
+    return htmlspecialchars($e);
+}
+
+function crt_e($s):string{
+    return str_replace(array("{","}"),array("&#123;","&#125;"),htmlspecialchars((string)$s,ENT_QUOTES,"UTF-8"));
+}
+
+function crt_badge($label,$tone):string{
+    $map=array("blue"=>"ak-info","green"=>"ak-ok","amber"=>"ak-warn","gray"=>"ak-off","cyan"=>"crt-cyan","indigo"=>"crt-indigo");
+    return "<span class='ak-tag ".($map[$tone] ?? "ak-off")."'>$label</span>";
+}
+
+function crt_status_cell($state,$DateTo,$treste):string{
+    if($state=="none"){return "<span class='crt-muted'>-</span>";}
+    $map=array("expired"=>array("ak-err","{expired}"),"soon"=>array("ak-warn","{expire_soon}"),"valid"=>array("ak-ok","{valid}"));
+    $h="<span class='ak-pill {$map[$state][0]}'><span class='ak-dot'></span>{$map[$state][1]}</span>";
+    $h.="<div class='crt-date'>".crt_e($DateTo)."</div>";
+    if(strlen(trim(strval($treste)))>0){$h.="<div class='crt-muted'>".crt_e($treste)."</div>";}
+    return $h;
+}
+
+function crt_services_cell($sitesFor):string{
+    if($sitesFor==""){
+        // null = the daemon inventory could not be read: "not used" would be a guess.
+        if(crt_usage_map()===null){return "<span class='crt-muted'>{crt_usage_unknown}</span>";}
+        return "<span class='crt-muted'>{crt_no_service_any}</span>";
+    }
+    return "<span class='crt-svc'><i class='fa-solid fa-globe'></i><span>$sitesFor</span></span>";
+}
+
+// "RSA 2048 / SHA256" from the certificate itself: key algorithm and size, signature hash.
+function crt_keytype($pem):string{
+    $pem=str_replace("\\n","\n",(string)$pem);
+    if(strlen($pem)<50){return "<span class='crt-muted'>-</span>";}
+    $parts=array();
+    $k=@openssl_pkey_get_public($pem);
+    if($k){
+        $d=@openssl_pkey_get_details($k);
+        if(is_array($d)){
+            $names=array(OPENSSL_KEYTYPE_RSA=>"RSA",OPENSSL_KEYTYPE_DSA=>"DSA",OPENSSL_KEYTYPE_EC=>"EC");
+            $t=isset($d["type"]) && isset($names[$d["type"]]) ? $names[$d["type"]] : "";
+            $bits=intval($d["bits"] ?? 0);
+            $parts[]=trim("$t ".($bits>0?$bits:""));
+        }
+    }
+    $x=@openssl_x509_parse($pem);
+    if(is_array($x) && isset($x["signatureTypeSN"]) && preg_match('/(SHA[0-9]+|MD5|ED25519|ED448)/i',$x["signatureTypeSN"],$re)){
+        $parts[]=strtoupper($re[1]);
+    }
+    $parts=array_filter($parts,"strlen");
+    if(count($parts)==0){return "<span class='crt-muted'>-</span>";}
+    return "<span class='crt-key'>".crt_e(@implode(" / ",$parts))."</span>";
+}
+
+// TINY filters: state and type, with their counts (client-side, crt_filter_js()).
+function crt_tiny_filters($results,$K):array{
+    $valid=$K["total"]-$K["expired"]-$K["soon"];
+    $states=array(""=>"{all_states} ({$K["total"]})","expired"=>"{expired} ({$K["expired"]})",
+        "soon"=>"{expire_soon} ({$K["soon"]})","valid"=>"{valid} ($valid)");
+    $types=array(""=>"{all_types}","root"=>"{ROOT_CERT}","selfsigned"=>"{SelfSignedCert}",
+        "official"=>"{official_certificate}","letsencrypt"=>"{LETSENCRYPT_CERTIFICATE}","csr"=>"{CSR}","meta"=>"{ccmeta_badge}");
+    $f=array();
+    $f[]=array("TYPE"=>"select","ID"=>"crt-f-state","LABEL"=>"{state}","VALUE"=>"","OPTIONS"=>$states,"JS"=>"CrtFilter");
+    $f[]=array("TYPE"=>"select","ID"=>"crt-f-type","LABEL"=>"{type}","VALUE"=>"","OPTIONS"=>$types,"JS"=>"CrtFilter");
+    return $f;
+}
+
+function crt_filter_js():string{
+    return "<script>
+window.CrtFilter=function(){
+ var g=function(id){var e=document.getElementById(id);return e?e.value:'';};
+ var s=g('crt-f-state'),t=g('crt-f-type');
+ var tb=document.getElementById('crt-rows-main'); if(!tb){return;}
+ var box=document.getElementById('crt-pager-main'), rows=tb.rows;
+ if(s==''&&t==''){
+   if(box){box.style.display='';}
+   if(typeof tb.__awcRedraw=='function'){tb.__awcRedraw();}else{for(var i=0;i<rows.length;i++){rows[i].style.display='';}}
+   return;
+ }
+ if(box){box.style.display='none';}
+ for(var j=0;j<rows.length;j++){
+   var r=rows[j], ok=(s==''||r.getAttribute('data-state')==s)&&(t==''||(' '+(r.getAttribute('data-type')||'')+' ').indexOf(' '+t+' ')>=0);
+   r.style.display=ok?'':'none';
+ }
+};
+</script>";
+}
+
+function crt_kpi_tile($label,$value,$sub,$ico,$tone,$js=""):string{
+    $click=$js<>"" ? " crt-kpi-click' OnClick=\"$js\"" : "'";
+    $map=array("err"=>"ak-err crt-kpi-err","ok"=>"ak-ok","green"=>"ak-accent","indigo"=>"crt-indigo");
+    $t=$map[$tone] ?? "";
+    return "<div class='ak-fig crt-kpi $t$click><div class='ak-fig-txt'><div class='ak-fig-l'>$label</div><div class='ak-fig-v'>$value</div>"
+        ."<div class='ak-fig-s ak-mono'>$sub</div></div><span class='ak-ico ak-ico-sq'><i class='$ico'></i></span></div>";
+}
+function crt_kpi_total($K):string{
+    return crt_kpi_tile("{certificates}",$K["total"],"{$K["linked"]} {crt_kpi_linked_any}","fa-solid fa-lock","neutral");
+}
+function crt_kpi_urgent($K):string{
+    $n=$K["expired"]+$K["soon"];
+    $tone=$n>0 ? "err" : "ok";
+    $sub=$n>0 ? "{crt_kpi_urgent_sub}" : "{crt_kpi_urgent_none}";
+    return crt_kpi_tile("{crt_kpi_urgent}",$n,$sub,"fa-solid fa-triangle-exclamation",$tone);
+}
+function crt_kpi_roots($K):string{
+    return crt_kpi_tile("{crt_kpi_roots}",$K["roots"],"{$K["roots_self"]} {crt_kpi_selfsigned}","fa-solid fa-shield-halved","indigo");
+}
+function crt_kpi_letsencrypt($K,$admin):string{
+    $days=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LetsEncryptRenewAfterDays"));
+    if($days==0){$days=15;}
+    $page=CurrentPageName();
+    $js=$admin ? "Loadjs('$page?autorenew-js=yes')" : "";
+    return crt_kpi_tile("Let's Encrypt",$K["le"],"{autorenew}: $days {days}","fa-solid fa-arrows-rotate","green",$js);
+}
+function crt_kpis($K,$admin):string{
+    return "<div class='ak ak-grid-4 crt-kpis'>".crt_kpi_total($K).crt_kpi_urgent($K).crt_kpi_roots($K).crt_kpi_letsencrypt($K,$admin)."</div>";
+}
+
+function crt_expired_banner($expired):string{
+    if($expired==0){return "";}
+    return "<div class='ak-banner ak-warn crt-warn'><i class='fa-solid fa-circle-info'></i><div><div class='crt-warn-t'>{crt_warn_title} ($expired)</div>"
+        ."<div>{crt_warn_text}</div></div></div>";
+}
+
+function crt_css():string{
+    if(isset($GLOBALS["CRT_CSS"])){return "";}
+    $GLOBALS["CRT_CSS"]=true;
+    // Seules les regles propres a la page : le reste vient du kit ak- (angular.css.php).
+    return "<style>
+.crt-kpis{margin:10px 0 18px}
+.crt-kpi{align-items:flex-start}
+.crt-kpi-click{cursor:pointer}.crt-kpi-click:hover{border-color:#cbd5e1}
+.crt-kpi-err{border-color:#fecaca}.crt-kpi-err .ak-fig-l,.crt-kpi-err .ak-fig-v{color:#dc2626}
+.crt-indigo{--ak-tfg:#005447;--ak-tbg:#e6eeed}.crt-cyan{--ak-tfg:#0e7490;--ak-tbg:#ecfeff}
+.crt-badges{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 0 54px}
+.crt-date{font-family:'JetBrains Mono',Consolas,monospace;font-size:13px;color:#334155;margin-top:6px}
+.crt-muted{font-size:13px;color:#94a3b8}
+.crt-svc{display:inline-flex;gap:8px;align-items:baseline;font-size:13px}.crt-svc i{color:#94a3b8}
+.crt-key{font-family:'JetBrains Mono',Consolas,monospace;font-size:13px;color:#334155}
+.crt-tip{display:inline-flex;cursor:help}
+.ak-act.crt-act-renew{color:#059669}
+.crt-meta{--ak-tfg:#005447;--ak-tbg:#f2f6f6;display:inline-flex;align-items:center;gap:5px}
+.ak-act.crt-act-off{color:#cbd5e1;cursor:not-allowed}.ak-act.crt-act-off:hover{background:none;color:#cbd5e1}
+.crt-meta-banner{display:flex;gap:12px;align-items:flex-start;background:#f2f6f6;border:1px solid #bfd4d1;color:#005447;border-radius:12px;padding:12px 16px;margin:0 0 14px;font-size:13px;line-height:1.6}
+.crt-meta-banner>i{color:#005447;font-size:16px;margin-top:3px}
+.crt-warn{align-items:flex-start;gap:14px;margin-top:18px;padding:16px 20px;font-size:13px;line-height:1.6}
+.crt-warn>i,.crt-warn>svg{color:#d97706;font-size:18px;margin-top:2px}
+.crt-warn-t{font-weight:700;font-size:14px}
+</style>";
+}
+
+// Services that reference each certificate (Web console, SMTP, proxy ports,
+// HaCluster...), from the daemon inventory /certificates/api/usage, once per
+// request: [ID => [label,...]]. null = inventory unavailable (older daemon).
+// Reverse-proxy sites are left to the nginx query below, which links them.
+function crt_usage_map(){
+    if(array_key_exists("CRT_USAGE_MAP",$GLOBALS)){return $GLOBALS["CRT_USAGE_MAP"];}
+    $GLOBALS["CRT_USAGE_MAP"]=null;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/certificates/api/usage"),true);
+    if(!is_array($json) || empty($json["success"]) || !isset($json["data"]["certificates"]) || !is_array($json["data"]["certificates"])){
+        return null;
+    }
+    $map=array();
+    foreach($json["data"]["certificates"] as $c){
+        $id=intval($c["id"] ?? 0);
+        if($id<=0 || !isset($c["consumers"]) || !is_array($c["consumers"])){continue;}
+        foreach($c["consumers"] as $cons){
+            if(($cons["service"] ?? "")=="reverse-proxy" && strlen($cons["target"] ?? "")>0){continue;}
+            // known=false: a setting that merely holds the same text (myhostname...).
+            if(empty($cons["known"])){continue;}
+            if(array_key_exists("enabled",$cons) && $cons["enabled"]===false){continue;}
+            $label=trim(strval($cons["label"] ?? ""));
+            if($label==""){continue;}
+            $map[$id][$label]=true;
+        }
+    }
+    $GLOBALS["CRT_USAGE_MAP"]=$map;
+    return $map;
+}
+
+function td_sitesbyCert($CommonName,$ID=0):string{
     $tpl=new template_admin();
     $function=$_GET["function"];
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT serviceid FROM `service_parameters` WHERE 
-            `zkey`='ssl_certificate' AND zvalue='$CommonName'");
+    // Same query for every row: fetched once per request.
+    if(!isset($GLOBALS["CRT_SSL_PARAMS"])){
+        $GLOBALS["CRT_SSL_PARAMS"]=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/service_parameters/zkey/ssl_certificate"),true);
+    }
+    $data=$GLOBALS["CRT_SSL_PARAMS"];
+    $rows=array();
+    if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])){
+        $rows=$data["rows"];
+    }
 
     $CONF=array();
-    foreach ($results as $index=>$ligne){
-        $serviceid=$ligne["serviceid"];
+    foreach ($rows as $ligne){
+        if(!isset($ligne["zvalue"])){continue;}
+        if(strval($ligne["zvalue"])!==strval($CommonName)){continue;}
+        $serviceid=isset($ligne["serviceid"])?intval($ligne["serviceid"]):0;
+        if($serviceid<=0){continue;}
         $host=get_servicename($serviceid);
         if(strlen($host)<3){continue;}
         $CONF[]=$tpl->td_href($host,"","Loadjs('fw.nginx.sites.php?www-parameters-ssl-js=$serviceid&CertCenter=$function')");
+    }
+
+    $usage=crt_usage_map();
+    $ID=intval($ID);
+    if(is_array($usage) && $ID>0 && isset($usage[$ID])){
+        foreach(array_keys($usage[$ID]) as $label){
+            $CONF[]=crt_e($label);
+        }
     }
 
     return @implode(", ",$CONF);
@@ -3133,23 +3222,6 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
 function IfCertisCA($certdata){
     $array=openssl_x509_parse($certdata);
     if(!isset($array["extensions"])){return false;}
@@ -3163,45 +3235,176 @@ function IfCertisCA($certdata){
 }
 
 
+/**
+ * certificate_new_csr_fields() — build the row to INSERT when a CSR is generated
+ * "based on" an existing certificate.
+ *
+ * The point of that mode is to keep the SAME PRIVATE KEY under a new Common Name,
+ * so the source row is read only for its key: everything else comes from the form
+ * the operator just filled in.
+ *
+ * The key is always written to `privkey` with UsePrivKeyCrt=1, whichever column it
+ * came from, because that is the pair LoadCertificateFromDB() reads in the daemon
+ * (openssl.go): UsePrivKeyCrt==1 -> privkey, else -> Squidkey. Writing the key
+ * without that flag would make the daemon read the empty Squidkey and silently
+ * generate a brand-new key instead of reusing the one the operator selected.
+ *
+ * Escaped "\n" sequences are restored: the daemon does the same on read, but a CSR
+ * built from a half-escaped PEM fails later and much less clearly.
+ *
+ * Pure function — no DB, no $_POST, no globals — so it can be exercised directly.
+ */
+/**
+ * certificate_new_row_name() — [nom de la ligne, SubjectCN] d'un nouveau CSR.
+ *
+ * sslcertificates.CommonName est UNIQUE et sert de nom au certificat dans tout le
+ * produit (services, liste, daemon). Le CN du sujet n'en est qu'une valeur par défaut :
+ * un « Certificate name » saisi devient le nom de la ligne et le CN part dans
+ * SubjectCN, lu par OpenSSLCreateCSR(). SubjectCN vide quand le nom égale le CN.
+ *
+ * Fonction pure.
+ */
+function certificate_new_row_name(array $post): array {
+    $cn = strtolower(trim((string)($post["CommonName"] ?? "")));
+    $name = strtolower(trim((string)($post["CertificateName"] ?? "")));
+    $name = trim(preg_replace('#[^a-z0-9._*-]+#', '-', $name), "-");
+    if ($name === "" || $name === $cn) {
+        return [$cn, ""];
+    }
+    return [$name, $cn];
+}
+
+/**
+ * crt_domains_parse() — liste des noms saisis dans la zone « Domains » du CSR.
+ * Séparateurs acceptés : retour à la ligne, virgule, point-virgule, espace.
+ * Rend [noms valides en minuscules, sans doublon ; entrées refusées]. Fonction pure.
+ */
+function crt_domains_parse(string $raw): array {
+    $ok = array(); $bad = array();
+    foreach (preg_split('#[\s,;]+#', $raw) as $d) {
+        $d = strtolower(trim($d));
+        if ($d === "") { continue; }
+        $valid = filter_var($d, FILTER_VALIDATE_IP) !== false
+            || preg_match('#^(\*\.)?([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z0-9-]{2,63}$#', $d);
+        if (!$valid) { $bad[] = $d; continue; }
+        if (!in_array($d, $ok, true)) { $ok[] = $d; }
+    }
+    return array($ok, $bad);
+}
+
+/**
+ * crt_domains_field() — zone de texte « Domains » du formulaire CSR, un nom par ligne,
+ * avec son aide. field_textarea_normal() enregistre le champ dans le formulaire ; seul
+ * son balisage est adapté (placeholder, police, hauteur).
+ */
+function crt_domains_field($tpl, string $value): string {
+    list($names, ) = crt_domains_parse($value);
+    $h = $tpl->field_textarea_normal("domains", "{domains}", implode("\n", $names), "100%", "110px");
+    $h = preg_replace("#style='width:100%;min-height: 110px;font-size: 12px;' class='form-control'#",
+        "class='form-control crt-dom-ta' rows='4' spellcheck='false' autocomplete='off' "
+        ."placeholder='www.example.com&#10;mail.example.com&#10;*.example.com&#10;192.0.2.10'", $h, 1);
+    return $h."<tr class='afrm-row afrm-full'><td colspan='2' style='padding-left:19px'>"
+        ."<div class='crt-dom-help'><i class='fa-solid fa-circle-info'></i><div>{csr_domains_help}</div></div></td></tr>";
+}
+
+/** Feuille de style de crt_domains_field(), émise hors _ENGINE_parse_body. */
+function crt_domains_style(): string {
+    return "<style>.crt-dom-ta{width:100%;min-height:110px;resize:vertical;padding:10px 12px;"
+        ."font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;font-size:13px;"
+        ."line-height:1.6;color:#0f172a;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:none}"
+        .".crt-dom-ta:focus{border-color:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.12);outline:0}"
+        .".crt-dom-ta::placeholder{color:#94a3b8}"
+        .".crt-dom-help{display:flex;gap:10px;align-items:flex-start;margin:2px 0 10px 0;padding:10px 12px;"
+        ."border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;color:#475569;font-size:13px;line-height:1.5}"
+        .".crt-dom-help>svg,.crt-dom-help>i{color:#64748b;margin-top:3px;flex:0 0 auto}</style>";
+}
+
+function certificate_new_csr_fields(array $post, array $srcRow): array {
+    $fields = [
+        "CountryName"         => $post["CountryName"] ?? "",
+        "stateOrProvinceName" => $post["stateOrProvinceName"] ?? "",
+        "CertificateMaxDays"  => intval($post["CertificateMaxDays"] ?? 0) > 0 ? $post["CertificateMaxDays"] : 730,
+        "OrganizationName"    => $post["OrganizationName"] ?? "",
+        "OrganizationalUnit"  => $post["OrganizationalUnit"] ?? "",
+        "emailAddress"        => $post["emailAddress"] ?? "",
+        "localityName"        => $post["localityName"] ?? "",
+        "levelenc"            => $post["levelenc"] ?? "",
+        "password"            => $post["password"] ?? "",
+        // Normalisé comme certificate_new_save() le fait avant d'appeler
+        // /certificate/csr/{cn} : sslcertificates.CommonName n'a pas de COLLATE
+        // NOCASE, donc insérer la forme brute rendrait la ligne introuvable au
+        // daemon dès que l'opérateur saisit une majuscule.
+        "CommonName"          => certificate_new_row_name($post)[0],
+        "SubjectCN"           => certificate_new_row_name($post)[1],
+        "domains"             => implode(",", crt_domains_parse((string)($post["domains"] ?? ""))[0]),
+    ];
+
+    // Where the source keeps its key: privkey when UsePrivKeyCrt=1, Squidkey
+    // otherwise — with a fallback, because rows written by older code paths do not
+    // always agree with their own flag.
+    $field = "privkey";
+    if (intval($srcRow["UsePrivKeyCrt"] ?? 0) == 0) {
+        $field = "Squidkey";
+        if (strlen($srcRow[$field] ?? "") < 10 && strlen($srcRow["privkey"] ?? "") > 10) {
+            $field = "privkey";
+        }
+    }
+    $key = str_replace("\\n", "\n", $srcRow[$field] ?? "");
+    if (strlen($key) > 10) {
+        $fields["privkey"]       = $key;
+        $fields["UsePrivKeyCrt"] = 1;
+    }
+    return $fields;
+}
 function certificate_new_save():bool{
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
     $tpl=new template_admin();
     $tpl->CLEAN_POST_XSS();
-    $CommonName=strtolower(trim($_POST["CommonName"]));
+    $SubjectCN=strtolower(trim($_POST["CommonName"]));
+    // $CommonName = nom de la ligne (clé du centre) ; le CN du sujet peut différer.
+    $CommonName=certificate_new_row_name($_POST)[0];
+    if($CommonName==""){echo $tpl->post_error("{CommonName}: {your_query_is_empty}");return false;}
     $sock=new sockets();
     $gpid=0;
-    if(isset($_SESSION["HARMPID"])) {
-        $gpid = intval($_SESSION["HARMPID"]);
-
+    $existsMsg="$CommonName: {alreadyexists}<br>{certificate_name_exists_hint}";
+    list(,$badDomains)=crt_domains_parse((string)($_POST["domains"] ?? ""));
+    if(count($badDomains)>0){
+        echo $tpl->post_error("{csr_domain_invalid}<br><code>".implode(" ",array_slice($badDomains,0,5))."</code>");
+        return false;
     }
 
-
-
-    $sock->SET_INFO("CSRCommonName",$CommonName);
+    $sock->SET_INFO("CSRCommonName",$SubjectCN);
 
 
     if(isset($_POST["OnlyCSR"])){
         if(isset($_POST["OnlyCSRID"])){
             $OnlyCSRID=trim($_POST["OnlyCSRID"]);
             if(strlen($OnlyCSRID)>3){
-               $sql="SELECT ID,`privkey`,`Squidkey`,`UsePrivKeyCrt` FROM sslcertificates WHERE CommonName='$OnlyCSRID'";
-                $ligne=$q->mysqli_fetch_array($sql);
-                $ID=intval($ligne["ID"]);
+                $rowSrc=$cdb->getByCommonName($OnlyCSRID);
+                $ligne = is_object($rowSrc) ? (array)$rowSrc : array();
+                $ID=intval($ligne["ID"] ?? 0);
                 if($ID==0){echo $tpl->post_error("$OnlyCSRID: {source_package_not_found}");return false;}
-                $field="privkey";
-                if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
-                if($ligne["UsePrivKeyCrt"]==0){
-                    $field="Squidkey";
-                    if(strlen($ligne[$field])<10){
-                        if(strlen($ligne["privkey"])>10){$field="privkey";}
-                    }
 
-                }
-                $ligne[$field]=str_replace("\\n", "\n", $ligne[$field]);
-                if(strlen($ligne[$field])<10){
-                    echo $tpl->post_error("$field {no_data}");
+                $insertFields=certificate_new_csr_fields($_POST,$ligne);
+                if(!isset($insertFields["privkey"])){
+                    echo $tpl->post_error("$OnlyCSRID: {no_data}");
                     return false;
                 }
+
+                // The daemon's /certificate/csr/{cn} loads the row BY COMMON NAME
+                // (LoadCertificateFromDB) — it never creates it. Without this insert
+                // it answers "Could not find configuration for <cn>", which is what
+                // this whole branch used to do: it read the source row, validated its
+                // private key, then threw it away and called the CSR endpoint for a
+                // Common Name that existed nowhere.
+                [$exists,$existsId]=$cdb->exists($CommonName);
+                if($exists){
+                    echo $tpl->post_error($existsMsg);
+                    return false;
+                }
+                $newId=$cdb->insert($insertFields);
+                if($newId<=0){echo $tpl->post_error($cdb->lastError);return false;}
 
                 $data=$sock->REST_API("/certificate/csr/$CommonName/$gpid");
                 $json=json_decode($data);
@@ -3221,50 +3424,16 @@ function certificate_new_save():bool{
    }
 
 
-
-foreach ($_POST as $num=>$vl){
-        $_POST[$num]=$q->sqlite_escape_string2($vl);
-    }
-    if($_POST["CertificateMaxDays"]==0){$_POST["CertificateMaxDays"]=730;}
-    $fields[]="CountryName"	;
-    $fields[]="stateOrProvinceName"	;
-    $fields[]="CertificateMaxDays"	;
-    $fields[]="OrganizationName"	;
-    $fields[]="OrganizationalUnit"	;
-    $fields[]="emailAddress"	;
-    $fields[]="localityName"	;
-    $fields[]="levelenc"	;
-    $fields[]="password"	;
-    $fields[]="CommonName"	;
-    $fields[]="domains"	;
-
-    $ligne=$q->mysqli_fetch_array("SELECT CommonName FROM `sslcertificates` WHERE `CommonName`='$CommonName'");
-    if(trim($ligne["CommonName"])<>null){
-        echo $tpl->post_error("$CommonName: {alreadyexists}");
+    [$exists,$existsId]=$cdb->exists($CommonName);
+    if($exists){
+        echo $tpl->post_error($existsMsg);
         return false;
     }
 
-    if(!$q->FIELD_EXISTS("sslcertificates","domains")){
-        $q->QUERY_SQL("ALTER TABLE sslcertificates ADD domains TEXT NOT NULL DEFAULT ''");
-    }
-
-    if(!isset($_POST["password"])){$_POST["password"]="";}
-
-    $values[]="'{$_POST["CountryName"]}'";
-    $values[]="'{$_POST["stateOrProvinceName"]}'";
-    $values[]="'{$_POST["CertificateMaxDays"]}'";
-    $values[]="'{$_POST["OrganizationName"]}'";
-    $values[]="'{$_POST["OrganizationalUnit"]}'";
-    $values[]="'{$_POST["emailAddress"]}'";
-    $values[]="'{$_POST["localityName"]}'";
-    $values[]="'{$_POST["levelenc"]}'";
-    $values[]="'{$_POST["password"]}'";
-    $values[]="'{$_POST["CommonName"]}'";
-    $values[]="'{$_POST["domains"]}'";
-    $sql="INSERT INTO `sslcertificates` (".@implode(",", $fields).") VALUES (".@implode(",", $values).")";
-    $q->QUERY_SQL($sql);
-
-    if(!$q->ok){echo $tpl->javascript_parse_text("jserror:$q->mysql_error\n$sql");return false;}
+    // Aucune ligne source : pas de clé à reprendre, le daemon en génère une.
+    $insertFields=certificate_new_csr_fields($_POST,[]);
+    $newId=$cdb->insert($insertFields);
+    if($newId<=0){echo $tpl->post_error($cdb->lastError);return false;}
 
 
 
@@ -3286,23 +3455,24 @@ foreach ($_POST as $num=>$vl){
 
 
 function certificate_info_crt_popup($return=false){
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
     $CommonName=$_GET["certificate-info"];
-    $q=new lib_sqlite(GetDatabase());
+    $cdb=new CertificatesDB();
 
-    $sql="SELECT `crt`,`CertPassword`,`SquidCert`,`UsePrivKeyCrt`,`UseGodaddy`  FROM sslcertificates WHERE CommonName='$CommonName'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    $row=$cdb->getByCommonName($CommonName);
+    $ligne = is_object($row) ? (array)$row : array();
 
     $field="crt";
-    if($ligne["UsePrivKeyCrt"]==0){$field="SquidCert";}
-    if($ligne["UseGodaddy"]==1){$field="crt";}
+    if(intval($ligne["UsePrivKeyCrt"] ?? 0)==0){$field="SquidCert";}
+    if(intval($ligne["UseGodaddy"] ?? 0)==1){$field="crt";}
 
 
     $passin=null;
-    if($ligne["CertPassword"]<>null){
+    if(($ligne["CertPassword"] ?? null)<>null){
         $passin=" -passin pass:{$ligne["CertPassword"]}";
     }
 
-    $ligne[$field]=str_replace("\\n", "\n", $ligne[$field]);
+    $ligne[$field]=str_replace("\\n", "\n", $ligne[$field] ?? "");
     @mkdir("/usr/share/artica-postfix/ressources/conf/upload",0755,true);
     $filepath=dirname(__FILE__)."/ressources/conf/upload/Cert.pem";
     @file_put_contents($filepath, $ligne[$field]);
@@ -3323,24 +3493,26 @@ function certificate_info_crt_popup($return=false){
 }
 
 function certificate_extract_crt($CommonName,$return=false){
-    $q=new lib_sqlite(GetDatabase());
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
 
-
-    $sql="SELECT *  FROM sslcertificates WHERE CommonName='$CommonName'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"]);
+    $row=$cdb->getByCommonName($CommonName);
+    $ligne = is_object($row) ? (array)$row : array();
+    $UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"] ?? 0);
+    $ID=intval($ligne["ID"] ?? 0);
 
     $Certfield="crt";
     if($UsePrivKeyCrt==0){return;}
+    if($ID<=0){return;}
 
 
 
     $sock=new sockets();
     $tpl=new templates();
 
-    $ADDF=array();
+    $updateFields=array();
 
-    $ligne[$Certfield]=str_replace("\\n", "\n", $ligne[$Certfield]);
+    $ligne[$Certfield]=str_replace("\\n", "\n", $ligne[$Certfield] ?? "");
 
     $filepath=dirname(__FILE__)."/ressources/conf/upload/Cert.pem";
     @file_put_contents($filepath, $ligne[$Certfield]);
@@ -3391,14 +3563,14 @@ function certificate_extract_crt($CommonName,$return=false){
             $Date1=strtotime($re[1]);
             $DateFrom=date("Y-m-d",$Date1);
 
-            $ADDF[]="`DateFrom`='".mysql_escape_string2($DateFrom)."'";
+            $updateFields["DateFrom"]=$DateFrom;
             continue;
 
         }
         if(preg_match("#Not After.*?:(.+)#",$ligne,$re)){
             $Date1=strtotime($re[1]);
             $DateTo=date("Y-m-d",$Date1);
-            $ADDF[]="`DateTo`='".mysql_escape_string2($DateTo)."'";
+            $updateFields["DateTo"]=$DateTo;
             continue;
 
         }
@@ -3423,37 +3595,33 @@ function certificate_extract_crt($CommonName,$return=false){
 
 
     if($C<>null){
-        $ADDF[]="`CountryName`='".mysql_escape_string2($C)."'";
+        $updateFields["CountryName"]=$C;
     }
     if($ST<>null){
-        $ADDF[]="`stateOrProvinceName`='".mysql_escape_string2($ST)."'";
+        $updateFields["stateOrProvinceName"]=$ST;
     }
     if($L<>null){
-        $ADDF[]="`localityName`='".mysql_escape_string2($L)."'";
+        $updateFields["localityName"]=$L;
     }
     if($O<>null){
-        $ADDF[]="`OrganizationName`='".mysql_escape_string2($O)."'";
+        $updateFields["OrganizationName"]=$O;
     }
     if($OU<>null){
-        $ADDF[]="`OrganizationalUnit`='".mysql_escape_string2($OU)."'";
+        $updateFields["OrganizationalUnit"]=$OU;
     }
 
     if($levelenc>0){
-        $ADDF[]="`levelenc`='".mysql_escape_string2($levelenc)."'";
+        $updateFields["levelenc"]=$levelenc;
     }
 
 
 
-    if(count($ADDF)>0){
+    if(count($updateFields)>0){
 
-        $sql="UPDATE sslcertificates SET ".@implode(",", $ADDF)." WHERE `CommonName`='$CommonName'";
-        VERBOSE($sql, __LINE__);
-        $q=new lib_sqlite(GetDatabase());
-
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){
-            if($return){return $q->mysql_error;}
-            echo $q->mysql_error;return;}
+        VERBOSE("UPDATE sslcertificates SET ".count($updateFields)." fields WHERE CommonName=$CommonName", __LINE__);
+        if(!$cdb->update($ID,$updateFields)){
+            if($return){return $cdb->lastError;}
+            echo $cdb->lastError;return;}
 
     }
 
@@ -3472,31 +3640,34 @@ function analyze_js(){
 }
 
 function getdb(){
-
-    $content_type="application/x-sqlite3";
-    header('Content-type: '.$content_type);
+    // Stream the certificates DB binary via /certificate/db/export. Direct
+    // file access is gone — the daemon owns the file.
+    header('Content-type: application/x-sqlite3');
     header('Content-Transfer-Encoding: binary');
     header("Content-Disposition: attachment; filename=\"certificates-center.db\"");
-    header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date dans le passé
-    $fsize = filesize(GetDatabase());
-    header("Content-Length: ".$fsize);
+    header("Cache-Control: no-cache, must-revalidate");
+    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
     ob_clean();
     flush();
-    readfile(GetDatabase());
 
-
-    //"
+    $ch=curl_init();
+    curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, "/usr/share/artica-postfix/bin/run/articarest.sock");
+    curl_setopt($ch, CURLOPT_URL, "http://localhost/certificate/db/export");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 60);
+    curl_exec($ch);
+    curl_close($ch);
 }
 
 function download_pfx(){
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
     $ID=intval($_GET["download-pfx"]);
-    $q=new lib_sqlite(GetDatabase());
+    $cdb=new CertificatesDB();
     $return=null;
-    $sql="SELECT CommonName,pks12 FROM sslcertificates WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $CommonName=$ligne["CommonName"];
-    $final_content=base64_decode($ligne["pks12"]);
+    $row=$cdb->getById($ID);
+    $ligne = is_object($row) ? (array)$row : array();
+    $CommonName=$ligne["CommonName"] ?? "";
+    $final_content=base64_decode($ligne["pks12"] ?? "");
 
     $fsize=strlen($final_content);
 
@@ -3513,32 +3684,32 @@ function download_pfx(){
 }
 
 function download_certificate(){
-
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
     $ID=intval($_GET["download-cert"]);
-    $q=new lib_sqlite(GetDatabase());
+    $cdb=new CertificatesDB();
     $return=null;
 
 
-    $sql="SELECT * FROM sslcertificates WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    $row=$cdb->getById($ID);
+    $ligne = is_object($row) ? (array)$row : array();
 
-    $CommonName=$ligne["CommonName"];
+    $CommonName=$ligne["CommonName"] ?? "";
     $field="privkey";
     $field_cert="crt";
-    if(!$q->ok){echo $q->mysql_error_html(true);}
-    if(intval($ligne["UsePrivKeyCrt"])==0){
+    if($cdb->lastError!==""){echo htmlspecialchars($cdb->lastError);}
+    if(intval($ligne["UsePrivKeyCrt"] ?? 0)==0){
         $field="Squidkey";
         $field_cert="SquidCert";
 
-        if(strlen($ligne[$field])<10){
-            if(strlen($ligne["privkey"])>10){$field="privkey";}
+        if(strlen($ligne[$field] ?? "")<10){
+            if(strlen($ligne["privkey"] ?? "")>10){$field="privkey";}
         }
 
     }
 
-    $ligne[$field]=str_replace("\\n", "\n", $ligne[$field]);
+    $ligne[$field]=str_replace("\\n", "\n", $ligne[$field] ?? "");
     $private_key_content=trim($ligne[$field]);
-    $ligne[$field_cert]=str_replace("\\n", "\n", $ligne[$field_cert]);
+    $ligne[$field_cert]=str_replace("\\n", "\n", $ligne[$field_cert] ?? "");
     $certificate_content=trim($ligne[$field_cert]);
 
     $final_content=$certificate_content."\n$private_key_content\n";
@@ -3561,10 +3732,11 @@ function download_certificate(){
 
 
 function export_single_certificate(){
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
     $CommonName=$_GET["download"];
-    $q=new lib_sqlite(GetDatabase());
-    $sql="SELECT *  FROM sslcertificates WHERE CommonName='$CommonName'";
-    $ligne=$q->mysqli_fetch_array($sql);
+    $cdb=new CertificatesDB();
+    $row=$cdb->getByCommonName($CommonName);
+    $ligne = is_object($row) ? (array)$row : array();
     $data=base64_encode(serialize($ligne));
     $size=strlen($data);
     $attchname=$CommonName;

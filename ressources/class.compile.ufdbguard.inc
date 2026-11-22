@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 include_once(dirname(__FILE__)."/class.mysql.inc");;
 include_once(dirname(__FILE__)."/class.groups.inc");
 include_once(dirname(__FILE__)."/class.compile.ufdbguard.expressions.inc");
@@ -60,7 +61,7 @@ class compile_ufdbguard{
 		if(is_file("/etc/artica-postfix/WEBSECURITY_APPLIANCE")){$this->WEBSECURITY_APPLIANCE=true;}
 		if(is_file("/etc/artica-postfix/STATS_APPLIANCE")){$this->STATS_APPLIANCE=true;}
 		
-		if(!is_file("/etc/artica-postfix/settings/Daemons/SquidDatabasesArticaEnable")){
+		if(!artica_setting_exists("SquidDatabasesArticaEnable")){
 			$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidDatabasesArticaEnable", 1);
 			$this->SquidDatabasesArticaEnable=1;
 		}else{
@@ -68,7 +69,7 @@ class compile_ufdbguard{
 		
 		}
 		
-		if(!is_file("/etc/artica-postfix/settings/Daemons/SquidDatabasesUtlseEnable")){
+		if(!artica_setting_exists("SquidDatabasesUtlseEnable")){
 		    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidDatabasesUtlseEnable", 1);
 
 		}
@@ -152,7 +153,7 @@ class compile_ufdbguard{
         if(!$Decoded){
             return array();
         }
-        $Unser=unserialize($Decoded);
+        $Unser=unserialize($Decoded,array("allowed_classes"=>array("stdClass")));
         if(!$Unser){
             return array();
         }

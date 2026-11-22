@@ -1,11 +1,10 @@
-<autolearning>Auto-learning</autolearning>
-<autolearning_text>This feature allow you to enable robots that will parse mailboxes in order to auto-complete white list and black list area</autolearning_text>
-<enable_artica_wbl_robots_text>If you enable this option, organization's manager will be allowed to create email addresses that will be in charge of adding email addresses in white or black list by receiving messages from users</enable_artica_wbl_robots_text>
-<enable_learning_ham_mailbox>Enable learning White list by parsing Sent mailbox</enable_learning_ham_mailbox>
-<enable_learning_spam_mailbox>Enable learning SPAM by parsing Junk mailbox</enable_learning_spam_mailbox>
-<replicate_each>Replicate settings each</replicate_each>
-<replicate_now>Launch replication now</replicate_now>
-<whitelist_explain>This area consolidate all white list & Black lists used in all modules executed by Postfix, you can add and delete senders
-in order to add a white/black list user, you need to set the recipient of each users.[br]
-Recipients could be "@domain.tlb" to white/black list for all domain or "user@domain.tlb" for a single user.
-</whitelist_explain>
+<autolearning>Automatisches Lernen</autolearning>
+<autolearning_text>Mit dieser Funktion k&#246;nnen Sie Roboter aktivieren, die Postf&#228;cher analysieren, um den Whitelist- und Blacklist-Bereich automatisch zu vervollst&#228;ndigen</autolearning_text>
+<enable_artica_wbl_robots_text>Wenn Sie diese Option aktivieren, darf der Organisationsmanager E-Mail-Adressen erstellen, die daf&#252;r zust&#228;ndig sind, durch den Empfang von Nachrichten von Benutzern E-Mail-Adressen zur Whitelist oder Blacklist hinzuzuf&#252;gen</enable_artica_wbl_robots_text>
+<enable_learning_ham_mailbox>Whitelist-Lernen durch Analyse des Postfachs &quot;Gesendet&quot; aktivieren</enable_learning_ham_mailbox>
+<enable_learning_spam_mailbox>SPAM-Lernen durch Analyse des Junk-Postfachs aktivieren</enable_learning_spam_mailbox>
+<replicate_each>Einstellungen replizieren alle</replicate_each>
+<replicate_now>Replikation jetzt starten</replicate_now>
+<whitelist_explain>Dieser Bereich konsolidiert alle Whitelists und Blacklists, die in allen von Postfix ausgef&#252;hrten Modulen verwendet werden. Sie k&#246;nnen Absender hinzuf&#252;gen und l&#246;schen.
+Um einen Whitelist-/Blacklist-Benutzer hinzuzuf&#252;gen, m&#252;ssen Sie den Empf&#228;nger jedes Benutzers festlegen.[br]
+Empf&#228;nger k&#246;nnen &quot;@domain.tlb&quot; sein, um f&#252;r die gesamte Dom&#228;ne auf die Whitelist/Blacklist zu setzen, oder &quot;user@domain.tlb&quot; f&#252;r einen einzelnen Benutzer.</whitelist_explain>

@@ -3,6 +3,10 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
+// awc_table_style()/awc_pager_js(): la feuille et le pager partages des tableaux d'entites.
+// Inclusion INCONDITIONNELLE: placee dans un bloc de bootstrap elle ne s'executerait
+// jamais et le tableau mourrait sur « Call to undefined function awc_table_style() ».
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
@@ -12,8 +16,6 @@ if(isset($_POST["ArticaMilterDebug"])){save();exit;}
 
 if(isset($_GET["status"])){amilter_status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
-if(isset($_GET["config-file-js"])){config_file_js();exit;}
-if(isset($_GET["config-file-popup"])){config_file_popup();exit;}
 
 if(isset($_GET["section-service-js"])){section_service_js();exit;}
 if(isset($_GET["section-service-popup"])){section_service_popup();exit;}
@@ -50,14 +52,6 @@ function page(){
     echo $tpl->_ENGINE_parse_body($html);
 
 }
-function config_file_js():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $users=new usersMenus();
-    if(!$users->AsPostfixAdministrator){$tpl->js_no_privileges();return false;}
-    return $tpl->js_dialog1("{APP_UNBOUND} >> {config_file}", "$page?config-file-popup=yes");
-
-}
 function section_service_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -81,7 +75,7 @@ function section_js_form():string{
 function restart():bool{
     $page=CurrentPageName();
     $sock=new sockets();
-    $sock->REST_API("/postfix/articamilter/restart");
+    $sock->REST_API_POSTFIX("/postfix/articamilter/restart");
     header("content-type: application/x-javascript");
     echo "LoadAjaxSilent('progress-amilter-start','$page?table1=yes');";
     return admin_tracks("Launch order to restart Artica Milter service");
@@ -148,7 +142,10 @@ function section_service_popup():bool{
     $times[129600]=$tpl->javascript_parse_text("3 {months}");
 
     $MimeDefangMaxQuartime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangMaxQuartime"));
-    if($MimeDefangMaxQuartime==0){$MimeDefangMaxQuartime=129600;}
+    // La valeur vient d'un reglage libre, pas d'une liste fermee: une retention reglee
+    // ailleurs (par l'API, par un import) sortait de $times en index indefini -- cellule
+    // vide en lecture, aucune option selectionnee dans la liste. On retombe sur le defaut.
+    if(!isset($times[$MimeDefangMaxQuartime])){$MimeDefangMaxQuartime=129600;}
 
     $form[]=$tpl->field_array_hash($times, "MimeDefangMaxQuartime", "{retention} ({backup})", $MimeDefangMaxQuartime);
 
@@ -218,7 +215,7 @@ function amilter_status():bool{
     $tpl    = new template_admin();
     $page=CurrentPageName();
     $sock=new sockets();
-    $data=$sock->REST_API("/postfix/articamilter/status");
+    $data=$sock->REST_API_POSTFIX("/postfix/articamilter/status");
     $json=json_decode($data);
     if (json_last_error()> JSON_ERROR_NONE) {
         echo $tpl->widget_rouge("{error}",json_last_error_msg());
@@ -254,7 +251,10 @@ function table1(){
     $times[129600]=$tpl->javascript_parse_text("3 {months}");
 
     $MimeDefangMaxQuartime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MimeDefangMaxQuartime"));
-    if($MimeDefangMaxQuartime==0){$MimeDefangMaxQuartime=129600;}
+    // La valeur vient d'un reglage libre, pas d'une liste fermee: une retention reglee
+    // ailleurs (par l'API, par un import) sortait de $times en index indefini -- cellule
+    // vide en lecture, aucune option selectionnee dans la liste. On retombe sur le defaut.
+    if(!isset($times[$MimeDefangMaxQuartime])){$MimeDefangMaxQuartime=129600;}
 
 
 
@@ -272,13 +272,15 @@ function table1(){
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $html="<input type='hidden' value='' id='artica-milter-ping'><table style='width:100%'>
-	<tr>
-		<td style='vertical-align:top;width:240px'><div id='amilter-status' style='margin-top:15px'></div></td>
-		<td	style='vertical-align:top;width:90%'>$myform</td>
-	</tr>
-	</table>
-	<script>LoadAjaxSilent('amilter-status','$page?status=yes');$jstiny</script>	
+    // Flex, pas un <table> a colonne figee: SERVICE_STATUS() rend une tuile de 335px de
+    // large et la cellule lui en accordait 240 -- elle debordait sur le formulaire a
+    // droite. En flex la tuile prend sa largeur naturelle et la carte prend le reste.
+    $html="<input type='hidden' value='' id='artica-milter-ping'>
+	<div style='display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;margin-top:10px'>
+		<div style='flex:0 0 auto'><div id='amilter-status'></div></div>
+		<div style='flex:1 1 420px;min-width:0'>$myform</div>
+	</div>
+	<script>LoadAjaxSilent('amilter-status','$page?status=yes');$jstiny</script>
 	";
 
 
@@ -291,9 +293,6 @@ function table1(){
 function save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
-    if($UnboundEnabled==0){$_POST["EnableUnboundBlackLists"]=0;}
-    $EnableUnboundBlackLists=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundBlackLists"));
     $EnableUnBoundSNMPD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnBoundSNMPD"));
 
     if(isset($_POST["InComingInterfaces"])){
@@ -304,22 +303,13 @@ function save(){
 
     $tpl->SAVE_POSTs();
 
-    if($_POST["EnableUnboundBlackLists"]<>$EnableUnboundBlackLists){
-
-        if($_POST["EnableUnboundBlackLists"]==1){
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?blacklists-enable=yes");
-        }else{
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?blacklists-disable=yes");
-        }
-
-    }
 
 
     if($_POST["EnableUnBoundSNMPD"]<>$EnableUnBoundSNMPD){$GLOBALS["CLASS_SOCKETS"]->REST_API("/snmpd/restart");}
 }
 function events_download():bool{
     $sock=new sockets();
-    $data=$sock->REST_API("/postfix/articamilter/events/compress");
+    $data=$sock->REST_API_POSTFIX("/postfix/articamilter/events/compress");
     $json=json_decode($data);
     if (json_last_error()> JSON_ERROR_NONE) {
         die();
@@ -351,96 +341,151 @@ function events_download():bool{
     return true;
 }
 
+/**
+ * amilter_severity — classe une ligne de journal a partir de son marqueur.
+ *
+ * Retourne array(cle, libelle, classe de badge, icone). Le marqueur est retire de
+ * la ligne: il devient une COLONNE, pas un fragment de la phrase. Un badge en tete
+ * de ligne se lit d'un coup d'oeil sur 200 lignes, un <span> insere au milieu du
+ * texte non -- et c'est bien la lecture qu'on vient chercher dans un journal.
+ */
+function amilter_severity(string $line):array{
+    $map=array(
+        "[ERROR]:"   => array("error","ERROR","awc-badge-alert","fa-circle-exclamation"),
+        "[WARNING]:" => array("warn","WARN","awc-badge-warn","fa-triangle-exclamation"),
+        "WARNING:"   => array("warn","WARN","awc-badge-warn","fa-triangle-exclamation"),
+        "[RESTAPI]:" => array("api","API","awc-badge-on","fa-code"),
+        "[START]:"   => array("start","START","awc-badge-on","fa-play"),
+        "[INFO]:"    => array("info","INFO","awc-badge-on","fa-circle-info"),
+        "[DEBUG]:"   => array("debug","DEBUG","awc-badge-off","fa-bug"),
+        "[DEBUG] "   => array("debug","DEBUG","awc-badge-off","fa-bug"),
+    );
+    foreach($map as $marker=>$sev){
+        if(strpos($line,$marker)===0){
+            return array($sev[0],$sev[1],$sev[2],$sev[3],trim(substr($line,strlen($marker))));
+        }
+    }
+    if(strpos($line,"Starting ")===0){
+        return array("start","START","awc-badge-on","fa-play",trim(substr($line,9)));
+    }
+    // Pas de marqueur: on classe sur le contenu. « fatal » et « error » sont les deux
+    // seuls mots que le service ecrit sans prefixe quand il meurt tot.
+    if(preg_match("#(fatal|error)#i",$line)){
+        return array("error","ERROR","awc-badge-alert","fa-circle-exclamation",$line);
+    }
+    return array("info","INFO","awc-badge-on","fa-circle-info",$line);
+}
+
+/**
+ * amilter_event_row — une ligne d'evenement du journal.
+ *
+ * $message arrive DEJA echappe: la ligne vient d'un fichier de journal ecrit par un
+ * service qui y recopie des donnees de message (expediteur, sujet), donc du texte
+ * qu'un tiers controle. L'echappement est fait par l'appelant, avant le decoupage
+ * du marqueur, pour qu'aucun chemin ne puisse l'oublier.
+ */
+function amilter_event_row(string $ftime,string $pid,array $sev,string $message):string{
+    $cls=($sev[0]=="error")?"awc-ico awc-ico-off":"awc-ico";
+    $txt=($sev[0]=="error")?"<span class='awc-down'>$message</span>":$message;
+    $h ="<tr>";
+    $h.="<td style='width:1%' nowrap><div class='awc-ident' style='gap:10px'>";
+    $h.="<span class='$cls' style='width:30px;height:30px;font-size:13px'><i class='fas ".$sev[3]."'></i></span>";
+    $h.="<span><span class='awc-name' style='font-size:13px;line-height:16px'>$ftime</span>";
+    $h.="<div class='awc-meta'>PID $pid</div></span></div></td>";
+    $h.="<td class='center' style='width:1%' nowrap><span class='awc-badge ".$sev[2]."'>".$sev[1]."</span></td>";
+    $h.="<td><span class='awc-mono' style='word-break:break-word'>$txt</span></td>";
+    $h.="</tr>";
+    return $h;
+}
+
 function events_search(){
     clean_xss_deep();
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $MAIN=$tpl->format_search_protocol($_GET["search"]);
+    $MAIN=$tpl->format_search_protocol(isset($_GET["search"])?$_GET["search"]:null);
     $sock=new sockets();
     $rp=intval($MAIN["MAX"]);
     $search=trim($MAIN["TERM"]);
     if(strlen($search)<3){$search="NONE";}
 
-    $data=$sock->REST_API("/postfix/articamilter/events/$rp/$search");
+    $data=$sock->REST_API_POSTFIX("/postfix/articamilter/events/$rp/$search");
 
     $json=json_decode($data);
-    if (json_last_error()> JSON_ERROR_NONE) {
+    // Deux sorties distinctes, et chacune REND LA MAIN. L'ancienne version affichait
+    // l'erreur puis continuait: sur un JSON illisible, $json vaut null et la ligne
+    // suivante lisait ->Status dessus (avertissement PHP 8), puis foreach parcourait
+    // ->Logs d'un null. La page repondait 200 avec un tableau vide et une erreur.
+    if(json_last_error()>JSON_ERROR_NONE){
         echo $tpl->div_error("{error}<hr>".json_last_error_msg());
+        return;
     }
-    if(!$json->Status){
-        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+    if(!is_object($json) || !$json->Status){
+        $err=is_object($json)?$json->Error:"";
+        echo $tpl->div_error("{error}<hr>".htmlspecialchars((string)$err));
+        return;
     }
 
+    $logs=(isset($json->Logs) && is_array($json->Logs))?$json->Logs:array();
+    $rowsHtml=array();
+    $counters=array("error"=>0,"warn"=>0,"debug"=>0);
 
-    $html[]="
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>{date}</th>
-        	<th>PID</th>
-        	<th>{events}</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
+    foreach($logs as $line){
+        $line=trim((string)$line);
+        if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+)\s+.*?\[([0-9]+)\]:\s+(.+)#",$line,$re)){continue;}
 
-
-
-
-
-
-    foreach ($json->Logs as $line){
-        $line=trim($line);
-
-        if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+)\s+.*?\[([0-9]+)\]:\s+(.+)#", $line,$re)){
-            //echo "<strong style='color:red'>$line</strong><br>";
-            continue;}
-
-        $xtime=strtotime($re[1] ." ".$re[2]." ".$re[3]);
-        $FTime=date("Y-m-d H:i:s",$xtime);
-        $curDate=date("Y-m-d");
-        $FTime=trim(str_replace($curDate, "", $FTime));
+        // Horodatage COMPLET, toujours. L'ancienne version retirait la date du jour pour
+        // gagner de la place, ce qui donnait un melange de « 01:12:03 » et de
+        // « 2026-09-06 23:50:00 » dans le meme tableau des que le journal traversait
+        // minuit -- ou simplement quand le fuseau de PHP et l'heure ecrite par le
+        // service ne tombaient pas le meme jour. Ici la date a sa propre colonne.
+        $xtime=strtotime($re[1]." ".$re[2]." ".$re[3]);
+        $FTime=($xtime===false)?"-":date("Y-m-d H:i:s",$xtime);
         $pid=$re[4];
-        $line=$re[5];
 
-
-        $line=str_replace("[DEBUG]:","<span class='label label-default'>DEBUG</span>&nbsp;",$line);
-        $line=str_replace("[DEBUG] ","<span class='label label-default'>DEBUG</span>&nbsp;",$line);
-        $line=str_replace("[RESTAPI]:","<span class='label label-info'>API</span>&nbsp;",$line);
-        $line=str_replace("[START]:","<span class='label label-info'>START</span>&nbsp;",$line);
-        $line=str_replace("[INFO]:","<span class='label label-info'>INFO</span>&nbsp;",$line);
-        $line=str_replace("[ERROR]:","<span class='label label-danger'>ERROR</span>&nbsp;",$line);
-        $line=str_replace("Starting ","<span class='label label-info'>START</span>&nbsp;",$line);
-        $line=str_replace("WARNING:","<span class='label label-warning'>WARN</span>&nbsp;",$line);
-
-
-        if(preg_match("#(fatal|Err)#i", $line)){
-            $line="<span class='text-danger'>$line</span>";
-        }
-
-
-        $html[]="<tr>
-				<td style='width:1%' nowrap>$FTime</td>
-				<td style='width:1%' nowrap>$pid</td>
-				<td>$line</td>
-				</tr>";
-
+        // ECHAPPER D'ABORD, decouper ensuite. Le journal recopie des donnees de
+        // message; une adresse contenant <script> arrivait telle quelle dans le HTML.
+        // Les marqueurs ([DEBUG]:, WARNING:) ne portent aucun caractere special, donc
+        // ils traversent htmlspecialchars() intacts et restent reconnaissables.
+        $sev=amilter_severity(htmlspecialchars($re[5],ENT_QUOTES));
+        if(isset($counters[$sev[0]])){$counters[$sev[0]]++;}
+        $rowsHtml[]=amilter_event_row($FTime,$pid,$sev,$sev[4]);
     }
 
-    $topbuttons[] = array("document.location.href='$page?download-logs=yes';", ico_download, "{download} {LogTypeM}");
+    $total=count($rowsHtml);
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{date}</th><th class='center'>{level}</th><th>{events}</th>";
+    $html[]="</tr></thead><tbody id='amilter-ev-rows'>";
+    if($total==0){
+        $html[]="<tr><td colspan='3'><div class='awc-empty'>{no_events}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rowsHtml);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} $total / $total {events}"
+        .($counters["error"]>0?" &middot; <span class='awc-down'>".$counters["error"]." {errors}</span>":"")
+        .($counters["warn"]>0?" &middot; ".$counters["warn"]." {warning}":"")
+        ."</span><span class='awc-pg' id='amilter-ev-pager'></span></div>";
+    $html[]="</div></div>";
 
+    $topbuttons=array();
+    $topbuttons[]=array("document.location.href='$page?download-logs=yes';",ico_download,"{download} {LogTypeM}");
 
-    if($_GET["search"]==null){$_GET["search"]="*";}
-    $TINY_ARRAY["TITLE"]="Artica Milter Service {events} &laquo;{$_GET["search"]}&raquo;";
+    // Le terme AFFICHE est celui qui a servi a interroger le daemon, echappe. L'ancien
+    // titre interpolait $_GET["search"] brut dans un litteral JavaScript: un apostrophe
+    // y decapitait tout l'en-tete, un antislash aussi (voir siem_tiny_filters).
+    $shown=($search=="NONE")?"*":$search;
+    $TINY_ARRAY=array();
+    $TINY_ARRAY["TITLE"]="Artica Milter {events} &laquo;".htmlspecialchars($shown,ENT_QUOTES)."&raquo;";
     $TINY_ARRAY["ICO"]=ico_eye;
     $TINY_ARRAY["EXPL"]="{artica_milter_explain}";
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $html[]="</tbody></table>";
-    $html[]="<script>$jstiny</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="<script>if(typeof NoSpinner==='function'){NoSpinner();}$jstiny</script>";
 
-
-
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .awc_pager_js(50,"amilter-ev-rows","amilter-ev-pager");
 }

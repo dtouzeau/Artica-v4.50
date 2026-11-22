@@ -1,11 +1,11 @@
 <add_nameserver>Adicionar um servidor de nomes</add_nameserver>
 <add_nameserver_text>Indique o endereço IP ou o nome da m%C3¡quina do seu servidor DNS</add_nameserver_text>
 <add_search_domains>Adicionar um dom%C3%ADnio de pesquisa</add_search_domains>
-<add_search_domain_text>Give a domain name</add_search_domain_text>
-<nic_dns_search>Search list for host-name lookup</nic_dns_search>
-<nic_dns_search_text>The search list is normally determined from the local domain name; by default, it contains only the local domain name[br] This may be changed by listing the desired domain search path.[br]
-If you refer to another server just by its name without the domain added on, DNS on your client will append the server name 
-to each domain in this list and do an DNS lookup on each to get the remote servers%u2019 IP address.[br]
-This is a handy time saving feature to have so that you can refer to servers in the same domain by only their servername without having to specify the domain.
-[br][b]The first domain listed must be the home domain of your network and The search list is currently limited to six domains with a total of 256 characters.</nic_dns_search_text>
+<add_search_domain_text>Indique um nome de dom&#237;nio</add_search_domain_text>
+<nic_dns_search>Lista de pesquisa para a resolu&#231;&#227;o de nomes de host</nic_dns_search>
+<nic_dns_search_text>A lista de pesquisa &#233; normalmente determinada a partir do nome de dom&#237;nio local; por predefini&#231;&#227;o, cont&#233;m apenas o nome de dom&#237;nio local[br] Isto pode ser alterado listando o caminho de pesquisa de dom&#237;nios desejado.[br]
+Se se referir a outro servidor apenas pelo nome sem o dom&#237;nio adicionado, o DNS no seu cliente acrescentar&#225; o nome do servidor 
+a cada dom&#237;nio nesta lista e far&#225; um lookup DNS em cada um para obter o endere&#231;o IP dos servidores remotos.[br]
+Esta &#233; uma funcionalidade pr&#225;tica que poupa tempo, permitindo referir-se a servidores no mesmo dom&#237;nio apenas pelo nome do servidor sem ter de especificar o dom&#237;nio.
+[br][b]O primeiro dom&#237;nio listado deve ser o dom&#237;nio principal da sua rede e a lista de pesquisa est&#225; atualmente limitada a seis dom&#237;nios com um total de 256 caracteres.</nic_dns_search_text>
 <nic_nameserver_text>Endereços IP dos seus servidores DNS.[br]A biblioteca de resoluç%C3£o os consulta na ordem listada</nic_nameserver_text>

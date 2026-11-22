@@ -1,4 +1,4 @@
 <backup_parameters>Par%C3¡metros de copia de seguridad</backup_parameters>
-<ENABLE_RSYNC_ACCOUNT>Enable Rsync Account</ENABLE_RSYNC_ACCOUNT>
-<ENABLE_RSYNC_ACCOUNT_TEXT>If you enable this account, the username and password of this user will be able to push backup files on this server</ENABLE_RSYNC_ACCOUNT_TEXT>
-<storage_path>Storage area Path for this user</storage_path>
+<ENABLE_RSYNC_ACCOUNT>Habilitar cuenta Rsync</ENABLE_RSYNC_ACCOUNT>
+<ENABLE_RSYNC_ACCOUNT_TEXT>Si activa esta cuenta, el nombre de usuario y la contrase%C3%B1a de este usuario podr%C3¡n utilizarse para enviar archivos de copia de seguridad a este servidor.</ENABLE_RSYNC_ACCOUNT_TEXT>
+<storage_path>Ruta del &#225;rea de almacenamiento para este usuario</storage_path>

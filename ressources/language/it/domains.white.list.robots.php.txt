@@ -1,14 +1,12 @@
-<Blacklist_addr>BlackList Robot</Blacklist_addr>
-<enable_artica_wbl_robots_explain>
-You can define here email addresses that will receive request from your users to white or black list email addresses.[br]
-To send a request to theses robots is very simple:[br]
-Put in the body message one email per line.[br]
-the star "*" is supported[br]
-Example : [br]
+<Blacklist_addr>Robot blacklist</Blacklist_addr>
+<enable_artica_wbl_robots_explain>Qui puoi definire indirizzi email che riceveranno richieste dai tuoi utenti per inserire in whitelist o blacklist indirizzi email.[br]
+Inviare una richiesta a questi robot &#232; molto semplice:[br]
+Inserisci nel corpo del messaggio un'email per riga.[br]
+L'asterisco &quot;*&quot; &#232; supportato[br]
+Esempio: [br]
 user1@domain.tld[br]
 *@domain.tld[br]
-user@*.tld[br]
-</enable_artica_wbl_robots_explain>
-<quar_addr>Quarantine report robot</quar_addr>
-<report_addr>Report Robot</report_addr>
-<whitelist_addr>WhiteList Robot</whitelist_addr>
+user@*.tld[br]</enable_artica_wbl_robots_explain>
+<quar_addr>Robot dei report di quarantena</quar_addr>
+<report_addr>Robot dei report</report_addr>
+<whitelist_addr>Robot whitelist</whitelist_addr>

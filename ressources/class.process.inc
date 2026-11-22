@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 $GLOBALS["OVERLOAD"]=false;
 class processes_php{
 	
@@ -94,18 +95,14 @@ function MemoryInstances(){
 
 		$arrayK["exec.squid.stats.hours.php"]=60;
 		$arrayK["exec.squid.php"]=10;
-		$arrayK["exec.squid.watchdog.php"]=10;
 		$arrayK["exec.squid-db.php"]=5;
 		$arrayK["exec.virtuals-ip.php"]=10;
 		$arrayK["exec.watchdog.php"]=3;
 		$arrayK["exec.test-connection.php"]=5;
 		$arrayK["exec.artica.meta.php"]=20;
-		$arrayK["exec.clean.logs.php"]=60;
 		$arrayK["exec.squid.stats.php"]=380;
 		$arrayK["exec.mysql.build.php"]=30;
-		$arrayK["exec.smtp-hack.export.php"]=10;
 		$arrayK["exec.ipband.php"]=60;
-		$arrayK["exec.testspeed.php"]=15;
 		$arrayK["exec.cache.pages.php"]=10;
 		$arrayK["exec.admin.status.postfix.flow.php"]=10;
 
@@ -117,10 +114,8 @@ function MemoryInstances(){
 
 		$arrayK["exec.squid.cloud.compile.php"]=1440;
 		$arrayK["exec.cleancloudcatz.php"]=1440;
-		$arrayK["exec.kerbauth.php"]=15;
 		$arrayK["exec.squid.stats.hours.php"]=59;
 		$arrayK["exec.initslapd.php"]=10;
-		$arrayK["exec.c-icap.php"]=10;
 
 		
 		$arrayK["exec.openvpn.php"]=10;
@@ -250,11 +245,11 @@ function MemoryInstances(){
 		$file=basename(__FILE__);
 		$systemForkProcessesNumber=4;
 		$EnableIntelCeleron=0;
-		if(is_file("/etc/artica-postfix/settings/Daemons/systemForkProcessesNumber")){
+		if(artica_setting_exists("systemForkProcessesNumber")){
 			$systemForkProcessesNumber=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("systemForkProcessesNumber"));
 		}
 		
-		if(is_file("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron")){
+		if(artica_setting_exists("EnableIntelCeleron")){
 			$EnableIntelCeleron=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron"));
 			
 			
@@ -329,7 +324,7 @@ function MemoryInstances(){
 		$error_cgroup=array();
 		
 		if(is_file("/usr/bin/cgexec")){
-			if(is_file("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron")){
+			if(artica_setting_exists("EnableIntelCeleron")){
 				$EnableIntelCeleron=intval(@file_get_contents("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron"));
 			}else{
 					$error_cgroup[]="EnableIntelCeleron no such file";

@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__) .'/class.tcpip.inc');
 include_once(dirname(__FILE__)."/class.postgres.inc");
 include_once(dirname(__FILE__)."/class.squid.familysites.inc");
@@ -40,6 +42,8 @@ class hosts{
 	public $pxe_server="0.0.0.0";
 	public $pxe_file="/pxelinux.0";
 	public $hotspotwhite=0;
+	// ISC dhcpd `always-broadcast on;` for this MAC only (repeaters doing MAC-NAT).
+	public $dhcpbroadcast=0;
 	
 	public function __construct($search){
 		if($GLOBALS["VERBOSE"]){echo "$search ??\n";}
@@ -131,6 +135,11 @@ class hosts{
 		$this->pxe_server=$ligne["pxe_server"];
 		$this->pxe_file=$ligne["pxe_file"];
         $this->dnsfixed=intval($ligne["dnsfixed"]);
+        if(!isset($ligne["dhcpbroadcast"])){
+            $this->PatchTable();
+            $ligne["dhcpbroadcast"]=0;
+        }
+        $this->dhcpbroadcast=intval($ligne["dhcpbroadcast"]);
 
 		if(!isset($ligne["hotspotwhite"])){
 		    $this->PatchTable();
@@ -175,6 +184,10 @@ class hosts{
         $q=new postgres_sql();
         if(!$q->FIELD_EXISTS("hostsnet","hotspotwhite")){
             $q->ADD_FIELD("hostsnet", "hotspotwhite", "smallint");
+        }
+        // Twin of articarest hostnets.PatchTables (smallint NOT NULL DEFAULT 0).
+        if(!$q->FIELD_EXISTS("hostsnet","dhcpbroadcast")){
+            $q->ADD_FIELD("hostsnet", "dhcpbroadcast", "smallint");
         }
 
 
@@ -269,6 +282,7 @@ class hosts{
 
 
         $this->hotspotwhite=intval($this->hotspotwhite);
+        $this->dhcpbroadcast=intval($this->dhcpbroadcast)==1?1:0;
 		if($this->pxe_server==null){$this->pxe_server="0.0.0.0";}
 		if($this->pxe_file==null){$this->pxe_file="/pxelinux.0";}
 		if($this->gateway==null){$this->gateway="0.0.0.0";}
@@ -297,7 +311,7 @@ class hosts{
 		$this->PatchTable();
 		$q=new postgres_sql();
         if(!$q->FIELD_EXISTS("hostsnet", "unknown")){$q->ADD_FIELD("hostsnet", "unknown", "smallint");}
-		$sqlAdd[]="INSERT INTO hostsnet(createdate,hostid,mac,ipaddr,proxyalias,fullhostname,dhcpfixed,gateway,gateway2,dns1,dns2,timeserver,ntpserver,localpac,scanreport,hostname,domainname,hostalias1,hostalias2,hostalias3,hostalias4,computeros,vendor,pxe_enabled,pxe_server,pxe_file,\"unknown\",hotspotwhite,dnsfixed,hostuuid)";
+		$sqlAdd[]="INSERT INTO hostsnet(createdate,hostid,mac,ipaddr,proxyalias,fullhostname,dhcpfixed,gateway,gateway2,dns1,dns2,timeserver,ntpserver,localpac,scanreport,hostname,domainname,hostalias1,hostalias2,hostalias3,hostalias4,computeros,vendor,pxe_enabled,pxe_server,pxe_file,\"unknown\",hotspotwhite,dnsfixed,dhcpbroadcast,hostuuid)";
 		$sqlAdd[]=" VALUES (NOW(),'$this->hostid','$this->mac','$this->ipaddr','$this->proxyalias','$this->fullhostname',";
 		$sqlAdd[]="'$this->dhcpfixed','$this->gateway','$this->gateway2','$this->dns1','$this->dns2',";
 		$sqlAdd[]="'$this->timeserver','$this->ntpserver','$this->localpac','$this->scanreport','$this->hostname','$this->domainname',";
@@ -313,6 +327,7 @@ class hosts{
         $sqlAdd[]="'$this->unknown',";
         $sqlAdd[]="'$this->hotspotwhite',";
         $sqlAdd[]="'$this->dnsfixed',";
+        $sqlAdd[]="'$this->dhcpbroadcast',";
         $sqlAdd[]="'$this->uuid'";
 		$sqlAdd[]=") ON CONFLICT DO NOTHING";
 		
@@ -322,7 +337,10 @@ class hosts{
 		if(!$q->ok){
 			writelogs($q->mysql_error,__FUNCTION__,__FILE__,__LINE__);
 			$this->ok=false;$this->mysql_error=$q->mysql_error."\n$sql\n";return false;}
-		$today=date("Y-m-d H:i:s");
+		// NOW(), never date(): the column is "timestamp without time zone"
+		// and every other writer (INSERT above, articarest hostnets) stores
+		// UTC through NOW() -- a PHP local time here shifted the row by the
+		// appliance's UTC offset.
 		$sql="UPDATE hostsnet SET 
 		ipaddr='$this->ipaddr',
 		proxyalias='$this->proxyalias',
@@ -336,7 +354,7 @@ class hosts{
 		dns2='$this->dns2',
 		timeserver='$this->timeserver',
 		ntpserver='$this->ntpserver',
-		\"updated\"='$today',
+		\"updated\"=NOW(),
 		hostalias1='$this->hostalias1',
 		hostalias2='$this->hostalias2',
 		hostalias3='$this->hostalias3',
@@ -351,6 +369,7 @@ class hosts{
 		\"unknown\"='$this->unknown',
 		hotspotwhite='$this->hotspotwhite',
         dnsfixed='$this->dnsfixed',
+        dhcpbroadcast='$this->dhcpbroadcast',
         hostuuid='$this->uuid'
 		WHERE mac='$this->mac'";
 

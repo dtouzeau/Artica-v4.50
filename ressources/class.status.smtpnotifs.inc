@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 
 function artica_notifs_pid(){
     $pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file("/var/run/artica-smtp-notif.pid");

@@ -329,8 +329,8 @@ Afin de ne pas surcharger votre serveur, lorsque Artica injecte les donn&eacute;
 [br]
 Si un serveur DHCP est en train d'&ecirc;tre configur&eacute; par quelqu'un d'autre que l'administrateur r&eacute;seau et qui par cons&eacute;quent ne souhaite pas endosser ce niveau d'autorit&eacute;, alors l'instruction alors cette option devra &ecirc;tre d&eacute;sactiv&eacute;e.</authoritativeDHCP_explain>
 <auth_mechanism>M&eacute;canismes d'authentification</auth_mechanism>
-<autofs_about>Le Centre d`Auto-montage est un service qui assure la connexion vers des r&eacute;pertoires distants de fa&ccedil;on automatique et uniquement sur demande.[br]
-En effet, les liaisons NFS/Partages Windows utilisent de la bande passante tout au long de la connexion.[br]Cette m&eacute;thode permet d'utiliser une connexion distante uniquement en cas de n&eacute;cessit&eacute;.</autofs_about>
+<autofs_about>Le Centre d'Auto-montage est un service qui assure la connexion vers des r&#233;pertoires distants de fa&#231;on automatique et uniquement sur demande.[br]
+En effet, les liaisons NFS/Partages Windows utilisent de la bande passante tout au long de la connexion.[br]Cette m&#233;thode permet d'utiliser une connexion distante uniquement en cas de n&#233;cessit&#233;.</autofs_about>
 <autofs_ask_dir>Indiquez ici le nom du r&eacute;pertoire qui sera le point de montage.
 Ce r&eacute;pertoire sera localis&eacute; dans /automounts</autofs_ask_dir>
 <autofs_ask_dir>Indiquez ici le nom du r&eacute;pertoire qui sera le point de montage.
@@ -625,7 +625,7 @@ Ce module se d&eacute;clenche en effectuant un certain type d'attaques malveilla
 module de d&eacute;cider lui-m&ecirc;me si oui ou non un client en particulier devrait &ecirc;tre interdit.</DDOS_WHITE_EXPLAIN>
 <DEBIAN_TEMPLATE>Mod&egrave;le Debian</DEBIAN_TEMPLATE>
 <debug_peer_list_explain>Indiquez le nom d'h&ocirc;te ou l'adresse r&eacute;seau du serveur &eacute;metteur. ex: 127.0.0.1 ou example.com</debug_peer_list_explain>
-<december>D&eacute;cembre</december>
+<december>D&#233;cembre</december>
 <default_destination_concurrency_negative_feedback>Taux d'&eacute;mission n&eacute;gatif par destination.</default_destination_concurrency_negative_feedback>
 <default_destination_concurrency_negative_feedback_text>C'est le taux d'&eacute;mission lorsque les &eacute;missions SMTP ont &eacute;t&eacute;s mises en &eacute;chec.
 
@@ -2465,9 +2465,9 @@ Si votre serveur est en mode publique, vous devriez mettre en rouge cette foncti
 <Tuesday>Mardi</Tuesday>
 <UDMA_CRC_Error_Count>erreurs de CRC UltraDMA</UDMA_CRC_Error_Count>
 <UDMA_CRC_Error_Count_text>Nombre d'erreurs de CRC pendant un acc&egrave;s Ultra DMA</UDMA_CRC_Error_Count_text>
-<ufdbgdb_explain>Le filtre d'URLs utilise des bases locales afin de vérifier les sites web.[br]
-Il utilise Les [b]bases Artica[/b] qu`il va télécharger régulièrement depuis Internet.[br]Ce sont des bases propriétaires et sous licence (environ 55.000.000 d'entrées). [br] 
-Si vous n`avez pas de licence Entreprise, le moteur de filtrage Web ne pourra que filtrer les éléments que vous ajouterez dans vos catégories personnelles.</ufdbgdb_explain>
+<ufdbgdb_explain>Le filtre d'URLs utilise des bases locales afin de v&#233;rifier les sites web.[br]
+Il utilise Les [b]bases Artica[/b] qu'il va t&#233;l&#233;charger r&#233;guli&#232;rement depuis Internet.[br]Ce sont des bases propri&#233;taires et sous licence (environ 55.000.000 d'entr&#233;es). [br] 
+Si vous n'avez pas de licence Entreprise, le moteur de filtrage Web ne pourra que filtrer les &#233;l&#233;ments que vous ajouterez dans vos cat&#233;gories personnelles.</ufdbgdb_explain>
 <ufdbguardTimeSpaceExplain>Cette section vous permet de d&eacute;finir des plages horaires de restrictions ou d'autorisations pendant les jours de la semaine.[br]
 Vous devez indiquer si la r&egrave;gle est comprise &agrave; l'int&eacute;rieur des tranches horaires indiqu&eacute;es ou bien &agrave; l'ext&eacute;rieur.[br]
 Vous pouvez alors aussi indiquer une alternative permettant d'appliquer une autre r&egrave;gle dans les horaires qui ne sont pas compris par la r&egrave;gle.</ufdbguardTimeSpaceExplain>
@@ -2584,7 +2584,7 @@ Voulez-vous effectuer cette op&eacute;ration ?</warning_rebuild_squid_caches>
 Il est conseill&eacute; de modifier le port ou de d&eacute;sactiver l'utilisation de SSL/HTTPS dans FreeWebs</WARNING_ROUNDCUBEHTTP_SAMEHTTPS_PORT>
 <WARNING_UFDBGUARD_COMPILES_RULES_ASK>Cette op&eacute;ration va reconstruire et rafra&icirc;chir les bases de donn&eacute;es de filtrage web.[br]En d&eacute;pendance avec la puissance de ce serveur, cela pourrait durer un certain temps.[br]
 Voulez-vous effectuer cette op&eacute;ration ?[br]Cette op&eacute;ration sera ex&eacute;cut&eacute;e en t&acirc;che de fond.</WARNING_UFDBGUARD_COMPILES_RULES_ASK>
-<warn_level>Niveau d`avertissement</warn_level>
+<warn_level>Niveau d'avertissement</warn_level>
 <warn_pdns_is_disabled>PowerDNS est d&eacute;sactiv&eacute; sur votre serveur</warn_pdns_is_disabled>
 <watchdog_parameters>Param&egrave;tres du d&eacute;mon de surveillance</watchdog_parameters>
 <wb>Cache d'&eacute;criture</wb>

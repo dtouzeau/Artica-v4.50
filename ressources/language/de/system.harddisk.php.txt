@@ -1,2 +1,2 @@
-<folders_statistics>Folders statistics</folders_statistics>
-<parameters_text>You can modify/add folders you want to see in the statistics pie</parameters_text>
+<folders_statistics>Ordnerstatistiken</folders_statistics>
+<parameters_text>Sie k&#246;nnen Ordner &#228;ndern/hinzuf&#252;gen, die Sie im Statistik-Tortendiagramm sehen m&#246;chten</parameters_text>

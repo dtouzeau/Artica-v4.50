@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Push DHCP scope or Option-82 relay definitions to all agents in a group.
  * Each submit calls the group endpoint and shows a per-agent results table.
@@ -437,7 +439,7 @@ function gscopes_render_results(template_admin $tpl, $json): void {
     $h[] = "</div>";
 
     if (!empty($results)) {
-        $h[] = "<table class='table table-striped table-condensed'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "  <thead><tr style='background:#f5f5f5'>";
         $h[] = "    <th style='width:1%'></th>";
         $h[] = "    <th>{hostname}</th>";
@@ -457,10 +459,10 @@ function gscopes_render_results(template_admin $tpl, $json): void {
             }
             $h[] = "    <tr><td>$ico</td><td><strong>$hostname</strong></td><td>$cell</td></tr>";
         }
-        $h[] = "  </tbody></table>";
+        $h[] = "  </tbody></table></div></div></div>";
     }
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 
 // ── JavaScript blocks ─────────────────────────────────────────────────────────

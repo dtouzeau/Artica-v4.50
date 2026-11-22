@@ -10,10 +10,8 @@ if(isset($_GET["src-js"])){src_js();exit;}
 if(isset($_GET["ipaddr-import-js"])){ipaddr_import_js();exit;}
 if(isset($_GET["src-popup"])){src_popup();exit;}
 if(isset($_POST["src"])){src_save();exit;}
-if(isset($_POST["ipaddr"])){ipaddr_save();exit;}
 if(isset($_GET["delete"])){delete();exit;}
 if(isset($_POST["delete"])){delete_perform();exit;}
-if(isset($_POST["import"])){import_save();exit;}
 if(isset($_GET["ipaddr-import-popup"])){ipaddr_import_popup();exit;}
 if(isset($_GET["reset-js"])){reset_js();exit;}
 if(isset($_POST["reset"])){reset_perform();exit;}
@@ -171,7 +169,8 @@ function source_events_search():bool{
 
 }
 function delete():bool{
-	$id=$_GET["delete"];
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$id=intval($_GET["delete"]);
 	$tpl=new template_admin();
 	$q=new postgres_sql();
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT description FROM rbl_sources WHERE id='$id'"));
@@ -179,7 +178,8 @@ function delete():bool{
 	return $tpl->js_confirm_delete("{delete} {source} #$id $description","delete",$id,"$('#{$_GET["md"]}').remove()");
 }
 function delete_perform():bool{
-	$id=$_POST["delete"];
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$id=intval($_POST["delete"]);
 	$sock=new sockets();
 	$q=new postgres_sql();
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT description FROM rbl_sources WHERE id='$id'"));
@@ -218,7 +218,8 @@ function src_popup():bool{
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$q=new postgres_sql();
-	$id=$_GET["src-popup"];
+	// Pentest 2026-11-04 : src-popup etait concatene dans la requete.
+	$id=intval($_GET["src-popup"]);
 	$function=$_GET["function"];
 	$ligne=array();
 	$interval=0;
@@ -287,22 +288,23 @@ function src_save():bool{
 	$id=intval($_POST["src"]);
 	$tpl->CLEAN_POST();
 	$q=new postgres_sql();
-	$url=pg_escape_string($_POST["url"]);
+	// Pentest 2026-11-04 : database (url/description: parametres lies) etait concatene dans la requete.
+	$url=$_POST["url"];
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM rbl_sources WHERE id='$id'"));
 	$OLDB=$ligne["database"];
 	$resetrecords=intval($_POST["resetrecords"]);
 	$interval=intval($_POST["definterval"]);
 	$http11=intval($_POST["http11"]);
 
-	$descr=pg_escape_string($_POST["description"]);
+	$descr=$_POST["description"];
 	$database=$_POST["database"];
 	$ttl=intval($_POST["ttl"]);
 	if($id==0) {
-		$q->QUERY_SQL("INSERT INTO rbl_sources (url , description,database,ttl,resetrecords,http11,interval,lasterror) VALUES ('$url' , '$descr','$database',$ttl,$resetrecords,$http11,$interval,'')");
+		$q->QUERY_SQL_PARAMS("INSERT INTO rbl_sources (url , description,database,ttl,resetrecords,http11,interval,lasterror) VALUES ($1 , $2,$3,$ttl,$resetrecords,$http11,$interval,'')",array($url,$descr,$database));
 	}else{
-		$q->QUERY_SQL("UPDATE rbl_sources SET description='$descr',url='$url',
-                       database='$database',ttl=$ttl,resetrecords=$resetrecords,
-                       http11=$http11,interval=$interval,lasterror='' WHERE id=$id");
+		$q->QUERY_SQL_PARAMS("UPDATE rbl_sources SET description=$1,url=$2,
+                       database=$3,ttl=$ttl,resetrecords=$resetrecords,
+                       http11=$http11,interval=$interval,lasterror='' WHERE id=$id",array($descr,$url,$database));
 	}
 	if(!$q->ok){
 		echo $tpl->post_error($q->mysql_error);
@@ -359,10 +361,12 @@ function search():bool{
 		$search="*$search*";
 		$search=str_replace("**","*",$search);
 		$search=str_replace("*","%",$search);
-		$query="WHERE description LIKE '$search' OR url LIKE '$search'";
+		// Pentest 2026-11-04 : search etait concatene dans la requete.
+		$query="WHERE description LIKE '".pg_escape_string2($search)."' OR url LIKE '".pg_escape_string2($search)."'";
 	}
 
 
+	$MAX=intval($MAX);
 	$sql="SELECT * FROM rbl_sources $query ORDER BY ID ASC LIMIT $MAX";
 	$results = $q->QUERY_SQL($sql);
 

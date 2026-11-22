@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DHCP Scopes and Option-82 Relay classes management for a single remote agent.
  * Relays are shown first since relay-type scopes reference a relay_id.
@@ -109,7 +111,7 @@ function scopes_list(): void {
     if (empty($relays)) {
         $h[] = "    <p style='padding:15px;color:#999'><i>{no_relays_defined}</i></p>";
     } else {
-        $h[] = "    <table class='table table-striped table-condensed' style='margin:0'>";
+        $h[] = "    <div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "      <thead><th>{class_name}</th><th>{circuit_id}</th><th>{remote_id}</th><th style='width:1%'></th></tr></thead><tbody>";
         foreach ($relays as $rel) {
             if (!is_object($rel)) continue;
@@ -125,10 +127,10 @@ function scopes_list(): void {
             $h[] = "        <td><code>$className</code>$label</td>";
             $h[] = "        <td><small>$circuitId</small></td>";
             $h[] = "        <td><small>$remoteId</small></td>";
-            $h[] = "        <td>" . $tpl->icon_delete("$delJs", "AsSystemAdministrator") . "</td>";
+            $h[] = "        <td>" . $tpl->icon_delete("$delJs", "AsMetaAdmin") . "</td>";
             $h[] = "      </tr>";
         }
-        $h[] = "      </tbody></table>";
+        $h[] = "      </tbody></table></div></div></div>";
     }
     $h[] = "  </div></div>";
 
@@ -144,7 +146,7 @@ function scopes_list(): void {
     $h[]="  LoadAjaxSilent('dhcp-scopes-div-$id','$page?scopes-table=$id');";
     $h[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 function scope_delete_js():bool{
     $agent_id=intval($_GET["scope-delete-js"]);
@@ -223,7 +225,7 @@ function scopes_table():bool{
     if (empty($scopes)) {
         $h[] = "    <p style='padding:15px;color:#999'><i>{no_scopes_defined}</i></p>";
     } else {
-        $h[] = "    <table class='table table-striped table-condensed' style='margin:0'>";
+        $h[] = "    <div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "      <thead><tr>";
         $h[] = "        <th>{type}</th><th>{subnet}</th>";
         $h[] = "        <th></th><th>{pools}</th><th style='width:1%'></th>";
@@ -255,12 +257,12 @@ function scopes_table():bool{
             $h[] = "        <td style='width:1%' nowrap>$iface$ifaceCell</td>";
             $h[] = "        <td style='width:1%' nowrap><span class='badge' style='background:#1c84c6;color:#fff'>$poolCnt</span></td>";
             $h[] = "        <td style='width:1%;white-space:nowrap'>";
-            $h[] = "          " . $tpl->icon_edit_field($editJs, "AsSystemAdministrator");
+            $h[] = "          " . $tpl->icon_edit_field($editJs, "AsMetaAdmin");
             $h[] = "          " . $delJs;
             $h[] = "        </td>";
             $h[] = "      </tr>";
         }
-        $h[] = "      </tbody></table>";
+        $h[] = "      </tbody></table></div></div></div>";
     }
     echo $tpl->_ENGINE_parse_body(implode("\n", $h));
     return true;

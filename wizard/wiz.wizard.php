@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.wizard.inc");
 
 if(is_file("/etc/artica-postfix/WIZARD_INSTALL_EXECUTED")){
@@ -90,7 +91,8 @@ function body_step():bool{
     $lang           = $htmltools_inc->LanguageArray();
 
     $timezone=$wiz->timezone();
-    $wiz->field_array_hash($timezone,"{timezone}","timezones",$wiz->timezone_def);
+    $wiz->card_open("{wizard_card_locale}","{wizard_card_locale_sub}","fas fa-earth-europe");
+    $wiz->field_array_hash($timezone,"{wizard_f_timezone}","timezones",$wiz->timezone_def);
     $wiz->field_array_hash($lang,"{mylanguage}",  "lang2",$wiz->DetectedLanguage);
     $FIRECRACKER_VM=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FIRECRACKER_VM"));
     if($FIRECRACKER_VM==1) {
@@ -110,7 +112,8 @@ function step_network():bool{
     if(strlen($wiz->DNS2)==0){$wiz->DNS2="8.8.4.4";}
     $page=CurrentPageName();
     //serveretdom
-    $wiz->field_text("{netbiosname}","netbiosname",$wiz->netbiosname,"text");
+    $wiz->card_open("{wizard_card_server}","{wizard_card_server_sub}","fas fa-server");
+    $wiz->field_text("{wizard_f_hostname}","netbiosname",$wiz->netbiosname,"text");
     $wiz->field_text("{DomainOfThisserver}","domain",$wiz->domainname,"text");
     $wiz->field_text( "{primary_dns}","DNS1" ,$wiz->DNS1,"ipaddr");
     $wiz->field_text("{secondary_dns}", "DNS2",$wiz->DNS2,"ipaddr");
@@ -167,18 +170,22 @@ function step_network():bool{
         }
 
         $MAINFORMS=array();
-        $MAINFORMS["nic-$nic-IPADDR"]["LABEL"]="{ipaddr} $nic ($MAC)";
+        $MAINFORMS["nic-$nic-IPADDR"]["LABEL"]="{ipaddr}";
         $MAINFORMS["nic-$nic-IPADDR"]["VALUE"]=$IPADDR;
         $MAINFORMS["nic-$nic-IPADDR"]["VALID"]="ipaddr";
 
-        $MAINFORMS["nic-$nic-GATEWAY"]["LABEL"]="{gateway} $nic ($MAC)";
+        $MAINFORMS["nic-$nic-GATEWAY"]["LABEL"]="{gateway}";
         $MAINFORMS["nic-$nic-GATEWAY"]["VALUE"]=$GATEWAY;
         $MAINFORMS["nic-$nic-GATEWAY"]["VALID"]="ipaddr";
 
-        $MAINFORMS["nic-$nic-NETMASK"]["LABEL"]="{netmask} $nic ($MAC)";
+        $MAINFORMS["nic-$nic-NETMASK"]["LABEL"]="{netmask}";
         $MAINFORMS["nic-$nic-NETMASK"]["VALUE"]=$NETMASK;
         $MAINFORMS["nic-$nic-NETMASK"]["VALID"]="ipaddr";
-        $wiz->multi_fieldtext($MAINFORMS);
+        // Ordre de lecture d'un administrateur : adresse, masque, passerelle.
+        $ORDERED=array();
+        foreach (array("IPADDR","NETMASK","GATEWAY") as $k){$ORDERED["nic-$nic-$k"]=$MAINFORMS["nic-$nic-$k"];}
+        $macTxt=htmlspecialchars((string)$MAC,ENT_QUOTES);
+        $wiz->multi_fieldtext($ORDERED,htmlspecialchars($nic,ENT_QUOTES),strlen($macTxt)>0?"MAC $macTxt":"");
 
     }
 
@@ -270,53 +277,47 @@ function step_products():bool{
     $wiz->form_previous($form_previous);
     $wiz->form_after("$page?step-manager=yes");
 
-    $LIST[0]=array(
-        "LABEL"=>"{APP_SQUID}","EXPLAIN"=>"{simple_proxy_and_webfiltering}","PIC"=>"PROXY");
+    // Ordre d'affichage = ordre des groupes, puis ordre dans chaque groupe.
+    // Les valeurs (clés) sont celles que lit articarest (unixconsole/WizardInstall.go).
+    $P="{wizard_grp_proxy}";$D="{wizard_grp_dns}";$L="{wizard_grp_logs}";$M="{wizard_grp_mail}";$B="{wizard_grp_base}";
+    $LIST=array();
+    $LIST[0]=array("LABEL"=>"{APP_SQUID}","EXPLAIN"=>"{simple_proxy_and_webfiltering}","ICON"=>"fas fa-globe","GROUP"=>$P);
+    $LIST[8]=array("LABEL"=>"HaCluster","EXPLAIN"=>"{hacluster_explain}","ICON"=>"fas fa-network-wired","GROUP"=>$P);
+    $LIST[4]=array("LABEL"=>"Reverse-Proxy","EXPLAIN"=>"{APP_REVERSE_PROXY_EXPLAIN}","ICON"=>"fas fa-shield-halved","GROUP"=>$P);
+    $LIST[11]=array("LABEL"=>"{APP_UFDBCAT}","EXPLAIN"=>"{APP_CATEGORIESS_EXPLAIN}","ICON"=>"fas fa-tags","GROUP"=>$P);
 
-    $LIST[8]=array(
-        "LABEL"=>"HaCluster","EXPLAIN"=>"{hacluster_explain}","PIC"=>"HACLUSTER");
-
-    $LIST[1]=array(
-        "LABEL"=>"{APP_DNS_FIREWALL}","EXPLAIN"=>"{APP_DNS_FIREWALL_ABOUT}","PIC"=>"DNS");
-
-    $LIST[10]=array(
-        "LABEL"=>"{APP_UNBOUND}","EXPLAIN"=>"{didyouknow_unbound}","PIC"=>"DNSC");
-
-    $LIST[7]=array(
-        "LABEL"=>"{APP_RBLDNSD}","EXPLAIN"=>"{APP_RBLDNSD_EXPLAIN}","PIC"=>"RBL");
-
-    $LIST[4]=array(
-        "LABEL"=>"Reverse-Proxy","EXPLAIN"=>"{APP_REVERSE_PROXY_EXPLAIN}","PIC"=>"RPROXY");
-
-    $LIST[3]=array(
-        "LABEL"=>"{logs_sink}","EXPLAIN"=>"{log_sink_explain}","PIC"=>"LOGS");
-
+    $LIST[1]=array("LABEL"=>"{APP_DNS_FIREWALL}","EXPLAIN"=>"{APP_DNS_FIREWALL_ABOUT}","ICON"=>"fas fa-filter","GROUP"=>$D);
+    $LIST[10]=array("LABEL"=>"{APP_UNBOUND}","EXPLAIN"=>"{didyouknow_unbound}","ICON"=>"fas fa-bolt","GROUP"=>$D);
+    $LIST[7]=array("LABEL"=>"{APP_RBLDNSD}","EXPLAIN"=>"{APP_RBLDNSD_EXPLAIN}","ICON"=>"fas fa-ban","GROUP"=>$D);
     $sock=new sockets();
     $KEA_INSTALLED=intval($sock->GET_INFO("KEA_INSTALLED"));
     if($KEA_INSTALLED==1) {
-        $LIST[9] = array(
-            "LABEL" => "{APP_DHCP} - IPAM", "EXPLAIN" => "{dhcp_ipam_explain}", "PIC" => "DHCP");
+        $LIST[9]=array("LABEL"=>"{APP_DHCP} - IPAM","EXPLAIN"=>"{dhcp_ipam_explain}","ICON"=>"fas fa-sitemap","GROUP"=>$D);
     }
 
-    $LIST[11] = array(
-        "LABEL" => "{APP_UFDBCAT}", "EXPLAIN" => "{APP_CATEGORIESS_EXPLAIN}", "PIC" => "CATEGORIES");
+    $LIST[3]=array("LABEL"=>"{logs_sink}","EXPLAIN"=>"{log_sink_explain}","ICON"=>"fas fa-box-archive","GROUP"=>$L);
+    $LIST[13]=array("LABEL"=>"SIEM","EXPLAIN"=>"{APP_SIEM_EXPLAIN_WIZARD}","ICON"=>"fas fa-chart-line","GROUP"=>$L);
 
-    $LIST[6] = array(
-        "LABEL" => "{APP_POSTFIX}", "EXPLAIN" => "{wizard_smtp_explain}", "PIC" => "SMTP");
+    $LIST[6]=array("LABEL"=>"{APP_POSTFIX}","EXPLAIN"=>"{wizard_smtp_explain}","ICON"=>"fas fa-envelope","GROUP"=>$M);
 
-    $LIST[12]=array(
-        "LABEL"=>"Artica Meta","EXPLAIN"=>"{network_agents_explain}","PIC"=>"META");
+    $LIST[12]=array("LABEL"=>"Artica Meta","EXPLAIN"=>"{network_agents_explain}","ICON"=>"fas fa-diagram-project","GROUP"=>$B);
+    $LIST[2]=array("LABEL"=>"{minimalist_gateway}","EXPLAIN"=>"{minimalist_gateway_short}","ICON"=>"fas fa-route","GROUP"=>$B);
 
-    $LIST[2]=array(
-        "LABEL"=>"{minimalist_gateway}","EXPLAIN"=>"{minimalist_gateway_short}","PIC"=>"FW");
+    // Restaurer un snapshot remplace les étapes de configuration par un envoi
+    // de fichier : même choix unique, mais carte à part.
+    $LIST[5]=array("LABEL"=>"{restore_a_snapshot}","EXPLAIN"=>"{wizard_restore_snapshot}","ICON"=>"fas fa-clock-rotate-left",
+        "ALT"=>true,"TAG"=>"{wizard_alternative_setup}");
 
-    $LIST[5]=array(
-        "LABEL"=>"{restore_a_snapshot}","EXPLAIN"=>"{wizard_restore_snapshot}","PIC"=>"RESTORE");
-
-    $wiz->field_sections("artica_method",$LIST);
+    // Pré-sélection : seulement si un choix a réellement été enregistré
+    // (la valeur par défaut 0 est aussi celle du proxy Squid).
+    $selected=null;
+    if(isset($wiz->savedsettings["artica_method"]) && $wiz->savedsettings["artica_method"]!==""){
+        $selected=intval($wiz->savedsettings["artica_method"]);
+    }
+    $wiz->field_sections("artica_method",$LIST,$selected);
 
     $html[]=$wiz->build_form();
-    echo $wiz->BuildSection("{aks_articasrv_type}","{aks_articasrv_type_explain}",$html);
+    echo $wiz->BuildSection("{aks_articasrv_type}","{wizard_role_explain}",$html);
 
     //
 
@@ -337,21 +338,25 @@ function step_manager():bool{
     }
 
     if($wiz->artica_method==5){
+        $wiz->card_open("{restore_a_snapshot}","","fas fa-clock-rotate-left");
         $wiz->field_info_button("{restore_a_snapshot}",$wiz->savedsettings["snapshot_fname"],
             "{delete}","Loadjs('$page?remove-snapshot-js=yes')");
     }
     $WizardLicenseUploaded=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardLicenseUploaded"));
     $WizardLicenseUploadedFile=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("WizardLicenseUploadedFile");
     if($WizardLicenseUploadedFile==null){$WizardLicenseUploaded=0;}
+    $wiz->card_open("{administrator_account}","{wizard_card_admin_sub}","fas fa-user-shield");
     $wiz->field_text("{administrator_account}","administrator",$wiz->administrator,"text");
     $wiz->field_password("{password}","administratorpass",$wiz->administratorpass,"text");
-    $wiz->field_text("{your_email_address}","mail",$wiz->mail,"mail");
-    $wiz->field_text("{organizationName}","organization",$wiz->organization,"text");
-    $wiz->field_text("{organizationalUnitName}","organizationUnit",$wiz->organizationUnit,"text");
-    $wiz->field_text("{countryName}","countryName",$wiz->countryName,"text");
+    $wiz->field_text("{wizard_f_email}","mail",$wiz->mail,"mail");
+    $wiz->card_open("{wizard_card_org}","{wizard_card_org_sub}","fas fa-building");
+    $wiz->field_text("{wizard_f_org_name}","organization",$wiz->organization,"text");
+    $wiz->field_text("{wizard_f_org_unit}","organizationUnit",$wiz->organizationUnit,"text");
+    $wiz->field_text("{wizard_f_country}","countryName",$wiz->countryName,"text");
     $wiz->field_text("{stateOrProvinceName}","stateOrProvinceName",$wiz->stateOrProvinceName,"text");
-    $wiz->field_text("{localityName}","localityName",$wiz->localityName,"text");
+    $wiz->field_text("{wizard_f_locality}","localityName",$wiz->localityName,"text");
 
+    $wiz->card_open("{license_key_file}","{wizard_card_license_sub}","fas fa-key");
     if($WizardLicenseUploaded==0) {
         $wiz->button_upload("{license_key_file}", "LicenseFile", $page);
     }else{
@@ -374,7 +379,7 @@ function step_manager():bool{
 
 
     $wiz->form_after("$page?step-finish=yes");
-    $html[]="<div style='margin-top:120px' id='license-uploaded'></div>";
+    $html[]="<div class='wz-target' id='license-uploaded'></div>";
     $html[]=$wiz->build_form();
     echo $wiz->BuildSection("{administrator_account}/{virtual_company}","{administrator_account_wizard_explain}<br>{virtual_company_email_ask}",$html);
 
@@ -387,8 +392,9 @@ function step_upload_snapshot():bool{
     $wiz->StepNumber(4);
     $wiz->form_previous("$page?step-products=yes");
     $wiz->form_after("$page?step-manager=yes&snapshot-uploaded=yes");
+    $wiz->card_open("{your_snapshot}","{wizard_card_snapshot_sub}","fas fa-clock-rotate-left");
     $wiz->button_upload("{your_snapshot}","snaphost",$page);
-    $html[]="<div style='margin-top:120px' id='snapshot-uploaded'></div>";
+    $html[]="<div class='wz-target' id='snapshot-uploaded'></div>";
     $html[]=$wiz->build_form();
     echo $wiz->BuildSection("{restore_a_snapshot}","{upload_snapshot_explain}",$html);
     return true;
@@ -482,7 +488,7 @@ function step_finish():bool{
     $jsrestart="Loadjs('wiz.wizard.progress.php?content=$prgress&mainid=progress-firehol-restart')";
 
 
-    $html[]="<div id='progress-firehol-restart' style='height:50px;margin-top:90px'></div>";
+    $html[]="<div class='wz-card'><div id='progress-firehol-restart'></div></div>";
 
     $html[]="<script>
 	    LoadAjaxSilent('vertical-steps','wiz.wizard.php?step=5');
@@ -492,7 +498,7 @@ function step_finish():bool{
     $explain="{wizard_explain_refresh}";
 
     echo $wiz->BuildSection("{preparing_your_server}",
-        "<div style='margin-bottom:30px;height:50px'><h2 id='prepare-server-title' >{please_wait}</h2></div>",$html);
+        "<span id='prepare-server-title'>{please_wait}</span>",$html);
 
 
 

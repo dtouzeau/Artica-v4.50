@@ -1,76 +1,63 @@
-<AddNewDnsReverseZone>To create the reverse Zone, give the first IP address of your DNS Domain
-For example: 192.168.1.1 or 10.10.10.1 or 192.168.0.1...
-</AddNewDnsReverseZone>
-<AddNewDnsZone_explain>Give here the domain that will be added after your computer names
-for example :
-if you set "domain.tld", your computer "computer" will be "computer.domain.tld"
-</AddNewDnsZone_explain>
-<add_forwarder>Add a new DNS</add_forwarder>
-<add_new_zone>Add a new Zone</add_new_zone>
-<add_new_zone_tex>Add a new net domain zone in order to query in DNS your computer has "computer.*.*"</add_new_zone_tex>
-<computers>computers</computers>
+<AddNewDnsReverseZone>Aby utworzy&#263; stref&#281; odwrotn&#261;, podaj pierwszy adres IP swojej domeny DNS
+Na przyk&#322;ad: 192.168.1.1 lub 10.10.10.1 lub 192.168.0.1...</AddNewDnsReverseZone>
+<AddNewDnsZone_explain>Podaj tutaj domen&#281;, kt&#243;ra zostanie dodana po nazwach komputer&#243;w
+na przyk&#322;ad:
+je&#347;li ustawisz &quot;domain.tld&quot;, Tw&#243;j komputer &quot;computer&quot; b&#281;dzie &quot;computer.domain.tld&quot;</AddNewDnsZone_explain>
+<add_forwarder>Dodaj nowy DNS</add_forwarder>
+<add_new_zone>Dodaj now%C4%85 stref%C4%99</add_new_zone>
+<add_new_zone_tex>Dodaj now&#261; stref&#281; domeny sieciowej, aby odpytywa&#263; w DNS sw&#243;j komputer jako &quot;computer.*.*&quot;</add_new_zone_tex>
+<computers>komputery</computers>
 <config>Plik konfiguracyjny</config>
 <dns_zones>Strefy DNS</dns_zones>
-<expire_time_text>Time that wait DNS servers before reject zones datas if the Primary server is no longer available</expire_time_text>
-<forward>forward zone</forward>
-<forwarders>Public DNS</forwarders>
-<forwarders_text>Specify here the Public DNS (Your FAI Dns servers) used to query DNS</forwarders_text>
-<forwarder_add>Give the IP address of your Public ISP DNS</forwarder_add>
-<forward_text>
-A "forward zone" is a way to configure forwarding on a per-domain basis.[br]
-A zone statement of type forward can contain a forward and/or forwarders statement,
-which will apply to queries within the domain given by the zone name.[br]
-If no forwarders statement is present or an empty list for forwarders is given, then no forwarding will be done for the domain,
-canceling the effects of any forwarders in the options statement.[br]
-Thus if you want to use this type of zone to change the behavior of the global forward option
-(that is, "forward first to", then "forward only", or vice versa, but want to use the same servers as set globally) you need to respecify the global forwarders.
-</forward_text>
+<expire_time_text>Czas, przez kt&#243;ry serwery DNS czekaj&#261; przed odrzuceniem danych stref, je&#347;li serwer podstawowy nie jest ju&#380; dost&#281;pny</expire_time_text>
+<forward>Strefa forward</forward>
+<forwarders>Publiczne DNS</forwarders>
+<forwarders_text>Okre&#347;l tutaj publiczne serwery DNS (serwery DNS dostawcy) u&#380;ywane do odpytywania DNS</forwarders_text>
+<forwarder_add>Podaj adres IP swojego publicznego DNS ISP</forwarder_add>
+<forward_text>&quot;Strefa forward&quot; to spos&#243;b konfigurowania przekazywania na zasadzie per-domena.[br]
+Deklaracja strefy typu forward mo&#380;e zawiera&#263; deklaracj&#281; forward i/lub forwarders, kt&#243;ra b&#281;dzie mia&#322;a zastosowanie do zapyta&#324; w domenie okre&#347;lonej przez nazw&#281; strefy.[br]
+Je&#347;li &#380;adna deklaracja forwarders nie jest obecna lub podano pust&#261; list&#281; forwarders, to &#380;adne przekazywanie nie zostanie wykonane dla domeny, anuluj&#261;c efekty wszelkich forwarders w deklaracji options.[br]
+Wi&#281;c je&#347;li chcesz u&#380;y&#263; tego typu strefy do zmiany zachowania globalnej opcji forward (tzn. &quot;forward first to&quot;, potem &quot;forward only&quot;, lub odwrotnie, ale chcesz u&#380;y&#263; tych samych serwer&#243;w ustawionych globalnie), musisz ponownie okre&#347;li&#263; globalne forwarders.</forward_text>
 <global_directory>Katalog roboczy</global_directory>
 <global_settings>Ustawienia globalne</global_settings>
-<hint>Hint zone</hint>
-<hint_text>
-The initial set of root nameservers is specified using a "hint zone".[br]
-When the server starts up, it uses the root hints to find a root nameserver and get the most recent list of root nameservers.[br]
-If no hint zone is specified for class IN, the server uses a compiled-in default set of root servers hints.[br]
-Classes other than IN have no built-in defaults hints.
-</hint_text>
-<Hostmaster_email>email of the postmaster of this server</Hostmaster_email>
-<Hostmaster_email_text>Wich email address we can use to contact this zone administrator</Hostmaster_email_text>
-<hosts>Hosts</hosts>
-<master>Authoritative answers</master>
-<master_text>The server has a master copy of the data for the zone and will be able to provide authoritative answers for it.</master_text>
-<minimal_ttl>Minimal Time To Live</minimal_ttl>
-<minimal_ttl_text>Minimal time that records are cached before deleted to refresh them</minimal_ttl_text>
-<PrimaryServerName>Primary server name</PrimaryServerName>
-<PrimaryServerName_text>The fqdn name of the server that serve queries</PrimaryServerName_text>
+<hint>Strefa hint</hint>
+<hint_text>Pocz&#261;tkowy zestaw g&#322;&#243;wnych serwer&#243;w nazw jest okre&#347;lany za pomoc&#261; &quot;strefy hint&quot;.[br]
+Gdy serwer si&#281; uruchamia, u&#380;ywa wskaz&#243;wek g&#322;&#243;wnych, aby znale&#378;&#263; g&#322;&#243;wny serwer nazw i uzyska&#263; najnowsz&#261; list&#281; g&#322;&#243;wnych serwer&#243;w nazw.[br]
+Je&#347;li dla klasy IN nie okre&#347;lono strefy hint, serwer u&#380;ywa wbudowanego domy&#347;lnego zestawu wskaz&#243;wek serwer&#243;w g&#322;&#243;wnych.[br]
+Klasy inne ni&#380; IN nie maj&#261; wbudowanych domy&#347;lnych wskaz&#243;wek.</hint_text>
+<Hostmaster_email>e-mail postmastera tego serwera</Hostmaster_email>
+<Hostmaster_email_text>Jakiego adresu e-mail mo&#380;emy u&#380;y&#263;, aby skontaktowa&#263; si&#281; z administratorem tej strefy</Hostmaster_email_text>
+<hosts>Hosty</hosts>
+<master>Odpowiedzi autorytatywne</master>
+<master_text>Serwer ma kopi&#281; g&#322;&#243;wn&#261; danych strefy i b&#281;dzie m&#243;g&#322; udziela&#263; autorytatywnych odpowiedzi.</master_text>
+<minimal_ttl>Minimalny Time To Live</minimal_ttl>
+<minimal_ttl_text>Minimalny czas buforowania rekord&#243;w przed ich usuni&#281;ciem w celu od&#347;wie&#380;enia</minimal_ttl_text>
+<PrimaryServerName>Nazwa serwera podstawowego</PrimaryServerName>
+<PrimaryServerName_text>Nazwa FQDN serwera obs&#322;uguj&#261;cego zapytania</PrimaryServerName_text>
 <refresh_time>Czas od%C5%9Bwie%C5%BCania</refresh_time>
-<refresh_time_text>Time that wait DNS servers before verify or update the primary server SOA record</refresh_time_text>
-<retry_time>Retry time</retry_time>
-<retry_time_text>Expire time</retry_time_text>
-<retry_time_text>Expire time</retry_time_text>
-<search_computer>Search hosts</search_computer>
-<search_computer_text>Query the database in order to find computers/hosts</search_computer_text>
-<search_explain>You can find a computer by giving the IP address or the computer name in your Dns Zone,
-star caracter (*) is supported.
-if you want to query all computers in all DNS Zones, type your pattern and "all" word after
-Example : PC-10* all
-</search_explain>
-<slave>slave</slave>
-<slave_text>A slave zone is a replica of a master zone.[br]
-The masters list specifies one or more IP addresses of master servers that the slave contacts to update its copy of the zone.[br]
-By default, transfers are made from port 53 on the servers;[br]
-this can be changed for all servers by specifying a port number before the list of IP addresses, or on a per-server basis after the IP address.[br]
-Authentication to the master can also be done with per-server TSIG keys.[br]
-If a file is specified, then the replica will be written to this file whenever the zone is changed, and reloaded from this file on a server restart.[br]
-</slave_text>
+<refresh_time_text>Czas, przez kt&#243;ry serwery DNS czekaj&#261; przed weryfikacj&#261; lub aktualizacj&#261; rekordu SOA serwera podstawowego</refresh_time_text>
+<retry_time>Czas ponowienia</retry_time>
+<retry_time_text>Czas ponowienia</retry_time_text>
+<retry_time_text>Czas ponowienia</retry_time_text>
+<search_computer>Szukaj host&#243;w</search_computer>
+<search_computer_text>Odpytaj baz&#281; danych, aby znale&#378;&#263; komputery/hosty</search_computer_text>
+<search_explain>Mo&#380;esz znale&#378;&#263; komputer, podaj&#261;c adres IP lub nazw&#281; komputera w strefie DNS; znak gwiazdki (*) jest obs&#322;ugiwany.
+Je&#347;li chcesz odpyta&#263; wszystkie komputery we wszystkich strefach DNS, wpisz wzorzec i s&#322;owo &quot;all&quot; po nim.
+Przyk&#322;ad: PC-10* all</search_explain>
+<slave>podrz&#281;dny</slave>
+<slave_text>Strefa podrz&#281;dna to replika strefy nadrz&#281;dnej.[br]
+Lista nadrz&#281;dnych okre&#347;la jeden lub wi&#281;cej adres&#243;w IP serwer&#243;w nadrz&#281;dnych, z kt&#243;rymi kontaktuje si&#281; podrz&#281;dny, aby zaktualizowa&#263; swoj&#261; kopi&#281; strefy.[br]
+Domy&#347;lnie transfery s&#261; wykonywane z portu 53 na serwerach;[br]
+mo&#380;na to zmieni&#263; dla wszystkich serwer&#243;w, podaj&#261;c numer portu przed list&#261; adres&#243;w IP, lub dla poszczeg&#243;lnych serwer&#243;w po adresie IP.[br]
+Uwierzytelnianie wobec nadrz&#281;dnego mo&#380;na r&#243;wnie&#380; wykona&#263; za pomoc&#261; kluczy TSIG dla poszczeg&#243;lnych serwer&#243;w.[br]
+Je&#347;li okre&#347;lono plik, replika b&#281;dzie zapisywana do tego pliku przy ka&#380;dej zmianie strefy i ponownie &#322;adowana z tego pliku przy ponownym uruchomieniu serwera.[br]</slave_text>
 <stub>stub</stub>
-<stub_text>A stub zone is similar to a slave zone, except that it replicates only the NS records of a master zone instead of the entire zone.[br]
-Stub zones are not a standard part of the DNS;[br]
-they are a feature specific to the BIND implementation.[br]
-Stub zones can be used to eliminate the need for glue NS record in a parent zone at the expense of maintaining a
-stub zone entry and a set of name server addresses in global settings.[br]
-This usage is not recommended for new configurations, and BIND 9 supports it only in a limited way.</stub_text>
+<stub_text>Strefa stub jest podobna do strefy podrz&#281;dnej, z tym &#380;e replikuje tylko rekordy NS strefy nadrz&#281;dnej zamiast ca&#322;ej strefy.[br]
+Strefy stub nie s&#261; standardow&#261; cz&#281;&#347;ci&#261; DNS;[br]
+s&#261; funkcj&#261; specyficzn&#261; dla implementacji BIND.[br]
+Strefy stub mog&#261; by&#263; u&#380;ywane do wyeliminowania potrzeby rekordu glue NS w strefie nadrz&#281;dnej kosztem utrzymywania wpisu strefy stub i zestawu adres&#243;w serwer&#243;w nazw w ustawieniach globalnych.[br]
+To zastosowanie nie jest zalecane dla nowych konfiguracji, a BIND 9 obs&#322;uguje je tylko w ograniczony spos&#243;b.</stub_text>
 <ttl>Czas na %C5%BCycie</ttl>
-<ttl_text>The Time To Libe describes how long a record can be cached before it should be discarded.</ttl_text>
-<zone>zone</zone>
-<ZoneDeleteWarning>Are your sure to delete this zone ?</ZoneDeleteWarning>
+<ttl_text>Time To Live opisuje, jak d&#322;ugo rekord mo&#380;e by&#263; buforowany, zanim zostanie odrzucony.</ttl_text>
+<zone>strefa</zone>
+<ZoneDeleteWarning>Czy na pewno chcesz usun&#261;&#263; t&#281; stref&#281;?</ZoneDeleteWarning>

@@ -68,7 +68,8 @@ function vertical_timeline(){
     $strtoTime=date("Y-m-d H:i:s",$time2);
     $UNIT="{each_10minutes}";
     $SQL_DATE="zdate";
-    $field=$_GET["field"];
+    // Pentest 2026-11-04 : field (nom de colonne) et value etaient concatenes dans la requete.
+    $field=strongswan_members_field($_GET["field"]);
     $value=$_GET["value"];
     $fieldenc=urlencode($field);
     $valueenc=urlencode($value);
@@ -84,10 +85,10 @@ function vertical_timeline(){
     }
 
 //    $sql="SELECT SUM(bytes_out) as bytes_out, SUM(bytes_in) as bytes_in, $SQL_DATE as zdate FROM strongswan_stats WHERE $field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
-    $sql="select sum(bytes_in) as bytes_in, sum(bytes_out) as bytes_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, zdate,$field FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,$field ORDER BY spi_in, zdate,$field) x where $field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
+    $sql="select sum(bytes_in) as bytes_in, sum(bytes_out) as bytes_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, zdate,$field FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,$field ORDER BY spi_in, zdate,$field) x where $field=$1 AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
 
 
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,array($value));
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
     while ($ligne = pg_fetch_assoc($results)) {
@@ -135,9 +136,9 @@ function vertical_timeline(){
     echo $highcharts->BuildChart();
     //PACKETS IN / OUT
 //    $sql = "SELECT SUM(packets_in) as packets_in, SUM(packets_out) as packets_out, $SQL_DATE as zdate FROM strongswan_stats WHERE $field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
-    $sql="select SUM(packets_in) as packets_in, SUM(packets_out) as packets_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(packets_in) as packets_in, MAX(packets_out) as packets_out, zdate,$field FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,$field ORDER BY spi_in, zdate,$field) x where $field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
+    $sql="select SUM(packets_in) as packets_in, SUM(packets_out) as packets_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(packets_in) as packets_in, MAX(packets_out) as packets_out, zdate,$field FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,$field ORDER BY spi_in, zdate,$field) x where $field=$1 AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
 
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,array($value));
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
     while ($ligne = pg_fetch_assoc($results)) {
         $packets_in = $ligne["packets_in"];
@@ -186,7 +187,8 @@ function top_tunnels(){
     $t=$_GET["t"];
     $tpl=new template_admin();
     $q=new postgres_sql();
-    $field=$_GET["field"];
+    // Pentest 2026-11-04 : field (nom de colonne) et value etaient concatenes dans la requete.
+    $field=strongswan_members_field($_GET["field"]);
     $value=$_GET["value"];
     $fieldenc=urlencode($field);
     $valueenc=urlencode($value);
@@ -199,11 +201,10 @@ function top_tunnels(){
     $strtoTime=date("Y-m-d H:i:s",$time2);
 
     //$sql="SELECT SUM(bytes_in + bytes_out) as size,conn_name FROM strongswan_stats WHERE $field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by conn_name ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,conn_name from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, conn_name,zdate,$field FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, conn_name,zdate,$field ORDER BY spi_in, conn_name) x where  $field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY conn_name ORDER BY size DESC LIMIT 15 ";
+    $sql="select SUM(bytes_in + bytes_out) as size,conn_name from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, conn_name,zdate,$field FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, conn_name,zdate,$field ORDER BY spi_in, conn_name) x where  $field=$1 AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY conn_name ORDER BY size DESC LIMIT 15 ";
 
 
-    $q->QUERY_SQL($sql);
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,array($value));
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
     while ($ligne = pg_fetch_assoc($results)) {
         $size = $ligne["size"];
@@ -236,11 +237,13 @@ function top_tunnels_table(){
     $html[]="<th>{tunnel}</th>";
     $html[]="<th>{size}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["tunnels-table"]));
+    $table=unserialize(base64_decode($_GET["tunnels-table"]),array("allowed_classes"=>false));
     foreach ( $table as $tunnel=>$sizeM) {
 
 
         $html[]="<tr>";
+        // Pentest 2026-11-04 : nom de tunnel (donnee externe) affiche sans encodage (XSS stockee).
+        $tunnel=req_html($tunnel);
         $html[]="<td><strong>$tunnel</strong></td>";
         $html[]="<td><strong>". FormatBytes($sizeM*1024)."</strong></td>";
         $html[]="</tr>";
@@ -251,3 +254,10 @@ function top_tunnels_table(){
 
 }
 
+// Pentest 2026-11-04 : liste blanche des colonnes acceptees dans field.
+function strongswan_members_field($field):string{
+    $allowed=array("username","local_vip","remote_host","conn_name");
+    $field=trim((string)$field);
+    if(in_array($field,$allowed,true)){return $field;}
+    return "username";
+}

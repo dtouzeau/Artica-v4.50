@@ -163,7 +163,7 @@ function tldextract(){
 
 
     $tar = $unix->find_program("tar");
-    shell_exec("$tar xf $srcfile -C /");
+    shell_exec("$tar xf $srcfile --keep-directory-symlink --no-overwrite-dir -C /");
     if(is_file($textfile)){
         squid_admin_mysql(2,"Success {installing} tldextract python package",null,__FILE__,__LINE__);
         return true;

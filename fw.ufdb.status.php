@@ -37,6 +37,12 @@ function ufdbdebug_popup(){
 	$sock=new sockets();
 	$UfdbDebugAll=intval(($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbDebugAll")));
 	
+	// Reglage tenu par une politique Artica Meta (ufdbrules) : pas de bascule locale.
+	include_once(dirname(__FILE__)."/ressources/class.ufdbrules.meta.inc");
+	if(count(ufdbrules_meta_locked_keys(array("UfdbDebugAll")))>0){
+		echo $tpl->div_error(ufdbrules_meta_text());
+		return;
+	}
 	if($UfdbDebugAll==1){$UfdbDebugAll=0;}else{$UfdbDebugAll=1;}
 	$sock->SET_INFO("UfdbDebugAll", $UfdbDebugAll);
 	
@@ -246,10 +252,10 @@ function line_status(){
 
     $html[]="<td style='padding:2px' width='33%'>";
     if($ART==0) {
-        $html[] = $tpl->widget_style1("yellow-bg", "fas fa-database", "{artica_databases} {websites_categorized}:", "0");
+        $html[] = $tpl->widget_style1("yellow-bg", ico_database, "{artica_databases} {websites_categorized}:", "0");
     }else{
         $ART=FormatNumber($ART);
-        $html[] = $tpl->widget_style1("navy-bg", "fas fa-database", "{artica_databases} {websites_categorized}:", "$ART");
+        $html[] = $tpl->widget_style1("navy-bg", ico_database, "{artica_databases} {websites_categorized}:", "$ART");
     }
     $html[]="</td>";
 
@@ -261,10 +267,10 @@ function line_status(){
     }else{
 
         if($CountDeInstalled==0) {
-            $html[]=$tpl->widget_style1("yellow-bg", "fas fa-database", "{used_databases}", "{none}");
+            $html[]=$tpl->widget_style1("yellow-bg", ico_database, "{used_databases}", "{none}");
 
         }else{
-            $html[]=$tpl->widget_style1("navy-bg", "fas fa-database", "{used_databases}", $CountDeInstalled);
+            $html[]=$tpl->widget_style1("navy-bg", ico_database, "{used_databases}", $CountDeInstalled);
         }
 
     }

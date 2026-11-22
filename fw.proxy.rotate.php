@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.autofs.inc");
 
@@ -67,7 +70,10 @@ function import_popup():bool{
     return true;
 }
 function file_uploaded():bool{
+    if(!fw_progress_page_priv("AsSquidAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
+    $_GET["file-uploaded"]=fw_progress_upload_name($_GET["file-uploaded"] ?? "");   // REST segment, see fw_progress_upload_name
+    if($_GET["file-uploaded"]===""){return fw_progress_bad_value("file-uploaded");}
     $file="/usr/share/artica-postfix/ressources/conf/upload/{$_GET["file-uploaded"]}";
 
     if(!preg_match("#\.(gz|log)$#i",basename($file))){
@@ -124,7 +130,12 @@ function decrypt_backup_js(){
 function decrypt_backup_perform():bool{
     admin_tracks("Legal Logs: send order to decrypt all backups");
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidRotateEnableCrypt",0);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("syslog.php?decrypt-backup=yes");
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/logrotate/legal/decrypt"));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        $error=(is_object($json) && isset($json->Error))?$json->Error:"articarest: ".json_last_error_msg();
+        echo $error;
+        return false;
+    }
     return true;
 }
 
@@ -137,9 +148,7 @@ function Save():bool{
         $_POST["LogRotateH"] = $sch[0];
         $_POST["LogRotateM"] = $sch[1];
     }
-	if(isset($_POST["WebDavSquidLogsEnabled"])){
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("services.php?webdav-service=yes");
-    }
+
 
     if(isset($_POST["SquidRotateEnableCrypt"])){
         if($_POST["SquidRotateEnableCrypt"]==1) {
@@ -158,9 +167,8 @@ function Save():bool{
     }
     $tpl->SAVE_POSTs();
 
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?monit-config=yes");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("services.php?rotatebuild=yes");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?global-logging-center=yes");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/watchdog/monit");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/logs/apply");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/syslog/reconfigure");
 
     admin_tracks("Logs rotation parameters as been modified.");
@@ -180,20 +188,22 @@ function legal_log_server_status(){
         "syslog.restart.log","progress-syslod-restart",
         "LoadAjax('table-loader-syslod-service','$page?tabs=yes');");
 
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td valign='top' style='width:250px'><div id='legal-log-server-status'></div></td>";
-    $html[]="<td valign='top' style='padding-left:20px'>";
+    // L'ancienne version disposait la vignette de service et le formulaire dans
+    // un <table> de MISE EN PAGE (colonne gauche figee a 250px). En flex, le
+    // formulaire reprend la largeur quand la fenetre retrecit.
+    $html[]="<div style='display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap'>";
+    $html[]="<div id='legal-log-server-status' style='flex:0 0 250px;max-width:100%'></div>";
+    $html[]="<div style='flex:1 1 380px;min-width:0'>";
     $html[]=$tpl->form_outside("{parameters}",$form,null,"{apply}",$jsrestart);
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    $html[]="</div>";
+    $html[]="</div>";
 
-    $html[]="<script>";
-    $html[]="LoadAjax('legal-log-server-status','$page?legal-log-server-status=yes');";
-    $html[]="</script>";
+    // Bloc de script concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque corps d'accolade JavaScript pour un
+    // {token}.
+    $script="<script>LoadAjax('legal-log-server-status','$page?legal-log-server-status=yes');</script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
 }
 
 function legal_log_server_service_status(){
@@ -323,19 +333,19 @@ function legal_log_server(){
         $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/legallogs.progress";
         $ARRAY["LOG_FILE"]=PROGRESS_DIR."/legallogs.progress.txt";
         $ARRAY["TITLE"]="{APP_LEGAL_LOGS_SERVER}";
-        $ARRAY["CMD"]="squid.php?legal-logs-progress=yes";
+        $ARRAY["CMD"]="/proxy/legal-logs/connect";
         $ARRAY["AFTER"]="LoadAjax('legal-logs-client-params','$page?legal-log-server=yes');";
         $prgress=base64_encode(serialize($ARRAY));
-        $applyjs="Loadjs('fw.progress.php?content=$prgress&mainid=progress-logrotate-restart')";
+        $applyjs="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-logrotate-restart')";
     }else{
         $LegalLogSyslogPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LegalLogSyslogPort"));
         $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/legallogs.progress";
         $ARRAY["LOG_FILE"]=PROGRESS_DIR."/legallogs.progress.txt";
         $ARRAY["TITLE"]="{APP_LEGAL_LOGS_SERVER}";
-        $ARRAY["CMD"]="squid.php?legal-logs-disconnect=yes";
+        $ARRAY["CMD"]="/proxy/legal-logs/disconnect";
         $ARRAY["AFTER"]="LoadAjax('legal-logs-client-params','$page?legal-log-server=yes');";
         $prgress=base64_encode(serialize($ARRAY));
-        $applyjs="Loadjs('fw.progress.php?content=$prgress&mainid=progress-logrotate-restart')";
+        $applyjs="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-logrotate-restart')";
 
 
         $btname="{disconnect}";
@@ -413,166 +423,339 @@ function form_push_js():string{
 function main_start(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align: top;width: 350px;padding-top:8px'>";
-    $html[]="<div id='remote-syslog-status'></div>";
-    $html[]="</td>";
-    $html[]="<td style='vertical-align: top;width: 99%;padding-left: 20px'><div id='proxy-rotate-main-params'></div></td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    // Meme tableau de MISE EN PAGE que ci-dessus, colonne gauche figee a 350px.
+    $html[]="<div style='display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap'>";
+    $html[]="<div id='remote-syslog-status' style='flex:0 0 350px;max-width:100%;padding-top:8px'></div>";
+    $html[]="<div id='proxy-rotate-main-params' style='flex:1 1 380px;min-width:0'></div>";
+    $html[]="</div>";
     $html[]="<script>";
-    $Interval=$tpl->RefreshInterval_js("remote-syslog-status",$page,"remote-syslog-status=yes");
     $html[]="LoadAjax('proxy-rotate-main-params','$page?main=yes');";
-    $html[]=$Interval;
+    $html[]=$tpl->RefreshInterval_js("remote-syslog-status",$page,"remote-syslog-status=yes");
     $html[]="</script>";
-    echo @implode("",$html);
+    echo @implode("\n",$html);
+}
+
+/* ===========================================================================
+ * Onglet Parameters (maquette Stitch « Legal logs settings », 2026-11-21).
+ *
+ * Seules des donnees reelles :
+ *  - les reglages lus par le daemon (logrotate/*.go) et par artica-rotate
+ *    (chiffrement : SquidRotateEnableCrypt, LogRotateCrypt) ;
+ *  - GET /system/directory/target/{/var/log} : emplacement reel et taille (Kio) ;
+ *  - GET /logs/capacity (logrotate.Capacity, cache 1 h) : taille des archives,
+ *    debit journalier, disque libre, projection de saturation.
+ * La retention appliquee est PurgeBackupMaxDays (varlog.go) : toujours active,
+ * BackupMaxDays pour les archives, BackupMaxDaysAccess (365 j, sans champ dans
+ * la console) pour les archives d'acces du proxy. SquidRotateClean,
+ * BackupLogsMaxStoragePercent et SquidRotateForceRestart ne sont lus par aucun
+ * code : la page ne les affiche plus et la fenetre ne les propose plus.
+ * La colonne de gauche (#remote-syslog-status) n'est pas touchee.
+ * ========================================================================= */
+
+function lgl_int(string $key,int $def,int $min=1):int{
+    $v=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($key));
+    return $v<$min?$def:$v;
+}
+function lgl_str(string $key,string $def=""):string{
+    $v=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO($key));
+    return $v===""?$def:$v;
+}
+// Echappe une valeur de reglage : HTML ET accolades (le moteur prendrait {x} pour un token).
+function lgl_e($s):string{
+    return str_replace(array("{","}"),array("&#123;","&#125;"),htmlspecialchars((string)$s,ENT_QUOTES));
+}
+// Un token dont chaque %s recoit une valeur deja echappee (texte brut sinon).
+function lgl_t($tpl,string $token,array $vals=array()):string{
+    $txt=$tpl->_ENGINE_parse_body("{".$token."}");
+    $txt=trim(preg_replace('#\s*<br\s*/?>\s*#i',' ',str_replace("[br]","<br>",$txt)));
+    $i=0;
+    return preg_replace_callback('/%s/',function($m) use ($vals,&$i){
+        $v=isset($vals[$i])?(string)$vals[$i]:"";
+        $i++;
+        return $v;
+    },$txt);
+}
+// Taille en octets -> « 12.4 GB » (FormatBytes compte en Kio).
+function lgl_bytes(float $b):string{
+    if($b<0){return "&mdash;";}
+    return FormatBytes($b/1024,true);
+}
+// « 2025-11-23 » -> « November 23, 2025 » (mois en token).
+function lgl_day(string $ymd):string{
+    $t=strtotime($ymd);
+    if($t===false){return lgl_e($ymd);}
+    return "{".date("F",$t)."} ".date("j",$t).", ".date("Y",$t);
+}
+
+// Le modele : tout ce que les cartes affichent, lu une fois.
+function lgl_model():array{
+    $s=$GLOBALS["CLASS_SOCKETS"];
+    $m=array();
+    // Archivage
+    $m["only_schedule"]=intval($s->GET_INFO("SquidRotateOnlySchedule"))==1;
+    $m["size_mb"]=lgl_int("LogsRotateDefaultSizeRotation",100,5);
+    $h=lgl_str("LogRotateH","00");$mi=lgl_str("LogRotateM","05");
+    $m["clock"]=sprintf("%02d:%02d",intval($h),intval($mi));
+    // Emplacements
+    $m["work_dir"]=lgl_str("LogRotatePath","/home/logrotate");
+    $m["backup_dir"]=lgl_str("BackupMaxDaysDir","/home/logrotate_backup");
+    // Retention (PurgeBackupMaxDays : <=0 vaut 365)
+    $m["max_days"]=lgl_int("BackupMaxDays",365);
+    $m["max_days_access"]=lgl_int("BackupMaxDaysAccess",365);
+    // Vie privee
+    $ex=preg_split('/[\s,;]+/',(string)$s->GET_INFO("SquidLogsExceptions"));
+    $m["exceptions"]=array();
+    foreach($ex as $ip){$ip=trim($ip);if($ip!==""){$m["exceptions"][]=$ip;}}
+    $m["crypt"]=intval($s->GET_INFO("SquidRotateEnableCrypt"))==1;
+    $m["crypted_files"]=is_file("/etc/artica-postfix/crypted-legal-logs");
+    // Copies externes
+    $m["cluster"]=intval($s->GET_INFO("HaClusterClient"))==1;
+    $m["sink"]=intval($s->GET_INFO("LogSinkClient"))==1;
+    $proto=intval($s->GET_INFO("LogSinkClientTCP"))==1?"tcp":"udp";
+    $port=intval($s->GET_INFO("LogSinkClientPort"));
+    if($port==0){$port=514;}
+    $m["sink_dest"]="$proto://".trim((string)$s->GET_INFO("LogSinClientServer")).":$port";
+    $autofs=intval($s->GET_INFO("AutoFSEnabled"));
+    if(intval($s->GET_INFO("SquidPerformance"))>2){$autofs=0;}
+    if(intval($s->GET_INFO("EnableIntelCeleron"))==1){$autofs=0;}
+    $m["autofs_installed"]=$autofs==1;
+    $m["automount"]=intval($s->GET_INFO("SquidRotateAutomount"))==1;
+    $m["automount_dest"]="/automounts/".trim((string)$s->GET_INFO("SquidRotateAutomountRes"))."/".trim((string)$s->GET_INFO("SquidRotateAutomountFolder"));
+    $m["nas"]=intval($s->GET_INFO("BackupSquidLogsUseNas"))==1;
+    $m["nas_dest"]=trim((string)$s->GET_INFO("BackupSquidLogsNASIpaddr"))."/".trim((string)$s->GET_INFO("BackupSquidLogsNASFolder"));
+    $m["external"]=$m["nas"] || $m["automount"] || ($m["cluster"]?true:$m["sink"]);
+    // /var/log
+    $m["varlog_path"]="";$m["varlog_kib"]=-1;
+    $json=json_decode((string)$s->REST_API("/system/directory/target/".base64_encode("/var/log")));
+    if(is_object($json) && isset($json->Status) && $json->Status){
+        $m["varlog_path"]=isset($json->Info)?(string)$json->Info:"";
+        $m["varlog_kib"]=isset($json->Size)?floatval($json->Size):-1;
+    }
+    // Capacite du disque des archives
+    $m["cap"]=null;
+    $json=json_decode((string)$s->REST_API("/logs/capacity"));
+    if(is_object($json) && isset($json->Status) && $json->Status && isset($json->Data) && is_object($json->Data)){
+        $m["cap"]=$json->Data;
+    }
+    return $m;
+}
+
+function lgl_card_head(string $icon,string $title,string $editJs=""):string{
+    $btn="";
+    if($editJs!==""){
+        $btn="<button type='button' class='lgl-btn' OnClick=\"$editJs\"><i class='fas fa-pen' aria-hidden='true'></i>{lgl_edit}</button>";
+    }
+    return "<div class='lgl-head'><h3><i class='fas $icon' aria-hidden='true'></i>$title</h3>$btn</div>";
+}
+
+// 1. Bandeau d'accroche : puces lues dans les reglages reels.
+function lgl_banner($tpl,array $m):string{
+    $chips=array();
+    $chips[]=array("fa-lock","{lgl_chip_unmodified}");
+    $chips[]=array("fa-calendar-check",lgl_t($tpl,"lgl_chip_kept",array($m["max_days_access"])));
+    if($m["crypt"]){$chips[]=array("fa-key","{lgl_chip_crypt}");}
+    if($m["nas"]){$chips[]=array("fa-server","{lgl_chip_nas}");}
+    if($m["cluster"]){$chips[]=array("fa-diagram-project","{lgl_chip_lb}");}
+    elseif($m["sink"]){$chips[]=array("fa-tower-broadcast","{lgl_chip_sink}");}
+    if($m["automount"]){$chips[]=array("fa-folder-tree","{lgl_chip_mount}");}
+    $c="";
+    foreach($chips as $ch){$c.="<span class='lgl-chip'><i class='fas {$ch[0]}' aria-hidden='true'></i>{$ch[1]}</span>";}
+    return "<section class='lgl-card lgl-banner'><div class='lgl-bico' aria-hidden='true'><i class='fas fa-file-shield'></i></div>"
+        ."<div class='lgl-btxt'><h2>{lgl_title}</h2><p>{lgl_text}</p><div class='lgl-chips'>$c</div></div></section>";
+}
+
+// 2a. Alerte : aucune copie hors de l'appliance.
+function lgl_warn_local($tpl,array $m):string{
+    if($m["external"]){return "";}
+    $page=CurrentPageName();
+    return "<div class='lgl-alert' role='alert'><i class='fas fa-triangle-exclamation' aria-hidden='true'></i><p>{lgl_warn_local}</p>"
+        ."<button type='button' class='lgl-btn warn' OnClick=\"Loadjs('$page?nas-squid-js=yes');\">{lgl_add_nas}</button></div>";
+}
+
+// 2b. Alerte : le daemon prevoit la saturation du disque des archives.
+function lgl_warn_capacity($tpl,array $m):string{
+    $c=$m["cap"];
+    if($c===null || !isset($c->sufficient) || $c->sufficient){return "";}
+    $date=isset($c->saturation_date) && $c->saturation_date!==""?lgl_day((string)$c->saturation_date):"&mdash;";
+    return "<div class='lgl-alert red' role='alert'><i class='fas fa-hard-drive' aria-hidden='true'></i><p>"
+        .lgl_t($tpl,"lgl_warn_full",array("<b>$date</b>"))."</p></div>";
+}
+
+// Une tuile de copie externe.
+function lgl_tile(string $icon,string $title,string $sub,string $state,string $dest,string $help,string $js):string{
+    $word=array("on"=>"{lgl_active}","off"=>"{lgl_off}","na"=>"{lgl_not_installed}","lb"=>"{lgl_by_lb}");
+    $cls=$state=="on"?" on":($state=="off"?"":" na");
+    $tag=$js!==""?"button type='button' OnClick=\"$js\"":"div";
+    $end=$js!==""?"button":"div";
+    $destHtml=$dest!==""?"<div class='dest'>".lgl_e($dest)."</div>":"";
+    $setup=($state=="off" && $js!=="")?"<span class='lnk'>{lgl_setup}</span>":"";
+    $subHtml=$sub!==""?"<div class='sub'>$sub</div>":"";
+    return "<$tag class='lgl-tile$cls'><div class='top'><span class='nm'><i class='fas $icon' aria-hidden='true'></i>$title</span>"
+        ."<span class='st'><span class='dot' aria-hidden='true'></span>{$word[$state]}</span></div>$subHtml$destHtml"
+        ."<div class='hp'><span>$help</span>$setup</div></$end>";
+}
+
+// 3. Ou sont gardes les enregistrements : dossiers + trois copies possibles.
+function lgl_where($tpl,array $m):string{
+    $page=CurrentPageName();
+    $h=array();
+    $h[]="<section class='lgl-card'>".lgl_card_head("fa-hard-drive","{lgl_where_t}","Loadjs('$page?main-section-js=yes');");
+    $h[]="<p class='lgl-lead'>{lgl_where_text}</p>";
+    $h[]="<div class='lgl-folder'><div><div class='lbl'>{lgl_archive_folder}</div><div class='sub'>{lgl_prep_folder} <span class='mono'>".lgl_e($m["work_dir"])."</span></div></div>"
+        ."<div class='mono big'>".lgl_e($m["backup_dir"])."</div></div>";
+    $h[]="<div class='lgl-tiles'>";
+    $h[]=lgl_tile("fa-server","{lgl_nas_t}","",$m["nas"]?"on":"off",$m["nas"]?$m["nas_dest"]:"","{lgl_nas_help}","Loadjs('$page?nas-squid-js=yes');");
+    if($m["cluster"]){
+        $h[]=lgl_tile("fa-tower-broadcast","{lgl_sink_t}","{logs_sink}","lb","","{lgl_lb_help}","");
+    }else{
+        $h[]=lgl_tile("fa-tower-broadcast","{lgl_sink_t}","{logs_sink}",$m["sink"]?"on":"off",$m["sink"]?$m["sink_dest"]:"","{lgl_sink_help}","Loadjs('$page?main-logsink-js=yes');");
+    }
+    if(!$m["autofs_installed"] && !$m["automount"]){
+        $h[]=lgl_tile("fa-folder-tree","{lgl_mount_t}","{automount_center}","na","","{lgl_mount_help}","");
+    }else{
+        $h[]=lgl_tile("fa-folder-tree","{lgl_mount_t}","{automount_center}",$m["automount"]?"on":"off",$m["automount"]?$m["automount_dest"]:"","{lgl_mount_help}","Loadjs('$page?main-autofs-js=yes');");
+    }
+    $h[]="</div></section>";
+    return @implode("",$h);
+}
+
+// 4. Quand les enregistrements sont archives.
+function lgl_when($tpl,array $m):string{
+    $page=CurrentPageName();
+    if($m["only_schedule"]){
+        $big=lgl_t($tpl,"lgl_when_daily",array($m["clock"]));
+        $sub=lgl_t($tpl,"lgl_when_daily_help",array($m["size_mb"]));
+    }else{
+        $big=lgl_t($tpl,"lgl_when_size",array($m["size_mb"]));
+        $sub="{lgl_when_size_help}";
+    }
+    return "<section class='lgl-card'>".lgl_card_head("fa-clock","{lgl_when_t}","Loadjs('$page?main-defaultsize-js=yes');")
+        ."<div class='lgl-big'>$big</div><p class='lgl-help'>$sub</p>"
+        ."<p class='lgl-note'><i class='fas fa-rotate' aria-hidden='true'></i>{lgl_when_reload}</p></section>";
+}
+
+// Anneau SVG : part du disque occupee (mesuree contre la taille reelle du volume).
+function lgl_ring(float $pct):string{
+    $pct=max(0,min(100,$pct));
+    $r=26;$c=2*M_PI*$r;$on=round($c*$pct/100,2);$off=round($c-$on,2);
+    $col=$pct>=90?"#dc2626":($pct>=75?"#d97706":"var(--lgl-accent)");
+    return "<svg class='lgl-ring' width='64' height='64' viewBox='0 0 64 64' role='img' aria-label='".round($pct)."%'>"
+        ."<circle cx='32' cy='32' r='$r' fill='none' stroke='#e5e7eb' stroke-width='8'/>"
+        ."<circle cx='32' cy='32' r='$r' fill='none' stroke='$col' stroke-width='8' stroke-dasharray='$on $off' transform='rotate(-90 32 32)' stroke-linecap='round'/>"
+        ."<text x='32' y='36' text-anchor='middle'>".round($pct)."%</text></svg>";
+}
+
+// 5c. Le disque des archives (GET /logs/capacity).
+function lgl_disk($tpl,array $m):string{
+    $c=$m["cap"];
+    if($c===null){
+        return "<div class='lgl-fact disk'><div class='lbl'>{lgl_disk_t}</div><div class='val'>&mdash;</div><p class='lgl-help'>{lgl_disk_none}</p></div>";
+    }
+    $used=isset($c->fs_used_pct)?floatval($c->fs_used_pct):-1;
+    $free=isset($c->fs_free_bytes)?floatval($c->fs_free_bytes):-1;
+    $total=isset($c->fs_total_bytes)?floatval($c->fs_total_bytes):-1;
+    $ring=$used>=0?lgl_ring($used):"";
+    $lines=array();
+    if($free>=0 && $total>0){$lines[]=lgl_t($tpl,"lgl_disk_free",array(lgl_bytes($free),lgl_bytes($total)));}
+    $ab=isset($c->archive_bytes)?floatval($c->archive_bytes):0;
+    if($ab>0 && isset($c->oldest_day) && $c->oldest_day!==""){
+        $lines[]=lgl_t($tpl,"lgl_disk_archives",array("<b>".lgl_bytes($ab)."</b>",lgl_day((string)$c->oldest_day)));
+    }elseif($ab<=0){
+        $lines[]=lgl_t($tpl,"lgl_disk_noarch");
+    }
+    if(isset($c->rate_avg_mb_per_day) && floatval($c->rate_avg_mb_per_day)>=0){
+        $lines[]=lgl_t($tpl,"lgl_disk_rate",array(number_format(floatval($c->rate_avg_mb_per_day),1)));
+    }
+    $verdict="";
+    if(isset($c->sufficient) && $c->sufficient && isset($c->required_gb) && floatval($c->required_gb)>=0){
+        $verdict="<p class='lgl-ok'><i class='fas fa-circle-check' aria-hidden='true'></i>"
+            .lgl_t($tpl,"lgl_disk_enough",array(isset($c->max_days)?intval($c->max_days):intval($m["max_days"]),number_format(floatval($c->required_gb),1)))."</p>";
+    }
+    return "<div class='lgl-fact disk'><div class='lbl'>{lgl_disk_t}</div><div class='lgl-disk'>$ring<div class='tx'>"
+        .@implode("<br>",$lines)."</div></div>$verdict</div>";
+}
+
+// 5. Combien de temps les archives sont gardees.
+function lgl_keep($tpl,array $m):string{
+    $page=CurrentPageName();
+    $ex=lgl_t($tpl,"lgl_keep_example",array($m["max_days_access"]));
+    $other="";
+    if($m["max_days"]!=$m["max_days_access"]){
+        $other="<div class='lgl-fact'><div class='lbl'>{lgl_keep_other}</div><div class='val'>".lgl_t($tpl,"lgl_n_days",array($m["max_days"]))."</div>"
+            ."<p class='lgl-help'>{lgl_keep_other_help}</p></div>";
+    }
+    return "<section class='lgl-card'>".lgl_card_head("fa-calendar-check","{lgl_keep_t}","Loadjs('$page?main-section-js=yes');")
+        ."<div class='lgl-facts'>"
+        ."<div class='lgl-fact'><div class='lbl'>{lgl_keep_proxy}</div><div class='val'>".lgl_t($tpl,"lgl_n_days",array($m["max_days_access"]))."</div>"
+        ."<p class='lgl-help'>{lgl_keep_proxy_help}</p></div>$other"
+        .lgl_disk($tpl,$m)
+        ."</div><p class='lgl-help'>{lgl_keep_text}</p><div class='lgl-example'><b>{lgl_example}</b> $ex</div></section>";
+}
+
+// 6. Vie privee et protection.
+function lgl_privacy($tpl,array $m):string{
+    $page=CurrentPageName();
+    $ips="";
+    if(count($m["exceptions"])==0){
+        $ips="<p class='lgl-empty'>{lgl_ex_none}</p>";
+    }else{
+        foreach($m["exceptions"] as $ip){$ips.="<span class='lgl-ip'>".lgl_e($ip)."</span>";}
+        $ips="<div class='lgl-ips'>$ips</div>";
+    }
+    if($m["crypt"]){
+        $st="<span class='lgl-state on'><i class='fas fa-lock' aria-hidden='true'></i>{lgl_crypt_on}</span>";
+    }else{
+        $st="<span class='lgl-state'><i class='fas fa-lock-open' aria-hidden='true'></i>{lgl_crypt_off}</span>";
+    }
+    $dec="";
+    if($m["crypted_files"]){
+        $dec="<div class='lgl-dec'><span>{lgl_crypted_files}</span><button type='button' class='lgl-link' OnClick=\"Loadjs('$page?decrypt-backups-js=yes');\">{decrypt_backups}</button></div>";
+    }
+    return "<section class='lgl-card'>".lgl_card_head("fa-user-shield","{lgl_priv_t}","Loadjs('$page?main-section-js=yes');")
+        ."<div class='lgl-cols'><div><div class='lbl'>{lgl_ex_t}</div>$ips<p class='lgl-help'>{lgl_ex_help}</p></div>"
+        ."<div><div class='lbl'>{lgl_crypt_t}</div>$st<p class='lgl-help'>{lgl_crypt_help}</p>$dec</div></div></section>";
+}
+
+// 7. Ou l'appliance ecrit ses journaux.
+function lgl_varlog($tpl,array $m):string{
+    $page=CurrentPageName();
+    $path=$m["varlog_path"]!==""?lgl_e($m["varlog_path"]):"/var/log";
+    $size=$m["varlog_kib"]>=0?" &middot; <b>".FormatBytes($m["varlog_kib"],true)."</b>":"";
+    return "<section class='lgl-card lgl-varlog'><i class='fas fa-folder-open ico' aria-hidden='true'></i>"
+        ."<div class='tx'><div class='t'>{lgl_varlog_t} <span class='mono pill'>$path$size</span></div><p class='lgl-help'>{lgl_varlog_help}</p></div>"
+        ."<button type='button' class='lgl-btn' OnClick=\"Loadjs('$page?ChangeSystemLog-js=yes');\"><i class='fas fa-folder-tree' aria-hidden='true'></i>{lgl_move}</button></section>";
 }
 
 function main(){
     $tpl=new template_admin();
-    //
-    $AutoFSEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AutoFSEnabled"));
-    $SquidPerformance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidPerformance"));
-    $EnableIntelCeleron=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableIntelCeleron"));
     $page=CurrentPageName();
-
+    // Conserve de l'ancienne page : desactive a chaque affichage le client et le
+    // serveur de journaux legaux historiques (LegalLogArticaClient, LegallogServer),
+    // que articarest lit encore (squid/legal_logs_client.go, logsink). Ne pas retirer
+    // sans avoir d'abord retire ces lectures cote daemon.
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LegalLogArticaClient",0);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LegallogServer",0);
+    $m=lgl_model();
+    $html=array();
+    $html[]="<div class='lgl'>";
+    $html[]=lgl_banner($tpl,$m);
+    $html[]=lgl_warn_capacity($tpl,$m);
+    $html[]=lgl_warn_local($tpl,$m);
+    $html[]=lgl_where($tpl,$m);
+    $html[]=lgl_when($tpl,$m);
+    $html[]=lgl_keep($tpl,$m);
+    $html[]=lgl_privacy($tpl,$m);
+    $html[]=lgl_varlog($tpl,$m);
+    $html[]="</div>";
 
-    if($SquidPerformance>2){$AutoFSEnabled=0;}
-    if($EnableIntelCeleron==1){$AutoFSEnabled=0;}
-    $SquidRotateOnlySchedule=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateOnlySchedule"));
-    $LogRotatePath=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogRotatePath");
-    $BackupMaxDays=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupMaxDays");
-    $BackupMaxDaysDir=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupMaxDaysDir");
-    $LogRotateH=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogRotateH");
-    $LogRotateM=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogRotateM");
-    $LogsRotateDefaultSizeRotation=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogsRotateDefaultSizeRotation");
-    if(!is_numeric($LogsRotateDefaultSizeRotation)){$LogsRotateDefaultSizeRotation=100;}
-    if(!is_numeric($BackupMaxDays)){$BackupMaxDays=365;}
-    if($LogRotateH==null){$LogRotateH="00";}
-    if($LogRotateM==null){$LogRotateM="05";}
-    if($LogRotatePath==null){$LogRotatePath="/home/logrotate";}
-    if($BackupMaxDaysDir==null){$BackupMaxDaysDir="/home/logrotate_backup";}
-    $SquidLogRotateFreq=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidLogRotateFreq"));
-    if($SquidLogRotateFreq<10){$SquidLogRotateFreq=1440;}
-    $BackupLogsMaxStoragePercent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupLogsMaxStoragePercent"));
-    if($BackupLogsMaxStoragePercent==0){$BackupLogsMaxStoragePercent=50;}
-    $SquidRotateClean=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateClean"));
-
-    $SquidLogsExceptions=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidLogsExceptions");
-    if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("SquidLogsExceptions")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogsExceptions", "127.0.0.1");}
-
-    $LogsRotateDefaultSizeRotation=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogsRotateDefaultSizeRotation"));
-    if($LogsRotateDefaultSizeRotation<5){$LogsRotateDefaultSizeRotation=100;}
-
-    $sock=new sockets();
-    $target=base64_encode("/var/log");
-    $json=json_decode($sock->REST_API("/system/directory/target/$target"));
-    $size=FormatBytes($json->Size);
-    $tpl->table_form_field_js("Loadjs('$page?ChangeSystemLog-js=yes')");
-    $tpl->table_form_field_info("{system_logs_path}",$json->Info." ($size)",ico_folder);
-
-
-
-    $tpl->table_form_field_js("Loadjs('$page?main-section-js=yes')");
-    $tpl->table_form_field_info("{SquidLogsExceptions}",$SquidLogsExceptions,ico_computer_down);
-
-    $tpl->table_form_field_js("Loadjs('$page?main-defaultsize-js=yes')");
-    if($SquidRotateOnlySchedule==0){
-        $tpl->table_form_field_info("{log_rotation}","{export_log_if_size_exceed} {$LogsRotateDefaultSizeRotation}MB",ico_clock);
-    }else{
-        $tpl->table_form_field_info("{log_rotation}","{every_day_at} $LogRotateH:$LogRotateM",ico_clock);
-        $tpl->table_form_field_text("{max_log_file_size}","{$LogsRotateDefaultSizeRotation}MB",ico_weight);
-    }
--
-    $tpl->table_form_field_js("Loadjs('$page?main-section-js=yes')");
-    $tpl->table_form_field_info("{temporay_storage_path}",$LogRotatePath,ico_folder);
-    $tpl->table_form_field_info("{backup_folder}",$BackupMaxDaysDir,ico_folder);
-
-    if($SquidRotateClean==1){
-        $tpl->table_form_field_info("{clean_old_files}","$BackupMaxDays {days}",ico_trash);
-    }else{
-        $tpl->table_form_field_info("{clean_old_files}","{never}",ico_trash);
-    }
-
-    $legal_log_external_explain=$tpl->_ENGINE_parse_body("{legal_log_external_explain}");
-    $legal_log_external_explain=str_replace("%s","<a href='https://wiki.articatech.com/en/system/syslog/log-sink' target=_top>{logs_sink}</a>",$legal_log_external_explain);
-    $tpl->table_form_section("{external_storage}",$legal_log_external_explain);
-
-    $HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
-
-    if($HaClusterClient==1){
-        $tpl->table_form_field_js("");
-        $tpl->table_form_field_info("{logs_sink}", "{use_lb_system}", ico_forward);
-
-    }else {
-
-        $tpl->table_form_field_js("Loadjs('$page?main-logsink-js=yes')");
-        $LogSinkClient = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinkClient"));
-        if ($LogSinkClient == 0) {
-            $tpl->table_form_field_info("{logs_sink}", "{inactive2}", ico_forward);
-
-        } else {
-            $proto = "udp";
-
-            $LogSinkClientPort = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinkClientPort"));
-            $LogSinkClientServer = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinClientServer"));
-            $LogSinkClientTCP = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinkClientTCP"));
-            if ($LogSinkClientTCP == 1) {
-                $proto = "tcp";
-            }
-            $tpl->table_form_field_info("{logs_sink}", "$proto://$LogSinkClientServer:$LogSinkClientPort", ico_forward);
-        }
-    }
-
-    $SquidRotateAutomount=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateAutomount"));
-    $SquidRotateAutomountRes=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateAutomountRes");
-    $SquidRotateAutomountFolder=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateAutomountFolder");
-
-    if($SquidRotateAutomount==0) {
-        if($AutoFSEnabled==0) {
-            $tpl->table_form_field_js("");
-            $tpl->table_form_field_info("{automount_center}", "{not_installed}", ico_storage);
-        }else{
-            $tpl->table_form_field_js("Loadjs('$page?main-autofs-js=yes')");
-            $tpl->table_form_field_info("{automount_center}", "{inactive2}", ico_storage);
-        }
-
-    }else{
-        $tpl->table_form_field_js("Loadjs('$page?main-autofs-js=yes')");
-        $tpl->table_form_field_info("{automount_center}","/automounts/$SquidRotateAutomountRes/$SquidRotateAutomountFolder",ico_storage);
-    }
-
-    $BackupSquidLogsUseNas=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupSquidLogsUseNas"));
-
-    $tpl->table_form_field_js("Loadjs('$page?nas-squid-js=yes')");
-    if($BackupSquidLogsUseNas==0){
-        $tpl->table_form_field_info("{NAS_storage}", "{inactive2}", ico_storage);
-    }else{
-        $BackupSquidLogsNASIpaddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupSquidLogsNASIpaddr");
-        $BackupSquidLogsNASFolder=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupSquidLogsNASFolder");
-        $tpl->table_form_field_info("{use_remote_nas}", "$BackupSquidLogsNASIpaddr/$BackupSquidLogsNASFolder", ico_storage);
-    }
-
-
-
-    $bts[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-
-
+    $topbuttons=array();
     $export_logs_now=$tpl->framework_buildjs("/proxy/rotate","squid.rotate.progress","squid.rotate.progress.txt","progress-logrotate-restart");
-
-
-
-    $topbuttons[] = array($export_logs_now,ico_export,"{export_logs_now}");
-    $topbuttons[] = array("Loadjs('$page?import-js=yes')",ico_import,"{import}");
-
-    if(is_file("/etc/artica-postfix/crypted-legal-logs")) {
-        $topbuttons[] = array("Loadjs('$page?decrypt-backups-js=yes')","fa-duotone fa-box-open","{decrypt_backups}");
+    $topbuttons[]=array($export_logs_now,ico_export,"{export_logs_now}");
+    $topbuttons[]=array("Loadjs('$page?import-js=yes')",ico_import,"{import}");
+    if($m["crypted_files"]){
+        $topbuttons[]=array("Loadjs('$page?decrypt-backups-js=yes')","fa-duotone fa-box-open","{decrypt_backups}");
     }
-
-
+    $TINY_ARRAY=array();
     $TINY_ARRAY["TITLE"]="{legal_logs}";
     $TINY_ARRAY["ICO"]="fa fa-file-archive";
     $TINY_ARRAY["EXPL"]="{legal_logs_explain}";
@@ -580,13 +763,97 @@ function main(){
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $html[]=$tpl->table_form_compile();
-    $html[]="<script>$jstiny</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo lgl_style().$tpl->_ENGINE_parse_body(@implode("",$html))."<script>$jstiny</script>";
     return true;
-
-
 }
+
+function lgl_style():string{
+    if(!empty($GLOBALS["LGL_CSS"])){return "";}
+    $GLOBALS["LGL_CSS"]=true;
+    $ac=array("accent"=>"#005447","accent_dark"=>"#003d33","accent_soft"=>"rgba(0,84,71,.12)");
+    if(function_exists("brand_ui_accents") && function_exists("brand_palette")){
+        $ac=brand_ui_accents(brand_palette());
+    }
+    return "<style>
+.lgl{--lgl-accent:{$ac["accent"]};--lgl-dark:{$ac["accent_dark"]};--lgl-soft:{$ac["accent_soft"]};display:flex;flex-direction:column;gap:16px;max-width:960px;padding-top:8px;color:#0f172a;font-size:14px}
+.lgl *{box-sizing:border-box}
+.lgl-card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.04);padding:20px}
+.lgl-banner{display:flex;gap:16px;align-items:flex-start}
+.lgl-bico{flex:0 0 44px;width:44px;height:44px;border-radius:10px;background:var(--lgl-soft);color:var(--lgl-accent);display:flex;align-items:center;justify-content:center;font-size:20px}
+.lgl-btxt h2{margin:0 0 6px 0;font-size:19px;font-weight:600;color:#0f172a}
+.lgl-btxt p{margin:0;font-size:14px;line-height:1.55;color:#475569}
+.lgl-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.lgl-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:999px;background:#f2f6f6;border:1px solid #e1ebe9;font-size:13px;color:#1e293b}
+.lgl-chip i,.lgl-chip svg{color:var(--lgl-accent)}
+.lgl-alert{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:12px;background:#fffbeb;border:1px solid #fde68a;color:#78350f}
+.lgl-alert>i,.lgl-alert>svg{color:#d97706;font-size:18px;flex:0 0 auto}
+.lgl-alert p{margin:0;flex:1;font-size:14px}
+.lgl-alert.red{background:#fef2f2;border-color:#fecaca;color:#7f1d1d}
+.lgl-alert.red>i,.lgl-alert.red>svg{color:#dc2626}
+.lgl-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid #eef0f2}
+.lgl-head h3{margin:0;font-size:18px;font-weight:600;display:flex;gap:10px;align-items:center;color:#0f172a}
+.lgl-head h3 i,.lgl-head h3 svg{color:var(--lgl-accent)}
+.lgl-btn{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;border-radius:8px;border:1px solid #d1d5db;background:#fff;color:#1e293b;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap}
+.lgl-btn:hover{border-color:var(--lgl-accent);color:var(--lgl-dark)}
+.lgl-btn.warn{background:#fef3c7;border-color:#fcd34d;color:#78350f;font-weight:600}
+.lgl-btn:focus-visible,.lgl-tile:focus-visible,.lgl-link:focus-visible{outline:2px solid var(--lgl-accent);outline-offset:2px}
+.lgl-lead{margin:0 0 14px 0;color:#475569}
+.lgl-folder{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 16px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;margin-bottom:14px}
+.lgl .lbl{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:4px}
+.lgl-folder .sub{font-size:13px;color:#6b7280}
+.lgl .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;overflow-wrap:anywhere}
+.lgl .mono.big{font-size:15px;font-weight:600;color:#0f172a;text-align:right}
+.lgl-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.lgl-tile{display:flex;flex-direction:column;gap:6px;text-align:left;padding:14px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;font:inherit;color:#334155;min-height:112px;min-width:0}
+button.lgl-tile{cursor:pointer}
+button.lgl-tile:hover{border-color:var(--lgl-accent)}
+.lgl-tile.on{border-color:#bfd4d1;background:#f2f6f6}
+.lgl-tile.na{background:#fafafa;color:#94a3b8}
+.lgl-tile .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.lgl-tile .nm{display:flex;gap:8px;align-items:center;font-weight:600;font-size:14px;color:#0f172a}
+.lgl-tile.na .nm{color:#64748b}
+.lgl-tile .nm i,.lgl-tile .nm svg{color:#94a3b8}
+.lgl-tile.on .nm i,.lgl-tile.on .nm svg{color:var(--lgl-accent)}
+.lgl-tile .st{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:500;color:#6b7280;white-space:nowrap}
+.lgl-tile.on .st{color:var(--lgl-accent);font-weight:600}
+.lgl-tile .dot{width:7px;height:7px;border-radius:50%;background:#cbd5e1}
+.lgl-tile.on .dot{background:#10b981}
+.lgl-tile .sub{font-size:13px;color:#94a3b8;margin-top:-4px}
+.lgl-tile .dest{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;color:var(--lgl-dark);font-weight:600;overflow-wrap:anywhere}
+.lgl-tile .hp{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;margin-top:auto;font-size:13px;line-height:1.45}
+.lgl-tile .lnk{color:var(--lgl-accent);font-weight:600;white-space:nowrap}
+.lgl-big{font-size:22px;font-weight:600;color:#0f172a;margin-bottom:4px}
+.lgl-help{margin:4px 0 0 0;font-size:13px;color:#6b7280;line-height:1.5}
+.lgl-note{display:flex;gap:8px;align-items:center;margin:14px 0 0 0;padding-top:12px;border-top:1px solid #eef0f2;font-size:13px;color:#475569}
+.lgl-note i,.lgl-note svg{color:#94a3b8}
+.lgl-facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
+.lgl-fact{padding:14px 16px;border:1px solid #e5e7eb;border-radius:10px;background:#f9fafb;min-width:0}
+.lgl-fact .val{font-size:22px;font-weight:600;color:#0f172a}
+.lgl-fact.disk{grid-column:span 2}
+.lgl-disk{display:flex;gap:14px;align-items:center;font-size:13px;color:#334155;line-height:1.6}
+.lgl-ring{flex:0 0 64px}
+.lgl-ring text{font-size:13px;font-weight:600;fill:#0f172a}
+.lgl-ok{display:flex;gap:6px;align-items:center;margin:8px 0 0 0;font-size:13px;color:var(--lgl-dark)}
+.lgl-example{padding:10px 14px;border-radius:8px;background:#f2f6f6;border:1px solid #e1ebe9;font-size:13px;color:#334155;margin-top:10px}
+.lgl-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.lgl-ips{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0}
+.lgl-ip{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;padding:3px 9px;border-radius:6px;background:#f1f5f9;border:1px solid #e2e8f0;color:#0f172a;white-space:nowrap}
+.lgl-empty{margin:4px 0;font-size:14px;color:#334155}
+.lgl-state{display:inline-flex;align-items:center;gap:7px;padding:4px 11px;border-radius:999px;background:#f3f4f6;border:1px solid #e5e7eb;font-size:13px;font-weight:600;color:#475569;margin:4px 0}
+.lgl-state.on{background:#f2f6f6;border-color:#bfd4d1;color:var(--lgl-dark)}
+.lgl-dec{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;color:#475569}
+.lgl-link{background:none;border:0;padding:0;color:var(--lgl-accent);font-weight:600;font-size:13px;cursor:pointer}
+.lgl-link:hover{color:var(--lgl-dark);text-decoration:underline}
+.lgl-varlog{display:flex;align-items:center;gap:14px;padding:16px 20px}
+.lgl-varlog .ico{color:var(--lgl-accent);font-size:20px}
+.lgl-varlog .tx{flex:1;min-width:0}
+.lgl-varlog .t{font-weight:600;font-size:15px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.lgl-varlog .pill{font-weight:400;padding:2px 8px;border-radius:6px;background:#f1f5f9;border:1px solid #e2e8f0}
+@media (max-width:1200px){.lgl-tiles{grid-template-columns:1fr}.lgl-cols{grid-template-columns:1fr}.lgl-fact.disk{grid-column:auto}}
+@media (prefers-reduced-motion:no-preference){.lgl-btn,.lgl-tile{transition:border-color .15s ease,color .15s ease}}
+</style>";
+}
+
 function main_autofs_popup(){
     $tpl=new template_admin();
     $AutoFSEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AutoFSEnabled"));
@@ -689,11 +956,8 @@ function main_section_popup():bool{
 	if($SquidLogRotateFreq<10){$SquidLogRotateFreq=1440;}
 
 	
-	$BackupLogsMaxStoragePercent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupLogsMaxStoragePercent"));
 	
-	if($BackupLogsMaxStoragePercent==0){$BackupLogsMaxStoragePercent=50;}
 	$SquidRotateAutomount=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateAutomount"));
-	$SquidRotateClean=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateClean"));
 	$SquidRotateAutomountRes=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateAutomountRes");
 	$SquidRotateAutomountFolder=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateAutomountFolder");
 	
@@ -722,13 +986,10 @@ function main_section_popup():bool{
     if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("SquidLogsExceptions")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogsExceptions", "127.0.0.1");}
 
 	$disabled=false;
-    $SquidRotateForceRestart=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateForceRestart"));
     $SquidRotateEnableCrypt=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidRotateEnableCrypt"));
 
 
 
-    $form[]=$tpl->field_checkbox("SquidRotateForceRestart", "{restart_proxy_service}",
-            $SquidRotateForceRestart);
 
 
 
@@ -736,9 +997,10 @@ function main_section_popup():bool{
 	$form[]=$tpl->field_text("BackupMaxDaysDir","{backup_folder}",$BackupMaxDaysDir,false,"{BackupMaxDaysDir_explain}");
 
 
-	$form[]=$tpl->field_checkbox("SquidRotateClean", "{clean_old_files}", $SquidRotateClean,false,"{clean_old_files_accesslog_explain}");
-	$form[]=$tpl->field_numeric("BackupMaxDays", "{max_storage_days}", $BackupMaxDays,"{max_storage_days_log_explain}");
-	$form[]=$tpl->field_numeric("BackupLogsMaxStoragePercent", "{max_percent_storage} (%)", $BackupLogsMaxStoragePercent,"{BackupLogsMaxStoragePercent_explain}");
+	// SquidRotateClean, BackupLogsMaxStoragePercent et SquidRotateForceRestart ne
+	// sont lus par aucun code (articarest, artica-rotate) : la purge par age
+	// (PurgeBackupMaxDays) s'applique toujours. Les champs ont ete retires.
+	$form[]=$tpl->field_numeric("BackupMaxDays", "{lgl_f_maxdays}", $BackupMaxDays,"{lgl_f_maxdays_help}");
 	$form[]=$tpl->field_text("SquidLogsExceptions","{SquidLogsExceptions}",$SquidLogsExceptions,false,"{SquidLogsExceptions_explain}");
 
     $LogRotateCrypt = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogRotateCrypt"));

@@ -61,20 +61,16 @@ class ntpd{
             return @implode("\n", $f);
         }
 
-        $q=new lib_sqlite("/home/artica/SQLITE/ntp.db");
-        $sql="SELECT * FROM ntpd_servers ORDER BY `order`";
-        $results=$q->QUERY_SQL($sql);
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/chrony/servers"));
+        $results=(is_object($json) && isset($json->Servers) && is_array($json->Servers)) ? $json->Servers : [];
         writelogs("Parse servers...:".count($results)." items",__CLASS__ .'/'.__FUNCTION__ ,__FILE__);
         $c=0;
-        foreach ($results as $index=>$ligne){
+        foreach ($results as $row){
             $c++;
-            if(!$this->isresolvable($ligne["ntp_servers"])){continue;}
-            $this->servers[]=$ligne["ntp_servers"];
-            $f[]="server {$ligne["ntp_servers"]} minpoll 1 maxpoll 10 iburst";
+            if(!$this->isresolvable($row->Server)){continue;}
+            $this->servers[]=$row->Server;
+            $f[]="server {$row->Server} minpoll 1 maxpoll 10 iburst";
         }
-
-
-
 
         if($c==0){$f[]=$this->builddefaults_servers();return @implode("\n", $f);}
 
@@ -91,10 +87,12 @@ class ntpd{
 
     function builddefaults_servers():string{
         $NTPClientDefaultServerList=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPClientDefaultServerList");
-        if($NTPClientDefaultServerList==null){$NTPClientDefaultServerList="United States";}
+        // Same default as the daemon (chronyd/Configurator.go). An unknown name gave
+        // count(null): a fatal on PHP 8 in every add/remove/move (via SaveToLdap()).
+        if(strlen(trim((string)$NTPClientDefaultServerList))<3){$NTPClientDefaultServerList="Generic";}
         $countries=$this->ServersList();
         $f[]="# Country used: $NTPClientDefaultServerList";
-        $ARRAY=$countries[$NTPClientDefaultServerList];
+        $ARRAY=(isset($countries[$NTPClientDefaultServerList]) && is_array($countries[$NTPClientDefaultServerList]))?$countries[$NTPClientDefaultServerList]:array();
         $f[]="# Number of servers: ".count($ARRAY);
         foreach ($ARRAY as $serv){
             if(!$this->isresolvable($serv)){continue;}
@@ -106,72 +104,36 @@ class ntpd{
     }
 
     function AddServer($servername){
-        $q=new lib_sqlite("/home/artica/SQLITE/ntp.db");
-        $q->QUERY_SQL("INSERT OR IGNORE INTO ntpd_servers (`ntp_servers`) VALUES ('$servername')");
-        if(!$q->ok){echo $q->mysql_error;return;}
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/chrony/servers", ["server"=>$servername]));
+        if(!is_object($json) || !$json->Status){
+            $err=is_object($json) ? $json->Error : "REST call failed";
+            writelogs("AddServer($servername) failed: $err",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
+            echo $err;
+            return;
+        }
         $this->SaveToLdap();
-
-
     }
 
     function DeleteServer($servername){
-        $q=new lib_sqlite("/home/artica/SQLITE/ntp.db");
-        $q->QUERY_SQL("DELETE FROM `ntpd_servers` WHERE `ntp_servers`='$servername'");
-        if(!$q->ok){echo $q->mysql_error;return;}
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_DELETE("/chrony/servers/".rawurlencode($servername)));
+        if(!is_object($json) || !$json->Status){
+            $err=is_object($json) ? $json->Error : "REST call failed";
+            writelogs("DeleteServer($servername) failed: $err",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
+            echo $err;
+            return;
+        }
         $this->SaveToLdap();
-
     }
 
     function MoveServer($servername,$direction){
-        $q=new lib_sqlite("/home/artica/SQLITE/ntp.db");
-        writelogs("\"$direction\"=>SELECT * FROM `ntpd_servers` WHERE `ntp_servers`='$servername'",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM `ntpd_servers` WHERE `ntp_servers`='$servername'");
-        $order=intval($ligne["order"]);
-
-        if($direction=="down"){
-            $orderS=$order+1;
-            $orderT=$order;
-
-            writelogs("$direction::$servername::Other $order -> $orderT",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-            $q->QUERY_SQL("UPDATE `ntpd_servers` SET `order`='$orderT' WHERE `order`='$orderS'");
-            if(!$q->ok){echo $q->mysql_error;return;}
-
-            writelogs("$direction::$servername $order -> $orderS",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-            $q->QUERY_SQL("UPDATE `ntpd_servers` SET `order`='$orderS' WHERE `ntp_servers`='$servername'");
-            if(!$q->ok){echo $q->mysql_error;return;}
-
-
-
-        }else{
-
-            $orderS=$order-1;
-            $orderT=$order;
-
-            writelogs("$direction::$servername $order -> $orderT",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-            $q->QUERY_SQL("UPDATE `ntpd_servers` SET `order`='$orderT' WHERE `order`='$orderS'");
-            if(!$q->ok){echo $q->mysql_error;return;}
-
-            writelogs("$direction::$servername $orderS -> $orderT",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-            $q->QUERY_SQL("UPDATE `ntpd_servers` SET `order`='$orderS' WHERE `ntp_servers`='$servername'");
-            if(!$q->ok){echo $q->mysql_error;return;}
-
-
-
-
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/chrony/servers/".rawurlencode($servername)."/move", ["direction"=>$direction]));
+        if(!is_object($json) || !$json->Status){
+            $err=is_object($json) ? $json->Error : "REST call failed";
+            writelogs("MoveServer($servername,$direction) failed: $err",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
+            echo $err;
+            return;
         }
-
-        $sql="SELECT * FROM ntpd_servers ORDER BY `order` ASC";
-        $results=$q->QUERY_SQL($sql,"artica_backup");
-        if(!$q->ok){echo "$q->mysql_error<br>";}
-        $c=0;
-        foreach ($results as $index=>$ligne){
-            $q->QUERY_SQL("UPDATE `ntpd_servers` SET `order`='$c' WHERE `ntp_servers`='{$ligne["ntp_servers"]}'");
-            $c++;
-        }
-
-
         $this->SaveToLdap();
-
     }
 
     function buildconf(){
@@ -179,7 +141,7 @@ class ntpd{
         $NTPDRestrictToLocalNetwork=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDRestrictToLocalNetwork"));
         $NTPClientDefaultServerList=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPClientDefaultServerList");
         $NTPDListenInterface=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDListenInterface");
-        if($NTPClientDefaultServerList==null){$NTPClientDefaultServerList="United States";}
+        if(strlen(trim((string)$NTPClientDefaultServerList))<3){$NTPClientDefaultServerList="Generic";}
 
         @mkdir("/var/lib/ntp",0755,true);
         @mkdir("/var/log/ntpstats",0755,true);

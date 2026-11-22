@@ -3,7 +3,14 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.dnsdist.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// Verrou Artica Meta (politique dnsfirewall) : regles Meta en lecture seule
+include_once(dirname(__FILE__)."/ressources/class.dnsfirewall.meta.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : enable-js/filltable/rule-delete-js/replace-rule etaient recopies sans encodage dans la page (XSS). Ce sont des ID de regle.
+foreach(array("enable-js","filltable","rule-delete-js","replace-rule") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
 
 //
 
@@ -27,6 +34,7 @@ if(isset($_POST["newrule"])){new_rule_save();exit;}
 if(isset($_POST["newrule2"])){new_rule_save2();exit;}
 if(isset($_POST["cache_settings"])){rule_cache_save();exit;}
 if(isset($_POST["EnableGoogleSafeSearch"])){rule_safesearch_save();exit;}
+if(isset($_POST["dacl-delete"])){dacl_delete_save();exit;}
 
 if(isset($_GET["ch-method-js"])){change_method_js();exit;}
 if(isset($_GET["ch-method-popup"])){change_method_popup();exit;}
@@ -70,13 +78,33 @@ function page():bool{
 }
 
 function filltable(){
+    // To be filled
+    return true;
     $ACCESSEnabled=0;
     $tpl=new template_admin();
     $uncrypt_ssl=$tpl->javascript_parse_text("{uncrypt_websites}");
     $trust_ssl=$tpl->javascript_parse_text("{trust_ssl}");
     $ID=$_GET["filltable"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM dnsdist_rules WHERE ID='$ID'");
+    $ruleData=acls_api_get("/dns/dnsdist/rules/".intval($ID));
+    $ligne=array();
+    if(is_array($ruleData)){
+        $ligne["ID"]=$ruleData["id"];
+        $ligne["enabled"]=$ruleData["enabled"];
+        $ligne["ruletype"]=$ruleData["ruleType"];
+        $ligne["rulename"]=$ruleData["ruleName"];
+        $ligne["rulevalue"]=$ruleData["ruleValue"];
+        $ligne["checkName"]=$ruleData["checkName"];
+        $ligne["checkInterval"]=$ruleData["checkInterval"];
+        $ligne["maxCheckFailures"]=$ruleData["maxCheckFailures"];
+        $ligne["checkTimeout"]=$ruleData["checkTimeout"];
+        $ligne["dns_caches"]=$ruleData["dnsCaches"];
+        $ligne["caches"]=$ruleData["caches"];
+        $ligne["uuid"]=$ruleData["uuid"];
+        $ligne["simpledomains"]=$ruleData["simpleDomains"];
+        $ligne["uuids"]=$ruleData["uuids"];
+        $ligne["useClientSubnet"]=intval($ruleData["useClientSubnet"] ?? 0);
+        $ligne["fwobject"]=$ruleData["fwobject"] ?? "";
+    }
     $crypt=$ligne["crypt"];
     $enabled=intval($ligne["enabled"]);
     if($crypt==1 OR ($ligne["trust"]==1)){$ACCESSEnabled=1;}
@@ -103,37 +131,47 @@ function filltable(){
 
 function rule_delete_js(){
     header("content-type: application/x-javascript");
-    $ID=$_GET["rule-delete-js"];
-    $md="acl-$ID";
-    if(!rule_delete($ID)){return;}
-    echo "$('#$md').remove();";
-
-
+    $ID=intval($_GET["rule-delete-js"]);
+    $tpl=new template_admin();
+    if(!dacl_can_write()){echo "alert(".json_encode($tpl->javascript_parse_text("{ERROR_NO_PRIVS2}")).");";return;}
+    // Regle Meta : refus avant tout appel, la ligne reste affichee.
+    if(dnsfw_rule_is_meta($ID)){dnsfw_meta_refuse_js();return;}
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    $name=is_array($ruleData)?(string)($ruleData["ruleName"] ?? ""):"";
+    if($name===""){$name="#$ID";}
+    // Confirmation (plus de suppression au premier clic) ; la suppression part en POST.
+    $tpl->js_confirm_delete(htmlspecialchars($name,ENT_QUOTES),"dacl-delete",$ID,"$('#acl-$ID').remove();RefreshDNSDistRules();");
+}
+function dacl_delete_save():bool{
+    $tpl=new template_admin();
+    if(!dacl_can_write()){echo $tpl->post_error("{ERROR_NO_PRIVS2}");return false;}
+    $ID=intval($_POST["dacl-delete"]);
+    if($ID<=0){echo $tpl->post_error("rule not found");return false;}
+    if(dnsfw_rule_is_meta($ID)){return dnsfw_meta_refuse_post();}
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    $name=is_array($ruleData)?(string)($ruleData["ruleName"] ?? ""):"";
+    list($ok,$err)=rule_delete($ID);
+    // Le refus du demon (423 pour une regle Meta, erreur d'ecriture) ne retire pas la ligne.
+    if(!$ok){echo $tpl->post_error((string)$err);return false;}
+    admin_tracks("Delete DNS Firewall rule $ID $name");
+    return true;
 }
 function rule_enable():bool{
-    $page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $ID=intval($_GET["enable-js"]);
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM dnsdist_rules WHERE ID='$ID'");
-    $enabled_src=intval($ligne["enabled"]);
-    if($enabled_src==0){
-        $js="$( \"#acl-{$_GET["enable-js"]}\" ).removeClass( \"text-muted\" );";
-        $enabled=1;
-    }else{
-        $js="$( \"#acl-{$_GET["enable-js"]}\" ).addClass( \"text-muted\" );";
-        $enabled=0;
-    }
-
-    $q->QUERY_SQL("UPDATE dnsdist_rules SET enabled='$enabled' WHERE ID='{$_GET["enable-js"]}'");
-
-
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
-
     header("content-type: application/x-javascript");
-    echo "// ID = $ID, src=$enabled_src, enabled =$enabled\n";
-    echo $js."\n";
-    echo "Loadjs('$page?filltable=$ID');\n";
+    if(!dacl_can_write()){echo "alert(".json_encode($tpl->javascript_parse_text("{ERROR_NO_PRIVS2}")).");";return false;}
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    if(!is_array($ruleData)){echo "alert('rule not found');";return false;}
+    if(dnsfw_meta_rule($ruleData)){return dnsfw_meta_refuse_js();}
+    $enabled=intval($ruleData["enabled"])==0?1:0;
+    list($ok,$err)=acls_api_send("PUT","/dns/dnsdist/rules/$ID",["enabled"=>$enabled]);
+    if(!$ok){echo "alert(".json_encode($tpl->javascript_parse_text((string)$err)).");";return false;}
+    admin_tracks("Set DNS Firewall rule $ID enabled=$enabled");
+    $on=$enabled==1?"true":"false";
+    $off=$enabled==1?"false":"true";
+    echo "(function(){var r=document.getElementById('acl-$ID');if(r){r.classList.toggle('dacl-off',$off);}";
+    echo "var s=document.getElementById('dacl-sw-$ID');if(s){s.setAttribute('aria-checked','$on');}})();\n";
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
     return true;
 }
@@ -141,21 +179,27 @@ function change_method_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["ch-method-js"]);
-    $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `rulename` FROM dnsdist_rules WHERE ID='$ID'");
-    $tpl->js_dialog2("{rule}: {change_method} {$ligne["rulename"]}","$page?ch-method-popup=$ID&function=$function");
+    // Ce nom finit dans des URL et dans du JavaScript execute: liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    $rulename=is_array($ruleData) ? $ruleData["ruleName"] : "";
+    $tpl->js_dialog2("{rule}: {change_method} $rulename","$page?ch-method-popup=$ID&function=$function");
     return true;
 }
 function change_method_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["ch-method-popup"]);
-    $function=$_GET["function"];
+    // Ce nom finit dans des URL et dans du JavaScript execute: liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
     $functionenc=urlencode($function);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `rulename`,ruletype FROM dnsdist_rules WHERE ID='$ID'");
-    $ruletype=intval($ligne["ruletype"]);
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    $ruletype=is_array($ruleData) ? intval($ruleData["ruleType"]) : 0;
+    if(dnsfw_meta_rule($ruleData)){
+        dnsfw_meta_lock_form($tpl);
+        echo $tpl->_ENGINE_parse_body(dnsfw_meta_banner($tpl,true,"{dnsfw_meta_row_locked}"));
+        return false;
+    }
 
     fillRulesList_explain();
     $RULESSWITH=fillRules_canchange();
@@ -186,14 +230,14 @@ function change_method_save():bool{
     $tpl=new template_admin();
     $ID=intval($_POST["ch-rule"]);
     $ruletype2=intval($_POST["ruletype"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `rulename`,ruletype FROM dnsdist_rules WHERE ID='$ID'");
-    $ruletype=intval($ligne["ruletype"]);
-    $rulename=$ligne["rulename"];
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    if(dnsfw_meta_rule($ruleData)){return dnsfw_meta_refuse_post();}
+    $ruletype=is_array($ruleData) ? intval($ruleData["ruleType"]) : 0;
+    $rulename=is_array($ruleData) ? $ruleData["ruleName"] : "";
 
-    $q->QUERY_SQL("UPDATE dnsdist_rules SET ruletype=$ruletype2 WHERE ID=$ID");
-    if(!$q->ok){
-        $tpl->post_error($q->mysql_error);
+    list($ok,$err)=acls_api_send("PUT","/dns/dnsdist/rules/$ID",["ruleType"=>$ruletype2]);
+    if(!$ok){
+        $tpl->post_error($err);
         return false;
     }
     admin_tracks("Change DNS Firewall $rulename rule method from type $ruletype to $ruletype2");
@@ -205,13 +249,13 @@ function rule_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $tpl->CLEAN_GET_XSS();
-    $function=$_GET["function"];
-    $ID=$_GET["rule-id-js"];
-
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename,ruletype FROM dnsdist_rules WHERE ID='$ID'");
-    $ruletype=$ligne["ruletype"];
-    $tpl->js_dialog("{rule}: $ID {$ligne["rulename"]}/$ruletype","$page?rule-tabs=$ID&function=$function");
+    // Ce nom finit dans des URL et dans du JavaScript execute: liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+    $ID=intval($_GET["rule-id-js"]);
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    $rulename=is_array($ruleData) ? $ruleData["ruleName"] : "";
+    $ruletype=is_array($ruleData) ? $ruleData["ruleType"] : 0;
+    $tpl->js_dialog("{rule}: $ID $rulename/$ruletype","$page?rule-tabs=$ID&function=$function");
     return true;
 }
 function default_js():bool{
@@ -223,10 +267,10 @@ function default_js():bool{
 function rule_cache_save():bool{
     $ID=intval($_POST["cache_settings"]);
     $tpl=new template_admin();
+    if(dnsfw_rule_is_meta($ID)){return dnsfw_meta_refuse_post();}
     $cache_settings=base64_encode(serialize($_POST));
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("UPDATE dnsdist_rules SET `dns_caches`='$cache_settings' WHERE ID=$ID");
-    if(!$q->ok){$tpl->post_error($q->mysql_error);return false;}
+    list($ok,$err)=acls_api_send("PUT","/dns/dnsdist/rules/$ID",["dnsCaches"=>$cache_settings]);
+    if(!$ok){$tpl->post_error($err);return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
     return true;
 }
@@ -235,11 +279,11 @@ function rule_safesearch():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["rule-safesearch"]);
-    $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `dns_caches` FROM dnsdist_rules WHERE ID='$ID'");
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    $safe_settings=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["dns_caches"]);
+    // Ce nom finit dans des URL et dans du JavaScript execute: liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    if(!is_array($ruleData)){echo $tpl->div_error("rule not found");return false;}
+    $safe_settings=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ruleData["dnsCaches"]);
     $EnableGoogleSafeSearch=intval($safe_settings["EnableGoogleSafeSearch"]);
     $EnableBraveSafeSearch=intval($safe_settings["EnableBraveSafeSearch"]);
     $EnableDuckduckgoSafeSearch=intval($safe_settings["EnableDuckduckgoSafeSearch"]);
@@ -271,17 +315,17 @@ function rule_safesearch():bool{
 function rule_safesearch_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["gbdbid"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `dns_caches` FROM dnsdist_rules WHERE ID='$ID'");
-    $safe_settings=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["dns_caches"]);
+    $ID=intval($_POST["gbdbid"]);
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    if(!is_array($ruleData)){$tpl->post_error("rule not found");return false;}
+    if(dnsfw_meta_rule($ruleData)){return dnsfw_meta_refuse_post();}
+    $safe_settings=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ruleData["dnsCaches"]);
     foreach ($_POST as $key=>$val){
         $safe_settings[$key]=$val;
     }
     $cache_settings=base64_encode(serialize($safe_settings));
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("UPDATE dnsdist_rules SET `dns_caches`='$cache_settings' WHERE ID=$ID");
-    if(!$q->ok){$tpl->post_error($q->mysql_error);return false;}
+    list($ok,$err)=acls_api_send("PUT","/dns/dnsdist/rules/$ID",["dnsCaches"=>$cache_settings]);
+    if(!$ok){$tpl->post_error($err);return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
     return true;
 }
@@ -289,20 +333,9 @@ function rule_cache(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["rule-cache"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-    if(!$q->FIELD_EXISTS("dnsdist_rules","dns_caches")) {
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD `dns_caches` TEXT NULL");
-        if (!$q->ok) {
-            echo $tpl->div_error("{sql_error}||$q->mysql_error");
-        }
-    }
-
-
-    $ligne=$q->mysqli_fetch_array("SELECT `dns_caches` FROM dnsdist_rules WHERE ID='$ID'");
-
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-    $cache_settings=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["dns_caches"]);
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    if(!is_array($ruleData)){echo $tpl->div_error("rule not found");return;}
+    $cache_settings=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ruleData["dnsCaches"]);
 
 
     if(!isset( $cache_settings["cache_enable"])){ $cache_settings["cache_enable"]=0;}
@@ -310,6 +343,7 @@ function rule_cache(){
     if(!isset( $cache_settings["maxTTL"])){ $cache_settings["maxTTL"]=86400;}
     if(!isset( $cache_settings["minTTL"])){ $cache_settings["minTTL"]=0;}
     if(!isset( $cache_settings["staleTTL"])){ $cache_settings["staleTTL"]=60;}
+    if(!isset( $cache_settings["temporaryFailureTTL"])){ $cache_settings["temporaryFailureTTL"]=10;}
 
 
     $TIMES[0]="{none}";
@@ -336,6 +370,7 @@ function rule_cache(){
     $form[]=$tpl->field_array_hash($TIMES, "minTTL", "{cache-ttl} (Min)", $cache_settings["minTTL"]);
     $form[]=$tpl->field_array_hash($TIMES, "maxTTL", "{cache-ttl} (Max)", $cache_settings["maxTTL"]);
     $form[]=$tpl->field_array_hash($TIMES, "staleTTL", "{negquery-cache-ttl}", $cache_settings["staleTTL"]);
+    $form[]=$tpl->field_numeric("temporaryFailureTTL", "{temporaryFailureTTL} ({seconds})",  $cache_settings["temporaryFailureTTL"]);
 
     echo $tpl->form_outside("{dns_cache}", @implode("\n", $form),null,"{apply}",
         "RefreshDNSDistRules()","AsDnsAdministrator");
@@ -346,7 +381,8 @@ function rule_tabs(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $tpl->CLEAN_GET_XSS();
-    $function=$_GET["function"];
+    // Ce nom finit dans des URL et dans du JavaScript execute: liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
     $ID=intval($_GET["rule-tabs"]);
     $RefreshFunction=base64_encode("RefreshDNSDistRules()");
     $array["{rule}"]="$page?rule-settings=$ID&function=$function";
@@ -354,9 +390,13 @@ function rule_tabs(){
     $array["{objects}"]="fw.proxy.acls.objects.php?rule-id=$ID&TableLink=dnsdist_sqacllinks&RefreshTable=$RefreshTable&RefreshFunction=$RefreshFunction&function=$function";
     $array["{cache}"]="$page?rule-cache=$ID&function=$function";
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `ruletype` FROM dnsdist_rules WHERE ID='$ID'");
-    $ruletype=$ligne["ruletype"];
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    $ruletype=is_array($ruleData) ? intval($ruleData["ruleType"]) : 0;
+    if(dnsfw_meta_rule($ruleData)){
+        // Regle Meta : lecture seule, seul l'onglet de la regle (verrouille) est montre.
+        echo $tpl->tabs_default(array("{rule}"=>$array["{rule}"]));
+        return;
+    }
     if($ruletype==2 OR $ruletype==3 OR $ruletype==4 OR $ruletype==9){unset($array["{cache}"]);}
     if($ruletype==9){
         $array["SafeSearch(s)"]="$page?rule-safesearch=$ID&function=$function";
@@ -383,30 +423,28 @@ function ProxyDefaultUncryptSSL_save(){
 }
 
 function FireWallObjects():array{
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q2=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $sql="SELECT firewallfilter_sqacllinks.gpid,
-                                  firewallfilter_sqacllinks.negation,
-                                  firewallfilter_sqacllinks.aclid,
-                                  firewallfilter_sqacllinks.zOrder,
-                                  firewallfilter_sqacllinks.zmd5 
-                                  as mkey, webfilters_sqgroups.* FROM firewallfilter_sqacllinks,
-                                  webfilters_sqgroups WHERE 
-                                  firewallfilter_sqacllinks.gpid=webfilters_sqgroups.ID            
-                                  AND firewallfilter_sqacllinks.direction=0
-                                  AND webfilters_sqgroups.GroupType='src'
-                                  AND webfilters_sqgroups.enabled=1
-                                  ORDER BY firewallfilter_sqacllinks.zOrder";
-    $results=$q->QUERY_SQL($sql);
+    // Build iptables_main lookup map: id => ruleName
+    $iptablesRaw=acls_api_get("/firewall/iptables-rules");
+    $iptablesMap=array();
+    if(is_array($iptablesRaw)){
+        foreach($iptablesRaw as $ir){
+            $iptablesMap[intval($ir["id"])]=$ir["ruleName"];
+        }
+    }
+
     $MAIN=array();
-    foreach ($results as $index=>$ligne){
-        $GroupName=$ligne["GroupName"];
-        $aclid=$ligne["aclid"];
-        $gpid=$ligne["ID"];
-        $ligne2=$q2->mysqli_fetch_array("SELECT rulename FROM iptables_main WHERE ID=$aclid");
-        $rulename=$ligne2["rulename"];
-        $IpsetName="src-$aclid-$gpid";
-        $MAIN[$IpsetName]="$rulename: $GroupName";
+    // Enumerate all iptables rules; for each, fetch firewallfilter_sqacllinks (direction=0, src groups)
+    foreach($iptablesMap as $aclid=>$rulename){
+        $links=acls_api_get("/proxy/acls/sqlite/links?table=firewallfilter_sqacllinks&aclid=$aclid");
+        if(!is_array($links)){ continue; }
+        foreach($links as $lnk){
+            if($lnk["groupType"]!="src"){ continue; }
+            $gpid=intval($lnk["gpid"]);
+            if(!intval($lnk["enabled"])){ continue; }
+            $GroupName=$lnk["groupName"];
+            $IpsetName="src-$aclid-$gpid";
+            $MAIN[$IpsetName]="$rulename: $GroupName";
+        }
     }
     return $MAIN;
 
@@ -415,30 +453,33 @@ function FireWallObjects():array{
 function rule_settings():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $function=$_GET["function"];
-    $ID=$_GET["rule-settings"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+    // Ce nom finit dans des URL et dans du JavaScript execute: liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+    $ID=intval($_GET["rule-settings"]);
     $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
 
-    if(!$q->FIELD_EXISTS("dnsdist_rules","useClientSubnet")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD `useClientSubnet` INTEGER NOT NULL DEFAULT 0");
-        if(!$q->ok){echo $tpl->div_error("{sql_error}||$q->mysql_error");}
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","simpledomains")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD `simpledomains` NULL");
-        if(!$q->ok){echo $tpl->div_error("{sql_error}||$q->mysql_error");}
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","checkTimeout")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD checkTimeout INT");
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","rulevalue")){
-            $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD a TEXT");
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","fwobject")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD fwobject TEXT NOT NULL DEFAULT ''");
-    }
-
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM dnsdist_rules WHERE ID='$ID'");
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    if(!is_array($ruleData)){echo $tpl->div_error("rule not found");return false;}
+    $isMetaRule=dnsfw_meta_rule($ruleData);
+    if($isMetaRule){dnsfw_meta_lock_form($tpl);}
+    $ligne=array(
+        "ID"=>$ruleData["id"],
+        "enabled"=>$ruleData["enabled"],
+        "ruletype"=>$ruleData["ruleType"],
+        "rulename"=>$ruleData["ruleName"],
+        "rulevalue"=>$ruleData["ruleValue"],
+        "checkName"=>$ruleData["checkName"],
+        "checkInterval"=>$ruleData["checkInterval"],
+        "maxCheckFailures"=>$ruleData["maxCheckFailures"],
+        "checkTimeout"=>$ruleData["checkTimeout"],
+        "dns_caches"=>$ruleData["dnsCaches"],
+        "caches"=>$ruleData["caches"],
+        "uuid"=>$ruleData["uuid"],
+        "simpledomains"=>$ruleData["simpleDomains"],
+        "uuids"=>$ruleData["uuids"],
+        "useClientSubnet"=>intval($ruleData["useClientSubnet"] ?? 0),
+        "fwobject"=>$ruleData["fwobject"] ?? "",
+    );
 
     $ruletype=$ligne["ruletype"];
     $form[]=$tpl->field_hidden("ID", $ID);
@@ -508,98 +549,73 @@ function rule_settings():bool{
         $jsafter = "$function();";
     }
 
+    if($isMetaRule){
+        // Pas de bouton "changer de methode" sur une regle Meta, et bandeau en tete.
+        array_unshift($form,dnsfw_meta_banner($tpl,true,"{dnsfw_meta_row_locked}"));
+        $tpl->FORM_LOCKED=true;
+    }
     $html=$tpl->form_outside("{rule} {$ligne["rulename"]} <small>{$GLOBALS["DNS_RULES"][$ruletype]} </small>", $form,null,"{apply}",$jsafter,"AsDnsAdministrator");
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
 
 function patch_table():bool{
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    if(!$q->FIELD_EXISTS("dnsdist_rules","caches")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD caches TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","uuid")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD uuid TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","simpledomains")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD `simpledomains` TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","checkInterval")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD COLUMN checkInterval INTEGER NOT NULL DEFAULT 5");
-        if(!$q->ok){
-            echo $q->mysql_error;
-        }
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","rulevalue")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD rulevalue TEXT");
-    }
-
-
-    if(!$q->FIELD_EXISTS("dnsdist_rules","maxCheckFailures")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD COLUMN maxCheckFailures INTEGER NOT NULL DEFAULT 3");
-    }
-
-    if(!$q->FIELD_EXISTS("dnsdist_rules","checkTimeout")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD checkTimeout INT");
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","checkName")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD COLUMN checkName TEXT NOT NULL DEFAULT 'a.root-servers.net'");
-        if(!$q->ok){
-            echo $q->mysql_error;
-        }
-    }
-
-    if(!$q->FIELD_EXISTS("dnsdist_rules","checkInterval")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD COLUMN checkInterval INTEGER NOT NULL DEFAULT 5");
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD COLUMN maxCheckFailures INTEGER NOT NULL DEFAULT 3");
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD COLUMN checkName TEXT NOT NULL DEFAULT 'a.root-servers.net'");
-
-
-    }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","dns_caches")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD dns_caches TEXT NULL");
-    }
+    // Schema migrations handled by Go daemon at startup.
     return true;
-
 }
 
-function rule_save(){
+function rule_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
 
-
-    $ID=$_POST["ID"];
+    $ID=intval($_POST["ID"]);
     unset($_POST["ID"]);
-    $edit_fields=array();
+    if(dnsfw_rule_is_meta($ID)){return dnsfw_meta_refuse_post();}
 
-if(isset($_POST["checkInterval"])){
-    if(intval($_POST["checkInterval"])<2){
-        $languageF=$tpl->_ENGINE_parse_body("{check_interval} ({seconds})");
-        echo "jserror:$languageF < 2";
-        return;
-    }
+    if(isset($_POST["checkInterval"])){
+        if(intval($_POST["checkInterval"])<2){
+            $languageF=$tpl->_ENGINE_parse_body("{check_interval} ({seconds})");
+            echo (new template_admin())->post_error("$languageF < 2");
+            return false;
+        }
     }
     if(isset($_POST["checkInterval"])){
         if(intval($_POST["checkTimeout"])<3){
             $languageF=$tpl->_ENGINE_parse_body("{timeout} ({seconds})");
-            echo "jserror:$languageF < 3";
-            return;
+            echo (new template_admin())->post_error("$languageF < 3");
+            return false;
         }
-
     }
-
-
+    $intFields = array(
+        "enabled",
+        "ruleType",
+        "checkInterval",
+        "maxCheckFailures",
+        "checkTimeout",
+        "useClientSubnet"
+    );
+    // Map POST field names to API camelCase keys
+    $fieldMap=array(
+        "rulename"=>"ruleName","enabled"=>"enabled","ruletype"=>"ruleType",
+        "rulevalue"=>"ruleValue","checkName"=>"checkName","checkInterval"=>"checkInterval",
+        "maxCheckFailures"=>"maxCheckFailures","checkTimeout"=>"checkTimeout",
+        "simpledomains"=>"simpleDomains","dns_caches"=>"dnsCaches","caches"=>"caches",
+        "uuid"=>"uuid","uuids"=>"uuids","fwobject"=>"fwobject","useClientSubnet"=>"useClientSubnet",
+    );
+    $body=array();
     foreach ($_POST as $key=>$val){
-        $edit_fields[]="`$key`='$val'";
+        $apiKey = isset($fieldMap[$key]) ? $fieldMap[$key] : $key;
+
+        if (in_array($apiKey, $intFields, true)) {
+            $body[$apiKey] = intval($val);
+        } else {
+            $body[$apiKey] = $val;
+        }
     }
 
-    $sql="UPDATE dnsdist_rules SET ".@implode(",", $edit_fields)." WHERE ID='$ID'";
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    patch_table();
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error;return false;}
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
-    return true;
+    list($ok,$err)=acls_api_send("PUT","/dns/dnsdist/rules/$ID",$body);
+    if(!$ok){echo $err;return false;}
+    return admin_tracks_post("Edit DNS Firewall rule $ID");
 }
 function view_rules_js(){
     $page=CurrentPageName();
@@ -637,11 +653,18 @@ function new_rule_js2():bool{
     $LAST_DNSFW_POSTED_RULE=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LAST_DNSFW_POSTED_RULE");
     if($LAST_DNSFW_POSTED_RULE==null){return false;}
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM dnsdist_rules WHERE uuid='$LAST_DNSFW_POSTED_RULE'");
-    $rulename=$ligne["rulename"];
-    $ruletype=intval($ligne["ruletype"]);
-    $ID=intval($ligne["ID"]);
+    $rules=acls_api_get("/dns/dnsdist/rules");
+    $rulename="";$ruletype=0;$ID=0;
+    if(is_array($rules)){
+        foreach($rules as $r){
+            if(($r["uuid"]??"")== $LAST_DNSFW_POSTED_RULE){
+                $rulename=$r["ruleName"];
+                $ruletype=intval($r["ruleType"]);
+                $ID=intval($r["id"]);
+                break;
+            }
+        }
+    }
     if($ruletype==10){
         return $tpl->js_dialog("$rulename","$page?newrule-popup2=$ID");
     }
@@ -658,13 +681,13 @@ function new_rule_js():bool{
 function new_rule_popup2():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $ID=$_GET["newrule-popup2"];
+    $ID=intval($_GET["newrule-popup2"]);
     $form[]=$tpl->field_hidden("newrule2", $ID);
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM dnsdist_rules WHERE ID='$ID'");
-    $rulename=$ligne["rulename"];
-    $ruletype=intval($ligne["ruletype"]);
+    $ruleData=acls_api_get("/dns/dnsdist/rules/$ID");
+    if(!is_array($ruleData)){return false;}
+    $rulename=$ruleData["ruleName"];
+    $ruletype=intval($ruleData["ruleType"]);
     fillRulesList_explain();
     $explain=$GLOBALS["DNS_RULES"][$ruletype];
     $domain=null;
@@ -689,9 +712,12 @@ function new_rule_save2():bool{
     $tpl->CLEAN_POST();
     $ID=intval($_POST["newrule2"]);
     $data=base64_encode(serialize($_POST));
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("UPDATE dnsdist_rules SET dns_caches='$data' WHERE ID=$ID");
-    $GLOBALS["CLASS_SOCKETS"]->getGoFramework("exec.dnsdist.php --template10 $ID");
+    acls_api_send("PUT","/dns/dnsdist/rules/$ID",["dnsCaches"=>$data]);
+    $ruleData=acls_api_get("/dns/dnsdist/rules/".intval($ID));
+    $uuid=is_array($ruleData)?($ruleData["uuid"]??null):null;
+    if($uuid<>null){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/template10/".urlencode($uuid));
+    }
     return true;
 }
 
@@ -737,52 +763,13 @@ function fillRules_canchange():array{
 
 function rule_move(){
     $tpl=new template_admin();
-    $ID=$_GET["acl-rule-move"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT zOrder FROM dnsdist_rules WHERE `ID`='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-    $xORDER_ORG=intval($ligne["zOrder"]);
-    $xORDER=$xORDER_ORG;
-
-
-    if($_GET["acl-rule-dir"]==1){$xORDER=$xORDER_ORG-1;}
-    if($_GET["acl-rule-dir"]==0){$xORDER=$xORDER_ORG+1;}
-    if($xORDER<0){$xORDER=0;}
-    $sql="UPDATE dnsdist_rules SET zOrder=$xORDER WHERE `ID`='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-    if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-    if($_GET["acl-rule-dir"]==1){
-        $xORDER2=$xORDER+1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE dnsdist_rules SET zOrder=$xORDER2 WHERE `ID`<>'$ID' AND zOrder=$xORDER";
-        $q->QUERY_SQL($sql);
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-    }
-    if($_GET["acl-rule-dir"]==0){
-        $xORDER2=$xORDER-1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE dnsdist_rules SET zOrder=$xORDER2 WHERE `ID`<>'{$_GET["acl-rule-move"]}' AND zOrder=$xORDER";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-    }
-
-    $c=0;
-    $sql="SELECT ID FROM dnsdist_rules ORDER BY zOrder";
-    $results = $q->QUERY_SQL($sql);
-
-    foreach($results as $index=>$ligne) {
-        $q->QUERY_SQL("UPDATE dnsdist_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}");
-        if($GLOBALS["VERBOSE"]){echo "UPDATE dnsdist_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}\n";}
-        $c++;
-    }
+    $ID=intval($_GET["acl-rule-move"]);
+    $dir=intval($_GET["acl-rule-dir"]);
+    if(!dacl_can_write()){echo "alert(".json_encode($tpl->javascript_parse_text("{ERROR_NO_PRIVS2}")).");";return;}
+    if(dnsfw_rule_is_meta($ID)){dnsfw_meta_refuse_js();return;}
+    list($ok,$err)=acls_api_send("PUT","/dns/dnsdist/rules/$ID/move",["dir"=>$dir]);
+    if(!$ok){echo "alert('".$tpl->javascript_parse_text($err)."');";return;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
-
 }
 
 function table_start(){
@@ -811,249 +798,563 @@ function replace_rule(){
 }
 
 
-function table():bool{
+// --- Liste des regles (portage Stitch, prefixe dacl_) ---------------------------
+// Modele unique calcule une fois : regles de /dns/dnsdist/rules (Meta d'abord, comme le demon les
+// evalue), liens d'objets (dnsdist_sqacllinks), compteurs cumules /dnsfw/service/listrules (une
+// regle absente de la liste n'est pas chargee dans dnsdist), uptime /dnsfw/struct, regle par defaut.
+
+function dacl_can_write():bool{
+    $users=new usersMenus();
+    return isWritter($users);
+}
+
+function dacl_h($v):string{
+    return str_replace(array("{","}","[","]"),array("&#123;","&#125;","&#91;","&#93;"),htmlspecialchars((string)$v,ENT_QUOTES));
+}
+
+function dacl_t(string $token,$value):string{
     $tpl=new template_admin();
-    $page=CurrentPageName();
-    $function=$_GET["function"];
+    return str_replace("%s",(string)$value,$tpl->_ENGINE_parse_body($token));
+}
 
-    $html[]="<table id='table-dns-fw-rules' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{requests}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{rulename}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>{events}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>{enabled}</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+function dacl_dst_type(string $t):bool{
+    return in_array($t,array("dst","doh","opendns","opendnsf"));
+}
 
-    $array_help["TITLE"]="{inactive2}";
-    $array_help["content"]="{inactive_acl_why}";
-    $array_help["ico"]="fa fa-question";
-    $scontent=base64_encode(serialize($array_help));
-
-    $status_inactive=$tpl->td_href("<span class='label'>{inactive2}</span>","{explain}","LoadAjax('artica-modal-dialog','fw.popup.php?array=$scontent')");
-
-    $jsAfter="LoadAjax('table-firewall-rules','$page?table=yes');";
-    $GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-    $squid_acls_groups=new squid_acls_groups();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-    if(!$q->FIELD_EXISTS("dnsdist_rules","caches")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD `dns_caches` TEXT NULL");
-        if(!$q->ok){echo $tpl->div_error("{sql_error}||$q->mysql_error");}
+// Objets lies a une regle : sources (ce qui correspond) et destinations (serveurs DNS).
+function dacl_links(int $ID):array{
+    $out=array("src"=>array(),"dst"=>array());
+    $rows=acls_api_get("/proxy/acls/sqlite/links?table=dnsdist_sqacllinks&aclid=$ID");
+    if(!is_array($rows)){ return $out; }
+    foreach($rows as $l){
+        $t=(string)($l["groupType"] ?? "");
+        $o=array("name"=>(string)($l["groupName"] ?? ""),"gid"=>intval($l["groupID"] ?? 0),
+            "neg"=>intval($l["negation"] ?? 0)==1,"type"=>$t);
+        if(dacl_dst_type($t)){ $out["dst"][]=$o; }else{ $out["src"][]=$o; }
     }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","useClientSubnet")){
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD `useClientSubnet` INTEGER NOT NULL DEFAULT 1");
-        if(!$q->ok){echo $tpl->div_error("{sql_error}||$q->mysql_error");}
+    return $out;
+}
+
+function dacl_duration(int $sec):string{
+    if($sec<=0){ return "0 s"; }
+    if($sec<120){ return "$sec s"; }
+    if($sec<7200){ return round($sec/60)." min"; }
+    if($sec<172800){ return round($sec/3600)." h"; }
+    return round($sec/86400)." d";
+}
+
+function dacl_cache_line(array $ligne):string{
+    $c=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["dns_caches"]);
+    if(!is_array($c) || intval($c["cache_enable"] ?? 0)!=1){ return ""; }
+    $n=number_format(intval($c["MaxRecords"] ?? 10000),0,".",",");
+    return dacl_t("{dacl_opt_cache}",$n)." ".dacl_duration(intval($c["minTTL"] ?? 0))." &ndash; ".dacl_duration(intval($c["maxTTL"] ?? 86400));
+}
+
+function dacl_check_line(string $name,int $interval,int $timeout,int $failures):string{
+    $s=dacl_t("{dacl_opt_check}","<span class='dacl-mono'>".dacl_h($name)."</span>");
+    $s=str_replace(array("%i","%t","%f"),array($interval,$timeout,$failures),$s);
+    return $s;
+}
+
+function dacl_rule(array $r,array $hits,bool $hitsKnown):array{
+    $ID=intval($r["id"]);
+    $ligne=array(
+        "ID"=>$ID,"enabled"=>$r["enabled"],"ruletype"=>$r["ruleType"],"rulename"=>$r["ruleName"],
+        "rulevalue"=>$r["ruleValue"],"checkName"=>$r["checkName"],"checkInterval"=>$r["checkInterval"],
+        "maxCheckFailures"=>$r["maxCheckFailures"],"checkTimeout"=>$r["checkTimeout"],
+        "dns_caches"=>$r["dnsCaches"],"simpledomains"=>$r["simpleDomains"],"fwobject"=>$r["fwobject"] ?? "",
+        "metaid"=>(string)($r["metaid"] ?? ""),
+    );
+    $m=array("id"=>$ID,"name"=>(string)$r["ruleName"],"enabled"=>intval($r["enabled"])==1,"type"=>intval($r["ruleType"]),
+        "meta"=>dnsfw_meta_rule($ligne),"edns"=>intval($r["useClientSubnet"] ?? 0)==1,"attention"=>"",
+        "target"=>"","options"=>array());
+    $type=$m["type"];
+    $links=dacl_links($ID);
+    $m["src"]=$links["src"];
+    $m["dst"]=$links["dst"];
+    if($type==2 || $type==3 || $type==4 || $type==6 || $type==9){ $m["edns"]=false; }
+
+    if(count($m["src"])==0){
+        if(in_array($type,array(1,2,3,5))){ $m["attention"]="{dacl_att_noobj}"; }
     }
-    if(!$q->FIELD_EXISTS("dnsdist_rules","fwobject")) {
-        $q->QUERY_SQL("ALTER TABLE dnsdist_rules ADD `fwobject` TEXT INTEGER NOT NULL DEFAULT ''");
-        if (!$q->ok) {
-            echo $tpl->div_error("{sql_error}||$q->mysql_error");
+
+    if($type==1){
+        if(count($m["dst"])==0){ if($m["attention"]===""){ $m["attention"]="{dacl_att_nodest}"; } }
+        else{ $m["target"]=dacl_chips($m["dst"],"dacl-chip-dst"); }
+    }elseif($type==2){
+        $m["target"]="{dacl_t_refuse}";
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"))==1 && strlen((string)$ligne["fwobject"])>2){
+            $m["target"].="<div class='dacl-opt'>{dacl_t_refuse_fw}</div>";
         }
-    }
-
-    $sql="SELECT * FROM dnsdist_rules ORDER BY zOrder";
-    if(isset($_GET["search"])){
-        $search=$_GET["search"];
-        if($search<>null){
-            $search="*$search*";
-            $search=str_replace("**","*",$search);
-            $search=str_replace("*","%",$search);
-            $sql="SELECT * FROM dnsdist_rules WHERE rulename LIKE '$search' ORDER BY zOrder";
-
+    }elseif($type==3){
+        if(trim((string)$ligne["rulevalue"])===""){ if($m["attention"]===""){ $m["attention"]="{dacl_att_novalue}"; } }
+        else{ $m["target"]="CNAME <span class='dacl-mono'>".dacl_h($ligne["rulevalue"])."</span>"; }
+    }elseif($type==4){
+        $vals=array();
+        foreach(explode(",",(string)$ligne["rulevalue"]) as $v){ $v=trim($v); if($v!==""){ $vals[]=$v; } }
+        $parts=array();
+        if(count($vals)){ $parts[]="A <span class='dacl-mono'>".dacl_h(implode(", ",$vals))."</span>"; }
+        if(count($m["dst"])){ $parts[]=dacl_chips($m["dst"],"dacl-chip-dst"); }
+        if(count($parts)==0){ if($m["attention"]===""){ $m["attention"]="{dacl_att_novalue}"; } }
+        $m["target"]=implode(" ",$parts);
+        if(trim((string)$ligne["simpledomains"])!==""){
+            $m["options"][]="{dacl_opt_domains} <span class='dacl-mono'>".dacl_h($ligne["simpledomains"])."</span>";
         }
+    }elseif($type==5){
+        $m["target"]="{dacl_t_nocache}";
+    }elseif($type==6){
+        $m["target"]="{dacl_t_google}";
+    }elseif($type==9){
+        $c=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["dns_caches"]);
+        if(!is_array($c)){ $c=array(); }
+        $map=array("EnableGoogleSafeSearch"=>"Google","EnableBraveSafeSearch"=>"Brave","EnableDuckduckgoSafeSearch"=>"Duckduckgo",
+            "EnableYandexSafeSearch"=>"Yandex","EnablePixabaySafeSearch"=>"Pixabay","EnableQwantSafeSearch"=>"Qwant",
+            "EnableBingSafeSearch"=>"Bing","EnableYoutubeSafeSearch"=>"Youtube Strict","EnbaleYoutubeModerate"=>"Youtube Moderate");
+        $safe=array();
+        foreach($map as $k=>$label){ if(intval($c[$k] ?? 0)==1){ $safe[]=$label; } }
+        if(count($safe)==0){ if($m["attention"]===""){ $m["attention"]="{dacl_att_nosafe}"; } }
+        else{ $m["target"]=implode(", ",$safe); }
+    }else{
+        $m["target"]="<span class='dacl-muted'>{dacl_t_builtin}</span>";
     }
 
-    $results=$q->QUERY_SQL($sql);
-    $TRCLASS=null;
+    if($type==1 || $type==6){
+        $ligne=ChecksIntervalDefaults($ligne);
+        $cl=dacl_cache_line($ligne);
+        if($cl!==""){ $m["options"][]=$cl; }
+        $m["options"][]=dacl_check_line((string)$ligne["checkName"],intval($ligne["checkInterval"]),intval($ligne["checkTimeout"]),intval($ligne["maxCheckFailures"]));
+    }
+
+    $m["loaded"]=$hitsKnown && array_key_exists($ID,$hits);
+    $m["hits"]=$m["loaded"]?floatval($hits[$ID]):null;
+    return $m;
+}
+
+function dacl_default_model(array $hits,bool $hitsKnown):array{
+    $s=$GLOBALS["CLASS_SOCKETS"];
+    $d=array();
+    $nets=array();
+    $restricts=acls_api_get("/dns/pdns-restricts");
+    if(is_array($restricts)){
+        foreach($restricts as $r){ $a=trim((string)($r["address"] ?? "")); if($a!==""){ $nets[]=$a; } }
+    }
+    if(count($nets)==0){ $nets=array("192.168.0.0/16","10.0.0.0/8","172.16.0.0/12"); }
+    $d["nets"]=$nets;
+    $dns=array();
+    $resolv=new resolv_conf();
+    foreach(array("DNS1","DNS2","DNS3") as $k){
+        $v=trim((string)($resolv->MainArray[$k] ?? ""));
+        if($v!=="" && $v!=="127.0.0.1"){ $dns[]=$v; }
+    }
+    $d["dns"]=$dns;
+    // Meme calcul qu'articarest (Acls.go) : Mo x 1024 x 1024 / 512, defaut 300 Mo.
+    $size=intval($s->GET_INFO("UnBoundCacheSize"));
+    if($size<=0){ $size=300; }
+    $d["cache"]=$size*2048;
+    $min=intval($s->GET_INFO("UnBoundCacheMinTTL")); if($min<0){ $min=0; }
+    $max=intval($s->GET_INFO("UnBoundCacheMAXTTL")); if($max==0){ $max=172800; } if($max<0){ $max=0; }
+    $d["min"]=$min; $d["max"]=$max;
+    $cn=trim((string)$s->GET_INFO("DNSDistCheckName")); if($cn===""){ $cn="a.root-servers.net"; }
+    $ci=intval($s->GET_INFO("DNSDistCheckInterval")); if($ci<2){ $ci=2; }
+    $ct=intval($s->GET_INFO("DNSDistCheckTimeout")); if($ct<3){ $ct=3; }
+    $cf=intval($s->GET_INFO("DNSDistMaxCheckFailures")); if($cf<=0){ $cf=3; }
+    $d["check"]=dacl_check_line($cn,$ci,$ct,$cf);
+    $d["loaded"]=$hitsKnown && array_key_exists(0,$hits);
+    $d["hits"]=$d["loaded"]?floatval($hits[0]):null;
+    return $d;
+}
+
+function dacl_model():array{
+    if(isset($GLOBALS["DACL_MODEL"])){ return $GLOBALS["DACL_MODEL"]; }
+    $hits=array();
+    $hitsKnown=false;
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/service/listrules"));
-    $RULES_STATUS=array();
-    if(property_exists($json,"Info")){
-        foreach ($json->Info as $RID=>$hits){
-            $RULES_STATUS[$RID]=$hits;
-        }
+    if(is_object($json) && !empty($json->Status) && property_exists($json,"Info") && (is_object($json->Info) || is_array($json->Info))){
+        $hitsKnown=true;
+        foreach($json->Info as $RID=>$n){ $hits[intval($RID)]=floatval($n); }
     }
+    $all=acls_api_get("/dns/dnsdist/rules");
+    if(!is_array($all)){ $all=array(); }
+    $meta=array(); $local=array();
+    foreach($all as $r){
+        if(!is_array($r) || !isset($r["id"])){ continue; }
+        $x=dacl_rule($r,$hits,$hitsKnown);
+        if($x["meta"]){ $meta[]=$x; }else{ $local[]=$x; }
+    }
+    $rules=array_merge($meta,$local);
+    $pos=0;
+    foreach($rules as $i=>$x){ $pos++; $rules[$i]["pos"]=$pos; }
 
-    $valign="vertical-align:middle;";
-    $textright="class=\"text-right\"";
-    foreach($results as $index=>$ligne) {
-        if($TRCLASS=="footable-odd "){$TRCLASS=null;}else{$TRCLASS="footable-odd ";}
-        $explain=null;
-        $ACCESSEnabled=1;
-        $ruletype=$ligne["ruletype"];
-        $ID=$ligne["ID"];
-        $rulename=$tpl->utf8_encode($ligne["rulename"]);
-        $uuid=$ligne["uuid"];
-        $uuids=$ligne["uuids"];
-        VERBOSE(" ------------------ Rule.$ID $rulename uuid=[$uuid] uuids=[$uuids]",__LINE__);
-        $status=$status_inactive;
-        $please_specify_an_object=$tpl->_ENGINE_parse_body("{please_specify_an_object}");
-        $useClientSubnet=intval($ligne["useClientSubnet"]);
-        $useClientSubnet_ico=null;
+    $m=array("rules"=>$rules,"hits_known"=>$hitsKnown,"has_meta"=>count($meta)>0);
+    $m["default"]=dacl_default_model($hits,$hitsKnown);
+    $total=0;
+    foreach($hits as $n){ $total+=$n; }
+    $m["total"]=$hitsKnown?$total:null;
+    $m["uptime"]=null;
+    $st=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/struct"));
+    if(is_object($st) && !empty($st->Status) && isset($st->Info->statistics->uptime) && is_numeric($st->Info->statistics->uptime)){
+        $m["uptime"]=intval($st->Info->statistics->uptime);
+    }
+    $c=array("enabled"=>0,"disabled"=>0,"loaded"=>0,"pending"=>0,"attention"=>0);
+    foreach($rules as $x){
+        if($x["enabled"]){ $c["enabled"]++; }else{ $c["disabled"]++; }
+        if($x["enabled"] && $x["loaded"]){ $c["loaded"]++; }
+        if($x["enabled"] && !$x["loaded"]){ $c["pending"]++; }
+        if($x["enabled"] && $x["attention"]!==""){ $c["attention"]++; }
+    }
+    $m["c"]=$c;
+    $GLOBALS["DACL_MODEL"]=$m;
+    return $m;
+}
 
+// --- Petits rendus ---------------------------------------------------------------
 
-        $TTEXT=array();
-        $TTEXT[]=$GLOBALS["DNS_RULES"][$ruletype];
+function dacl_fmt($v):string{
+    if($v===null){ return "&mdash;"; }
+    return number_format($v,0,".",",");
+}
 
-        $GLOBALS["ACL_OBJECTS_JS_AFTER"]=base64_encode("LoadAjax('dnsdist-rule-text-$ID','$page?replace-rule=$ID');");
-        $objects=$squid_acls_groups->getobjectsNameFromAclrule($ID,null,"dnsdist_sqacllinks");
-
-        if($ruletype==6){
-            if(count($objects)==0){$objects[]="&laquo;{everyone}&raquo;";}
-            $useClientSubnet=0;
-        }
-        if($ruletype==9){
-            if(count($objects)==0){$objects[]="&laquo;{everyone}&raquo;";}
-            $useClientSubnet=0;
-        }
-
-        if(count($objects)>0){
-            $explain="&nbsp;{for_objects} ". @implode(" {and} ", $objects);
+function dacl_chips(array $objs,string $cls="dacl-chip-src"):string{
+    $jsafter=base64_encode("RefreshDNSDistRules()");
+    $h=array();
+    foreach($objs as $o){
+        $neg=$o["neg"]?"<span class='dacl-not'>{dacl_not}</span> ":"";
+        $name=dacl_h($o["name"]);
+        if($o["gid"]>0){
+            $h[]="<button type='button' class='dacl-chip $cls' title='{dacl_open_object}' OnClick=\"Loadjs('fw.rules.items.php?groupid={$o["gid"]}&js-after=$jsafter',true);\">$neg$name</button>";
         }else{
-            if($ruletype==1) {
-                $ACCESSEnabled = 0;
-                $explain = "<strong class=\"text-danger\">$please_specify_an_object</strong>";
-            }
-            if($ruletype==2) {
-                $ACCESSEnabled = 0;
-                $explain = "<strong class=\"text-danger\">$please_specify_an_object</strong>";
-            }
-            if($ruletype==3) {
-                $ACCESSEnabled = 0;
-                $explain = "<strong class=\"text-danger\">$please_specify_an_object</strong>";
-            }
-            if($ruletype==5) {
-                $ACCESSEnabled = 0;
-                $explain = "<strong class=\"text-danger\">$please_specify_an_object</strong>";
-            }
-
+            $h[]="<span class='dacl-chip $cls'>$neg$name</span>";
         }
+    }
+    return "<div class='dacl-chips'>".implode("",$h)."</div>";
+}
 
+function dacl_action_pill(int $type):string{
+    $map=array(
+        1=>array("fa-solid fa-scale-balanced","dacl-a-teal","{load_balance_dns_action}"),
+        2=>array("fa-solid fa-ban","dacl-a-red","{refuse_to_resolve}"),
+        3=>array("fa-solid fa-reply","dacl-a-purple","{SpoofCNAMEAction}"),
+        4=>array("fa-solid fa-reply","dacl-a-purple","{SpoofAction}"),
+        5=>array("fa-solid fa-database","dacl-a-grey","{do_not_cache}"),
+        6=>array("fa-brands fa-google","dacl-a-blue","{us_google_dns_gdmains}"),
+        7=>array("fa-solid fa-shield-halved","dacl-a-green","{web_browsing_protection}"),
+        8=>array("fa-solid fa-broom","dacl-a-green","{web_browsing_cleaning}"),
+        9=>array("fa-solid fa-child-reaching","dacl-a-green","SafeSearch(s)"),
+        10=>array("fa-solid fa-sitemap","dacl-a-blue","Active Directory Offloading"),
+    );
+    if(!isset($map[$type])){ return "<span class='dacl-action dacl-a-grey'>?</span>"; }
+    list($ico,$cls,$label)=$map[$type];
+    return "<span class='dacl-action $cls'><i class='$ico'></i><span>$label</span></span>";
+}
 
-        $class="text-muted";
+function dacl_requests_html($hits,$total):string{
+    $pct=0;
+    if($total!==null && $total>0 && $hits!==null){ $pct=round($hits*100/$total,1); }
+    $w=max(0,min(100,$pct));
+    $share=($total!==null && $total>0)?dacl_t("{dacl_share}",$pct):"";
+    return "<div class='dacl-req'>".dacl_fmt($hits)."</div><div class='dacl-bar' role='img' aria-label='$pct%'><span style='width:$w%'></span></div><div class='dacl-share'>$share</div>";
+}
 
+// --- Widgets ---------------------------------------------------------------------
 
-        if($useClientSubnet==1){$useClientSubnet_ico="&nbsp;<span class='label label-info'>EDNS</span>";}
-        if($ACCESSEnabled==1){$explain=$explain.EXPLAIN_THIS_RULE($ID);}
+function dacl_kpi(string $ico,string $tone,string $label,string $value,string $foot):string{
+    return "<div class='dacl-kpi $tone'><span class='dacl-kico'><i class='$ico'></i></span>"
+        ."<div class='dacl-kt'><div class='dacl-klabel'>$label</div><div class='dacl-kval'>$value</div><div class='dacl-kfoot'>$foot</div></div></div>";
+}
 
-        $delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
-        $js="Loadjs('$page?rule-id-js=$ID&function=$function')";
+function dacl_kpi_rules(array $m):string{
+    $c=$m["c"];
+    $total=$c["enabled"]+$c["disabled"];
+    return dacl_kpi("fa-solid fa-list-check","","{dacl_k_rules}",dacl_t("{dacl_k_rules_v}",$c["enabled"]),
+        dacl_t("{dacl_k_rules_f}",$total).($c["disabled"]>0?" &middot; ".dacl_t("{dacl_k_disabled}",$c["disabled"]):""));
+}
 
-        $up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
-        $down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
-        $rulename=$tpl->utf8_decode($rulename);
-        $check=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')");
-        $rulerow=$tpl->td_href($rulename,"{click_to_edit}",$js);
-        $logs=$tpl->icon_loupe();
-        $requests=0;
+function dacl_kpi_loaded(array $m):string{
+    $c=$m["c"];
+    if(!$m["hits_known"]){
+        return dacl_kpi("fa-solid fa-server","dacl-k-warn","{dacl_k_loaded}","&mdash;","{dacl_k_unreachable}");
+    }
+    $tone=$c["pending"]>0?"dacl-k-warn":"";
+    $foot=$c["pending"]>0?dacl_t("{dacl_k_pending}",$c["pending"]):"{dacl_k_uptodate}";
+    return dacl_kpi("fa-solid fa-server",$tone,"{dacl_k_loaded}",dacl_t("{dacl_k_loaded_v}",$c["loaded"]),$foot);
+}
 
-        if(isset($RULES_STATUS[$ID])){
-            $status = "<span class='label label-primary'>{active2}</span>";
-            if($RULES_STATUS[$ID]>0) {
-                $requests = $tpl->FormatNumber($RULES_STATUS[$ID]);
-                $class = "text-primary";
-                $logs=$tpl->icon_loupe(true,"Loadjs('fw.dnsdist.logs.php?rule-js=$ID')");
-            }
+function dacl_kpi_requests(array $m):string{
+    $foot=$m["uptime"]!==null?dacl_t("{dacl_k_uptime}",dacl_duration($m["uptime"])):"";
+    return dacl_kpi("fa-solid fa-chart-simple","","{dacl_k_requests}",dacl_fmt($m["total"]),$foot);
+}
 
-            if($RULES_STATUS[$ID]==0) {
-                $requests = 0;
-                $status = "<span class='label label-default'>{active2}</span>";
-                $class = "text-primary";
-            }
+function dacl_kpi_attention(array $m):string{
+    $n=$m["c"]["attention"];
+    if($n==0){ return dacl_kpi("fa-solid fa-circle-check","","{dacl_k_attention}","{dacl_none}","{dacl_k_att_none}"); }
+    return dacl_kpi("fa-solid fa-triangle-exclamation","dacl-k-warn","{dacl_k_attention}",dacl_t("{dacl_k_att_v}",$n),"{dacl_k_att_f}");
+}
 
-        }
-        if($ruletype==2 OR $ruletype==3 OR $ruletype==4 OR $ruletype==6){$useClientSubnet_ico=null;}
+function dacl_switch(array $x,bool $write):string{
+    $page=CurrentPageName();
+    $on=$x["enabled"]?"true":"false";
+    $lbl=dacl_h($x["name"]);
+    if($x["meta"] || !$write){
+        $why=$x["meta"]?"{dacl_meta_locked}":"{dacl_no_privs}";
+        return "<button type='button' class='dacl-sw' role='switch' aria-checked='$on' aria-label='$lbl' title='$why' disabled><span></span></button>";
+    }
+    return "<button type='button' class='dacl-sw' id='dacl-sw-{$x["id"]}' role='switch' aria-checked='$on' aria-label='$lbl' OnClick=\"Loadjs('$page?enable-js={$x["id"]}');\"><span></span></button>";
+}
 
-        $html[]="<tr style='$valign' class='$TRCLASS' id='acl-$ID'>";
-        $html[]="<td style='$valign;width:1%' class=\"$class\" nowrap><span class='$class' id='RA-$ID'> $status</span></td>";
-        $html[]="<td style='$valign;width:1%;' $textright nowrap><span class='$class' id='RR-$ID'>$requests</span></td>";
-        $html[]="<td style='$valign;width:1%' nowrap><span class='$class'>$rulerow</span></td>";
-        $html[]="<td style='$valign;width:99%' class=\"$class\" >$explain</span>$useClientSubnet_ico</td>";
-        $html[]="<td style='$valign;width:1%' class='center'>$logs</td>";
-        $html[]="<td style='$valign;width:1%' class='center'>$check</td>";
-        $html[]="<td style='$valign;width:1%' class='center' nowrap>$up&nbsp;&nbsp;$down</td>";
-        $html[]="<td style='$valign;width:1%' class='center'>$delete</td>";
-        $html[]="</tr>";
+function dacl_actions(array $x,bool $write,string $function):string{
+    $page=CurrentPageName();
+    $ID=$x["id"];
+    $h=array();
+    if($x["hits"]!==null && $x["hits"]>0){
+        $h[]="<button type='button' class='ak-act' aria-label='{dacl_events}' title='{dacl_events}' OnClick=\"Loadjs('fw.dnsdist.logs.php?rule-js=$ID');\"><i class='fa-solid fa-magnifying-glass'></i></button>";
+    }else{
+        $h[]="<button type='button' class='ak-act' aria-label='{dacl_events}' title='{dacl_no_events}' disabled><i class='fa-solid fa-magnifying-glass'></i></button>";
+    }
+    if($x["meta"] || !$write){
+        $h[]="<span class='dacl-lock' title='".($x["meta"]?"{dacl_meta_locked}":"{dacl_no_privs}")."'><i class='fa-solid fa-lock'></i></span>";
+        return "<div class='ak-acts'>".implode("",$h)."</div>";
+    }
+    $h[]="<button type='button' class='ak-act' aria-label='{dacl_move_up}' title='{dacl_move_up}' OnClick=\"Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');\"><i class='fa-solid fa-arrow-up'></i></button>";
+    $h[]="<button type='button' class='ak-act' aria-label='{dacl_move_down}' title='{dacl_move_down}' OnClick=\"Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');\"><i class='fa-solid fa-arrow-down'></i></button>";
+    $h[]="<button type='button' class='ak-act ak-danger' aria-label='{dacl_delete}' title='{dacl_delete}' OnClick=\"Loadjs('$page?rule-delete-js=$ID&function=$function');\"><i class='fa-solid fa-trash'></i></button>";
+    return "<div class='ak-acts'>".implode("",$h)."</div>";
+}
+
+function dacl_row(array $x,array $m,bool $write,string $function):string{
+    $page=CurrentPageName();
+    $ID=$x["id"];
+    $cls="dacl-row";
+    if(!$x["enabled"]){ $cls.=" dacl-off"; }
+    if($x["enabled"] && $x["attention"]!==""){ $cls.=" dacl-att"; }
+    if($x["meta"]){ $cls.=" dacl-meta"; }
+    $name=dacl_h($x["name"]);
+    $js="Loadjs('$page?rule-id-js=$ID&function=$function')";
+    $title=$x["meta"]?"{view}":"{click_to_edit}";
+    $badges=array();
+    if($x["meta"]){ $badges[]="<span class='dacl-badge dacl-b-meta'><i class='fa-solid fa-lock'></i> Artica Meta</span>"; }
+    if($x["edns"]){ $badges[]="<span class='dacl-badge'>EDNS</span>"; }
+    if(!$x["enabled"]){ $badges[]="<span class='dacl-badge dacl-b-off'>{dacl_disabled}</span>"; }
+    if($x["enabled"] && $x["attention"]!==""){ $badges[]="<span class='dacl-badge dacl-b-att'><i class='fa-solid fa-triangle-exclamation'></i> {dacl_needs_attention}</span>"; }
+
+    if(count($x["src"])){ $matches=dacl_chips($x["src"]); }
+    elseif(in_array($x["type"],array(6,9))){ $matches="<div class='dacl-chips'><span class='dacl-chip dacl-chip-all'><i class='fa-solid fa-globe'></i> {dacl_everyone}</span></div>"; }
+    else{ $matches="<span class='dacl-muted'>{dacl_no_object}</span>"; }
+
+    $target=$x["target"];
+    if($x["attention"]!==""){ $target.="<div class='dacl-attline'><i class='fa-solid fa-circle-exclamation'></i> ".$x["attention"]."</div>"; }
+    foreach($x["options"] as $o){ $target.="<div class='dacl-opt'>$o</div>"; }
+
+    if($x["loaded"]){ $req=dacl_requests_html($x["hits"],$m["total"]); }
+    elseif(!$x["enabled"]){ $req="<span class='dacl-muted'>&mdash;</span>"; }
+    elseif(!$m["hits_known"]){ $req="<span class='dacl-muted' title='{dacl_k_unreachable}'>&mdash;</span>"; }
+    else{ $req="<span class='dacl-pill-nl' title='{dacl_not_loaded_help}'><i class='fa-solid fa-circle-pause'></i> {dacl_not_loaded}</span>"; }
+
+    return "<tr class='$cls' id='acl-$ID'>"
+        ."<td class='dacl-c-pos'><span class='dacl-pos'>{$x["pos"]}</span></td>"
+        ."<td class='dacl-c-name'><a href='javascript:void(0)' class='dacl-name' title='$title' OnClick=\"$js\">$name</a><div class='dacl-badges'>".implode("",$badges)."</div></td>"
+        ."<td class='dacl-c-match'>$matches</td>"
+        ."<td class='dacl-c-action'>".dacl_action_pill($x["type"])."</td>"
+        ."<td class='dacl-c-target'>$target</td>"
+        ."<td class='dacl-c-req' id='RR-$ID'>$req</td>"
+        ."<td class='dacl-c-sw'>".dacl_switch($x,$write)."</td>"
+        ."<td class='dacl-c-act'>".dacl_actions($x,$write,$function)."</td>"
+        ."</tr>";
+}
+
+function dacl_default_row(array $m):string{
+    $d=$m["default"];
+    $nets=array();
+    foreach($d["nets"] as $n){ $nets[]="<span class='dacl-chip dacl-chip-net'>".dacl_h($n)."</span>"; }
+    if(count($d["dns"])){
+        $dns=array();
+        foreach($d["dns"] as $n){ $dns[]="<span class='dacl-chip dacl-chip-dst'>".dacl_h($n)."</span>"; }
+        $target="<div class='dacl-chips'>".implode("",$dns)."</div>";
+    }else{
+        $target="<div class='dacl-attline'><i class='fa-solid fa-circle-exclamation'></i> {dacl_default_nodns}</div>";
+    }
+    $target.="<div class='dacl-opt'>".dacl_t("{dacl_opt_cache}",number_format($d["cache"],0,".",","))." ".dacl_duration($d["min"])." &ndash; ".dacl_duration($d["max"])."</div>";
+    $target.="<div class='dacl-opt'>".$d["check"]."</div>";
+    if($d["loaded"]){ $req=dacl_requests_html($d["hits"],$m["total"]); }
+    else{ $req="<span class='dacl-muted'>&mdash;</span>"; }
+    $ev=($d["hits"]!==null && $d["hits"]>0)
+        ?"<button type='button' class='ak-act' aria-label='{dacl_events}' title='{dacl_events}' OnClick=\"Loadjs('fw.dnsdist.logs.php?rule-js=0');\"><i class='fa-solid fa-magnifying-glass'></i></button>"
+        :"<button type='button' class='ak-act' aria-label='{dacl_events}' title='{dacl_no_events}' disabled><i class='fa-solid fa-magnifying-glass'></i></button>";
+    return "<tbody class='dacl-default'><tr id='acl-0'>"
+        ."<td class='dacl-c-pos'><span class='dacl-pos dacl-pos-def' title='{dacl_default_last}'><i class='fa-solid fa-anchor'></i></span></td>"
+        ."<td class='dacl-c-name'><span class='dacl-name-def'>{dacl_default}</span><div class='dacl-sub'>{dacl_default_last}</div></td>"
+        ."<td class='dacl-c-match'><div class='dacl-sub'>{dacl_allowed_networks}</div><div class='dacl-chips'>".implode("",$nets)."</div></td>"
+        ."<td class='dacl-c-action'>".dacl_action_pill(1)."</td>"
+        ."<td class='dacl-c-target'>$target</td>"
+        ."<td class='dacl-c-req' id='RR-0'>$req</td>"
+        ."<td class='dacl-c-sw'><span class='dacl-always' title='{dacl_default_locked}'>{dacl_always_on}</span></td>"
+        ."<td class='dacl-c-act'><div class='ak-acts'>$ev<span class='dacl-lock' title='{dacl_default_locked}'><i class='fa-solid fa-thumbtack'></i></span></div></td>"
+        ."</tr></tbody>";
+}
+
+function dacl_empty_row(bool $write,string $function):string{
+    $page=CurrentPageName();
+    $btn=$write?"<button type='button' class='ak-btn ak-btn-sm' OnClick=\"Loadjs('$page?newrule-js=yes&function=$function',true);\"><i class='fa-solid fa-plus'></i> {new_rule}</button>":"";
+    return "<tr><td colspan='8'><div class='dacl-empty'><i class='fa-solid fa-list'></i><span>{dacl_empty}</span>$btn</div></td></tr>";
+}
+
+function dacl_style():string{
+    if(isset($GLOBALS["DACL_STYLE"])){ return ""; }
+    $GLOBALS["DACL_STYLE"]=true;
+    return "<style>
+#dacl-root{display:flex;flex-direction:column;gap:16px;margin-top:10px}
+#dacl-root #dnsfw-meta-banner{margin:0!important}
+#dacl-root .dacl-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+#dacl-root .dacl-kpi{display:flex;align-items:center;gap:12px;min-height:72px;padding:12px 16px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;box-sizing:border-box;min-width:0}
+#dacl-root .dacl-kico{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;flex:0 0 40px;border-radius:10px;background:#f1f5f9;color:#334155;font-size:17px}
+#dacl-root .dacl-kt{min-width:0}
+#dacl-root .dacl-klabel{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#64748b}
+#dacl-root .dacl-kval{font-size:17px;font-weight:600;color:#0f172a;font-variant-numeric:tabular-nums}
+#dacl-root .dacl-kfoot{font-size:12px;color:#64748b}
+#dacl-root .dacl-k-warn{background:#fffbeb;border-color:#fde68a}
+#dacl-root .dacl-k-warn .dacl-kico{background:#fef3c7;color:#b45309}
+#dacl-root .dacl-k-warn .dacl-kfoot{color:#92400e}
+#dacl-root .dacl-guide{display:flex;align-items:center;gap:8px;padding:12px 16px;font-size:13px;color:#334155;border-bottom:1px solid #e5e7eb}
+#dacl-root table.dacl-tbl{width:100%;border-collapse:collapse}
+#dacl-root .dacl-tbl th{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#64748b;text-align:left;padding:10px 12px;border-bottom:1px solid #e5e7eb;white-space:nowrap}
+#dacl-root .dacl-tbl td{padding:12px;border-bottom:1px solid #f1f5f9;vertical-align:middle;font-size:13px;color:#0f172a}
+#dacl-root .dacl-row.dacl-off td{opacity:.55}
+#dacl-root .dacl-row.dacl-off td.dacl-c-sw,#dacl-root .dacl-row.dacl-off td.dacl-c-act{opacity:1}
+#dacl-root .dacl-row.dacl-att td:first-child{box-shadow:inset 4px 0 0 #d97706}
+#dacl-root .dacl-row.dacl-att{background:#fffbeb}
+#dacl-root .dacl-c-pos{width:44px;text-align:center}
+#dacl-root .dacl-pos{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:#f1f5f9;color:#475569;font-size:12px;font-weight:600}
+#dacl-root .dacl-pos-def{background:#e2e8f0}
+#dacl-root .dacl-c-name{min-width:150px;max-width:220px}
+#dacl-root .dacl-name{font-size:14px;font-weight:600;color:#0f172a;text-decoration:none;overflow-wrap:anywhere}
+#dacl-root .dacl-name:hover,#dacl-root .dacl-name:focus{color:var(--ak-fill,#0f766e);text-decoration:underline}
+#dacl-root .dacl-name-def{font-size:14px;font-weight:600}
+#dacl-root .dacl-sub{font-size:12px;color:#64748b;margin-top:2px}
+#dacl-root .dacl-badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+#dacl-root .dacl-badge{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:6px;font-size:12px;font-weight:600;background:#f1f5f9;color:#475569}
+#dacl-root .dacl-b-meta{background:#eff6ff;color:#1d4ed8}
+#dacl-root .dacl-b-off{background:#f1f5f9;color:#64748b}
+#dacl-root .dacl-b-att{background:#fef3c7;color:#92400e}
+#dacl-root .dacl-chips{display:flex;flex-wrap:wrap;gap:4px}
+#dacl-root .dacl-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border:1px solid #e2e8f0;border-radius:6px;background:#f8fafc;color:#334155;font-size:12px;font-weight:600;cursor:default;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#dacl-root button.dacl-chip{cursor:pointer}
+#dacl-root button.dacl-chip:hover,#dacl-root button.dacl-chip:focus-visible{border-color:#94a3b8;background:#fff}
+#dacl-root .dacl-chip-dst{background:#f0fdfa;border-color:#99f6e4;color:#115e59}
+#dacl-root .dacl-chip-net{font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-weight:500;background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}
+#dacl-root .dacl-chip-all{background:#f8fafc}
+#dacl-root .dacl-not{color:#b91c1c;font-weight:700}
+#dacl-root .dacl-action{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:8px;border:1px solid;font-size:12px;font-weight:600;max-width:220px;line-height:1.3}
+#dacl-root .dacl-a-teal{background:#f0fdfa;border-color:#99f6e4;color:#0f766e}
+#dacl-root .dacl-a-red{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+#dacl-root .dacl-a-purple{background:#f2f6f6;border-color:#bfd4d1;color:#005447}
+#dacl-root .dacl-a-grey{background:#f8fafc;border-color:#e2e8f0;color:#475569}
+#dacl-root .dacl-a-blue{background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8}
+#dacl-root .dacl-a-green{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
+#dacl-root .dacl-c-target{min-width:220px}
+#dacl-root .dacl-opt{font-size:12px;color:#64748b;margin-top:3px;line-height:1.45}
+#dacl-root .dacl-attline{font-size:12px;font-weight:600;color:#b45309;margin-top:3px}
+#dacl-root .dacl-mono{font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:12px;overflow-wrap:anywhere}
+#dacl-root .dacl-muted{color:#94a3b8}
+#dacl-root .dacl-c-req{width:120px}
+#dacl-root .dacl-req{font-family:'JetBrains Mono',Menlo,Consolas,monospace;font-size:13px;font-variant-numeric:tabular-nums}
+#dacl-root .dacl-bar{height:4px;width:96px;border-radius:4px;background:#e5e7eb;margin-top:4px;overflow:hidden}
+#dacl-root .dacl-bar span{display:block;height:100%;background:var(--ak-fill,#0f766e);border-radius:4px}
+#dacl-root .dacl-share{font-size:12px;color:#64748b;margin-top:2px}
+#dacl-root .dacl-pill-nl{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;background:#fef3c7;color:#92400e;font-size:12px;font-weight:600;white-space:nowrap}
+#dacl-root .dacl-c-sw{width:70px;text-align:center}
+#dacl-root .dacl-sw{position:relative;width:38px;height:22px;border:0;border-radius:999px;background:#cbd5e1;cursor:pointer;padding:0;transition:background .15s}
+#dacl-root .dacl-sw span{position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:left .15s}
+#dacl-root .dacl-sw[aria-checked=true]{background:var(--ak-fill,#0f766e)}
+#dacl-root .dacl-sw[aria-checked=true] span{left:19px}
+#dacl-root .dacl-sw[disabled]{opacity:.5;cursor:not-allowed}
+#dacl-root .dacl-sw:focus-visible{outline:2px solid var(--ak-fill,#0f766e);outline-offset:2px}
+#dacl-root .dacl-c-act{width:150px}
+#dacl-root .dacl-lock{display:inline-flex;align-items:center;justify-content:center;width:28px;height:30px;color:#94a3b8}
+#dacl-root .dacl-always{display:inline-block;padding:2px 8px;border-radius:6px;background:#f0fdfa;border:1px solid #99f6e4;color:#0f766e;font-size:12px;font-weight:600;white-space:nowrap}
+#dacl-root .dacl-default td{background:#f8fafc;border-top:2px dashed #cbd5e1}
+#dacl-root .dacl-empty{display:flex;align-items:center;gap:12px;padding:18px;color:#475569}
+#dacl-root .dacl-empty>span{flex:1}
+#dacl-root .dacl-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:#64748b}
+#dacl-root .dacl-legend i{margin-right:4px}
+@media (max-width:1200px){#dacl-root .dacl-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (prefers-reduced-motion:reduce){#dacl-root .dacl-sw,#dacl-root .dacl-sw span{transition:none}}
+</style>";
+}
+
+function table():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    // $_GET["function"] part dans des OnClick et dans RefreshDNSDistRules() : liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+    $m=dacl_model();
+    $write=dacl_can_write();
+
+    $rules=$m["rules"];
+    if(isset($_GET["search"]) && trim((string)$_GET["search"])!==""){
+        $pat=strtolower(trim((string)$_GET["search"]));
+        $rules=array_values(array_filter($rules,function($x) use($pat){
+            if(strpos(strtolower($x["name"]),$pat)!==false){ return true; }
+            foreach(array_merge($x["src"],$x["dst"]) as $o){ if(strpos(strtolower($o["name"]),$pat)!==false){ return true; } }
+            return false;
+        }));
     }
 
-
-    $default_rule=default_rule();
-    $requests=0;
-    $status=$status_inactive;
-    //$DNSDIST_DEFAULT_UUID=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDIST_DEFAULT_UUID");
-    if(isset($RULES_STATUS[0])){
-        $requests=$tpl->FormatNumber($RULES_STATUS[0]);
-        $status="<span class='label label-primary'>{active2}</span>";
-    }
-
-    if($default_rule<>null) {
-        $logs=$tpl->icon_loupe(true,"Loadjs('fw.dnsdist.logs.php?rule-js=0')");
-        if ($TRCLASS == "footable-odd") {$TRCLASS = null;} else {$TRCLASS = "footable-odd ";}
-        $html[] = "<tr style='$valign' class='$TRCLASS' id='acl-0'>";
-        $html[] = "<td style='$valign;width:1%' nowrap><span id='RA-0'>$status</span></td>";
-        $html[] = "<td style='$valign' $textright nowrap><span id='RR-0'>$requests</span></td>";
-        $html[] = "<td style='$valign;width:1%'  nowrap>{default}</td>";
-        $html[] = "<td style='$valign'>$default_rule</td>";
-        $html[] = "<td class='center'>$logs</td>";
-        $html[] = "<td class='center'>" . $tpl->icon_nothing() . "</td>";
-        $html[] = "<td class='center' style='$valign'>" . $tpl->icon_nothing() . "</td>";
-        $html[] = "<td class='center' style='$valign'>" . $tpl->icon_nothing() . "</td>";
-        $html[] = "</tr>";
-    }
-
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='6'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-
+    $h=array();
+    $h[]="<div id='dacl-root' class='ak'>";
+    $h[]="<div class='dacl-kpis'>".dacl_kpi_rules($m).dacl_kpi_loaded($m).dacl_kpi_requests($m).dacl_kpi_attention($m)."</div>";
+    $h[]="<div class='awc-wrap'><div class='awc-card'>";
+    $h[]="<div class='dacl-guide'><i class='fa-solid fa-arrow-down-1-9'></i><span>{dacl_order_help}</span></div>";
+    $h[]="<div class='awc-scroll'><table id='table-dns-fw-rules' class='dacl-tbl'>";
+    $h[]="<thead><tr><th class='dacl-c-pos' title='{dacl_th_pos_help}'>#</th><th>{rulename}</th><th title='{dacl_th_match_help}'>{dacl_th_match}</th>"
+        ."<th>{dacl_th_action}</th><th title='{dacl_th_target_help}'>{dacl_th_target}</th><th title='{dacl_th_req_help}'>{requests}</th>"
+        ."<th class='dacl-c-sw'>{enabled}</th><th class='dacl-c-act' style='text-align:right'>{dacl_actions}</th></tr></thead>";
+    $h[]="<tbody id='dnsfw-rows'>";
+    foreach($rules as $x){ $h[]=dacl_row($x,$m,$write,$function); }
+    if(count($rules)==0){ $h[]=dacl_empty_row($write,$function); }
+    $h[]="</tbody>";
+    $h[]=dacl_default_row($m);
+    $h[]="</table></div>";
+    $h[]="<div class='awc-foot'><span>".dacl_t("{dacl_showing}",count($rules))."</span>"
+        ."<span class='dacl-legend'><span><i class='fa-solid fa-circle-check' style='color:#0f766e'></i>{dacl_lg_loaded}</span>"
+        ."<span><i class='fa-solid fa-circle-pause' style='color:#b45309'></i>{dacl_not_loaded}</span>"
+        ."<span><i class='fa-solid fa-lock' style='color:#1d4ed8'></i>Artica Meta</span></span>"
+        ."<span class='awc-pg' id='dnsfw-pager'></span></div>";
+    $h[]="</div></div></div>";
 
     $add="Loadjs('$page?newrule-js=yes&function=$function',true);";
+    $jsrestart=$tpl->framework_buildjs("/dnsfw/service/php/restart","dnsdist.restart","dnsdist.restart.log",
+        "progress-dnsdist-restart","RefreshDNSDistRules();");
+    $topbuttons=array();
+    if($write){
+        $topbuttons[]=array($add,ico_plus,"{new_rule}");
+        $topbuttons[]=array($jsrestart,ico_save,"{apply_rules}");
+    }
+    $topbuttons[]=array("Loadjs('$page?view-rules=yes');","fa-solid fa-magnifying-glass","{view_rules}");
+    $topbuttons[]=array("RefreshDNSDistRules();","fa-solid fa-rotate","{dacl_reload}");
+    $topbuttons[]=array("LoadAjaxSilent('MainContent','fw.dns.unbound.php');","fab fa-gripfire","{status}");
 
-    $jsrestart=$tpl->framework_buildjs("/dnsfw/service/php/restart",
-        "dnsdist.restart",
-        "dnsdist.restart.log","progress-dnsdist-restart","RefreshDNSDistRules();");
-
-    $jsView="Loadjs('$page?view-rules=yes');";
-
-
-    $btns="	<div class=\"btn-group\" data-toggle=\"buttons\">
-    	<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>
-        <label class=\"btn btn btn-info\" OnClick=\"$jsrestart\"><i class='fa fa-save'></i> {apply_rules} </label>
-        <label class=\"btn btn btn-blue\" OnClick=\"$jsView\"><i class='fad fa-search'></i> {view_rules} </label>
-        <label class=\"btn btn btn-primary\" OnClick=\"RefreshDNSDistRules();\"><i class='far fa-sync-alt'></i> {reload} </label>
-         <label class=\"btn btn btn-info\" OnClick=\"LoadAjaxSilent('MainContent','fw.dns.unbound.php');\"><i class='fab fa-gripfire'></i> {status} </label>
-     </div>	";
-
+    $TINY_ARRAY=array();
     $TINY_ARRAY["TITLE"]="{APP_DNSDIST}&nbsp;&raquo;&nbsp;{DNS_ACLS}";
     $TINY_ARRAY["ICO"]="fas fa-list";
-    $TINY_ARRAY["EXPL"]="{dnsdist_rules_explain}";
-    $TINY_ARRAY["BUTTONS"]=$btns;
+    $TINY_ARRAY["EXPL"]="{dacl_page_explain}";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-
+    // table-dns-fw-rules est la SENTINELLE de ce rafraichisseur : il doit rester sur le <table>.
     $jsRefr=$tpl->RefreshInterval_Loadjs("table-dns-fw-rules",$page,"counts-js=yes");
-    
-    $html[]="
-<script> 
-    function RefreshDNSDistRules(){ {$_GET["function"]}(); }
-    $jstiny
-    $jsRefr
-    NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-</script>";
+    $refresh="LoadAjax('table-firewall-rules','$page?table=yes');";
+    if($function!==""){ $refresh="if(typeof $function==='function'){ $function(); }"; }
+    $js=array();
+    $js[]="function RefreshDNSDistRules(){ $refresh }";
+    $js[]=$jstiny;
+    $js[]=$jsRefr;
+    $js[]="NoSpinner();";
+    // Script concatene APRES le parse (la regex des {jetons} lirait le corps des fonctions).
+    $script="<script>".implode("\n",$js)."</script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $body=$tpl->_ENGINE_parse_body(implode("\n",$h));
+    // Bandeau Meta deja traduit et echappe par dnsfw_meta_banner() : insere apres le parse.
+    $meta=dnsfw_meta_banner($tpl,$m["has_meta"],"{dnsfw_meta_managed_explain}");
+    if($meta!==""){ $body=str_replace("<div id='dacl-root' class='ak'>","<div id='dacl-root' class='ak'>$meta",$body); }
+    echo awc_table_style().dacl_style().$body.$script.awc_pager_js(50,"dnsfw-rows","dnsfw-pager");
     return true;
 }
 
@@ -1098,10 +1399,18 @@ function EXPLAIN_THIS_RULE($ID){
     $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
 
   $page=CurrentPageName();
-  $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM dnsdist_rules WHERE ID='$ID'");
-    if(!$q->ok){return $q->mysql_error;}
+    $ruleData=acls_api_get("/dns/dnsdist/rules/".intval($ID));
+    if(!is_array($ruleData)){return "rule not found";}
+    $ligne=array(
+        "ID"=>$ruleData["id"],"enabled"=>$ruleData["enabled"],"ruletype"=>$ruleData["ruleType"],
+        "rulename"=>$ruleData["ruleName"],"rulevalue"=>$ruleData["ruleValue"],
+        "checkName"=>$ruleData["checkName"],"checkInterval"=>$ruleData["checkInterval"],
+        "maxCheckFailures"=>$ruleData["maxCheckFailures"],"checkTimeout"=>$ruleData["checkTimeout"],
+        "dns_caches"=>$ruleData["dnsCaches"],"caches"=>$ruleData["caches"],"uuid"=>$ruleData["uuid"],
+        "simpledomains"=>$ruleData["simpleDomains"],"uuids"=>$ruleData["uuids"],
+        "fwobject"=>$ruleData["fwobject"] ?? "",
+    );
     $ruletype=$ligne["ruletype"];
     $cacheexpl=null;
     $ligne=ChecksIntervalDefaults($ligne);
@@ -1135,30 +1444,27 @@ function EXPLAIN_THIS_RULE($ID){
     VERBOSE("RULE TYPE = $ruletype",__LINE__);
 
     if($ruletype==1){
-        $sql="SELECT dnsdist_sqacllinks.gpid,dnsdist_sqacllinks.negation,dnsdist_sqacllinks.zOrder,webfilters_sqgroups.* 
-		FROM dnsdist_sqacllinks,webfilters_sqgroups 
-		WHERE dnsdist_sqacllinks.gpid=webfilters_sqgroups.ID 
-		AND (webfilters_sqgroups.GroupType='dst' OR webfilters_sqgroups.GroupType='doh' OR webfilters_sqgroups.GroupType='opendns'  OR webfilters_sqgroups.GroupType='opendnsf')
-		AND dnsdist_sqacllinks.aclid=$ID
-		ORDER BY dnsdist_sqacllinks.zOrder";
         $gps=array();
-        $results=$q->QUERY_SQL($sql);
-
-        foreach ($results as $index=>$ligne){
-
-            $GroupType=$ligne["GroupType"];
-            if($GroupType=="opendns"){
-                $REMOVEGRPS[$ligne['ID']]=true;
-            }
-            if($GroupType=="opendnsf"){
-                $REMOVEGRPS[$ligne['ID']]=true;
-            }
-            $GroupName=$tpl->utf8_encode($ligne["GroupName"]);
-            $href="<a href=\"javascript:blur();\" 
-			OnClick=\"Loadjs('fw.rules.items.php?groupid={$ligne['ID']}&js-after=$jsafter',true);\" 
+        $links=acls_api_get("/proxy/acls/sqlite/links?table=dnsdist_sqacllinks&aclid=$ID");
+        if(is_array($links)){
+            foreach ($links as $lnk){
+                $GroupType=$lnk["groupType"];
+                $gid=intval($lnk["groupID"]);
+                if($GroupType=="opendns"){
+                    $REMOVEGRPS[$gid]=true;
+                }
+                if($GroupType=="opendnsf"){
+                    $REMOVEGRPS[$gid]=true;
+                }
+                if($GroupType!="dst" && $GroupType!="doh" && $GroupType!="opendns" && $GroupType!="opendnsf"){
+                    continue;
+                }
+                $GroupName=$tpl->utf8_encode($lnk["groupName"]);
+                $href="<a href=\"javascript:blur();\"
+			OnClick=\"Loadjs('fw.rules.items.php?groupid=$gid&js-after=$jsafter',true);\"
 			style=\"text-decoration:underline;\">";
-            $gps[]="<strong>$href$GroupName</strong></a>";
-
+                $gps[]="<strong>$href$GroupName</strong></a>";
+            }
         }
 
         if(count($gps)==0){
@@ -1173,14 +1479,17 @@ function EXPLAIN_THIS_RULE($ID){
         if($FireHolEnable==1) {
             if (strlen($ligne["fwobject"]) > 2) {
                 $tb=explode("-",$ligne["fwobject"]);
-                $ruleid=$tb[1];
-                $groupid=$tb[2];
-                $q1 = new lib_sqlite("/home/artica/SQLITE/acls.db");
-                $ligne1 = $q1->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$groupid'");
-                $GroupName=$ligne1["GroupName"];
-                $q2 = new lib_sqlite("/home/artica/SQLITE/firewall.db");
-                $ligne1 = $q2->mysqli_fetch_array("SELECT rulename FROM iptables_main WHERE ID='$ruleid'");
-                $rulename=$ligne1["rulename"];
+                $ruleid=intval($tb[1]);
+                $groupid=intval($tb[2]);
+                $grp=acls_api_get("/proxy/acls/sqlite/group/$groupid");
+                $GroupName=is_array($grp) ? ($grp["groupName"] ?? "") : "";
+                $iptablesRules=acls_api_get("/firewall/iptables-rules");
+                $rulename="";
+                if(is_array($iptablesRules)){
+                    foreach($iptablesRules as $ir){
+                        if(intval($ir["id"])===$ruleid){ $rulename=$ir["ruleName"]; break; }
+                    }
+                }
                 $text=$tpl->_ENGINE_parse_body("{dnsdist_fwxplain}");
                 $text=str_replace("%groupid","<strong>$GroupName</strong>",$text);
                 $text=str_replace("%ruleid","<strong>$rulename</strong>",$text);
@@ -1237,29 +1546,24 @@ function EXPLAIN_THIS_RULE($ID){
             if($ligne["rulevalue"]<>null){$PP[]=$ligne["rulevalue"];}
         }
 
-
-        $sql="SELECT dnsdist_sqacllinks.gpid,dnsdist_sqacllinks.negation,dnsdist_sqacllinks.zOrder,webfilters_sqgroups.* 
-		FROM dnsdist_sqacllinks,webfilters_sqgroups 
-		WHERE dnsdist_sqacllinks.gpid=webfilters_sqgroups.ID AND webfilters_sqgroups.GroupType='dst'
-		AND dnsdist_sqacllinks.aclid=$ID
-		ORDER BY dnsdist_sqacllinks.zOrder";
-        $gps=array();
-        $results=$q->QUERY_SQL($sql);
-
+        $links4=acls_api_get("/proxy/acls/sqlite/links?table=dnsdist_sqacllinks&aclid=$ID");
         $IPClass=new IP();
-        foreach ($results as $index=>$ligne1){
-            $gpid=$ligne1["gpid"];
-            $sql="SELECT pattern FROM webfilters_sqitems WHERE gpid=$gpid ORDER BY pattern";
-            $results2 = $q->QUERY_SQL($sql);
-            foreach ($results2 as $index2=>$ligne3){
-                $pattern=$ligne3["pattern"];
-                if(!$IPClass->isIPAddressOrRange($pattern)){continue;}
-                if(strpos($pattern,"/")>0){
-                    $tt=explode("/",$pattern);
-                    if($tt[1]<32){continue;}
-                    $pattern=$tt[0];
+        if(is_array($links4)){
+            foreach ($links4 as $lnk4){
+                if($lnk4["groupType"]!="dst"){ continue; }
+                $gpid=intval($lnk4["gpid"]);
+                $items=acls_api_get("/proxy/acls/sqlite/items?gpid=$gpid");
+                if(!is_array($items)){ continue; }
+                foreach ($items as $itm){
+                    $pattern=$itm["pattern"];
+                    if(!$IPClass->isIPAddressOrRange($pattern)){continue;}
+                    if(strpos($pattern,"/")>0){
+                        $tt=explode("/",$pattern);
+                        if($tt[1]<32){continue;}
+                        $pattern=$tt[0];
+                    }
+                    $PP[]=$pattern;
                 }
-                $PP[]=$pattern;
             }
         }
 
@@ -1283,16 +1587,14 @@ function EXPLAIN_THIS_RULE($ID){
 
 function new_rule_save():bool{
 //a.root-servers.net
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-
-    patch_table();
     $wizard_protection=null;
     $wizard_cleaning=null;
     $wizard_safesearch=null;
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $_POST["useClientSubnet"]=0;
+
+
 
     unset($_POST["newrule"]);
     if($_POST["ruletype"]==6){
@@ -1307,7 +1609,7 @@ function new_rule_save():bool{
         if($_POST["rulename"]==null) {
             $_POST["rulename"] = $tpl->javascript_parse_text("{web_browsing_protection}");
         }
-        $_POST["uuid"]=time();
+        $_POST["uuid"]=strval(time());
         $wizard_protection=$_POST["uuid"];
     }
     if($_POST["ruletype"]==8){
@@ -1317,7 +1619,7 @@ function new_rule_save():bool{
         if($_POST["rulename"]==null) {
             $_POST["rulename"] = $tpl->javascript_parse_text("{web_browsing_cleaning}");
         }
-        $_POST["uuid"]=time();
+        $_POST["uuid"]=strval(time());
         $wizard_cleaning=$_POST["uuid"];
     }
 
@@ -1339,8 +1641,7 @@ function new_rule_save():bool{
         $safe_settings["EnbaleYoutubeModerate"]=0;
         $cache_settings=base64_encode(serialize($safe_settings));
         $_POST["dns_caches"]=$cache_settings;
-
-        $_POST["uuid"]=time();
+        $_POST["uuid"]=strval(time());
         $wizard_safesearch=$_POST["uuid"];
     }
 
@@ -1350,26 +1651,48 @@ function new_rule_save():bool{
         if($_POST["rulename"]==null) {
             $_POST["rulename"] = "Active Directory Offloading";
         }
-        $_POST["uuid"]=time();
+        $_POST["uuid"]=strval(time());
 
     }
 
+    // Map POST field names to API camelCase keys for POST body
+    $fieldMap=array(
+        "rulename"=>"ruleName","enabled"=>"enabled","ruletype"=>"ruleType",
+        "rulevalue"=>"ruleValue","checkName"=>"checkName","checkInterval"=>"checkInterval",
+        "maxCheckFailures"=>"maxCheckFailures","checkTimeout"=>"checkTimeout",
+        "simpledomains"=>"simpleDomains","dns_caches"=>"dnsCaches","caches"=>"caches",
+        "uuid"=>"uuid","uuids"=>"uuids","fwobject"=>"fwobject","useClientSubnet"=>"useClientSubnet",
+    );
+
+    $intFields = array(
+        "enabled",
+        "ruleType",
+        "checkInterval",
+        "maxCheckFailures",
+        "checkTimeout",
+        "useClientSubnet"
+    );
+
+    $body=array();
     foreach ($_POST as $key=>$val){
-        $add_fields[]="`$key`";
-        $add_values[]="'$val'";
+        $apiKey=isset($fieldMap[$key]) ? $fieldMap[$key] : $key;
+        if (in_array($apiKey, $intFields, true)) {
+            $body[$apiKey] = intval($val);
+        } else {
+            $body[$apiKey] = $val;
+        }
     }
-    $sql="INSERT INTO dnsdist_rules (".@implode(",", $add_fields).") VALUES (".@implode(",", $add_values).")";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error."<hr>$sql";return false;}
+    list($ok,$newData)=acls_api_send("POST","/dns/dnsdist/rules",$body);
+    if(!$ok){echo $newData;return false;}
 
     if($wizard_protection<>null){
-        $GLOBALS["CLASS_SOCKETS"]->getGoFramework("exec.dnsdist.php --template7 $wizard_protection");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/template7/".urlencode($wizard_protection));
     }
     if($wizard_cleaning<>null){
-        $GLOBALS["CLASS_SOCKETS"]->getGoFramework("exec.dnsdist.php --template8 $wizard_cleaning");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/template8/".urlencode($wizard_cleaning));
     }
     if($wizard_safesearch<>null){
-        $GLOBALS["CLASS_SOCKETS"]->getGoFramework("exec.dnsdist.php --template9 $wizard_cleaning");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/template9/".urlencode($wizard_safesearch));
     }
 
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LAST_DNSFW_POSTED_RULE",$_POST["uuid"]);
@@ -1379,133 +1702,42 @@ function new_rule_save():bool{
 }
 
 function rule_delete($ID){
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("DELETE FROM dnsdist_rules WHERE ID='$ID'");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");
-    return true;
+    list($ok,$err)=acls_api_send("DELETE","/dns/dnsdist/rules/".intval($ID));
+    if($ok){$GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/flush");}
+    return array($ok,$err);
 }
 
-
-function default_rule(){
-    $tpl=new template_admin();
-    $DNSDistCheckName=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistCheckName"));
-    $DNSDistCheckInterval=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistCheckInterval"));
-    $DNSDistMaxCheckFailures=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistMaxCheckFailures"));
-    $DNSDistCheckTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSDistCheckTimeout"));
-    if(intval($DNSDistCheckTimeout)==0){$DNSDistCheckTimeout=1;}
-    if(trim($DNSDistCheckName)==null){$DNSDistCheckName="a.root-servers.net";}
-    if(intval($DNSDistCheckInterval)==0){$DNSDistCheckInterval=1;}
-    if(intval($DNSDistMaxCheckFailures)==0){$DNSDistMaxCheckFailures=3;}
-
-    if($DNSDistCheckTimeout<3){$DNSDistCheckTimeout=3;}
-    if($DNSDistCheckInterval<2){$DNSDistCheckInterval=2;}
-    $UnBoundCacheSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheSize"));
-    $UnBoundCacheMinTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheMinTTL"));
-    $UnBoundCacheMAXTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheMAXTTL"));
-    $UnBoundCacheNEGTTL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheNEGTTL"));
-    $EnableUnboundLogQueries=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundLogQueries"));
-
-    if($UnBoundCacheMinTTL==0){$UnBoundCacheMinTTL=3600;}
-    if($UnBoundCacheMAXTTL==0){$UnBoundCacheMAXTTL=172800;}
-    if($UnBoundCacheNEGTTL==0){$UnBoundCacheNEGTTL=3600;}
-
-    if($UnBoundCacheMinTTL==-1){$UnBoundCacheMinTTL=0;}
-    if($UnBoundCacheMAXTTL==-1){$UnBoundCacheMAXTTL=0;}
-    if($UnBoundCacheNEGTTL==-1){$UnBoundCacheNEGTTL=0;}
-
-    if($UnBoundCacheSize==0){$UnBoundCacheSize=100;}
-
-    $DnsDistCacheItem=$UnBoundCacheSize*1024;
-    $DnsDistCacheItem=$DnsDistCacheItem*1024;
-    $DnsDistCacheItem=round($DnsDistCacheItem/512);
-
-    $DnsDistCacheItem=$tpl->FormatNumber($DnsDistCacheItem);
-    $cacheexpl="<br>{and} <strong>{use_cache}</strong> {with} {$DnsDistCacheItem} {max_records_in_memory}";
-    $UnBoundCacheMinTTLText=distanceOfTimeInWords(time(),time()+$UnBoundCacheMinTTL,true);
-    $UnBoundCacheMAXTTLText=distanceOfTimeInWords(time(),time()+$UnBoundCacheMAXTTL,true);
-    $UnBoundCacheNEGTTLText=distanceOfTimeInWords(time(),time()+$UnBoundCacheNEGTTL,true);
-    $cacheexpl="$cacheexpl {cache-ttl} {minimum} $UnBoundCacheMinTTLText {and} <strong>$UnBoundCacheMAXTTLText {maximum}</strong> {and} {negquery-cache-ttl} $UnBoundCacheNEGTTLText";
-
-
-    $DNS=array();
-    $default_rule_src=default_rule_src();
-    $resolv=new resolv_conf();
-    if(!isset($resolv->MainArray["DNS3"])){$resolv->MainArray["DNS3"]="";}
-
-    if($resolv->MainArray["DNS1"]<>null){
-        if($resolv->MainArray["DNS1"]<>"127.0.0.1") {
-            $DNS[] = $resolv->MainArray["DNS1"];
-        }
-    }
-    if($resolv->MainArray["DNS2"]<>null){
-        if($resolv->MainArray["DNS1"]<>"127.0.0.1") {
-            $DNS[] = $resolv->MainArray["DNS2"];
-        }
-    }
-    if($resolv->MainArray["DNS3"]<>null){
-        if($resolv->MainArray["DNS1"]<>"127.0.0.1") {
-            $DNS[] = $resolv->MainArray["DNS3"];
-        }
-    }
-
-    if(count($DNS)==0){return null;}
-
-    return "{for} {ipaddresses} <strong>$default_rule_src</strong> {and} <strong>{all_domains}</strong> {then} <strong>{load_balance_dns_action}</strong> {to_addresses} <strong>" .@implode(" {or} ",$DNS)."</strong>".
-        "$cacheexpl<br>{check_addr} <strong>$DNSDistCheckName</strong> {timeout} $DNSDistCheckTimeout {seconds} {each} $DNSDistCheckInterval {seconds}  $DNSDistMaxCheckFailures {attempts}";
-
-
+// La regle $ID a-t-elle ete ecrite par Meta (metaid non vide). Lecture en echec = false : le demon
+// refuse de toute facon l'ecriture (423).
+function dnsfw_rule_is_meta($ID):bool{
+    $ID=intval($ID);
+    if($ID<=0){return false;}
+    return dnsfw_meta_rule(acls_api_get("/dns/dnsdist/rules/$ID"));
 }
 
-
-function default_rule_src(){
-
-
-    $q = new lib_sqlite("/home/artica/SQLITE/dns.db");
-    $Rules=$q->COUNT_ROWS("pdns_restricts");
-
-    if($Rules==0){
-        $ACLREST[] = "192.168.0.0/16";
-        $ACLREST[] = "10.0.0.0/8";
-        $ACLREST[] = "172.16.0.0/12";
-
-    }else {
-        $sql = "SELECT *  FROM pdns_restricts";
-        $results = $q->QUERY_SQL($sql);
-        foreach ($results as $index => $ligne) {
-            $address=trim($ligne["address"]);
-            if($address==null){continue;}
-            $ACLREST[] = $address;
-        }
-    }
-
-    return @implode(" {or} ",$ACLREST);
-
-
-}
 
 function count_js():bool{
-    $tpl=new template_admin();
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfw/service/listrules"));
-    if(!property_exists($json,"Info")){return false;}
-    $f=array();
+    // property_exists() sur null est une TypeError sous PHP 8, et ce repondeur tourne toutes les N secondes.
+    if(!is_object($json) || !property_exists($json,"Info")){return false;}
     header("content-type: application/x-javascript");
-        foreach ($json->Info as $RID=>$hits){
-            $status = $tpl->_ENGINE_parse_body("<span class='label label-primary'>{active2}</span>");
-            if($hits==0){
-                $status = $tpl->_ENGINE_parse_body("<span class='label label-default'>{active2}</span>");
-            }
-            $statusEnc=base64_encode($status);
-            $hitsText=$tpl->FormatNumber($hits);
-            $f[]="if(document.getElementById('RR-$RID')){";
-            $f[]="document.getElementById('RR-$RID').innerHTML='$hitsText';";
-            $f[]="}";
-            $f[]="if(document.getElementById('RA-$RID')){";
-            $f[]="document.getElementById('RA-$RID').innerHTML=base64_decode('$statusEnc');";
-            $f[]="}";
-
-        }
-
-    echo @implode("\n",$f);
-        return true;
+    $hits=array();
+    $total=0;
+    foreach($json->Info as $RID=>$n){$hits[intval($RID)]=floatval($n);$total+=floatval($n);}
+    $f=array();
+    foreach($hits as $RID=>$n){
+        $enc=base64_encode(dacl_requests_html($n,$total));
+        $f[]="if(document.getElementById('RR-$RID') && !document.querySelector('#acl-$RID.dacl-off')){document.getElementById('RR-$RID').innerHTML=base64_decode('$enc');}";
+    }
+    echo implode("\n",$f);
+    return true;
 }
-
+function isWritter($users){
+    if($users->AsDansGuardianAdministrator){
+        return true;
+    }
+    if($users->AsDnsAdministrator){
+        return true;
+    }
+    return false;
+}

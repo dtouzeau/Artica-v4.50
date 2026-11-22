@@ -1,13 +1,26 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 
+// Les repartiteurs ?enable-signature= et ?enable-firewall= appelaient
+// enable_signature() et enable_firewall(), qui ne sont definies NI dans ce
+// fichier NI ailleurs: les deux URL repondaient un fatal « Call to undefined
+// function ». La paire appartient a la famille Suricata (elle bascule une
+// signature dans suricata-rules.db et un drapeau dans suricata_sig) et n'a
+// rien a faire ici; seul fw.ids.rules.php produit reellement
+// « ?enable-signature= ».
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["form-config-js"])){form_config_js();exit;}
 if(isset($_GET["form-config-popup"])){form_config_popup();exit;}
-if(isset($_GET["tsigkeys-search"])){tsigkeys_table();exit;}
 if(isset($_GET["netbox-status"])){service_status();exit;}
 if(isset($_POST["NetboxDefaultSiteID"])){form_config_save();exit;}
 if(isset($_GET["device-role-js"])){device_role_js();exit;}
@@ -28,23 +41,9 @@ if(isset($_POST["siteid"])){site_save();exit;}
 
 if(isset($_GET["flat-start"])){flat_start();exit;}
 if(isset($_GET["netbox-flat"])){flat_config();exit;}
-if(isset($_POST["dhpddns"])){ddns_save();exit;}
 
-if(isset($_GET["search"])){table();exit;}
-if(isset($_GET["enable-signature"])){enable_signature();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
-if(isset($_GET["search-form"])){search_form();exit;}
-if(isset($_GET["secretkey-js"])){secretkey_js();exit;}
-if(isset($_GET["secretkey-start"])){secretkey_start();exit;}
-if(isset($_GET["secretkey-popup"])){secretkey_popup();exit;}
 if(isset($_GET["enable"])){enable();exit;}
 if(isset($_GET["delete"])){delete();exit;}
-if(isset($_POST["delete"])){delete_perform();exit;}
 
 page();
 function page(){

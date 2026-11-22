@@ -9,9 +9,7 @@ if(!$user->AsSambaAdministrator){die();}
 if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["sessions"])){sessions_table();exit;}
 if(isset($_GET["io-stats"])){io_stats();exit;}
-if(isset($_GET["io-chart-js"])){io_chart_js();exit;}
 if(isset($_GET["top-consumers"])){top_consumers();exit;}
-if(isset($_GET["top-chart-js"])){top_chart_js();exit;}
 
 page();
 

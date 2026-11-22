@@ -7,6 +7,17 @@ include_once(dirname(__FILE__).'/ressources/class.os.system.inc');
 include_once(dirname(__FILE__).'/ressources/class.ccurl.inc');
 $GLOBALS["WITH_CLAMAV"]=false;
 
+function icap_reconfigure(){
+    // Rebuild Squid global-access ACLs + ICAP config natively inside articarest.
+    // ?wait=1 runs squidacls.RunAcls()+RunIPCAP() synchronously so install /
+    // uninstall steps that follow (squid restart, cluster_mode push) see the
+    // regenerated config — preserving the synchronous semantics of the old
+    // "exec.squid.global.access.php --icap-silent" shell-out. Timeout is raised
+    // because a full ACL compile can exceed the 13s REST default.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=180;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/icap?wait=1");
+}
+
 if(preg_match("#--with-clamav#",@implode("",$argv))){
     $GLOBALS["WITH_CLAMAV"]=true;
 }
@@ -99,7 +110,7 @@ function uninstall_clamav(){
     build_progress_install("{uninstall_service} 3/3",40);
     $unix->remove_service("/etc/init.d/clamav-freshclam");
     build_progress_install("{uninstall_service} 3/3",50);
-    shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
+    icap_reconfigure();
     build_progress_install("{uninstall_service} {done}",100);
 }
 
@@ -114,7 +125,7 @@ function install_clamav(){
     build_progress_install("{install_service} 2/3",30);
     clamav_freshclam();
     build_progress_install("{install_service} 3/3",50);
-    shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
+    icap_reconfigure();
     build_progress_install("{install_service} {done}",100);
 }
 function install_sandbox(){
@@ -130,7 +141,7 @@ function install_sandbox(){
     $unix->Popuplate_cron_make("icap-sbclean","* */4 * * *","exec.c-icap.sandbox.php --clean");
     UNIX_RESTART_CRON();
 
-    shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
+    icap_reconfigure();
     build_progress_install("{install_service} {done}",100);
 }
 function install_sandbox_syslog(){
@@ -177,7 +188,7 @@ function uninstall_sandbox(){
 
     build_progress_install("{uninstall_service} 2/3",30);
     build_progress_install("{uninstall_service} 3/3",50);
-    shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
+    icap_reconfigure();
     build_progress_install("{uninstall_service} {done}",100);
     $q=new postgres_sql();
     $q->QUERY_SQL("DROP TABLE cicap_sandbox");
@@ -243,7 +254,7 @@ function install():bool{
 	build_progress_install("{restart_service} 6/6",65);
     $unix->reload_monit();
 	build_progress_install("{configuring} 2/2",70);
-	system("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
+	icap_reconfigure();
 	build_progress_install("{done}",100);
 	cluster_mode();
     return true;
@@ -391,7 +402,7 @@ function uninstall(){
 
 	build_progress_install("{configuring} 2/2",70);
     if(is_file("/etc/init.d/squid")) {
-        system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+        system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
     }
 	build_progress_install("{done}",100);
 	cluster_mode();

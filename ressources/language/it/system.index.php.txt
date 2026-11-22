@@ -1,28 +1,28 @@
-<APP_BACKUP_TEXT>Backup artica settings and required datas automatically</APP_BACKUP_TEXT>
-<APP_IPTABLES_TEXT>ipchains is a free software based firewall for Linux.</APP_IPTABLES_TEXT>
-<APP_NMAP_TEXT>Discover computers and services on a computer network</APP_NMAP_TEXT>
-<APP_NTPD_TEXT>Maintain your system clock automatically</APP_NTPD_TEXT>
-<APP_ROUNDCUBE_TEXT>Configure and integrate RoundCube WebMail in  your system</APP_ROUNDCUBE_TEXT>
-<artica_autoupdate_text>Update Artica main program periodically</artica_autoupdate_text>
-<artica_performances>Artica performances</artica_performances>
-<artica_performances_text>Personalize some parameters to reduce or increase performances modules</artica_performances_text>
-<dns>DNS & resolutions</dns>
-<edit_acls>Edit LDAP Access List</edit_acls>
-<folders_monitor_text>Monitor your hard disk and follow folders size</folders_monitor_text>
-<mysql_database>Mysql Database</mysql_database>
-<mysql_database_text>Manage mysql settings and enable/disable mysql engine</mysql_database_text>
+<APP_BACKUP_TEXT>Esegui automaticamente il backup delle impostazioni di Artica e dei dati necessari</APP_BACKUP_TEXT>
+<APP_IPTABLES_TEXT>ipchains &#232; un firewall gratuito basato su software per Linux.</APP_IPTABLES_TEXT>
+<APP_NMAP_TEXT>Scopri computer e servizi su una rete di computer</APP_NMAP_TEXT>
+<APP_NTPD_TEXT>Mantieni automaticamente l'orologio del tuo sistema</APP_NTPD_TEXT>
+<APP_ROUNDCUBE_TEXT>Configura e integra RoundCube WebMail nel tuo sistema</APP_ROUNDCUBE_TEXT>
+<artica_autoupdate_text>Aggiorna periodicamente il programma principale di Artica</artica_autoupdate_text>
+<artica_performances>Prestazioni di Artica</artica_performances>
+<artica_performances_text>Personalizza alcuni parametri per ridurre o aumentare le prestazioni dei moduli</artica_performances_text>
+<dns>DNS e risoluzioni</dns>
+<edit_acls>Modifica l'elenco di accesso LDAP</edit_acls>
+<folders_monitor_text>Monitora il tuo disco rigido e segui la dimensione delle cartelle</folders_monitor_text>
+<mysql_database>Database Mysql</mysql_database>
+<mysql_database_text>Gestisci le impostazioni di mysql e abilita/disabilita il motore mysql</mysql_database_text>
 <network>Rete e schede di rete</network>
-<nic_dynamic_dns_text>maintains the IP address of your host name.checks periodically whether your IP address stored by the DNS server is the real current address.</nic_dynamic_dns_text>
-<nic_static_dns_text>Manage hosts and minimal settings for hosts names resolutions</nic_static_dns_text>
-<per_user_addressbook>Per user Address Book</per_user_addressbook>
-<per_user_addressbook_explain>If you set to green, remote mail clients will be able to add or query the LDAP server has their own address book,each user will have an access to it's own NAB</per_user_addressbook_explain>
-<remote_addressbook>Address Book</remote_addressbook>
-<remote_addressbook_explain>If you set to green, remote mail clients such has Thunderbird or Outlook Express will be able to parse the LDAP server has an Address Book storage.</remote_addressbook_explain>
-<remote_addressbook_text>Enable or disable this system has a global address book</remote_addressbook_text>
-<repository_manager>repository manager</repository_manager>
-<repository_manager_text>Update and install packages according your system repositories manager</repository_manager_text>
-<services>Services</services>
+<nic_dynamic_dns_text>Mantiene l'indirizzo IP del tuo nome host. Verifica periodicamente se l'indirizzo IP memorizzato dal server DNS &#232; l'indirizzo corrente reale.</nic_dynamic_dns_text>
+<nic_static_dns_text>Gestisci gli host e le impostazioni minime per la risoluzione dei nomi host</nic_static_dns_text>
+<per_user_addressbook>Rubrica per utente</per_user_addressbook>
+<per_user_addressbook_explain>Se imposti su verde, i client di posta remoti potranno aggiungere o interrogare il server LDAP come rubrica personale, ogni utente avr&#224; accesso al proprio NAB</per_user_addressbook_explain>
+<remote_addressbook>Rubrica</remote_addressbook>
+<remote_addressbook_explain>Se imposti su verde, i client di posta remoti come Thunderbird o Outlook Express potranno analizzare il server LDAP come archivio di rubrica.</remote_addressbook_explain>
+<remote_addressbook_text>Abilita o disabilita questo sistema come rubrica globale</remote_addressbook_text>
+<repository_manager>gestore dei repository</repository_manager>
+<repository_manager_text>Aggiorna e installa i pacchetti in base al gestore dei repository del tuo sistema</repository_manager_text>
+<services>Servizi</services>
 <system>Sistema &amp; Hardware</system>
-<update>Update & Maintain</update>
-<usb_section>Manage USB devices</usb_section>
-<usb_section_text>Create a dedicated device for backup features and connect/disconnect usb devices</usb_section_text>
+<update>Aggiorna e mantieni</update>
+<usb_section>Gestisci i dispositivi USB</usb_section>
+<usb_section_text>Crea un dispositivo dedicato per le funzionalit&#224; di backup e connetti/disconnetti i dispositivi usb</usb_section_text>

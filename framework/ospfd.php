@@ -1,7 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/frame.class.inc"); 
 include_once(dirname(__FILE__)."/class.unix.inc");
-if(isset($_GET["reload"])){reload();exit;}
 if(isset($_GET["uninstall"])){uninstall();exit;}
 if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["refresh"])){refresh();exit;}
@@ -15,11 +14,6 @@ foreach ($_GET as $key=>$value){
 }
 
 writelogs_framework("unable to understand query [".@implode($tt,", ")."]...",__FUNCTION__,__FILE__,__LINE__);
-
-function reload(){
-    $unix=new unix();
-    $unix->framework_exec("exec.quagga.php --reload &","quagga.reload");
-}
 
 function SearchInSyslog(){
     $unix=new unix();

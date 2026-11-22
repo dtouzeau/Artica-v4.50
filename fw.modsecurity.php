@@ -98,7 +98,7 @@ function page(){
 function protocols_popup():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
-    $available = explode(" ", "GET HEAD POST OPTIONS PUT PATCH DELETE CHECKOUT COPY DELETE LOCK MERGE MKACTIVITY MKCOL MOVE PROPFIND PROPPATCH PUT UNLOCK TRACE CONNECT");
+    $available = explode(" ", "GET HEAD POST OPTIONS PUT PATCH DELETE CHECKOUT COPY DELETE LOCK MERGE MKACTIVITY MKCOL MOVE PROPFIND PROPPATCH PUT UNLOCK TRACE CONNECT SEARCH");
 
     $ModSecurityProtocols = unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ModSecurityProtocols"));
     if (!is_array($ModSecurityProtocols)) {
@@ -531,7 +531,7 @@ function parameters(){
 	echo $tpl->_ENGINE_parse_body($html);
     $bts=array();
     $TINY_ARRAY["TITLE"]="{WAF_LONG} {parameters}";
-    $TINY_ARRAY["ICO"]="fab fa-free-code-camp";
+    $TINY_ARRAY["ICO"]="fa-solid fa-block-brick-fire";
     $TINY_ARRAY["EXPL"]="{ModSecurityExplain}";
     $TINY_ARRAY["URL"] = "waf";
     $TINY_ARRAY["BUTTONS"]=@implode("",$bts);
@@ -664,31 +664,11 @@ function table(){
 	$html[]="<div class=\"col-lg-3\">";
 	
 	$html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fas fa-ethernet fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {connections}</span>
-	<h2 class=\"font-bold\">".FormatNumber($ActiveConnections)."</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("lazur-bg","fas fa-ethernet","{connections}",FormatNumber($ActiveConnections));
 	
 	
 	$html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fas fa-tachometer fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {requests}</span>
-	<h2 class=\"font-bold\">".FormatNumber($requests)."</h2>
-	</div>
-	</div>
-	</div>";	
+	".$tpl->widget_style1("lazur-bg","fas fa-tachometer","{requests}",FormatNumber($requests));	
 			
 			
 			

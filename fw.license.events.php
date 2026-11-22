@@ -90,8 +90,9 @@ function search(){
         $FTime=date("Y-m-d H:i:s",$xtime);
         $curDate=date("Y-m-d");
         $FTime=trim(str_replace($curDate, "", $FTime));
-        $pid=$re[4];
-        $line=$re[5];
+        // Pentest 2026-11-04 : ligne de journal licence (donnee externe) affiche sans encodage (XSS stockee).
+        $pid=req_html($re[4]);
+        $line=req_html($re[5]);
 
         if(preg_match("#(fatal|Err)#i", $line)){
             $line="<span class='text-danger'>$line</span>";

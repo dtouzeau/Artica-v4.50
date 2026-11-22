@@ -88,7 +88,7 @@ private function parse_internal_networks(){
 	if($ldap->ldapFailed){
 		if($GLOBALS["EXECUTED_AS_ROOT"]){echo "Starting......: ".date("H:i:s")." amavisd-new LDAP Failed, aborting and die()\n";}
 		writelogs("Fatal: LDAP Failed, aborting and die",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-		die("DIE " .__FILE__." Line: ".__LINE__);
+		die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 	}	
 	
 	

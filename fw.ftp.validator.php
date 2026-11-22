@@ -1,4 +1,7 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -20,17 +23,17 @@ function js(){
 
 function popup(){
     $id=$_GET["id"];
-    $array=unserialize(base64_decode($_GET["data"]));
+    $array=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
     $data=urlencode($_GET["data"]);
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/ftp.validator.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/ftp.validator.logs";
-    $ARRAY["CMD"]="ftpproxy.php?validator=yes";
+    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ftp.validator.progress";
+    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/ftp.validator.logs";
+    $ARRAY["CMD"]="/system/ftp/validate";
     $ARRAY["TITLE"]="{squid_ftp_user}";
     $ARRAY["AFTER"]="Loadjs('$page?ftp-validator-confirmed=yes&id=$id&data=$data')";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsafter="Loadjs('fw.progress.php?content=$prgress&mainid=ftp-validator')";
+    $jsafter="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=ftp-validator')";
 
     $html[]="<div id='ftp-validator'></div>";
     $form[]=$tpl->field_text("FTP_SERVER", "{ftp_server}", $array["FTP_SERVER"]["VALUE"]);
@@ -52,7 +55,7 @@ function popup(){
 
 function SaveConfirmed(){
     $id=$_GET["id"];
-    $array=unserialize(base64_decode($_GET["data"]));
+    $array=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
     $FTPValidator=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FTPValidator")));
 
     foreach ($array as $Key=>$main){

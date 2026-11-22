@@ -1,8 +1,8 @@
-<add_new_fetchmail_rule>Add a new fetchmail rule</add_new_fetchmail_rule>
-<and_send_to>and send emails to</and_send_to>
+<add_new_fetchmail_rule>A&#241;adir una nueva regla de fetchmail</add_new_fetchmail_rule>
+<and_send_to>y enviar los correos a</and_send_to>
 <confirm_delete>%C2%BFEliminar esta regla?</confirm_delete>
-<fetch_address>Fetch address</fetch_address>
+<fetch_address>Direcci&#243;n de recuperaci&#243;n</fetch_address>
 <server_type>Tipo de servidor</server_type>
-<using_ssl>using SSL</using_ssl>
-<view>View rule in source format</view>
-<with_port>with port</with_port>
+<using_ssl>usando SSL</using_ssl>
+<view>Ver regla en formato de origen</view>
+<with_port>con puerto</with_port>

@@ -9,6 +9,8 @@ $GLOBALS["ACTIONSAV"][3]="{do_nothing}";
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
+// Pentest 2026-11-04 : rule-js et popup (md5) etaient recopies sans encodage dans la page (XSS).
+foreach (array("rule-js","popup") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^A-Za-z0-9]#','',(string)$_GET[$xk]);}}
 if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["rule-js"])){rule_js();exit;}
@@ -74,6 +76,8 @@ function page(){
 function rule_delete_js(){
     $tpl=new template_admin();
     $md5=$_GET["delete-rule-js"];
+    // Pentest 2026-11-04 : delete-rule-js etait concatene dans la requete.
+    if(!preg_match('/^[a-f0-9]{32}$/',$md5)){return;}
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT * FROM autowhite WHERE zmd5='$md5'");
     $mailfrom=$ligne["mailfrom"];
@@ -84,6 +88,8 @@ function rule_delete_js(){
 }
 function rule_delete_perform(){
     $md5=$_POST["delete"];
+    // Pentest 2026-11-04 : delete etait concatene dans la requete.
+    if(!preg_match('/^[a-f0-9]{32}$/',$md5)){echo "Invalid rule identifier";return;}
     $q=new postgres_sql();
     $q->QUERY_SQL("DELETE FROM autowhite WHERE zmd5='$md5'");
     if(!$q->ok){echo $q->mysql_error;}
@@ -117,6 +123,14 @@ function rule_save(){
         }
     }
 
+    // Pentest 2026-11-04 : mailfrom et mailto etaient concatenes dans la requete.
+    // postgres_sql n'a pas de requete parametree : validation stricte (adresse, domaine ou *).
+    foreach(array("mailfrom","mailto") as $k){
+        if(!preg_match('/^[a-z0-9_.@+*=-]+$/',$_POST[$k])){
+            echo "$k: invalid characters";
+            return;
+        }
+    }
     $new_zmd5=md5($_POST["mailfrom"].$_POST["mailto"]);
     $date=date("Y-m-d H:i:s");
     $sqladd="INSERT INTO autowhite(zmd5,zdate,mailfrom,mailto) VALUES ('$new_zmd5','$date','{$_POST["mailfrom"]}','{$_POST["mailto"]}')";
@@ -150,6 +164,8 @@ function IntelligentSearch($search_local){
 
 
     $search_local=trim($search_local);
+    // Pentest 2026-11-04 : search etait concatene dans la requete (quote et antislash retires).
+    $search_local=str_replace(array("'","\\"),"",$search_local);
 
     if(preg_match("#^\*@(.+)#", $search_local,$re)){
         $querys="WHERE (mailfrom ~ '{$re[1]}') OR (mailto ~ '{$re[1]}')";
@@ -234,8 +250,10 @@ function table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $zmd5=$ligne["zmd5"];
         $xtime=$tpl->time_to_date(strtotime($ligne["zdate"],true));
-        $mailfrom= $ligne["mailfrom"];
-        $mailto=$ligne["mailto"];
+        // Pentest 2026-11-04 : mailfrom, mailto (donnee externe) affiche sans encodage (XSS stockee).
+        $mailfrom= req_html($ligne["mailfrom"]);
+        $mailto=req_html($ligne["mailto"]);
+        $zmd5=req_html($zmd5);
 
 
 
@@ -261,7 +279,7 @@ function table(){
     $html[]="</tr>";
     $html[]="</tfoot>";
     $html[]="</table>";
-    $html[]="<div><small>$sql</small></div>
+    $html[]="<div><small>".req_html($sql)."</small></div>
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });

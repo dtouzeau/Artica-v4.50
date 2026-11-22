@@ -385,7 +385,7 @@ function Save():bool{
     if($KSRNRemote==1){
         $fp = fsockopen($KSRNRemoteAddr,$KSRNRemotePort,$errno,$errstr,1);
         if(!$fp){
-            echo "jserror:".$tpl->javascript_parse_text("$KSRNRemoteAddr:$KSRNRemotePort {connection_error}")."<br> $errstr";
+            echo (new template_admin())->post_error("".$tpl->javascript_parse_text("$KSRNRemoteAddr:$KSRNRemotePort {connection_error}")."<br> $errstr");
             return false;
         }
     }

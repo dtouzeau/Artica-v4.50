@@ -47,14 +47,6 @@ class squidworkers{
 		$this->SquidCachesProxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidCachesProxyEnabled"));
 		if($this->SquidCachesProxyEnabled==0){$this->DisableAnyCache=1;}
 		
-		if($this->EnableRemoteStatisticsAppliance==1){
-			include_once(dirname(__FILE__)."/class.blackboxes.inc");
-			$sock=new blackboxes($this->uuid);
-			$this->SquidBoosterMem=$sock->GET_SQUID_INFO("SquidBoosterMem");
-			$this->SquidBoosterMemK=$sock->GET_SQUID_INFO("SquidBoosterMemK");
-			$this->DisableAnyCache=$sock->GET_SQUID_INFO("DisableAnyCache");	
-
-		}	
 		
 		if(!is_numeric($this->DisableAnyCache)){$this->DisableAnyCache=0;}
 		if(!is_numeric($this->SquidBoosterMem)){$this->SquidBoosterMem=0;}

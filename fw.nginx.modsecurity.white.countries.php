@@ -2,7 +2,11 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.rtmm.tools.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
+// Pentest 2026-11-04 : serviceid etait recopie sans encodage dans la page (XSS). C'est l'ID du site.
+if(isset($_GET["serviceid"])){$_GET["serviceid"]=intval($_GET["serviceid"]);}
 if(isset($_GET["service-js"])){service_js();exit;}
 if(isset($_GET["popup-main"])){popup_main();exit;}
 if(isset($_GET["popup-table"])){popup_table();exit;}
@@ -116,13 +120,7 @@ function isHarmpID():bool{
 
     return true;
 }
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
+
 function rule_enable():bool{
     $Country=$_GET["pattern-enable"];
     $serviceid=intval($_GET["serviceid"]);
@@ -289,11 +287,12 @@ function popup_table2():bool{
     $search=$_GET["search"];
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap colspan='2'>{countries}</th>
-        	<th nowrap>{enable}</small></th>
+        	<th nowrap>{enable}</th>
         </tr>
   	</thead>
 	<tbody>
@@ -358,11 +357,10 @@ function popup_table2():bool{
 
     }
 
-        $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('countries-nginx-$serviceid','$page?top-buttons=$serviceid&function=$function');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
         }

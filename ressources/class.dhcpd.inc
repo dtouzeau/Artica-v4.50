@@ -151,7 +151,10 @@ class dhcpd{
         $this->do_no_verify_range=intval($dhcp_socks->GET("do_no_verify_range"));
         $this->ping_check=trim($dhcp_socks->GET("ping_check"));
         $this->service_enabled=intval($dhcp_socks->GET("service_enabled"));
-        $this->DisableAllwaysBrodcast=intval($dhcp_socks->GET("DisableAllwaysBrodcast"));
+        // always-broadcast is OFF unless explicitly enabled (stored "0"), same rule as
+        // keaDHCPD4.disableAlwaysBroadcast: broadcast ACKs to unicast renewals made
+        // Google Home/Nest loop renew/rebind/DISCOVER. Absent key => unchecked box.
+        $this->DisableAllwaysBrodcast=(trim($dhcp_socks->GET("DisableAllwaysBrodcast"))==="0")?0:1;
 		
 		if($this->listen_nic==null){$this->GetDefaultNic();}
 		

@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pak 9
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.nics.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
@@ -25,7 +27,13 @@ function xgen(){
 							<i class=\"fa fa-bars\"></i> </a>";
     $SEARCHBARR=true;
     if($users->isWebStatisticsAdministratorOnly()){$SEARCHBARR=false;}
+    // Compte AsMetaAdmin seul (tenants Artica Meta, spec 2026-11-13 5.10.6) : ni recherche
+    // globale ni jauges/htop de l'appliance, qui sert tous les clients.
+    $MetaAdminOnly=$users->isMetaAdminOnly();
+    if($MetaAdminOnly){$SEARCHBARR=false;}
 
+    // The "Ask Artica AI" link lives in the right sidebar (fw.sidebar.php):
+    // in the top bar it pushed the entries out when many services were installed.
     if($SEARCHBARR) {
         $f[] = "
 <div class='navbar-form-custom' role='search'>
@@ -38,7 +46,39 @@ function xgen(){
 
 
 
+    // La barre passe sur deux lignes quand son contenu deborde VRAIMENT, mesure
+    // a l'ecran : le nombre d'entrees varie selon les services installes, donc
+    // aucun seuil de largeur fixe ne convient a toutes les appliances (cf.
+    // angular.css.php, nav.navbar-static-top.tb-wrap).
     $f[]="<script>
+function TopBarFit(){
+  var n=document.querySelector('nav.navbar-static-top'); if(!n){return;}
+  var u=n.querySelector('ul.navbar-top-links'); if(!u){return;}
+  n.classList.remove('tb-wrap');
+  if(getComputedStyle(n).display!='flex'){return;}
+  // justify-content:flex-end fait deborder la liste vers la GAUCHE, que
+  // scrollWidth ne compte pas : on compare la position de la premiere entree
+  // au bord de la liste et a la fin de l en-tete de gauche.
+  var li=u.firstElementChild; if(!li){return;}
+  var h=n.querySelector('.navbar-header');
+  var x=li.getBoundingClientRect().left;
+  var over=(x<u.getBoundingClientRect().left-1) || (u.scrollWidth>u.clientWidth+1);
+  if(h && x<h.getBoundingClientRect().right){ over=true; }
+  if(over){ n.classList.add('tb-wrap'); }
+}
+(function(){
+  var pending=false;
+  function later(){ if(pending){return;} pending=true; window.requestAnimationFrame(function(){ pending=false; TopBarFit(); }); }
+  window.addEventListener('resize',later);
+  if(document.readyState=='loading'){ document.addEventListener('DOMContentLoaded',later); }else{ later(); }
+  window.addEventListener('load',later);
+  // Les compteurs de la barre changent de largeur en vivant.
+  if(window.MutationObserver){
+    var go=function(){ var u=document.querySelector('nav.navbar-static-top ul.navbar-top-links');
+      if(u){ new MutationObserver(later).observe(u,{childList:true,subtree:true,characterData:true}); } };
+    if(document.readyState=='loading'){ document.addEventListener('DOMContentLoaded',go); }else{ go(); }
+  }
+})();
 function GlobalSearchEngine(e){
 	if(!checkEnter(e)){return;}
 	var Search=encodeURIComponent(document.getElementById('top-search').value);
@@ -79,6 +119,7 @@ function GlobalSearchEngine(e){
         </div>
     </div>
 </li>";
+    if($MetaAdminOnly){array_pop($f);}
     
     
     $EnableOpenLDAP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAP"));
@@ -91,6 +132,7 @@ function GlobalSearchEngine(e){
     $DHCPDInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DHCPDInstalled"));
     $EnableDHCPServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDHCPServer"));
     $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
+    $EnableArticaSiem=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaSiem"));
     $LegallogServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LegallogServer"));
     $EnableDNSFirewall=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSFirewall"));
     $EnableSmokePing=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSmokePing"));
@@ -146,6 +188,21 @@ function GlobalSearchEngine(e){
             $f[] = "</li>";
             $SQUID_RT=true;
         }
+
+        // Jumelle SIEM de l'entree ci-dessus. Les deux coexistent parce que les
+        // deux sources coexistent : le helper logfile_daemon n'a qu'UN sink, et
+        // des que la sortie SIEM est armee il contourne le canal HaCluster --
+        // access.json cesse alors d'etre alimente sans qu'aucune erreur ne le
+        // signale. Cette entree n'apparait que la ou le SIEM tourne, parce que
+        // la page lit sa socket unix LOCALE.
+        if($EnableArticaSiem==1) {
+            $f[] = "<!-- L.".__LINE__." -->";
+            $f[] = "<li>";
+            $f[] = "<a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.siem.proxys.realtime.php')\">";
+            $f[] = "<i class=\"fa fa-eye\"></i> {realtime_requests} SIEM";
+            $f[] = "</a>";
+            $f[] = "</li>";
+        }
         if($EnablePulseReverse==1){
             $f[] = "<!-- L.".__LINE__." -->";
             $f[] = "<li>";
@@ -158,7 +215,13 @@ function GlobalSearchEngine(e){
 
         if($SQUIDEnable==1){
 
-                $f[] = "<li>";
+                // tb-shrink : la SEULE entree de la barre autorisee a se tronquer
+                // quand la place manque ({active_requests} est le libelle le plus
+                // long). La classe est indispensable -- le libelle est un simple
+                // noeud texte apres le <i>, sans conteneur propre, donc une ellipse
+                // posee sur .navbar-top-links a rognerait TOUS les libelles.
+                // Regles associees : angular.css.php, bloc "Barre du haut".
+                $f[] = "<li class=\"tb-shrink\">";
                 $f[] = "<a href=\"javascript:Loadjs('{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.active_requests.php')\">";
                 $f[] = "<i class=\"".ico_health_check."\"></i> {active_requests}";
                 $f[] = "</a>";
@@ -287,14 +350,7 @@ function GlobalSearchEngine(e){
 
 
     if($users->AsPostfixAdministrator OR $users->AsMessagingOrg){
-        $EnableMilterSpyDaemon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMilterSpyDaemon"));
-        if($EnableMilterSpyDaemon==1){
-            $f[]="                    <li>";
-            $f[]="                        <a href=\"javascript:LoadAjax('MainContent','{$HTTP_X_ARTICA_SUBFOLDER}fw.postfix.milterspy.relatime.php')\">";
-            $f[]="                            <i class=\"fa fa-eye\"></i> {forwarded_messages}";
-            $f[]="                        </a>";
-            $f[]="                    </li>";
-        }
+
 
         if($EnablePostfix==1){
             $f[]="                    <li>";
@@ -390,6 +446,7 @@ function GlobalSearchEngine(e){
     $EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
     $EnableActiveDirectoryFeature=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableActiveDirectoryFeature"));
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
     $EnableExternalACLADAgent=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableExternalACLADAgent"));
     $HaClusterDoNotUseAD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDoNotUseAD"));
     $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));

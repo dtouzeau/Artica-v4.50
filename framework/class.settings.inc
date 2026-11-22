@@ -13,82 +13,47 @@ class settings_inc {
 	public $APACHE_INSTALLED=false;
 	public $AllowChangeDomains=false;
 	public $AsSystemAdministrator=false;
-	public $AsOrgStorageAdministrator=false;
-	public $AllowXapianDownload=false;
 	public $AllowAddGroup=false;
-	public $AllowChangeKav=false;
-	public $AllowChangeKas=false;
-	public $AllowEditAsWbl=false;
-	public $AllowEditOuSecurity=false;	
 	public $AsArticaAdministrator=false;
 	public $AsSambaAdministrator=false;
-	public $AsMailManAdministrator=false;
 	public $AsPostfixAdministrator=false;
 	public $AsSquidAdministrator=false;
 	public $AsMailBoxAdministrator=false;
-	public $AsDansGuardianGroupRule=false;
 	public $AsDnsAdministrator=false;
-	public $AsQuarantineAdministrator=false;
-	public $AllowFetchMails=false;
-	public $AllowSenderCanonical=false;
-	public $AllowChangeUserPassword=false;
-	public $AllowDansGuardianBanned=false;
-	public $AllowChangeUserKas=false;
-	public $AllowEditAliases=false;
-	public $AllowEmailing=false;
-	public $AllowOpenVPN=false;
 	public $NETATALK_INSTALLED=false;
 	public $AsAnAdministratorGeneric=false;
 	public $AllowAddUsers=false;
-	public $AllowViewStatistics=false;
-	public $AllowChangeAntiSpamSettings=false;
 	public $AsOrgAdmin=false;
-	public $AsInventoryAdmin=false;
-	public $AseMailCampaignsAdmin=false;
 	public $uid=null;
 	public $groupid=-900;
-	public $IptablesEnabled;
-	public $KAVMILTER_ENABLED;
 	public $lighttpd_installed;
 	public $spamassassin_installed=false;
 	public $spamassassin_version=0;
 	public $fetchmail_configured=false;
 	public $LOCAL_SID;
-	public $EnableFetchmail=0;
-	public $EnableFDMFetch=0;
-	public $P3ScanEnabled=0;
-	public $RoundCubeHTTPEngineEnabled=0;
 	public $roundcube_intversion=0;
 	public $roundcube_plugins=null;
-	public $template_user_addr;
-	public $disks_size=null;
 	public $cpumhz=null;
 	public $preload_installed=false;
 	public $smbmount_installed=false;
 	public $collectd_installed=false;
 	public $EnableVirtualDomainsInMailBoxes=false;
-	public $CLAMD_DATABASE_PATH="";
 	public $COLLECTD_RRD=array();
-	public $LoadModulesEnabledParsed=false;
 	public $dar_installed=false;
 	public $GNARWL_INSTALLED=false;
-	public $AllowChangeMailBoxRules=false;
 	public $cyrus_ldap_admin_password="";
-	public $CLAMD_CONF_PATH="";
 	public $PFLOGSUMM_INSTALLED=false;
 	public $maillog_path;
 	public $spamassassin_ipcountry=false;
 	public $CUPS_INSTALLED=false;
-	
+
 	public $SARG_INSTALLED=false;
-	public $OPENGOO_INSTALLED=false;
 	public $APACHE_GROUPWARE_INSTALLED=false;
 	public $POSTFIX_QUEUE=array();
 	public $LinuxDistriCode=null;
 
 	
 	public $cyrus_sync_installed=false;
-	public $AllowManageOwnComputers=false;
 	public $CRYPTSETUP_INSTALLED=false;
 	public $ZABBIX_INSTALLED=true;
 	public $phpldapadmin_installed=false;
@@ -98,13 +63,9 @@ class settings_inc {
 	public $APP_VBOXADDINTION_INSTALLED=false;
 	public $MHONARC_VERSION="";
 	public $FETCHMAIL_STATUS="";
-	public $kavmilter_installed=false;
-	public $APACHE_MOD_AUTHNZ_LDAP=false;
 	public $OPENVPN_APPLIANCE=false;
 	public $SIEVE_PORT=0;
 
-	public $APP_KHSE_INSTALLED=false;
-	public $MEMCACHED_INSTALLED=false;
 	public $HAPROXY_INSTALLED=false;
 	public $APP_TOMCAT6_INSTALLED=false;
 	public $URLSNARF_INSTALLED=false;
@@ -214,10 +175,7 @@ class settings_inc {
 	
 	
 	public $stunnel4_installed=false;
-	public $DkimFilterEnabled=0;
-	public $DKIMFILTER_INSTALLED=false;
-	public $DKIMFILTER_SOCKET="";
-	
+
 	public $nmap_installed=false;
 	public $usb_list=array();
 	public $roundcube_mysql_sources;
@@ -300,15 +258,11 @@ class settings_inc {
 	public $MEM_TOTAL_INSTALLEE=0;
 	public $POSTFILTER_INSTALLED=false;
 	public $VMWARE_TOOLS_INSTALLED=false;
-	public $SQUIDGUARD_INSTALLED=false;
-	public $SQUIDGUARD_BINVER=0;
-	public $SQUIDGUARD_BIN_PATH="";
 	public $RSYNC_INSTALLED=false;
 	public $ZARAFA_APPLIANCE=false;
 	
 	public $mysqld_datadir;
 	
-	public $MAIL_DKIM_VERSION=null;
 	public $HDPARM_INSTALLED=false;
 	
 	
@@ -317,15 +271,12 @@ class settings_inc {
 	public $POSTFIX_PCRE_COMPLIANCE=false;
 	public $APP_AUDITD_INSTALLED=false;
 	public $DKFILTER_INSTALLED=false;
-	public $OPENDKIM_INSTALLED=false;
 	public $DB_RECOVER_INSTALLED=false;
 	public $APP_UFDBGUARD_INSTALLED=false;
 	public $ufdbgclient_path=null;
 	public $roundcube_subscriptions_option=false;
 	public $ADZAPPER_INSTALLED=false;
 	public $KINIT_INSTALLED=false;
-	public $DKIMPROXY_INSTALLED=false;
-	public $MILTER_DKIM_INSTALLED=false;
 	public $DROPBOX_INSTALLED=false;
 	public $VIRTUALBOX_INSTALLED=false;
 	public $AsVirtualBoxManager=false;
@@ -349,7 +300,6 @@ class settings_inc {
 	public $LDAP_SYNCPROV=false;
 	public $ARTICA_META_ENABLED=false;
 	public $PIWIGO_INSTALLED=false;
-	public $POSTSCREEN_INSTALLED=false;
 	public $deduplication_installed=false;
 	
 	public $IPSET_INSTALLED=false;
@@ -372,7 +322,6 @@ class settings_inc {
 	public $Z_PUSH_INSTALLED=false;
     public $IPTABLES_ACCOUNTING_EXISTS=false;
     public $LOAD_BALANCE_APPLIANCE=false;
-	public $ARPD_INSTALLED=false;
 	public $SQUID_APPLIANCE=false;
 	public $PROXYTINY_APPLIANCE=false;
 	public $MPM_ITK_MODULE=false;
@@ -403,24 +352,13 @@ class settings_inc {
 	public $ISCSID_INSTALLED=false;
 	public $RDPPROXY_INSTALLED=false;
 	
-	public $SENSORS_INSTALLED=false;
+
 
 	public $HYPERCACHE_STOREID=false;
 	public $XEN_HOST=false;
 	public $HYPERV_HOST=false;
 	public $WINBINDD_INSTALLED=false;
 	
-	private function CheckIndexDefaults($_GLOBAL){
-		return $_GLOBAL;
-		foreach($this as $key => $value) {
-			if(!isset($_GLOBAL[$key])){$_GLOBAL[$key]=$value;}
-		}
-		
-		return $_GLOBAL;
-		
-		
-	}
-
 	function __construct(){
 			$_GLOBAL=array();
 			if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}
@@ -589,9 +527,7 @@ class settings_inc {
 			
 			
 			if(isset($_GLOBAL["stunnel4_installed"])){$this->stunnel4_installed=$_GLOBAL["stunnel4_installed"];}
-			if(isset($_GLOBAL["DKIMFILTER_INSTALLED"])){$this->DKIMFILTER_INSTALLED=$_GLOBAL["DKIMFILTER_INSTALLED"];}
-			if(isset($_GLOBAL["DKIMFILTER_SOCKET"])){$this->DKIMFILTER_SOCKET=$_GLOBAL["DKIMFILTER_SOCKET"];}
-			
+
 			
 			if(isset($_GLOBAL["usb_list"])){$this->usb_list=$_GLOBAL["usb_list"];}
 			$nmap_installed=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NMAPInstalled"));
@@ -623,7 +559,7 @@ class settings_inc {
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_DNSBL"))==1){$this->C_ICAP_DNSBL=true;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("XEN_HOST"))==1){$this->XEN_HOST=true;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HYPERV_HOST"))==1){$this->HYPERV_HOST=true;}
-			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SENSORS_INSTALLED"))==1){$this->SENSORS_INSTALLED=true;}
+
 			
 			
 			
@@ -759,13 +695,11 @@ class settings_inc {
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VMWARE_TOOLS_INSTALLED"))==1){$this->VMWARE_TOOLS_INSTALLED=true;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HOSTAPD_INSTALLED"))==1){$this->HOSTAPD_INSTALLED=true;}
 			if(is_file("/etc/artica-postfix/settings/Daemons/WPA_SUPPLIANT_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WPA_SUPPLIANT_INSTALLED"))==1){$this->WPA_SUPPLIANT_INSTALLED=true;}}
-			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARPD_INSTALLED"))==1){$this->ARPD_INSTALLED=true;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RSYNC_INSTALLED"))==1){$this->RSYNC_INSTALLED=true;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("openldap_installed"))==1){$this->openldap_installed=true;}
 			
 			
 			if(isset($_GLOBAL["mysqld_datadir"])){$this->mysqld_datadir=$_GLOBAL["mysqld_datadir"];}
-			if(isset($_GLOBAL["MAIL_DKIM_VERSION"])){$this->MAIL_DKIM_VERSION=trim($_GLOBAL["MAIL_DKIM_VERSION"]);}
 			if(isset($_GLOBAL["HDPARM_INSTALLED"])){$this->HDPARM_INSTALLED=trim($_GLOBAL["HDPARM_INSTALLED"]);}
 			
 			
@@ -779,7 +713,6 @@ class settings_inc {
 			if(isset($_GLOBAL["POSTFIX_PCRE_COMPLIANCE"])){$this->POSTFIX_PCRE_COMPLIANCE=$_GLOBAL["POSTFIX_PCRE_COMPLIANCE"];};
 			if(isset($_GLOBAL["APP_AUDITD_INSTALLED"])){$this->APP_AUDITD_INSTALLED=$_GLOBAL["APP_AUDITD_INSTALLED"];;};
 			if(isset($_GLOBAL["DKFILTER_INSTALLED"])){$this->DKFILTER_INSTALLED=$_GLOBAL["DKFILTER_INSTALLED"];}
-			if(isset($_GLOBAL["OPENDKIM_INSTALLED"])){$this->OPENDKIM_INSTALLED=$_GLOBAL["OPENDKIM_INSTALLED"];}
 			if(isset($_GLOBAL["DB_RECOVER_INSTALLED"])){$this->DB_RECOVER_INSTALLED=$_GLOBAL["DB_RECOVER_INSTALLED"];}
 			
 			$APP_UFDBGUARD_INSTALLED=0;
@@ -796,8 +729,6 @@ class settings_inc {
 			if(isset($_GLOBAL["roundcube_subscriptions_option"])){$this->roundcube_subscriptions_option=$_GLOBAL["roundcube_subscriptions_option"];}
 			if(isset($_GLOBAL["ADZAPPER_INSTALLED"])){$this->ADZAPPER_INSTALLED=$_GLOBAL["ADZAPPER_INSTALLED"];}
 			
-			if(isset($_GLOBAL["DKIMPROXY_INSTALLED"])){$this->DKIMPROXY_INSTALLED=$_GLOBAL["DKIMPROXY_INSTALLED"];}
-			if(isset($_GLOBAL["MILTER_DKIM_INSTALLED"])){$this->MILTER_DKIM_INSTALLED=$_GLOBAL["MILTER_DKIM_INSTALLED"];}
 			if(isset($_GLOBAL["DROPBOX_INSTALLED"])){$this->DROPBOX_INSTALLED=$_GLOBAL["DROPBOX_INSTALLED"];}
 			if(isset($_GLOBAL["VIRTUALBOX_INSTALLED"])){$this->VIRTUALBOX_INSTALLED=$_GLOBAL["VIRTUALBOX_INSTALLED"];}
 			
@@ -830,7 +761,6 @@ class settings_inc {
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VIRTUALBOX_HOST"))==1){$this->VIRTUALBOX_HOST=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ASPELL_INSTALLED"))==1){$this->ASPELL_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSET_INSTALLED"))==1){$this->IPSET_INSTALLED=True;}
-			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTSCREEN_INSTALLED"))==1){$this->POSTSCREEN_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ISCSI_INSTALLED"))==1){$this->ISCSI_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VLAN_INSTALLED"))==1){$this->VLAN_INSTALLED=True;}
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LOSETUP_INSTALLED"))==1){$this->LOSETUP_INSTALLED=True;}

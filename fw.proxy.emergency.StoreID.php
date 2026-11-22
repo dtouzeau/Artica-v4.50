@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.os.system.tools.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -30,11 +32,11 @@ function popup(){
 	
 	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/squid.urgency.hypercache.progress";
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/squid.urgency.hypercache.progress.log";
-	$ARRAY["CMD"]="squid2.php?disable-hypercache-urgency=yes";
+	$ARRAY["CMD"]="/proxy/hypercache/urgency/disable";
 	$ARRAY["TITLE"]="{disable_emergency_mode}";
 	$ARRAY["AFTER"]=@implode(";", $js);
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=proxy-emergency-hypercache')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=proxy-emergency-hypercache')";
 	
 	$html= "<div id='proxy-emergency-hypercache'></div>
 	<center style='margin-top:10px'>". $tpl->button_autnonome("{disable_emergency_mode}", $jsrestart, "fa fa-bell-slash")."</center>	

@@ -1,9 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 //$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-if(isset($_GET["ruleid-tabs"])){ruleid_tabs();exit;}
 if(isset($_GET["ruleid-js"])){ruleid_js();exit;}
 if(isset($_GET["ruleid-popup"])){ruleid_popup();exit;}
 if(isset($_GET["search"])){table();exit;}
@@ -82,52 +82,17 @@ function page(){
     $page=CurrentPageName();
     $tpl=new template_admin();
 
-    $t=time();
+    // search_block remplace la barre de recherche ecrite a la main: il fournit le
+    // champ, le div de resultats (results-<hash>), le rafraichissement differe et
+    // surtout le nom de fonction que les mutations rappellent pour redessiner la
+    // table SANS perdre le filtre courant.
+    $html=array();
+    $html[]="<div id='progress-modesec-def'></div>";
+    $html[]="<div style='margin-top:10px'>";
+    $html[]=$tpl->search_block($page,"","","","");
+    $html[]="</div>";
 
-    $html[]="<div class=\"row\" style='margin-top: 10px'>";
-    $html[]="<div class='ibox-content'>";
-			$html[]="<div class=\"input-group\" style='margin-top:10px'>
-	      		<input type=\"text\" class=\"form-control\" value=\"\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
-	      		<span class=\"input-group-btn\"><button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button></span>
-	     	</div>
-    	</div>
-	</div>
-	<div class='row'><div id='progress-modesec-def'></div>
-	<div class='ibox-content'>";
-
-
-    $html[]="<div id='table-ModSecdefRules'></div>
-
-	</div>
-	</div>
-	<script>
-
-		function Search$t(e){";
-$html[]="    
-			if(!checkEnter(e) ){return;}
-			ss$t();
-		}
-		
-		function ss$t(){
-			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
-			LoadAjax('table-ModSecdefRules','$page?search='+ss+'&function=ss$t');
-		}
-		
-		function Start$t(){
-			var ss=document.getElementById('search-this-$t').value;
-			ss$t();
-		}
-		
-		function modsecurity_js_rules_search(){
-		    ss$t();
-		}
-		
-		Start$t();
-	</script>";
-
-
-    echo $tpl->_ENGINE_parse_body($html);
-
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
 }
 
 
@@ -136,110 +101,160 @@ $html[]="
 function table(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-    $t=time();
-	$eth_sql=null;
-	$token=null;
-	$class=null;
-	$t=$_GET["t"];
-	if(!is_numeric($t)){$t=time();}
-    $function=$_GET["function"];
 
-    $MAIN_WHITE=array();
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?serviceid=0"),true);
-    if(is_array($json) && $json["Status"]){
-        foreach($json["entries"] as $e){
-            if(strlen($e["spath"])==0){$MAIN_WHITE[$e["wfrule"]]=true;}
-        }
-    }
-    $TRCLASS=null;
+	// Les trois valeurs repartent dans du JavaScript (OnClick, $jsafter, URL de
+	// pager): liste blanche au site de lecture, sinon un ?function=... force est
+	// du code execute dans la session de l'administrateur.
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+	$divid=preg_replace('/[^A-Za-z0-9_-]/','',(string)(isset($_GET["div-id"])?$_GET["div-id"]:""));
+	$search=trim((string)(isset($_GET["search"])?$_GET["search"]:""));
+	$pageNo=intval(isset($_GET["page"])?$_GET["page"]:1);
+	if($pageNo<1){$pageNo=1;}
+	$psize=100;
 
-    $html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{rulename}</th>";
-	$html[]="<th data-sortable=false class='text-capitalize' data-type='text'>{disabled}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-
-	$jsAfter="LoadAjax('table-loader','$page?table=yes&eth={$_GET["eth"]}');";
-	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-
-    $search=$_GET["search"];
-    $search="*$search*";
-    $search=str_replace("**","*",$search);
-    $search=str_replace("*","%",$search);
-
-    if(strpos("  $search","%")>0){
-        $sql="SELECT * FROM rules WHERE ( (rulename LIKE '$search') OR (ID LIKE '$search') ) ORDER BY rulename";
-    }else{
-        $sql="SELECT * FROM rules ORDER BY ID DESC LIMIT 250";
-    }
-
-    $q=new lib_sqlite("/home/artica/SQLITE/modsecurity_rules.db");
-	$results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error("<b>{please_click_synchronize}</b><p>$q->mysql_error</p>");}
-	$TRCLASS=null;
-	foreach ($results as $ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $id=$ligne["ID"];
-        $stype="strong";
-        $whitelisted=0;
-        if(isset($MAIN_WHITE[$id])){
-            $whitelisted=1;
-            $stype="span";
-        }
-
-        $ligne["rulename"]=str_replace("'","`",$ligne["rulename"]);
-        if(strlen($ligne["rulename"])>100){
-            $ligne["rulename"]=substr($ligne["rulename"],0,97)."...";
-        }
-        $ligne["rulename"]=$tpl->td_href("{$ligne["rulename"]}",null,"Loadjs('$page?ruleid-js=$id')");
-		$html[]="<tr class='$TRCLASS'>";
-		$html[]="<td style='width:1%' nowrap><$stype>{$id}</$stype></td>";
-        $html[]="<td style='vertical-align:middle;width:99%' nowrap><$stype>{$ligne["rulename"]}</$stype></td>";
-		$html[]="<td style='vertical-align:middle;width:1%' nowrap><center>".$tpl->icon_check($whitelisted,"Loadjs('$page?enable-whitelist=$id')","signature-$id")."</center></td>";
-		$html[]="</tr>";
-		
-
+	// Les regles neutralisees: une entree de liste blanche sans chemin vaut pour
+	// tout le service.
+	$MAIN_WHITE=array();
+	$json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist?serviceid=0"),true);
+	if(is_array($json) && isset($json["Status"]) && $json["Status"]){
+		if(isset($json["entries"]) && is_array($json["entries"])){
+			foreach($json["entries"] as $e){
+				if(strlen($e["spath"])==0){$MAIN_WHITE[$e["wfrule"]]=true;}
+			}
+		}
 	}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
+	$q=new lib_sqlite("/home/artica/SQLITE/modsecurity_rules.db");
 
-	$html[]="<tr>";
-	$html[]="<td colspan='3'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	";
+	// La recherche etait concatenee dans le SQL apres un simple str_replace des
+	// jokers: une apostrophe suffisait a casser la requete, ou a la detourner.
+	// Elle voyage desormais en parametre lie -- QUERY_SQL_PARAMS est une methode
+	// distincte, PAS un second argument de QUERY_SQL (celui-la est le nom de base
+	// historique, ignore par lib_sqlite).
+	$where="";
+	$params=array();
+	if($search<>""){
+		$like="%".str_replace("*","%",$search)."%";
+		$like=str_replace("%%","%",$like);
+		$where=" WHERE (rulename LIKE ?) OR (ID LIKE ?)";
+		$params=array($like,$like);
+	}
 
+	$total=0;
+	$rowsCount=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) AS tot FROM rules$where",$params);
+	if(!$q->ok){
+		echo $tpl->_ENGINE_parse_body($tpl->div_error("<b>{please_click_synchronize}</b><p>".
+			htmlspecialchars((string)$q->mysql_error)."</p>"));
+		return;
+	}
+	if(isset($rowsCount[0]["tot"])){$total=intval($rowsCount[0]["tot"]);}
 
-    $button=@implode("",array());
+	$pages=1;
+	if($total>0){$pages=intval(ceil($total/$psize));}
+	if($pageNo>$pages){$pageNo=$pages;}
+	$offset=($pageNo-1)*$psize;
 
-    $TINY_ARRAY["TITLE"]="{WAF_LONG} {global_rules}";
-    $TINY_ARRAY["ICO"]="fa fa-bars";
-    $TINY_ARRAY["EXPL"]="{ModSecurityGLobalRulesExplain}";
-    $TINY_ARRAY["BUTTONS"]=$button;
-    $html[]= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-    $html[]="</script>";
+	// Tri par ID: les identifiants ModSecurity sont porteurs de sens (la famille
+	// 942xxx est l'injection SQL, 941xxx le XSS), donc les regrouper vaut mieux
+	// qu'un ordre alphabetique de libelles. La page est decoupee par le SQL, pas
+	// par le navigateur: la table compte des milliers de regles et icon_check
+	// emet TROIS fonctions JavaScript par ligne.
+	$sql="SELECT * FROM rules$where ORDER BY ID LIMIT $psize OFFSET $offset";
+	$results=$q->QUERY_SQL_PARAMS($sql,$params);
+	if(!$q->ok){
+		echo $tpl->_ENGINE_parse_body($tpl->div_error("<b>{please_click_synchronize}</b><p>".
+			htmlspecialchars((string)$q->mysql_error)."</p>"));
+		return;
+	}
 
-	echo $tpl->_ENGINE_parse_body($html);
+	$rows=array();
+	foreach($results as $ligne){
+		$rows[]=defrules_row($page,$ligne,isset($MAIN_WHITE[$ligne["ID"]]));
+	}
 
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{rulename}</th>";
+	$html[]="<th class='center awc-nowrap'>{status}</th>";
+	// {actions} et non {disabled}: la colonne porte le CONTROLE, l'etat est deja
+	// dit par le badge de la colonne precedente. L'en-tete d'origine melangeait
+	// les deux et laissait croire que la case cochee valait "regle active".
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='defrules-rows'>";
+	if(count($rows)==0){
+		$html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>{showing} ".count($rows)." / ".$tpl->FormatNumber($total).
+		"</span><span class='awc-pg'>".awc_pager_server($pageNo,$pages,"mdr-pg-a")."</span></div>";
+	$html[]="</div></div>";
+
+	$TINY_ARRAY=array();
+	$TINY_ARRAY["TITLE"]="{WAF_LONG} {global_rules}";
+	$TINY_ARRAY["ICO"]="fa fa-bars";
+	$TINY_ARRAY["EXPL"]="{ModSecurityGLobalRulesExplain}";
+	$TINY_ARRAY["BUTTONS"]="";
+	$jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+	// ICON_SCRIPTS_COMPILE() et non $tpl->ICON_SCRIPTS: chaque ligne est batie par
+	// defrules_row() avec SA propre instance, et les fonctions BtSwitch<id> partent
+	// avec elle. La case s'afficherait et ne repondrait a aucun clic.
+	$js="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$jstiny\n</script>";
+
+	// Le pager recharge CE fragment: div-id et function viennent de search_block.
+	$baseurl="$page?search=".urlencode($search)."&function=$function&div-id=$divid";
+	$nav ="<script>\n(function(){\n";
+	$nav.=" var base=".json_encode($baseurl).", div=".json_encode($divid).";\n";
+	$nav.=" if(div==\"\"){return;}\n";
+	$nav.=" var as=document.querySelectorAll(\".mdr-pg-a\");\n";
+	$nav.=" for(var i=0;i<as.length;i++){\n";
+	$nav.="   as[i].onclick=function(){ LoadAjaxTiny(div, base+\"&page=\"+this.getAttribute(\"data-p\")); return false; };\n";
+	$nav.=" }\n})();\n</script>";
+
+	// CSS et JS concatenes AUTOUR de l'analyse: la regex #{(.+?)}# du moteur prend
+	// chaque corps de regle CSS et chaque bloc JavaScript pour un {jeton}.
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html).$js)
+		.$nav;
+}
+
+// Une ligne = une regle. Whitelistee veut dire NEUTRALISEE: la colonne d'origine
+// s'appelait "{disabled}" et la case cochee eteint la regle -- l'etat affiche
+// suit cette semantique, pas l'inverse.
+function defrules_row($page,$ligne,$whitelisted):string{
+	$tpl=new template_admin();
+	$id=$ligne["ID"];
+	$name=(string)$ligne["rulename"];
+	if(strlen($name)>110){$name=substr($name,0,107)."...";}
+
+	$h ="<tr>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico".($whitelisted?" awc-ico-off":"")."'><i class='fas fa-shield-halved'></i></span>";
+	$h.="<span><span class='awc-name".($whitelisted?" awc-name-off":"")."'>";
+	$h.="<a href=\"javascript:blur();\" onclick=\"Loadjs('$page?ruleid-js=".urlencode($id)."')\">".
+		htmlspecialchars($name)."</a></span>";
+	$h.="<div class='awc-meta'>ID: ".htmlspecialchars((string)$id)."</div>";
+	$h.="</span></div></td>";
+	$h.="<td class='center'><span class='awc-badge ".
+		($whitelisted?"awc-badge-off'>{disabled}":"awc-badge-on'>{enabled}")."</span></td>";
+	$h.="<td><div class='awc-acts' style='opacity:1'>".
+		$tpl->icon_check($whitelisted?1:0,"Loadjs('$page?enable-whitelist=".urlencode($id)."')","signature-$id").
+		"</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 function enable(){
 	
-	$filename=$_POST["filename"];
+	$filename=(string)$_POST["filename"];
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM suricata_rules_packages WHERE rulefile='$filename'");
+	// Pentest 2026-11-04 : filename (POST) etait concatene dans la requete.
+	$rs=$q->QUERY_SQL_PARAMS("SELECT enabled FROM suricata_rules_packages WHERE rulefile=?",array($filename));
+	$ligne=isset($rs[0])?$rs[0]:array();
 	$enabled=intval($ligne["enabled"]);
 	if($enabled==0){$enabled=1;}else{$enabled=0;}
-	$q->QUERY_SQL("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile='$filename'","artica_backup");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile=?",array($filename));
 	if(!$q->ok){echo $q->mysql_error;}
 }

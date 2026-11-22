@@ -1,18 +1,15 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 
 include_once(dirname(__FILE__)."/frame.class.inc"); 
 include_once(dirname(__FILE__)."/class.unix.inc");
 
 if(isset($_GET["ch-admin"])){ch_admin();exit;}
-if(isset($_GET["is_installed"])){is_installed();exit;}
-if(isset($_GET["version"])){version();exit;}
 if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["uninstall"])){uninstall();exit;}
-if(isset($_GET["export"])){export();exit;}
-if(isset($_GET["import"])){import();exit;}
 if(isset($_GET["backup-now"])){backup_now();exit;}
 if(isset($_GET["backup-delete"])){backup_delete();exit;}
-
 
 if(isset($_GET["build-new-sites"])){build_new_sites();exit;}
 if(isset($_GET["build-sites"])){build_sites();exit;}
@@ -52,14 +49,9 @@ if(isset($_GET["repair-db"])){repair_db();exit;}
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
-die("DIE " .__FILE__." Line: ".__LINE__);
+die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 
 
-function is_installed(){
-	if(is_dir("/usr/share/wordpress-src/wp-includes")){ echo "<articadatascgi>TRUE</articadatascgi>"; return; }
-	echo "<articadatascgi>FALSE</articadatascgi>";
-	
-}
 function replace_insite(){
     $siteid=intval($_GET["site-replace"]);
     $unix=new unix();
@@ -263,7 +255,7 @@ function searchInSyslog(){
     $unix=new unix();
     $grep=$unix->find_program("grep");
     $tail=$unix->find_program("tail");
-    $MAIN=unserialize(base64_decode($_GET["syslog"]));
+    $MAIN=unserialize(base64_decode($_GET["syslog"]),array("allowed_classes"=>false));
     $PROTO_P=null;
 
     foreach ($MAIN as $val=>$key){
@@ -308,7 +300,8 @@ function searchInSyslog(){
 
     $search="$date.*?$mainline";
     $search=str_replace(".*?.*?",".*?",$search);
-    $cmd="$grep --binary-files=text -i -E '$search' /var/log/fw-nginx.log |tail -n $max >/usr/share/artica-postfix/ressources/logs/web/firehol-wordpress.syslog 2>&1";
+    // Pentest 2026-11-04 : motif et nombre de lignes quotes (injection shell root).
+    $cmd="$grep --binary-files=text -i -E ".fw_shell_quote($search)." /var/log/fw-nginx.log |tail -n ".(intval($max)>0?intval($max):200)." >/usr/share/artica-postfix/ressources/logs/web/firehol-wordpress.syslog 2>&1";
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
@@ -404,24 +397,6 @@ function uninstall(){
     shell_exec($cmd);
 }
 
-function export(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$servername=$_GET["servername"];
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/wordpress.export.$servername.progress";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/wordpress.export.$servername.progress.txt";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);
-	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress-backup.php --export ".escapeshellarg($servername)." >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
 function backup_import(){
 
     $fname=$_GET["import-backup"];
@@ -473,43 +448,12 @@ function backup_now():bool{
 	return true;
 }
 
-function import(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$filename=$_GET["filename"];
-	$fn_base=basename($filename);
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/wordpress.import.$fn_base.progress";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/wordpress.import.$fn_base.progress.txt";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);
-
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.wordpress-backup.php --import ".escapeshellarg($filename)." >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
-
-function version(){
-	@chmod("/usr/share/artica-postfix/bin/wp-cli.phar",0755);
-	$cmd="/usr/share/artica-postfix/bin/wp-cli.phar --allow-root core version --path=/usr/share/wordpress-src 2>&1";
-	
-	$version=exec($cmd);
-	if(preg_match("#wp core download#", $version)){
-		return null;
-	}
-	
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>".exec($cmd)."</articadatascgi>";
-	
-}
 function wordpress_duplicator_container(){
     $fname=$_GET["wp-duplicator-back"];
     $ARROOTR    = ARTICA_ROOT;
-    $siteid=$_GET["siteid"];
+    // Pentest 2026-11-04 : nom de fichier uploade sans chemin, siteid numerique (traversee de repertoire root).
+    $siteid=intval($_GET["siteid"]);
+    if(!wordpress_upload_name_ok($fname)){return false;}
     $filepath   = "$ARROOTR/ressources/conf/upload/$fname";
     if(!is_file($filepath)){return false;}
     $target_path = "/home/wordpress/wp-duplicator/$siteid/$fname";
@@ -524,7 +468,9 @@ function wordpress_duplicator_container(){
 function wordpress_duplicator_installer(){
     $fname=$_GET["wp-duplicator-insta"];
     $ARROOTR    = ARTICA_ROOT;
-    $siteid=$_GET["siteid"];
+    // Pentest 2026-11-04 : nom de fichier uploade sans chemin, siteid numerique (traversee de repertoire root).
+    $siteid=intval($_GET["siteid"]);
+    if(!wordpress_upload_name_ok($fname)){return false;}
     $filepath   = "$ARROOTR/ressources/conf/upload/$fname";
     if(!is_file($filepath)){return false;}
     $target_path = "/home/wordpress/wp-duplicator/$siteid/installer.php";
@@ -534,6 +480,14 @@ function wordpress_duplicator_installer(){
     if(is_file($target_path)){@unlink($target_path);}
     @copy($filepath,$target_path);
     @unlink($filepath);
+    return true;
+}
+// Pentest 2026-11-04 : un nom de fichier de ressources/conf/upload/, jamais un chemin.
+function wordpress_upload_name_ok($fname):bool{
+    $fname=(string)$fname;
+    if($fname=="" || $fname=="." || $fname==".."){return false;}
+    if(basename($fname)!==$fname){return false;}
+    if(strpos($fname,"\0")!==false || strpos($fname,"/")!==false){return false;}
     return true;
 }
 function wordpress_duplicator_restore(){

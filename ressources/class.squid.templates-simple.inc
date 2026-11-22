@@ -226,13 +226,13 @@ class template_simple
     private function loadTemplate()
     {
         $cache_mgr_user = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("cache_mgr_user");
-        $SquidHTTPTemplateNoVersion = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateNoVersion"));
+        $SquidHTTPTemplateNoVersion = (trim(strval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateNoVersion")))==="0"?0:1);
         $SquidHTTPTemplateBackgroundColor = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateBackgroundColor");
         $SquidHTTPTemplateDisableHostname = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateDisableHostname"));
         $SquidHTTPTemplateEnablePostmaster = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateEnablePostmaster");
         $SquidHTTPTemplateFontColor = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateFontColor");
         $SquidHTTPTemplateFamily = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateFamily");
-        $SquidHTTPTemplateNoProxyVersion = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateNoProxyVersion"));
+        $SquidHTTPTemplateNoProxyVersion = (trim(strval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidHTTPTemplateNoProxyVersion")))==="0"?0:1);
 
 
         $SquidFTPTemplateEnablePostmaster = 1;
@@ -733,7 +733,7 @@ class template_simple
             writelogs("Saving $this->TEMPLATE_NAME LANG $this->lang", __FUNCTION__, __FILE__, __LINE__);
         }
         $sock->SaveConfigFile(serialize($this->TemplateConfig), "TemplateConfig");
-        $sock->getFrameWork("squid.php?single-templates=yes");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/templates");
     }
 
     private function imageinline($img_file){
@@ -851,7 +851,9 @@ class template_simple
 
 
         if ($this->SquidHTTPTemplateNoProxyVersion == 1) {
-            $content = str_ireplace("<p>Generated %T by %h (%s)</p>", "<!-- <p>Generated %T by %h (%s)</p> -->", $content);
+            // Supprimee, pas commentee : Squid remplace %T/%h/%s jusque dans les
+            // commentaires HTML, le nom complet de l'appliance restait dans le source.
+            $content = str_ireplace("<p>Generated %T by %h (%s)</p>", "", $content);
         }
 
         if ($this->SquidHTTPTemplateNoVersion == 0) {

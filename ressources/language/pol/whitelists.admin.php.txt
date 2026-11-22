@@ -1,11 +1,10 @@
-<autolearning>Auto-learning</autolearning>
-<autolearning_text>This feature allow you to enable robots that will parse mailboxes in order to auto-complete white list and black list area</autolearning_text>
-<enable_artica_wbl_robots_text>If you enable this option, organization's manager will be allowed to create email addresses that will be in charge of adding email addresses in white or black list by receiving messages from users</enable_artica_wbl_robots_text>
-<enable_learning_ham_mailbox>Enable learning White list by parsing Sent mailbox</enable_learning_ham_mailbox>
-<enable_learning_spam_mailbox>Enable learning SPAM by parsing Junk mailbox</enable_learning_spam_mailbox>
-<replicate_each>Replicate settings each</replicate_each>
-<replicate_now>Launch replication now</replicate_now>
-<whitelist_explain>This area consolidate all white list & Black lists used in all modules executed by Postfix, you can add and delete senders
-in order to add a white/black list user, you need to set the recipient of each users.[br]
-Recipients could be "@domain.tlb" to white/black list for all domain or "user@domain.tlb" for a single user.
-</whitelist_explain>
+<autolearning>Automatyczne uczenie</autolearning>
+<autolearning_text>Ta funkcja umo&#380;liwia w&#322;&#261;czenie robot&#243;w, kt&#243;re b&#281;d&#261; analizowa&#263; skrzynki pocztowe w celu automatycznego uzupe&#322;nienia obszaru bia&#322;ej i czarnej listy</autolearning_text>
+<enable_artica_wbl_robots_text>Je&#347;li w&#322;&#261;czysz t&#281; opcj&#281;, mened&#380;er organizacji b&#281;dzie m&#243;g&#322; tworzy&#263; adresy e-mail, kt&#243;re b&#281;d&#261; odpowiedzialne za dodawanie adres&#243;w e-mail do bia&#322;ej lub czarnej listy poprzez odbieranie wiadomo&#347;ci od u&#380;ytkownik&#243;w</enable_artica_wbl_robots_text>
+<enable_learning_ham_mailbox>W&#322;&#261;cz uczenie bia&#322;ej listy przez analiz&#281; skrzynki wys&#322;anych</enable_learning_ham_mailbox>
+<enable_learning_spam_mailbox>W&#322;&#261;cz uczenie SPAM przez analiz&#281; skrzynki wiadomo&#347;ci-&#347;mieci</enable_learning_spam_mailbox>
+<replicate_each>Replikuj ustawienia co</replicate_each>
+<replicate_now>Uruchom replikacj&#281; teraz</replicate_now>
+<whitelist_explain>Ten obszar konsoliduje wszystkie bia&#322;e i czarne listy u&#380;ywane we wszystkich modu&#322;ach wykonywanych przez Postfix, mo&#380;esz dodawa&#263; i usuwa&#263; nadawc&#243;w.
+Aby doda&#263; u&#380;ytkownika z bia&#322;ej/czarnej listy, musisz ustawi&#263; odbiorc&#281; ka&#380;dego u&#380;ytkownika.[br]
+Odbiorcami mog&#261; by&#263; &quot;@domain.tlb&quot;, aby umie&#347;ci&#263; na bia&#322;ej/czarnej li&#347;cie ca&#322;&#261; domen&#281;, lub &quot;user@domain.tlb&quot; dla pojedynczego u&#380;ytkownika.</whitelist_explain>

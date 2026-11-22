@@ -26,7 +26,8 @@ function rule_js():bool{
     }
     $uid="";
     if(isset($_GET["uid"])){
-        $uid="&uid={$_GET["uid"]}";
+        // Pentest 2026-11-04 : uid etait recopie sans encodage dans la page (XSS).
+        $uid="&uid=".req_url($_GET["uid"]);
     }
 
 	return $tpl->js_dialog2($title,"$page?rule-tab=$id&function=$function$uid");
@@ -39,7 +40,8 @@ function rule_tab():bool{
     $function=$_GET["function"];
     $uid="";
     if(isset($_GET["uid"])){
-        $uid="&uid={$_GET["uid"]}";
+        // Pentest 2026-11-04 : uid etait recopie sans encodage dans la page (XSS).
+        $uid="&uid=".req_url($_GET["uid"]);
     }
 
     if($ID==0) {
@@ -66,7 +68,8 @@ function rule_tab():bool{
 
 function delete_rule_js():bool{
     $tpl=new template_admin();
-    $ID=$_GET["delete-js"];
+    // Pentest 2026-11-04 : delete-js etait recopie sans encodage dans la page (XSS).
+    $ID=intval($_GET["delete-js"]);
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $ligne=$q->mysqli_fetch_array("SELECT rulename FROM profiles WHERE ID=$ID");
@@ -110,18 +113,25 @@ function rule_popup():bool{
 	$page=CurrentPageName();
     $uid="";
     if(isset($_GET["uid"])){
-        $uid=";Loadjs('fw.openvpn.clients.php?uid-row={$_GET["uid"]}')";
+        // Pentest 2026-11-04 : uid etait recopie sans encodage dans la page (XSS).
+        $uid=";Loadjs('fw.openvpn.clients.php?uid-row=".req_url($_GET["uid"])."')";
     }
 
     //OpenVPNClientTOClient: client-to-client
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $id=intval($_GET["rule-popup"]);
-    $ligne["clienttoclient"]=0;
+    // Defaults guarantee every field is defined even before the daemon has patched the new
+    // columns (push_dns*, redirect_*, etc.) into the profiles table.
+    $defaults=array("rulename"=>"","clienttoclient"=>0,"clienttoserver"=>0,
+        "push_dns1"=>"","push_dns2"=>"","push_domain"=>"","push_wins"=>"",
+        "block_outside_dns"=>0,"redirect_gateway"=>0,"redirect_flags"=>"def1 bypass-dhcp");
+    $ligne=$defaults;
     $function=$_GET["function"];
     $btn="{add}";
     $jsclose="dialogInstance2.close();";
     if($id>0){
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM profiles WHERE ID=$id");
+        $row=$q->mysqli_fetch_array("SELECT * FROM profiles WHERE ID=$id");
+        if(is_array($row)){$ligne=array_merge($defaults,$row);}
         $btn="{apply}";
     }
     if(strlen($function)>3){
@@ -132,6 +142,13 @@ function rule_popup():bool{
     $form[]=$tpl->field_hidden("ID",$id);
     $form[]=$tpl->field_text("rulename", "{name}", $ligne["rulename"],true);
 	$form[]=$tpl->field_checkbox("clienttoclient", "{OpenVPNClientTOClient}", $ligne["clienttoclient"]);
+	$form[]=$tpl->field_text("push_dns1", "{dns_server} 1", $ligne["push_dns1"]);
+	$form[]=$tpl->field_text("push_dns2", "{dns_server} 2", $ligne["push_dns2"]);
+	$form[]=$tpl->field_text("push_domain", "{domain}", $ligne["push_domain"]);
+	$form[]=$tpl->field_text("push_wins", "WINS", $ligne["push_wins"]);
+	$form[]=$tpl->field_checkbox("block_outside_dns", "block-outside-dns", $ligne["block_outside_dns"]);
+	$form[]=$tpl->field_checkbox("redirect_gateway", "{redirect_gateway}", $ligne["redirect_gateway"]);
+	$form[]=$tpl->field_text("redirect_flags", "redirect-gateway {options}", $ligne["redirect_flags"]);
 	$html=$tpl->form_outside("",  $form,"",$btn,"$function$jsclose$uid","AsVPNManager");
 	echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -142,20 +159,31 @@ function rule_save(){
     $tpl->CLEAN_POST();
     $main["rulename"]=$_POST["rulename"];
     $main["clienttoclient"]=$_POST["clienttoclient"];
-    $ID=$_POST["ID"];
+    $main["push_dns1"]=$_POST["push_dns1"] ?? "";
+    $main["push_dns2"]=$_POST["push_dns2"] ?? "";
+    $main["push_domain"]=$_POST["push_domain"] ?? "";
+    $main["push_wins"]=$_POST["push_wins"] ?? "";
+    $main["block_outside_dns"]=intval($_POST["block_outside_dns"] ?? 0);
+    $main["redirect_gateway"]=intval($_POST["redirect_gateway"] ?? 0);
+    $main["redirect_flags"]=$_POST["redirect_flags"] ?? "def1 bypass-dhcp";
+    // Pentest 2026-11-04 : ID et les champs du profil etaient concatenes dans la requete.
+    $ID=intval($_POST["ID"]);
+    $sqlparams=array();
     foreach ($main as $key=>$val){
         $f_add[]=$key;
-        $d_add[]="'$val'";
-        $e_add[]="$key='$val'";
+        $d_add[]="?";
+        $e_add[]="$key=?";
+        $sqlparams[]=$val;
 
     }
     if($ID==0){
         $sql=sprintf("INSERT INTO profiles (%s) VALUES (%s)",implode(",",$f_add),implode(",",$d_add));
     }else{
-        $sql=sprintf("UPDATE profiles SET %s WHERE ID=%s",@implode(",",$e_add),$ID);
+        $sql=sprintf("UPDATE profiles SET %s WHERE ID=?",@implode(",",$e_add));
+        $sqlparams[]=$ID;
     }
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$sqlparams);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -186,7 +214,8 @@ function main(){
 	$function=$_GET["function"];
     $uid="";
     if(isset($_GET["uid"])){
-        $uid="&uid={$_GET["uid"]}";
+        // Pentest 2026-11-04 : uid etait recopie sans encodage dans la page (XSS).
+        $uid="&uid=".req_url($_GET["uid"]);
     }
     $t=time();
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");

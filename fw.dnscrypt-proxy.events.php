@@ -1,5 +1,13 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsDnsAdministrator){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
@@ -143,7 +151,7 @@ function search(){
 	$date_text=$tpl->_ENGINE_parse_body("{date}");
 	$events=$tpl->_ENGINE_parse_body("{events}");
 	$html[]="
-<table class=\"table table-hover\">
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th>$date_text</th>
@@ -166,7 +174,8 @@ $xServe["pdns_recursor"]="{APP_PDNS_RECURSOR}";
 		$rulename=null;
 		$ACTION=null;
 		if(!preg_match("#(.*?)\s+([0-9]+)\s+([0-9:]+)\s+.*?\s+dnscrypt-proxy\[([0-9]+)\]:(.+)#", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
+			// Pentest 2026-11-04 : ligne de journal dnscrypt-proxy (donnee externe) affichee sans encodage (XSS stockee).
+			echo "<strong style='color:red'>".req_html($line)."</strong><br>"; 
 			continue;}
 
 			
@@ -177,7 +186,8 @@ $xServe["pdns_recursor"]="{APP_PDNS_RECURSOR}";
 		
 		
 		$pid=$re[4];
-		$line=trim($re[5]);
+		// Pentest 2026-11-04 : ligne de journal dnscrypt-proxy (donnee externe) affichee sans encodage (XSS stockee).
+		$line=req_html(trim($re[5]));
 
 		
 
@@ -190,9 +200,10 @@ $xServe["pdns_recursor"]="{APP_PDNS_RECURSOR}";
 		
 	}
 	
-	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/dnscrypt-proxy.pattern")."</i></div>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	$html[]="</tbody></table></div></div></div>";
+	// Pentest 2026-11-04 : motif de recherche relu depuis un fichier, affiche sans encodage (XSS stockee).
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/dnscrypt-proxy.pattern"))."</i></div>";
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
 	
 	
@@ -212,7 +223,7 @@ function requests_search(){
     $date_text=$tpl->_ENGINE_parse_body("{date}");
 
     $html[]="
-<table class=\"table table-hover\">
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th>$date_text</th>
@@ -245,10 +256,11 @@ function requests_search(){
         $FTime=$tpl->time_to_date($xtime,true);
 
 
-        $Client=$re[2];
-        $Domain=$re[3];
-        $Q=$re[4];
-        $INFO=$re[5];
+        // Pentest 2026-11-04 : client/domaine/type de la requete DNS (donnee externe) affiches sans encodage (XSS stockee).
+        $Client=req_html($re[2]);
+        $Domain=req_html($re[3]);
+        $Q=req_html($re[4]);
+        $INFO=req_html($re[5]);
 
 
 
@@ -263,8 +275,9 @@ function requests_search(){
 
     }
 
-    $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/dnscrypt-proxy.pattern")."</i></div>";
+    $html[]="</tbody></table></div></div></div>";
+    // Pentest 2026-11-04 : motif de recherche relu depuis un fichier, affiche sans encodage (XSS stockee).
+    $html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/dnscrypt-proxy.pattern"))."</i></div>";
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 
 

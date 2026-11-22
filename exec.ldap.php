@@ -7,7 +7,6 @@ include_once(dirname(__FILE__)."/ressources/class.mysql.inc");
 include_once(dirname(__FILE__).'/ressources/class.manager.inc');
 
 if($argv[1]=='--users'){parseusers();exit;}
-if($argv[1]=="--change-suffix"){ChangeSuffix();exit;}
 if($argv[1]=="--proxy"){proxycnx();exit;}
 
 
@@ -54,94 +53,7 @@ function GetOus(){
   	 
 }
 
-function ChangeSuffix_progress($text,$pourc){
-    echo "{$pourc}% $text\n";
-    $cachefile="/usr/share/artica-postfix/ressources/logs/openldap.chsuffix.progress";
-    if(is_numeric($text)){
-        $array["POURC"]=$text;
-        $array["TEXT"]=$pourc;
-    }else{
-        $array["POURC"]=$pourc;
-        $array["TEXT"]=$text;
-    }
-    @file_put_contents($cachefile, serialize($array));
-    @chmod($cachefile,0755);
 
-}
-
-function ChangeSuffix(){
-	$unix=new unix();
-	$ldap=new clladp();
-	$sock=new sockets();
-	$users=new usersMenus();
-
-	$ChangeLDAPSuffixFrom=utf8_encode(base64_decode($sock->GET_INFO("ChangeLDAPSuffixFrom")));
-	$ChangeLDAPSuffixTo=utf8_encode(base64_decode($sock->GET_INFO("ChangeLDAPSuffixTo")));
-    ChangeSuffix_progress("{move} {from} $ChangeLDAPSuffixFrom {to} $ChangeLDAPSuffixTo",15);
-	$filebackup="/home/artica/ldap_backup/ldap.ldif";
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$slapadd=$unix->find_program("slapadd");
-    $slpadconf=$unix->SLAPD_CONF_PATH();
-
-	$rm=$unix->find_program("rm");
-	echo "Starting change LDAP suffix from \"$ChangeLDAPSuffixFrom\"\n";
-	echo "Starting change LDAP suffix to \"$ChangeLDAPSuffixTo\"\n";
-	if(!is_file("$filebackup")){
-        ChangeSuffix_progress("{exporting}...",15);
-		echo "Exporting database to /home/artica/ldap_backup...\n";
-		@mkdir("/home/artica/ldap_backup",0755);
-		$nextscript=dirname(__FILE__)."/exec.ldapchpipe.php";
-		$cmd="/usr/sbin/slapcat -b \"$ChangeLDAPSuffixFrom\"|$php5 $nextscript >$filebackup";
-		echo $cmd."\n";
-		shell_exec($cmd);
-		$filesize=$unix->file_size($filebackup);
-		echo "$filebackup $filesize Bytes\n";
-		if($filesize<100){
-            ChangeSuffix_progress("{exporting} {failed}...",110);
-			echo "Corrupted backup file, aborting\n";
-			@unlink($filebackup);
-			return;
-		}
-	}else{
-		echo "Skipping exporting datas $filebackup exists\n";
-	}
-    ChangeSuffix_progress("{restarting}...",30);
-
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/system/manager", array("suffix" => $ChangeLDAPSuffixTo));
-    system("/usr/sbin/artica-phpfpm-service -restart-ldap");
-    system("/usr/sbin/artica-phpfpm-service -nsswitch");
-
-
-    ChangeSuffix_progress("{stopping}...",50);
-	echo "Stopping watchdogs and LDAP server\n";
-
-	shell_exec("/etc/init.d/monit stop");
-    ChangeSuffix_progress("{stopping}...",55);
-	shell_exec("/etc/init.d/artica-status stop");
-    ChangeSuffix_progress("{stopping}...",60);
-    system("/usr/sbin/artica-phpfpm-service -stop-ldap");
-	echo "Stopping Removing OpenLDAP database file\n";
-	shell_exec("$rm -f /var/lib/ldap/*");
-	echo "Injecting data with new suffix\n";
-    ChangeSuffix_progress("{importing}...",70);
-	$cmd="$slapadd -v -s -c -l $filebackup -f $slpadconf";   
-	echo $cmd."\n";
-	shell_exec($cmd);
-    ChangeSuffix_progress("{starting}...",80);
-	echo "Starting LDAP server\n";
-    system("/usr/sbin/artica-phpfpm-service -start-ldap");
-    ChangeSuffix_progress("{starting}...",85);
-    shell_exec("/etc/init.d/monit start");
-    ChangeSuffix_progress("{stopping}...",55);
-    shell_exec("/etc/init.d/artica-status start");
-	@copy($filebackup, $filebackup.".".time());
-	@unlink($filebackup);
-    ChangeSuffix_progress("{success}...",100);
-	
-
-	
-
-}
 
 
 

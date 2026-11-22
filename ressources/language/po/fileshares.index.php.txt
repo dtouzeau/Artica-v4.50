@@ -1,51 +1,47 @@
-<add_sub_folder>Create a new sub-folder </add_sub_folder>
+<add_sub_folder>Criar uma nova subpasta</add_sub_folder>
 <apply_config_pureftpd>Guarde os parâmetros dos seus utilizadores numa base de dados de servidor FTP virtual</apply_config_pureftpd>
-<APP_PUREFTPD_TEXT>Pure-FTPd is a free (BSD), secure, production-quality and standard-conformant FTP server. </APP_PUREFTPD_TEXT>
-<APP_SAMBA_TEXT>Samba is an Open Source/Free Software suite that provides seamless file and print services to SMB/CIFS clients</APP_SAMBA_TEXT>
-<browse_computers>Browse computers</browse_computers>
+<APP_PUREFTPD_TEXT>O Pure-FTPd &#233; um servidor FTP gratuito (BSD), seguro, de qualidade de produ&#231;&#227;o e conforme aos padr&#245;es.</APP_PUREFTPD_TEXT>
+<APP_SAMBA_TEXT>O Samba &#233; um conjunto de software Open Source/livre que fornece servi&#231;os de ficheiros e impress&#227;o transparentes aos clientes SMB/CIFS</APP_SAMBA_TEXT>
+<browse_computers>Navegar pelos computadores</browse_computers>
 <current_connections>Conex%C3µes actuais</current_connections>
-<current_connections_text>Display informations about who is connected and what happens on the FTP flow</current_connections_text>
-<delete_share>Unshare This Folder</delete_share>
+<current_connections_text>Exibir informa&#231;&#245;es sobre quem est&#225; ligado e o que acontece no fluxo FTP</current_connections_text>
+<delete_share>Anular a partilha desta pasta</delete_share>
 <del_folder_name>Tem a certeza de apagar este direct%C3%B3rio ??</del_folder_name>
-<del_sub_folder>Delete this folder</del_sub_folder>
-<enable_roaming>Enable Roaming profiles</enable_roaming>
-<enable_roaming_text>If you turn this feature to green, the server will be turn to PDC mode and allow Windows client 
-to push/retreive local datas from this server from any computer join to this domain</enable_roaming_text>
-<FOLDER_IS_SHARED>This folder is already shared, users can access it in smb mode</FOLDER_IS_SHARED>
-<ftp_share>FTP Shares</ftp_share>
-<give_computer_nameip>Give the computer name or computer IP address</give_computer_nameip>
-<give_folder_name>Give here the name of the new folder you want to create.
-was based on </give_folder_name>
-<mount_name>mount name</mount_name>
-<net_share>Windows Networking share</net_share>
-<NFS_CLIENT_ADD>Connect to a NFS remote directory</NFS_CLIENT_ADD>
-<NFS_CLIENT_ADD_TEXT>Add the remote directory into Auto-connect service database. This to automatically link the remote service when try to access it</NFS_CLIENT_ADD_TEXT>
-<NFS_CLIENT_HOWTO>Click on the icon on the left pan in order to set NFS parameters in order to mount a local directory to the targeted server</NFS_CLIENT_HOWTO>
-<NTconfig>XP/2000 Policies</NTconfig>
-<NTconfig_howto>Push your Windows NT policy (*.pol) in order to make it in production mode</NTconfig_howto>
-<NTconfig_howto_title>How to create a .pol file ?</NTconfig_howto_title>
-<NTconfig_howto_title_text>Click on this icon in order to see how to create policies for your windows XP clients</NTconfig_howto_title_text>
-<NTconfig_text>Save your users policies (only if samba is set has PDC mode)</NTconfig_text>
-<privileges_settings>Shared properties and privileges; Define users privileges and folder behavior</privileges_settings>
-<roaming_profiles>Roaming profiles</roaming_profiles>
-<roaming_profiles_text>Roaming Allows a user with a computer joined to a Windows Server domain to log on to any computer on the same network and access 
-their local files and settings
-</roaming_profiles_text>
-<samba_audit>View Samba statistics</samba_audit>
-<samba_audit_text>Get events of your share directories and perform analysis</samba_audit_text>
-<selected_folder>Selected folder</selected_folder>
-<select_disk>Select the Hard Drive first</select_disk>
-<select_this_folder>Select this folder</select_this_folder>
-<SHARE_FOLDER>Share a folder</SHARE_FOLDER>
-<SHARE_FOLDER_TEXT>Share a folder on this system.[br]Browse your hard drives and point a directory to share</SHARE_FOLDER_TEXT>
-<share_this>Share This folder</share_this>
-<share_this_NFS>Share this folder using Linux NFS</share_this_NFS>
-<share_this_NFS_explain>You are ready to share this folder with NFS protocol.[br]Add a computer to give him access to this folder by using the add computer button[br]NFS protocol is used for Unix based computer[br]
-Sun's NFS protocol provides transparent remote access to shared file systems across networks. The NFS protocol is designed to be machine, operating system, 
-network architecture, and transport protocol independent.</share_this_NFS_explain>
-<unshare_this>Unshare this folder ? All shared privileges and properties will be definitively deleted</unshare_this>
-<usb_share>USB Sharing</usb_share>
-<usb_share_explain>This section allow you to "share" devices activated with "Auto-Connect" feature.[br]
-Click on a row of this list to share the device trough Windows share system.[br]
-If there is no data in this list, it means that you have no "Auto-Connect" device enabled</usb_share_explain>
-<usb_share_text>Detect your usb devices and share them in your network automatically</usb_share_text>
+<del_sub_folder>Eliminar esta pasta</del_sub_folder>
+<enable_roaming>Ativar perfis m&#243;veis</enable_roaming>
+<enable_roaming_text>Se colocar esta funcionalidade a verde, o servidor passar&#225; para o modo PDC e permitir&#225; que os clientes Windows enviem/obtenham dados locais deste servidor a partir de qualquer computador associado a este dom&#237;nio</enable_roaming_text>
+<FOLDER_IS_SHARED>Esta pasta j&#225; est&#225; partilhada, os utilizadores podem aceder-lhe em modo smb</FOLDER_IS_SHARED>
+<ftp_share>Partilhas FTP</ftp_share>
+<give_computer_nameip>Indique o nome do computador ou o endere&#231;o IP do computador</give_computer_nameip>
+<give_folder_name>Indique aqui o nome da nova pasta que pretende criar.
+baseou-se em</give_folder_name>
+<mount_name>Nome de montagem</mount_name>
+<net_share>Partilha de rede do Windows</net_share>
+<NFS_CLIENT_ADD>Ligar a um diret&#243;rio remoto NFS</NFS_CLIENT_ADD>
+<NFS_CLIENT_ADD_TEXT>Adicionar o diret&#243;rio remoto &#224; base de dados do servi&#231;o Auto-connect. Isto para ligar automaticamente o servi&#231;o remoto ao tentar aceder-lhe</NFS_CLIENT_ADD_TEXT>
+<NFS_CLIENT_HOWTO>Clique no &#237;cone no painel esquerdo para definir os par&#226;metros NFS e montar um diret&#243;rio local no servidor de destino</NFS_CLIENT_HOWTO>
+<NTconfig>Pol&#237;ticas XP/2000</NTconfig>
+<NTconfig_howto>Carregue a sua pol&#237;tica Windows NT (*.pol) para a colocar em modo de produ&#231;&#227;o</NTconfig_howto>
+<NTconfig_howto_title>Como criar um ficheiro .pol?</NTconfig_howto_title>
+<NTconfig_howto_title_text>Clique neste &#237;cone para ver como criar pol&#237;ticas para os seus clientes Windows XP</NTconfig_howto_title_text>
+<NTconfig_text>Guardar as suas pol&#237;ticas de utilizador (apenas se o samba estiver configurado em modo PDC)</NTconfig_text>
+<privileges_settings>Propriedades e privil&#233;gios de partilha; Definir privil&#233;gios de utilizadores e comportamento da pasta</privileges_settings>
+<roaming_profiles>Perfis m&#243;veis</roaming_profiles>
+<roaming_profiles_text>O roaming permite que um utilizador com um computador associado a um dom&#237;nio Windows Server inicie sess&#227;o em qualquer computador na mesma rede e aceda aos seus ficheiros e defini&#231;&#245;es locais</roaming_profiles_text>
+<samba_audit>Ver estat&#237;sticas do Samba</samba_audit>
+<samba_audit_text>Obter eventos dos seus diret&#243;rios partilhados e realizar an&#225;lises</samba_audit_text>
+<selected_folder>Pasta selecionada</selected_folder>
+<select_disk>Selecionar primeiro o disco r&#237;gido</select_disk>
+<select_this_folder>Selecionar esta pasta</select_this_folder>
+<SHARE_FOLDER>Partilhar uma pasta</SHARE_FOLDER>
+<SHARE_FOLDER_TEXT>Partilhar uma pasta neste sistema.[br]Navegue pelos seus discos r&#237;gidos e indique um diret&#243;rio para partilhar</SHARE_FOLDER_TEXT>
+<share_this>Partilhar esta pasta</share_this>
+<share_this_NFS>Partilhar esta pasta usando Linux NFS</share_this_NFS>
+<share_this_NFS_explain>Est&#225; pronto para partilhar esta pasta com o protocolo NFS.[br]Adicione um computador para lhe dar acesso a esta pasta usando o bot&#227;o adicionar computador[br]O protocolo NFS &#233; usado para computadores baseados em Unix[br]
+O protocolo NFS da Sun fornece acesso remoto transparente a sistemas de ficheiros partilhados atrav&#233;s de redes. O protocolo NFS foi concebido para ser independente da m&#225;quina, do sistema operativo, da arquitetura de rede e do protocolo de transporte.</share_this_NFS_explain>
+<unshare_this>Anular a partilha desta pasta? Todos os privil&#233;gios e propriedades de partilha ser&#227;o definitivamente removidos</unshare_this>
+<usb_share>Partilha USB</usb_share>
+<usb_share_explain>Esta sec&#231;&#227;o permite-lhe &quot;partilhar&quot; dispositivos ativados com a funcionalidade &quot;Auto-Connect&quot;.[br]
+Clique numa linha desta lista para partilhar o dispositivo atrav&#233;s do sistema de partilha do Windows.[br]
+Se n&#227;o houver dados nesta lista, significa que n&#227;o tem nenhum dispositivo &quot;Auto-Connect&quot; ativado</usb_share_explain>
+<usb_share_text>Detetar os seus dispositivos USB e partilh&#225;-los automaticamente na sua rede</usb_share_text>

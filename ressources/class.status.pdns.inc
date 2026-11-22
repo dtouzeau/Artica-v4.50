@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!isset($GLOBALS["BASE_ROOT"])){$GLOBALS["BASE_ROOT"]="/usr/share/artica-postfix";}
 
 
@@ -6,8 +7,8 @@ if(!isset($GLOBALS["BASE_ROOT"])){$GLOBALS["BASE_ROOT"]="/usr/share/artica-postf
 
 function pdns_increment_func($array){
 	if(!isset($GLOBALS["CLASS_SOCKETS"])){ if(function_exists("LoadIncludes")){LoadIncludes();}else{return $array;} }
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnablePDNS")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePDNS", 0);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/PowerDNSEnableRecursor")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PowerDNSEnableRecursor", 1);}
+	if(!artica_setting_exists("EnablePDNS")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePDNS", 0);}
+	if(!artica_setting_exists("PowerDNSEnableRecursor")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PowerDNSEnableRecursor", 1);}
 	$EnablePDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePDNS"));
 	
 	$array[]="pdns_stats";
@@ -75,7 +76,7 @@ function pdns_stats():string{
 function pdns_instance(){
 	$verbose=$GLOBALS["VERBOSE"];
 	$master_pid=null;
-	if(!is_file("/etc/artica-postfix/settings/Daemons/PDNSRestartIfUpToMB")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PDNSRestartIfUpToMB", 0);}
+	if(!artica_setting_exists("PDNSRestartIfUpToMB")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PDNSRestartIfUpToMB", 0);}
 	
 	$PDNSRestartIfUpToMB=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PDNSRestartIfUpToMB");
 	$pdns_server=$GLOBALS["CLASS_UNIX"]->find_program("pdns_server");

@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
@@ -57,7 +60,7 @@ function status(){
 	$ARRAY["TITLE"]="{restarting_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-greylist-rules','$page?tabs=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$milterrestart_js="Loadjs('fw.progress.php?content=$prgress&mainid=progress-greylist-restart');";
+	$milterrestart_js="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-greylist-restart');";
 	
 	$MiltergreyListAddDefaultNets=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MiltergreyListAddDefaultNets"));
 	$MilterGreyListUseTCPPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MilterGreyListUseTCPPort"));
@@ -73,21 +76,17 @@ function status(){
 	if($MilterGreyListAutoWhite==0){$MilterGreyListAutoWhite=3;}
 	
 	
-	$html[]="<table style='width:100%'>";
-	$html[]="<tr>";
-	$html[]="	<td style='width:260px;vertical-align: top'>";
-	$html[]="		<table style='width:100%'>";
-	$html[]="			<tr><td valign='top'>";
-	$html[]="				<div class=\"ibox\" style='border-top:0px'>";
-    $html[]="					<div class=\"ibox-content\" style='border-top:0px'>". 
-    								$tpl->SERVICE_STATUS($ini, "MILTER_GREYLIST",$milterrestart_js).
-    $html[]="					</div>";
-    $html[]="				</div>
-     						</td>
-     					</tr>";
-    $html[]="		</table>";
-	$html[]="		</td>";
-	$html[]="	<td style='width:98%'>";
+	// Mise en page en flex. La version en <table> concatenait SERVICE_STATUS a la
+	// ligne suivante avec un "." au lieu d'un ";" : la fermeture du ibox-content
+	// etait avalee dans la meme entree du tableau, et la colonne de gauche etait
+	// figee a 260px alors que la tuile de service en mesure 335.
+	$html[]="<div style='display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start'>";
+	$html[]="<div style='flex:0 0 auto'>";
+	$html[]="<div class=\"ibox\" style='border-top:0px'><div class=\"ibox-content\" style='border-top:0px'>";
+	$html[]=$tpl->SERVICE_STATUS($ini, "MILTER_GREYLIST",$milterrestart_js);
+	$html[]="</div></div>";
+	$html[]="</div>";
+	$html[]="<div style='flex:1 1 420px;min-width:0'>";
 	
 	
 	$form[]=$tpl->field_checkbox("MiltergreyListAddDefaultNets","{add_default_nets}",$MiltergreyListAddDefaultNets,false,"{milter_greylist_add_default_net_explain}");
@@ -101,12 +100,9 @@ function status(){
 	$form[]=$tpl->field_numeric("MilterGreyListAutoWhite","{autowhite} ({days})",$MilterGreyListAutoWhite,"{autowhite_text}");
 	$html[]=$tpl->form_outside("{parameters}", $form,null,"{apply}",$milterrestart_js,"AsPostfixAdministrator");
 	
-	$html[]="	</td>";
-	$html[]="</tr>";
-	$html[]="</table>";
-	
+	$html[]="</div>";
+	$html[]="</div>";
 
-	
 	echo $tpl->_ENGINE_parse_body($html);
 	
 }

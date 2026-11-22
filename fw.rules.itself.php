@@ -1,9 +1,15 @@
 <?php
-define(td1prc ,  "widht=1% class='center' style='vertical-align:middle' nowrap");
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
+// Nom de constante NON quoté = erreur fatale en PHP 8 : la page ne s'ouvrait plus.
+if(!defined("td1prc")){define("td1prc","class='center' style='vertical-align:middle;width:1%' nowrap");}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
-include_once(dirname(__FILE__)."/ressources/class.firehol.inc");
-include_once(dirname(__FILE__)."/ressources/class.iptables.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.firewall.api.inc");
+// Contrôle de droits côté serveur : form_outside(…,"AsFirewallManager") ne le fait que dans le navigateur.
+$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["delete"])){delete();exit;}
 if(isset($_POST["pattern"])){add_final();exit;}
@@ -35,11 +41,10 @@ function add(){
 }
 function delete(){
     $tpl        = new template_admin();
-    $q          = new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $md         = $_GET["id"];
-    $ID         = $_GET["delete"];
-    $q->QUERY_SQL("DELETE FROM firehol_itself WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
+    $md         = preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
+    $ID         = intval($_GET["delete"]);
+    $e=fwapi_error(fwapi_send("DELETE","itself/$ID"));
+    if($e!=""){$tpl->js_error($e);return;}
     header("content-type: application/x-javascript");
     echo "$('#$md').remove();\n";
 }
@@ -49,45 +54,36 @@ function add_final(){
     $tpl->CLEAN_POST();
     $IP=new IP();
     if(!$IP->isIPAddressOrRange($_POST["pattern"])){
-        echo "jserror: {$_POST["pattern"]} not valid, should be 1.1.1.1/11 or 1.1.1.1";
+        echo (new template_admin())->post_error("{$_POST["pattern"]} not valid, should be 1.1.1.1/11 or 1.1.1.1");
         return;
     }
 
-    if(!preg_match("#^(tcp|sctp|udp|udplite|icmp|icmp6):([0-9\-]+)#",$_POST["port"])){
-        echo "jserror: {$_POST["port"]} not valid should be tcp|sctp|udp|udplite|icmp|icmp6:Port Nuber";
+    if(!preg_match("#^(tcp|sctp|udp|udplite|icmp|icmp6):([0-9\-]+)$#",$_POST["port"])){
+        echo (new template_admin())->post_error("{$_POST["port"]} not valid should be tcp|sctp|udp|udplite|icmp|icmp6:Port Nuber");
         return;
     }
 
-    $md5=md5($_POST["pattern"].$_POST["port"]);
     if(!preg_match("#^\[[0-9\-]+#",$_POST["comment"])) {
         $date=date("Y-m-d H:i:s");
         $_POST["comment"]="[$date]: {$_POST["comment"]}";
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $line="('$md5','{$_POST["pattern"]}',0,'{$_POST["port"]}','{$_POST["comment"]}')";
-    $q->QUERY_SQL("INSERT OR IGNORE INTO firehol_itself (md5,pattern,official,port,comment) VALUES $line");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
-
+    $e=fwapi_error(fwapi_send("POST","itself",array(
+        "pattern"=>trim((string)$_POST["pattern"]),
+        "port"=>trim((string)$_POST["port"]),
+        "comment"=>(string)$_POST["comment"],
+    )));
+    if($e!=""){echo $tpl->post_error($e);}
 }
-
 
 function table_start(){
     $tpl        = new template_admin();
     $page       = CurrentPageName();
     $add        = "Loadjs('$page?add-js=yes');";
 
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR . "/firehol.reconfigure.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR . "/firehol.reconfigure.log";
-    $ARRAY["CMD"]="firehol.php?ipset-itself=yes";
-    $ARRAY["TITLE"]="{compiling}";
-    $ARRAY["AFTER"]="blur();";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=ipset-itself-progress')";
 
     $html[]="
-    <div id='ipset-itself-progress'></div>
     <div class=\"btn-group\" data-toggle=\"buttons\" style='margin-bottom:10px'>
-    	<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_item} </label>        <label class=\"btn btn btn-info\" OnClick=\"$jsrestart\"><i class='fa fa-save'></i> {compile} </label>
+    	<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_item} </label>
     	
 </div>";
 
@@ -109,14 +105,14 @@ function table(){
 
 //md5,pattern,official,port
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{address}</th>";
-    $html[]="<th data-sortable=false>{delete}</th>";
+    $html[]="<th>{address}</th>";
+    $html[]="<th>{delete}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='rulesitself-rows'>";
 
     $ico_nothing=$tpl->icon_nothing();
     $search=$tpl->query_pattern(trim(strtolower($_GET["search"])));
@@ -129,7 +125,7 @@ function table(){
         $md         = $ligne["md5"];
         $comment    = $ligne["comment"];
         $ID         = $ligne["ID"];
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $delete=$tpl->icon_delete("Loadjs('$page?delete=$ID&id=$md')","AsFirewallManager");
         if(intval($ligne["official"])==1){$delete=$ico_nothing;}
         $html[]="<tr class='$TRCLASS' id='$md'>";
@@ -139,20 +135,14 @@ function table(){
     }
 
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='rulesitself-pager'></span></div></div></div>";
     $html[]="
 <script> 
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); }); 
 </script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"rulesitself-rows","rulesitself-pager");
 }

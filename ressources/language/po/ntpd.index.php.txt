@@ -1,9 +1,9 @@
 <about>O NTPD foi projetado para sincronizar os rel&oacute;gios dos computadores de uma rede numa base de tempo comum (geralmente UTC) atrav&eacute;s do protocolo NTP.</about>
-<add_text_server>Click on the picture below in order to add a new Internet Time server....</add_text_server>
+<add_text_server>Clique na imagem abaixo para adicionar um novo servidor de hora da Internet....</add_text_server>
 <add_title_server>Novo servidor Time</add_title_server>
 <close_windows>Todas as operaç%C3µes conclu%C3%ADdas, Pode agora fechar as janelas</close_windows>
-<enable_ntpd>Enable NTPD service</enable_ntpd>
-<give_server_name>Give the Internet Time Server name</give_server_name>
+<enable_ntpd>Ativar o servi&#231;o NTPD</enable_ntpd>
+<give_server_name>Indique o nome do servidor de hora da Internet</give_server_name>
 <how_to_find_timeserver>[h5]Onde posso encontrar um servidor de tempo ?[/h5]
 Como padr%C3£o, os servidores ir%C3£o atribuir-lhe servidores de tempo de todo o mundo,
 a qualidade do tempo n%C3£o ser%C3¡ a ideal[br].
@@ -14,7 +14,7 @@ e ainda melhor tempo se utilizar a zona do pa%C3%ADs (como ch.pool.ntp.org na Su
 - para todas estas zonas, pode usar novamente os prefixos 0, 1 ou 2, como 0.ch.pool.ntp.org.[br]
 Note, contudo, que a zona de pa%C3%ADs pode n%C3£o existir para o seu pa%C3%ADs, ou pode conter apenas um ou dois servidores hor%C3¡rios. [br]
 Se conhece os servidores de tempo que est%C3£o realmente perto de si (medidos pela distância da rede, com traceroute ou ping), o tempo provavelmente ser%C3¡ ainda melhor.</how_to_find_timeserver>
-<ntpdconf>NTPD Config file</ntpdconf>
-<ntpd_apply>Apply NTPD to server</ntpd_apply>
-<save_ntpd_ok>Saving NTPD settings....OK</save_ntpd_ok>
-<save_toserver_ok>Saving NTPD Settings to server....OK</save_toserver_ok>
+<ntpdconf>Ficheiro de configura&#231;&#227;o NTPD</ntpdconf>
+<ntpd_apply>Aplicar NTPD ao servidor</ntpd_apply>
+<save_ntpd_ok>A guardar as configura&#231;&#245;es NTPD....OK</save_ntpd_ok>
+<save_toserver_ok>A guardar as configura&#231;&#245;es NTPD no servidor....OK</save_toserver_ok>

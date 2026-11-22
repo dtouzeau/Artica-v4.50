@@ -69,7 +69,6 @@ class pureftpd{
 		$sock->SET_INFO('PureFtpdEnabled',$this->PureFtpdEnabled);
 		$sock->SaveConfigFile($PureFtpdConf,"PureFtpdConf");
 		$sock->SaveConfigFile(base64_encode(serialize($this->main_array)),"PureFtpdConfArray");
-		$sock->getFrameWork("pure-ftpd.php?restart=yes");
 		return true;
 		
 	}

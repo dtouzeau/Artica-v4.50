@@ -1,21 +1,19 @@
-<BUILD_CLUSTER>Build cluster</BUILD_CLUSTER>
-<WIZARD_CLUSTER_CYRUS_EXPLAIN>This wizard will help you to create a mailbox server Active/passive on your network.[br]
-To set this structure you need a second running Artica server with IMAP service.[br]
-This second Artica server will be the mailboxes replica/slave.[br]
-It will receive notifications from this server in order to replicate mailboxes in realtime.[br]
-If the configuration is a success you will never loose mails.[br]
-[br]The first operation is to check if the slave server store mandatories elements for linking procedure.[br]
-If the link operation is a success the 2 artica servers (Master and slave) will change parameters and start the clustering production mode.[br]
-You will be able to return back to a standalone mode so you will not loose mail on a failed operation.[br][br]
-So, it's time to start the first procedure.[br]
-Fill the form below by setting the remote server credentials.[br]This will help Artica to talk to the remote server for checking it's status.[br]
-</WIZARD_CLUSTER_CYRUS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Slave/replica informations</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>The target server is ready</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>This server is ready to be a replica/slave after clicking on the "build cluster" button the Master and the Slave
-will be notified to be linked in order to build a cluster configuration.[br]
-Your Master should be behind a Firewall with NAT, it is necessary to define which IP address/Server name the replica must use.
-In the form below, put the Ip address of your server act has a Master. 
-</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_WELCOME>Welcome on the Wizard for Clustering mailboxes</WIZARD_CLUSTER_CYRUS_WELCOME>
-<WIZARD_CLUSTER_ERROR>The wizard is blocked, it encounter some error, try to fix it ans restart the operation</WIZARD_CLUSTER_ERROR>
+<BUILD_CLUSTER>Zbuduj klaster</BUILD_CLUSTER>
+<WIZARD_CLUSTER_CYRUS_EXPLAIN>Ten kreator pomo&#380;e Ci utworzy&#263; serwer skrzynek pocztowych Aktywny/pasywny w Twojej sieci.[br]
+Aby ustawi&#263; t&#281; struktur&#281;, potrzebujesz drugiego dzia&#322;aj&#261;cego serwera Artica z us&#322;ug&#261; IMAP.[br]
+Ten drugi serwer Artica b&#281;dzie replik&#261;/serwerem podrz&#281;dnym skrzynek pocztowych.[br]
+B&#281;dzie otrzymywa&#322; powiadomienia z tego serwera w celu replikacji skrzynek pocztowych w czasie rzeczywistym.[br]
+Je&#347;li konfiguracja si&#281; powiedzie, nigdy nie utracisz wiadomo&#347;ci.[br]
+[br]Pierwsz&#261; operacj&#261; jest sprawdzenie, czy serwer podrz&#281;dny przechowuje obowi&#261;zkowe elementy do procedury &#322;&#261;czenia.[br]
+Je&#347;li operacja &#322;&#261;czenia si&#281; powiedzie, 2 serwery artica (nadrz&#281;dny i podrz&#281;dny) wymieni&#261; parametry i uruchomi&#261; tryb produkcyjny klastra.[br]
+B&#281;dziesz m&#243;g&#322; powr&#243;ci&#263; do trybu samodzielnego, aby nie utraci&#263; wiadomo&#347;ci w przypadku nieudanej operacji.[br][br]
+Czas wi&#281;c rozpocz&#261;&#263; pierwsz&#261; procedur&#281;.[br]
+Wype&#322;nij poni&#380;szy formularz, ustawiaj&#261;c po&#347;wiadczenia zdalnego serwera.[br]Pomo&#380;e to Artica komunikowa&#263; si&#281; ze zdalnym serwerem w celu sprawdzenia jego stanu.[br]</WIZARD_CLUSTER_CYRUS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Informacje o serwerze podrz&#281;dnym/replice</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>Serwer docelowy jest gotowy</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>Ten serwer jest gotowy, aby sta&#263; si&#281; replik&#261;/serwerem podrz&#281;dnym. Po klikni&#281;ciu przycisku &quot;zbuduj klaster&quot; serwer nadrz&#281;dny i podrz&#281;dny
+zostan&#261; powiadomione o po&#322;&#261;czeniu w celu zbudowania konfiguracji klastra.[br]
+Tw&#243;j serwer nadrz&#281;dny powinien znajdowa&#263; si&#281; za zapor&#261; z NAT, konieczne jest zdefiniowanie, kt&#243;rego adresu IP/nazwy serwera musi u&#380;ywa&#263; replika.
+W poni&#380;szym formularzu wpisz adres IP swojego serwera pe&#322;ni&#261;cego rol&#281; serwera nadrz&#281;dnego.</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_WELCOME>Witamy w kreatorze grupowania skrzynek pocztowych</WIZARD_CLUSTER_CYRUS_WELCOME>
+<WIZARD_CLUSTER_ERROR>Kreator jest zablokowany, napotka&#322; b&#322;&#261;d, spr&#243;buj go naprawi&#263; i uruchom operacj&#281; ponownie</WIZARD_CLUSTER_ERROR>

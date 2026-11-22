@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!isset($GLOBALS["BASE_ROOT"])){$GLOBALS["BASE_ROOT"]="/usr/share/artica-postfix";}
 
 
@@ -9,11 +10,11 @@ function postfix_increment_func($array){
 	$postconf=$GLOBALS["CLASS_UNIX"]->find_program("postconf");
 	if(!is_file($postconf)){return $array;}
 	
-	if(!is_file("/etc/artica-postfix/settings/Daemons/DisableMessaging")){
+	if(!artica_setting_exists("DisableMessaging")){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableMessaging", 0);
 	}
 	
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableStopPostfix")){
+	if(!artica_setting_exists("EnableStopPostfix")){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableStopPostfix", 0);
 	}
 	
@@ -32,7 +33,7 @@ function postfix_increment_func($array){
 	
 
 
-	$array[]="opendkim";
+
 	$array[]="milter_greylist";
 	$array[]="milter_greylist_updates";
 	$array[]="postfix_schedules";
@@ -76,7 +77,7 @@ function postfix():string{
 function postfix_schedules():bool{
 	$ASPOST=true;
 	$CRON_RELOAD=false;
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableMalwarePatrolBody")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableMalwarePatrolBody", 1); }
+	if(!artica_setting_exists("EnableMalwarePatrolBody")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableMalwarePatrolBody", 1); }
 	$DisableMessaging=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
 	$EnableStopPostfix=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableStopPostfix"));
 	$EnableMalwarePatrolBody=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableMalwarePatrolBody"));
@@ -181,17 +182,17 @@ function milter_greylist_updates():bool{
 function _milter_greylist_enabled(){
 
 
-    if(!is_file("/etc/artica-postfix/settings/Daemons/EnablePostfix")){
+    if(!artica_setting_exists("EnablePostfix")){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnablePostfix", 0);
     }
 
     $EnablePostfix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePostfix");
     if($EnablePostfix==0){return 0;}
 
-	if(!is_file("/etc/artica-postfix/settings/Daemons/MilterGreyListEnabled")){
+	if(!artica_setting_exists("MilterGreyListEnabled")){
 	    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("MilterGreyListEnabled", 0);
 	}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableMilterGreylistExternalDB")) {$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableMilterGreylistExternalDB", 0);
+	if(!artica_setting_exists("EnableMilterGreylistExternalDB")) {$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableMilterGreylistExternalDB", 0);
 	}
 
 	$bin=$GLOBALS["CLASS_UNIX"]->find_program("milter-greylist");
@@ -364,99 +365,13 @@ function milter_regex(){
 //========================================================================================================================================================
 
 
-function opendkim(){
 
-	$EnableDKFilter=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDKFilter");
-	if(!is_numeric($EnableDKFilter)){$EnableDKFilter=0;}
-	$DisconnectDKFilter=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisconnectDKFilter");
-	if(!is_numeric($DisconnectDKFilter)){$DisconnectDKFilter=0;}
-    $nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-
-
-
-	$pid_path="/var/run/opendkim/opendkim.pid";
-	$master_pid=$GLOBALS["CLASS_UNIX"]->get_pid_from_file($pid_path);
-
-
-    if($GLOBALS["VERBOSE"]){echo  "$pid_path --- > $master_pid\n";}
-
-	$DisableMessaging=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
-	if($DisableMessaging==1){$EnableDKFilter=0;}
-
-	$l[]="[APP_OPENDKIM]";
-	$l[]="service_name=APP_OPENDKIM";
-	$l[]="master_version=".$GLOBALS["CLASS_SOCKETS"]->GET_INFO("OPENDKIM_VERSION");
-	$l[]="service_cmd=/etc/init.d/opendkim";
-	$l[]="service_disabled=$EnableDKFilter";
-	$l[]="pid_path=$pid_path";
-	$l[]="watchdog_features=1";
-	$l[]="family=postfix";
-
-    if(!is_file("/etc/init.d/opendkim")){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableDKFilter",0);
-        return @implode("\n",$l);
-    }
-
-	
-
-	if($EnableDKFilter==0){$l[]="";return implode("\n",$l);}
-
-	if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-		if($DisconnectDKFilter==0){
-			if(!$GLOBALS["DISABLE_WATCHDOG"]){
-				shell_exec2("$nohup {$GLOBALS["NICE"]} /etc/init.d/opendkim start >/dev/null 2>&1 &");
-					
-			}
-		}
-		$l[]="";
-		return implode("\n",$l);
-		
-	}
-
-	if(!$GLOBALS["CLASS_UNIX"]->is_socket("/var/run/opendkim/opendkim.sock")){
-		shell_exec2("$nohup {$GLOBALS["NICE"]} /etc/init.d/opendkim restart >/dev/null 2>&1 &");
-	}
-
-	$l[]=GetMemoriesOf($master_pid);
-	$l[]="";
-
-	return implode("\n",$l);
-
-}
 //========================================================================================================================================================
 
 
-function spamassassin_version(){
-	if(isset($GLOBALS["spamassassin_version"])){return $GLOBALS["spamassassin_version"];}
-	$bin=$GLOBALS["CLASS_UNIX"]->find_program("spamd");
-	if(is_file("/usr/local/bin/spamd")){$bin="/usr/local/bin/spamd";}
-	exec("$bin -h 2>&1",$results);
-	foreach ($results as $num=>$line){
-		$line=trim($line);
-		if($line==null){continue;}
-		if(!preg_match("#SpamAssassin Server version\s+([0-9\.]+)#",$line,$re)){continue;}
-		$GLOBALS["spamassassin_version"]=$re[1];
-	}
 
-	return $GLOBALS["spamassassin_version"];
-
-}
 //========================================================================================================================================================
-function valvulad_version($binary){
-	if(isset($GLOBALS["valvulad_version"])){return $GLOBALS["valvulad_version"];}
-	exec("$binary --version 2>&1",$results);
-	foreach ($results as $num=>$line){
-		$line=trim($line);
-		if($line==null){continue;}
-		if(!preg_match("#^([0-9\.]+)#",$line,$re)){continue;}
-		$GLOBALS["valvulad_version"]=$re[1];
-		break;
-	}
-	
-	return $GLOBALS["valvulad_version"];
-	
-	
-}
+
 
 
 

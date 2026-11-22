@@ -1,64 +1,54 @@
-<addtrustednet>Give your trusted network</addtrustednet>
+<addtrustednet>Forne&#231;a a sua rede confi&#225;vel</addtrustednet>
 <add_header>Adicionar cabeçalho</add_header>
 <all>Todos</all>
-<amavisSpamModifiesSubj>Modify subject on detected SPAM</amavisSpamModifiesSubj>
-<auto_learn>Enable Bayes auto-learning</auto_learn>
-<block_with_required_score>Block the mail if SpamAssassin score is up to</block_with_required_score>
-<block_with_required_score_text>If Spamassassin result exceed the value, the mail will be refused by the server.[br]Set to 0 if you don't want to block mails</block_with_required_score_text>
-<config>Main config file</config>
-<From>From Header</From>
-<ham>When ham message detected</ham>
-<managed_by_mimedefang>Managed by MimeDefang</managed_by_mimedefang>
-<managed_by_mimedefang_not_enabled>Should be managed by MimeDefang</managed_by_mimedefang_not_enabled>
+<amavisSpamModifiesSubj>Modificar o assunto no SPAM detectado</amavisSpamModifiesSubj>
+<auto_learn>Ativar o aprendizado autom&#225;tico Bayes</auto_learn>
+<block_with_required_score>Bloquear a mensagem se a pontua&#231;&#227;o do SpamAssassin for superior a</block_with_required_score>
+<block_with_required_score_text>Se o resultado do Spamassassin exceder o valor, a mensagem ser&#225; recusada pelo servidor.[br]Defina como 0 se n&#227;o quiser bloquear mensagens</block_with_required_score_text>
+<config>Arquivo de configura&#231;&#227;o principal</config>
+<From>Cabe&#231;alho From</From>
+<ham>Quando uma mensagem ham &#233; detectada</ham>
+<managed_by_mimedefang>Gerenciado pelo MimeDefang</managed_by_mimedefang>
+<managed_by_mimedefang_not_enabled>Deveria ser gerenciado pelo MimeDefang</managed_by_mimedefang_not_enabled>
 <plugins>Plugins</plugins>
-<pyzor_text> Pyzor is a collaborative, networked system to detect and block spam using identifying digests of messages.[br]
-Pyzor initially started out to be merely a Python implementation of Razor.(see http://pyzor.sourceforge.net)</pyzor_text>
-<razor_text>ipul's Razor is a distributed, collaborative, spam detection and
-filtering network.[br]
-Through user contribution, Razor establishes a distributed and constantly updating catalogue of spam in propagation that
-is consulted by email clients to filter out known spam.[br]
-Detection is done with statistical and randomized signatures that efficiently spot mutating spam content.[br]
-User input is validated through reputation assignments based on consensus on report and revoke assertions which in turn is used for
-computing confidence values associated with individual signatures</razor_text>
-<report_safe>Encapsulate spam in an attachment</report_safe>
+<pyzor_text>O Pyzor &#233; um sistema colaborativo e em rede para detectar e bloquear spam usando resumos identificadores de mensagens.[br]
+O Pyzor come&#231;ou inicialmente como apenas uma implementa&#231;&#227;o em Python do Razor. (veja http://pyzor.sourceforge.net)</pyzor_text>
+<razor_text>O Razor da Vipul &#233; uma rede distribu&#237;da e colaborativa de detec&#231;&#227;o e filtragem de spam.[br]
+Atrav&#233;s da contribui&#231;&#227;o dos usu&#225;rios, o Razor estabelece um cat&#225;logo distribu&#237;do e constantemente atualizado do spam em propaga&#231;&#227;o que &#233; consultado pelos clientes de e-mail para filtrar o spam conhecido.[br]
+A detec&#231;&#227;o &#233; feita com assinaturas estat&#237;sticas e aleatorizadas que detectam eficientemente conte&#250;do de spam mutante.[br]
+A entrada dos usu&#225;rios &#233; validada atrav&#233;s de atribui&#231;&#245;es de reputa&#231;&#227;o baseadas no consenso sobre as asser&#231;&#245;es de den&#250;ncia e revoga&#231;&#227;o, que por sua vez &#233; usado para calcular os valores de confian&#231;a associados a assinaturas individuais</razor_text>
+<report_safe>Encapsular o spam em um anexo</report_safe>
 <report_safe_text>Se esta opç%C3£o estiver ativada e uma mensagem recebida for marcada como spam, o SpamAssassin criar%C3¡ uma nova mensagem de relat%C3%B3rio e anexar%C3¡ a mensagem original como uma parte MIME message/rfc822.
 Isso garante que a mensagem original seja totalmente preservada, n%C3£o seja facilmente aberta e seja mais f%C3¡cil de recuperar.[br]
 Se esta opç%C3£o estiver desativada, o spam recebido ser%C3¡ modificado apenas pela adiç%C3£o de cabeçalhos X-Spam-*, sem alteraç%C3µes no corpo da mensagem.[br]
 Além disso, ser%C3¡ adicionado aos spams um cabeçalho chamado X-Spam-Report</report_safe_text>
-<required_score>Score required for SpamAssassin to flag a message as spam</required_score>
-<required_score_text>
-Set the score required before a mail is considered spam.[br]
-n.nn can be an integer or a real number.[br]
-5.0 is the default setting, and is quite aggressive; it would be suitable for a single-user setup,
-but if you're an ISP installing SpamAssassin, you should probably set the default to be more conservative,
-like 8.0 or 10.0.[br]
-It is not recommended to automatically delete or discard messages marked as spam, as your users will complain,
-but if you choose to do so, only delete messages with an exceptionally high score such as 15.0 or higher.
-</required_score_text>
-<rewrite_header>Rewrite headers</rewrite_header>
-<rewrite_header_txt>
-By default, suspected spam messages will not have the Subject, From or To lines tagged to indicate spam.[br]
-By setting this option, the header will be tagged with value to indicate that a message is spam.[br]
-For the From or To headers, this will take the form of an RFC 2822 comment following the address in parantheses.[br]
-For the Subject header, this will be prepended to the original subject.[br]
-Note that you should only use the _REQD_ and _SCORE_ tags when rewriting the Subject header if report_safe is 0.[br]
-Otherwise, you may not be able to remove the SpamAssassin markup via the normal methods.[br]
-Parentheses are not permitted in value if rewriting the From or To headers. (They will be converted to square brackets.)
-</rewrite_header_txt>
-<salearnschedule>Junk Learning schedule</salearnschedule>
-<salearnschedule_text>Define the schedule of Mailboxes Junk Learning</salearnschedule_text>
-<sa_dsn_cutoff_level>Spam level beyond which a DSN is not sent</sa_dsn_cutoff_level>
-<sa_kill_level_deflt>Score that destroy the message (Real spam)</sa_kill_level_deflt>
-<sa_quarantine_cutoff_level>Spam level beyond the message is not quarantine but destroy</sa_quarantine_cutoff_level>
-<sa_tag2_level_deflt>Score to tag the "Subject:" with a "***SPAM***" marking</sa_tag2_level_deflt>
-<sa_tag3_level_deflt>Score to add "spam detected" in headers and send to quarantine</sa_tag3_level_deflt>
-<sa_tag_level_deflt>Add X-Spam*** info headers if at, or above that level</sa_tag_level_deflt>
-<spam>When spam detected</spam>
-<spamassassin_about>SpamAssassin is a mature, widely-deployed open source project that serves as a mail filter to identify Spam.[br]
-SpamAssassin uses a variety of mechanisms including header and text analysis, Bayesian filtering, DNS blocklists, and collaborative filtering databases.[br]
-SpamAssassin runs on a server, and filters spam before it reaches your mailbox</spamassassin_about>
-<title1>Basic Message Tagging Options</title1>
-<To>To Header</To>
+<required_score>Pontua&#231;&#227;o necess&#225;ria para o SpamAssassin marcar uma mensagem como spam</required_score>
+<required_score_text>Defina a pontua&#231;&#227;o necess&#225;ria antes de uma mensagem ser considerada spam.[br]
+n.nn pode ser um n&#250;mero inteiro ou real.[br]
+5.0 &#233; a configura&#231;&#227;o padr&#227;o e &#233; bastante agressiva; seria adequada para uma instala&#231;&#227;o de usu&#225;rio &#250;nico, mas se voc&#234; for um ISP instalando o SpamAssassin, provavelmente deveria definir o padr&#227;o de forma mais conservadora, como 8.0 ou 10.0.[br]
+N&#227;o &#233; recomendado excluir ou descartar automaticamente as mensagens marcadas como spam, pois os seus usu&#225;rios reclamar&#227;o, mas se optar por faz&#234;-lo, exclua apenas mensagens com uma pontua&#231;&#227;o excepcionalmente alta, como 15.0 ou superior.</required_score_text>
+<rewrite_header>Reescrever cabe&#231;alhos</rewrite_header>
+<rewrite_header_txt>Por padr&#227;o, as mensagens suspeitas de spam n&#227;o ter&#227;o as linhas Subject, From ou To marcadas para indicar spam.[br]
+Ao definir esta op&#231;&#227;o, o cabe&#231;alho ser&#225; marcado com um valor para indicar que uma mensagem &#233; spam.[br]
+Para os cabe&#231;alhos From ou To, isto ter&#225; a forma de um coment&#225;rio RFC 2822 ap&#243;s o endere&#231;o entre par&#234;nteses.[br]
+Para o cabe&#231;alho Subject, isto ser&#225; anteposto ao assunto original.[br]
+Note que voc&#234; s&#243; deve usar as tags _REQD_ e _SCORE_ ao reescrever o cabe&#231;alho Subject se report_safe for 0.[br]
+Caso contr&#225;rio, voc&#234; pode n&#227;o conseguir remover a marca&#231;&#227;o do SpamAssassin pelos m&#233;todos normais.[br]
+Par&#234;nteses n&#227;o s&#227;o permitidos no valor ao reescrever os cabe&#231;alhos From ou To. (Eles ser&#227;o convertidos em colchetes.)</rewrite_header_txt>
+<salearnschedule>Agendamento de aprendizagem de lixo</salearnschedule>
+<salearnschedule_text>Definir o agendamento da aprendizagem de lixo das caixas de correio</salearnschedule_text>
+<sa_dsn_cutoff_level>N&#237;vel de spam acima do qual uma DSN n&#227;o &#233; enviada</sa_dsn_cutoff_level>
+<sa_kill_level_deflt>Pontua&#231;&#227;o que destr&#243;i a mensagem (spam real)</sa_kill_level_deflt>
+<sa_quarantine_cutoff_level>N&#237;vel de spam acima do qual a mensagem n&#227;o &#233; colocada em quarentena mas destru&#237;da</sa_quarantine_cutoff_level>
+<sa_tag2_level_deflt>Pontua&#231;&#227;o para marcar o &quot;Subject:&quot; com uma marca&#231;&#227;o &quot;***SPAM***&quot;</sa_tag2_level_deflt>
+<sa_tag3_level_deflt>Pontua&#231;&#227;o para adicionar &quot;spam detected&quot; nos cabe&#231;alhos e enviar para quarentena</sa_tag3_level_deflt>
+<sa_tag_level_deflt>Adicionar cabe&#231;alhos de informa&#231;&#227;o X-Spam*** se igual ou acima desse n&#237;vel</sa_tag_level_deflt>
+<spam>Quando spam &#233; detectado</spam>
+<spamassassin_about>O SpamAssassin &#233; um projeto de c&#243;digo aberto maduro e amplamente implantado que serve como filtro de correio para identificar Spam.[br]
+O SpamAssassin usa uma variedade de mecanismos, incluindo an&#225;lise de cabe&#231;alhos e texto, filtragem bayesiana, listas de bloqueio DNS e bancos de dados de filtragem colaborativa.[br]
+O SpamAssassin &#233; executado em um servidor e filtra o spam antes de chegar &#224; sua caixa de correio</spamassassin_about>
+<title1>Op&#231;&#245;es b&#225;sicas de marca&#231;&#227;o de mensagens</title1>
+<To>Cabe&#231;alho To</To>
 <trusted_networks>Redes confi%C3¡veis</trusted_networks>
 <trusted_networks_text>Que redes ou anfitri%C3µes s%C3£o 'confi%C3¡veis' na sua configuraç%C3£o[br].
 A confiança neste caso significa que os anfitri%C3µes de retransmiss%C3£o nestas redes s%C3£o considerados como n%C3£o sendo potencialmente operados por spammers,
@@ -79,23 +69,19 @@ Nota: 127/8 est%C3¡ sempre inclu%C3%ADdo no trust_networks, independentemente d
 [li]212.17.35.15 (apenas aquele anfitri%C3£o)[/li]
 [li]!10.0.1.5 10.0.1/24 (tudo em 10.0.1.* mas n%C3£o 10.0.1.5)[/li]
 [/blk]</trusted_networks_text>
-<use_auto_whitelist>Enable automatic whitelist</use_auto_whitelist>
-<use_auto_whitelist_text>
-The auto-whitelist, aka automatic whitelist or AWL, tracks scores for your regular correspondents in a small on-disk database.[br]
-In 3.1, it is a plugin, loaded by default in the file v310.pre.[br]
-The AWL is actually a very simple system.[BR]
-In short, the AWL is a score averaging system.[BR]
-It keeps track of the historical average of a sender, and pushes any subsequent mail towards that average.[br]
-So if someone that never sent you mail before sends you a mail that scores 20, and then sends you a second mail that would score 2.0 without the AWL,
-the AWL will push the score up to 11 on the second mail.[br]
-This is auto blacklisting, based on their past history of spam.[br]
-If that same person sent you a mail that scored 0, and then later sent one that scored 7,
-the AWL would push the score down to 3.5.[br]
-This is auto-whitelisting based on past history of nonspam.[br]
-A "sender" is identified using both the address they sent with, and their IP address, so spam claiming to be From you with forged headers will fail to get through.[br]
-But the "auto whitelist" isn't really a whitelist per-se. [br]
-It does however have a "learning white/blacklist" type behavior as a result of its averaging.[br]
-Sometimes it may appear that the AWL is assigning scores the wrong way;
-</use_auto_whitelist_text>
-<use_bayes>Enable the Bayes system</use_bayes>
-<use_terse_report>Use terse version of the spam report</use_terse_report>
+<use_auto_whitelist>Ativar a lista branca autom&#225;tica</use_auto_whitelist>
+<use_auto_whitelist_text>A auto-whitelist, também chamada de lista branca autom%C3¡tica ou AWL, acompanha as pontuaç%C3µes dos seus correspondentes regulares em um pequeno banco de dados em disco.[br]
+Na vers%C3£o 3.1, ela é um plugin carregado por padr%C3£o no arquivo v310.pre.[br]
+A AWL é, na verdade, um sistema muito simples.[BR]
+Em resumo, a AWL é um sistema de média de pontuaç%C3µes.[BR]
+Ela mantém a média hist%C3%B3rica de um remetente e aproxima qualquer email posterior dessa média.[br]
+Assim, se alguém que nunca enviou emails antes enviar uma mensagem com pontuaç%C3£o 20 e depois enviar uma segunda mensagem que teria pontuaç%C3£o 2.0 sem a AWL, a AWL aumentar%C3¡ a pontuaç%C3£o da segunda mensagem para 11.[br]
+Isso é blacklisting autom%C3¡tico baseado no hist%C3%B3rico de spam desse remetente.[br]
+Se essa mesma pessoa enviasse uma mensagem com pontuaç%C3£o 0 e depois outra com pontuaç%C3£o 7, a AWL reduziria a pontuaç%C3£o para 3.5.[br]
+Isso é whitelisting autom%C3¡tico baseado no hist%C3%B3rico de mensagens n%C3£o spam.[br]
+Um â%80%9Cremetenteâ%80%9D é identificado tanto pelo endereço usado para envio quanto pelo seu endereço IP, para que spam fingindo vir de você com cabeçalhos falsificados n%C3£o consiga passar.[br]
+No entanto, a â%80%9Cauto-whitelistâ%80%9D n%C3£o é realmente uma lista branca em si.[br]
+Ainda assim, ela apresenta um comportamento de â%80%9Caprendizado de lista branca/lista negraâ%80%9D como resultado da sua média.[br]
+%C3%80s vezes pode parecer que a AWL atribui pontuaç%C3µes no sentido errado.</use_auto_whitelist_text>
+<use_bayes>Ativar o sistema Bayes</use_bayes>
+<use_terse_report>Usar a vers&#227;o concisa do relat&#243;rio de spam</use_terse_report>

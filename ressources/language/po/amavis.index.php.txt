@@ -11,61 +11,56 @@ Exemplo: exe com bat dll src ssh</AmavisAddExtFilter_text>
 <AmavisMemoryInRAM>Direct&oacute;rio de trabalho na RAM</AmavisMemoryInRAM>
 <AmavisMemoryInRAM_TEXT>Por defeito, o Amavis usa uma pasta do disco para executar a verifica&ccedil;&atilde;o de v&iacute;rus nas mensagens. Voc&ecirc; pode aumentar o desempenho do Amavis, atribuindo uma parte de mem&oacute;ria RAM para a verifica&ccedil;&atilde;o de v&iacute;rus.[br]O valor m&iacute;nimo &eacute; de 128M[br] Ajuste o valor para 0 se voc&ecirc; quiser desactivar este recurso</AmavisMemoryInRAM_TEXT>
 <amavisNewVirusAdmin>Notificar endere&ccedil;o de e-mail (novos v&iacute;rus)</amavisNewVirusAdmin>
-<amavisSpamAdmin>spam admin to notify</amavisSpamAdmin>
+<amavisSpamAdmin>Admin de spam a notificar</amavisSpamAdmin>
 <amavisSpamKillLevel>N&iacute;vel m&aacute;ximo de spam</amavisSpamKillLevel>
 <amavisSpamLover>Permitir mensagens detectadas</amavisSpamLover>
 <amavisSpamModifiesSubj>Alterar o assunto quando for detectado spam</amavisSpamModifiesSubj>
 <amavisSpamSubjectTag>Etiqueta do assunto</amavisSpamSubjectTag>
 <amavisSpamSubjectTag2>Etiqueta do assunto</amavisSpamSubjectTag2>
 <amavisSpamTag2Level>N&iacute;vel m&iacute;nimo de spam</amavisSpamTag2Level>
-<amavisSpamTagLevel>Tag Spam info headers level</amavisSpamTagLevel>
+<amavisSpamTagLevel>N&#237;vel dos cabe&#231;alhos de info de tag de spam</amavisSpamTagLevel>
 <amavisVirusAdmin>Notificar endere&ccedil;o de e-mail</amavisVirusAdmin>
 <amavisVirusLover>Permitir mensagens detectadas</amavisVirusLover>
 <amavisVirusQuarantineTo>Colocar em quarentena as mensagens detectas</amavisVirusQuarantineTo>
 <amavisWarnVirusRecip>Notificar o destinat&aacute;rio</amavisWarnVirusRecip>
 <amavis_domain_text>Esta sec&ccedil;&atilde;o vai alterar o comportamento da filtragem anti-spam no seu dom&iacute;nio SMTP</amavis_domain_text>
-<AMAVIS_PERFS>Performances Engine</AMAVIS_PERFS>
+<AMAVIS_PERFS>Motor de desempenho</AMAVIS_PERFS>
 <amavis_user_text>Esta sec&ccedil;&atilde;o vai alterar o comportamento da filtragem anti-spam nas suas contas de e-mail</amavis_user_text>
 <APPLY_SETTINGS_AMAVIS>Salvar e Aplicar os par&acirc;metros do Amavis no servidor</APPLY_SETTINGS_AMAVIS>
 <APP_ALTERMIME_NOT_INSTALLED>O alterMIME n&atilde;o est&aacute; instalado.[br]Se pretende activar o alterMIME, tem que o instalar primeiro.[br]V&aacute; ao centro de instala&ccedil;&atilde;o de aplica&ccedil;&otilde;es (Application Setup Center) para instalar o alterMIME no sistema</APP_ALTERMIME_NOT_INSTALLED>
 <av_rules>Regras do antiv&iacute;rus</av_rules>
 <back_to_defaults>Voltar para as configura&ccedil;&otilde;es padr&atilde;o</back_to_defaults>
-<child_timeout>Abort child if it does not complete each task in</child_timeout>
+<child_timeout>Abortar o processo filho se n&#227;o concluir cada tarefa em</child_timeout>
 <child_timeout_text>Este valor aumenta o tempo limite para o processo Amavisd.[br]
 Por defeito &eacute; de apenas 8 minutos.[br]
 Quando amavisd &eacute; usado com outros pacotes de correio em uma estrutura de fila de correio,
 a mensagem &eacute; transferida apenas localmente (a partir da fila de correio local para o loopback amavisd) e por isso &eacute; muito r&aacute;pido.[br]</child_timeout_text>
 <daemon_events>Eventos</daemon_events>
 <disclaimer>Aviso legar com alterMIME</disclaimer>
-<disclaimer_explain>A disclaimer is generally any statement intended to specify or delimit the scope of rights and obligations
-that may be exercised and enforced by parties in a legally-recognized relationship.[br]
-In contrast to other terms for legally operative language, the term "disclaimer" usually implies situations that involve some level of uncertainty, waiver, or risk...
-(source:wikipedia.org)
-</disclaimer_explain>
-<disclaimer_text>Add a statement intended to specify or delimit the scope of rights and obligations</disclaimer_text>
+<disclaimer_explain>Um aviso legal &#233; geralmente qualquer declara&#231;&#227;o destinada a especificar ou delimitar o &#226;mbito de direitos e obriga&#231;&#245;es que podem ser exercidos e impostos pelas partes numa rela&#231;&#227;o juridicamente reconhecida.[br]
+Ao contr&#225;rio de outros termos para linguagem juridicamente operativa, o termo &quot;aviso legal&quot; geralmente implica situa&#231;&#245;es que envolvem algum n&#237;vel de incerteza, ren&#250;ncia ou risco...
+(fonte: wikipedia.org)</disclaimer_explain>
+<disclaimer_text>Adicionar uma declara&#231;&#227;o destinada a especificar ou delimitar o &#226;mbito de direitos e obriga&#231;&#245;es</disclaimer_text>
 <domains_rules>Regras dos dom&iacute;nios</domains_rules>
-<domains_rules_text>Here you can create security rules for all users stored in a specific SMTP Domain</domains_rules_text>
+<domains_rules_text>Aqui pode criar regras de seguran&#231;a para todos os utilizadores armazenados num dom&#237;nio SMTP espec&#237;fico</domains_rules_text>
 <D_BOUNCE>Apagar mensagem e enviar notifica&ccedil;&atilde;o para o remetente</D_BOUNCE>
 <D_BOUNCE_EXP>A mensagem n&atilde;o ser&aacute; entregue aos seus destinat&aacute;rios, uma notifica&ccedil;&atilde;o de n&atilde;o entrega (devolu&ccedil;&atilde;o) ser&aacute; enviada ao remetente atrav&eacute;s do amavisd-new;</D_BOUNCE_EXP>
 <D_DISCARD>Apagar mensagem (buraco negro)</D_DISCARD>
-<D_DISCARD_EXP>mail will not be delivered to its recipients, sender will NOT be notified.[br]
-Effectively we lose mail (but will be quarantined unless disabled).[br]
-Losing mail is not decent for a mailer,but might be desired.</D_DISCARD_EXP>
+<D_DISCARD_EXP>A mensagem n&#227;o ser&#225; entregue aos seus destinat&#225;rios, o remetente N&#195;O ser&#225; notificado.[br]
+Na pr&#225;tica, perdemos a mensagem (mas ser&#225; posta em quarentena a menos que desativado).[br]
+Perder mensagens n&#227;o &#233; correto para um mailer, mas pode ser desejado.</D_DISCARD_EXP>
 <D_PASS>Enviar para os destinat&aacute;rios, independentemente de ter um mau conte&uacute;do.</D_PASS>
-<D_PASS_EXP>mail will pass to recipients, regardless of bad contents;</D_PASS_EXP>
+<D_PASS_EXP>A mensagem passar&#225; para os destinat&#225;rios, independentemente de maus conte&#250;dos;</D_PASS_EXP>
 <D_REJECT>A mensagem n&atilde;o ser&aacute; entregue aos seus destinat&aacute;rios</D_REJECT>
-<D_REJECT_EXP>mail will not be delivered to its recipients, sender should preferably get a reject, e.g. SMTP permanent reject response
-(e.g. with milter),[br]If this is not possible (e.g. different recipients have different tolerances to bad mail contents and not using LMTP)
-amavisd-new sends a bounce by itself (same as Delete Mail and send notification to sender).
-</D_REJECT_EXP>
+<D_REJECT_EXP>A mensagem n&#227;o ser&#225; entregue aos seus destinat&#225;rios, o remetente dever&#225; preferencialmente receber uma rejei&#231;&#227;o, p. ex. uma resposta de rejei&#231;&#227;o permanente SMTP (p. ex. com milter),[br]Se isto n&#227;o for poss&#237;vel (p. ex. destinat&#225;rios diferentes t&#234;m toler&#226;ncias diferentes a maus conte&#250;dos e n&#227;o usam LMTP) o amavisd-new envia ele pr&#243;prio um bounce (igual a Eliminar mensagem e enviar notifica&#231;&#227;o ao remetente).</D_REJECT_EXP>
 <edit_disclaimer>Edite o seu aviso legal</edit_disclaimer>
-<edit_disclaimer_text>Open the editor in order to modify the default disclaimer wich will be added on your outgoing emails</edit_disclaimer_text>
-<EnableBlockUsersTroughInternet>Enable External sent rules</EnableBlockUsersTroughInternet>
+<edit_disclaimer_text>Abrir o editor para modificar o aviso legal predefinido que ser&#225; adicionado &#224;s suas mensagens de sa&#237;da</edit_disclaimer_text>
+<EnableBlockUsersTroughInternet>Ativar regras de envio externo</EnableBlockUsersTroughInternet>
 <extension_list>Lista de extens&otilde;es</extension_list>
 <filter_behavior>Comportamento dos filtros</filter_behavior>
 <filter_behavior_text>Defina aqui o comportamento do amavis quando encontrar v&iacute;rus, spam, filtros...</filter_behavior_text>
 <filter_extension>Verifica&ccedil;&atilde;o do tipo de conte&uacute;do dos arquivos</filter_extension>
-<filter_extension_text>Bann attached files in mails by file content type</filter_extension_text>
+<filter_extension_text>Banir ficheiros anexados em mensagens por tipo de conte&#250;do do ficheiro</filter_extension_text>
 <FinalBadHeaderDestiny>Quando encontrar mau cabe&ccedil;alho</FinalBadHeaderDestiny>
 <FinalBannedDestiny>Quando encontrar extens&otilde;es proibidas</FinalBannedDestiny>
 <FinalSpamDestiny>Quando encontrar spam</FinalSpamDestiny>
@@ -85,31 +80,29 @@ por exemplo, se a sua rede é 192.168.1.x definida [b]192.168.1.0[/b] ou 192.168
 No campo &quot;To IP&quot;, defina o %C3%BAltimo endereço IP da sua rede.[br]por exemplo, se a sua rede for 192.168.1.x defina [b]192.168.1.255[/b][br]</local_network_explain>
 <local_network_text>Adicione as configura&ccedil;&otilde;es da sua rede local de forma a n&atilde;o filtrar os seus utilizares</local_network_text>
 <log_level>N&iacute;vel de registos (Log)</log_level>
-<mailfrom_notify>Sender envelope address, from which notification reports are sent from</mailfrom_notify>
-<mailfrom_notify_admin>Sender envelope address for admins notifications</mailfrom_notify_admin>
+<mailfrom_notify>Endere&#231;o de envelope do remetente a partir do qual os relat&#243;rios de notifica&#231;&#227;o s&#227;o enviados</mailfrom_notify>
+<mailfrom_notify_admin>Endere&#231;o de envelope do remetente para notifica&#231;&#245;es dos admins</mailfrom_notify_admin>
 <mailfrom_notify_recip>Endereço do envelope do remetente para notificaç%C3µes dos destinat%C3¡rios</mailfrom_notify_recip>
-<mailfrom_notify_spamadmin>Sender envelope address for Spam admin notifications</mailfrom_notify_spamadmin>
+<mailfrom_notify_spamadmin>Endere&#231;o de envelope do remetente para notifica&#231;&#245;es do admin de spam</mailfrom_notify_spamadmin>
 <max_requests>Pedidos M%C3¡x.</max_requests>
 <max_requests_text>Max Requests controla o n%C3%BAmero aproximado de tarefas que cada processo infantil est%C3¡ disposto a realizar.[br]
 Depois disso, o processo infantil termina e o daemon principal fornece um novo processo infantil para tomar o seu lugar [br].
 No lado baixo, o n%C3%BAmero n%C3£o deve ser demasiado pequeno para que o custo de arranque seja calculado como média / suficientemente dilu%C3%ADdo durante toda uma vida inteira da criança [br].
 Um valor acima de 5 ou 10 cumpre este objectivo na maioria das novas configuraç%C3µes de amavisd.</max_requests_text>
-<max_servers>amavisd child processes to spawn number</max_servers>
-<max_servers_text>Specifies the number of instances of amavisd child processes to spawn.[br]
- You should increase or decrease this number depending on how much memory your PC has installed.[br]
-  Make sure that this number is synchronized to the smtpd maxproc setting in the postfix/master.cf file
- (so that you don't end up with postfix trying to connect to a non-existant queue).
- For 4000 users a value between 5 and 10 would be a good starting point.[br]
- With low memory (e.g. 256 MB) a value of 2 or 3 would probably do.
-</max_servers_text>
+<max_servers>N&#250;mero de processos filhos amavisd a iniciar</max_servers>
+<max_servers_text>Especifica o n&#250;mero de inst&#226;ncias de processos filhos amavisd a iniciar.[br]
+ Deve aumentar ou diminuir este n&#250;mero dependendo da quantidade de mem&#243;ria instalada no seu PC.[br]
+  Certifique-se de que este n&#250;mero est&#225; sincronizado com a defini&#231;&#227;o smtpd maxproc no ficheiro postfix/master.cf
+ (para que n&#227;o acabe com o postfix a tentar ligar-se a uma fila inexistente).
+ Para 4000 utilizadores, um valor entre 5 e 10 seria um bom ponto de partida.[br]
+ Com pouca mem&#243;ria (ex. 256 MB) um valor de 2 ou 3 provavelmente serviria.</max_servers_text>
 <notification_text>Comportamento das notifica&ccedil;&otilde;es em acordo com a Detec&ccedil;&atilde;o Amavis</notification_text>
 <postfix_afterqueue>Filtro de Conte&uacute;dos Postfix After-Queue</postfix_afterqueue>
-<postfix_afterqueue_text>[b]Using Postfix After-Queue Content Filter[/b][br]
-Normally, Postfix receives mail, stores it in the mail queue and then delivers it.[br]
-With the external content filter, [b]mail is filtered AFTER it is queued.[/b][br]
-This approach decouples mail receiving processes from mail filtering processes, and gives you maximal control over how many filtering processes you are willing to run in parallel.[br]
-This method will give you all filtering features but it use more processes and memory and there is a risk to flood the Postfix queue if the filter is not be able to scan mails in time.[br]
-</postfix_afterqueue_text>
+<postfix_afterqueue_text>[b]Usar o filtro de conte&#250;do After-Queue do Postfix[/b][br]
+Normalmente, o Postfix recebe o correio, armazena-o na fila de correio e depois entrega-o.[br]
+Com o filtro de conte&#250;do externo, [b]o correio &#233; filtrado DEPOIS de ser colocado na fila.[/b][br]
+Esta abordagem desacopla os processos de rece&#231;&#227;o de correio dos processos de filtragem e d&#225;-lhe o m&#225;ximo controlo sobre quantos processos de filtragem deseja executar em paralelo.[br]
+Este m&#233;todo oferece todas as funcionalidades de filtragem, mas usa mais processos e mem&#243;ria, e existe o risco de inundar a fila do Postfix se o filtro n&#227;o conseguir analisar as mensagens a tempo.[br]</postfix_afterqueue_text>
 <postfix_beforequeue>Extens&atilde;o Milter Postfix before-queue</postfix_beforequeue>
 <postfix_beforequeue_text>[b]Usando Postfix before-queue Milter support[/b][br] [b]Usando Postfix before-queue Milter support[/b
 Postfix vers%C3£o 2.3 introduz suporte para o protocolo Sendmail vers%C3£o 8 Milter (filtro de correio) [br].

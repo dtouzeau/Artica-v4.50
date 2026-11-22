@@ -1,7 +1,22 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// Service Pack 9
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : engine/category/t/field etaient recopies sans encodage dans la page (XSS) et concatenes dans la requete.
+// engine et t sont des jetons, category un entier, field un nom de colonne (username, mac, ipaddr).
+if(isset($_GET["engine"])){$_GET["engine"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["engine"]);}
+if(isset($_GET["category"])){$_GET["category"]=intval($_GET["category"]);}
+if(isset($_GET["t"])){$_GET["t"]=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["t"]);}
+if(isset($_GET["field"])){$_GET["field"]=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["field"]);}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["template"])){template();exit;}
 if(isset($_GET["vertical-timeline"])){vertical_timeline();exit;}
@@ -29,7 +44,8 @@ function js(){
     if(!isset($_GET["engine"])){$_GET["engine"]="proxy";}
 
     $page=CurrentPageName();
-    $tpl->js_dialog3("$field/$value/{category}: $categoryname","$page?tabs=yes&field=$fieldenc&value=$valueenc&category=$category&engine={$_GET["engine"]}",1040);
+    // Pentest 2026-11-04 : value etait recopie sans encodage dans la page (XSS).
+    $tpl->js_dialog3("$field/".req_html(req_html($value))."/{category}: $categoryname","$page?tabs=yes&field=$fieldenc&value=$valueenc&category=$category&engine={$_GET["engine"]}",1040);
 
 
 }
@@ -99,26 +115,21 @@ function sites_table(){
     $t=time();
     $html[]="
     <H2>{familysite}: {category} <strong>$categoryname</strong> {from} ".$tpl->time_to_date($time1,true)." {to} ". $tpl->time_to_date($time2,true)."</H2>
-<table id='table-$t' class=\"footable table table-stripped\" 
-    data-page-size=\"100\" data-paging=\"true\">";
+<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{familysite}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$field_table</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='scbcfam-rows'>";
     $td1=$tpl->table_td1prc_Left();
     $TRCLASS=null;
 
     if(!$q->ok){echo $tpl->div_error($q->mysql_error_html());}
 
     while ($ligne = pg_fetch_assoc($results)) {
-        if ($TRCLASS == "footable-odd ") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd ";
-        }
+        $TRCLASS=null;
 
         $familysite = $ligne["familysite"];
         $size = FormatBytes($ligne["tsize"] / 1024);
@@ -130,28 +141,23 @@ function sites_table(){
 
 
         $html[] = "<tr style='vertical-align:middle' class='$TRCLASS'>";
-        $html[] = "<td $td1><strong>$familysite</strong></td>";
+        // Pentest 2026-11-04 : site (donnee externe) affiche sans encodage (XSS stockee).
+        $html[] = "<td $td1><strong>".req_html($familysite)."</strong></td>";
         $html[] = "<td $td1 data-sort-value='{$ligne["tsize"]}'>$size</td>";
         $html[] = "</tr>";
     }
 
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='scbcfam-pager'></span></div></div></div>";
     $html[]="
 <script> 
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) }); 
 </script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"scbcfam-rows","scbcfam-pager");
 
 
 }
@@ -211,8 +217,7 @@ function members_table(){
     $t=time();
     $html[]="
     <H2>{members}: {category} <strong>$categoryname</strong> {from} ".$tpl->time_to_date($time1,true)." {to} ". $tpl->time_to_date($time2,true)."</H2>
-<table id='table-$t' class=\"footable table table-stripped\" 
-    data-page-size=\"100\" data-paging=\"true\">";
+<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     if($hideMembers==0) {
@@ -227,15 +232,11 @@ function members_table(){
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$field_table</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='scbcsite-rows'>";
     $td1=$tpl->table_td1prc_Left();
     $TRCLASS=null;
     while ($ligne = pg_fetch_assoc($results)) {
-        if ($TRCLASS == "footable-odd ") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd ";
-        }
+        $TRCLASS=null;
         $username=null;
         $mac=null;
         $macenc=null;
@@ -253,7 +254,8 @@ function members_table(){
             $size=$tpl->FormatNumber($ligne["tsize"]);
         }
 
-        $ipaddr = $tpl->td_href($ipaddr, "{statistics}", "Loadjs('fw.statscom.browse.users.php?field=ipaddr&value=$ipaddr')");
+        // Pentest 2026-11-04 : adresse et membre dans le Loadjs (donnee externe) affiche sans encodage (XSS stockee).
+        $ipaddr = $tpl->td_href($ipaddr, "{statistics}", "Loadjs('fw.statscom.browse.users.php?field=ipaddr&value=".req_url($ipaddr)."')");
         if($hideMembers==0) {
             if ($username == null) {
                 if ($hideUnkownMembers == 1) {
@@ -263,7 +265,7 @@ function members_table(){
                 }
 
             } else {
-                $username = $tpl->td_href($username, "{statistics}", "Loadjs('fw.statscom.browse.users.php?field=username&value=$username')");
+                $username = $tpl->td_href($username, "{statistics}", "Loadjs('fw.statscom.browse.users.php?field=username&value=".req_url($username)."')");
 
             }
         }
@@ -282,22 +284,16 @@ function members_table(){
     }
 
         $html[]="</tbody>";
-        $html[]="<tfoot>";
-
-        $html[]="<tr>";
-        $html[]="<td colspan='$ColSpan'>";
-        $html[]="<ul class='pagination pull-right'></ul>";
-        $html[]="</td>";
-        $html[]="</tr>";
-        $html[]="</tfoot>";
-        $html[]="</table>";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='scbcsite-pager'></span></div></div></div>";
         $html[]="
 <script> 
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) }); 
 </script>";
 
-        echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+        echo awc_table_style()
+            .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+            .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"scbcsite-rows","scbcsite-pager");
 
 }
 
@@ -373,7 +369,8 @@ function vertical_timeline(){
         $SQL_DATE = "date_part('day', zdate)";
     }
     $AND=null;
-    if($field<>null){$AND=" AND $field='$value'";}
+    // Pentest 2026-11-04 : value etait concatene dans la requete.
+    if($field<>null){$AND=" AND $field='".pg_escape_string2($value)."'";}
 
     $sql="SELECT SUM(statscom.size) as size,$SQL_DATE as zdate FROM statscom,statscom_websites WHERE 
     statscom_websites.siteid=statscom.siteid
@@ -419,6 +416,8 @@ function vertical_timeline(){
 
     $stimeFrom=$tpl->time_to_date($time1);
     $stimeTo=$tpl->time_to_date($time2);
+    // Pentest 2026-11-04 : value etait recopie sans encodage dans la page (XSS).
+    $value=req_html(req_html($value));
     $title="{downloaded_flow} (MB) $categoryname $field $value $stimeFrom - $stimeTo {$UNIT}";
     if($_GET["engine"]=="dnsfw"){
         $title="{dns_queries} $categoryname $field $value $stimeFrom - $stimeTo {$UNIT}";
@@ -465,7 +464,8 @@ function top_sites(){
     $categoryname=$catz->CategoryIntToStr($category);
     $AND=null;
     if($field<>null){
-        $AND=" AND statscom.$field='$value'";
+        // Pentest 2026-11-04 : value etait concatene dans la requete.
+        $AND=" AND statscom.$field='".pg_escape_string2($value)."'";
     }
 
     $sql="SELECT SUM(statscom.size) as size,statscom_websites.familysite FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND statscom_websites.category=$category{$AND} AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by familysite ORDER BY size DESC LIMIT 10";
@@ -495,6 +495,8 @@ function top_sites(){
     $encoded=base64_encode(serialize($PieData2));
 
     $highcharts=new highcharts();
+    // Pentest 2026-11-04 : value etait recopie sans encodage dans la page (XSS).
+    $value=req_html(req_html($value));
     $highcharts->container="websites-graph-$t";
     $highcharts->PieDatas=$PieData;
     $highcharts->ChartType="pie";
@@ -533,7 +535,8 @@ function top_users(){
 
     $AND=null;
     if($field<>null){
-        $AND=" AND statscom.$field='$value'";
+        // Pentest 2026-11-04 : value etait concatene dans la requete.
+        $AND=" AND statscom.$field='".pg_escape_string2($value)."'";
     }
 
     $sql="SELECT SUM(statscom.size) as size,username,ipaddr,MAC FROM statscom,statscom_websites  WHERE 
@@ -602,22 +605,26 @@ function top_users(){
 function top_users_table(){
 
     $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<tr>";
     $html[]="<th>{member}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["users-table"]));
+    $table=unserialize(base64_decode($_GET["users-table"]),array("allowed_classes"=>false));
+    if(!is_array($table)){$table=array();}
+    // Pentest 2026-11-04 : users-table etait recopie sans encodage dans la page (XSS).
     foreach ( $table as $site=>$sizeM) {
+        $sizeM=floatval($sizeM);
         $h=explode("|",$site);
+        foreach (array(0,1,2) as $i){$h[$i]=isset($h[$i])?$h[$i]:null;}
         $t=array();
         if($h[0]<>null){
-            $t[]=$tpl->td_href($h[0],null,"Loadjs('fw.statscom.browse.users.php?field=username&value=".urlencode($h[0])."')");
+            $t[]=$tpl->td_href(req_html($h[0]),null,"Loadjs('fw.statscom.browse.users.php?field=username&value=".urlencode($h[0])."')");
         }
         if($h[1]<>null){
-            $t[]=$tpl->td_href($h[1],null,"Loadjs('fw.statscom.browse.users.php?field=mac&value=".urlencode($h[1])."')");
+            $t[]=$tpl->td_href(req_html($h[1]),null,"Loadjs('fw.statscom.browse.users.php?field=mac&value=".urlencode($h[1])."')");
         }
         if($h[2]<>null){
-            $t[]=$tpl->td_href($h[2],null,"Loadjs('fw.statscom.browse.users.php?field=ipaddr&value=".urlencode($h[2])."')");
+            $t[]=$tpl->td_href(req_html($h[2]),null,"Loadjs('fw.statscom.browse.users.php?field=ipaddr&value=".urlencode($h[2])."')");
         }
 
         if($sizeM>1024){
@@ -637,8 +644,8 @@ function top_users_table(){
         $html[]="</tr>";
 
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="</table></div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }
 
 function top_sites_table(){
@@ -647,13 +654,17 @@ function top_sites_table(){
         $fname="{queries}";
     }
     $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<tr>";
     $html[]="<th>{domains}</th>";
     $html[]="<th>$fname</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["sites-table"]));
+    $table=unserialize(base64_decode($_GET["sites-table"]),array("allowed_classes"=>false));
+    if(!is_array($table)){$table=array();}
+    // Pentest 2026-11-04 : sites-table etait recopie sans encodage dans la page (XSS).
     foreach ( $table as $site=>$sizeM) {
+        $sizeM=floatval($sizeM);
+        $site=req_html($site);
 
         if($sizeM>1024){
             $sizeM2=FormatBytes($sizeM/1024);
@@ -670,6 +681,6 @@ function top_sites_table(){
         $html[]="</tr>";
 
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="</table></div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }

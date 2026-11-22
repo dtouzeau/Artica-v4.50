@@ -18,7 +18,7 @@ function __construct(){
 }
 	
 function mysqlOpen(){
-		if(!is_file(dirname(__FILE__) . '/settings.inc')){die("DIE " .__FILE__." Line: ".__LINE__);}
+		if(!is_file(dirname(__FILE__) . '/settings.inc')){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 		include(dirname(__FILE__) . '/settings.inc');
 		$mysql_server=$_GLOBAL["mysql_server"];
 		$mysql_admin=$_GLOBAL["mysql_admin"];

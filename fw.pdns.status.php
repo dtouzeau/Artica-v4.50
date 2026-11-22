@@ -1,13 +1,11 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["ufdbconf"])){ufdbconf_js();exit;}
-if(isset($_GET["ufdbconf-popup"])){ufdbconf_popup();exit;}
-if(isset($_GET["ufdbdebug-popup"])){ufdbdebug_popup();exit;}
 if(isset($_GET["purge-js"])){purge_js();exit;}
 if(isset($_GET["replicate-js"])){replicate_js();exit;}
 page();
@@ -87,7 +85,7 @@ function table(){
 	$ARRAY["TITLE"]="{restarting_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-pdnsstatus','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$recusrsor_restart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-pdns-restart');";
+	$recusrsor_restart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-pdns-restart');";
 	$PowerDNSEnableRecursor=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableRecursor"));
 	
 	if($PowerDNSEnableRecursor==1){
@@ -249,17 +247,7 @@ function pdns_performance(){
 	$html="
 	<div class=\"col-lg-3\">
 	<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fa fa-heart fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {memory_cache} </span>
-	<h2 class=\"font-bold\">$Memory_usage</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("lazur-bg","fa fa-heart","{memory_cache}","$Memory_usage");
 	
 	$PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
 	$PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
@@ -267,17 +255,7 @@ function pdns_performance(){
 		$PowerDNSClusterClientDate=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSClusterClientDate"));
 		if($PowerDNSClusterClientDate==0){
 		$html=$html."<!-- -------------------------------------------------------------------------------------------------- -->
-		<div class=\"widget style1 yellow-bg\">
-		<div class=\"row\">
-		<div class=\"col-xs-4\">
-		<i class=\"fas fa-sync-alt fa-5x\"></i>
-		</div>
-		<div class=\"col-xs-8 text-right\">
-		<span> {last_sync} </span>
-		<h2 class=\"font-bold\">{nothing}</h2>
-		</div>
-		</div>
-		</div>";
+		".$tpl->widget_style1("yellow-bg","fas fa-sync-alt","{last_sync}","{nothing}");
 		}
 		
 		if($PowerDNSClusterClientDate>0){
@@ -285,17 +263,7 @@ function pdns_performance(){
 			$xtime=$tpl->time_to_date($PowerDNSClusterClientDate,true);
 			
 			$html=$html."<!-- -------------------------------------------------------------------------------------------------- -->
-			<div class=\"widget style1 navy-bg\">
-			<div class=\"row\">
-			<div class=\"col-xs-4\">
-			<i class=\"fas fa-sync-alt fa-5x\"></i>
-			</div>
-			<div class=\"col-xs-8 text-right\">
-			<span> {last_sync} </span>
-			<h2 class=\"font-bold\">$xtime</h2>
-			</div>
-			</div>
-			</div>";
+			".$tpl->widget_style1("navy-bg","fas fa-sync-alt","{last_sync}","$xtime");
 		}
 	
 	}
@@ -305,30 +273,10 @@ function pdns_performance(){
 		if($PowerDNSEnableClusterMasterTime>0){
 			$xtime=$tpl->time_to_date($PowerDNSEnableClusterMasterTime,true);
 			$html=$html."<!-- -------------------------------------------------------------------------------------------------- -->
-			<div class=\"widget style1 navy-bg\">
-			<div class=\"row\">
-			<div class=\"col-xs-4\">
-			<i class=\"fas fa-file-export fa-5x\"></i>
-			</div>
-			<div class=\"col-xs-8 text-right\">
-			<span> {last_export} </span>
-			<h2 class=\"font-bold\">$xtime</h2>
-			</div>
-			</div>
-			</div>";
+			".$tpl->widget_style1("navy-bg","fas fa-file-export","{last_export}","$xtime");
 		}else{
 			$html=$html."<!-- -------------------------------------------------------------------------------------------------- -->
-			<div class=\"widget style1 yellow-bg\">
-			<div class=\"row\">
-			<div class=\"col-xs-4\">
-			<i class=\"fas fa-file-export fa-5x\"></i>
-			</div>
-			<div class=\"col-xs-8 text-right\">
-			<span> {last_export} </span>
-			<h2 class=\"font-bold\">{nothing}</h2>
-			</div>
-			</div>
-			</div>";
+			".$tpl->widget_style1("yellow-bg","fas fa-file-export","{last_export}","{nothing}");
 			
 		}
 		
@@ -336,29 +284,9 @@ function pdns_performance(){
 	
 	
 	$html=$html."<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 navy-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fa fa-question fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {queries} UDP </span>
-	<h2 class=\"font-bold\">$udpQueries</h2>
-	</div>
-	</div>
-	</div>
+	".$tpl->widget_style1("navy-bg","fa fa-question","{queries} UDP","$udpQueries")."
 	<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 navy-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fa fa-reply fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {answers} UDP</span>
-	<h2 class=\"font-bold\">$udpAnswers</h2>
-	</div>
-	</div>
-	</div>
+	".$tpl->widget_style1("navy-bg","fa fa-reply","{answers} UDP","$udpAnswers")."
 	<!-- -------------------------------------------------------------------------------------------------- -->
 	</div>
 
@@ -403,6 +331,7 @@ function pdns_performance(){
 }
 
 function recursor_performance(){
+	$tpl=new template_admin();
 
 	
 	if(!isset($GLOBALS["RECURSOR_INFOS"])){
@@ -459,53 +388,13 @@ function recursor_performance(){
 	$html="
 <div class=\"col-lg-3\">
 	<!-- -------------------------------------------------------------------------------------------------- -->
-                <div class=\"widget style1 lazur-bg\">
-                    <div class=\"row\">
-                        <div class=\"col-xs-4\">
-                            <i class=\"fa fas fa-database fa-5x\"></i>
-                        </div>
-                        <div class=\"col-xs-8 text-right\">
-                            <span> {requests} </span>
-                            <h2 class=\"font-bold\">$answers_all</h2>
-                        </div>
-                    </div>
-                </div>
+                ".$tpl->widget_style1("lazur-bg","fa fas fa-database","{requests}","$answers_all")."
 	<!-- -------------------------------------------------------------------------------------------------- -->  
-                <div class=\"widget style1 navy-bg\">
-                    <div class=\"row\">
-                        <div class=\"col-xs-4\">
-                            <i class=\"fas fa-clock fa-5x\"></i>
-                        </div>
-                        <div class=\"col-xs-8 text-right\">
-                            <span> {answers10100} </span>
-                            <h2 class=\"font-bold\">$answers10100</h2>
-                        </div>
-                    </div>
-                </div>                
+                ".$tpl->widget_style1("navy-bg","fas fa-clock","{answers10100}","$answers10100")."                
 	<!-- -------------------------------------------------------------------------------------------------- -->  	
-                <div class=\"widget style1 yellow-bg\">
-                    <div class=\"row\">
-                        <div class=\"col-xs-4\">
-                            <i class=\"fas fa-clock fa-5x\"></i>
-                        </div>
-                        <div class=\"col-xs-8 text-right\">
-                            <span> {answers1001000} </span>
-                            <h2 class=\"font-bold\">$answers1001000</h2>
-                        </div>
-                    </div>
-                </div>                
+                ".$tpl->widget_style1("yellow-bg","fas fa-clock","{answers1001000}","$answers1001000")."                
 	<!-- -------------------------------------------------------------------------------------------------- -->  
-                <div class=\"widget style1 red-bg\">
-                    <div class=\"row\">
-                        <div class=\"col-xs-4\">
-                            <i class=\"fas fa-clock fa-5x\"></i>
-                        </div>
-                        <div class=\"col-xs-8 text-right\">
-                            <span> {answersslow} </span>
-                            <h2 class=\"font-bold\">$answersslow</h2>
-                        </div>
-                    </div>
-                </div>                
+                ".$tpl->widget_style1("red-bg","fas fa-clock","{answersslow}","$answersslow")."                
 	<!-- -------------------------------------------------------------------------------------------------- -->  		              
     </div>	
 

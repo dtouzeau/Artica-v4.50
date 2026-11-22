@@ -1,4 +1,5 @@
 <?php
+// Post SP10 - 13/10/2026
 if(isset($_GET["VERBOSE"])){ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string','');ini_set('error_append_string','');}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string','');ini_set('error_append_string','');}
 
@@ -18,14 +19,19 @@ js();
 
 function js(){
 	$page=CurrentPageName();
-	$ID=$_GET["ID"];
+	// $ID partait BRUT dans le WHERE. La colonne est un entier, et les deux
+	// valeurs speciales (-1 = nouvelle regle, 0 = regle par defaut) survivent a
+	// intval().
+	$ID=intval($_GET["ID"]);
+	$rulename="";
 	if($ID==0){$rulename="{default}";}
 	if($ID==-1){$rulename="{new_rule}";}
 	if($ID>0){
 		$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-		$sql="SELECT groupname FROM webfilter_rules WHERE ID=$ID";
-		$ligne=$q->mysqli_fetch_array($sql);
-		$rulename=$ligne["groupname"];
+		$ligne=$q->mysqli_fetch_array("SELECT groupname FROM webfilter_rules WHERE ID=$ID");
+		if(!is_array($ligne)){$ligne=array();}
+		// Le nom vient de la base et partait BRUT dans le titre de la modale.
+		$rulename=htmlspecialchars((string)($ligne["groupname"] ?? ""));
 	}
 	$tpl=new template_admin();
 	$tpl->js_dialog($rulename, "$page?tab=$ID");
@@ -35,7 +41,7 @@ function js(){
 function tabs(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["tab"];
+	$ID=intval($_GET["tab"]);
 	$array["{rule}"]="$page?popup=$ID";
 	if($ID>-1){
 		$array["{blacklists}"]="fw.dns.filterd.rules.categories.php?ID=$ID&modeblk=0";
@@ -47,7 +53,8 @@ function tabs(){
 
 function popup(){
 	
-	$ID=$_GET["popup"];
+	// $ID partait BRUT dans le WHERE plus bas.
+	$ID=intval($_GET["popup"]);
 	$tpl=new template_admin();
 	$users=new usersMenus();
 	$page=CurrentPageName();
@@ -60,7 +67,7 @@ function popup(){
 	$groupmode[2]="{exception}";
 	$button_name="{apply}";
 	$close=null;
-	$t=$_GET["t"];
+	// ($t etait ecrase par $_GET["t"] puis jamais relu.)
 	if($ID<0){$button_name="{add}";}
 	$sock=new sockets();
 	$CheckLicense=false;
@@ -75,15 +82,19 @@ function popup(){
 	$FORM_EXPLAIN=null;
 	
 	
+	$ligne=array();
 	if($ID>0){
-		$sql="SELECT * FROM webfilter_rules WHERE ID=$ID";
-		$ligne=$q->mysqli_fetch_array($sql);
+		$ligne=$q->mysqli_fetch_array("SELECT * FROM webfilter_rules WHERE ID=$ID");
+		if(!is_array($ligne)){$ligne=array();}
 		$CheckLicense=true;
 	
 	}else{
 		if($ID==0){
 			$sock=new dnsfiltersocks();
-			$ligne=unserialize($sock->GET_INFO("DansGuardianDefaultMainRule"));
+			// unserialize() rend false sur une valeur absente ou tronquee, et
+			// $ligne["..."] sur false est un avertissement PHP 8 suivi d'un null.
+			$ligne=@unserialize((string)$sock->GET_INFO("DansGuardianDefaultMainRule"),array("allowed_classes"=>false));
+			if(!is_array($ligne)){$ligne=array();}
 			$ligne["groupname"]="default";
 			$DefaultPosition=$ligne["defaultPosition"];
 			if(!is_numeric($DefaultPosition)){$DefaultPosition=0;}
@@ -115,7 +126,9 @@ function popup(){
 	if(!isset($ligne["enabled"])){$ligne["enabled"]=1;}
 	
 	
-	$DNS_PARAMS=unserialize(base64_decode($ligne["ExternalWebPage"]));
+	$rawWeb=base64_decode((string)($ligne["ExternalWebPage"] ?? ""),true);
+	$DNS_PARAMS=($rawWeb===false)?false:@unserialize($rawWeb,array("allowed_classes"=>false));
+	if(!is_array($DNS_PARAMS)){$DNS_PARAMS=array();}
 	if(!isset($DNS_PARAMS["dns_use_default"])){$DNS_PARAMS["dns_use_default"]=1;}
 	if(!isset($DNS_PARAMS["dns_ipaddr"])){$DNS_PARAMS["dns_ipaddr"]="127.0.0.1";}
 	if(!isset($DNS_PARAMS["dns_neg_ttl"])){$DNS_PARAMS["dns_neg_ttl"]=3600;}
@@ -129,7 +142,8 @@ function popup(){
 	}
 	
 	$form[]=$tpl->field_hidden("ID", $ID);
-	$FORM_TITLE="{rule}: {$ligne["groupname"]}";
+	// Le nom vient de la base et partait BRUT dans le titre du formulaire.
+	$FORM_TITLE="{rule}: ".htmlspecialchars((string)($ligne["groupname"] ?? ""));
 	if($AsDefaultRule){
 		$arrayPos[0]="{at_the_top_rules}";
 		$arrayPos[1]="{at_the_end_of_rules}";
@@ -164,11 +178,45 @@ function popup(){
 	
 	
 	
-	echo $tpl->form_outside($FORM_TITLE, @implode("\n", $form),$FORM_EXPLAIN,$button_name,"LoadAjax('table-loader-dnsfilterd-rules','fw.dns.filterd.rules.php?table=yes');$close","AsDnsAdministrator",$CheckLicense);
+	// form_outside() n'analyse QUE le libelle de son bouton: sans cet appel, le
+	// titre, l'explication et tous les libelles de champ s'affichaient en
+	// {tokens} litteraux.
+	echo $tpl->_ENGINE_parse_body(
+		$tpl->form_outside($FORM_TITLE, @implode("\n", $form),$FORM_EXPLAIN,$button_name,
+			"LoadAjax('table-loader-dnsfilterd-rules','fw.dns.filterd.rules.php?table=yes');$close",
+			"AsDnsAdministrator",$CheckLicense)
+	);
 
 }
+/**
+ * Les SEULES colonnes que ce formulaire a le droit d'ecrire.
+ *
+ * La boucle d'origine construisait le nom de colonne ET la valeur par
+ * concatenation, a partir de $_POST:
+ *
+ *     $fieldsEDIT[]="`$num`='".utf8_encode($ligne)."'";
+ *
+ * La CLE etait donc un nom de colonne fourni par l'appelant, et la VALEUR
+ * partait sans echappement -- soit une primitive d'ecriture complete sur
+ * webfilter_rules. Un nom de colonne ne peut jamais etre lie par un parametre
+ * prepare: il se valide, et la seule validation sure est la liste des colonnes
+ * que ce formulaire possede reellement.
+ */
+function dnsfr_edit_columns(){
+	return array(
+		"groupname"=>true,
+		"enabled"=>true,
+		"zOrder"=>true,
+		"AllSystems"=>true,
+		"groupmode"=>true,
+		"endofrule"=>true,
+		"ExternalWebPage"=>true,
+	);
+}
+
 function rule_edit_save(){
-	$ID=$_POST["ID"];
+	// $ID partait BRUT dans "WHERE ID=$ID".
+	$ID=intval($_POST["ID"]);
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
@@ -178,10 +226,11 @@ function rule_edit_save(){
 	
 	writelogs("Save ruleid `$ID`",__FUNCTION__,__FILE__,__LINE__);
 
+	$DEFAULTARRAY=array();
 	if($ID==0){
 		$sock=new dnsfiltersocks();
-		$DEFAULTARRAY=unserialize($sock->GET_INFO("DansGuardianDefaultMainRule"));
-		
+		$DEFAULTARRAY=@unserialize((string)$sock->GET_INFO("DansGuardianDefaultMainRule"),array("allowed_classes"=>false));
+		if(!is_array($DEFAULTARRAY)){$DEFAULTARRAY=array();}
 	}
 	unset($_POST["ID"]);
 	$build=false;
@@ -213,9 +262,13 @@ function rule_edit_save(){
 	$_POST["groupname"]=str_replace('{', "", $_POST["groupname"]);
 	$_POST["groupname"]=str_replace('}', "", $_POST["groupname"]);
 	$_POST["groupname"]=str_replace('|', "", $_POST["groupname"]);
+	// L'apostrophe ne figurait dans AUCUN des vingt-quatre str_replace ci-dessus:
+	// elle traversait le nettoyage et sortait de la chaine SQL juste en dessous.
+	$_POST["groupname"]=str_replace("'", "", $_POST["groupname"]);
 
-	$sql="SELECT ID FROM webfilter_rules WHERE `groupname`='{$_POST["groupname"]}' AND ID != $ID";
-	$results=$q->QUERY_SQL($sql);
+	$results=$q->QUERY_SQL_PARAMS("SELECT ID FROM webfilter_rules WHERE `groupname`=? AND ID != $ID",
+		array($_POST["groupname"]));
+	if(!is_array($results)){$results=array();}
 	$mysql_num_rows=intval(count($results));
 
 	if($mysql_num_rows>0){
@@ -237,30 +290,48 @@ function rule_edit_save(){
 	
 	
 
+	// La regle par defaut ne vit pas en base: c'est un blob serialise dans
+	// Valkey, et il garde bien tous les champs postes (dont defaultPosition,
+	// qui n'est pas une colonne).
 	foreach ($_POST as $num=>$ligne){
-		$fieldsAddA[]="`$num`";
-		$fieldsAddB[]="'".utf8_encode($ligne)."'";
-		$fieldsEDIT[]="`$num`='".utf8_encode($ligne)."'";
 		$DEFAULTARRAY[$num]=$ligne;
 	}
-
 	if($ID==0){
 		$sock=new dnsfiltersocks();
 		$sock->SET_INFO("DansGuardianDefaultMainRule",serialize($DEFAULTARRAY));
 		return;
 	}
 
-	$sql_edit="UPDATE webfilter_rules SET ".@implode(",", $fieldsEDIT)." WHERE ID=$ID";
-	$sql_add="INSERT INTO webfilter_rules (".@implode(",", $fieldsAddA).") VALUES (".@implode(",", $fieldsAddB).")";
+	// Cote SQL: le nom de colonne est valide contre la liste blanche, la valeur
+	// est LIEE. utf8_encode() a disparu: il convertit de l'ISO-8859-1 vers
+	// l'UTF-8, or la console est deja en UTF-8 -- il double-encodait donc les
+	// accents des noms de regle. Il est de surcroit deprecie depuis PHP 8.2.
+	$allowed=dnsfr_edit_columns();
+	$cols=array();$marks=array();$sets=array();$binds=array();
+	foreach ($_POST as $num=>$ligne){
+		if(!isset($allowed[$num])){continue;}
+		$cols[]="`$num`";
+		$marks[]="?";
+		$sets[]="`$num`=?";
+		$binds[]=$ligne;
+	}
+	if(count($cols)==0){echo $tpl->post_error("{error}");return;}
 
-	if($ID<0){$s=$sql_add;$build=true;}else{$s=$sql_edit;}
-	$q->QUERY_SQL($s);
+	if($ID<0){
+		$q->QUERY_SQL_PARAMS("INSERT INTO webfilter_rules (".@implode(",",$cols).") VALUES (".@implode(",",$marks).")",$binds);
+		$build=true;
+	}else{
+		$q->QUERY_SQL_PARAMS("UPDATE webfilter_rules SET ".@implode(",",$sets)." WHERE ID=$ID",$binds);
+	}
 
-	if(!$q->ok){echo $q->mysql_error."\n$q->mysql_error\n$s\n";return;}
+	// L'ancien message renvoyait l'erreur SQL EN DOUBLE et la requete complete:
+	// le schema partait a l'ecran a chaque echec.
+	if(!$q->ok){echo $tpl->post_error($q->mysql_error);return;}
+	admin_tracks("DNS filtering rule saved ID=$ID (".@implode(", ",$cols).")");
 		$c=0;
-		$sql="SELECT ID FROM webfilter_rules ORDER BY zOrder";
-		$results = $q->QUERY_SQL($sql);
-		
+		$results = $q->QUERY_SQL("SELECT ID FROM webfilter_rules ORDER BY zOrder");
+		if(!is_array($results)){$results=array();}
+
 		foreach ($results as $index=>$ligne){
 			$q->QUERY_SQL("UPDATE webfilter_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}");
 			$c++;

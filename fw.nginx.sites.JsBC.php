@@ -5,6 +5,8 @@ include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.reverse.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.tpl.inc");
 include_once(dirname(__FILE__)."/ressources/class.modsecurity.tools.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 
@@ -36,7 +38,9 @@ function rule_js():bool{
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
     $page       = CurrentPageName();
     $function   = $_GET["function"];
-    $title      = "{rule}: $rule";
+    // Pentest 2026-11-04 : rule-js etait recopie sans encodage dans la page (XSS) ; le titre de modale est
+    // rendu en HTML apres decodage des entites : on y retire les caracteres de balisage.
+    $title      = "{rule}: ".preg_replace('/[<>&\\\\]/','',$rule);
     $ruleEnc=urlencode($rule);
     if($rule==0){$title="{new_rule}";}
     return $tpl->js_dialog5("{exclude}: $title","$page?popup-rule=$ruleEnc&serviceid=$serviceid&function=$function");
@@ -47,7 +51,8 @@ function web_js():bool{
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
     $page       = CurrentPageName();
     $function   = $_GET["function"];
-    $title      = "{path}: $rule";
+    // Pentest 2026-11-04 : rule-js etait recopie sans encodage dans la page (XSS) (titre de modale, cf. rule_js).
+    $title      = "{path}: ".preg_replace('/[<>&\\\\]/','',$rule);
     $ruleEnc=urlencode($rule);
     if($rule==0){$title="{new_path}";}
     return $tpl->js_dialog5("{exclude}: $title","$page?popup-web=$ruleEnc&serviceid=$serviceid&function=$function");
@@ -119,12 +124,13 @@ function whitelist_table():bool{
     $tableid    = time();
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap colspan='2'>{network}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
@@ -133,6 +139,28 @@ function whitelist_table():bool{
     $sock=new socksngix($serviceid);
     $Conf=$sock->GetCache();
     $ico=ico_server;
+
+    // Exemptions integrees au daemon (127.0.0.1, le crawler cloud-audit qui
+    // fabrique les miroirs de vitrification) : toujours actives, sur tous les
+    // sites, impossibles a retirer d'ici. Les montrer evite qu'un exploitant
+    // ajoute l'adresse une seconde fois ou cherche pourquoi elle passe le
+    // challenge. Un daemon plus ancien ne connait pas la route : rien n'est
+    // affiche, jamais un tableau invente.
+    $defaults=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/jsbc/white/defaults"),true);
+    if(is_array($defaults) AND !empty($defaults["Status"]) AND isset($defaults["Data"]) AND is_array($defaults["Data"])){
+        foreach($defaults["Data"] as $ligne){
+            $pattern=htmlspecialchars(trim(strval(isset($ligne["item"])?$ligne["item"]:"")));
+            if($pattern==""){continue;}
+            $description=trim(strval(isset($ligne["description"])?$ligne["description"]:""));
+            if(strlen($description)>1){$description="<br><small>$description</small>";}
+            $html[]="<tr>
+				<td style='width:1%' nowrap><i class='fas fa-lock'></i></td>
+				<td style='width:99%'><strong>$pattern</strong> <span class='awc-badge awc-badge-on'>{jsbc_builtin_whitelist}</span>$description</td>
+				<td style='width:1%' nowrap class='center'><i class='fas fa-check' style='color:#26a69a'></i></td>
+				<td style='width:1%' nowrap>&nbsp;</td>
+				</tr>";
+        }
+    }
     foreach ($Conf["JSBCWhite"] as $num=>$ligne){
         $enable=intval($ligne["enabled"]);
         $description=trim($ligne["description"]);
@@ -157,20 +185,11 @@ function whitelist_table():bool{
 
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div></div></div>";
     $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
     $html[]="LoadAjaxSilent('top-buttons-$serviceid','$page?top-buttons=$serviceid&function=$function');";
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
     return true;
 }
 function rule_enable():bool{
@@ -186,7 +205,8 @@ function rule_enable():bool{
 
     }
     if(!$json["Status"]){
-        return $tpl->js_error($json["Error"]);
+        // Pentest 2026-11-04 : l'element de la requete pouvait revenir sans encodage dans la page (XSS) via le message d'erreur.
+        return $tpl->js_error(req_html($json["Error"]));
     }
     return admin_tracks("Switch enable/disable Signed JavaScript Browser Challenge rule {$_GET["rule-enable"]} from $servicename");
 }
@@ -204,7 +224,8 @@ function rule_remove():bool{
 
     }
     if(!$json["Status"]){
-        return $tpl->js_error($json["Error"]);
+        // Pentest 2026-11-04 : l'element de la requete pouvait revenir sans encodage dans la page (XSS) via le message d'erreur.
+        return $tpl->js_error(req_html($json["Error"]));
     }
     return admin_tracks("Delete Signed JavaScript Browser Challenge rule {$_GET["rule-remove"]} from $servicename");
 }

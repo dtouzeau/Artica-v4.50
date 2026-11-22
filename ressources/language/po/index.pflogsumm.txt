@@ -1,2 +1,2 @@
-<PFLOGSUMM_SEND_REPORT_EACH>Send report by eMail each day at</PFLOGSUMM_SEND_REPORT_EACH>
-<use_send_mail>Use internal SMTP engine</use_send_mail>
+<PFLOGSUMM_SEND_REPORT_EACH>Enviar relat&#243;rio por e-mail todos os dias &#224;s</PFLOGSUMM_SEND_REPORT_EACH>
+<use_send_mail>Usar o motor SMTP interno</use_send_mail>

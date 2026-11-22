@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -10,6 +12,9 @@ if(isset($_GET["mode-client-js"])){mode_client_js();exit;}
 if(isset($_GET["mode-client-single"])){mode_client_single();exit;}
 if(isset($_GET["mode-client-iscsi-search"])){mode_client_iscsi_search();exit;}
 if(isset($_GET["mode-client-iscsi-results"])){mode_client_iscsi_results();exit;}
+// Pentest 2026-11-04 : mod-client-selectadd/mod-client-form etaient recopies sans encodage dans la page (XSS).
+// Ce sont des tableaux serialises en base64 : alphabet base64 (+ espace, '+' decode en espace).
+foreach(array("mod-client-selectadd","mod-client-form") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('#[^A-Za-z0-9+/= ]#','',(string)$_GET[$k]);}}
 if(isset($_GET["mod-client-selectadd"])){mode_client_iscsi_results_add();exit;}
 if(isset($_GET["mod-client-form"])){mode_client_iscsi_results_form();exit;}
 if(isset($_GET["mod-client-fiche-js"])){mode_client_iscsi_fiche_js();exit;}
@@ -69,9 +74,10 @@ function mode_client_js(){
 }
 
 function mode_server_delete(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["mode-server-delete"];
+	$ID=intval($_GET["mode-server-delete"]);
 	
 	$q=new mysql();
 	$sql="SELECT Params FROM iscsi_params WHERE ID='$ID'";
@@ -86,7 +92,7 @@ function mode_server_delete(){
 	$ARRAY["TITLE"]="{ISCSI_share}::{remove}";
 	$ARRAY["AFTER"]="LoadAjax('mode-server-popup-table','$page?mode-server-popup-table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-iscsi-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-iscsi-restart')";
 	
 	$tpl->js_confirm_delete($iqn, "none", "none",$jsrestart);
 	
@@ -225,7 +231,7 @@ function mode_server_single(){
 }
 function mode_server_save(){
 	
-	while (list ($num, $val) = each ($_POST)){
+	foreach ($_POST as $num=>$val){
 		$_POST[$num]=url_decode_special_tool($val);
 	}
 	
@@ -265,8 +271,10 @@ function mode_server_save(){
 	
 	$q=new mysql();
 	$tpl=new templates();
+	$ID=intval($ID);
 	if($ID==0){
-		$sql="SELECT ID FROM iscsi_params WHERE shared_folder='$foldername'";
+		// Pentest 2026-11-04 : shared_folder etait concatene dans la requete.
+		$sql="SELECT ID FROM iscsi_params WHERE shared_folder='".mysql_escape_string2($foldername)."'";
 		$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,"artica_backup"));
 		if($ligne["ID"]>0){
 			echo $tpl->javascript_parse_text("$foldername {ERROR_OBJECT_ALREADY_EXISTS}");
@@ -302,10 +310,19 @@ function mode_server_save(){
 	if($type=='file'){$dev=$_POST["path"]."/$foldername.img";}else{$dev=$_POST["partition"];}
 	if(!is_numeric($size)){$size=5;}
 	if(!is_numeric($ID)){$ID=0;}
+	// Pentest 2026-11-04 : hostname, dev, type, shared_folder, uid, EnableAuth et ID etaient concatenes dans la requete.
+	$ID=intval($ID);
+	$size=intval($size);
+	$EnableAuth=intval($EnableAuth);
+	$hostnameSql=mysql_escape_string2($hostname);
+	$devSql=mysql_escape_string2($dev);
+	$typeSql=mysql_escape_string2($type);
+	$foldernameSql=mysql_escape_string2($foldername);
+	$uidSql=mysql_escape_string2($uid);
 	$sql="INSERT INTO iscsi_params (`hostname`,`dev`,`type`,`file_size`,`shared_folder`,`uid`,`EnableAuth`,`Params`)
-	VALUES('$hostname','$dev','$type','{$size}','$foldername','$uid','$EnableAuth','$ParamsText')";
+	VALUES('$hostnameSql','$devSql','$typeSql','{$size}','$foldernameSql','$uidSql','$EnableAuth','$ParamsText')";
 	
-	$sqlu="UPDATE iscsi_params SET EnableAuth='$EnableAuth',`uid`='$uid',`Params`='$ParamsText' WHERE ID=$ID";
+	$sqlu="UPDATE iscsi_params SET EnableAuth='$EnableAuth',`uid`='$uidSql',`Params`='$ParamsText' WHERE ID=$ID";
 	
 	if($ID>0){$sql=$sqlu;}
 	
@@ -363,6 +380,7 @@ function  mode_client_browse(){
 }
 
 function mode_client_iscsi_search(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$sock=new sockets();
@@ -376,7 +394,7 @@ function mode_client_iscsi_search(){
 	$ARRAY["AFTER"]="LoadAjax('mode-client-browse','$page?mode-client-iscsi-results=yes');";
 	
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=mode-client-browse')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=mode-client-browse')";
 	echo "<script>
 	//{$ARRAY["PROGRESS_FILE"]}\n//{$ARRAY["LOG_FILE"]}
 	
@@ -464,16 +482,22 @@ function mode_client_iscsi_results(){
 function mode_client_iscsi_results_add(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$array=unserialize(base64_decode($_GET["mod-client-selectadd"]));
+	$array=unserialize(base64_decode($_GET["mod-client-selectadd"]),array("allowed_classes"=>false));
     if(!is_array($array)){$array=array();}
-	$title="{$array["IP"]}:{$array["PORT"]}/{$array["FOLDER"]}";
+	// Pentest 2026-11-04 : le contenu de mod-client-selectadd etait recopie sans encodage dans le titre (XSS).
+	// Double encodage : le titre passe par html_entity_decode() puis est rendu en HTML.
+	$title=req_html(req_html("{$array["IP"]}:{$array["PORT"]}/{$array["FOLDER"]}"));
 	$tpl->js_dialog2($title, "$page?mod-client-form={$_GET["mod-client-selectadd"]}&md={$_GET["md"]}");
 }
 function mode_client_iscsi_results_form(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();	
-	$subarray2=unserialize(base64_decode($_GET["mod-client-form"]));
-	$title="{$subarray2["IP"]}:{$subarray2["PORT"]}";
+	$subarray2=unserialize(base64_decode($_GET["mod-client-form"]),array("allowed_classes"=>false));
+	if(!is_array($subarray2)){$subarray2=array();}
+	foreach(array("IP","PORT","ISCSI","FOLDER") as $k){if(!isset($subarray2[$k])){$subarray2[$k]="";}}
+	// Pentest 2026-11-04 : le contenu de mod-client-form etait recopie sans encodage dans la page (XSS).
+	$title=req_html("{$subarray2["IP"]}:{$subarray2["PORT"]}");
+	// ISCSI et FOLDER : field_info() les filtre lui-meme, ne pas les encoder ici.
 	$ligne["EnableAuth"]=0;
 	$ligne["Persistante"]=1;
 	$form[]=$tpl->field_hidden("ClientID", 0);
@@ -500,8 +524,9 @@ function mode_client_iscsi_fiche_js(){
 }
 
 function mode_client_delete_js(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	$page=CurrentPageName();
-	$ID=$_GET["mode-client-delete"];
+	$ID=intval($_GET["mode-client-delete"]);
 	$sql="SELECT * FROM iscsi_client WHERE ID='{$ID}'";
 	$q=new mysql();
 	$tpl=new template_admin();
@@ -517,7 +542,7 @@ function mode_client_delete_js(){
 	$ARRAY["AFTER"]="LoadAjax('mode-client-popup-table','$page?mode-client-popup-table=yes');";
 	
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-iscsi-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-iscsi-restart')";
 	
 	$tpl->js_confirm_delete($title, "mode-client-delete", $ID,$jsrestart);
 }
@@ -559,7 +584,7 @@ function mode_client_iscsi_results_save(){
 	}
 	
 	
-	$subarray2=unserialize(base64_decode($_POST["Params"]));
+	$subarray2=unserialize(base64_decode($_POST["Params"]),array("allowed_classes"=>false));
 	
 	$ID=$_POST["ClientID"];
 	if(!is_numeric($ID)){$ID=0;}
@@ -572,15 +597,25 @@ function mode_client_iscsi_results_save(){
 	
 	
 	
+	// Pentest 2026-11-04 : username, password, Params, cible iSCSI, persistante, EnableAuth et ID etaient concatenes dans la requete.
+	if(!is_array($subarray2)){$subarray2=array();}
+	$username=mysql_escape_string2($_POST["username"] ?? "");
+	$password=mysql_escape_string2($_POST["password"] ?? "");
+	$ParamsSql=mysql_escape_string2($_POST["Params"] ?? "");
+	$hostnameSql=mysql_escape_string2(($subarray2["ISCSI"] ?? "").":".($subarray2["PORT"] ?? ""));
+	$directorySql=mysql_escape_string2($subarray2["FOLDER"] ?? "");
+	$persistante=intval($_POST["persistante"] ?? 0);
+	$EnableAuth=intval($_POST["EnableAuth"] ?? 0);
+	$ID=intval($ID);
 	$sql="INSERT INTO iscsi_client(username,password,Params,hostname,directory,Persistante,EnableAuth)
-	VALUES('{$_POST["username"]}','{$_POST["password"]}','{$_POST["Params"]}','{$subarray2["ISCSI"]}:{$subarray2["PORT"]}','{$subarray2["FOLDER"]}','{$_POST["persistante"]}','{$_POST["EnableAuth"]}')";
+	VALUES('$username','$password','$ParamsSql','$hostnameSql','$directorySql','$persistante','$EnableAuth')";
 	
 	$sql_edit="UPDATE `iscsi_client`
-	SET `username`='{$_POST["username"]}',
-	`password`='{$_POST["password"]}',
-	`Persistante`='{$_POST["persistante"]}',
-	`EnableAuth`='{$_POST["EnableAuth"]}'
-	WHERE `ID`='{$_POST["ID"]}'
+	SET `username`='$username',
+	`password`='$password',
+	`Persistante`='$persistante',
+	`EnableAuth`='$EnableAuth'
+	WHERE `ID`='$ID'
 	";
 	if($ID>0){$sql=$sql_edit;}
 	
@@ -633,7 +668,7 @@ function mode_server_popup_table(){
 	$ARRAY["TITLE"]="{ISCSI_share}::{apply}";
 	$ARRAY["AFTER"]="LoadAjax('mode-server-popup-table','$page?mode-server-popup-table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-iscsi-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-iscsi-restart')";
 	
 	$html[]="<div class='ibox-content'>
 	<div class=\"btn-group\" data-toggle=\"buttons\">

@@ -6,6 +6,7 @@ if(isset($_GET["certificate-popup"])){certificate_wizard0();exit;}
 if(isset($_GET["certificate-wiz1"])){certificate_wizard1();exit;}
 if(isset($_GET["certificate-wiz2"])){certificate_wizard2();exit;}
 if(isset($_GET["certificate-wiz3"])){certificate_wizard3();exit;}
+if(isset($_POST["le-wiz1"])){le_wiz1_save();exit;}
 if(isset($_POST["service-id"])){certificate_save();exit;}
 js();
 
@@ -28,12 +29,13 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
+function fetch_nginx_service_hosts($ID):string{
+    $ID=intval($ID);
+    if($ID==0){return "";}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/ID/$ID");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"]) || count($data["rows"])==0){return "";}
+    return isset($data["rows"][0]["hosts"]) ? strval($data["rows"][0]["hosts"]) : "";
 }
 
 function certificate_wizard0():bool{
@@ -57,33 +59,93 @@ function certificate_wizard1():bool{
         return false;
     }
 
-    $tpl->table_form_section("","<p class='font-bold' style='margin-bottom: 15px;font-size:18px'>{letsencryptval1}</p>");
+    // Per-name selection: each valid server name is an interactive checkbox
+    // (checked = included in the Let's Encrypt certificate). Unchecked names are
+    // excluded from the cert and get a 302 redirect to the primary (first checked)
+    // name — handled in certificate_save(). Invalid names cannot be certified and
+    // are shown disabled.
+    $form=array();
+    $form[]=$tpl->field_hidden("service-id",$serviceid);
+    $form[]=$tpl->field_hidden("function",$function);
+    $form[]=$tpl->field_hidden("le-wiz1","1");
+    $hostmap=array();
     $c=0;
     foreach ($Hosts as $host=>$val){
-
         if(!$val){
-            $tpl->table_form_field_bool("<span style='text-transform:none'>$host</span>",0,ico_bug);
+            $form[]="<div style='color:#999;padding:4px 0'><i class='".ico_bug."'></i>&nbsp;<span style='text-transform:none'>".htmlspecialchars($host)."</span></div>";
             continue;
         }
-        $tpl->table_form_field_bool("<span style='text-transform:none'>$host</span>",1,ico_earth);
+        $md=md5($host);
+        $hostmap[$md]=$host;
+        $form[]=$tpl->field_checkbox("le_inc_$md","<span style='text-transform:none'>".htmlspecialchars($host)."</span>",1);
         $c++;
     }
+    $form[]=$tpl->field_hidden("le-hostmap",base64_encode(json_encode($hostmap)));
 
     if($c==0){
         echo $tpl->div_error($tpl->_ENGINE_parse_body("{no_domain_valid}"));
         return false;
     }
-    $tpl->table_form_button("{next}","LoadAjax('certificate-wizard-$serviceid','$page?certificate-wiz2=true&service-id=$serviceid&function=$function')","",ico_arrow_right);
+    $jsafter="LoadAjax('certificate-wizard-$serviceid','$page?certificate-wiz2=true&service-id=$serviceid&function=$function')";
+    echo $tpl->_ENGINE_parse_body($tpl->form_outside("",$form,"{letsencryptval1}","{next}",$jsafter,"AsWebMaster"));
+    return true;
+}
 
+// Stores the per-name include selection from certificate_wizard1 into the session.
+// Triggered by the wizard-1 form POST (marker le-wiz1). certificate_save() reads it.
+function le_wiz1_save():bool{
+    $serviceid=intval($_POST["service-id"]);
+    $hostmap=json_decode(base64_decode($_POST["le-hostmap"]),true);
+    if(!is_array($hostmap)){$hostmap=array();}
+    $sel=array();
+    foreach($hostmap as $md=>$host){
+        $sel[$host]=(isset($_POST["le_inc_$md"]) && intval($_POST["le_inc_$md"])==1) ? 1 : 0;
+    }
+    $_SESSION["LE_SEL_$serviceid"]=$sel;
+    return true;
+}
 
-    echo $tpl->table_form_compile();
-return true;
+// Adds a 302 redirect (domain>primary) for each excluded server name, reusing the
+// existing nginx_services.hosts "domain>redirect" machinery. The bare primary name
+// (no scheme) makes the daemon emit `return 302 $scheme://primary$request_uri;`
+// (ServersBlockRedirects.go), preserving scheme + path.
+function le_setup_redirects($serviceid,$excluded,$primary):bool{
+    $primary=trim(strtolower($primary));
+    if($primary==""||count($excluded)==0){return true;}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/ID/$serviceid");
+    $data=json_decode($resp,true);
+    $hosts=(is_array($data) && isset($data["rows"][0]["hosts"])) ? strval($data["rows"][0]["hosts"]) : "";
+    $MAIN=array();
+    foreach(explode("||",$hosts) as $d){
+        $d=trim(strtolower($d));
+        if($d==""){continue;}
+        if(preg_match("#^(.+?)>(.+)#",$d,$re)){$MAIN[$re[1]]=$re[2];continue;}
+        $MAIN[$d]="";
+    }
+    foreach($excluded as $h){
+        $h=trim(strtolower($h));
+        if($h==""||$h==$primary){continue;}
+        $MAIN[$h]=$primary;
+    }
+    $F=array();
+    foreach($MAIN as $d=>$r){
+        $d=trim(strtolower($d));
+        if($d==""){continue;}
+        if(strpos($d,";")>0){continue;}
+        if($r<>null && $r!=$d){$F[]="$d>$r";}else{$F[]=$d;}
+    }
+    $newval=trim(implode("||",$F));
+    $result=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/site/$serviceid/update-service",["hosts"=>$newval,"goodconftime"=>0]),true);
+    if(is_array($result) && !empty($result["Status"])){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/singlehup/$serviceid");
+        return true;
+    }
+    return false;
 }
 
 function ExtractHost($ID):array{
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne      = $q->mysqli_fetch_array("SELECT hosts FROM nginx_services WHERE ID=$ID");
-    $Zhosts=explode("||",$ligne["hosts"]);
+    $hosts=fetch_nginx_service_hosts($ID);
+    $Zhosts=explode("||",$hosts);
     $DOMS=array();
     foreach ($Zhosts as $domains){
         if (trim($domains)==null){continue;}
@@ -136,16 +198,6 @@ function isValidDomain(string $domain): bool{
 
     return true;
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
 function certificate_wizard2():bool{
     $tpl=new template_admin();
     $serviceid=intval($_GET["service-id"]);
@@ -190,23 +242,37 @@ function certificate_save():bool{
         echo $tpl->post_error($tpl->_ENGINE_parse_body("{no_domain_valid}"));
         return false;
     }
-    $c=0;
+    // Per-name selection from wizard 1 (session). Absent => include all valid hosts
+    // (backward compatible). Unchecked valid hosts are excluded from the SAN list and
+    // get a 302 redirect to the primary (first included) name.
+    $sel=isset($_SESSION["LE_SEL_".$array["serviceid"]]) ? $_SESSION["LE_SEL_".$array["serviceid"]] : array();
+    $hasSel=is_array($sel) && count($sel)>0;
     $domains=array();
+    $excluded=array();
     foreach ($Hosts as $host=>$val){
         if(!$val){
             continue;
         }
-        $domains[]=$host;
+        $inc = $hasSel ? (isset($sel[$host]) ? ($sel[$host]==1) : true) : true;
+        if($inc){
+            $domains[]=$host;
+        }else{
+            $excluded[]=$host;
+        }
     }
     if(count($domains)==0){
         echo $tpl->post_error($tpl->_ENGINE_parse_body("{no_domain_valid}"));
         return false;
+    }
+    if(count($excluded)>0){
+        le_setup_redirects($array["serviceid"],$excluded,$domains[0]);
     }
     $servicename=get_servicename($array["serviceid"]);
     $array["servicename"]=$servicename;
     $array["domains"]=@implode(",",$domains);
     $encoded=urlencode(base64_encode(serialize($array)));
     $_SESSION["AUTOLETSENCRYPT"]=$encoded;
+    unset($_SESSION["LE_SEL_".$array["serviceid"]]);
     return admin_tracks("Create Let`s Encrypt certificate for $servicename");
 
 }

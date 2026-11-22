@@ -1,76 +1,50 @@
 <cicap_title>C-ICAP + Clam Antivirus</cicap_title>
-<clamav_settings>Clam Antivirus settings</clamav_settings>
-<clamav_settings_text>
-    Define the behavior of clamav with your Squid proxy
-</clamav_settings_text>
-<icap_logs>C-Icap/Clamav Events</icap_logs>
-<icap_logs_text>display events about the scanned web pages</icap_logs_text>
+<clamav_settings>Impostazioni Clam Antivirus</clamav_settings>
+<clamav_settings_text>Definisci il comportamento di clamav con il tuo proxy Squid</clamav_settings_text>
+<icap_logs>Eventi C-Icap/Clamav</icap_logs>
+<icap_logs_text>Visualizza gli eventi sulle pagine web scansionate</icap_logs_text>
 <KeepAlive>KeepAlive</KeepAlive>
-<KeepAliveTimeout>KeepAlive Timeout</KeepAliveTimeout>
-<KeepAliveTimeout_text>The maximum time in seconds waiting for a new requests.[br]
-If the value is set it to -1, there is no timeout</KeepAliveTimeout_text>
-<KeepAlive_text>
-If the feature is enabled, then the c-icap server tries not to close the connection with the ICAP client,[br]
-but it waits for more requests tunnelled through it.[br]
-This feature can improve the communication speed between the ICAP client and the c-icap server
-</KeepAlive_text>
-<MaxKeepAliveRequests>Max KeepAlive Requests</MaxKeepAliveRequests>
-<MaxKeepAliveRequests_text>Max KeepAlive Requests</MaxKeepAliveRequests_text>
-<MaxRequestsPerChild>Maximal Requests Per Child</MaxRequestsPerChild>
-<MaxRequestsPerChild_text>
-the maximum number of requests that a child process can serve.[br]
-After this number has been reached, process dies.[br]
-The goal of this parameter is to minimize the risk of memory leaks and increase the stability of c-icap.[br]
-It can be disabled by setting its value to 0
-</MaxRequestsPerChild_text>
-<MaxServers>Maximum Servers</MaxServers>
-<MaxServers_text>The maximum number of server processes</MaxServers_text>
-<MaxSpareThreads>Maximal Spare Threads</MaxSpareThreads>
-<MaxSpareThreads_text>if the number of the available threads is more than this number then the c-icap server kills a child</MaxSpareThreads_text>
-<MinSpareThreads>Minimal Spare Threads</MinSpareThreads>
-<MinSpareThreads_text>
-if the number of the available threads is less than this number, the c-icap server starts a new child
-</MinSpareThreads_text>
-<srv_clamav.ClamAvMaxFilesInArchive>Maximum files scanned in archives</srv_clamav.ClamAvMaxFilesInArchive>
-<srv_clamav.ClamAvMaxFilesInArchive_text>Sets the maximum number of files in archive.[br]
-Used by clamav library.[br]
-Set it to 0 to disable it. </srv_clamav.ClamAvMaxFilesInArchive_text>
-<srv_clamav.ClamAvMaxFileSizeInArchive>Maximal Archived file size</srv_clamav.ClamAvMaxFileSizeInArchive>
-<srv_clamav.ClamAvMaxFileSizeInArchive_text>
-Sets the maximal archived file size.[br]
-Used by clamav library.[br] Set it to 0 to disable it
-</srv_clamav.ClamAvMaxFileSizeInArchive_text>
-<srv_clamav.ClamAvMaxRecLevel>
-Maximal recursion compression level
-</srv_clamav.ClamAvMaxRecLevel>
-<srv_clamav.ClamAvMaxRecLevel_text>
-The maximal recursion level. Used by clamav library.Set it to 0 to disable it. 
-</srv_clamav.ClamAvMaxRecLevel_text>
-<srv_clamav.MaxObjectSize>
-    Maximal size of files
-</srv_clamav.MaxObjectSize>
-<srv_clamav.MaxObjectSize_text>
-    The maximum size of files which will be scanned by clamav.
-</srv_clamav.MaxObjectSize_text>
-<srv_clamav.SendPercentData>Percentage of data that can be sent</srv_clamav.SendPercentData>
-<srv_clamav.SendPercentData_text>
-The percentage of data that can be sent by the c-icap server before receiving the complete body of a request.[br]
-This feature in conjuction with the folowing can be usefull becouse if the download of the object takes a lot of time the connection of web client to proxy can be expired. It must be noticed that the data which delivered to the web client maybe contains a virus or a part of a virus and can be dangerous.[br]
-In the other hand partial data (for example 5% data of a zip or an exe file) in most cases can not be used.[br]
-Set it to 0 to disable this feature. 
-</srv_clamav.SendPercentData_text>
-<srv_clamav.StartSendPercentDataAfter>
-    Percentage of data sent after
-</srv_clamav.StartSendPercentDataAfter>
-<srv_clamav.StartSendPercentDataAfter_text>
-    Only if the object is bigger than size then the percentage of data which defined by "Percentage of data that can be sent"
-    sent by the c-icap server before receiving the complete body of request. 
-</srv_clamav.StartSendPercentDataAfter_text>
+<KeepAliveTimeout>Timeout KeepAlive</KeepAliveTimeout>
+<KeepAliveTimeout_text>Il tempo massimo in secondi di attesa di nuove richieste.[br]
+Se il valore &#232; impostato a -1, non c'&#232; timeout</KeepAliveTimeout_text>
+<KeepAlive_text>Se la funzionalit&#224; &#232; abilitata, il server c-icap cerca di non chiudere la connessione con il client ICAP,[br]
+ma attende ulteriori richieste tunnellate attraverso di essa.[br]
+Questa funzionalit&#224; pu&#242; migliorare la velocit&#224; di comunicazione tra il client ICAP e il server c-icap</KeepAlive_text>
+<MaxKeepAliveRequests>Richieste KeepAlive massime</MaxKeepAliveRequests>
+<MaxKeepAliveRequests_text>Richieste KeepAlive massime</MaxKeepAliveRequests_text>
+<MaxRequestsPerChild>Numero massimo di richieste per child</MaxRequestsPerChild>
+<MaxRequestsPerChild_text>Il numero massimo di richieste che un processo child pu&#242; servire.[br]
+Dopo aver raggiunto questo numero, il processo muore.[br]
+L'obiettivo di questo parametro &#232; minimizzare il rischio di memory leak e aumentare la stabilit&#224; di c-icap.[br]
+Pu&#242; essere disabilitato impostando il suo valore a 0</MaxRequestsPerChild_text>
+<MaxServers>Server massimi</MaxServers>
+<MaxServers_text>Il numero massimo di processi server</MaxServers_text>
+<MaxSpareThreads>Thread liberi massimi</MaxSpareThreads>
+<MaxSpareThreads_text>Se il numero di thread disponibili &#232; superiore a questo numero, il server c-icap arresta un child</MaxSpareThreads_text>
+<MinSpareThreads>Thread liberi minimi</MinSpareThreads>
+<MinSpareThreads_text>Se il numero di thread disponibili &#232; inferiore a questo numero, il server c-icap avvia un nuovo child</MinSpareThreads_text>
+<srv_clamav.ClamAvMaxFilesInArchive>Numero massimo di file scansionati negli archivi</srv_clamav.ClamAvMaxFilesInArchive>
+<srv_clamav.ClamAvMaxFilesInArchive_text>Imposta il numero massimo di file nell'archivio.[br]
+Usato dalla libreria clamav.[br]
+Impostalo a 0 per disabilitarlo.</srv_clamav.ClamAvMaxFilesInArchive_text>
+<srv_clamav.ClamAvMaxFileSizeInArchive>Dimensione massima file archiviato</srv_clamav.ClamAvMaxFileSizeInArchive>
+<srv_clamav.ClamAvMaxFileSizeInArchive_text>Imposta la dimensione massima dei file archiviati.[br]
+Usato dalla libreria clamav.[br] Impostalo a 0 per disabilitarlo</srv_clamav.ClamAvMaxFileSizeInArchive_text>
+<srv_clamav.ClamAvMaxRecLevel>Livello massimo di compressione ricorsiva</srv_clamav.ClamAvMaxRecLevel>
+<srv_clamav.ClamAvMaxRecLevel_text>Il livello massimo di ricorsione. Usato dalla libreria clamav. Impostalo a 0 per disabilitarlo.</srv_clamav.ClamAvMaxRecLevel_text>
+<srv_clamav.MaxObjectSize>Dimensione massima dei file</srv_clamav.MaxObjectSize>
+<srv_clamav.MaxObjectSize_text>La dimensione massima dei file che verranno scansionati da clamav.</srv_clamav.MaxObjectSize_text>
+<srv_clamav.SendPercentData>Percentuale di dati che possono essere inviati</srv_clamav.SendPercentData>
+<srv_clamav.SendPercentData_text>La percentuale di dati che il server c-icap pu&#242; inviare prima di ricevere il corpo completo di una richiesta.[br]
+Questa funzionalit&#224; in combinazione con la seguente pu&#242; essere utile perch&#233; se il download dell'oggetto richiede molto tempo la connessione del client web al proxy pu&#242; scadere. Va notato che i dati consegnati al client web possono contenere un virus o una parte di un virus e possono essere pericolosi.[br]
+D'altra parte i dati parziali (ad esempio il 5% dei dati di un file zip o exe) nella maggior parte dei casi non possono essere usati.[br]
+Imposta a 0 per disabilitare questa funzionalit&#224;.</srv_clamav.SendPercentData_text>
+<srv_clamav.StartSendPercentDataAfter>Percentuale di dati inviati dopo</srv_clamav.StartSendPercentDataAfter>
+<srv_clamav.StartSendPercentDataAfter_text>Solo se l'oggetto &#232; pi&#249; grande della dimensione, la percentuale di dati definita in &quot;Percentuale di dati che possono essere inviati&quot; viene inviata dal server c-icap prima di ricevere il corpo completo della richiesta.</srv_clamav.StartSendPercentDataAfter_text>
 <ThreadsPerChild>Fili per bambino</ThreadsPerChild>
-<ThreadsPerChild_text>The initial number of threads per child process</ThreadsPerChild_text>
+<ThreadsPerChild_text>Il numero iniziale di thread per processo figlio</ThreadsPerChild_text>
 <Timeout>Timeout</Timeout>
-<Timeout_text>The time in seconds after which a connection without activity can be cancelled</Timeout_text>
-<ViralatorMode>Viralator Mode</ViralatorMode>
-<ViralatorMode_text>The following directives are related with an experimental mode which called "viralator" mode. Antivirus will download the file localy 
-and sends to the web client a web page messages about the progress of download.[br]
-After the download completed it sends a message with the web location where the downloaded file store.</ViralatorMode_text>
+<Timeout_text>Il tempo in secondi dopo il quale una connessione senza attivit&#224; pu&#242; essere annullata</Timeout_text>
+<ViralatorMode>Modalit&#224; Viralator</ViralatorMode>
+<ViralatorMode_text>Le seguenti direttive sono relative a una modalit&#224; sperimentale chiamata modalit&#224; &quot;viralator&quot;. L'antivirus scaricher&#224; il file localmente e invier&#224; al client web una pagina web con messaggi sull'avanzamento del download.[br]
+Al termine del download, invia un messaggio con la posizione web in cui &#232; memorizzato il file scaricato.</ViralatorMode_text>

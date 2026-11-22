@@ -1,7 +1,14 @@
 <?php
-//$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
-include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
+// SMTP firewall blocklist (ipset SMTPDeny). Rewired 2026-08 to talk to the artica-postfix daemon over
+// /run/artica-postfix.sock instead of opening PostgreSQL directly and shelling the old PHP SMTP ipset script
+// through framework/postfix2.php. The daemon owns smtp_ipset (parameterised — the old raw-SQL page had
+// injection holes) and the SMTPDeny ipset/firewall-rule lifecycle.
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+// awc_table_style(): shared entity-table stylesheet
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["ipaddr-js"])){ipaddr_js();exit;}
@@ -12,234 +19,190 @@ if(isset($_GET["enable"])){enable();exit;}
 
 table();
 
+// pfxfw_admin returns the acting admin name for the daemon's audit log.
+function pfxfw_admin(){
+	$admin=isset($_SESSION["uid"])?$_SESSION["uid"]:"Manager";
+	if($admin==-100){$admin="Manager";}
+	return (string)$admin;
+}
+
+// pfxfw_err extracts a daemon error message, "" on success. A non-JSON, non-empty body (a bare
+// "Not Found" from an older daemon binary) is treated as an error rather than a silent success.
+function pfxfw_err($resp){
+	$r=json_decode((string)$resp,true);
+	if(is_array($r)){
+		if(isset($r["success"]) && !$r["success"]){return (string)(isset($r["error"])?$r["error"]:"error");}
+		if(!empty($r["error"])){return (string)$r["error"];}
+		return "";
+	}
+	$raw=trim(str_replace(array("'","\\"),array(" "," "),(string)$resp));
+	return $raw==""?"":substr($raw,0,300);
+}
+
 function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$t=time();
 	$html[]="
-
 	</div>
 	<div class='ibox-content'>
 	<div id='postfix-ipset'></div>
-
 	</div>
 	</div>
 	";
-
-
-	$html[]=$tpl->search_block($page,"postgres","smtp_ipset","smtp_ipset","");
+	// type "" — no PostgreSQL autocomplete: the page no longer opens the database, the daemon serves it.
+	$html[]=$tpl->search_block($page,"","","","");
 	echo $tpl->_ENGINE_parse_body($html);
-
 }
 
 function delete(){
-	$ipaddr=$_GET["delete"];
-	$q=new postgres_sql();
-	$q->QUERY_SQL("DELETE FROM smtp_ipset WHERE pattern='$ipaddr'");
-	
-	$date=date("Y-m-d H:i:s");
-	$admin=$_SESSION["uid"];
-	if($admin==-100){$admin="Manager";}
-	$subject="Firewall rule removed by $admin";
-	$sql="INSERT INTO smtplog(zdate,ipaddr,reason,refused,smtp_code,subject) VALUES('$date','$ipaddr','FireWall remove',0,55,'$subject')";
-	$q->QUERY_SQL($sql);
-	echo "$('#{$_GET["md"]}').remove()\n";
+	$tpl=new template_admin();
+	$ipaddr=(string)$_GET["delete"];
+	$resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/ipset/delete?ipaddr=".urlencode($ipaddr)."&admin=".urlencode(pfxfw_admin()));
+	$e=pfxfw_err($resp);
+	if($e!==""){echo $tpl->js_mysql_alert($e);return;}
+	// The row id is a md5: restrict it to hex so it cannot inject an arbitrary jQuery selector.
+	$md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
+	echo "$('#$md').remove()\n";
 }
-
 
 function ipaddr_js(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$ipaddr=$_GET["ipaddr-js"];
-	if($ipaddr==null){$title="{new_entry}";}else{$title=$ipaddr;}
-	$tpl->js_prompt("{new_address}", "{set_address_generic}", "far fa-plus-square", "$page", "ipaddr","{$_GET["function"]}()");
-	
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
+	$tpl->js_prompt("{new_address}", "{set_address_generic}", "far fa-plus-square", "$page", "ipaddr","$function()");
 }
+
 function enable(){
-	$ipaddr=$_GET["enable"];
-	$q=new postgres_sql();
 	$tpl=new template_admin();
-	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM smtp_ipset WHERE pattern='$ipaddr'"));
-	VERBOSE("ENABLED: {$ligne["enabled"]}",__LINE__);
-	if($ligne["enabled"]==1){
-		$newenabled=0;
-		VERBOSE("UPDATE smtp_ipset SET enabled=$newenabled WHERE pattern='$ipaddr'",__LINE__);
-		$q->QUERY_SQL("UPDATE smtp_ipset SET enabled=$newenabled WHERE pattern='$ipaddr'");
-	}else{
-		$newenabled=1;
-		VERBOSE("UPDATE smtp_ipset SET enabled=$newenabled WHERE pattern='$ipaddr'",__LINE__);
-		$q->QUERY_SQL("UPDATE smtp_ipset SET enabled=$newenabled WHERE pattern='$ipaddr'");
-	}
-	if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);}
-	$date=date("Y-m-d H:i:s");
-	$admin=$_SESSION["uid"];
-	if($admin==-100){$admin="Manager";}
-	if($newenabled==1){
-		$subject="Firewall rule enabled by $admin";
-		$sql="INSERT INTO smtplog(zdate,ipaddr,reason,refused,smtp_code,subject) VALUES('$date','$ipaddr','FireWall Block',1,55,'$subject')";
-		$q->QUERY_SQL($sql);
-	}else{
-		$subject="Firewall rule disabled by $admin";
-		$sql="INSERT INTO smtplog(zdate,ipaddr,reason,refused,smtp_code,subject) VALUES('$date','$ipaddr','FireWall Unblock',0,55,'$subject')";
-		$q->QUERY_SQL($sql);		
-	}
-	
-	
+	$ipaddr=(string)$_GET["enable"];
+	$resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/ipset/toggle?ipaddr=".urlencode($ipaddr)."&admin=".urlencode(pfxfw_admin()));
+	$e=pfxfw_err($resp);
+	if($e!==""){echo $tpl->js_mysql_alert($e);}
 }
 
 function ipaddr_popup(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new postgres_sql();
 	$ipaddr=$_GET["ipaddr-popup"];
-	$uid=$_SESSION["uid"];
-	if($uid==-100){$uid="Manager";}
-	$jsafter="BootstrapDialog1.close();{$_GET["function"]}()";
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
+	$jsafter="BootstrapDialog1.close();$function()";
 	if($ipaddr==null){
 		$bt="{add}";
 		$title="{new_address}";
 		$form[]=$tpl->field_text("ipaddr","{address}", $ipaddr);
-		$description="Added $uid - ".date("Y-m-d H:i:s");
 	}else{
 		$bt="{apply}";
 		$form[]=$tpl->field_ipaddr("ipaddr", "{address}", null,true);
-		$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM smtp_ipset WHERE ipaddr='$ipaddr'"));
-		$description=$ligne["description"];
-		$title=$ipaddr." - {$ligne["zdate"]}";
+		$title=$ipaddr;
 	}
-	$form[]=$tpl->field_text("description", "{description}", $description);
+	$form[]=$tpl->field_text("description", "{description}", "");
 	echo $tpl->form_outside($title, $form,null,$bt,$jsafter,"AsDnsAdministrator",true);
 }
 
 function ipaddr_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	
-	$ipclass=new IP();
-	$ipaddr=$_POST["ipaddr"];
-	$date=date("Y-m-d H:i:s");
-	$q=new postgres_sql();
-	if(!$ipclass->IsACDIROrIsValid($ipaddr)){echo "$ipaddr not an IP/CDIR address";return;}
-	$q->QUERY_SQL("INSERT INTO smtp_ipset (pattern,zdate,patype,automatic,enabled) VALUES ('$ipaddr','$date','0','0',1)");
-	if(!$q->ok){echo $q->mysql_error;return;}
-
-	$admin=$_SESSION["uid"];
-	if($admin==-100){$admin="Manager";}
-	$subject="Firewall rule created by $admin";
-	$sql="INSERT INTO smtplog(zdate,ipaddr,reason,refused,smtp_code,subject) VALUES('$date','$ipaddr','FireWall Block',1,55,'$subject')";
-	$q->QUERY_SQL($sql);
-
+	$ipaddr=(string)$_POST["ipaddr"];
+	$resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX_POST_JSON("/postfix/ipset/add",
+		array("ipaddr"=>$ipaddr,"admin"=>pfxfw_admin()));
+	$e=pfxfw_err($resp);
+	if($e!==""){echo $e;return;}
 }
 
-
 function search(){
-	
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$sock=new sockets();
-	$q=new postgres_sql();
 	$t=time();
-	
-	$PATTERN[0]="-";
-	$PATTERN[1]="SpamHaus";
-	$PATTERN[2]="Spamhaus extended";
-	$PATTERN[3]="Blocklist SMTP";
-	$PATTERN[4]="Blocklist IMAP";
-	$PATTERN[5]="AlienVault";
 
-	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/ipset.progress";
-	$ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/ipset.progress.log";
-	$ARRAY["CMD"]="postfix2.php?postfix-ipset-compile=yes";
-	$ARRAY["TITLE"]="{APP_FIREWALL} {compile_rules}";
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=postfix-ipset')";
-	
-	
+	// Compile ("apply rows to the live ipset") and Update ("download the blocklists then compile") are
+	// fire-and-track daemon jobs; the progress bar polls ipset.progress. CMD carries the `postfix:`
+	// prefix so fw.progress.php dispatches it to /run/artica-postfix.sock.
+	$AC["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/ipset.progress";
+	$AC["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/ipset.progress.log";
+	$AC["CMD"]="postfix:/postfix/ipset/compile";
+	$AC["TITLE"]="{APP_FIREWALL} {compile_rules}";
+	$jsCompile="Loadjs('fw.progress.php?".fw_progress_args($AC)."&mainid=postfix-ipset')";
+	$AU=$AC; $AU["CMD"]="postfix:/postfix/ipset/download"; $AU["TITLE"]="{APP_FIREWALL} {update}";
+	$jsUpdate="Loadjs('fw.progress.php?".fw_progress_args($AU)."&mainid=postfix-ipset')";
+
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style=''>";
-	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?ipaddr-js=&function={$_GET["function"]}');\">";
+	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?ipaddr-js=&function=$function');\">";
 	$html[]="<i class='fa fa-plus'></i> {new_address} </label>";
-	
-	$html[]="<label class=\"btn btn btn-info\" OnClick=\"$jsRestart;\">";
-	$html[]="<i class='fa fa-plus'></i> {compile_rules} </label>";	
-	
+	$html[]="<label class=\"btn btn btn-info\" OnClick=\"$jsCompile;\">";
+	$html[]="<i class='fa fa-cogs'></i> {compile_rules} </label>";
+	$html[]="<label class=\"btn btn btn-success\" OnClick=\"$jsUpdate;\">";
+	$html[]="<i class='fa fa-download'></i> {update} </label>";
 	$html[]="</div>";
+
 	$search="";
 	if(isset($_GET["search"])){$search=trim($tpl->CLEAN_BAD_XSS($_GET["search"]));}
-	$aliases["ipaddr"]="ipaddr";
-	$querys=$tpl->query_pattern($search,$aliases);
-	$MAX=$querys["MAX"];
-	if($MAX==0){$MAX=150;}
-	$sql="SELECT * FROM smtp_ipset {$querys["Q"]} ORDER BY zdate DESC LIMIT $MAX";
-	
-	if(preg_match("#^([0-9\.]+)#", $search)){
-		$sql="SELECT * FROM smtp_ipset WHERE pattern='$search' ORDER BY zdate DESC LIMIT $MAX";
-	}
-	
-	
-	$results = $q->QUERY_SQL($sql);
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." $sql<br>$q->mysql_error");return;}
-	if(!$results){
-		echo $tpl->_ENGINE_parse_body($html);
+	$resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/ipset/list?limit=2000&search=".urlencode($search));
+	$j=json_decode((string)$resp,true);
+	if(!is_array($j) || empty($j["success"])){
+		echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
 		echo $tpl->FATAL_ERROR_SHOW_128("{no_data}");
 		return;
 	}
+	$entries=isset($j["entries"])&&is_array($j["entries"])?$j["entries"]:array();
+	$sources=isset($j["sources"])&&is_array($j["sources"])?$j["sources"]:array();
 
-	if(pg_num_rows($results)==0){
-		echo $tpl->_ENGINE_parse_body($html);
-		echo $tpl->FATAL_ERROR_SHOW_128("{no_data}");
-		return;
-	}
-	
-	$TRCLASS=null;
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0px'>";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{time}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{ipaddr}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{enable}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</center></th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-	while ($ligne = pg_fetch_assoc($results)) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$md=md5(serialize($ligne));
-		$ipaddr=$ligne["pattern"];
-		$zDate=strtotime($ligne["zdate"]);
-		$time=$tpl->time_to_date($zDate,true);
-		$delete=$tpl->icon_nothing();
-		$class_text=null;
-		$patternencoded=urlencode($ipaddr);
-		$enable=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable={$patternencoded}&md=$md')");
-		if($ligne["automatic"]==0){
-			$delete=$tpl->icon_delete("Loadjs('$page?delete={$ligne["ipaddr"]}&md=$md')");
-		}
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:1%' nowrap>{$time}</td>";
-		$html[]="<td style='width:97%' nowrap><span class='$class_text'>$ipaddr ({$PATTERN[$ligne["patype"]]})</span></td>";
-		$html[]="<td style='width:1%' class='center' nowrap>$enable</center></td>";
-		$html[]="<td style='width:1%' class='center' nowrap>$delete</center></td>";
-		$html[]="</tr>";
-	
-	}
+	$rows=array();
+	foreach($entries as $e){ $rows[]=pfxfw_row($tpl,$page,$sources,$e); }
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="<small>$sql</small>
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	
-	echo $tpl->_ENGINE_parse_body($html);
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{ipaddr}</th>";
+	$html[]="<th>{time}</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pfxfw-rows'>";
+	if(count($rows)==0){
+		$html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$shown=count($rows);
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown / $shown</span>";
+	$html[]="<span class='awc-pg' id='pfxfw-pager'></span>";
+	$html[]="</div></div></div>";
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.awc_pager_js(50,"pfxfw-rows","pfxfw-pager");
+}
+
+/**
+ * One ipset entry: pattern as identity, source as subtitle, enable toggle and delete. Automatic
+ * (downloaded) entries cannot be hand-deleted — they would just come back on the next feed refresh.
+ */
+function pfxfw_row($tpl,$page,$sources,$e):string{
+	$ipaddr=(string)($e["pattern"] ?? "");
+	$md=md5($ipaddr);
+	$enc=urlencode($ipaddr);
+	$auto=(intval($e["automatic"] ?? 0)!=0);
+	$en=(intval($e["enabled"] ?? 0)!=0);
+	$patype=(string)($e["patype"] ?? "");
+	$type=isset($sources[$patype])?(string)$sources[$patype]:$patype;
+
+	$enable=$tpl->icon_check($en?1:0,"Loadjs('$page?enable=$enc&md=$md')");
+	$delete=$auto?$tpl->icon_nothing():$tpl->icon_delete("Loadjs('$page?delete=$enc&md=$md')");
+
+	$h ="<tr id='$md'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='".($en?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-ban'></i></span>";
+	$h.="<span><span class='".($en?"awc-name":"awc-name awc-name-off")."'>".htmlspecialchars($ipaddr)."</span>";
+	$meta=array();
+	if($type!=="" && $type!=="0" && $type!=="-"){$meta[]=htmlspecialchars($type);}
+	if($auto){$meta[]="{automatic}";}
+	if(count($meta)>0){$h.="<div class='awc-meta'>".@implode(" &middot; ",$meta)."</div>";}
+	$h.="</span></div></td>";
+	$h.="<td class='awc-mono'>".htmlspecialchars($tpl->time_to_date(strtotime((string)($e["zdate"] ?? "")),true))."</td>";
+	$h.="<td><div class='awc-acts'>$enable$delete</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 ?>

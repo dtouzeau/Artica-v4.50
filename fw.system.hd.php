@@ -1,9 +1,14 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.os.system.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 //"{macro_remove_disk}","{macro_remove_disk_explain}"
+// Pentest 2026-11-04 : les noms de peripheriques (dev) etaient recopies sans encodage dans la page (XSS).
+foreach (array("extend-partition-js","move-to","extend-partition-popup","partitions-js","partitions-start","build-js","build-popup","disconnect-js","system-swap-partitions-remove","partitions-popup") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^A-Za-z0-9/_.:+@-]#','',(string)$_GET[$xk]);}}
 if(isset($_GET["extend-system-popup"])){extend_system_popup();exit;}
 if(isset($_GET["extend-system-js"])){extend_system_js();exit;}
 if(isset($_GET["extend-partition-js"])){extend_partition_js();exit;}
@@ -50,24 +55,26 @@ function extend_system_js():bool{
 }
 
 function action_move_to(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl        = new template_admin();
     $page       = CurrentPageName();
     $dev        = $_GET["move-to"];
     $text       = "$dev: {move_to_hd}";
-    $devenc     = urlencode($dev);
+    $devenc     = rawurlencode($dev);
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/system.partition.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/system.mv.txt";
-    $ARRAY["CMD"]="hd.php?move-disk=$devenc";
+    $ARRAY["CMD"]="/system/harddrives/move-system/$devenc";
     $ARRAY["TITLE"]="{move_to} $dev";
     $ARRAY["AFTER"]="LoadAjax('disk-systems-table-start','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $rescan_hd="Loadjs('fw.progress.php?content=$prgress&mainid=progress-hd-restart')";
+    $rescan_hd="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-hd-restart')";
     $tpl->js_confirm_execute($text, "nothing", "nothing",$rescan_hd);
 
 }
 
 function extend_partition_popup(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $page=CurrentPageName();
     $tpl=new template_admin();
     $dev=$_GET["extend-partition-popup"];
@@ -76,8 +83,6 @@ function extend_partition_popup(){
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/hd/expand/size/$devEnc"));
 
     $size=FormatBytes($json->size/1024);
-
-    $after[]="LoadAjax('disk-systems-table-start','$page?table=yes');";
     $after[]="BootstrapDialog1.close();";
     $after[]="document.getElementById('extend-partition-button').innerHTML='';";
     $after[]="dialogInstance1.close();";
@@ -123,14 +128,17 @@ function directory_monitor_graph_js():bool{
     $page=CurrentPageName();
     $path=$_GET["directories-monitor-graph-js"];
     $pathenc=urlencode($path);
-    return $tpl->js_dialog1("{your_hard_disks} >> {directories_monitor} >> $path", "$page?directories-monitor-graph-popup=$pathenc");
+    // Pentest 2026-11-04 : directories-monitor-graph-js etait recopie sans encodage dans la page (XSS).
+    $pathT=req_html(req_html($path));
+    return $tpl->js_dialog1("{your_hard_disks} >> {directories_monitor} >> $pathT", "$page?directories-monitor-graph-popup=$pathenc");
 }
 function directory_monitor_path_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $path=$_GET["directories-monitor-path-js"];
     $pathenc=urlencode($path);
-    if($path==null){$title="{new_directory}";}else{$title=$path;}
+    // Pentest 2026-11-04 : directories-monitor-path-js etait recopie sans encodage dans la page (XSS).
+    if($path==null){$title="{new_directory}";}else{$title=req_html(req_html($path));}
     return $tpl->js_dialog2("{your_hard_disks} >> {directories_monitor} >> $title", "$page?directories-monitor-path-popup=$pathenc");
 }
 
@@ -158,9 +166,8 @@ function directory_monitor_delete(){
     $q->QUERY_SQL("DELETE FROM philesight WHERE `directory`='$directory'","artica_backup");
     if(!$q->ok){echo $q->mysql_error;return;}
 
-    @unlink("/usr/share/artica-postfix/img/philesight/$md5.png");
-    $sock=new sockets();
-    $sock->getFrameWork("hd.php?DeleteFile=".urlencode("/home/artica/philesight/$md5.db"));
+    // articarest supprime la base et l'image Philesight de ce repertoire (md5 seulement).
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/philesight/remove/$md5");
 
     echo "$('#$md').remove();";
 
@@ -222,8 +229,11 @@ function directory_monitor_path_popup(){
         $jsafter="dialogInstance2.close();LoadAjax('directories-monitor-popup','$page?directories-monitor-table=yes');";
     }
     else{
-        $ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT * FROM philesight WHERE directory='$path'","artica_backup"));
-        $title=$path;
+        // Pentest 2026-11-04 : directories-monitor-path-popup etait concatene dans la requete.
+        $pathSQL=mysql_escape_string2($path);
+        $ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT * FROM philesight WHERE directory='$pathSQL'","artica_backup"));
+        // Pentest 2026-11-04 : directories-monitor-path-popup etait recopie sans encodage dans la page (XSS).
+        $title=req_html($path);
         $btname="{apply}";
         $jsafter="LoadAjax('directories-monitor-popup','$page?directories-monitor-table=yes');";
     }
@@ -260,6 +270,9 @@ function directory_monitor_path_save(){
     $q=new mysql();
     $directory=url_decode_special_tool($_POST["directory"]);
     $directory=mysql_escape_string2($directory);
+    // Pentest 2026-11-04 : enabled et maxtime etaient concatenes dans la requete.
+    $_POST["enabled"]=intval($_POST["enabled"]);
+    $_POST["maxtime"]=intval($_POST["maxtime"]);
     $ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT directory FROM philesight WHERE directory='$directory'","artica_backup"));
     if($ligne["directory"]==null){
         $q->QUERY_SQL("INSERT IGNORE INTO philesight (`directory`,`enabled`,`maxtime`)
@@ -273,7 +286,7 @@ function directory_monitor_path_save(){
     if(!$q->ok){echo $q->mysql_error;}
 
 }
-
+// Build_js, Build_popup , Build_after , Build_save
 
 function Build_js(){
     $tpl=new template_admin();
@@ -335,6 +348,7 @@ function Build_save(){
 }
 
 function disconnect_js():bool{
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $page=CurrentPageName();
     $dev=$_GET["disconnect-js"];
@@ -828,7 +842,7 @@ function directory_monitor_table(){
     $prgress=base64_encode(serialize($ARRAY));
 
 
-    $rescan_hd="Loadjs('fw.progress.php?content=$prgress&mainid=progress-directories-monitor-restart')";
+    $rescan_hd="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-directories-monitor-restart')";
 
 
     $html[]=$tpl->_ENGINE_parse_body("

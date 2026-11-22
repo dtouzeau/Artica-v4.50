@@ -10,12 +10,8 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 if(isset($_GET["search"])){search();exit;}
 
 if(isset($_GET["reconfigure"])){reconfigure_waf();exit;}
-if(isset($_GET["zoom-popup"])){zoom_popup();exit;}
-if(isset($_GET["zoom-download"])){zoom_download();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["active-tabs"])){active_tabs();exit;}
-if(isset($_GET["active-list"])){active_list();exit;}
 if(isset($_POST["ruleid"])){rule_save();exit;}
 if(isset($_GET["active-remove"])){active_remove();exit;}
 if(isset($_POST["active-remove"])){active_remove_perform();exit;}
@@ -41,13 +37,26 @@ function rule_js(){
             $etet = "&domain=$domain&query=$query";
         }
         if(isset($_GET["rid"])){
-            $rid="&rid={$_GET["rid"]}";
+            // Pentest 2026-11-04 : rid etait recopie sans encodage dans la page (XSS).
+            $rid="&rid=".intval($_GET["rid"]);
         }
     }
 
 
 
     $tpl->js_dialog1($title,"$page?ruleid-popup=$ruleid$etet$rid");
+}
+
+// Ligne posée par une proposition de faux positif acceptée (origin='artica') : elle n'est ni
+// modifiée ni supprimée ici — seule la page « Faux positifs » (Retirer) la retire, avec sa trace.
+function wfw_entry($ID){
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/modsec/whitelist"),true);
+    if(!is_array($json) || empty($json["Status"]) || !isset($json["entries"]) || !is_array($json["entries"])){return null;}
+    foreach($json["entries"] as $e){if(intval($e["ID"])==intval($ID)){return $e;}}
+    return null;
+}
+function wfw_is_artica($entry){
+    return is_array($entry) && isset($entry["origin"]) && (string)$entry["origin"]=="artica";
 }
 
 function active_enable():bool{
@@ -59,6 +68,7 @@ function active_enable():bool{
         foreach($json["entries"] as $e){if($e["ID"]==$ID){$entry=$e;break;}}
     }
     if($entry==null){return false;}
+    if(wfw_is_artica($entry)){$tpl=new template_admin();$tpl->js_error("{wfp_artica_row_locked}");return false;}
     $newEnabled=($entry["enabled"]==0) ? 1 : 0;
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
         "action"=>"update","table"=>"modsecurity_whitelist",
@@ -82,6 +92,10 @@ function rule_popup(){
         if(is_array($json) && $json["Status"]){
             foreach($json["entries"] as $e){if($e["ID"]==$ID){$ligne=$e;break;}}
         }
+        if(wfw_is_artica($ligne)){
+            echo $tpl->_ENGINE_parse_body($tpl->div_warning("{wfp_artica_row_locked}"));
+            return;
+        }
         $title="{rule}: $ID";
     }
     if($ID==0) {
@@ -92,7 +106,8 @@ function rule_popup(){
         if(isset($_GET["domain"])) {
             $domain = $_GET["domain"];
             $query = $_GET["query"];
-            $title=$title."&nbsp;&raquo;&nbsp;$domain";
+            // Pentest 2026-11-04 : domain etait recopie sans encodage dans la page (XSS).
+            $title=$title."&nbsp;&raquo;&nbsp;".req_html($domain);
             $ligne["serviceid"]=$tpl->nginxHostToInt($domain);
             if($ligne["serviceid"]==0){
                 $title=$title."<strong> ({host_not_found})</strong>";
@@ -172,6 +187,10 @@ function rule_save(){
         $zkeys[]="$key=$val";
     }
 
+    if($ID>0 && wfw_is_artica(wfw_entry($ID))){
+        echo $tpl->post_error("{wfp_artica_row_locked}");
+        return false;
+    }
     if($ID>0){
         $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
             "action"=>"update","table"=>"modsecurity_whitelist",
@@ -220,7 +239,8 @@ function delete_by_rule_perform():bool{
 
     $q->QUERY_SQL("DELETE FROM modsecurity_events WHERE ruleid=$ruleid");
     foreach ($UNIQS as $uniq_id){
-        $q->QUERY_SQL("DELETE FROM modsecurity_reports WHERE unique_id=$uniq_id");
+        // Pentest 2026-11-04 : unique_id (lu dans les evenements WAF) etait concatene dans la requete.
+        $q->QUERY_SQL_PARAMS("DELETE FROM modsecurity_reports WHERE unique_id=$1",array((string)$uniq_id));
     }
     admin_tracks(count($UNIQS)." events removed from Web application firewall threats list");
     return true;
@@ -279,6 +299,7 @@ function active_remove():bool{
         foreach($json["entries"] as $e){if($e["ID"]==$ID){$entry=$e;break;}}
     }
     if($entry==null){return false;}
+    if(wfw_is_artica($entry)){$tpl->js_error("{wfp_artica_row_locked}");return false;}
     $serviceid=$entry["serviceid"];
     $reconfigure_js=reconfigure_js($serviceid);
     $md=$_GET["md"];
@@ -290,6 +311,7 @@ function active_remove():bool{
 function active_remove_perform():bool{
     $tpl=new template_admin();
     $ID=intval($_POST["active-remove"]);
+    if(wfw_is_artica(wfw_entry($ID))){echo $tpl->post_error("{wfp_artica_row_locked}");return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
         "action"=>"delete","table"=>"modsecurity_whitelist","where"=>["ID"=>$ID]
     ]);
@@ -327,14 +349,15 @@ function table() {
         $www="{all_websites}";
         $ruleid=$ligne["wfrule"];
         $compile_tb=null;
-        if($path==null){$path="{all_directories}";}
+        // Pentest 2026-11-04 : chemin/description de la liste blanche (requete externe journalisee) affiche sans encodage (XSS stockee).
+        if($path==null){$path="{all_directories}";}else{$path=req_html($path);}
         $ID=$ligne["ID"];
         $uri_rule=null;
         $rulename_text=null;
         $rulename=rulename($ruleid);
         if($rulename<>null) {
             $uri_rule = "Loadjs('fw.modsecurity.defrules.php?ruleid-js=$ruleid')";
-            $rulename_text="$rulename";
+            $rulename_text=req_html($rulename);
         }
         $compile_tb=$tpl->icon_run($compile);
         if($serviceid>0){
@@ -354,12 +377,27 @@ function table() {
         }
 
 
+        $sockSvcName=$www;
         $delete_ico=$tpl->icon_delete("Loadjs('$page?active-remove=$ID&md=$md')","AsWebSecurity");
         $www=$tpl->td_href($www,null,"Loadjs('$page?ruleid-js=$ID')");
         $enabled=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?active-enable=$ID&md=$md')");
-        $description=$ligne["description"];
+        $description=isset($ligne["description"])?(string)$ligne["description"]:"";
         if(strlen($description)>2) {
-            $description="<br><i>$description</i>";
+            $description="<br><i>".req_html($description)."</i>";
+        }
+        // champ exclu (exclusion par champ) et origine « Artica » (proposition de faux positif acceptée)
+        $target=isset($ligne["target"])?trim((string)$ligne["target"]):"";
+        if($target!==""){
+            $description.="<br>{wfp_field} <code>".req_html($target)."</code>";
+        }
+        if(isset($ligne["pathmatch"]) && (string)$ligne["pathmatch"]=="exact"){
+            $description.=" <span class='label label-default'>{wfp_exact_path}</span>";
+        }
+        if(wfw_is_artica($ligne)){
+            $description.=" <span class='label label-primary'>{wfp_origin_artica}</span>";
+            $www=req_html($sockSvcName);
+            $enabled=($ligne["enabled"]==1)?"<i class='fas fa-check'></i>":"&nbsp;";
+            $delete_ico="&nbsp;";
         }
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
@@ -395,6 +433,8 @@ $(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabl
 function rulename($ruleid){
     if($ruleid=="200002"){return "Failed to parse request body.";}
     $q=new lib_sqlite("/home/artica/SQLITE/modsecurity_rules.db");
+    // Pentest 2026-11-04 : ruleid (reponse REST) etait concatene dans la requete.
+    $ruleid=intval($ruleid);
     $ligne=$q->mysqli_fetch_array("SELECT rulename FROM rules WHERE ID=$ruleid");
     return trim($ligne["rulename"]);
 }

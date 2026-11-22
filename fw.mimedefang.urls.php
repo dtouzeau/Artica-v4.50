@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 
 $GLOBALS["ACTIONSAV"][0]="{use_default}";
 $GLOBALS["ACTIONSAV"][1]="{modify_urls_in_message}";
@@ -10,6 +11,16 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 
+// Pentest 2026-11-04 : run-task-js/remove-message-js/logs-js/rule-js/popup/delete-rule-js/eth etaient recopies sans encodage dans la page (XSS).
+// Un msgid est un nom de fichier de file d'attente (exec.mimedefang.urls.php) : ni chevron, ni guillemet, ni espace.
+foreach(array("run-task-js","remove-message-js") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_.@+=$%!#*?^{}|~-]/','',(string)$_GET[$k]);}
+}
+if(isset($_GET["logs-js"])){$_GET["logs-js"]=intval($_GET["logs-js"]);}
+foreach(array("rule-js","popup","delete-rule-js") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9]/','',(string)$_GET[$k]);}
+}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
 if(isset($_POST["EnableMimedefangUrlsChecker"])){save();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["rules"])){rules();exit;}
@@ -61,6 +72,9 @@ function run_task_js(){
 
 function run_task(){
     $msgid=$_POST["run-task"];
+    // Pentest 2026-11-04 : run-task etait concatene dans la requete (pas de requete
+    // parametree dans postgres_sql : liste blanche de caracteres d'un Message-ID).
+    if(!preg_match('#^[A-Za-z0-9_.@<>+=$%!\#&*/?^{}|~-]{1,90}$#',(string)$msgid)){return;}
     $now=time()-10;
     $q=new postgres_sql();
     $sql="UPDATE mimedefang_urls SET ttlmin='$now' WHERE msgid='$msgid'";
@@ -87,19 +101,25 @@ function remove_message_js(){
 function remove_messsage_perform(){
     $q=new postgres_sql();
     $id=$_POST["remove_messsage"];
+    // Pentest 2026-11-04 : remove_messsage etait concatene dans la requete (pas de requete
+    // parametree dans postgres_sql : liste blanche de caracteres d'un Message-ID).
+    if(!preg_match('#^[A-Za-z0-9_.@<>+=$%!\#&*/?^{}|~-]{1,90}$#',(string)$id)){return;}
     $q->QUERY_SQL("DELETE FROM mimedefang_urls WHERE msgid='$id'");
     $q->QUERY_SQL("DELETE FROM mimedefang_msgurls WHERE msgid='$id'");
 
 }
 
 function logs_popup(){
-    $id=$_GET["logs-popup"];
+    // Pentest 2026-11-04 : logs-popup etait concatene dans la requete.
+    $id=intval($_GET["logs-popup"]);
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT log from mimedefang_urls WHERE id=$id");
 
     $logs=unserialize(base64_decode($ligne["log"]));
+    // Pentest 2026-11-04 : ligne du journal d'analyse d'URL (donnee externe) affiche sans encodage (XSS stockee).
+    if(!is_array($logs)){$logs=array();}
     foreach ($logs as $xline){
-        $html[]="<div>$xline</div>";
+        $html[]="<div>".req_html($xline)."</div>";
 
 
     }
@@ -132,7 +152,8 @@ function search(){
 
 
     $results = $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." $sql<br>$q->mysql_error");return;}
+    // Pentest 2026-11-04 : la requete (construite depuis search) n'est plus renvoyee au navigateur.
+    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." ".htmlspecialchars($q->mysql_error,ENT_QUOTES));return;}
 
 
     $TRCLASS=null;
@@ -198,14 +219,19 @@ function search(){
 
         if(strlen($url_text)>50){$url_text=substr($url_text,0,47)."...";}
 
+        // Pentest 2026-11-04 : msgid, content_type (donnee externe) affiche sans encodage (XSS stockee).
+        $message_id_url=req_url($message_id);
+        $content_type=req_html($content_type);
+        $id=intval($id);
         $js="Loadjs('$page?logs-js=$id');";
-        $Runjs="Loadjs('$page?run-task-js=$message_id&function={$_GET["function"]}')";
-        $js_msgid="Loadjs('fw.postfix.transactions.php?second-query=".base64_encode("WHERE msgid='$message_id'")."&title=".urlencode("{see_messages_with}:$message_id")."')";
+        $Runjs="Loadjs('$page?run-task-js=$message_id_url&function={$_GET["function"]}')";
+        // Pentest 2026-11-04 : msgid etait concatene dans la clause second-query (desormais signee et echappee).
+        $js_msgid="Loadjs('fw.postfix.transactions.php?second-query=".signed_html_token("WHERE msgid='".pg_escape_string2($message_id)."'")."&title=".req_url("{see_messages_with}:$message_id")."')";
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%'>".$tpl->td_href($id,"{view2}",$js)."</td>";
         $html[]="<td style='width:1%' nowrap>$label</td>";
         $html[]="<td style='width:1%'>".$tpl->td_href($message_id,"{view2}",$js_msgid)."</td>";
-        $html[]="<td style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?remove-message-js=$message_id&function={$_GET["function"]}')")."</td>";
+        $html[]="<td style='width:1%' nowrap>".$tpl->icon_delete("Loadjs('$page?remove-message-js=$message_id_url&function={$_GET["function"]}')")."</td>";
         $html[]="<td style='width:1%' nowrap>$zdate</td>";
         $html[]="<td style='width:1%' nowrap>$next</td>";
         $html[]="<td style='width:1%' nowrap class='center'>".$tpl->icon_run($Runjs)."</td>";
@@ -225,7 +251,7 @@ function search(){
     $html[]="</tr>";
     $html[]="</tfoot>";
     $html[]="</table>";
-    $html[]="<small>$sql</small>
+    $html[]="<small></small>
 <script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
@@ -247,7 +273,9 @@ function rule_delete_js(){
     $tpl=new template_admin();
     $md5=$_GET["delete-rule-js"];
     $q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_urls WHERE zmd5='$md5'");
+    // Pentest 2026-11-04 : delete-rule-js etait concatene dans la requete.
+    $r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_urls WHERE zmd5=?",array((string)$md5));
+    $ligne=isset($r[0]) ? $r[0] : array();
     $mailfrom=$ligne["mailfrom"];
     $mailto=$ligne["mailto"];
     $type=$ligne["type"];
@@ -258,7 +286,8 @@ function rule_delete_js(){
 function rule_delete_perform(){
     $md5=$_POST["delete"];
     $q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-    $q->QUERY_SQL("DELETE FROM mimedefang_urls WHERE zmd5='$md5'");
+    // Pentest 2026-11-04 : delete etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM mimedefang_urls WHERE zmd5=?",array((string)$md5));
     if(!$q->ok){echo $q->mysql_error;}
 
 }
@@ -271,7 +300,9 @@ function rule_js(){
 
     if($md5<>null){
         $q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_urls WHERE zmd5='$md5'");
+        // Pentest 2026-11-04 : rule-js etait concatene dans la requete.
+        $r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_urls WHERE zmd5=?",array((string)$md5));
+        $ligne=isset($r[0]) ? $r[0] : array();
         $mailfrom=$ligne["mailfrom"];
         $mailto=$ligne["mailto"];
         $type=$ligne["type"];
@@ -291,7 +322,9 @@ function popup(){
     if($md5<>null){
         $bt="{apply}";
         $q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_urls WHERE zmd5='$md5'");
+        // Pentest 2026-11-04 : popup etait concatene dans la requete.
+        $r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_urls WHERE zmd5=?",array((string)$md5));
+        $ligne=isset($r[0]) ? $r[0] : array();
         $mailfrom=$ligne["mailfrom"];
         $mailto=$ligne["mailto"];
         $type=$ligne["type"];
@@ -317,24 +350,27 @@ function rule_save(){
     if($zmd5==null){
         $zmd5=md5($_POST["mailfrom"].$_POST["mailto"]);
         $ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_urls WHERE zmd5='$zmd5'");
-        if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
-        $q->QUERY_SQL("INSERT INTO mimedefang_urls(zmd5,mailfrom,mailto,`type`) VALUES ('$zmd5','{$_POST["mailfrom"]}','{$_POST["mailto"]}','{$_POST["ztype"]}')");
+        if($ligne["zmd5"]<>null){echo /* Pentest 2026-11-04 : mailfrom/mailto etaient recopies sans encodage dans la page (XSS). */ req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
+        // Pentest 2026-11-04 : mailfrom, mailto et ztype etaient concatenes dans la requete.
+        $q->QUERY_SQL_PARAMS("INSERT INTO mimedefang_urls(zmd5,mailfrom,mailto,`type`) VALUES (?,?,?,?)",array($zmd5,(string)$_POST["mailfrom"],(string)$_POST["mailto"],(string)$_POST["ztype"]));
         if(!$q->ok){echo $q->mysql_error;}
         return;
     }
 
     $new_zmd5=md5($_POST["mailfrom"].$_POST["mailto"]);
     if($new_zmd5==$zmd5){
-        $q->QUERY_SQL("UPDATE mimedefang_urls SET `type`='{$_POST["ztype"]}' WHERE zmd5='$zmd5'");
+        // Pentest 2026-11-04 : ztype et zmd5 etaient concatenes dans la requete.
+        $q->QUERY_SQL_PARAMS("UPDATE mimedefang_urls SET `type`=? WHERE zmd5=?",array((string)$_POST["ztype"],(string)$zmd5));
         if(!$q->ok){echo $q->mysql_error;}
         return;
     }
 
     $ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_urls WHERE zmd5='$new_zmd5'");
-    if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
+    if($ligne["zmd5"]<>null){echo /* Pentest 2026-11-04 : mailfrom/mailto etaient recopies sans encodage dans la page (XSS). */ req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
 
-    $q->QUERY_SQL("DELETE FROM mimedefang_urls WHERE zmd5='$zmd5'");
-    $q->QUERY_SQL("INSERT INTO mimedefang_urls(zmd5,mailfrom,mailto,`type`) VALUES ('$new_zmd5','{$_POST["mailfrom"]}','{$_POST["mailto"]}','{$_POST["ztype"]}')");
+    // Pentest 2026-11-04 : zmd5, mailfrom, mailto et ztype etaient concatenes dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM mimedefang_urls WHERE zmd5=?",array((string)$zmd5));
+    $q->QUERY_SQL_PARAMS("INSERT INTO mimedefang_urls(zmd5,mailfrom,mailto,`type`) VALUES (?,?,?,?)",array($new_zmd5,(string)$_POST["mailfrom"],(string)$_POST["mailto"],(string)$_POST["ztype"]));
     if(!$q->ok){echo $q->mysql_error;}
 
 }
@@ -448,7 +484,7 @@ function parameters(){
     $ARRAY["CMD"]="mimedefang.php?reload=yes";
     $ARRAY["TITLE"]="{apply_parameters}";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedfurls-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedfurls-restart')";
 
 
     $html=$tpl->form_outside("{parameters}",$form,null,"{apply}",$jsrestart,"AsPostfixAdministrator");
@@ -478,7 +514,7 @@ function table(){
     $prgress=base64_encode(serialize($ARRAY));
     $add="Loadjs('$page?rule-js=',true);";
 
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedfurls-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedfurls-restart')";
 
     $html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
     $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>";

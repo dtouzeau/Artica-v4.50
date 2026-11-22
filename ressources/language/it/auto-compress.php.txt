@@ -1,10 +1,9 @@
-<addextension_help>
-You can one extension byt typing just the extension name after the dot eg "doc" or
-you can add multiple extensions by separate extension name by a comma eg "doc,xls,pdf,exe,com,vbs"</addextension_help>
-<Auto-compress_explain>auto-compress feature allow you to automatically convert and compress attached files in outgoing/incoming mails.[br]
-This feature have 2 benefits :[ul]
-[li]Prevent malicious executables codes running automatically when your users read mails or save attachments.[/li]
-[li]Save bandwith by compressing attached documents.[/li]
+<addextension_help>Puoi aggiungere un'estensione digitando semplicemente il nome dell'estensione dopo il punto, es. &quot;doc&quot;, oppure
+puoi aggiungere pi&#249; estensioni separando i nomi delle estensioni con una virgola, es. &quot;doc,xls,pdf,exe,com,vbs&quot;</addextension_help>
+<Auto-compress_explain>La funzione di compressione automatica ti permette di convertire e comprimere automaticamente i file allegati nelle email in uscita/in entrata.[br]
+Questa funzione ha 2 vantaggi:[ul]
+[li]Impedisce l'esecuzione automatica di codici eseguibili dannosi quando i tuoi utenti leggono le email o salvano gli allegati.[/li]
+[li]Risparmia banda comprimendo i documenti allegati.[/li]
 [/ul]
-You need to add extensions eg doc,ppt,xls,exe,com in the interface in order to enable compression of these attached files</Auto-compress_explain>
-<enable_autocompress>Enable auto-compress feature</enable_autocompress>
+Devi aggiungere estensioni come doc,ppt,xls,exe,com nell'interfaccia per abilitare la compressione di questi file allegati</Auto-compress_explain>
+<enable_autocompress>Abilita la funzione di compressione automatica</enable_autocompress>

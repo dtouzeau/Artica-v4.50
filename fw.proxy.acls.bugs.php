@@ -1,17 +1,21 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
 
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["refresh"])){refresh();exit;}
 if(isset($_GET["service-js"])){service_js();exit;}
 if(isset($_GET["popup-main"])){popup_main();exit;}
 if(isset($_GET["popup-table"])){popup_table();exit;}
-if(isset($_GET["pattern-remove"])){rule_remove();exit;}
-if(isset($_GET["pattern-enable"])){rule_enable();exit;}
 if(isset($_GET["rule-js"])){rule_js();exit;}
 if(isset($_GET["popup-rule"])){rule_popup();exit;}
-if(isset($_POST["ruleid"])){rule_save();exit;}
 if(isset($_GET["delete-all"])){delete_all();exit;}
 service_js();
 

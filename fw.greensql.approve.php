@@ -3,6 +3,8 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.mysql.greensql.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : approve/disapprove etaient recopies sans encodage dans la page (XSS).
+foreach(array("approve","disapprove") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=preg_replace('#[^A-Za-z0-9+/= ]#','',(string)$_GET[$xssk]);}}
 if(isset($_GET["search"])) {table();exit;}
 if(isset($_GET["approve"])){approve_alert();exit;}
 if(isset($_GET["disapprove"])){disapprove_alert();exit;}
@@ -130,7 +132,7 @@ function approve_alert(){
 	$page=CurrentPageName();
 	$q=new green_sql();
 	$md=$_GET["md"];
-	$ligne=unserialize(base64_decode($_GET["disapprove"]));
+	$ligne=unserialize(base64_decode($_GET["disapprove"]),array("allowed_classes"=>false));
 	$db_name=$ligne["db_name"];
 	$db_name_q=mysql_escape_string2($db_name);
 	$status=$ligne["status"];
@@ -158,7 +160,7 @@ function approve_alert(){
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 	
 	$btnmd="btn-$md";
-	$btn=$tpl->_ENGINE_parse_body($tpl->button_autnonome("{disapprove}", "Loadjs('$page?disapprove={$_GET["approve"]}&md=$md')","fas fa-thumbs-down","AsSquidAdministrator",0,"btn-danger","small"));
+	$btn=$tpl->_ENGINE_parse_body($tpl->button_autnonome("{disapprove}", "Loadjs('$page?disapprove=".req_url($_GET["approve"])."&md=$md')","fas fa-thumbs-down","AsSquidAdministrator",0,"btn-danger","small"));
 	$btn=mysql_escape_string2($btn);
 	$status=mysql_escape_string2($tpl->_ENGINE_parse_body("<span class='label label-info'>{approved}</span>"));
 	echo "document.getElementById('$btnmd').innerHTML='$btn'\n";
@@ -172,7 +174,7 @@ function disapprove_alert(){
 	$page=CurrentPageName();
 	$q=new green_sql();
 	$md=$_GET["md"];
-	$ligne=unserialize(base64_decode($_GET["approve"]));
+	$ligne=unserialize(base64_decode($_GET["approve"]),array("allowed_classes"=>false));
 	$db_name=$ligne["db_name"];
 	$db_name_q=mysql_escape_string2($db_name);
 	$status=$ligne["status"];
@@ -194,7 +196,7 @@ function disapprove_alert(){
 	$q->QUERY_SQL($sql);
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 	
-	$btn=$tpl->button_autnonome("{approve}", "Loadjs('$page?approve={$_GET["disapprove"]}&md=$md')",
+	$btn=$tpl->button_autnonome("{approve}", "Loadjs('$page?approve=".req_url($_GET["disapprove"])."&md=$md')",
 			"fas fa-thumbs-up","AsSquidAdministrator",0,"btn-primary","small");
 	$btn=mysql_escape_string2($btn);
 	$status=mysql_escape_string2($tpl->_ENGINE_parse_body("<span class='label label-danger'>{detected}</span>"));

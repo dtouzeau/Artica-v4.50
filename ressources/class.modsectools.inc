@@ -44,23 +44,8 @@ class modesctools{
         $GLOBALS["reverse-proxy-service"][$ID]=$sock->GetServiceName();
         return $GLOBALS["reverse-proxy-service"][$ID];
     }
-    private function isHarmpID():bool{
-        if(!isset($_SESSION["HARMPID"])){
-            return false;
-        }
-        if(intval($_SESSION["HARMPID"])==0){
-            return false;
-        }
 
-        return true;
-    }
-    private function NginxGetDB():string{
-        if(!$this->isHarmpID()){
-            return "/home/artica/SQLITE/nginx.db";
-        }
-        $Gpid=$_SESSION["HARMPID"];
-        return "/home/artica/SQLITE/nginx.$Gpid.db";
-    }
+
 
     public function rule_is_global_white($ruleid):bool{
         $ruleid=intval($ruleid);
@@ -132,6 +117,9 @@ class modesctools{
         $ruleid=intval($ruleid);
         if($ruleid==0){$this->mysql_error="Rule ID = 0 ??";return false;}
         if(!$this->modsecWhitelistAPI("add",$ruleid)){return false;}
+        // Comme les autres operations : sans rechargement, l'exemption n'agit qu'au prochain Reconfigure.
+        $sock=new sockets();
+        $sock->REST_API_NGINX("/reverse-proxy/wafnohup");
         return admin_tracks("Add WAF rule $ruleid To global whitelist");
     }
     public function LoadAllWhitelists():array{
@@ -158,6 +146,8 @@ class modesctools{
         if($serviceid==0){$this->mysql_error="Service ID = 0 ??";return false;}
         if(!$this->modsecWhitelistAPI("add",$ruleid,$serviceid)){return false;}
         $sitename=$this->get_servicename($serviceid);
+        $sock=new sockets();
+        $sock->REST_API_NGINX("/reverse-proxy/wafnohup");
         return admin_tracks("Add WAF rule $ruleid To $sitename");
     }
     function whitelist_path_rule($ruleid,$serviceid,$path):bool{
@@ -232,6 +222,7 @@ class modesctools{
     }
 
     private function isLocalIP($ip) {
+        if(strpos($ip,":")!==false){return IP::isLocalIPv6($ip);}
         $privateIPs = [
             ['10.0.0.0',    '10.255.255.255'],
             ['172.16.0.0',  '172.31.255.255'],
@@ -285,24 +276,73 @@ class modesctools{
         return array();
     }
 
+    // Renseigne les champs d'une adresse locale (partage IPv4 / IPv6)
+    private function fillLocal($ip):array{
+        $this->ipaddr = $ip;
+        $this->hostname = "";
+        $this->continent = "local";
+        $this->continent_code = "N/A";
+        $this->country = "local";
+        $this->country_name = "local";
+        $this->city = "local";
+        $this->timezone = "";
+        $this->isp = "";
+        $this->asn_number = "";
+        $this->asn_organization = "";
+        $this->organization = "";
+        $this->flag = GetFlags("");
+        $this->Flag256 = GetFlags256("");
+        return array();
+    }
+
+    // Recherche par adresse (ipaddr::inet) : IPv6, dont hton est NULL
+    private function GetCachedByIP($ipaddr){
+        $key="ipinfo-addr:".$ipaddr;
+        if(isset($GLOBALS["hton"][$key])) {
+            return $GLOBALS["hton"][$key];
+        }
+        $q = new postgres_sql();
+        $ligne = $q->mysqli_fetch_array("SELECT * FROM hotstinfos where ipaddr='".$ipaddr."'::inet");
+        if(!$ligne || !isset($ligne["ipaddr"])){
+            return array();
+        }
+        $GLOBALS["hton"][$key]=$ligne;
+        return $ligne;
+    }
+
     public function hostinfo($hostid,$updateIfNotFound=false):array{
+        // Adresse IPv6 valide : cle = l'adresse canonique, jamais hton
+        if(is_string($hostid) && strpos($hostid,":")!==false && filter_var($hostid,FILTER_VALIDATE_IP,FILTER_FLAG_IPV6)){
+            $ipaddr=inet_ntop(inet_pton($hostid));
+            if ($this->isLocalIP($ipaddr)) {
+                return $this->fillLocal($ipaddr);
+            }
+            $ligne=$this->GetCachedByIP($ipaddr);
+            if(count($ligne)==0){
+                VERBOSE("[$ipaddr] !!! MISS",__LINE__);
+                return array();
+            }
+            // hostid non vide (l'adresse) : les appelants testent !empty(), hton etant NULL
+            $this->hostid=$ipaddr;
+            $this->ipaddr=$ligne["ipaddr"];
+            $this->hostname=$ligne["hostname"];
+            $this->continent=$ligne["continent"];
+            $this->continent_code=$ligne["continent_code"];
+            $this->country=$ligne["country"];
+            $this->country_name=$ligne["country_name"];
+            $this->city=$ligne["city"];
+            $this->timezone=$ligne["timezone"];
+            $this->isp=$ligne["isp"];
+            $this->asn_number=$ligne["asn_number"];
+            $this->asn_organization=$ligne["asn_organization"];
+            $this->organization=$ligne["organization"];
+            $this->flag=GetFlags($ligne["country_name"]);
+            $this->Flag256=GetFlags256($ligne["country_name"]);
+            return $ligne;
+        }
         if(preg_match("#^[0-9]+\.[0-9]+\.[0-9]+#",$hostid)) {
             if ($this->isLocalIP($hostid)) {
-                $this->ipaddr = $hostid;
-                $this->hostname = "";
-                $this->continent = "local";
-                $this->continent_code = "N/A";
-                $this->country = "local";
-                $this->country_name = "local";
-                $this->city = "local";
-                $this->timezone = "";
-                $this->isp = "";
-                $this->asn_number = "";
-                $this->asn_organization = "";
-                $this->organization = "";
-                $this->flag = GetFlags("");
-                $this->Flag256 = GetFlags256("");
-                return array();
+                return $this->fillLocal($hostid);
             }
             $ipaddr=$hostid;
             $hostid=ip2long($ipaddr);

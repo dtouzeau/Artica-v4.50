@@ -109,7 +109,8 @@ $xServe["pdns_recursor"]="{APP_PDNS_RECURSOR}";
 		$ACTION=null;
 		$FF=false;
 		if(!preg_match("#^(.+?)\s+([0-9])+\s+([0-9:]+)\s+(.+?)\s+(.+?)\[([0-9]+)\]:\s+(.+)#", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
+			// Pentest 2026-11-04 : ligne de journal PowerDNS (donnee externe) affichee sans encodage (XSS stockee).
+			echo "<strong style='color:red'>".req_html($line)."</strong><br>"; 
 			continue;}
 			$service=$re[5];
 			
@@ -121,7 +122,8 @@ $xServe["pdns_recursor"]="{APP_PDNS_RECURSOR}";
 		$FTime=trim(str_replace($curDate, "", $FTime));
 		
 		$pid=$re[6];
-		$line=$re[7];
+		// Pentest 2026-11-04 : ligne de journal PowerDNS (donnee externe) affichee sans encodage (XSS stockee).
+		$line=req_html($re[7]);
 
 		
 
@@ -136,7 +138,8 @@ $xServe["pdns_recursor"]="{APP_PDNS_RECURSOR}";
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/pdns.syslog.pattern")."</i></div>";
+	// Pentest 2026-11-04 : motif de recherche relu depuis un fichier, affiche sans encodage (XSS stockee).
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/pdns.syslog.pattern"))."</i></div>";
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
 	

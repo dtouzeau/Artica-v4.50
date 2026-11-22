@@ -84,8 +84,9 @@ function icap_results(){
         $html[]="<table style='width:100%'>";
         foreach ($SimulateICAP["HEADERS"] as $key=>$val){
             $html[]="<tr>";
-            $html[]="<td style='width:1%;text-align:right' nowrap>$key:</td>";
-            $html[]="<td style='width:100%;text-align:left;padding-left:10px'><strong>$val</strong></td>";
+            // Pentest 2026-11-04 : en-tetes renvoyes par le serveur ICAP interroge, encodes.
+            $html[]="<td style='width:1%;text-align:right' nowrap>".req_html($key).":</td>";
+            $html[]="<td style='width:100%;text-align:left;padding-left:10px'><strong>".req_html($val)."</strong></td>";
             $html[]="</tr>";
         }
 //<i class="fa-solid fa-broom"></i>
@@ -98,14 +99,14 @@ function icap_results(){
 
         $html[]="</table>";
     }
-    $TITLE=$SimulateICAP["TITLE"];
+    $TITLE=req_html($SimulateICAP["TITLE"]);
     if(isset($SimulateICAP["HEADERS"]["x-infection-found"])){
         $SimulateICAP["CONN_STATUS"]=false;
     }
 
     if(!$SimulateICAP["CONN_STATUS"]){
         if(isset($SimulateICAP["DESCRIPTION"])){
-            $html[]="<p><strong>{$SimulateICAP["DESCRIPTION"]}</strong></p>";
+            $html[]="<p><strong>".req_html($SimulateICAP["DESCRIPTION"])."</strong></p>";
         }
 
         return $tpl->div_error("$TITLE: {results}||".@implode("\n",$html));
@@ -339,10 +340,11 @@ function save(){
 function file_uploaded_js(){
     $page=CurrentPageName();
     $filename=$_GET["file-uploaded"];
-    $fileencode=urlencode($filename);
-    $sock=new sockets();
     $after="LoadAjaxSilent('icap-section','$page?icap-step1=yes');";
-    $sock->getFrameWork("cicap.php?simulate=$fileencode");
+    // Simulation portee dans articarest (exec.c-icap.php supprime), synchrone :
+    // la page relit SimulateICAP juste apres.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=120;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/cicap/simulate/".rawurlencode(basename((string)$filename)));
     echo "$after\n";
 }
 
@@ -385,12 +387,16 @@ function parseProxyHostPort($proxyUrl="", $defaultPort = 80): array{
             $port = (string)$defaultPort;
         } else {
             // Best-effort defaults
+            // Plancher PHP 7.3: match() n'arrive qu'en 8.0 et fait echouer
+            // l'analyse syntaxique du fichier entier -- la page ne se resumait
+            // plus qu'a un spinner qui ne s'efface jamais.
             $scheme = strtolower($parts['scheme'] ?? 'http');
-            $port = match ($scheme) {
-                'https' => '443',
-                'socks5','socks5h','socks4','socks4a' => '1080',
-                default => '3128',
-            };
+            $port = '3128';
+            if ($scheme === 'https') {
+                $port = '443';
+            } elseif (in_array($scheme, array('socks5', 'socks5h', 'socks4', 'socks4a'), true)) {
+                $port = '1080';
+            }
         }
     }
 

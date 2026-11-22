@@ -105,12 +105,12 @@ function chhostname_save():bool{
     $_POST["hostname"]=trim(strtolower($_POST["hostname"]));
 
     if(!filter_var($_POST["hostname"], FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME)){
-        echo $tpl->_ENGINE_parse_body("jserror:{$_POST["hostname"]}: {not_an_fqdn}");
+        echo $tpl->post_error("{$_POST["hostname"]}: {not_an_fqdn}");
         return false;
     }
 
     $t=explode(".",$_POST["hostname"]);
-    if(count($t)==1){echo $tpl->_ENGINE_parse_body("jserror:{$_POST["hostname"]}: {not_an_fqdn}");
+    if(count($t)==1){echo $tpl->post_error("{$_POST["hostname"]}: {not_an_fqdn}");
         return false;
     }
 
@@ -118,7 +118,7 @@ function chhostname_save():bool{
     unset($t[0]);
     $domainname=trim(@implode(".",$t));
     if($domainname==null){
-        echo $tpl->_ENGINE_parse_body("jserror:{$_POST["hostname"]}: {not_an_fqdn}");
+        echo $tpl->post_error("{$_POST["hostname"]}: {not_an_fqdn}");
         return false;
     }
     $sidentity=new sidentity();

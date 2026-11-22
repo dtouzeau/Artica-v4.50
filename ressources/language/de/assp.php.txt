@@ -1,34 +1,32 @@
-<ASSP_INTERFACE>Open Original Interface</ASSP_INTERFACE>
-<ASSP_INTERFACE_TEXT>Open the ASSP original interface</ASSP_INTERFACE_TEXT>
-<ASSP_NOT_INSTALLED>ASSP Is not installed</ASSP_NOT_INSTALLED>
-<ASSP_NOT_INSTALLED_TEXT>Click on this icon in order to install ASSP and play with this feature</ASSP_NOT_INSTALLED_TEXT>
-<DelayEmbargoTime>Embargo time</DelayEmbargoTime>
-<DelayEmbargoTime_text>Enter the number of minutes for which delivery, related with new 'triplet' (IP address of the sending
-host + mail from + rcpt to), is refused with a temporary failure.[br]
- Default is 5 minutes.</DelayEmbargoTime_text>
-<DelayExpiryTime>Expiry time</DelayExpiryTime>
-<DelayExpiryTime_text>Enter the number of days for which whitelisted 'tuplet' is considered valid. Default is 36 days.</DelayExpiryTime_text>
+<ASSP_INTERFACE>Originaloberfl&#228;che &#246;ffnen</ASSP_INTERFACE>
+<ASSP_INTERFACE_TEXT>Die urspr&#252;ngliche ASSP-Oberfl&#228;che &#246;ffnen</ASSP_INTERFACE_TEXT>
+<ASSP_NOT_INSTALLED>ASSP ist nicht installiert</ASSP_NOT_INSTALLED>
+<ASSP_NOT_INSTALLED_TEXT>Klicken Sie auf dieses Symbol, um ASSP zu installieren und diese Funktion zu nutzen</ASSP_NOT_INSTALLED_TEXT>
+<DelayEmbargoTime>Embargo-Zeit</DelayEmbargoTime>
+<DelayEmbargoTime_text>Geben Sie die Anzahl der Minuten ein, f&#252;r die die Zustellung im Zusammenhang mit einem neuen 'Triplet' (IP-Adresse des sendenden
+Hosts + mail from + rcpt to) mit einem tempor&#228;ren Fehler abgelehnt wird.[br]
+ Standard ist 5 Minuten.</DelayEmbargoTime_text>
+<DelayExpiryTime>Ablaufzeit</DelayExpiryTime>
+<DelayExpiryTime_text>Geben Sie die Anzahl der Tage ein, f&#252;r die ein auf die Whitelist gesetztes 'Tuplet' als g&#252;ltig gilt. Standard ist 36 Tage.</DelayExpiryTime_text>
 <DelayGripvalue>Gripvalue</DelayGripvalue>
-<DelayGripvalue_text>This will restrict Delaying/Greylisting to IPs with a Gripvalue above this value.[br]
-For example 0.4.[br]
-You may set it higher to 0.5 if you want to delay only IPs with a higher probability to send Spam.[br]
-The local griplist is build during rebuildspamdb and uploaded to a global database.[br]
-In return the global griplist is downloaded.[br]
-The Gripvalue is calculated from the "spamminess" , where 0 means the IP-Block never sends spam and 1 it always send spam.
-</DelayGripvalue_text>
-<DelaySSL>SSL Greylisting</DelaySSL>
-<DelaySSL_text>Enable Greylisting for SSL Connections.</DelaySSL_text>
-<DelayWaitTime>Wait time</DelayWaitTime>
-<DelayWaitTime_text>Enter the number of hours to wait for delivery attempts related with recognised 'triplet'; delivery is accepted
-immediately and the 'tuplet' (IP address of the sending host + sender's domain) is safelisted.[br]
-Default is 28 hours.</DelayWaitTime_text>
-<EnableDelaying_text>
-Greylisting involves sending a temporary 451 SMTP error code to the sending server when a message is received, 
-along with sending this error code ASSP creates a Triplet and stores this.[br]
- On the second delivery attempt if the Embargo Time set by the ASSP admin for the Triplet has been surpassed the message 
- will be accepted and a Tuplet will be created and not delayed again for an Expiry Time set by the ASSP admin.</EnableDelaying_text>
-<MessageScoringLowerLimit>Tag messages whose score exceeds</MessageScoringLowerLimit>
-<MessageScoringLowerLimitTag>Tag text</MessageScoringLowerLimitTag>
-<MessageScoringUpperLimit>Block messages whose score exceeds</MessageScoringUpperLimit>
-<messages_scoring>Messages scoring</messages_scoring>
-<messages_scoring_text>Define scores that will be block messages</messages_scoring_text>
+<DelayGripvalue_text>Dies beschr&#228;nkt das Delaying/Greylisting auf IPs mit einem Gripvalue &#252;ber diesem Wert.[br]
+Zum Beispiel 0.4.[br]
+Sie k&#246;nnen ihn h&#246;her auf 0.5 setzen, wenn Sie nur IPs mit einer h&#246;heren Wahrscheinlichkeit, Spam zu senden, verz&#246;gern m&#246;chten.[br]
+Die lokale Griplist wird w&#228;hrend rebuildspamdb erstellt und in eine globale Datenbank hochgeladen.[br]
+Im Gegenzug wird die globale Griplist heruntergeladen.[br]
+Der Gripvalue wird aus der &quot;Spamminess&quot; berechnet, wobei 0 bedeutet, dass der IP-Block niemals Spam sendet, und 1, dass er immer Spam sendet.</DelayGripvalue_text>
+<DelaySSL>SSL-Greylisting</DelaySSL>
+<DelaySSL_text>Greylisting f&#252;r SSL-Verbindungen aktivieren.</DelaySSL_text>
+<DelayWaitTime>Wartezeit</DelayWaitTime>
+<DelayWaitTime_text>Geben Sie die Anzahl der Stunden ein, die auf Zustellversuche im Zusammenhang mit einem erkannten 'Triplet' gewartet werden soll; die Zustellung wird
+sofort akzeptiert und das 'Tuplet' (IP-Adresse des sendenden Hosts + Dom&#228;ne des Absenders) wird auf die Safelist gesetzt.[br]
+Standard ist 28 Stunden.</DelayWaitTime_text>
+<EnableDelaying_text>Greylisting beinhaltet das Senden eines tempor&#228;ren 451-SMTP-Fehlercodes an den sendenden Server, wenn eine Nachricht empfangen wird.
+Zusammen mit dem Senden dieses Fehlercodes erstellt ASSP ein Triplet und speichert es.[br]
+ Beim zweiten Zustellversuch wird die Nachricht akzeptiert, wenn die vom ASSP-Administrator f&#252;r das Triplet festgelegte Embargo-Zeit &#252;berschritten wurde,
+ und es wird ein Tuplet erstellt, das f&#252;r eine vom ASSP-Administrator festgelegte Ablaufzeit nicht erneut verz&#246;gert wird.</EnableDelaying_text>
+<MessageScoringLowerLimit>Nachrichten markieren, deren Bewertung &#252;berschreitet</MessageScoringLowerLimit>
+<MessageScoringLowerLimitTag>Tag-Text</MessageScoringLowerLimitTag>
+<MessageScoringUpperLimit>Nachrichten blockieren, deren Bewertung &#252;berschreitet</MessageScoringUpperLimit>
+<messages_scoring>Nachrichtenbewertung</messages_scoring>
+<messages_scoring_text>Definieren Sie Bewertungen, die Nachrichten blockieren</messages_scoring_text>

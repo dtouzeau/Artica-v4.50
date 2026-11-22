@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Apply central DHCP config to all agents in a group.
  * Shows a summary of the central config and an "Apply" button.
@@ -148,7 +150,7 @@ function capply_run(): void {
 
     // Per-agent results table
     if (!empty($results)) {
-        $h[] = "<table class='table table-striped table-condensed'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "  <thead><tr style='background:#f5f5f5'>";
         $h[] = "    <th style='width:1%'></th>";
         $h[] = "    <th>{hostname}</th>";
@@ -170,9 +172,9 @@ function capply_run(): void {
             }
             $h[] = "    <tr><td>$ico</td><td><strong>$hostname</strong></td><td>$cell</td></tr>";
         }
-        $h[] = "  </tbody></table>";
+        $h[] = "  </tbody></table></div></div></div>";
     }
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     admin_tracks("Group #$id: Central DHCP config applied to all agents ($success/$total success)");
 }

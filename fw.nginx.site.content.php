@@ -25,14 +25,24 @@ function webdav_explain_js():bool{
     return $tpl->js_dialog4("{ACTIVATE_THIS_USER_WEBDAV}","$page?webdav-explain-popup=$ID");
 }
 
+
+
+
+function count_webdav_access_for_service($serviceid):int{
+    $serviceid=intval($serviceid);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/webdav_access/serviceid/$serviceid");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){return 0;}
+    return count($data["rows"]);
+}
+
 function webdav_explain_popup():bool{
     $ID=intval($_GET["webdav-explain-popup"]);
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->table_form_section("WebDav","{webdavinfoexplain}");
-    $q=new lib_sqlite(NginxGetDB());
     $nginxSock=new socksngix($ID);
-    $ligne      = $q->mysqli_fetch_array("SELECT `servicename`,`hosts` FROM nginx_services WHERE ID=$ID");
-    $Zhosts=explode("||",$ligne["hosts"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $Zhosts=explode("||",isset($ligne["hosts"])?$ligne["hosts"]:"");
     $User=$nginxSock->GET_INFO("WebDavUser");
     $css="<span style='text-transform:initial'>";
     $css2="</span>";
@@ -55,12 +65,11 @@ function content():bool{
     $_SESSION["NGINX-WEBCONTENT-ID"]=$ID;
     $nginxSock=new socksngix($ID);
 
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
+    $ligne=fetch_nginx_service_row($ID);
     $tpl->field_hidden("ID","$ID");
 
-    if($ligne["WebDirectory"]==null) {$ligne["WebDirectory"]="/home/www/$ID";}
-    $WebContentSize=intval($ligne["WebContentSize"]);
+    if(!isset($ligne["WebDirectory"]) || $ligne["WebDirectory"]==null) {$ligne["WebDirectory"]="/home/www/$ID";}
+    $WebContentSize=intval(isset($ligne["WebContentSize"])?$ligne["WebContentSize"]:0);
     $html=array();
     if($WebContentSize>10){
 
@@ -94,8 +103,7 @@ function content():bool{
     $form[]=$tpl->field_text("WebDavUser","{username}",$nginxSock->GET_INFO("WebDavUser"));
     $form[]=$tpl->field_password("WebDavPassword","{password}",$nginxSock->GET_INFO("WebDavPassword"));
 
-    $ligne=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount from webdav_access WHERE serviceid=$ID");
-    $Count=intval($ligne["tcount"]);
+    $Count=count_webdav_access_for_service($ID);
     $form[]=$tpl->field_button("{access_rules}","$Count {rules}","Loadjs('fw.nginx.webdav.access.php?serviceid=$ID')");
 
 
@@ -120,12 +128,12 @@ function Save():bool{
 
 function download(){
     $ID=intval($_GET["download"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT servicename,WebContent  FROM nginx_services WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $data=base64_decode($ligne["WebContent"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $data=base64_decode(isset($ligne["WebContent"])?$ligne["WebContent"]:"");
     $size=strlen($data);
-    $attchname=$ligne["servicename"].".zip";
+    $attchname=(isset($ligne["servicename"])?$ligne["servicename"]:"").".zip";
+    // Pentest 2026-11-04 : nom de piece jointe nettoye (guillemets, CR/LF, separateurs).
+    $attchname=preg_replace('#[^A-Za-z0-9_.-]#',"_",$attchname);
 
 
     header('Content-type: application/zip');
@@ -143,6 +151,12 @@ function file_uploaded(){
 
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
+    // Pentest 2026-11-04 : file-uploaded etait recopie sans encodage dans la page (XSS) et sans controle dans un chemin.
+    $_GET["file-uploaded"]=basename(str_replace("\\","/",(string)$_GET["file-uploaded"]));
+    if($_GET["file-uploaded"]==="" || $_GET["file-uploaded"]==="." || $_GET["file-uploaded"]===".."){
+        $tpl->js_error("No file given");
+        return false;
+    }
     $file="/usr/share/artica-postfix/ressources/conf/upload/{$_GET["file-uploaded"]}";
     $ID=intval($_SESSION["NGINX-WEBCONTENT-ID"]);
 
@@ -154,12 +168,12 @@ function file_uploaded(){
 
 
     if(!is_file($file)){
-        $tpl->js_error("$file not found...");
+        $tpl->js_error(req_html($file)." not found...");
         return false;
     }
 
     if(!preg_match("#\.zip$#i",basename($file))){
-        $tpl->js_error("$file unexpected file..");
+        $tpl->js_error(req_html($file)." unexpected file..");
         @unlink($file);
         return false;
     }
@@ -168,7 +182,7 @@ function file_uploaded(){
     @unlink($file);
     $filelenght=strlen($data);
     $data=base64_encode($data);
-    $function=$_GET["function"];
+    $function=preg_replace('#[^A-Za-z0-9_]#',"",(string)($_GET["function"] ?? ""));
     $refreshjs="";
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"nginx_services","set"=>["WebContent"=>$data,"WebContentSize"=>$filelenght],"where"=>["ID"=>$ID]]);
@@ -178,21 +192,4 @@ function file_uploaded(){
     echo "$jsCompile\n";
     echo "LoadAjax('webcontent-site-$ID','$page?content-id=$ID');\n";
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ClusterWaitNotify",time());
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
 }

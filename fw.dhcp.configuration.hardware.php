@@ -2,10 +2,17 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
+include_once(dirname(__FILE__)."/ressources/class.dhcpd.meta.inc");
+// Pentest 2026-11-04 E-06 : meme garde que fw.dhcp.last.php.
+$users=new usersMenus();if(!$users->AsFirewallManager && !$users->ASDCHPAdmin && !$users->AsSystemAdministrator){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : interface/popup/ruleid etaient recopies sans encodage dans la page (XSS).
+// Ce sont des noms d'interface : meme alphabet que table (M-01).
+foreach(array("interface","popup","ruleid") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_.:@-]/','',trim(strval($_GET[$k])));}
+}
 
 if(isset($_GET["popup"])){popup();exit;}
-if(isset($_GET["route-delete-js"])){route_delete_js();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["rule-js"])){rule_js();exit;}
 if(isset($_GET["rule-popup"])){rule_popup();exit;}
@@ -181,6 +188,8 @@ function items_add(){
 
 }
 function rule_enable():bool{
+    // Verrou Meta : la definition des pools (dont leur activation) vient de la politique.
+    if(dhcpd_meta_refuse_js()){return false;}
     $page       = CurrentPageName();
     $tpl        = new template_admin();
     $ID         = intval($_GET["rule-enable"]);
@@ -211,6 +220,7 @@ function rule_delete(){
 }
 
 function rule_delete_perform(){
+    if(dhcpd_meta_refuse_text()){return;}
     $page       = CurrentPageName();
     $tpl        = new template_admin();
     $ID         = intval($_POST["rule-delete"]);
@@ -413,6 +423,7 @@ function rule_popup():bool{
     $js[]="LoadAjax('hardware-table-dhcp-{$_GET["ruleid"]}','$page?table={$_GET["ruleid"]}');";
 
 
+    dhcpd_meta_lock_form($tpl);
     $html=$tpl->form_outside("$ruleid: $title", @implode("\n", $form),null,$btname,@implode("", $js),"AsSystemAdministrator");
     echo $html;
     return true;
@@ -432,6 +443,7 @@ function popup(){
 
 
 function rule_save(){
+    if(dhcpd_meta_refuse_post()){return;}
 
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
@@ -445,10 +457,16 @@ function rule_save(){
 
     $q=new lib_sqlite("/home/artica/SQLITE/dhcpd.db");
 
+    // Pentest 2026-11-04 : les noms et valeurs des champs POST etaient concatenes dans la
+    // requete : colonnes en liste blanche (champs du formulaire), valeurs liees.
+    $allowedColumns=array("PooName","range_from","range_to","max-lease-time","DNS1","DNS2","ntp_server","interface");
+    $upd=array();$Fields=array();$Datas=array();$binds=array();
     foreach ($_POST as $key=>$value){
-        $upd[]="`$key`='$value'";
+        if(!in_array($key,$allowedColumns,true)){continue;}
+        $upd[]="`$key`=?";
         $Fields[]="`$key`";
-        $Datas[]="'$value'";
+        $Datas[]="?";
+        $binds[]=$value;
 
     }
 
@@ -460,13 +478,14 @@ function rule_save(){
         $sql="INSERT INTO dhcpd_hardware (".@implode(",",$Fields).") VALUES (".@implode(",",$Datas).")";
 
     }else{
-        $sql="UPDATE dhcpd_hardware SET ".@implode(",",$upd). " WHERE ID=$ID";
+        $sql="UPDATE dhcpd_hardware SET ".@implode(",",$upd). " WHERE ID=?";
+        $binds[]=$ID;
 
     }
 
 
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    $q->QUERY_SQL_PARAMS($sql,$binds);
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return;}
 
 }
 
@@ -475,7 +494,8 @@ function table(){
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/dhcpd.db");
     $EnableKEA=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKEA"));
-    $MAIN_ID=trim($_GET["table"]);
+    // Pentest 2026-11-04 M-01 : nom d'interface, reflete en HTML/JS et en SQL.
+    $MAIN_ID=preg_replace('/[^A-Za-z0-9_.:@-]/','',trim(strval($_GET["table"])));
     $RefreshAfter="LoadAjax('dhcp-service','fw.dhcp.configuration.php?status=yes');";
     $page=CurrentPageName();
 
@@ -496,13 +516,16 @@ function table(){
         $DHCP4_PARSER_FAIL=str_replace("failed to create or run parser for configuration element","",$DHCP4_PARSER_FAIL);
         $DHCP4_PARSER_FAIL=$tpl->div_error($DHCP4_PARSER_FAIL);
     }
+    $html[]=dhcpd_meta_banner($tpl);
     $html[]="<div id='progress-for-static-routes-$MAIN_ID'>$DHCP4_PARSER_FAIL</div>";
 
-    $topbuttons[] = array("Loadjs('$page?rule-js=0&ruleid=$MAIN_ID');", ico_plus, "{new_pool}");
+    // Verrou Meta : creation de pool et application masquees ; les membres MAC restent libres.
+    $metaLocked=dhcpd_meta_locked();
+    if(!$metaLocked){$topbuttons[] = array("Loadjs('$page?rule-js=0&ruleid=$MAIN_ID');", ico_plus, "{new_pool}");}
 
     $topbuttons[] = array("LoadAjax('hardware-table-dhcp-$MAIN_ID','$page?table=$MAIN_ID');", ico_refresh, "{reload}");
 
-    $topbuttons[] = array("$jsafter", ico_save, "{apply_configuration}");
+    if(!$metaLocked){$topbuttons[] = array("$jsafter", ico_save, "{apply_configuration}");}
 
     $html[]="<div style='margin-top:10px'>";
     $html[]=$tpl->th_buttons($topbuttons);
@@ -535,8 +558,8 @@ function table(){
         $ID             = $ligne["ID"];
         $md             = md5(serialize($ligne));
         $PooName        = $tpl->td_href($PooName,$PooName,"Loadjs('$page?rule-js={$ligne["ID"]}&ruleid=$MAIN_ID');");
-        $delete         = $tpl->icon_delete("Loadjs('$page?rule-delete={$ligne["ID"]}&ruleid=$MAIN_ID&md=$md');","AsSystemAdministrator");
-        $enabled        = $tpl->icon_check($ligne["enabled"],"Loadjs('$page?rule-enable={$ligne["ID"]}&ruleid=$MAIN_ID&md=$md');","AsSystemAdministrator");
+        $delete         = $tpl->icon_delete("Loadjs('$page?rule-delete={$ligne["ID"]}&ruleid=$MAIN_ID&md=$md');",dhcpd_meta_sec("AsSystemAdministrator"));
+        $enabled        = $tpl->icon_check($ligne["enabled"],"Loadjs('$page?rule-enable={$ligne["ID"]}&ruleid=$MAIN_ID&md=$md');",null,dhcpd_meta_sec("AsSystemAdministrator"));
 
         $ligne2=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM dhcpd_hardware_list WHERE dhcpd_hardware_id=$ID");
         $Count=intval($ligne2["tcount"]);

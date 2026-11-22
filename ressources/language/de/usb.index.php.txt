@@ -1,30 +1,29 @@
-<about_usb>This section helps you to play with usb storage devices, you can plug devices connect them and un-connect them with this interface[br]
-When click on an item you can delegate one usb device has the usb auto-backup device[br]
-This means that when you plug you device on the computer, artica will mount it automatically and perform backup feature.[br]
-If you leave this device permanently, the backup operation will be perform every 2 hours</about_usb>
-<automount>Auto-connect</automount>
-<automount_explain>Automatically connect this device when you plug it on the system</automount_explain>
-<automount_explain_text>This operation will automatically connect the device into /automounts directory when it is plugged on the system.[br]
-the linking operation will be automatic when the system wants to access it.</automount_explain_text>
-<auto_folder>Directory name point</auto_folder>
-<click_to_edit>Click to edit...</click_to_edit>
+<about_usb>Dieser Bereich hilft Ihnen beim Umgang mit USB-Speicherger&#228;ten. Sie k&#246;nnen Ger&#228;te anschlie&#223;en, verbinden und trennen &#252;ber diese Oberfl&#228;che[br]Wenn Sie auf ein Element klicken, k&#246;nnen Sie ein USB-Ger&#228;t als USB-Auto-Backup-Ger&#228;t bestimmen[br]Das bedeutet, dass Artica beim Anschlie&#223;en Ihres Ger&#228;ts an den Computer es automatisch einh&#228;ngt und die Backup-Funktion ausf&#252;hrt.[br]Wenn Sie dieses Ger&#228;t dauerhaft angeschlossen lassen, wird der Backup-Vorgang alle 2 Stunden durchgef&#252;hrt</about_usb>
+<automount>Automatisch verbinden</automount>
+<automount_explain>Dieses Ger&#228;t automatisch verbinden, wenn Sie es an das System anschlie&#223;en</automount_explain>
+<automount_explain_text>Dieser Vorgang verbindet das Ger&#228;t automatisch mit dem Verzeichnis /automounts, wenn es an das System angeschlossen wird.[br]
+Der Verkn&#252;pfungsvorgang erfolgt automatisch, wenn das System darauf zugreifen m&#246;chte.</automount_explain_text>
+<auto_folder>Verzeichnisname</auto_folder>
+<click_to_edit>Zum Bearbeiten klicken...</click_to_edit>
 <connected>Verbunden</connected>
-<dismount_text>[b]Disconnect this key[/b][br]Destroy the pointer to this usb storage in order to physically remove it from the computer</dismount_text>
-<error_understand_fs>Unable to understand filesystem type</error_understand_fs>
-<file_system>File system</file_system>
-<formatdevice>Format this device</formatdevice>
-<format_warning>Are you sure to perform this operation,all datas will be erased...</format_warning>
-<local>local</local>
-<make_autobackup>Auto-backup device</make_autobackup>
-<manufacturer>manufacturer</manufacturer>
+<dismount_text>[b]Diesen Stick trennen[/b][br]den Verweis auf diesen USB-Speicher l&#246;schen, um ihn physisch aus dem Computer zu entfernen</dismount_text>
+<error_understand_fs>Dateisystemtyp kann nicht erkannt werden</error_understand_fs>
+<file_system>Dateisystem</file_system>
+<formatdevice>Dieses Ger&#228;t formatieren</formatdevice>
+<format_warning>Sind Sie sicher, dass Sie diesen Vorgang durchf&#252;hren m&#246;chten? Alle Daten werden gel&#246;scht...</format_warning>
+<local>lokal</local>
+<make_autobackup>Auto-Backup-Ger&#228;t</make_autobackup>
+<manufacturer>Hersteller</manufacturer>
 <model>Modell</model>
-<mounted_on>mounted on</mounted_on>
-<mount_text>[b]Connect this key[/b][br]create a pointer to this usb storage in order to access it</mount_text>
-<not_applicable>Not applicable</not_applicable>
-<plugged>plugged</plugged>
+<mounted_on>Eingeh%C3%A4ngt auf</mounted_on>
+<mount_text>[b]Diesen Stick verbinden[/b][br]einen Verweis auf diesen USB-Speicher erstellen, um darauf zuzugreifen</mount_text>
+<not_applicable>Nicht zutreffend</not_applicable>
+<plugged>angeschlossen</plugged>
 <speed>Geschwindigkeit</speed>
 <system>System</system>
-<umake_autobackup>Remove Auto-backup</umake_autobackup>
-<vendor>Vendor</vendor>
-<warnautoback>You choose that this device will be an auto-backup device.\nThis meens that when you plug this device on this computer,\nArtica will backup automatically mandatories datas on this device</warnautoback>
-<warnautobackremove>This device will be disconnected has an auto-backup device\nContinue?</warnautobackremove>
+<umake_autobackup>Auto-Backup entfernen</umake_autobackup>
+<vendor>Hersteller</vendor>
+<warnautoback>Sie haben festgelegt, dass dieses Ger&#228;t ein Auto-Backup-Ger&#228;t sein wird.
+Das bedeutet, dass Artica beim Anschlie&#223;en dieses Ger&#228;ts an diesen Computer automatisch die erforderlichen Daten auf diesem Ger&#228;t sichert</warnautoback>
+<warnautobackremove>Dieses Ger&#228;t wird als Auto-Backup-Ger&#228;t getrennt
+Fortfahren?</warnautobackremove>

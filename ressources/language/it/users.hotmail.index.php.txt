@@ -1,10 +1,10 @@
-<Delete_messages>Delete messages</Delete_messages>
-<Delete_messages_text>whether the message will be deleted after being downloaded.</Delete_messages_text>
+<Delete_messages>Elimina i messaggi</Delete_messages>
+<Delete_messages_text>se il messaggio verr&#224; eliminato dopo essere stato scaricato.</Delete_messages_text>
 <Domain>Dominio</Domain>
-<Domain_text>Your Hotmail Domain (default 'hotmail.com', basically what's after the @ in your address)</Domain_text>
-<getlive_about>GetLive is a utility that fetches mail from your Hotmail/Windows Live account.[br]
-Fill this form in order to get all your Hotmail/Live messages and put them into your local mailbox</getlive_about>
-<MarkRead>Mark read</MarkRead>
-<MarkRead_text>whether the message will be marked read after being downloaded</MarkRead_text>
-<password_text>Your Hotmail Password</password_text>
-<username_text>Your Hotmail UserName (without @something)</username_text>
+<Domain_text>Il tuo dominio Hotmail (predefinito 'hotmail.com', sostanzialmente ci&#242; che si trova dopo la @ nel tuo indirizzo)</Domain_text>
+<getlive_about>GetLive &#232; un'utilit&#224; che recupera la posta dal tuo account Hotmail/Windows Live.[br]
+Compila questo modulo per ottenere tutti i tuoi messaggi Hotmail/Live e inserirli nella tua casella di posta locale</getlive_about>
+<MarkRead>Contrassegna come letto</MarkRead>
+<MarkRead_text>se il messaggio verr&#224; contrassegnato come letto dopo essere stato scaricato</MarkRead_text>
+<password_text>La tua password Hotmail</password_text>
+<username_text>Il tuo nome utente Hotmail (senza @qualcosa)</username_text>

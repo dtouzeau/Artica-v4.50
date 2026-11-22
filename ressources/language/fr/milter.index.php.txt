@@ -70,12 +70,12 @@ Le programme n'effectuera pas de scan antivirus sur ces objets MIME exclus.[br]
 [li]^application/vnd.ms.wms-hdr.asfv1$[/li]</ExcludeMimeTypeExplain>
 <excludes>Exclusions</excludes>
 <ExcludeURL>Par URL</ExcludeURL>
-<ExcludeURLExplain>Définir un masque d'exception pour le filtrage par type d`URL (Expressions Régulières Étendues POSIX peuvent être utilisées).
-L'application n`effectue pas l'analyse antivirus des objets ayant des URL qui correspondent au masque spécifié.
+<ExcludeURLExplain>D&#233;finir un masque d'exception pour le filtrage par type d'URL (Expressions R&#233;guli&#232;res &#201;tendues POSIX peuvent &#234;tre utilis&#233;es).
+L'application n'effectue pas l'analyse antivirus des objets ayant des URL qui correspondent au masque sp&#233;cifi&#233;.
 www.example.com.*[br]
 www.localsite.local.*[br]
 Vous devez entrer les symboles  ^ . [ $ () | *   ? { 
-entre les les caractères d'échappement ..</ExcludeURLExplain>
+entre les les caract&#232;res d'&#233;chappement ..</ExcludeURLExplain>
 <flow>Flux</flow>
 <globalsettings>Param&egrave;tres globaux</globalsettings>
 <icapserver_1>Param&egrave;tres du service</icapserver_1>

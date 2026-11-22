@@ -1,11 +1,10 @@
-<autolearning>Auto-learning</autolearning>
-<autolearning_text>This feature allow you to enable robots that will parse mailboxes in order to auto-complete white list and black list area</autolearning_text>
-<enable_artica_wbl_robots_text>If you enable this option, organization's manager will be allowed to create email addresses that will be in charge of adding email addresses in white or black list by receiving messages from users</enable_artica_wbl_robots_text>
-<enable_learning_ham_mailbox>Enable learning White list by parsing Sent mailbox</enable_learning_ham_mailbox>
-<enable_learning_spam_mailbox>Enable learning SPAM by parsing Junk mailbox</enable_learning_spam_mailbox>
-<replicate_each>Replicate settings each</replicate_each>
-<replicate_now>Launch replication now</replicate_now>
-<whitelist_explain>This area consolidate all white list & Black lists used in all modules executed by Postfix, you can add and delete senders
-in order to add a white/black list user, you need to set the recipient of each users.[br]
-Recipients could be "@domain.tlb" to white/black list for all domain or "user@domain.tlb" for a single user.
-</whitelist_explain>
+<autolearning>Aprendizaje autom&#225;tico</autolearning>
+<autolearning_text>Esta funci&#243;n le permite habilitar robots que analizar&#225;n los buzones para autocompletar el &#225;rea de lista blanca y lista negra</autolearning_text>
+<enable_artica_wbl_robots_text>Si habilita esta opci&#243;n, el administrador de la organizaci&#243;n podr&#225; crear direcciones de correo que se encargar&#225;n de a&#241;adir direcciones de correo a la lista blanca o negra al recibir mensajes de los usuarios</enable_artica_wbl_robots_text>
+<enable_learning_ham_mailbox>Habilitar el aprendizaje de la lista blanca analizando el buz&#243;n de enviados</enable_learning_ham_mailbox>
+<enable_learning_spam_mailbox>Habilitar el aprendizaje de SPAM analizando el buz&#243;n de correo no deseado</enable_learning_spam_mailbox>
+<replicate_each>Replicar la configuraci&#243;n cada</replicate_each>
+<replicate_now>Iniciar la replicaci&#243;n ahora</replicate_now>
+<whitelist_explain>Esta &#225;rea consolida todas las listas blancas y negras utilizadas en todos los m&#243;dulos ejecutados por Postfix, puede a&#241;adir y eliminar remitentes.
+Para a&#241;adir un usuario de lista blanca/negra, debe establecer el destinatario de cada usuario.[br]
+Los destinatarios pueden ser &quot;@domain.tlb&quot; para incluir en lista blanca/negra todo el dominio o &quot;user@domain.tlb&quot; para un solo usuario.</whitelist_explain>

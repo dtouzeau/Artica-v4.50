@@ -1,20 +1,20 @@
-<APP_DHCP_EVENTS>DHCPD server events</APP_DHCP_EVENTS>
-<APP_DHCP_EVENTS_TEXT>Display realtime events of your DHCP server</APP_DHCP_EVENTS_TEXT>
+<APP_DHCP_EVENTS>Eventos do servidor DHCPD</APP_DHCP_EVENTS>
+<APP_DHCP_EVENTS_TEXT>Exibir eventos em tempo real do seu servidor DHCP</APP_DHCP_EVENTS_TEXT>
 <ARTICA_AS_GATEWAY>O Artica possui um gateway</ARTICA_AS_GATEWAY>
-<ARTICA_AS_GATEWAY_EXPLAIN>If you set to green, Artica will server DHCP server, DNS, proxy,connections has a real gateway</ARTICA_AS_GATEWAY_EXPLAIN>
-<ARTICA_AS_GATEWAY_TEXT>Define if artica will be your gateway or not</ARTICA_AS_GATEWAY_TEXT>
-<conf>Main configuration File</conf>
+<ARTICA_AS_GATEWAY_EXPLAIN>Se voc&#234; colocar em verde, o Artica fornecer&#225; servidor DHCP, DNS, proxy e conex&#245;es como um verdadeiro gateway</ARTICA_AS_GATEWAY_EXPLAIN>
+<ARTICA_AS_GATEWAY_TEXT>Defina se o Artica ser&#225; o seu gateway ou n&#227;o</ARTICA_AS_GATEWAY_TEXT>
+<conf>Arquivo de configura&#231;&#227;o principal</conf>
 <ddns_domainname>Dom%C3%ADnio interno</ddns_domainname>
-<EnableArticaAsDNSFirst>Set Artica has First DNS</EnableArticaAsDNSFirst>
-<EnableArticaAsDNSFirst_explain>If you turn to green, Artica will serve hostname resolution with the DHCP server.[br]It is usefull to resolve easly hostnames serves by the DHCP server</EnableArticaAsDNSFirst_explain>
-<EnableDHCPServer>Enable DHCP service</EnableDHCPServer>
-<EnablePXEDHCP>Enable DHCP Preboot Execution Environment</EnablePXEDHCP>
-<fixedHosts>Fixed hosts</fixedHosts>
+<EnableArticaAsDNSFirst>Definir Artica como primeiro DNS</EnableArticaAsDNSFirst>
+<EnableArticaAsDNSFirst_explain>Se voc&#234; colocar em verde, o Artica fornecer&#225; a resolu&#231;&#227;o de nomes de host com o servidor DHCP.[br]&#201; &#250;til para resolver facilmente os nomes de host servidos pelo servidor DHCP</EnableArticaAsDNSFirst_explain>
+<EnableDHCPServer>Ativar o servi&#231;o DHCP</EnableDHCPServer>
+<EnablePXEDHCP>Ativar o ambiente de execu&#231;&#227;o de pr&#233;-inicializa&#231;&#227;o DHCP</EnablePXEDHCP>
+<fixedHosts>Hosts fixos</fixedHosts>
 <max_lease_time>Tempo m%C3¡ximo de concess%C3£o</max_lease_time>
-<max_lease_time_text>Time should be the maximum length in seconds that will be assigned to a lease.[br]
-The only exception to this is that Dynamic BOOTP lease lengths,  which  are not specified by the client, are not limited by this maximum.</max_lease_time_text>
+<max_lease_time_text>O tempo deve ser a dura&#231;&#227;o m&#225;xima em segundos que ser&#225; atribu&#237;da a uma concess&#227;o.[br]
+A &#250;nica exce&#231;&#227;o &#233; que as dura&#231;&#245;es das concess&#245;es BOOTP din&#226;micas, que n&#227;o s&#227;o especificadas pelo cliente, n&#227;o est&#227;o limitadas por este m&#225;ximo.</max_lease_time_text>
 <PXE>Ambiente de execuç%C3£o préâ%80%91boot</PXE>
-<PXE_DHCP_MINI_TEXT>Serve IP addresses to your computers helping them running PXE from an another point</PXE_DHCP_MINI_TEXT>
-<pxe_file>PXE boot file name</pxe_file>
-<pxe_server>PXE server address</pxe_server>
-<range>IP Range</range>
+<PXE_DHCP_MINI_TEXT>Forne&#231;a endere&#231;os IP aos seus computadores para ajud&#225;-los a executar PXE a partir de outro ponto</PXE_DHCP_MINI_TEXT>
+<pxe_file>Nome do arquivo de boot PXE</pxe_file>
+<pxe_server>Endere&#231;o do servidor PXE</pxe_server>
+<range>Intervalo de IP</range>

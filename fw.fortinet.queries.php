@@ -9,8 +9,6 @@ if(!ifisright()){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["zoom-js"])){zoom_js();exit;}
-if(isset($_GET["button"])){button_white();exit;}
-if(isset($_GET["whitelist-js"])){whitelist_js();exit;}
 if(isset($_GET["zoom"])){zoom();exit;}
 
 page();
@@ -73,7 +71,11 @@ function zoom(){
     $ProtosText["88"]="Enhanced Interior Gateway Routing Protocol";
     $Protos[115]="L2TP";
     $ProtosText["115"]="Layer 2 Tunneling Protocol";
-    $data=unserialize(base64_decode($_GET["data"]));
+    $data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
+    // Pentest 2026-11-04 : champs du journal FortiGate (donnee externe : noms d'hotes, interfaces, politiques) affiches sans encodage (XSS stockee).
+    // Toutes les valeurs de $data ne servent ici qu'a l'affichage : encodees une fois pour le HTML.
+    if(!is_array($data)){$data=array();}
+    $data=array_map('req_html',$data);
     $results_color["NXDOMAIN"]="#f8ac59";
     $results_color["deny"]="rgb(237, 85, 101)";
     $results_color["SERVFAIL"]="#f8ac59";
@@ -131,7 +133,7 @@ if(isset($data["srcname"])) {
     unset($data["srcname"]);
 }else{
     $html[] = "                <tr>";
-    $html[] = "                    <td style='font-size:12px'><i>".gethostbyaddr($data["srcip"])."</i></td>";
+    $html[] = "                    <td style='font-size:12px'><i>".req_html(gethostbyaddr(html_entity_decode($data["srcip"],ENT_QUOTES,"ISO-8859-1")))."</i></td>";
     $html[] = "                </tr>";
     unset($data["srcname"]);
 }
@@ -231,6 +233,7 @@ if(isset($data["srcname"])) {
     $html[]="<div style='width:60%;margin-top:30px'>";
     $html[]="<table class='table table table-bordered' class='center'>";
     foreach ($data as $key=>$val){
+        $key=req_html($key);
         $html[]="<tr>
         <td style='width:1%' nowrap=''>$key:</td>
         <td style='width:99%' nowrap=''><strong>$val</strong></td>
@@ -353,6 +356,10 @@ $ProtosText["115"]="Layer 2 Tunneling Protocol";
         $policyname="&nbsp;";
         $protocol="";
         $data=parseData($line);
+        // Pentest 2026-11-04 : champs du journal FortiGate (donnee externe : noms d'hotes, interfaces, politiques) affiches sans encodage (XSS stockee).
+        // La version brute part dans le lien de zoom, la version encodee sert a l'affichage.
+        $dataRaw=$data;
+        $data=array_map('req_html',$data);
         $seconds = $data["eventtime"] / 1e9;
         $Time = round($seconds);
         $devname=$data["devname"]."/".$data["vd"];
@@ -388,7 +395,7 @@ $ProtosText["115"]="Layer 2 Tunneling Protocol";
         }
 
         $md=md5($line);
-        $lineUU=base64_encode(serialize($data));
+        $lineUU=base64_encode(serialize($dataRaw));
 
         $xtime=strtotime($data["date"]." " .$data["time"]);
 

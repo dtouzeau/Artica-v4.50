@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.ipinfo.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $users=new usersMenus();
 if(!$users->AsDnsAdministrator){exit();}
@@ -52,7 +54,7 @@ function search(){
 
 
     $html[]="
-<table class=\"table table-hover\">
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th style='width:1%' nowrap>{date}</th>
@@ -74,7 +76,8 @@ function search(){
     foreach ($data as $line){
 
         if(!preg_match("#^(.*?)\s+([0-9]+)\s+([0-9:]+)\s+.*?\[([0-9]+)\]:\s+(.+)#",$line,$re)){
-            echo "<span style='color:red'>$line</span><br>";
+            // Pentest 2026-11-04 : ligne de journal dnscat (donnee externe) affichee sans encodage (XSS stockee).
+            echo "<span style='color:red'>".req_html($line)."</span><br>";
             continue;
         }
 
@@ -83,7 +86,9 @@ function search(){
         $Day=$re[2];
         $time=$re[3];
         $pid=$re[4];
-        $event=$re[5];
+        // Pentest 2026-11-04 : evenement de journal (donnee externe) affiche sans encodage (XSS stockee).
+        $event=req_html($re[5]);
+        $Month=req_html($Month);
         $function=null;
         $MOD="INFO";
         if(preg_match("#^(.+?)\(\)\{([0-9]+)\}\s+\[(.+?)\]:(.+)#",$event,$ri)){
@@ -119,8 +124,9 @@ function search(){
 
     }
 
-    $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents($pat)."</i></div>";
+    $html[]="</tbody></table></div></div></div>";
+    // Pentest 2026-11-04 : motif de recherche relu depuis un fichier, affiche sans encodage (XSS stockee).
+    $html[]="<div><i>".req_html(@file_get_contents($pat))."</i></div>";
     $TINY_ARRAY["TITLE"]="{your_categories}: {events}";
     $TINY_ARRAY["ICO"]=ico_eye;
     $TINY_ARRAY["EXPL"]="{personal_categories_explain}";
@@ -128,7 +134,7 @@ function search(){
     $TINY_ARRAY["BUTTONS"]=null;
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
     $html[]="<script>$jstiny</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }
 
 

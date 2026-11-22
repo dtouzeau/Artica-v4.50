@@ -1,11 +1,9 @@
 <action_killmail>Usu%C5%84</action_killmail>
-<action_prepend>Prepend the subject with text</action_prepend>
-<action_quarantine>Save into my Spam Quarantine area</action_quarantine>
-<org_antispam_rules>Default organization antispam rules</org_antispam_rules>
-<prepend_text>Prepend text</prepend_text>
-<spam_detection_rate>When detection rate exceed</spam_detection_rate>
-<spam_rules_intro>
-Kaspersky analyzes all incoming mail and assigns each message a score between 0 and 100, 
-where 0 is not spam and 100 is definitely spam.[br]
-You can define 2 rules that could correspond to your need.[br]
-</spam_rules_intro>
+<action_prepend>Poprzed&#378; temat tekstem</action_prepend>
+<action_quarantine>Zapisz w moim obszarze kwarantanny spamu</action_quarantine>
+<org_antispam_rules>Domy&#347;lne regu&#322;y antyspamowe organizacji</org_antispam_rules>
+<prepend_text>Poprzed&#378; tekstem</prepend_text>
+<spam_detection_rate>Gdy wska&#378;nik wykrywania przekroczy</spam_detection_rate>
+<spam_rules_intro>Kaspersky analizuje ca&#322;&#261; przychodz&#261;c&#261; poczt&#281; i przypisuje ka&#380;dej wiadomo&#347;ci wynik od 0 do 100,
+gdzie 0 to nie spam, a 100 to zdecydowanie spam.[br]
+Mo&#380;esz zdefiniowa&#263; 2 regu&#322;y, kt&#243;re mog&#261; odpowiada&#263; Twoim potrzebom.[br]</spam_rules_intro>

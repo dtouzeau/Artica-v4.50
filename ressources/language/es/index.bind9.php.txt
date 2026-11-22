@@ -1,21 +1,19 @@
-<AddNewDnsReverseZone>To create the reverse Zone, give the first IP address of your DNS Domain
-For example: 192.168.1.1 or 10.10.10.1 or 192.168.0.1...
-</AddNewDnsReverseZone>
-<AddNewDnsZone_explain>Give here the domain that will be added after your computer names
-for example :
-if you set "domain.tld", your computer "computer" will be "computer.domain.tld"
-</AddNewDnsZone_explain>
+<AddNewDnsReverseZone>Para crear la zona inversa, indique la primera direcci&#243;n IP de su dominio DNS
+Por ejemplo: 192.168.1.1 o 10.10.10.1 o 192.168.0.1...</AddNewDnsReverseZone>
+<AddNewDnsZone_explain>Indique aqu&#237; el dominio que se a&#241;adir&#225; despu&#233;s de los nombres de sus equipos
+por ejemplo:
+si establece &quot;domain.tld&quot;, su equipo &quot;computer&quot; ser&#225; &quot;computer.domain.tld&quot;</AddNewDnsZone_explain>
 <add_forwarder>Agregar un nuevo DNS</add_forwarder>
 <add_new_zone>Agregar una nueva Zona</add_new_zone>
-<add_new_zone_tex>Add a new net domain zone in order to query in DNS your computer has "computer.*.*"</add_new_zone_tex>
+<add_new_zone_tex>A&#241;adir una nueva zona de dominio de red para consultar en DNS su equipo como &quot;computer.*.*&quot;</add_new_zone_tex>
 <computers>Computadoras</computers>
 <config>Archivo de configuraci&oacute;n</config>
 <dns_zones>Zonas DNS</dns_zones>
 <expire_time_text>Tiempo que esperan los servidores DNS antes de rechazar los datos de las zonas si el servidor primario ya no est%C3¡ disponible</expire_time_text>
-<forward>forward zone</forward>
+<forward>Zona forward</forward>
 <forwarders>DNS publico</forwarders>
 <forwarders_text>Especifique aqu%C3%AD el DNS p%C3%BAblico (sus servidores Dns FAI) utilizado para consultar el DNS</forwarders_text>
-<forwarder_add>Give the IP address of your Public ISP DNS</forwarder_add>
+<forwarder_add>Indique la direcci&#243;n IP de su DNS p&#250;blico del ISP</forwarder_add>
 <forward_text>Una &quot;zona de reenv%C3%ADo&quot; es una forma de configurar el reenv%C3%ADo por dominio[br].
 Una declaraci%C3%B3n de zona de tipo forward puede contener una declaraci%C3%B3n forward y/o forwarders
 que se aplicar%C3¡ a las consultas dentro del dominio indicado por el nombre de la zona.
@@ -25,35 +23,31 @@ Por lo tanto, si desea utilizar este tipo de zona para cambiar el comportamiento
 (es decir, &quot;reenviar primero a&quot;, luego &quot;s%C3%B3lo reenviar&quot;, o viceversa, pero desea utilizar los mismos servidores que se han establecido globalmente), debe volver a especificar los reenviadores globales.</forward_text>
 <global_directory>Directorio de trabajo</global_directory>
 <global_settings>Configuraci%C3%B3n global</global_settings>
-<hint>Hint zone</hint>
-<hint_text>
-The initial set of root nameservers is specified using a "hint zone".[br]
-When the server starts up, it uses the root hints to find a root nameserver and get the most recent list of root nameservers.[br]
-If no hint zone is specified for class IN, the server uses a compiled-in default set of root servers hints.[br]
-Classes other than IN have no built-in defaults hints.
-</hint_text>
-<Hostmaster_email>email of the postmaster of this server</Hostmaster_email>
-<Hostmaster_email_text>Wich email address we can use to contact this zone administrator</Hostmaster_email_text>
+<hint>Zona hint</hint>
+<hint_text>El conjunto inicial de servidores de nombres ra&#237;z se especifica mediante una &quot;zona hint&quot;.[br]
+Cuando el servidor arranca, usa las pistas ra&#237;z para encontrar un servidor de nombres ra&#237;z y obtener la lista m&#225;s reciente de servidores de nombres ra&#237;z.[br]
+Si no se especifica ninguna zona hint para la clase IN, el servidor usa un conjunto predeterminado de pistas de servidores ra&#237;z compilado.[br]
+Las clases distintas de IN no tienen pistas predeterminadas integradas.</hint_text>
+<Hostmaster_email>correo del postmaster de este servidor</Hostmaster_email>
+<Hostmaster_email_text>Qu&#233; direcci&#243;n de correo podemos usar para contactar al administrador de esta zona</Hostmaster_email_text>
 <hosts>Hosts</hosts>
-<master>Authoritative answers</master>
-<master_text>The server has a master copy of the data for the zone and will be able to provide authoritative answers for it.</master_text>
-<minimal_ttl>Minimal Time To Live</minimal_ttl>
-<minimal_ttl_text>Minimal time that records are cached before deleted to refresh them</minimal_ttl_text>
-<PrimaryServerName>Primary server name</PrimaryServerName>
-<PrimaryServerName_text>The fqdn name of the server that serve queries</PrimaryServerName_text>
+<master>Respuestas autoritativas</master>
+<master_text>El servidor tiene una copia maestra de los datos de la zona y podr&#225; proporcionar respuestas autoritativas para ella.</master_text>
+<minimal_ttl>Time To Live m&#237;nimo</minimal_ttl>
+<minimal_ttl_text>Tiempo m&#237;nimo que se almacenan en cach&#233; los registros antes de eliminarlos para actualizarlos</minimal_ttl_text>
+<PrimaryServerName>Nombre del servidor primario</PrimaryServerName>
+<PrimaryServerName_text>El nombre FQDN del servidor que atiende las consultas</PrimaryServerName_text>
 <refresh_time>Tiempo de actualizaci%C3%B3n</refresh_time>
 <refresh_time_text>Tiempo que esperan los servidores DNS antes de verificar o actualizar el registro SOA del servidor primario</refresh_time_text>
-<retry_time>Retry time</retry_time>
-<retry_time_text>Expire time</retry_time_text>
-<retry_time_text>Expire time</retry_time_text>
-<search_computer>Search hosts</search_computer>
-<search_computer_text>Query the database in order to find computers/hosts</search_computer_text>
-<search_explain>You can find a computer by giving the IP address or the computer name in your Dns Zone,
-star caracter (*) is supported.
-if you want to query all computers in all DNS Zones, type your pattern and "all" word after
-Example : PC-10* all
-</search_explain>
-<slave>slave</slave>
+<retry_time>Tiempo de reintento</retry_time>
+<retry_time_text>Tiempo de reintento</retry_time_text>
+<retry_time_text>Tiempo de reintento</retry_time_text>
+<search_computer>Buscar hosts</search_computer>
+<search_computer_text>Consultar la base de datos para encontrar equipos/hosts</search_computer_text>
+<search_explain>Puede encontrar un equipo indicando la direcci&#243;n IP o el nombre del equipo en su zona DNS; se admite el car&#225;cter asterisco (*).
+Si desea consultar todos los equipos en todas las zonas DNS, escriba su patr&#243;n y la palabra &quot;all&quot; despu&#233;s.
+Ejemplo: PC-10* all</search_explain>
+<slave>esclavo</slave>
 <slave_text>Una zona esclava es una réplica de solo lectura de una zona maestra.[br]
 La lista masters define una o m%C3¡s direcciones IP de servidores maestros que la zona esclava contacta para actualizar su copia.[br]
 Por defecto, las transferencias se realizan por el puerto 53;[br]
@@ -68,6 +62,6 @@ Las zonas &quot;stub&quot; pueden utilizarse para eliminar la necesidad de un re
 entrada de zona stub y un conjunto de direcciones de servidor de nombres en la configuraci%C3%B3n global.[br]
 Este uso no se recomienda para nuevas configuraciones, y BIND 9 lo soporta s%C3%B3lo de forma limitada.</stub_text>
 <ttl>Tiempo de vida</ttl>
-<ttl_text>The Time To Libe describes how long a record can be cached before it should be discarded.</ttl_text>
+<ttl_text>El Time To Live describe cu&#225;nto tiempo puede almacenarse en cach&#233; un registro antes de descartarlo.</ttl_text>
 <zone>zona</zone>
 <ZoneDeleteWarning>&iquest;Esta seguro que desea borrar esta zona?</ZoneDeleteWarning>

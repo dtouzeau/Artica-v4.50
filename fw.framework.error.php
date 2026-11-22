@@ -30,7 +30,17 @@ function restarted():bool{
     $page=CurrentPageName();
 
     if(isset($_GET["restart"])){
-        $GLOBALS["CLASS_SOCKETS"]->go_exec("/etc/init.d/artica-phpfpm restart");
+        // Cette page tourne dans artica-phpfpm, le service qu'elle relance, et se
+        // recharge toutes les 2 s tant que le framework ne repond pas : une
+        // relance par minute au plus, toutes sessions confondues (fichier
+        // temoin). La reponse peut ne jamais revenir : le worker est tue par la
+        // relance, le daemon la termine de son cote.
+        $stamp=PROGRESS_DIR."/framework-restart.time";
+        $last=is_file($stamp)?intval(@filemtime($stamp)):0;
+        if(time()-$last>60){
+            @touch($stamp);
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/webconsole/php/unixrestart");
+        }
     }
 
     if(!CHECK_FRAMEWORK()){

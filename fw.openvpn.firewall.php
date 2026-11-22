@@ -10,6 +10,7 @@ if(isset($_GET["rule-popup"])){rule_popup();exit;}
 if(isset($_GET["main"])){main();exit;}
 if(isset($_POST["fw"])){rule_save();exit;}
 if(isset($_GET["rule-move"])){rule_move();exit;}
+if(isset($_GET["fwapply"])){fw_apply();exit;}
 //page();
 main_start();
 
@@ -17,6 +18,8 @@ function rule_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
     $profile=intval($_GET["profile"]);
+    $clientuid=$_GET["clientuid"] ?? "";
+    $cu=strlen($clientuid)>0?"&clientuid=".urlencode($clientuid):"";
     $function=$_GET["function"];
     $ID=intval($_GET["ruleid-js"]);
     $rulename="{new_rule}";
@@ -26,22 +29,25 @@ function rule_js():bool{
         $rulename=$ligne["rulename"];
     }
 
-	return $tpl->js_dialog($rulename,"$page?rule-popup=0&profile=$profile&function=$function");
+	return $tpl->js_dialog($rulename,"$page?rule-popup=0&profile=$profile&function=$function$cu");
 }
 
 function main_start():bool{
     $profile=intval($_GET["profile"]);
+    $clientuid=$_GET["clientuid"] ?? "";
+    $cu=strlen($clientuid)>0?"&clientuid=".urlencode($clientuid):"";
     $function=$_GET["function"];
     $page=CurrentPageName();
     echo "<div id='firewall-profile-$profile'></div>
-        <script>LoadAjax('firewall-profile-$profile','$page?main=yes&profile=$profile&function=$function')</script>";
+        <script>LoadAjax('firewall-profile-$profile','$page?main=yes&profile=$profile&function=$function$cu')</script>";
 
     return true;
 
 }
 function delete_rule_js():bool{
     $tpl=new template_admin();
-    $ID=$_GET["delete-js"];
+    // Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+    $ID=intval($_GET["delete-js"]);
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $ligne=$q->mysqli_fetch_array("SELECT rulename FROM firewall WHERE ID=$ID");
@@ -50,7 +56,8 @@ function delete_rule_js():bool{
 }
 function delete_rule_confirm():bool{
     $tpl=new template_admin();
-    $ID=$_POST["delete"];
+    // Pentest 2026-11-04 : delete (POST) etait concatene dans la requete.
+    $ID=intval($_POST["delete"]);
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM firewall WHERE ID=$ID");
     $title=$ligne["rulename"];
@@ -64,6 +71,8 @@ function rule_popup():bool{
 	$page=CurrentPageName();
     $ID=intval($_GET["rule-popup"]);
     $profile=intval($_GET["profile"]);
+    $clientuid=$_GET["clientuid"] ?? "";
+    $cu=strlen($clientuid)>0?"&clientuid=".urlencode($clientuid):"";
     $function=$_GET["function"];
     $title="{new_route}";
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
@@ -74,12 +83,13 @@ function rule_popup():bool{
         $btn="{apply}";
     }
 
-    $fs[]="LoadAjax('firewall-profile-$profile','$page?main=yes&profile=$profile&function=$function')";
+    $fs[]="LoadAjax('firewall-profile-$profile','$page?main=yes&profile=$profile&function=$function$cu')";
     $fs[]="BootstrapDialog1.close()";
     $fs[]="$function()";
 
     $form[]=$tpl->field_hidden("fw",$ID);
     $form[]=$tpl->field_hidden("profile",$profile);
+    $form[]=$tpl->field_hidden("clientuid",$clientuid);
     $form[]=$tpl->field_text("rulename","{rulename}",$ligne["rulename"]);
 
     $protocol["all"]="{all}";
@@ -113,7 +123,14 @@ function rule_save():bool{
         $_POST["direction"]="all";
     }
 
-    $Main["profileid"]=intval($_POST["profile"]);
+    $clientuid=$_POST["clientuid"] ?? "";
+    if(strlen($clientuid)>0){
+        // Per-client scope: rule belongs to a single connection, not a profile.
+        $Main["clientuid"]=$clientuid;
+        $Main["profileid"]=0;
+    }else{
+        $Main["profileid"]=intval($_POST["profile"]);
+    }
     $Main["rulename"]=$_POST["rulename"];
     $Main["ipaddr"]=$_POST["ipaddr"];
     $Main["protocol"]=$_POST["zprotocol"];
@@ -124,18 +141,22 @@ function rule_save():bool{
     $ports=str_replace(";",",",$ports);
     $Main["ports"]=$ports;
 
+    // Pentest 2026-11-04 : les valeurs du formulaire (POST) etaient concatenees dans la
+    // requete ; les colonnes sont les cles fixes de $Main.
+    $binds=array();
     foreach ($Main as $key=>$val){
         $ff[]=$key;
-        $fd[]="'$val'";
-        $fe[]="$key='$val'";
+        $fd[]="?";
+        $fe[]="$key=?";
+        $binds[]=$val;
     }
     if($ID==0){
         $sql=sprintf("INSERT INTO firewall (%s) VALUES (%s)",implode(",",$ff),implode(",",$fd));
     }else{
-        $sql=sprintf("UPDATE firewall SET %s WHERE ID=%s",implode(",",$fe),$ID);
+        $sql=sprintf("UPDATE firewall SET %s WHERE ID=%d",implode(",",$fe),$ID);
     }
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$binds);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -151,7 +172,7 @@ function rule_move():bool{
     if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["zorder"]};\n";}
     $xORDER_ORG=intval($ligne["zorder"]);
     $xORDER=$xORDER_ORG;
-    $profileid=$ligne["profileid"];
+    $profileid=intval($ligne["profileid"]);
     if($_GET["acl-rule-dir"]==1){
         $xORDER=$xORDER_ORG-1;
     }
@@ -185,9 +206,14 @@ function main(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
     $profile=intval($_GET["profile"]);
+    $clientuid=$_GET["clientuid"] ?? "";
+    $cu=strlen($clientuid)>0?"&clientuid=".urlencode($clientuid):"";
     $function=$_GET["function"];
-    $topbuttons[] = array("Loadjs('$page?ruleid-js=0&profile=$profile&function=$function');", ico_plus, "{new_rule}");
-	
+    $topbuttons[] = array("Loadjs('$page?ruleid-js=0&profile=$profile&function=$function$cu');", ico_plus, "{new_rule}");
+    if(strlen($clientuid)>0){
+        $topbuttons[] = array("OpenVPNFwApply('".base64_encode($clientuid)."')", ico_firewall, "{apply_now}");
+    }
+
 	$html[]="<div style='margin-top:10px'>";
     $html[]=$tpl->th_buttons($topbuttons);
 	$html[]="<table id='table-openvpn-sites' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
@@ -226,13 +252,18 @@ function main(){
     $action["deny"]="<span class='label label-danger'><i class='$icofw'></i> {deny}</span>";
     $action["allow"]="<span class='label label-primary'><i class='$icofw'></i> {allow}</span>";
 
-    $results=$q->QUERY_SQL("SELECT * FROM firewall WHERE profileid=$profile ORDER BY zorder LIMIT 500");
+    if(strlen($clientuid)>0){
+        $cuesc=$q->sqlite_escape_string2($clientuid);
+        $results=$q->QUERY_SQL("SELECT * FROM firewall WHERE clientuid='$cuesc' ORDER BY zorder LIMIT 500");
+    }else{
+        $results=$q->QUERY_SQL("SELECT * FROM firewall WHERE profileid=$profile ORDER BY zorder LIMIT 500");
+    }
 
     foreach ($results as $index=>$ligne){
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$md=md5(serialize($ligne));
         $ID=$ligne["ID"];
-        $rulename=$tpl->td_href($ligne["rulename"],null,"Loadjs('$page?ruleid-js=$ID&profile=$profile&function=$function');","AsVPNManager");
+        $rulename=$tpl->td_href($ligne["rulename"],null,"Loadjs('$page?ruleid-js=$ID&profile=$profile&function=$function$cu');","AsVPNManager");
         $direction=td_direction($ligne);
         $network=td_network($ligne);
 		$html[]="<tr class='$TRCLASS' id='$md'>";
@@ -255,12 +286,26 @@ function main(){
 	$html[]="<tfoot>";
 	$html[]="</tfoot>";
 	$html[]="</table>";
+	$applyjs="";
+	if(strlen($clientuid)>0){
+		$applyjs="function OpenVPNFwApply(c){LoadAjaxSilent('openvpn-fwapply','$page?fwapply='+encodeURIComponent(c));}";
+	}
+	$html[]="<div id='openvpn-fwapply' style='display:none'></div>";
 	$html[]="</div>
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+	$applyjs
 	</script>";
 	echo $tpl->_ENGINE_parse_body($html);
     return true;
+}
+
+function fw_apply(){
+	// $_GET["fwapply"] is the base64-encoded connection name; the daemon reapplies the live
+	// per-client firewall rules without waiting for a reconnect.
+	$cnB64=$_GET["fwapply"];
+	$sock=new sockets();
+	$sock->REST_API("/openvpn/firewall/reapply/".urlencode($cnB64));
 }
 
 function td_direction($ligne):string{

@@ -294,9 +294,6 @@ function Tiny():bool{
 function save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
-    if($UnboundEnabled==0){$_POST["EnableUnboundBlackLists"]=0;}
-    $EnableUnboundBlackLists=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundBlackLists"));
     $EnableUnBoundSNMPD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnBoundSNMPD"));
 
     if(isset($_POST["InComingInterfaces"])){
@@ -307,15 +304,6 @@ function save(){
 
     $tpl->SAVE_POSTs();
 
-    if($_POST["EnableUnboundBlackLists"]<>$EnableUnboundBlackLists){
-
-        if($_POST["EnableUnboundBlackLists"]==1){
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?blacklists-enable=yes");
-        }else{
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?blacklists-disable=yes");
-        }
-
-    }
 
 
     if($_POST["EnableUnBoundSNMPD"]<>$EnableUnBoundSNMPD){$GLOBALS["CLASS_SOCKETS"]->REST_API("/snmpd/restart");}

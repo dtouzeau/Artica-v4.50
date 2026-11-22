@@ -6,6 +6,8 @@ include_once(dirname(__FILE__)."/ressources/class.logfile_daemon.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(!ifisright()){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
@@ -15,28 +17,58 @@ if(isset($_GET["empty-js"])){empty_js();exit;}
 
 page();
 
+// GET /hotspot/events/download : articarest rend le journal deja compresse.
+// REST_API() decode du JSON et ne porte pas de binaire : cURL direct sur le socket.
+// Remplace framework/hotspot.php?download-events (gzip ecrit sous ressources/logs/web).
 function download():bool{
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("hotspot.php?download-events=yes");
-    $compressfile=PROGRESS_DIR . "/hotspot.log.gz";
-	$fsize=@filesize($compressfile);
-	header("Content-Length: ".$fsize);
-	header('Content-type: application/gzip');
-	header('Content-Transfer-Encoding: binary');
-	header("Content-Disposition: attachment; filename=\"hotspot.log.gz\"");
-	header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-	header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date dans le passé
-	header("Content-Length: ".$fsize);
-	ob_clean();
-	flush();
-	readfile($compressfile);
-	@unlink($compressfile);
+    $ch=curl_init("http://localhost/hotspot/events/download");
+    curl_setopt($ch, CURLOPT_UNIX_SOCKET_PATH, "/usr/share/artica-postfix/bin/run/articarest.sock");
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 300);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, $GLOBALS["CLASS_SOCKETS"]->META_SCOPE_HEADERS());
+    $data=curl_exec($ch);
+    $code=intval(curl_getinfo($ch, CURLINFO_HTTP_CODE));
+    $ctype=(string)curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    if(function_exists("curl_close")){curl_close($ch);}
+    if($data===false || $code!=200 || strpos($ctype,"application/gzip")!==0){
+        header("content-type: text/plain; charset=UTF-8");
+        $json=json_decode((string)$data);
+        echo (is_object($json) && isset($json->Error))?(string)$json->Error:"Unable to download the HotSpot events log (HTTP $code)";
+        return false;
+    }
+    header('Content-type: application/gzip');
+    header('Content-Transfer-Encoding: binary');
+    header("Content-Disposition: attachment; filename=\"hotspot.log.gz\"");
+    header("X-Content-Type-Options: nosniff");
+    header("Cache-Control: no-cache, must-revalidate");
+    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
+    header("Content-Length: ".strlen($data));
+    if(ob_get_level()>0){ob_clean();}
+    echo $data;
     return true;
 }
+// POST /hotspot/events/empty : vider le journal est une ecriture, reservee a
+// l'administrateur du proxy (la page est ouverte aux roles en lecture seule).
+// Remplace framework/hotspot.php?empty-events.
 function empty_js():bool{
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("hotspot.php?empty-events=yes");
-    $function =$_GET["function"];
     header("content-type: application/x-javascript");
-    echo "$function();\n";
+    $users=new usersMenus();
+    if(!$users->AsSquidAdministrator){
+        echo "alert(".json_encode("Permission denied").");\n";
+        return false;
+    }
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/hotspot/events/empty",array()));
+    if(!is_object($json) || empty($json->Status)){
+        $err="articarest: no answer";
+        if(is_object($json) && isset($json->Error)){$err=(string)$json->Error;}
+        elseif(is_object($json) && isset($json->error)){$err=(string)$json->error;}
+        echo "alert(".json_encode($err).");\n";
+        return false;
+    }
+    admin_tracks("Emptied the HotSpot events log");
+    // Le nom vient de l'URL : un identifiant JS seulement, jamais du code.
+    $function=(string)($_GET["function"] ?? "");
+    if(preg_match('/^[A-Za-z_$][A-Za-z0-9_$]*$/',$function)){echo "$function();\n";}
     return true;
 }
 
@@ -72,7 +104,10 @@ function search(){
 	$max=0;$date=null;$c=0;
 	if(isset($_GET["logfile"])){$addPLUS="&logfile=".urlencode($_GET["logfile"]);}
 	$MAIN=$tpl->format_search_protocol($_GET["search"],false,false,false,true);
-	$sock->getFrameWork("hotspot.php?events=yes&rp={$MAIN["MAX"]}&query=".urlencode($MAIN["TERM"]));
+	// /system/logfile/search, identifiant "hotspot" (motif passe a grep sans shell),
+	// lignes les plus recentes en premier : plus de krsort(). Remplace
+	// framework/hotspot.php?events, qui montait un grep en root.
+	$data=$tpl->logfile_search("hotspot",$MAIN,false);
 
 	$zdate=$tpl->_ENGINE_parse_body("{zDate}");
 	$service=$tpl->_ENGINE_parse_body("{service2}");
@@ -81,7 +116,7 @@ function search(){
 	
 	$html[]="
 
-<table class=\"table table-hover\" id='hotspot-event-table'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>
 	<thead>
     	<tr>
         	<th style='width:1%' nowrap>$zdate</th>
@@ -89,22 +124,20 @@ function search(){
             <th>{events}</th>
         </tr>
   	</thead>
-	<tbody>
+	<tbody id='hotspotevent-rows'>
 ";
     $page=CurrentPageName();
-    $targetfile="/usr/share/artica-postfix/ressources/logs/hotspot.log.tmp";
-	$data=explode("\n",@file_get_contents($targetfile));
-	krsort($data);
 	foreach ($data as $line){
 		
     	if(!preg_match("#(.*?)\s+([0-9]+)\s+([0-9:]+).*?\[([0-9]+)\]:(.+)#", $line,$TR)){
             continue;}
 		$c++;
 		$color="black";
-		$date=$TR[1] . " ".$TR[2];
+		// Pentest 2026-11-04 : ligne du journal hotspot (donnee externe) affichee sans encodage (XSS stockee).
+		$date=req_html($TR[1] . " ".$TR[2]);
 		$TIME=$TR[3];
 		$PID=$TR[4];
-		$LINE=$TR[5];
+		$LINE=req_html($TR[5]);
 		if($date==$today){$date=null;}
         $LINE=str_replace("[INFO]:","<span class='label label-info'>{info}</span>&nbsp;",$LINE);
         $LINE=str_replace("[WARNING]:","<span class='label label-warning'>{warning}</span>&nbsp;",$LINE);
@@ -129,15 +162,8 @@ function search(){
                </tr>";
 		
 	}
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</tbody></table>";
+	$html[]="";
+	$html[]="</tbody></table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='hotspotevent-pager'></span></div></div></div>";
 
 
     $bts[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
@@ -146,7 +172,10 @@ function search(){
         OnClick=\"document.location.href='/$page?download=yes';\">
         <i class='fa-solid fa-download'></i> {download} </label>";
 
-    $bts[]="<label class=\"btn btn btn-danger\" OnClick=\"Loadjs('$page?empty-js=yes&function={$_GET["function"]}');\"><i class='fas fa-trash-alt'></i> {empty} </label>";
+    $users=new usersMenus();
+    if($users->AsSquidAdministrator){
+        $bts[]="<label class=\"btn btn btn-danger\" OnClick=\"Loadjs('$page?empty-js=yes&function=".req_url($_GET["function"] ?? "")."');\"><i class='fas fa-trash-alt'></i> {empty} </label>";
+    }
     $bts[]="</div>";
 
 
@@ -158,12 +187,13 @@ function search(){
 
 
 
-    $html[]="<div>".@file_get_contents("/usr/share/artica-postfix/ressources/logs/hotspot.log.cmd")."</div>
-	<script>
+    $html[]="<script>
 		NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 		$jstiny
 	</script>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"hotspotevent-rows","hotspotevent-pager");
 	
 	
 	

@@ -5,8 +5,6 @@ include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.manager.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["tabs"])){tabs();exit;}
-if(isset($_GET["local-ldap"])){local_ldap();exit;}
-if(isset($_GET["remote-ldap"])){remote_ldap();exit;}
 
 if(isset($_GET["radius-config-js"])){radius_config_js();exit;}
 if(isset($_GET["radius-config-popup"])){radius_config_popup();exit;}
@@ -52,6 +50,33 @@ function tabs():bool{
     return true;
 }
 
+/**
+ * Base locale, annuaire distant et RADIUS s'excluent (Save, SaveRemoteLDAP, SaveRadius
+ * remettent les autres a 0). On le dit AVANT l'enregistrement : liste des methodes
+ * actives que l'activation de $self eteindra.
+ */
+function pauth_conflict_html($self):string{
+    $flags=array("local"=>"SquidStandardLDAPAuth","remote"=>"SquidExternLDAPAUTH","radius"=>"SquidRadiusAuth");
+    $names=array("local"=>"{pauth_local_name}","remote"=>"{pauth_remote_name}","radius"=>"{pauth_radius_name}");
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($flags[$self]))==1){return "";}
+    $off=array();
+    foreach($flags as $k=>$f){
+        if($k==$self){continue;}
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($f))==1){$off[]=$names[$k];}
+    }
+    if(count($off)==0){return "";}
+    return "<div class='alert alert-warning' style='font-size:14px'><i class='fas fa-triangle-exclamation'></i> "
+        .str_replace("%L","<strong>".implode(", ",$off)."</strong>",(new template_admin())->_ENGINE_parse_body("{pauth_turns_off}"))."</div>";
+}
+
+/** Les ecritures d'authentification exigent le droit proxy cote serveur. */
+function pauth_require_admin():bool{
+    $users=new usersMenus();
+    if($users->AsSquidAdministrator){return true;}
+    echo "Permission denied";
+    return false;
+}
+
 function local_ldap_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -80,6 +105,7 @@ function local_ldap_popup():bool{
     }
 
 
+    $html[]=pauth_conflict_html("local");
     $html[]=$tpl->form_outside(null, $form,$EXPLAIn,"{apply}",
         "dialogInstance2.close();LoadAjax('auth-table','fw.proxy.members.engines.php?table=yes');$jsrestart",$security);
     echo $tpl->_ENGINE_parse_body($html);
@@ -129,6 +155,7 @@ function radius_config_popup():bool{
 	$form[]=$tpl->field_numeric("radiusport","{radius_server_port}", $radiusport);
 	$form[]=$tpl->field_text("radiusidentifier","{radiusidentifier}",$radiusidentifier,false,"{radiusidentifier_explain}");
 	$form[]=$tpl->field_password2("radiuspassword", "{radiuspassword}", $radiuspassword);
+	$html[]=pauth_conflict_html("radius");
 	$html[]=$tpl->form_outside(null, $form,null,"{apply}",
         "dialogInstance2.close();LoadAjax('auth-table','fw.proxy.members.engines.php?table=yes');$jsrestart",$security);
 	echo $tpl->_ENGINE_parse_body($html);
@@ -136,6 +163,7 @@ function radius_config_popup():bool{
 }
 
 function SaveRadius():bool{
+	if(!pauth_require_admin()){return false;}
 	$tpl=new template_admin();
 	
 	if($_POST["SquidRadiusAuth"]==1){
@@ -152,6 +180,7 @@ function SaveRadius():bool{
 }
 
 function Save(){
+	if(!pauth_require_admin()){return;}
 	$tpl=new template_admin();
 	if($_POST["SquidStandardLDAPAuth"]==1){
 		$_POST["SquidExternLDAPAUTH"]=0;
@@ -246,6 +275,7 @@ function remote_ldap_popup():bool{
 	$form[]=$tpl->field_text("ldap_filter_search_group","{ldap_filter_search_groups}",$ldap_filter_search_group,true,"");
 	$form[]=$tpl->field_text("ldap_group_attribute","{ldap_group_attribute}",$ldap_group_attribute,true,"");
 	
+	$html[]=pauth_conflict_html("remote");
 	$html[]=$tpl->form_outside(null,  $form,null,"{apply}",
         "dialogInstance2.close();LoadAjax('auth-table','fw.proxy.members.engines.php?table=yes');$jsrestart",$security);
 	echo $tpl->_ENGINE_parse_body($html);
@@ -374,6 +404,7 @@ function remote_ldap_status(){
 }
 
 function SaveRemoteLDAP(){
+	if(!pauth_require_admin()){return;}
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
@@ -393,7 +424,7 @@ function SaveRemoteLDAP(){
 	$CONNECTION=@ldap_connect($ldap_server,$ldap_port);
 	
 	if(!$CONNECTION){
-		echo $tpl->_ENGINE_parse_body("jserror:{failed_connect_ldap} $ldap_server:$ldap_port");
+		echo $tpl->post_error("{failed_connect_ldap} $ldap_server:$ldap_port");
 		return;
 	}
 	@ldap_set_option($CONNECTION, LDAP_OPT_PROTOCOL_VERSION, 3);
@@ -409,7 +440,7 @@ function SaveRemoteLDAP(){
 		$error=@ldap_err2str(@ldap_errno($CONNECTION));
 		if (@ldap_get_option($CONNECTION, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$error=$error." $extended_error";}
 		@ldap_close($CONNECTION);
-		echo $tpl->_ENGINE_parse_body("jserror:$error");
+		echo $tpl->post_error($error);
 		@ldap_close($CONNECTION);
 		return;
 	}

@@ -47,7 +47,7 @@ function config_view():bool{
     $f[]="  <button class='btn btn-sm btn-primary' OnClick=\"ns_config_apply();\"><i class='fas fa-save'></i> {apply}</button>";
     $f[]="</div></div>";
     $f[]="<div class='ibox-content'>";
-    $f[]="<textarea id='ns-config-editor' class='form-control' style='font-family:monospace;font-size:12px;min-height:400px;white-space:pre'>".htmlspecialchars($config_text)."</textarea>";
+    $f[]="<textarea id='ns-config-editor' class='form-control' style='font-size:12px;min-height:400px;white-space:pre'>".htmlspecialchars($config_text)."</textarea>";
     $f[]="<div id='ns-config-result' style='margin-top:10px'></div>";
     $f[]="</div></div></div></div>";
 

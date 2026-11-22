@@ -48,46 +48,33 @@ class squid_reverse{
 	
 	
 	public function ssl_certificates_list($NoProxy=false,$IncludeServerCert=0):array{
-
-        $db="/home/artica/SQLITE/certificates.db";
-        if(isset($_SESSION["HARMPID"])){
-            $gpid=intval($_SESSION["HARMPID"]);
-            if($gpid>0){
-                $db="/home/artica/SQLITE/certificates.$gpid.db";
-            }
-        }
-
-        $sqladdon=null;
-		if($NoProxy){$sqladdon=" WHERE `AsProxyCertificate`=0";}
-		$sql="SELECT CommonName,IsClientCert,clientkey,ServerCert FROM sslcertificates{$sqladdon} ORDER BY CommonName";
-		$q=new lib_sqlite($db);
-        $results=$q->QUERY_SQL($sql);
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $rows=$cdb->dropdown([
+            "NoProxy"=>(bool)$NoProxy,
+            "IncludeSub"=>true,
+        ]);
         $sslcertificates[null]="{none}";
-
-		foreach ($results as $index=>$ligneZ){
-			$client=null;
-            if($IncludeServerCert==0) {
-                if ($ligneZ["ServerCert"] == 1) {
-                    VERBOSE("ServerCert == 1 --> CONTINUE", __LINE__);
+        foreach ($rows as $r){
+            $kind=(string)($r->Kind ?? "cert");
+            if($kind==="cert"){
+                if($IncludeServerCert==0 && intval($r->ServerCert ?? 0)===1){
+                    VERBOSE("ServerCert == 1 --> CONTINUE",__LINE__);
                     continue;
                 }
+                $client=null;
+                if(intval($r->IsClientCert ?? 0)===1){$client=" (client)";}
+                $ck=(string)($r->clientkey ?? "");
+                if(strlen($ck)>50){$client=" (client)";}
+                $cn=(string)($r->CommonName ?? "");
+                $sslcertificates[$cn]=$cn.$client;
+            }else{
+                $cn=(string)($r->commonName ?? "");
+                $ID=intval($r->ID ?? 0);
+                $sslcertificates["SUB:$ID"]="Server: $cn-$ID";
             }
-			if($ligneZ["IsClientCert"]==1){$client=" (client)";}
-            if(!is_null($ligneZ["clientkey"])) {
-                if (strlen($ligneZ["clientkey"]) > 50) {
-                    $client = " (client)";
-                }
-            }
-			$sslcertificates[$ligneZ["CommonName"]]=$ligneZ["CommonName"].$client;
-		}
-        $results=$q->QUERY_SQL("SELECT ID,DateTo,commonName,organizationName,emailAddress,subjectAltName FROM subcertificates WHERE Certype=1 ORDER BY commonName ASC");
-        foreach ($results as $index=>$ligneZ){
-            $commonName=$ligneZ["commonName"];
-            $ID=$ligneZ["ID"];
-            $sslcertificates["SUB:$ID"]="Server: $commonName-$ID";
         }
-
-		return $sslcertificates;
+        return $sslcertificates;
 	}
 	private function patchtables(){
 		if($GLOBALS["VERBOSE"]){echo __FUNCTION__."::".__LINE__.":: patching tables...\n";}

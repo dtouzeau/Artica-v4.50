@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -9,8 +11,6 @@ if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["top-computers"])){top_ip();exit;}
 if(isset($_GET["top-countries"])){top_countries();exit;}
 if(isset($_GET["top-threats"])){top_reputations();exit;}
-if(isset($_GET["top-usersagents-1"])){UsersAgentsWidgets();exit;}
-if(isset($_GET["top-htons-1"])){HtonsWidgets();exit;}
 if(isset($_GET["serviceid-js"])){field_serviceid();exit;}
 if(isset($_GET["top-table"])){top_table();exit;}
 if(isset($_GET["byip-js"])){byip_js();exit;}
@@ -43,12 +43,22 @@ function RefreshAllJS():string{
 
     return @implode("\n",$f);
 }
+// Adresse client (IPv4 ou IPv6) venant de l'URL : valeur validee, "" si invalide.
+function byip_valid_ip($value):string{
+    $value=trim(strval($value));
+    if(filter_var($value,FILTER_VALIDATE_IP)===false){return "";}
+    return $value;
+}
+// Expression SQL de l'adresse d'une table de statistiques (historique IPv4 : hton).
+function byip_addr_sql($table):string{
+    return "COALESCE($table.ipaddr,'0.0.0.0'::inet + $table.hton)";
+}
 function byip_js():bool{
-    $hton=$_GET["byip-js"];
+    $ipaddr=byip_valid_ip($_GET["byip-js"]);
+    if($ipaddr===""){return false;}
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $ipaddr=long2ip($hton);
-    return $tpl->js_dialog2($ipaddr,"$page?byip-popup=$hton",1024);
+    return $tpl->js_dialog2($ipaddr,"$page?byip-popup=".urlencode($ipaddr),1024);
 }
 
 function page(){
@@ -82,16 +92,16 @@ function tabs(){
 }
 function byip_popup():bool{
     $page=CurrentPageName();
-    $hton=$_GET["byip-popup"];
+    $ip=byip_valid_ip($_GET["byip-popup"]);
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $array["{today}"]="$page?byip-popup-requests=$hton";
+    $array["{today}"]="$page?byip-popup-requests=".urlencode($ip);
 
     echo $tpl->tabs_default($array);
     return true;
 }
 function byip_requests():bool{
     $page=CurrentPageName();
-    $hton=$_GET["byip-popup-requests"];
+    $ip=urlencode(byip_valid_ip($_GET["byip-popup-requests"]));
     $tpl=new template_admin();
     echo $tpl->_ENGINE_parse_body("<div id='byip-popup-requests' style='margin-top:10px;min-height:450px'></div>");
     echo "<table style='width:100%'>";
@@ -99,16 +109,17 @@ function byip_requests():bool{
     echo "<td style='vertical-align:top;padding:5px;'><div style='margin-top:10px;min-height:450px' id='byip-popup-sites'></div></td>";
     echo "</tr>";
     echo "</table>";
-    echo "<script>\nLoadjs('$page?byip-popup-requests-graph=$hton');\n";
-    echo "Loadjs('$page?byip-popup-websites=$hton');\n";
+    echo "<script>\nLoadjs('$page?byip-popup-requests-graph=$ip');\n";
+    echo "Loadjs('$page?byip-popup-websites=$ip');\n";
     echo "</script>";
     return true;
 }
 function byip_websites_graph():bool{
     $timetext="{by_day}";
     $today=date("Y-m-d");
-    $hton=$_GET["byip-popup-websites"];
-    $sql="SELECT SUM(hits) as hits,serviceid FROM hotstinfos_realtime WHERE hton=$hton GROUP BY serviceid ORDER BY hits DESC";
+    $ip=byip_valid_ip($_GET["byip-popup-websites"]);
+    if($ip===""){return false;}
+    $sql="SELECT SUM(hits) as hits,serviceid FROM hotstinfos_realtime WHERE ".byip_addr_sql("hotstinfos_realtime")."='$ip'::inet GROUP BY serviceid ORDER BY hits DESC";
     $q=new postgres_sql();
 
     $hash=hashServices();
@@ -133,23 +144,21 @@ function byip_websites_graph():bool{
 }
 function hashServices():array{
     $zids=array();
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT ID,servicename FROM nginx_services WHERE enabled=1 ORDER BY servicename";
-    $results=$q->QUERY_SQL($sql);
-    foreach ($results as $index=>$ligne){
-        $servicename=$ligne["servicename"];
-        $ID=$ligne["ID"];
-        $zids[$ID]=$servicename;
-
-
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/nginx_services?order=servicename");
+    $data=json_decode($resp,true);
+    $rows=(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])) ? $data["rows"] : [];
+    foreach ($rows as $ligne){
+        if(intval(isset($ligne["enabled"])?$ligne["enabled"]:0)!==1){continue;}
+        $zids[$ligne["ID"]]=$ligne["servicename"];
     }
     return $zids;
 }
 function byip_requests_graph():bool{
     $timetext="{today}";
     $today=date("Y-m-d");
-    $hton=$_GET["byip-popup-requests-graph"];
-    $sql="SELECT SUM(hits) as hits,zdate FROM hotstinfos_realtime WHERE hton=$hton GROUP BY zdate ORDER BY zdate";
+    $ip=byip_valid_ip($_GET["byip-popup-requests-graph"]);
+    if($ip===""){return false;}
+    $sql="SELECT SUM(hits) as hits,zdate FROM hotstinfos_realtime WHERE ".byip_addr_sql("hotstinfos_realtime")."='$ip'::inet GROUP BY zdate ORDER BY zdate";
     $q=new postgres_sql();
     $results=$q->QUERY_SQL($sql);
     while($ligne=@pg_fetch_assoc($results)){
@@ -158,7 +167,10 @@ function byip_requests_graph():bool{
     }
     if(count($xdata)<2){
         header("content-type: application/x-javascript");
-        echo "// $sql;";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$sql)."\n"; }
         echo "// Count = ".count($xdata)." <2";
         return true;
     }
@@ -264,25 +276,27 @@ function top_table(){
         $filters_text=" AND ".@implode(" AND ",$filters);
     }
 
+    $addr_rt=byip_addr_sql("hotstinfos_realtime");
+    $addr_dy=byip_addr_sql("hotstinfos_days");
     $query = "SELECT SUM(hits) as hits,
-       hotstinfos_realtime.hton,
+       host($addr_rt) AS ipaddr,
        hotstinfos.country_name,
        hotstinfos.hostname,
        hotstinfos.abuseipdb
     FROM hotstinfos_realtime,hotstinfos 
-    WHERE hotstinfos_realtime.hton=hotstinfos.hton $filters_text 
-    GROUP BY hotstinfos_realtime.hton,hotstinfos.country_name,hotstinfos.hostname,hotstinfos.abuseipdb
+    WHERE hotstinfos.ipaddr=$addr_rt $filters_text 
+    GROUP BY host($addr_rt),hotstinfos.country_name,hotstinfos.hostname,hotstinfos.abuseipdb
     ORDER by hits DESC LIMIT 500";
 
     if(isset($_GET["week"]) OR isset($_GET["month"])){
         $query = "SELECT SUM(hits) as hits,
-       hotstinfos_days.hton,
+       host($addr_dy) AS ipaddr,
        hotstinfos.country_name,
        hotstinfos.hostname,
        hotstinfos.abuseipdb
             FROM hotstinfos_days,hotstinfos 
-            WHERE hotstinfos_days.hton=hotstinfos.hton $filters_text 
-            GROUP BY hotstinfos_days.hton,hotstinfos.country_name,hotstinfos.hostname,hotstinfos.abuseipdb
+            WHERE hotstinfos.ipaddr=$addr_dy $filters_text 
+            GROUP BY host($addr_dy),hotstinfos.country_name,hotstinfos.hostname,hotstinfos.abuseipdb
             ORDER by hits DESC LIMIT 500";
     }
     $query=str_replace("AND AND","AND",$query);
@@ -296,13 +310,14 @@ function top_table(){
 
     $tableid="table-".time();
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{ipaddr}</th>
         	<th nowrap>{hostname}</th>
-        	<th nowrap>{country}</small></th>
-        	<th nowrap>{requests}</small></th>
+        	<th nowrap>{country}</th>
+        	<th nowrap>{requests}</th>
         </tr>
   	</thead>
 	<tbody>";
@@ -312,9 +327,9 @@ function top_table(){
 
     while ($ligne = @pg_fetch_assoc($results)){
         $iconco=ico_computer;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $hton=$ligne["hton"];
-        $ipaddr=long2ip($ligne["hton"]);
+        $TRCLASS=null;
+        $ipaddr=byip_valid_ip($ligne["ipaddr"]);
+        if($ipaddr===""){continue;}
         $hostname=$ligne["hostname"];
         $country_name=$ligne["country_name"];
         $class="";
@@ -343,30 +358,23 @@ function top_table(){
         }
 
         $hostname=$tpl->td_href($hostname,null,"Loadjs('fw.modsecurity.threats.php?zoom-ip-js=$ipaddr')");
-        $ipaddr=$tpl->td_href($ipaddr,null,"Loadjs('$page?byip-js=$hton')");
+        $ipaddr=$tpl->td_href($ipaddr,null,"Loadjs('$page?byip-js=".urlencode($ipaddr)."')");
 
         $html[]="<tr class='$TRCLASS' id=''>";
         $html[]="<td style='font-weight:bold;width=1%' $class nowrap><i class=\"$iconco\"></i>&nbsp;$ipaddr</td>";
         $html[]="<td $class style='width:99%'>$hostname</td>";
-        $html[]="<td $class $td1prc>$country_name</td>";
+        // Pentest 2026-11-04 : pays (donnee externe, base GeoIP) affiche sans encodage (XSS stockee).
+        $html[]="<td $class $td1prc>".req_html($country_name)."</td>";
         $html[]="<td $class $td1prc>$hits</td>";
         $html[]="</tr>";
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div></div></div>";
     $html[]="<script>";
     $html[]="NoSpinner();";
     $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('#$tableid').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
+    // L'initialisation footable est devenue sans objet: le tableau est un awc.
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }
 
 function top_threats(){
@@ -452,7 +460,8 @@ function top_ip(){
         $filters_text=@implode(" AND ",$filters);
     }
 
-    $query = "SELECT SUM(hits) as hits,hton FROM $tblid$WHERE$filters_text GROUP by hton ORDER by hits DESC LIMIT 10";
+    $addr=byip_addr_sql($tblid);
+    $query = "SELECT SUM(hits) as hits,host($addr) AS ipaddr FROM $tblid$WHERE$filters_text GROUP by host($addr) ORDER by hits DESC LIMIT 10";
 
     $q = new postgres_sql();
     $results = $q->QUERY_SQL($query);
@@ -468,8 +477,8 @@ function top_ip(){
 
     while ($ligne = @pg_fetch_assoc($results)) {
         $hits = $ligne['hits'];
-        $htons = $ligne['hton'];
-        $ipAddress = long2ip($htons);
+        $ipAddress = $ligne['ipaddr'];
+        if(strlen($ipAddress)==0){continue;}
         $Chartjs->PieDatas[$ipAddress] = $hits;
     }
     $Chartjs->Title = "{top_ipaddr}";
@@ -519,7 +528,7 @@ function top_countries(){
 
     $query = "SELECT SUM(hits) as hits,hotstinfos.country_name 
     FROM $tblid,hotstinfos 
-    WHERE $tblid.hton=hotstinfos.hton $filters_text GROUP by hotstinfos.country_name ORDER by hits DESC LIMIT 10";
+    WHERE hotstinfos.ipaddr=".byip_addr_sql($tblid)." $filters_text GROUP by hotstinfos.country_name ORDER by hits DESC LIMIT 10";
 
 
 
@@ -573,9 +582,9 @@ function top_reputations(){
         $filters_text=" AND ".@implode(" AND ",$filters);
     }
 
-    $query = "SELECT SUM(hits) as hits,hotstinfos.hton 
+    $query = "SELECT SUM(hits) as hits,host(hotstinfos.ipaddr) AS ipaddr 
     FROM $tblid,hotstinfos 
-    WHERE $tblid.hton=hotstinfos.hton AND hotstinfos.abuseipdb=1 $filters_text GROUP by hotstinfos.hton ORDER by hits DESC LIMIT 10";
+    WHERE hotstinfos.ipaddr=".byip_addr_sql($tblid)." AND hotstinfos.abuseipdb=1 $filters_text GROUP by host(hotstinfos.ipaddr) ORDER by hits DESC LIMIT 10";
 
     $q = new postgres_sql();
     $results = $q->QUERY_SQL($query);
@@ -591,8 +600,8 @@ function top_reputations(){
 
     while ($ligne = @pg_fetch_assoc($results)) {
         $hits = $ligne['hits'];
-        $htons=$ligne["hton"];
-        $ipAddress = long2ip($htons);
+        $ipAddress = $ligne["ipaddr"];
+        if(strlen($ipAddress)==0){continue;}
 
         $Chartjs->PieDatas[$ipAddress] = $hits;
     }
@@ -607,21 +616,4 @@ function get_servicename($ID):string{
     if($ID==0){return "Unknown";}
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
 }

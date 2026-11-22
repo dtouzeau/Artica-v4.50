@@ -1,3 +1,3 @@
-<permit_tls_clientcerts>permit tls client certs</permit_tls_clientcerts>
-<permit_tls_clientcerts_text>Permit the request when the remote SMTP client certificate fingerprint is listed in relay client certs.[br]
-The fingerprint digest algorithm is configurable via the smtpd_tls_fingerprint_digest parameter (hard-coded as md5 prior to Postfix version 2.5)</permit_tls_clientcerts_text>
+<permit_tls_clientcerts>consenti certificati client tls</permit_tls_clientcerts>
+<permit_tls_clientcerts_text>Consenti la richiesta quando l'impronta del certificato del client SMTP remoto &#232; elencata nei certificati client di relay.[br]
+L'algoritmo di digest dell'impronta &#232; configurabile tramite il parametro smtpd_tls_fingerprint_digest (hard-coded come md5 prima della versione 2.5 di Postfix)</permit_tls_clientcerts_text>

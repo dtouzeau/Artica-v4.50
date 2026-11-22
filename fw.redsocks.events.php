@@ -1,5 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.dnswhitelist.inc");
 include_once(dirname(__FILE__)."/ressources/class.logfile_daemon.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
@@ -24,7 +25,7 @@ function zoom_js(){
 }
 function zoom(){
 
-	$data=unserialize(base64_decode($_GET["data"]));
+	$data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
 $html[]="<div class=ibox-content>";
 $html[]="<table class='table table table-bordered'>";
 	while (list ($key,$val) = each ($data)){
@@ -54,33 +55,15 @@ function whitelist_js(){
 	$md=$_GET["md"];
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$sql="SELECT * FROM webfilter_whitelists WHERE pattern='$familysite'";
-	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$ligne=$q->mysqli_fetch_array($sql);
-	$ID=intval($ligne["ID"]);
-	if($ID>0){
-		$enabled=intval($ligne["enabled"]);
-		if($enabled==1){
-			$q->QUERY_SQL("UPDATE webfilter_whitelists SET enabled=0 WHERE ID=$ID");
-			if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-		}else{
-			$q->QUERY_SQL("UPDATE webfilter_whitelists SET enabled=1 WHERE ID=$ID");
-			if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-		}
-		$sock=new sockets();
-		$sock->getFrameWork("unbound.php?reload=yes");
-		header("content-type: application/x-javascript");
-		echo "LoadAjaxSilent('btn-$md','$page?button=yes&md=$md&familysite=$familysiteenc')";
-		
-		return;
-		
-	}
-	$sql="INSERT INTO webfilter_whitelists (pattern,enabled,`type`) VALUES('$familysite','1',1)";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-	$sock=new sockets();
-	$sock->getFrameWork("unbound.php?reload=yes");
+	// La reponse est evaluee comme du JavaScript par Loadjs, branche d'erreur
+	// comprise : poser l'en-tete AVANT tout retour anticipe.
 	header("content-type: application/x-javascript");
+	// Chercher-puis-inverser-ou-creer est une SEULE operation cote daemon : la
+	// page enchainait un SELECT puis un UPDATE, que deux clics rapproches
+	// pouvaient croiser (le second lisait l'etat d'avant le premier).
+	$e=artrest_error(dnswhitelist_toggle($familysite));
+	if($e!=""){$tpl->js_error($e);return;}
+	$GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/reconfigure");
 	echo "LoadAjaxSilent('btn-$md','$page?button=yes&md=$md&familysite=$familysiteenc')";
 	
 }
@@ -151,11 +134,8 @@ function button_white(){
 	$tpl=new template_admin();
 	$familysiteEnc=urlencode($familysite);
 	$md=$_GET["md"];
-	$sql="SELECT * FROM webfilter_whitelists WHERE pattern='$familysite'";
-	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$ligne=$q->mysqli_fetch_array($sql);
-	$ID=intval($ligne["ID"]);
-	$enabled=intval($ligne["enabled"]);
+	$state=dnswhitelist_state($familysite);
+	$enabled=intval($state["Enabled"]);
 	
 	
 	$js="Loadjs('$page?whitelist-js=$familysiteEnc&md=$md')";
@@ -231,9 +211,7 @@ function search(){
 	$today=date("Y-m-d");
 	$tcp=new IP();
 	
-	$sql="SELECT * FROM webfilter_whitelists ORDER BY pattern";
-	$q=new lib_sqlite("/home/artica/SQLITE/dns.db");
-	$results=$q->QUERY_SQL($sql);
+	$results=dnswhitelist_list();
 	foreach ($results as $index=>$ligne){
 		$WHITE[$ligne["pattern"]]=1;
 	}
@@ -317,6 +295,15 @@ function search(){
 		
 		
 		
+		// Pentest 2026-11-04 : client/regle/action/nom d'hote du journal DNS (donnee externe) affiches sans encodage (XSS stockee).
+		$date=req_html($date);
+		$TIME=req_html($TIME);
+		$CLIENT_IP=req_html($CLIENT_IP);
+		$RULE=req_html($RULE);
+		$CATEGORY=req_html($CATEGORY);
+		$ALLOW=req_html($ALLOW);
+		$familysite=req_html($familysite);
+		$hostname=req_html($hostname);
 		$html[]="<tr id='$md'>
 				<td><span style='color:$color' style='width:1%' nowrap>$date $TIME</span></td>
 				<td><span style='color:$color' style='width:1%' nowrap>$CLIENT_IP</span></td>
@@ -337,7 +324,7 @@ function search(){
 	$html[]="</tr>";
 	$html[]="</tfoot>";
 	$html[]="</tbody></table>";
-	$html[]="<div>".@file_get_contents("/usr/share/artica-postfix/ressources/logs/dnsfilterd.log.cmd")."</div>
+	$html[]="<div>".req_html(@file_get_contents("/usr/share/artica-postfix/ressources/logs/dnsfilterd.log.cmd"))."</div>
 	<script>
 		NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 		$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });

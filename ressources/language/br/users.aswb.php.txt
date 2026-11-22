@@ -1,13 +1,12 @@
-<add_backlistwhitelist_email>Add a black or a white email address</add_backlistwhitelist_email>
-<add_email>Add an email address</add_email>
-<add_wbl_text>Give here the eMail address you want to add in the black or white anti-spam list[br]
-The address format should be :[ul]
+<add_backlistwhitelist_email>Adicionar um endere&#231;o de e-mail em blacklist ou whitelist</add_backlistwhitelist_email>
+<add_email>Adicionar um endere&#231;o de e-mail</add_email>
+<add_wbl_text>Indique aqui o endere&#231;o de e-mail que voc&#234; deseja adicionar &#224; lista negra ou branca anti-spam[br]
+O formato do endere&#231;o deve ser:[ul]
 [li]user@example.com[/li]
 [li]@example.com[/li]
 [li]@.example.com[/li]
-[/ul]
-</add_wbl_text>
-<black_list_text>An e-mail Blacklist is a list of senders contacts that will be automatically deleted</black_list_text>
-<email_type>eMail type</email_type>
-<email_type_help>If you set it to red, this email will be insterted in yout black list.[br]In other case, if you set it to green, this email will inserted into your white list</email_type_help>
-<white_list_text>An e-mail whitelist is a list of contacts that the user deems are acceptable to receive email from and should not be sent to the trash folder</white_list_text>
+[/ul]</add_wbl_text>
+<black_list_text>Uma blacklist de e-mail &#233; uma lista de contatos remetentes que ser&#227;o exclu&#237;dos automaticamente</black_list_text>
+<email_type>Tipo de e-mail</email_type>
+<email_type_help>Se voc&#234; definir como vermelho, este e-mail ser&#225; inserido na sua blacklist.[br]Caso contr&#225;rio, se voc&#234; definir como verde, este e-mail ser&#225; inserido na sua whitelist</email_type_help>
+<white_list_text>Uma whitelist de e-mail &#233; uma lista de contatos dos quais o usu&#225;rio considera aceit&#225;vel receber e-mail e que n&#227;o devem ser enviados para a lixeira</white_list_text>

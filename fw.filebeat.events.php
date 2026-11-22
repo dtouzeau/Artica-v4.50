@@ -110,7 +110,8 @@ function events_searcher():bool{
         $textclass=null;
         $level=$sline->{"log.level"};
         $timestamp=$sline->{"@timestamp"};
-        $message=$sline->message;
+        // Pentest 2026-11-04 : message filebeat (donnee externe) affiche sans encodage (XSS stockee).
+        $message=req_html($sline->message);
         $level_label=$tooltips[$level];
         $xtime=strtotime($timestamp);
         $FTime=$tpl->time_to_date($xtime,true);

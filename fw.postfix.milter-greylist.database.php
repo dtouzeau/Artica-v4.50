@@ -1,6 +1,11 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.milter.greylist.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["search"])){search();exit;}
 
 table();
@@ -44,7 +49,7 @@ function search(){
 	$ARRAY["CMD"]="milter-greylist.php?scandb=yes";
 	$ARRAY["TITLE"]="{analyze_database}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsApply="Loadjs('fw.progress.php?content=$prgress&mainid=progress-greylist-restart')";
+	$jsApply="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-greylist-restart')";
 
 
 
@@ -72,60 +77,59 @@ function search(){
 				return;
 			}
 
-			$TRCLASS=null;
-			$html[]="<table id='table-miltergrey-list-db' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0px'>";
-			$html[]="<thead>";
-			$html[]="<tr>";
-			$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-			$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{time}</th>";
-			$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{ipaddr}</center></th>";
-			$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{sender}</center></th>";
-			$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{recipients}</center></th>";
-			$html[]="</tr>";
-			$html[]="</thead>";
-			$html[]="<tbody>";
-			
-			$STATUS[1]="<span class='label label-primary'>{whitelisted}</span>";
-			$STATUS[0]="<span class='label'>{greylisted}</span>";
-
+			$rows=array();
 			while ($ligne = pg_fetch_assoc($results)) {
-				if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-				$md=md5(serialize($ligne));
-				$id=$ligne["id"];
-				$color="#000000";
-				$zdate=$tpl->time_to_date(strtotime($ligne["stime"]),true);
-				
-				$ipaddr=$ligne["ip_addr"];
-				$mailfrom=$ligne["mailfrom"];
-				$mailto=$ligne["mailto"];
-				$whitelisted=$ligne["whitelisted"];
-
-				
-				$html[]="<tr class='$TRCLASS' id='$md'>";
-				$html[]="<td style='width:1%'>{$STATUS[$whitelisted]}</td>";
-				$html[]="<td style='width:1%' nowrap>{$ligne["stime"]}</td>";
-				$html[]="<td style='width:1%' nowrap>$ipaddr</td>";
-				$html[]="<td>$mailfrom</td>";
-				$html[]="<td style='width:1%' nowrap>$mailto</td>";
-				$html[]="</tr>";
+				$rows[]=pfxgl_row($tpl,$ligne);
 			}
 
-			$html[]="</tbody>";
-			$html[]="<tfoot>";
+			$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+			$html[]="<table class='awc-tbl'><thead><tr>";
+			$html[]="<th>{sender}</th>";
+			$html[]="<th class='center'>{status}</th>";
+			$html[]="<th>{ipaddr}</th>";
+			$html[]="<th>{time}</th>";
+			$html[]="</tr></thead><tbody id='pfxgl-rows'>";
+			if(count($rows)==0){
+				$html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+			}else{
+				$html[]=@implode("\n",$rows);
+			}
+			$shown=count($rows);
+			$html[]="</tbody></table></div>";
+			$html[]="<div class='awc-foot'>";
+			$html[]="<span>{showing} $shown / $shown</span>";
+			$html[]="<span class='awc-pg' id='pfxgl-pager'></span>";
+			$html[]="</div></div></div>";
 
-			$html[]="<tr>";
-			$html[]="<td colspan='5'>";
-			$html[]="<ul class='pagination pull-right'></ul>";
-			$html[]="</td>";
-			$html[]="</tr>";
-			$html[]="</tfoot>";
-			$html[]="</table>";
-			$html[]="<small>$sql</small>
-			<script>
-			NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-			$(document).ready(function() { $('#table-miltergrey-list-db').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-			</script>";
+			// La requete SQL etait affichee sous le tableau: reste de mise au point.
+			$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.awc_pager_js(50,"pfxgl-rows","pfxgl-pager");
+}
+
+/**
+ * Un tuple de la base de liste grise: expediteur en identite, destinataire en
+ * sous-titre. Adresses et IP viennent de la session SMTP -- donc d'un tiers -- et
+ * etaient rendues brutes.
+ */
+function pfxgl_row($tpl,$ligne):string{
+	$md=md5(serialize($ligne));
+	$wl=intval($ligne["whitelisted"])==1;
+	$mailto=(string)$ligne["mailto"];
+
+	$h ="<tr id='$md'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='".($wl?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-hourglass-half'></i></span>";
+	$h.="<span><span class='awc-name'>".htmlspecialchars((string)$ligne["mailfrom"])."</span>";
+	if($mailto!==""){$h.="<div class='awc-meta'>&rarr; ".htmlspecialchars($mailto)."</div>";}
+	$h.="</span></div></td>";
+	$h.="<td class='center'>".($wl
+		?"<span class='awc-badge awc-badge-on'>{whitelisted}</span>"
+		:"<span class='awc-badge awc-badge-off'>{greylisted}</span>")."</td>";
+	$h.="<td class='awc-mono'>".htmlspecialchars((string)$ligne["ip_addr"])."</td>";
+	$h.="<td class='awc-mono'>".htmlspecialchars($tpl->time_to_date(strtotime((string)$ligne["stime"]),true))."</td>";
+	$h.="</tr>";
+	return $h;
 }

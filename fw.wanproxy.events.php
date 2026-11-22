@@ -22,7 +22,7 @@ function zoom_js(){
 }
 function zoom(){
 
-	$data=unserialize(base64_decode($_GET["data"]));
+	$data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
 $html[]="<div class=ibox-content>";
 $html[]="<table class='table table table-bordered'>";
 	while (list ($key,$val) = each ($data)){
@@ -146,8 +146,9 @@ function search(){
 	$c++;
 	$color="black";
 	$date=date("Y-m-d H:i:s",$re[1]);
-	$service=$re[2];
-	$line=$re[3];
+	// Pentest 2026-11-04 : ligne de journal wanproxy (donnee externe) affiche sans encodage (XSS stockee).
+	$service=req_html($re[2]);
+	$line=req_html($re[3]);
 
 		if(preg_match("#already defined. Ignoring#i", $line)){continue;}
 		if(preg_match("#Socket created at#i", $line)){continue;}

@@ -59,6 +59,10 @@ class HeadsBuilder{
             $this->InTopHead[]="<script $headjs src=\"$HTTP_X_ARTICA_SUBFOLDER$jsf\"></script>";
         }
 
+        // Zoom de la console sans cumul avec un zoom arriere du navigateur.
+        if(function_exists("console_zoom_script")){
+            $this->InTopHead[]=console_zoom_script($HTTP_X_ARTICA_SUBFOLDER);
+        }
         $this->f=@implode("\n", $this->InTopHead);
         return true;
     }
@@ -262,8 +266,7 @@ class HeadsBuilder{
         $jsCode104[]="angular/font-awesome/js/all.min.js";
         $jsCode104[]="js/jquery-confirm.js";
         $jsCode104[]="js/moment.js";
-        $jsCode104[]="js/Chart.bundle.min.js";
-        $jsCode104[]="angular/js/plugins/chartJs/Chart.min.4.4.7.js";
+        $jsCode104[]="angular/js/plugins/chartJs/Chart.min.4.5.1.js";
         $jsCode104[]="angular/js/plugins/chartJs/chartjs-plugin-datalabels.min.js";
         $jsCode104[]="angular/js/plugins/chartJs/chartjs-adapter-date-fns.bundle.min.js";
         $jsCode104[]="$pluginRoot/chosen/chosen.jquery.js";

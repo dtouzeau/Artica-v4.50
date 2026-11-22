@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);
 include_once(dirname(__FILE__).'/framework/class.unix.inc');if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 

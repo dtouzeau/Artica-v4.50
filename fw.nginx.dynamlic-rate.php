@@ -2,6 +2,9 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_GET["popup-tabs"])){popup_tabs();exit;}
 if(isset($_GET["top-buttons"])){top_buttons();exit;}
@@ -84,11 +87,14 @@ function rule_popup():bool{
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
     $function   = $_GET["function"];
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_drl_sqacls WHERE ID=$ruleid");
-
-    if(!isset($ligne["enable"])){
-        $ligne["enabled"] = 1;
+    $ligne = ["enabled"=>1,"aclname"=>"","rate"=>0];
+    if($ruleid > 0){
+        $data = acls_api_get("/nginx/dynamic-rate/acls/$ruleid");
+        if(is_array($data)){
+            $ligne["enabled"] = intval($data["enabled"] ?? 1);
+            $ligne["aclname"] = $data["aclName"] ?? "";
+            $ligne["rate"]    = intval($data["rate"] ?? 0);
+        }
     }
     $bt="{add}";
     if($ruleid>0){ $bt="{apply}"; }
@@ -132,33 +138,32 @@ function rule_export_save(){
 
 function rule_save():bool{
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl->CLEAN_POST();
     $serviceid  = intval($_POST["serviceid"]);
     $ruleid     = intval($_POST["ruleid"]);
     $rate       = intval($_POST["rate"]);
-    $aclname    = $q->sqlite_escape_string2($_POST["aclname"]);
+    $aclname    = trim($_POST["aclname"]);
     $enabled    = intval($_POST["enabled"]);
     if($ruleid==0) {
-
-        $xORDER=1;
-        $PortDirection=0;
-        $sql = "INSERT INTO nginx_drl_sqacls (aclname,enabled,acltpl,xORDER,aclport,aclgroup,aclgpid,PortDirection,serviceid,rate) VALUES ('$aclname',$enabled,'','$xORDER','0','0','0','$PortDirection',$serviceid,$rate)";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){
-            echo $tpl->post_error($q->mysql_error);
+        [$ok,$data] = acls_api_send("POST","/nginx/dynamic-rate/acls",[
+            "aclName"   => $aclname,
+            "serviceID" => $serviceid,
+            "rate"      => $rate,
+        ]);
+        if(!$ok){
+            echo $tpl->post_error($data);
             return false;
         }
         return admin_tracks_post("New Reverse-proxy Dynamic Rate rule");
     }
 
-    $sql="UPDATE nginx_drl_sqacls SET enabled=$enabled,
-                        aclname='$aclname',
-                        rate=$rate,
-                        WHERE ID=$ruleid";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
+    [$ok,$data] = acls_api_send("PUT","/nginx/dynamic-rate/acls/$ruleid",[
+        "enabled" => $enabled,
+        "aclName" => $aclname,
+        "rate"    => $rate,
+    ]);
+    if(!$ok){
+        echo $tpl->post_error($data);
         return false;
     }
     return admin_tracks_post("Edit Reverse-proxy Dynamic Rate rule #$ruleid");
@@ -204,26 +209,32 @@ function popup_table(){
     $compile_js_progress=compile_js_progress($serviceid);
     $html[]="<div id='progress-compile-replace-$serviceid'></div>";
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{dynamic_rate_limiting}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
 ";
     $TRCLASS="";
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $results=$q->QUERY_SQL("SELECT * FROM nginx_drl_sqacls WHERE serviceid=$serviceid ORDER BY xORDER");
+    $results = acls_api_get("/nginx/dynamic-rate/acls?serviceid=$serviceid");
+    if(!is_array($results)){ $results = []; }
 
     foreach($results as $index=>$ligne) {
+        $ligne["ID"]      = $ligne["id"] ?? 0;
+        $ligne["enabled"] = $ligne["enabled"] ?? 1;
+        $ligne["aclname"] = $ligne["aclName"] ?? "";
+        $ligne["aclgroup"]= $ligne["aclGroup"] ?? 0;
+        $ligne["xORDER"]  = $ligne["xOrder"] ?? 1;
         $MUTED=null;
         $ID=$ligne["ID"];
         if(isset($already_isset[$ID])){continue;}
         $already_isset[$ID]=true;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $explain = EXPLAIN_THIS_RULE($ligne['ID'], $ligne["enabled"], $ligne["aclgroup"]);
         $delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
         $js="Loadjs('$page?rule-id-js=$ID')";
@@ -260,31 +271,20 @@ function popup_table(){
 
     }
 
-        $html[]="</tbody>";
-        $html[]="<tfoot>";
-
-        $html[]="<tr>";
-        $html[]="<td colspan='9'>";
-        $html[]="<ul class='pagination pull-right'></ul>";
-        $html[]="</td>";
-        $html[]="</tr>";
-        $html[]="</tfoot>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-        $html[]="$(document).ready(function() { $('#$tableid').footable( { \"filtering\": { \"enabled\": false";
-        $html[]="},\"sorting\": { \"enabled\": true },";
-        $html[]="\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
         $html[]="LoadAjaxSilent('top-buttons-$serviceid','$page?top-buttons=$serviceid&function=$function');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         }
 
 
 function EXPLAIN_THIS_RULE($ID){
     $acls=new squid_acls_groups();
     $tpl=new templates();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rate FROM nginx_drl_sqacls WHERE ID=$ID");
+    $row = acls_api_get("/nginx/dynamic-rate/acls/$ID");
+    $ligne = ["rate"=>0];
+    if(is_array($row)){ $ligne["rate"] = intval($row["rate"] ?? 0); }
     $objects=$acls->getobjectsNameFromAclrule($ID,"black","nginx_drl_sqacls");
     if(count($objects)>0){$method[]="{for_objects} ". @implode(", {and} ", $objects);}
     $method[]="{then} {limit_rate} &laquo;{$ligne["rate"]}/s&raquo;";

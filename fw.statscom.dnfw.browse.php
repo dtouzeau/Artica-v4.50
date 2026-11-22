@@ -281,10 +281,12 @@ function categories_table(){
     $html[]="<th>{category}</th>";
     $html[]="<th>{size}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["categories-table"]));
+    $table=unserialize(base64_decode($_GET["categories-table"]),array("allowed_classes"=>false));
     $catz=new mysql_catz();
     foreach ( $table as $categoryid=>$sizeM) {
 
+        // Pentest 2026-11-04 : categoryid (donnee externe) affiche sans encodage (XSS stockee).
+        $categoryid=intval($categoryid);
         $category=$catz->CategoryIntToStr($categoryid);
         $link=$tpl->td_href($category,null,"Loadjs('fw.statscom.browse.categories.php?category=$categoryid&engine=dnsfw')");
 
@@ -362,10 +364,11 @@ function sites_table(){
     $html[]="<th>{domains}</th>";
     $html[]="<th>{queries}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["sites-table"]));
+    $table=unserialize(base64_decode($_GET["sites-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$array) {
         $sizeM=$array[0];
-        $siteid=$array[1];
+        // Pentest 2026-11-04 : siteid (donnee externe) affiche sans encodage (XSS stockee).
+        $siteid=intval($array[1]);
 
         $link=$tpl->td_href("$site",null,"Loadjs('fw.statscom.browse.website.php?siteid=$siteid&engine=dnsfw')");
 
@@ -385,7 +388,7 @@ function users_table(){
     $html[]="<tr>";
     $html[]="<th>{members}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["users-table"]));
+    $table=unserialize(base64_decode($_GET["users-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$sizeM) {
         $h=explode("|",$site);
         $t=array();
@@ -556,15 +559,16 @@ function query(){
 
     if($_SESSION["STATSCOM_DAY"]["USER"]<>null){
         $TITLES[]="{and} {member} {$_SESSION["STATSCOM_DAY"]["USER"]}";
-        $WHEREU=" AND username='{$_SESSION["STATSCOM_DAY"]["USER"]}'";
+        // Pentest 2026-11-04 : USER/IP/MAC/FROM/TO/LIMIT (session remplie par POST) etaient concatenes dans la requete.
+        $WHEREU=" AND username='".pg_escape_string2($_SESSION["STATSCOM_DAY"]["USER"])."'";
     }
     if($_SESSION["STATSCOM_DAY"]["IP"]<>null){
         $TITLES[]="{and} {ipaddr} {$_SESSION["STATSCOM_DAY"]["IP"]}";
-        $WHEREI=" AND ipaddr='{$_SESSION["STATSCOM_DAY"]["IP"]}'";
+        $WHEREI=" AND ipaddr='".pg_escape_string2($_SESSION["STATSCOM_DAY"]["IP"])."'";
     }
     if($_SESSION["STATSCOM_DAY"]["MAC"]<>null){
         $TITLES[]="{and} {MAC} {$_SESSION["STATSCOM_DAY"]["MAC"]}";
-        $WHEREM=" AND mac='{$_SESSION["STATSCOM_DAY"]["MAC"]}'";
+        $WHEREM=" AND mac='".pg_escape_string2($_SESSION["STATSCOM_DAY"]["MAC"])."'";
     }
     if( intval($_SESSION["STATSCOM_DAY"]["SIZE"])>0){
         $size_q=round(intval( $_SESSION["STATSCOM_DAY"]["SIZE"])*1024);
@@ -572,6 +576,10 @@ function query(){
     }
 
     $html[]="<H2 style='margin-top: 10px'>".@implode(" ",$TITLES)."</H2>";
+    $date1SQL=pg_escape_string2($date1);
+    $date2SQL=pg_escape_string2($date2);
+    $LIMITSQL=intval($_SESSION["STATSCOM_DAY"]["LIMIT"]);
+    if($LIMITSQL<1){$LIMITSQL=250;}
 
 
     $sql="SELECT SUM($TABLE_SELECTED.hits) as hits, 
@@ -584,9 +592,9 @@ function query(){
     statscom_websites.category   
     FROM $TABLE_SELECTED,statscom_websites WHERE{$WHERES}
     statscom_websites.siteid=$TABLE_SELECTED.siteid AND
-    $TABLE_SELECTED.zdate >='$date1' AND  $TABLE_SELECTED.zdate <= '$date2'{$WHEREU}{$WHEREI}{$WHEREM}
+    $TABLE_SELECTED.zdate >='$date1SQL' AND  $TABLE_SELECTED.zdate <= '$date2SQL'{$WHEREU}{$WHEREI}{$WHEREM}
     GROUP BY $TABLE_SELECTED.zdate,$TABLE_SELECTED.username,$TABLE_SELECTED.ipaddr,$TABLE_SELECTED.mac,statscom_websites.sitename, statscom_websites.category ORDER BY $TABLE_SELECTED.zdate
-    LIMIT {$_SESSION["STATSCOM_DAY"]["LIMIT"]}";
+    LIMIT $LIMITSQL";
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){
@@ -644,6 +652,9 @@ function query(){
         $category=$tpl->td_href($category,"{statistics}","Loadjs('fw.statscom.category.php?data=yes&$params')");
 
 
+        // Pentest 2026-11-04 : site/membre/MAC/IP (donnee externe) affiche sans encodage (XSS stockee).
+        $date=req_html($date);$sitename=req_html($sitename);$username=req_html($username);
+        $mac=req_html($mac);$ipaddr=req_html($ipaddr);
         $html[]="<tr style='vertical-align:middle' class='$TRCLASS'>";
         $html[]="<td $td1>$date</td>";
         $html[]="<td $tdfree>$sitename</td>";

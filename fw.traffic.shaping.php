@@ -5,15 +5,15 @@ $GLOBALS["Units"]["Mbit"]="Megabit (Mbit)";
 //$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.firewall.api.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// Contrôle de droits côté serveur : form_outside(…,"AsFirewallManager") ne le fait que dans le navigateur.
+$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["element-js"])){element_js();exit;}
-if(isset($_GET["ipaddr-import-js"])){ipaddr_import_js();exit;}
 if(isset($_GET["element-popup"])){element_popup();exit;}
 if(isset($_POST["ID"])){element_save();exit;}
 if(isset($_GET["delete"])){delete();exit;}
-if(isset($_POST["import"])){import_save();exit;}
-if(isset($_GET["ipaddr-import-popup"])){ipaddr_import_popup();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["enable"])){element_enable();exit;}
@@ -25,7 +25,7 @@ js();
 function js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ruleid=intval($_GET["ruleid"]);
+	$ruleid=intval($_GET["ruleid"] ?? 0);
 	if($ruleid==0){
 		page();
 		exit;
@@ -69,42 +69,11 @@ function element_enable(){
 	$tpl=new template_admin();
 	$ID=intval($_GET["enable"]);
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM traffic_shaping WHERE ID='$ID'");
-	$pattern=urlencode($ligne["pattern"]);
-	$ruleid=$ligne["ruleid"];
-	if(intval($ligne["enabled"])==1){
-		$q->QUERY_SQL("UPDATE traffic_shaping SET enabled=0 WHERE ID=$ID");
-		if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-		$sock=new sockets();
-		$sock->getFrameWork("firehol.php?traffic-shap-remove=$pattern&ruleid=$ruleid");
-		echo "Loadjs('$page?fill=$ID');\n";
-		return;
-	}
-	$q->QUERY_SQL("UPDATE traffic_shaping SET enabled=1 WHERE ID=$ID");
-	if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-	element_push($ID);
+	$cur=fwapi_data(fwapi_get("shaping/$ID"));
+	if(!is_array($cur)){$tpl->js_error("{fw_rule_not_found}");return;}
+	$e=fwapi_error(fwapi_send("POST","shaping/$ID/enable",array("enabled"=>intval($cur["enabled"])==1?0:1)));
+	if($e!=""){$tpl->js_error($e);return;}
 	echo "Loadjs('$page?fill=$ID');\n";
-}
-
-function element_push($ID){
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM traffic_shaping WHERE ID='$ID'");
-	$pattern=urlencode($ligne["pattern"]);
-	$ruleid=$ligne["ruleid"];
-	$limit_unit=$ligne["limit_unit"];
-	$limit=$ligne["limit"];
-
-	if($limit_unit=="kbit"){
-		$final=$limit*1024;
-	}
-	if($limit_unit=="Mbit"){
-		$final=$limit*1024;
-		$final=$final*1024;
-	}
-
-	$sock=new sockets();
-	$sock->getFrameWork("firehol.php?traffic-shap-add=$pattern&ruleid=$ruleid&value=$final");
 }
 
 function table_start(){
@@ -119,15 +88,6 @@ function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$sql="CREATE TABLE IF NOT EXISTS `traffic_shaping` (
-		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-		`pattern` TEXT,
-		`enabled` INTEGER NOT NULL DEFAULT 0,
-		`ruleid` INTEGER NOT NULL DEFAULT 0,
-		`limit` INTEGER NOT NULL DEFAULT 10000000,
-		`limit_unit` TEXT NOT NULL DEFAULT 'bit')";
-
-	$q->QUERY_SQL($sql);
 	$ruleid=intval($_GET["ruleid"]);
 
 
@@ -140,30 +100,28 @@ function table(){
 
 function delete(){
 	$ID=intval($_GET["delete"]);
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$q->QUERY_SQL("DELETE FROM traffic_shaping WHERE ID='$ID'");
-	if(!$q->ok){
-		$tpl=new template_admin();
-		$tpl->js_mysql_alert($q->mysql_error);
-		return;
-	}
-	echo "$('#{$_GET["md"]}').remove()\n";
+	$md=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["md"] ?? ""));
+	// Le daemon retire le motif de xt_ratelimit avant de supprimer la ligne.
+	$e=fwapi_error(fwapi_send("DELETE","shaping/$ID"));
+	if($e!=""){(new template_admin())->js_error($e);return;}
+	echo "$('#$md').remove()\n";
 }
-
 
 function element_js(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$ID=intval($_GET["element-js"]);
 	$ruleid=intval($_GET["ruleid"]);
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
 	if($ID==0){$title="{new_entry}";}else{$title="{item} $ID";}
-	$tpl->js_dialog($title, "$page?element-popup=$ID&ruleid=$ruleid&function={$_GET["function"]}");
+	$tpl->js_dialog($title, "$page?element-popup=$ID&ruleid=$ruleid&function=$function");
 }
 function element_popup(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ruleid=$_GET["ruleid"];
+	$ruleid=intval($_GET["ruleid"]);
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
 	$RemoveRuleField=false;
 	$explain=null;
 
@@ -175,13 +133,13 @@ function element_popup(){
 	$ID=intval($_GET["element-popup"]);
 	$uid=$_SESSION["uid"];
 	if($uid==-100){$uid="Manager";}
-	$jsafter="{$_GET["function"]}()";
+	$jsafter="$function()";
 	$ligne=$q->mysqli_fetch_array("SELECT * FROM traffic_shaping WHERE ID='$ID'");
 
 	$Units=$GLOBALS["Units"];
 
 	if($ID==0){
-		$jsafter="BootstrapDialog1.close();{$_GET["function"]}()";
+		$jsafter="BootstrapDialog1.close();$function()";
 		$bt="{add}";
 		$title="{new_item}";
 		$ligne["limit"]=512;
@@ -215,78 +173,27 @@ function element_popup(){
 function element_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-
-	$ID=$_POST["ID"];
-	$pattern=$_POST["pattern"];
-	$limit=intval($_POST["limit"]);
-	$limit_unit=$_POST["limit_unit"];
-	$ruleid=intval($_POST["ruleid"]);
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-
-	if(!$q->FIELD_EXISTS("traffic_shaping","stmp")){
-		$q->QUERY_SQL("ALTER TABLE ADD stmp TEXT NULL");
-	}
-
-	if(!is_file("/proc/net/ipt_ratelimit/rule{$ruleid}")){
-		$error_not_ip_not_cdir=$tpl->_ENGINE_parse_body("{error_fwrule_not_applied}");
-		echo "jserror: $error_not_ip_not_cdir";
-		return;
-	}
-
+	$ID=intval($_POST["ID"]);
+	$data=array(
+		"limit"=>intval($_POST["limit"]),
+		"limit_unit"=>(string)($_POST["limit_unit"] ?? "kbit"),
+		"ruleid"=>intval($_POST["ruleid"]),
+	);
 	if($ID==0){
-
-		$ipclass=new IP();
-		if(!$ipclass->IsACDIROrIsValid($pattern)){
-			$error_not_ip_not_cdir=$tpl->_ENGINE_parse_body("{error_not_ip_not_cdir}");
-			$error_not_ip_not_cdir=str_replace("%s",$pattern,$error_not_ip_not_cdir);
-			echo "jserror: $error_not_ip_not_cdir";
-			return;
-
-		}
-		$stmp=md5(time()."$pattern$ruleid");
-		$q->QUERY_SQL("INSERT OR IGNORE INTO traffic_shaping (`pattern`,`limit`,`limit_unit`,`enabled`,`ruleid`,`stmp`)
-			VALUES ('$pattern','$limit','$limit_unit',1,$ruleid,'$stmp')");
-		if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
-
-		$ligne=$q->mysqli_fetch_array("SELECT ID FROM traffic_shaping WHERE stmp='$stmp'");
-		element_push($ligne["ID"]);
-
-
-
-		return;
+		$data["pattern"]=trim((string)($_POST["pattern"] ?? ""));
+		$data["enabled"]=1;
+		$resp=fwapi_send("POST","shaping",$data);
+	}else{
+		$resp=fwapi_send("PUT","shaping/$ID",$data);
 	}
-
-
-	$q->QUERY_SQL("UPDATE traffic_shaping SET 
-				`limit`='$limit', 
-				`limit_unit`='$limit_unit', 
-				`ruleid` = '$ruleid'
-				WHERE `ID`='$ID'");
-	if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
-	element_push($ID);
-
-
-}
-
-function import_save(){
-    $tpl=new template_admin();
-    $tpl->CLEAN_POST();
-    $tb=explode("\n",$_POST["import"]);
-    unset($_POST["import"]);
-    foreach($tb as $item) {
-        $_POST["ipaddr"]=$item;
-        ipaddr_save();
-    }
+	$e=fwapi_error($resp);
+	if($e!=""){echo $tpl->post_error($e);}
 }
 
 function dump_rules(){
 	$xRULES=array();
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 
-	if(!$q->FIELD_EXISTS("iptables_main","xt_ratelimit")){
-		$q->QUERY_SQL("ALTER TABLE iptables_main ADD xt_ratelimit INTEGER NOT NULL DEFAULT 0");
-		$q->QUERY_SQL("ALTER TABLE iptables_main ADD xt_ratelimit_dir TEXT NOT NULL DEFAULT 'src'");
-	}
 
 	$sql="SELECT ID,rulename FROM iptables_main WHERE xt_ratelimit=1 AND enabled=1";
 	$results=$q->QUERY_SQL($sql);
@@ -300,23 +207,24 @@ function dump_rules(){
 function fill(){
 	header("content-type: application/x-javascript");
 	$page=CurrentPageName();
-	$md=md5("TRAFFIC.".$_GET["fill"]);
+	$fillid=intval($_GET["fill"]);
+	$md=md5("TRAFFIC.".$fillid);
 
 
 	echo "
 	var elm = document.getElementById('$md');
 	var className=elm.className;
 	var str='';
-	$.get(\"$page?row={$_GET["fill"]}\", {class:className}, function(data){
+	$.get(\"$page?row=$fillid\", {class:className}, function(data){
 		$(\"#$md\").replaceWith(data);
 	});";
 
 	#echo "LoadAjax('$md','$page?row={$_GET["fill"]}');\n";
 }
 function row_fill(){
-	$ID=$_GET["row"];
+	$ID=intval($_GET["row"]);
 	$tpl=new template_admin();
-	$class=$_GET["class"];
+	$class=preg_replace('/[^A-Za-z0-9_ -]/','',(string)($_GET["class"] ?? ""));
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$sql="SELECT * FROM traffic_shaping WHERE ID=$ID";
 	$ligne=$q->mysqli_fetch_array($sql);
@@ -395,10 +303,11 @@ function rows($ligne,$TRCLASS=null){
 	}
 	$limit_text="$limit&nbsp;{$Units[$limit_unit]}";
 
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
 	$pattern=$tpl->td_href($pattern,null,
-		"Loadjs('$page?element-js=$ID&ruleid=$ruleid&function={$_GET["function"]}');");
+		"Loadjs('$page?element-js=$ID&ruleid=$ruleid&function=$function');");
 
-	$enable_ico=$tpl->icon_check($enabled,"Loadjs('$page?enable=$ID')","AsFirewallManager");
+	$enable_ico=$tpl->icon_check($enabled,"Loadjs('$page?enable=$ID')",null,"AsFirewallManager");
 	$ico_status=$tpl->td_href($ico_status,"{refresh}","Loadjs('$page?fill=$ID')");
 
 	$html[]="<td $td1>{$ico_status}</span></td>";
@@ -425,9 +334,10 @@ function search(){
 
 	$t=time();
 	$ruleid=intval($_GET["ruleid"]);
+	$function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
 
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style=''>";
-	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?element-js=0&ruleid=$ruleid&function={$_GET["function"]}');\">";
+	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?element-js=0&ruleid=$ruleid&function=$function');\">";
 	$html[]="<i class='fa fa-plus'></i> {new_item} </label>";
 	$html[]="</div>";
 
@@ -440,7 +350,8 @@ function search(){
 	if($MAX==0){$MAX=150;}
 	$sql="SELECT * FROM traffic_shaping {$querys["Q"]} LIMIT $MAX";
 	$results = $q->QUERY_SQL($sql);
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." $sql<br>$q->mysql_error");return;}
+	// Pentest 2026-11-04 : search (dans la requete affichee) etait recopie sans encodage dans la page (XSS).
+	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." ".req_html($sql)."<br>".req_html($q->mysql_error));return;}
 	
 
 	

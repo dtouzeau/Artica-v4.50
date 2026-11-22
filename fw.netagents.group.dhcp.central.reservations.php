@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Central DHCP reservation management (cluster_mode).
  * CRUD operations on the management server's central config JSON.
@@ -71,7 +73,7 @@ function cres_page(): bool {
         return true;
     }
         $t = time();
-        $h[] = "<table id='tbl-cres-$t' class='table table-stripped' data-page-size='50'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "<thead><tr>";
         $h[] = "  <th data-sortable=true data-type='text'>ID</th>";
         $h[] = "  <th data-sortable=true data-type='text'>{name}</th>";
@@ -83,7 +85,7 @@ function cres_page(): bool {
         $TRCLASS = null;
         foreach ($reservations as $r) {
             if (!is_object($r)) continue;
-            if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+            $TRCLASS=null;
             $rid     = htmlspecialchars($r->id ?? '');
             $name    = htmlspecialchars($r->name ?? '');
             $mac     = htmlspecialchars($r->hardware_address ?? '');
@@ -105,7 +107,7 @@ function cres_page(): bool {
         }
         $h[] = "</tbody>";
         $h[] = "<tfoot><tr><td colspan='6'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-        $h[] = "</table>";
+        $h[] = "</table></div></div></div>";
         $h[] = "<script>NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS);
         $h[]="  LoadAjax('cres-buttons-$id','$page?res-buttons=yes&id=$id&function=$function');";
         $h[] = "</script>";
@@ -128,7 +130,7 @@ function cres_page(): bool {
     $h[] = "</script>";
     $h[] = "<div id='cres-container-$id'></div>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     return true;
 }
 

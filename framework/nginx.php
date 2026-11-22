@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 /*$GLOBALS["VERBOSE"]=true;
 ini_set('display_errors', 1);
 ini_set('error_reporting', E_ALL);
@@ -6,52 +8,15 @@ ini_set('error_prepend_string',null);ini_set('error_append_string',null);
 */
 include_once(dirname(__FILE__)."/frame.class.inc");
 include_once(dirname(__FILE__)."/class.unix.inc");
-if(isset($_GET["nginx-searchav"])){SearchInAv();exit;}
 
-
-if(isset($_GET["apply-template"])){apply_template();exit;}
 if(isset($_GET["check-reverse"])){check_reverse();exit;}
-if(isset($_GET["create-server-cert"])){create_server_cert();exit;}
-if(isset($_GET["create-client-cert"])){create_client_cert();exit;}
 
-if(isset($_GET["upgrade1"])){upgrade1();exit;}
-if(isset($_GET["remove-site"])){remove_website();exit;}
-if(isset($_GET["access-errors"])){events_errors();exit;}
-if(isset($_GET["disable-all"])){disable_all();exit;}
-if(isset($_GET["execute-wizard"])){execute_wizard();exit;}
-if(isset($_GET["import"])){import();exit;}
-if(isset($_GET["export"])){export();exit;}
-if(isset($_GET["status-infos"])){status_info();exit;}
-if(isset($_GET["delete-cache"])){delete_cache();exit;}
-if(isset($_GET["sync-freewebs"])){sync_freewebs();exit;}
-if(isset($_GET["www-events"])){www_events();exit;}
-if(isset($_GET["mysqldb-restart"])){mysqldb_restart();exit;}
-if(isset($_GET["restart"])){restart();exit;}
-if(isset($_GET["conf-view"])){conf_view();exit;}
-if(isset($_GET["replic-conf"])){conf_save();exit;}
-if(isset($_GET["uncompress-nginx"])){uncompress_nginx();exit;}
-if(isset($_GET["reconfigure-single"])){reconfigure_single();exit;}
-if(isset($_GET["purge-cache"])){purge_cache();exit;}
-if(isset($_GET["import-bulk"])){import_bulk();exit;}
-if(isset($_GET["reconfigure-progress"])){reconfigure_progress();exit;}
-if(isset($_GET["access-query"])){events_all();exit;}
-if(isset($_GET["compile-single"])){compile_single();exit;}
-if(isset($_GET["compile-destination"])){compile_destination();exit;}
-if(isset($_GET["refresh-caches"])){refresh_caches();exit;}
-if(isset($_GET["access-real"])){access_real();exit;}
 if(isset($_GET["clean-websites"])){clean_websites();exit;}
-if(isset($_GET["backup"])){backup();exit;}
-if(isset($_GET["restore"])){restore();exit;}
-if(isset($_GET["build-main"])){build_main();exit;}
-if(isset($_GET["status"])){status_info2();exit;}
-if(isset($_GET["clean"])){clean();exit;}
-if(isset($_GET["events"])){events();exit;}
 if(isset($_GET["modsecurity-events"])){mod_security_events();exit;}
 
 if(isset($_GET["atomi-update"])){atomi_update();exit;}
 if(isset($_GET["atomi-enable"])){atomi_enable();exit;}
 if(isset($_GET["atomi-disable"])){atomi_disable();exit;}
-if(isset($_GET["upload-package"])){upload_package();exit;}
 if(isset($_GET["webcopy-sync"])){webcopy_sync();exit;}
 if(isset($_GET["webcopy-delete"])){webcopy_delete();exit;}
 if(isset($_GET["webcopy-events"])){webcopy_events();exit;}
@@ -62,19 +27,13 @@ if(isset($_GET["waf-modsec"])){modesecurity_modsec();exit;}
 if(isset($_GET["waf-modrep"])){modesecurity_modrep();exit;}
 if(isset($_GET["prepare-modsec-backup"])){modesecurity_prepare_backup();exit;}
 if(isset($_GET["delete-modsec-backup"])){modesecurity_delete_backup();exit;}
-if(isset($_GET["waf-rules"])){modsecurity_rules();exit;}
-if(isset($_GET["nginx-requests"])){SearchInSyslog();exit;}
-if(isset($_GET["list-local-reverses"])){list_local_reverses();exit;}
 if(isset($_GET["nginx-debug"])){SearchInDebug();exit;}
 if(isset($_GET["debug-prepare"])){debug_prepare();exit;}
 if(isset($_GET["webcopy-sync"])){webcopy_sync();exit;}
 
-if(isset($_GET["cache-disk-scan"])){cache_disk_scan();exit;}
-
-
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("Unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
-die("DIE " .__FILE__." Line: ".__LINE__);
+die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 function check_reverse():bool{
     $ID=intval($_GET["check-reverse"]);
     $file=PROGRESS_DIR."/check-reverse-$ID.txt";
@@ -111,11 +70,6 @@ function SearchInDebug():bool{
     shell_exec($cmd);
     return true;
 }
-function cache_disk_scan():bool{
-    $unix=new unix();
-    return $unix->framework_execute("exec.nginx.php --cache-disk-scan",
-        "nginx.scan.progress","nginx.scan.log");
-}
 
 function StringToRegex($pattern):string{
     $pattern=str_replace(".", "\.", $pattern);
@@ -128,197 +82,8 @@ function StringToRegex($pattern):string{
     $pattern=str_replace("*", ".*", $pattern);
     return $pattern;
 }
-function SearchInAv():bool{
-    $unix=new unix();
-    $grep=$unix->find_program("grep");
-    $tail=$unix->find_program("tail");
-    $MAIN=unserialize(base64_decode($_GET["nginx-searchav"]));
-    $index=$_GET["index"];
-
-
-    if(preg_match("#-([0-9]+)$#",$index,$re)){
-        $index=$re[1];
-    }
-    $targetfile="/var/log/nginx/antivirus.log";
-
-    if(isset($_GET["uuid"])){
-        if(strlen($_GET["uuid"])>5){
-            $targetfile="/home/artica/harmp/{$_GET["uuid"]}/access.$index.log";
-        }
-    }
-
-    $RFile=PROGRESS_DIR."/nginx-searchav.$index.syslog";
-    $PFile=PROGRESS_DIR."/nginx-search.$index.pattern";
-    if(!isset($MAIN["TERM"])){$MAIN["TERM"]=null;}
-    $opts=unserialize(base64_decode($_GET["opts"]));
-
-    foreach ($MAIN as $val=>$key){
-        $MAIN[$val]=StringToRegex($MAIN[$val]);
-    }
-
-    $max=intval($MAIN["MAX"]);if($max>1500){$max=1500;}
-    if($max==0){$max=100;}
-    $search=$MAIN["TERM"];
-    $SearchOpts=array();
-
-    foreach ($opts as $key=>$val){
-        $val=trim($val);
-        $index=0;
-        if(strlen($val)==0){continue;}
-
-        if($key=="proxy_upstream_name"){
-            $key="Serverid";
-            $index=10;
-            if(preg_match("#.*?-([0-9]+)#",$val)){
-                $val=$re[1];
-            }
-        }
-        $val=str_replace("*",".*?",$val);
-
-        if($key=="remote_addr"){
-            $index=1;
-            $key="src_ip";
-        }
-
-        if($key=="request"){
-            $index=2;
-        }
-
-        if($key=="status"){
-            $index=3;
-        }
-        if($key=="user_agent"){
-            $index=4;
-        }
-
-        $val=StringToRegex($val);
-        $SearchOpts[$index]="$key:$val";
-
-    }
-    $MainSearch="";
-    if (count($SearchOpts)>0){
-        ksort($SearchOpts);
-        $MainSearch=@implode(".*?",$SearchOpts);
-
-    }
-    $MainSearch=str_replace(".*?.*?",".*?",$MainSearch);
-    $FirstCmd="$tail -n $max $targetfile";
-
-    if(strlen($search)>2 AND strlen($MainSearch)>2){
-        $FirstCmd="$grep --binary-files=text -i -E '$MainSearch' $targetfile|$grep -i -E '$search'|$tail -n $max";
-    }
-    if(strlen($search)==0 AND strlen($MainSearch)>2){
-        $FirstCmd="$grep --binary-files=text -i -E '$MainSearch' $targetfile|$tail -n $max";
-    }
-    if(strlen($search)>2 AND strlen($MainSearch)==0){
-        $FirstCmd="$grep --binary-files=text -i -E '$search' $targetfile|$tail -n $max";
-    }
-
-    $cmd="$FirstCmd >$RFile 2>&1";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    @file_put_contents($PFile, $search);
-    shell_exec($cmd);
-    @chmod($RFile,0755);
-    @chown($RFile,"www-data");
-    return true;
-}
-function SearchInSyslog():bool{
-    $unix=new unix();
-    $grep=$unix->find_program("grep");
-    $tail=$unix->find_program("tail");
-    $MAIN=unserialize(base64_decode($_GET["nginx-requests"]));
-    $index=$_GET["index"];
-
-
-    if(preg_match("#-([0-9]+)$#",$index,$re)){
-        $index=$re[1];
-    }
-
-
-    $targetfile="/var/log/nginx/access.$index.log";
-
-    if(isset($_GET["uuid"])){
-        if(strlen($_GET["uuid"])>5){
-            $targetfile="/home/artica/harmp/{$_GET["uuid"]}/access.$index.log";
-        }
-    }
-
-    $RFile=PROGRESS_DIR."/nginx-search.$index.syslog";
-    $PFile=PROGRESS_DIR."/nginx-search.$index.pattern";
-    if(!isset($MAIN["TERM"])){$MAIN["TERM"]=null;}
-    $opts=unserialize(base64_decode($_GET["opts"]));
-
-    foreach ($MAIN as $val=>$key){
-        $MAIN[$val]=StringToRegex($MAIN[$val]);
-    }
-
-    $max=intval($MAIN["MAX"]);if($max>1500){$max=1500;}
-    if($max==0){$max=100;}
-    $search=$MAIN["TERM"];
-    $SearchOpts=array();
-
-    foreach ($opts as $key=>$val){
-        $val=trim($val);
-        $index=0;
-        if(strlen($val)==0){continue;}
-
-        if($key=="proxy_upstream_name"){
-            $index=10;
-        }
-        $val=str_replace("*",".*?",$val);
-
-        if($key=="remote_addr"){
-            $index=1;
-            $key="src_ip";
-        }
-
-        if($key=="request"){
-            $index=2;
-        }
-
-        if($key=="status"){
-            $index=3;
-        }
-        if($key=="user_agent"){
-            $index=4;
-        }
-
-        $val=StringToRegex($val);
-        $SearchOpts[$index]="\"$key\":\"$val\"";
-        $SearchOpts[$index]=str_replace("\..*\?",".*?",$SearchOpts[$index]);
-        $SearchOpts[$index]=str_replace("\[0-9\]","[0-9]+",$SearchOpts[$index]);
-
-
-
-
-    }
-    $MainSearch="";
-    if (count($SearchOpts)>0){
-        ksort($SearchOpts);
-        $MainSearch=@implode(".*?",$SearchOpts);
-
-    }
-    $MainSearch=str_replace(".*?.*?",".*?",$MainSearch);
-    $FirstCmd="$tail -n $max $targetfile";
-
-    if(strlen($search)>2 AND strlen($MainSearch)>2){
-          $FirstCmd="$grep --binary-files=text -i -E '$MainSearch' $targetfile|$grep -i -E '$search'|$tail -n $max";
-    }
-    if(strlen($search)==0 AND strlen($MainSearch)>2){
-        $FirstCmd="$grep --binary-files=text -i -E '$MainSearch' $targetfile|$tail -n $max";
-    }
-    if(strlen($search)>2 AND strlen($MainSearch)==0){
-        $FirstCmd="$grep --binary-files=text -i -E '$search' $targetfile|$tail -n $max";
-    }
-
-    $cmd="$FirstCmd >$RFile 2>&1";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    @file_put_contents($PFile, $search);
-    shell_exec($cmd);
-    @chmod($RFile,0755);
-    @chown($RFile,"www-data");
-    return true;
-}
+// SearchInAv() (?nginx-searchav) removed 2026-11-15: fw.clamav.waf.php reads the log through
+// articarest's closed list (GET /system/logfile/search/waf-antivirus/...).
 function modesecurity_prepare_backup(){
     $ID=intval($_GET["prepare-modsec-backup"]);
     $unix=new unix();
@@ -332,24 +97,6 @@ function modesecurity_prepare_backup(){
     chgrp($tgz_path,"www-data");
 
 }
-
-function list_local_reverses(){
-    $IDS=array();
-    $unix=new unix();
-    $dstf=PROGRESS_DIR."/nginx-reverses-ids.db";
-    $DirFiles=$unix->DirFiles("/etc/nginx/reverse.d","[0-9]+-[0-9]+\.conf");
-    foreach ($DirFiles as $fname){
-        if(!preg_match("#^[0-9]+-([0-9]+)\.conf$#",$fname,$re)){continue;}
-        $IDS[$re[1]]=true;
-    }
-    @file_put_contents($dstf,serialize($IDS));
-    @chown($dstf,"www-data");
-
-}
-
-
-
-
 
 function modesecurity_delete_backup(){
     $ID=intval($_GET["delete-modsec-backup"]);
@@ -451,13 +198,6 @@ function atomi_disable(){
 
 
 
-function upload_package(){
-    $unix=new unix();
-
-    $pname=$unix->shellEscapeChars($_GET["upload-package"]);
-    $unix->framework_execute("exec.nginx.php --upgrade-from $pname","nginx.upgrade.progress", "nginx.upgrade.log");
-
-}
 
 
 function mod_security_events(){
@@ -510,92 +250,6 @@ function mod_security_events(){
 
 }
 
-function upgrade1(){
-    $unix=new unix();
-    $unix->framework_execute("exec.nginx.php --upgrade1","nginx.reconfigure.progress","nginx.reconfigure.progress.txt");
-
-
-}
-
-function status_info(){
-    $unix=new unix();
-    $nginx=$unix->find_program("nginx");
-    if(!is_file($nginx)){return false;}
-    return $unix->framework_exec("exec.status.php --nginx --nowachdog");
-
-}
-function events(){
-	$unix=new unix();
-	$tail=$unix->find_program("tail");
-	$targetfile="/usr/share/artica-postfix/ressources/logs/nginx.log.tmp";
-	$sourceLog="/var/log/nginx/access.log";
-	$grep=$unix->find_program("grep");
-	$rp=intval($_GET["rp"]);
-	$query=$_GET["query"];
-	$cmd="$tail -n $rp $sourceLog >$targetfile 2>&1";
-
-	if($query<>null){
-		if(preg_match("#regex:(.*)#", $query,$re)){$pattern=$re[1];}else{
-			$pattern=str_replace(".", "\.", $query);
-			$pattern=str_replace("*", ".*?", $pattern);
-			$pattern=str_replace("/", "\/", $pattern);
-		}
-	}
-	if($pattern<>null){
-
-		$cmd="$grep --binary-files=text -Ei \"$pattern\" $sourceLog| $tail -n $rp  >$targetfile 2>&1";
-	}
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	@file_put_contents("/usr/share/artica-postfix/ressources/logs/nginx.log.cmd", $cmd);
-	shell_exec($cmd);
-	@chmod("$targetfile",0755);
-}
-function status_info2():bool{
-	$unix=new unix();
-    return $unix->framework_exec("exec.status.php --nginx --nowachdog");
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-function disable_all(){
-    $unix=new unix();
-    $BaseWorkDirs[]="/etc/nginx/reverse.d";
-    $BaseWorkDirs[]="/etc/nginx/stream.d";
-    $BaseWorkDirs[]="/etc/nginx/sites-enabled";
-    $BaseWorkDirs[]="/etc/nginx/local-sites";
-    $BaseWorkDirs[]="/etc/nginx/local-sslsites";
-    foreach ($BaseWorkDirs as $BaseWorkDir){
-        $handle = opendir($BaseWorkDir);
-        if($handle) {
-            while (false !== ($filename = readdir($handle))) {
-                if ($filename == ".") {continue;}
-                if ($filename == "..") {continue;}
-                $targetFile = "$BaseWorkDir/$filename";
-                if (is_dir($targetFile)) {continue;}
-                if (!preg_match("#^[0-9]+-([0-9]+)\.conf$#", $filename, $re)) {continue;}
-                @unlink($targetFile);
-            }
-        }
-    }
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --reload >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-}
-
-
-
 
 function webcopy_events(){
     $unix=new unix();
@@ -626,297 +280,4 @@ function webcopy_events(){
     @chmod($output, 0755);
 
 }
-
-function events_errors(){
-	$pattern=trim(base64_decode($_GET["access-query"]));
-	if($pattern=="yes"){$pattern=null;}
-	$pattern=str_replace("  "," ",$pattern);
-	$pattern=str_replace(" ","\s+",$pattern);
-	$pattern=str_replace(".","\.",$pattern);
-	$pattern=str_replace("*",".+?",$pattern);
-	$pattern=str_replace("/","\/",$pattern);
-	$syslogpath=$_GET["syslog-path"];
-	$maxrows=0;
-	$syslogpath="/var/log/nginx/error.log";
-	$size=@filesize($syslogpath);
-	if($size==0){@unlink($syslogpath);}
-	$output="/usr/share/artica-postfix/ressources/logs/web/nginx.query.errors";
-	$unix=new unix();
-	
-	if(!is_file($syslogpath)){
-		if(is_file("/var/log/apache2/access-common.log")){
-			$syslogpath="/var/log/apache2/access-common.log";
-		}
-	}
-	
-	$grepbin=$unix->find_program("grep");
-	$tail = $unix->find_program("tail");
-	if($tail==null){return;}
-	
-	writelogs_framework("Pattern \"$pattern\"" ,__FUNCTION__,__FILE__,__LINE__);
-	if(isset($_GET["rp"])){$maxrows=$_GET["rp"];}
-	if($maxrows==0){$maxrows=500;}
-	
-	
-	if(strlen($pattern)>1){
-		$grep="$grepbin -i -E '$pattern' $syslogpath";
-	}
-		
-	if($grep<>null){
-		$cmd="$grep|$tail -n $maxrows >$output 2>&1";
-	}else{
-		$cmd="$tail -n $maxrows $syslogpath >$output 2>&1";
-	}
-	
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	@chmod($output, 0755);
-	
-	
-}
-
-function events_all(){
-	$pattern=trim(base64_decode($_GET["access-query"]));
-	if($pattern=="yes"){$pattern=null;}
-	$pattern=str_replace("  "," ",$pattern);
-	$pattern=str_replace(" ","\s+",$pattern);
-	$pattern=str_replace(".","\.",$pattern);
-	$pattern=str_replace("*",".+?",$pattern);
-	$pattern=str_replace("/","\/",$pattern);
-	$syslogpath=$_GET["syslog-path"];
-	$maxrows=0;
-	$syslogpath="/var/log/nginx/access.log";
-	$size=@filesize($syslogpath);
-	if($size==0){@unlink($syslogpath);}
-	$output="/usr/share/artica-postfix/ressources/logs/web/nginx.query";
-	$unix=new unix();
-	
-	if(!is_file($syslogpath)){
-		if(is_file("/var/log/apache2/access-common.log")){
-			$syslogpath="/var/log/apache2/access-common.log";
-		}
-	}
-	
-	$grepbin=$unix->find_program("grep");
-	$tail = $unix->find_program("tail");
-	if($tail==null){return;}
-	
-	writelogs_framework("Pattern \"$pattern\"" ,__FUNCTION__,__FILE__,__LINE__);
-	if(isset($_GET["rp"])){$maxrows=$_GET["rp"];}
-	if($maxrows==0){$maxrows=500;}
-
-
-	if(strlen($pattern)>1){
-		$grep="$grepbin -i -E '$pattern' $syslogpath";
-	}
-			
-	if($grep<>null){
-		$cmd="$grep|$tail -n $maxrows >$output 2>&1";
-	}else{
-		$cmd="$tail -n $maxrows $syslogpath >$output 2>&1";
-	}
-
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	@chmod($output, 0755);
-}
-
-
-
-function conf_view(){
-	$sitename=$_GET["conf-view"];
-	writelogs_framework("conf_view $sitename",__FUNCTION__,__FILE__,__LINE__);
-	foreach (glob("/etc/nginx/sites-enabled/freewebs-$sitename*") as $filename) {
-		writelogs_framework("Copy $filename",__FUNCTION__,__FILE__,__LINE__);
-		@copy($filename, "/usr/share/artica-postfix/ressources/logs/".basename($filename));
-		$array["FILENAME"]=basename($filename);
-		echo "<articadatascgi>".base64_encode(serialize($array))."</articadatascgi>";
-		return;
-	}
-	
-}
-
-function sync_freewebs(){
-	$unix=new unix();
-	$php=$unix->LOCATE_PHP5_BIN();
-	shell_exec("$php /usr/share/artica-postfix/exec.freeweb.php --sync-squid");
-	
-}
-
-function restart(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-
-	$cmd="$nohup /etc/init.d/nginx restart >/dev/null 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	
-	if(isset($_GET["enabled"])){
-		if($_GET["enabled"]==0){
-			$cmd="$nohup /etc/init.d/apache2 restart >/dev/null 2>&1 &";
-			shell_exec($cmd);
-			$cmd="$nohup /etc/init.d/artica-status reload >/dev/null 2>&1 &";
-			shell_exec($cmd);		
-			$cmd="$nohup /etc/init.d/artica-webconsole restart >/dev/null 2>&1 &";
-			shell_exec($cmd);
-			$cmd="$nohup /etc/init.d/monit restart >/dev/null 2>&1 &";
-			shell_exec($cmd);
-		}
-	}
-	
-}
-
-function delete_cache(){
-	
-	$directory=base64_decode($_GET["delete-cache"]);
-	if(trim($directory)==null){return;}
-	if(!is_dir($directory)){return;}
-	$unix=new unix();
-	if($unix->IsProtectedDirectory($directory,true)){return;}
-	$rm=$unix->find_program("rm");
-	$nohup=$unix->find_program("nohup");
-	shell_exec("$nohup $rm -rf ".escapeshellarg($directory)." >/dev/null 2>&1 &");
-}
-function www_events(){
-	$servername=$_GET["servername"];
-	$servername=str_replace(" ", "", $servername);
-	$port=$_GET["port"];	
-	$type=$_GET["type"];
-	$filename="/var/log/apache2/$servername/nginx.access.log";
-	if($type==2){
-		$filename="/var/log/apache2/$servername/nginx.error.log";
-	}
-	$search=$_GET["search"];
-	$unix=new unix();
-	$search=$unix->StringToGrep($search);
-	$grep=$unix->find_program("grep");
-	$tail=$unix->find_program("tail");
-	$refixcmd="$tail -n 2500 $filename";
-	if($search<>null){
-		$refixcmd=$refixcmd."|$grep --binary-files=text -i -E '$search'|$tail -n 500";
-	}else{
-		$refixcmd="$tail -n 500 $filename";
-	}
-	
-	
-	exec($refixcmd." 2>&1",$results);
-	writelogs_framework($refixcmd." (".count($results).")",__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>".base64_encode(serialize($results))."</articadatascgi>";
-	
-}
-
-function uncompress_nginx(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$tar=$unix->find_program("tar");
-	$filename=$_GET["uncompress-nginx"];
-	$nohup=$unix->find_program("nohup");
-	$FilePath="/usr/share/artica-postfix/ressources/conf/upload/$filename";
-
-	if(!is_file($FilePath)){
-		echo "<articadatascgi>".base64_encode(serialize(array("R"=>false,"T"=>"{failed}: $FilePath no such file")))."</articadatascgi>";
-	}
-	
-	$cmd="$tar -xhf $FilePath -C /";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	$VERSION=nginx_version();
-	shell_exec("$nohup /etc/init.d/nginx restart >/dev/null 2>&1 &");
-	echo "<articadatascgi>".base64_encode(serialize(array("R"=>true,"T"=>"{success}: v.$VERSION")))."</articadatascgi>";
-}
-
-function reconfigure_single(){
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	$servername=$_GET["servername"];
-	$sn_base=preg_replace('/[^a-zA-Z0-9_\-\.]/', '', $servername);
-	$cachefile="/usr/share/artica-postfix/ressources/logs/web/nginx-$sn_base.log";
-	@unlink($cachefile);
-	@file_put_contents($cachefile, "Starting......: ".date("H:i:s")." [INIT]: Nginx[".__LINE__."](".basename(__FILE__).") **** RECONFIGURING $servername ****\n");
-	@chmod($cachefile, 0777);
-	shell_exec("$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --reconfigure ".escapeshellarg($servername)." >>$cachefile 2>&1 &");
-}
-
-
-
-
-function nginx_version(){
-	$unix=new unix();
-	$nginx=$unix->find_program("nginx");
-	if(!is_file($nginx)){return;}
-	$php5=$unix->LOCATE_PHP5_BIN();
-	exec("$nginx -V 2>&1",$results);
-
-	foreach ($results as $key=>$value){
-		if(preg_match("#nginx version: .*?\/([0-9\.]+)#", $value,$re)){return $re[1];}
-		if(preg_match("#TLS SNI support enabled#", $value,$re)){$ARRAY["DEF"]["TLS"]=true;continue;}
-	}
-}
-
-
-function reconfigure_progress(){
-    $unix=new unix();
-    $unix->framework_execute("exec.nginx.php --reconfigure-all-reboot","nginx.reconfigure.progress","nginx.reconfigure.progress.txt");
-	
-}
-
-
-
-
-
-
-
-function refresh_caches(){
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/nginx-caches.progress";
-	$GLOBALS["LOGSFILES"]="/usr/share/artica-postfix/ressources/logs/web/nginx-caches.log";
-	$unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$nohup=$unix->find_program("nohup");
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOGSFILES"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOGSFILES"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOGSFILES"], 0755);
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.nginx.php --caches-status --output >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	
-}
-function access_real(){
-	$unix=new unix();
-	$tail=$unix->find_program("tail");
-	$servername=$_GET["servername"];
-	$targetfile="/usr/share/artica-postfix/ressources/logs/access.log.$servername.tmp";
-	$sourceLog="/var/log/apache2/$servername/nginx.access.log";
-	
-	$rp=intval($_GET["rp"]);
-	writelogs_framework("access_real -> $rp" ,__FUNCTION__,__FILE__,__LINE__);
-
-
-	$query=$_GET["query"];
-	$grep=$unix->find_program("grep");
-
-
-	$cmd="$tail -n $rp $sourceLog >$targetfile 2>&1";
-
-	if($query<>null){
-		if(preg_match("#regex:(.*)#", $query,$re)){$pattern=$re[1];}else{
-			$pattern=str_replace(".", "\.", $query);
-			$pattern=str_replace("*", ".*?", $pattern);
-			$pattern=str_replace("/", "\/", $pattern);
-		}
-	}
-	if($pattern<>null){
-
-		$cmd="$grep --binary-files=text -Ei \"$pattern\" $sourceLog| $tail -n $rp  >$targetfile 2>&1";
-	}
-	writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	@chmod("$targetfile",0755);
-}
-
-
 

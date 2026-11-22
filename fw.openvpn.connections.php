@@ -4,12 +4,8 @@ $users=new usersMenus();if(!$users->AsVPNManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["search"])){search();exit;}
-if(isset($_GET["delete-js"])){delete_rule_js();exit;}
-if(isset($_GET["ruleid-js"])){rule_js();exit;}
-if(isset($_GET["rule-popup"])){rule_popup();exit;}
 if(isset($_GET["main"])){main();exit;}
 if(isset($_GET["main-start"])){main_start();exit;}
-if(isset($_REQUEST["GenerateProgress"])){GenerateProgress();exit;}
 if(isset($_POST["connection_name"])){buildconfig();exit;}
 page();
 
@@ -73,18 +69,22 @@ function search(){
 	
 	$_SESSION["OPENVPN_SEARCH2"]=$_GET["search"];
     $sql="SELECT * FROM openvpn_cnx ORDER BY zdate DESC LIMIT 250";
+    $sqlparams=array();
 	if(strlen($_GET["search"])>1){
         $search="*{$_GET["search"]}*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $sql="SELECT * FROM openvpn_cnx WHERE (action LIKE '$search' OR ipaddr LIKE '$search' OR uid LIKE '$search' ) ORDER BY zdate DESC LIMIT 250";
+        // Pentest 2026-11-04 : search etait concatene dans la requete.
+        $sql="SELECT * FROM openvpn_cnx WHERE (action LIKE ? OR ipaddr LIKE ? OR uid LIKE ? ) ORDER BY zdate DESC LIMIT 250";
+        $sqlparams=array($search,$search,$search);
     }
 	
 	$q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-	$results=$q->QUERY_SQL($sql);
+	$results=$q->QUERY_SQL_PARAMS($sql,$sqlparams);
 
-	if(!$q->ok){echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";}
+	// Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS) (aussi via l'erreur SQL et la requete).
+	if(!$q->ok){echo "<div class='alert alert-danger'>".req_html($q->mysql_error)."<br><strong><code>".req_html($_GET["search"])."</code></strong><br><strong><code>".req_html($sql)."</code></strong></div>";}
 	
 	$array["update"]="fas fa-sync-alt";
 	$array["add"]="fa-link";
@@ -118,8 +118,12 @@ $sepclabel="style='min-width: 104px;display: table-cell;padding: 6px;'";
 		$date=$tpl2->time_to_date($ligne["ztime"],true);
 		$md=md5(serialize($ligne));
 		$fuser="fa-user";
-		if($ligne["uid"]==null){$ligne["uid"]="&nbsp;-&nbsp;";$fuser="fa-user-o";}
-        if(!isset($arrayT[$ligne["action"]])){$arrayT[$ligne["action"]]=$ligne["action"];}
+		// Pentest 2026-11-04 : uid/ipaddr/action (donnee externe) affiches sans encodage (XSS stockee).
+		$ligne["ipaddr"]=req_html($ligne["ipaddr"]);
+		if($ligne["uid"]==null){$ligne["uid"]="&nbsp;-&nbsp;";$fuser="fa-user-o";}else{$ligne["uid"]=req_html($ligne["uid"]);}
+        if(!isset($arrayT[$ligne["action"]])){$arrayT[$ligne["action"]]=req_html($ligne["action"]);}
+        if(!isset($IconActions[$ligne["action"]])){$IconActions[$ligne["action"]]="";}
+        if(!isset($array[$ligne["action"]])){$array[$ligne["action"]]="";}
 		$html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td $widthL>{$IconActions[$ligne["action"]]}</td>";
         $html[]="<td $widthL><span class='fa fa-clock'> </span>&nbsp;{$date}</td>";

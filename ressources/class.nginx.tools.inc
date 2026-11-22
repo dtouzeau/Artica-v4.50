@@ -122,10 +122,14 @@ class nginx_tools{
 
 	public function IF_PROXY_PAC(){
 	    if(isset($GLOBALS["IF_PROXY_PAC"])){return $GLOBALS["IF_PROXY_PAC"];}
-        $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $sql="SELECT COUNT(*) as tcount FROM nginx_services WHERE enabled=1 AND `type`=8";
-        $ligne=$q->mysqli_fetch_array($sql);
-        $count=intval($ligne["tcount"]);
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/type/8");
+        $data=json_decode($resp,true);
+        $count=0;
+        if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])){
+            foreach($data["rows"] as $r){
+                if(intval(isset($r["enabled"])?$r["enabled"]:0)===1){$count++;}
+            }
+        }
         if($count>0){$GLOBALS["IF_PROXY_PAC"]=true;return true;}
         $GLOBALS["IF_PROXY_PAC"]=false;
         return false;

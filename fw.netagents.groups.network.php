@@ -29,13 +29,13 @@ function js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_can_view($users)){
         return $tpl->js_error("{no_privileges}");
     }
     $gpid=intval($_GET["id"]);
     $grp=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/groups/$gpid"));
     $groupName=is_object($grp)?htmlspecialchars($grp->name??"Group #$gpid"):"Group #$gpid";
-    return $tpl->js_dialog2("{network_settings} - $groupName","$page?tabs=$gpid",950);
+    return $tpl->js_dialog2("{network_settings} - $groupName","$page?tabs=$gpid",1100);
 }
 function tabs():bool{
     $page=CurrentPageName();

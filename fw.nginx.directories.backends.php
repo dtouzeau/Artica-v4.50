@@ -1,6 +1,13 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+include_once("/usr/share/artica-postfix/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
+if(isset($_GET["verbose"])){
+    $GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
+}
 
 
 if(isset($_GET["table"])){table();exit;}
@@ -10,6 +17,9 @@ if(isset($_GET["delete"])){delete_js();exit;}
 if(isset($_POST["ID"])){id_save();exit;}
 if(isset($_POST["delete"])){delete();exit;}
 if(isset($_GET["refresh-interface"])){refresh_interface();exit;}
+
+
+
 
 table_start();
 
@@ -81,10 +91,11 @@ function delete_js():bool{
     if(isset($_GET["function"])){
         $function=$_GET["function"];
     }
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT `hostname`,`port` ,`serviceid`,`directory_id` FROM  directories_backends WHERE ID=$ID");
-    $serviceid=$ligne["serviceid"];
-    $directory_id=$ligne["directory_id"];
+    $ligne=fetch_directory_backend_by_id($ID);
+    $serviceid=isset($ligne["serviceid"])?intval($ligne["serviceid"]):0;
+    $directory_id=isset($ligne["directory_id"])?intval($ligne["directory_id"]):0;
+    $hostname=isset($ligne["hostname"])?$ligne["hostname"]:"";
+    $port=isset($ligne["port"])?$ligne["port"]:"";
     $servicename=get_servicename($serviceid);
     $dirname=get_directoryname($directory_id);
 
@@ -93,15 +104,14 @@ function delete_js():bool{
     }
 
     $js2="LoadAjax('ngx_directories_access_module-$directory_id','fw.nginx.directories.php?table=$directory_id');";
-    return $tpl->js_confirm_delete("{$ligne["hostname"]}:{$ligne["port"]} $servicename/$dirname", "delete", "$ID","$('#$md5').remove();$js2;Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');$function");
+    return $tpl->js_confirm_delete("$hostname:$port $servicename/$dirname", "delete", "$ID","$('#$md5').remove();$js2;Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');$function");
 }
 function  delete():bool{
-    $ID=$_POST["delete"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT `hostname`,`serviceid`,`directory_id` FROM  directories_backends WHERE ID=$ID");
-    $hostname=$ligne["hostname"];
-    $serviceid=$ligne["serviceid"];
-    $directory_id=$ligne["directory_id"];
+    $ID=intval($_POST["delete"]);
+    $ligne=fetch_directory_backend_by_id($ID);
+    $hostname=isset($ligne["hostname"])?$ligne["hostname"]:"#$ID";
+    $serviceid=isset($ligne["serviceid"])?intval($ligne["serviceid"]):0;
+    $directory_id=isset($ligne["directory_id"])?intval($ligne["directory_id"]):0;
     $servicename=get_servicename($serviceid);
     $dirname=get_directoryname($directory_id);
     admin_tracks("delete backend $hostname from path $dirname on site $servicename");
@@ -129,20 +139,21 @@ function id_popup():bool{
     if(isset($_GET["function"])){
         $function=$_GET["function"];
     }
-    $q=new lib_sqlite(NginxGetDB());
     $servicename=get_servicename($serviceid);
     $dirname=get_directoryname($directory_id);
     $title="$servicename/$dirname: {new_item}";
     $options=array();
-    $ligne=$q->mysqli_fetch_array("SELECT `type` FROM nginx_services WHERE ID=$serviceid");
-    $Type=intval($ligne["type"]);
+    $ligne=array();
+    $Type=fetch_nginx_service_type($serviceid);
     $btname="{add}";
 
     if($ID>0){
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM directories_backends WHERE ID=$ID");
+        $ligne=fetch_directory_backend_by_id($ID);
         $btname="{apply}";
-        $title="$servicename/$dirname: {$ligne["hostname"]}:{$ligne["port"]}";
-        $serviceid=$ligne["serviceid"];
+        $hostname0=isset($ligne["hostname"])?$ligne["hostname"]:"#$ID";
+        $port0=isset($ligne["port"])?$ligne["port"]:"";
+        $title="$servicename/$dirname: $hostname0:$port0";
+        $serviceid=isset($ligne["serviceid"])?intval($ligne["serviceid"]):$serviceid;
     }
     $suffix=suffix_RQ();
     $js="dialogInstance2.close();Loadjs('$page?refresh-interface=yes&$suffix');Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid');";
@@ -182,9 +193,8 @@ function get_servicename($ID):string{
     return $sock->GetServiceName();
 }
 function get_directoryname($ID):string{
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT directory FROM ngx_directories WHERE ID=$ID");
-    return $ligne["directory"];
+    $row=fetch_directory_row($ID);
+    return isset($row["directory"]) ? strval($row["directory"]) : "";
 }
 
 function id_save():bool{
@@ -193,7 +203,6 @@ function id_save():bool{
     $ID=$_POST["ID"];
     $serviceid=intval($_POST['serviceid']);
     $directory_id=intval($_POST["directory_id"]);
-    $q=new lib_sqlite(NginxGetDB());
     if($serviceid==0){echo $tpl->post_error("Service ID missing or null");return false;}
     if($directory_id==0){echo $tpl->post_error("Path ID missing or null");return false;}
     $hostname=$_POST["hostname"];
@@ -234,7 +243,7 @@ function table():bool{
     $html[]=$tpl->th_buttons($topbuttons);
     $html[]="</div>";
     $html[]="<div id='$forcediv'></div>";
-    $html[]="<table id='table-backends-{$_GET["table"]}' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{hostname}</th>";
@@ -246,17 +255,14 @@ function table():bool{
 
 
 
-    $q=new lib_sqlite(NginxGetDB());
-
-    $results=$q->QUERY_SQL("SELECT * FROM  directories_backends WHERE directory_id='$directory_id'");
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return true;}
+    $results=fetch_directory_backends_for_directory($directory_id);
 
 
 
     $TRCLASS=null;
     $suffix=suffix_RQ();
     foreach ($results as $md5=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md=md5(serialize($ligne).$md5);
         $ID=intval($ligne["ID"]);
         $port=$ligne["port"];
@@ -275,39 +281,12 @@ function table():bool{
         $html[]="</tr>";
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div></div></div>";
     $html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-backends-{$_GET["table"]}').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"false\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
     return true;
 }
 
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}

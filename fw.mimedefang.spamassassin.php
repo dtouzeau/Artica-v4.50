@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.maincf.multi.inc");
@@ -125,7 +128,6 @@ function parameters(){
 	$EnableSpamassassinURIDNSBL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSpamassassinURIDNSBL"));
 	$EnableSpamAssassinFreeMail=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSpamAssassinFreeMail"));
 	$EnableDecodeShortURLs=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDecodeShortURLs"));
-	$enable_dkim_verification=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("enable_dkim_verification"));
 	$SpamAssassinUrlScore=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SpamAssassinUrlScore"));
 	$SpamAssassinScrapScore=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SpamAssassinScrapScore"));
 	$SpamAssassinSubjectsScore=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SpamAssassinSubjectsScore"));
@@ -173,7 +175,7 @@ function parameters(){
 	$ARRAY["TITLE"]="{reloading_service}";
 	//$ARRAY["AFTER"]="LoadAjax('table-spamassassin','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$mimedefang_reload="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedefangspam-restart');";	
+	$mimedefang_reload="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedefangspam-restart');";	
 	
 	
 	$form[]=$tpl->field_checkbox("NotTrustLocalNet","{NotTrustLocalNet}",$NotTrustLocalNet,false,"{NotTrustLocalNet_explain}");
@@ -205,7 +207,6 @@ function parameters(){
 	$form[]=$tpl->field_checkbox("EnableSpamassassinURIDNSBL","URIDNSBL",$EnableSpamassassinURIDNSBL,false,"{URIDNSBL_explain}");
 	$form[]=$tpl->field_checkbox("EnableSpamAssassinFreeMail","FreeMail",$EnableSpamAssassinFreeMail,false,"{EnableSpamAssassinFreeMail_explain}");
 	$form[]=$tpl->field_checkbox("EnableDecodeShortURLs","{enable_DecodeShortURLs}",$EnableDecodeShortURLs,false,"{DecodeShortURLs_explain}");
-	$form[]=$tpl->field_checkbox("enable_dkim_verification","{enable_dkim_verification}",$enable_dkim_verification,false,"{dkim_about}<br>{dkim_about2}");
 	$html[]=$tpl->form_outside(null, $form,null,"{apply}",$mimedefang_reload,"AsPostfixAdministrator",true);
 	echo $tpl->_ENGINE_parse_body($html);
 	

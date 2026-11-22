@@ -6,7 +6,6 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 $tpl=new template_admin();
 if(isset($_POST["none"])){exit;}
 if(isset($_GET["page"])){page();exit;}
-if(isset($_GET["chart1"])){chart1();exit;}
 if(isset($_GET["chart2"])){chart2();exit;}
 if(isset($_GET["chart3"])){chart3();exit;}
 if(isset($_GET["chart-line-time"])){chart_line_time();exit;}

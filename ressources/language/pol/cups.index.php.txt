@@ -4,24 +4,23 @@
 <CONNECTED_PRINTERS>Pod%u0142%u0105czone drukarki</CONNECTED_PRINTERS>
 <CONNECTED_PRINTERS_TEXT>Skanuj pod%u0142%u0105czone do systemu drukarki</CONNECTED_PRINTERS_TEXT>
 <delete_all_printers>Usu%u0144 wszystkie drukarki</delete_all_printers>
-<drivers_in_collection>Printers drivers in your collection</drivers_in_collection>
+<drivers_in_collection>Sterowniki drukarek w Twojej kolekcji</drivers_in_collection>
 <found>Znaleziono</found>
-<GENERATE_DRIVERS>Generate Drivers</GENERATE_DRIVERS>
-<GENERATE_DRIVERS_EXPLAIN>If you click on the button, Artica will download all known printers drivers database, it will build "gutenprint" drivers.[br]
-After this operation you will have the best drivers list in probablu found your right printer driver.[br]
-This operation should take a long time...[br]
-Read logs below in order to undertsand if there is some error during the process...
-</GENERATE_DRIVERS_EXPLAIN>
-<GENERATE_DRIVERS_TEXT>Build the drivers list in order to found the appriopriate driver for your printer</GENERATE_DRIVERS_TEXT>
-<INSTALLED_PRINTERS>Installed printers</INSTALLED_PRINTERS>
-<INSTALLED_PRINTERS_TEXT>Uninstall or get status of your installed printers</INSTALLED_PRINTERS_TEXT>
-<localization>localization</localization>
-<manufacturer>Manufacturer</manufacturer>
+<GENERATE_DRIVERS>Generuj sterowniki</GENERATE_DRIVERS>
+<GENERATE_DRIVERS_EXPLAIN>Je&#347;li klikniesz przycisk, Artica pobierze baz&#281; danych wszystkich znanych sterownik&#243;w drukarek i zbuduje sterowniki &quot;gutenprint&quot;.[br]
+Po tej operacji b&#281;dziesz mie&#263; najlepsz&#261; list&#281; sterownik&#243;w, aby prawdopodobnie znale&#378;&#263; w&#322;a&#347;ciwy sterownik drukarki.[br]
+Ta operacja mo&#380;e zaj&#261;&#263; du&#380;o czasu...[br]
+Przeczytaj poni&#380;sze dzienniki, aby zrozumie&#263;, czy podczas procesu wyst&#261;pi&#322; jaki&#347; b&#322;&#261;d...</GENERATE_DRIVERS_EXPLAIN>
+<GENERATE_DRIVERS_TEXT>Zbuduj list&#281; sterownik&#243;w, aby znale&#378;&#263; odpowiedni sterownik dla swojej drukarki</GENERATE_DRIVERS_TEXT>
+<INSTALLED_PRINTERS>Zainstalowane drukarki</INSTALLED_PRINTERS>
+<INSTALLED_PRINTERS_TEXT>Odinstaluj lub sprawd&#378; stan zainstalowanych drukarek</INSTALLED_PRINTERS_TEXT>
+<localization>lokalizacja</localization>
+<manufacturer>Producent</manufacturer>
 <NO_CONNECTED_PRINTERS>Nie ma pod%u0142%u0105czonych drukarek w tym komputerze</NO_CONNECTED_PRINTERS>
-<no_cups_drivers_scanned>There is no drivers-scanning operations executed.[br]Please execute drivers-scanning before this operation</no_cups_drivers_scanned>
+<no_cups_drivers_scanned>Nie wykonano &#380;adnych operacji skanowania sterownik&#243;w.[br]Wykonaj skanowanie sterownik&#243;w przed t&#261; operacj&#261;</no_cups_drivers_scanned>
 <printer_name>Nazwa drukarki</printer_name>
-<QUERY_DRIVERS_COLLECTION>Query drivers Collection</QUERY_DRIVERS_COLLECTION>
-<QUERY_DRIVERS_COLLECTION_TEXT>Find and query your printer drivers collection</QUERY_DRIVERS_COLLECTION_TEXT>
-<search_drivers>Query the drivers database</search_drivers>
+<QUERY_DRIVERS_COLLECTION>Przeszukaj kolekcj&#281; sterownik&#243;w</QUERY_DRIVERS_COLLECTION>
+<QUERY_DRIVERS_COLLECTION_TEXT>Znajd&#378; i przeszukaj swoj&#261; kolekcj&#281; sterownik&#243;w drukarek</QUERY_DRIVERS_COLLECTION_TEXT>
+<search_drivers>Przeszukaj baz&#281; danych sterownik&#243;w</search_drivers>
 <shared_printers>Udost%u0119pnione drukarki</shared_printers>
 <share_this_printer>Udost%u0119pnij t%u0119 drukark%u0119</share_this_printer>

@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -62,9 +63,7 @@ function search(){
 	
 	$MAIN=$tpl->format_search_protocol($_GET["search"],true);
 	
-	$line=base64_encode(serialize($MAIN));
-	$sock->getFrameWork("rsync.php?syslog=$line");
-	$filename=PROGRESS_DIR."/rsyncd.syslog";
+	$data=$tpl->logfile_search("rsyncd",$MAIN);
 	$date_text=$tpl->_ENGINE_parse_body("{date}");
 	$rule_text=$tpl->_ENGINE_parse_body("{rule}");
 	$src=$tpl->_ENGINE_parse_body("{src}");
@@ -85,9 +84,7 @@ function search(){
 	<tbody>
 ";
 	
-	$data=explode("\n",@file_get_contents($filename));
 	if(count($data)>3){$_SESSION["RSYNCD_SEARCH"]=$_GET["search"];}
-	rsort($data);
 
 	
 	foreach ($data as $line){
@@ -99,7 +96,7 @@ function search(){
 		$ACTION=null;
 		$FF=false;
 		if(!preg_match("#^(.+?)\[([0-9]+)\]\s+(.+)#i", $line,$re)){
-			echo "<strong style='color:red'> ??? $line ???</strong><br>"; 
+			echo "<strong style='color:red'> ??? ".req_html($line)." ???</strong><br>"; 
 			continue;}
 		
 		$date="{$re[1]}";
@@ -107,8 +104,9 @@ function search(){
 		$FTime=date("Y-m-d H:i:s",$xtime);
 		$curDate=date("Y-m-d");
 		$FTime=trim(str_replace($curDate, "", $FTime));
-		$pid=$re[1];
-		$line=$re[3];
+		// Pentest 2026-11-04 : ligne de journal rsyncd (donnee externe) affiche sans encodage (XSS stockee).
+		$pid=req_html($re[1]);
+		$line=req_html($re[3]);
 
 		if(preg_match("#(fatal|failed|syntax or usage error)#i", $line)){$class="text-danger";}
 		if(preg_match("#(Warning)#i", $line)){$class="text-warning";}
@@ -123,7 +121,6 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/rsyncd.syslog.pattern")."</i></div>";
 	echo @implode("\n", $html);
 	
 	

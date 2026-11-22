@@ -114,6 +114,8 @@ function search(){
 
 
 
+        // Pentest 2026-11-04 : texte du journal de mise a jour (donnee externe) affiche sans encodage (XSS stockee).
+        $events=req_html($events);
         $events=str_replace("[INFO]:","<span class='label label-info'>INFO..</span>",$events);
         $events=str_replace("[WARNING]:","<span class='label label-warning'>WARN</span>",$events);
         $events=str_replace("[ERROR]:","<span class='label label-danger'>ERRO.</span>",$events);

@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["table"])){table();exit;}
@@ -117,7 +118,7 @@ function status(){
 	$ARRAY["TITLE"]="{APP_GLANCES} {restarting_service}";
 	$ARRAY["AFTER"]="LoadAjaxSilent('glances-status','$page?glances-status=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-glances-restart')";
+	$jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-glances-restart')";
 	echo $tpl->SERVICE_STATUS($bsini, "APP_GLANCES",$jsRestart);
 }
 

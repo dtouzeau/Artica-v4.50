@@ -17,9 +17,7 @@ if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["uninstall"])){uninstall();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["restart"])){restart();exit;}
-if(isset($_GET["events"])){ksrn_events();exit;}
 if(isset($_GET["reconfigure"])){reconfigure();exit;}
-if(isset($_GET["check"])){ksrn_check();exit;}
 
 function status(){
     $unix=new unix();
@@ -101,48 +99,3 @@ function reconfigure(){
 
 
 
-function ksrn_events(){
-    $unix=new unix();
-    $grep=$unix->find_program("grep");
-    $tail=$unix->find_program("tail");
-    $MAIN=unserialize(base64_decode($_GET["events"]));
-    $PROTO_P=null;
-
-    foreach ($MAIN as $val=>$key){
-        $MAIN[$key]=str_replace(".", "\.", $MAIN[$key]);
-        $MAIN[$key]=str_replace("*", ".*?", $MAIN[$key]);
-
-    }
-
-    $max=intval($MAIN["MAX"]);if($max>1500){$max=1500;}
-    $date=$MAIN["DATE"];
-    $SRC=$MAIN["SRC"];
-    $DST=$MAIN["DST"];
-    $IN=$MAIN["IN"];
-    $PID=$MAIN["PID"];
-    if($MAIN["TERM"]<>null){$TERM=".*?{$MAIN["TERM"]}";}
-
-    if($PID<>null){$PID_P=".*?sshd\[$PID\].*?";}
-    if($IN<>null){$IN_P="(from|to)\s+.*?$IN.*?";}
-    if($SRC<>null){$IN_P="(from|to)\s+.*?$SRC.*?";}
-    if($DST<>null){$IN_P="(from|to)\s+.*?$DST.*?";}
-    if($MAIN["C"]==0){$TERM_P=$TERM;}
-
-
-    $mainline="{$PID_P}{$TERM_P}{$IN_P}";
-    if($TERM<>null){
-        if($MAIN["C"]>0){
-            $mainline="($mainline|$TERM)";
-        }
-    }
-
-
-
-    $search="$date.*?$mainline";
-    $search=str_replace(".*?.*?",".*?",$search);
-    $cmd="$grep --binary-files=text -i -E '$search' /var/log/dwagent.log |$tail -n $max >/usr/share/artica-postfix/ressources/logs/web/ksrn.syslog 2>&1";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-    @file_put_contents("/usr/share/artica-postfix/ressources/logs/web/ksrn.syslog.pattern", $search);
-    shell_exec($cmd);
-
-}

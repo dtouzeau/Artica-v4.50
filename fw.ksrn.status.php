@@ -8,12 +8,9 @@ if(isset($_POST["KRSN_DEBUG"])){Save();exit;}
 if(isset($_GET["ksrn-status"])){status();exit;}
 if(isset($_GET["emergency-enable"])){emergency_enable();exit;}
 if(isset($_GET["logfile-js"])){logfile_js();exit;}
-if(isset($_GET["ksrn-form-server"])){ksrn_form_server();exit;}
-if(isset($_POST["TheShieldsInterface"])){ksrn_form_server_save();exit;}
 if(isset($_GET["emergency-disable"])){emergency_disable();exit;}
 if(isset($_GET["clean-cache"])){clean_cache();exit;}
 if(isset($_GET["ksrn-settings"])){main_settings();exit;}
-if(isset($_GET["section-shields-js"])){section_shields_js();exit;}
 
 page();
 
@@ -80,6 +77,9 @@ function section_shields(){
 
     $form[]         = $tpl->field_section("Threats Shield","{threats_shield_explain}");
     $form[]         = $tpl->field_checkbox("KsrnAllEnable","{KsrnAllEnable}",1,false,"{KsrnAllEnable}",true);
+    $KsrnEnableIDNHomograph = 1;
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KsrnDisableIDNHomograph"))==1){$KsrnEnableIDNHomograph=0;}
+    $form[]         = $tpl->field_checkbox("KsrnEnableIDNHomograph","{KsrnEnableIDNHomograph}",$KsrnEnableIDNHomograph,false,"{KsrnEnableIDNHomograph_explain}");
 
     $form[]         = $tpl->field_section("Privacy Shield","{privacy_shield_explain}");
     $form[]         = $tpl->field_checkbox("KsrnDisableGoogleAdServices","{allow}: Google Ad Services",$KsrnDisableGoogleAdServices);
@@ -133,6 +133,9 @@ function table_old(){
 
     $form[]         = $tpl->field_section("Threats Shield","{threats_shield_explain}");
     $form[]         = $tpl->field_checkbox("KsrnAllEnable","{KsrnAllEnable}",1,false,"{KsrnAllEnable}",true);
+    $KsrnEnableIDNHomograph = 1;
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KsrnDisableIDNHomograph"))==1){$KsrnEnableIDNHomograph=0;}
+    $form[]         = $tpl->field_checkbox("KsrnEnableIDNHomograph","{KsrnEnableIDNHomograph}",$KsrnEnableIDNHomograph,false,"{KsrnEnableIDNHomograph_explain}");
 
     $form[]         = $tpl->field_section("Privacy Shield","{privacy_shield_explain}");
     $form[]         = $tpl->field_checkbox("KsrnDisableGoogleAdServices","{allow}: Google Ad Services",$KsrnDisableGoogleAdServices);
@@ -301,6 +304,10 @@ function Save(){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("CloudFlareSafeDisable",0);
     }
 
+    if(isset($_POST["KsrnEnableIDNHomograph"])){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KsrnDisableIDNHomograph",(intval($_POST["KsrnEnableIDNHomograph"])==0)?1:0);
+        unset($_POST["KsrnEnableIDNHomograph"]);
+    }
 	if(intval($_POST["KsrnEnableAdverstising"])==0){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KsrnDisableAdverstising",1);
     }else{

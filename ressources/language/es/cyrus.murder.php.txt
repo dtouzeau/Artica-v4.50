@@ -1,21 +1,19 @@
 <artica_console_port>Puerto de la consola web de Artica</artica_console_port>
 <connect_and_next>Conectar y siguiente paso</connect_and_next>
-<CYRUS_MURDER_CONNECT_BACKEND>Connect this server to the backend</CYRUS_MURDER_CONNECT_BACKEND>
-<CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>In the following form, give the backend server address and credentials to connect to the remote Artica SSL web console</CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>
-<CYRUS_MURDER_CONNECT_BACKEND_TEXT>Make this server has a frontend and notify the backend to add a new frontend server</CYRUS_MURDER_CONNECT_BACKEND_TEXT>
-<IS_DIFFERENT_THAN>is different than</IS_DIFFERENT_THAN>
-<MURDER_BACKEND_SERVER>Backend server name</MURDER_BACKEND_SERVER>
-<MURDER_HAS_FRONTEND>This server is a frontend server</MURDER_HAS_FRONTEND>
-<MURDER_HAS_FRONTEND_TEXT>This server is linked to a backend server for clustering mailboxes, if you want to disonnect it, turn to red this circle</MURDER_HAS_FRONTEND_TEXT>
-<murder_link_now>Link this server to backend server now</murder_link_now>
-<MURDER_VERIFY_DONE>The backend server has successfully authenticate your request, you can now proceed linking the 2 servers</MURDER_VERIFY_DONE>
-<MURDER_VERIFY_GO>
-[b]Be carrefull this server will use the backend server for users database, organizations and so on.[/b][br] 
-verify that 389,3905 ports are open in your firewall from this server to the backend server
-[br]If it is the first time you link a backend, the backend server will 
-turn off the Postfix MTA mail server (if it is installed).[br]
-The remote backend server will be switch to be only a Mailboxes/Databases server only...
-</MURDER_VERIFY_GO>
-<MURDER_VERIFY_GO_SUCCESS>This frontend server has been successfully added to the target backend server, all messaging services will be restarted to apply new parameters</MURDER_VERIFY_GO_SUCCESS>
-<REQUIRE_FULL_HOSTNAME>A full hostname is required</REQUIRE_FULL_HOSTNAME>
-<SERVER_REQUESTED>The backed server you set:</SERVER_REQUESTED>
+<CYRUS_MURDER_CONNECT_BACKEND>Conectar este servidor al backend</CYRUS_MURDER_CONNECT_BACKEND>
+<CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>En el siguiente formulario, indique la direcci&#243;n y las credenciales del servidor backend para conectarse a la consola web SSL remota de Artica</CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>
+<CYRUS_MURDER_CONNECT_BACKEND_TEXT>Convierta este servidor en un frontend y notifique al backend para que a&#241;ada un nuevo servidor frontend</CYRUS_MURDER_CONNECT_BACKEND_TEXT>
+<IS_DIFFERENT_THAN>es diferente de</IS_DIFFERENT_THAN>
+<MURDER_BACKEND_SERVER>Nombre del servidor backend</MURDER_BACKEND_SERVER>
+<MURDER_HAS_FRONTEND>Este servidor es un servidor frontend</MURDER_HAS_FRONTEND>
+<MURDER_HAS_FRONTEND_TEXT>Este servidor est&#225; vinculado a un servidor backend para agrupar buzones; si desea desconectarlo, ponga en rojo este c&#237;rculo</MURDER_HAS_FRONTEND_TEXT>
+<murder_link_now>Vincular este servidor al servidor backend ahora</murder_link_now>
+<MURDER_VERIFY_DONE>El servidor backend ha autenticado correctamente su solicitud, ahora puede proceder a vincular los 2 servidores</MURDER_VERIFY_DONE>
+<MURDER_VERIFY_GO>[b]Tenga cuidado, este servidor usar&#225; el servidor backend para la base de datos de usuarios, organizaciones, etc.[/b][br] 
+verifique que los puertos 389, 3905 est&#233;n abiertos en su firewall desde este servidor hacia el servidor backend
+[br]Si es la primera vez que vincula un backend, el servidor backend
+apagar&#225; el servidor de correo Postfix MTA (si est&#225; instalado).[br]
+El servidor backend remoto se cambiar&#225; para ser &#250;nicamente un servidor de buzones/bases de datos...</MURDER_VERIFY_GO>
+<MURDER_VERIFY_GO_SUCCESS>Este servidor frontend se ha a&#241;adido correctamente al servidor backend de destino, todos los servicios de mensajer&#237;a se reiniciar&#225;n para aplicar los nuevos par&#225;metros</MURDER_VERIFY_GO_SUCCESS>
+<REQUIRE_FULL_HOSTNAME>Se requiere un nombre de host completo</REQUIRE_FULL_HOSTNAME>
+<SERVER_REQUESTED>El servidor backend que estableci&#243;:</SERVER_REQUESTED>

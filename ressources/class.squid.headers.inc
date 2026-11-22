@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class squid_headers{
 	
@@ -83,8 +84,10 @@ class squid_headers{
 			return;
 		}
 		
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$results=$q->QUERY_SQL("SELECT * FROM squid_http_headers_acls WHERE enabled=1 ORDER BY zorder");
+		// acls.db is API-only — enabled http-header ACL rules via the acls backend.
+		$results=acls_api_get("/proxy/acls/sqlite/http-headers-acls");
+		if(!is_array($results)){$results=array();}
+		foreach($results as $ri=>$rr){$results[$ri]["ID"]=intval($rr["id"]??0);$results[$ri]["rulename"]=(string)($rr["ruleName"]??"");$results[$ri]["ztype"]=(string)($rr["zType"]??"");$results[$ri]["headername"]=(string)($rr["headerName"]??"");$results[$ri]["headervalue"]=(string)($rr["headerValue"]??"");$results[$ri]["aclport"]=intval($rr["aclPort"]??0);}
 		
 		
 		$squid_acls_groups=new squid_acls_groups();

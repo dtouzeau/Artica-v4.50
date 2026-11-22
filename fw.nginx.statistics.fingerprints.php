@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.rtmm.tools.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["json-data"])){json_data_js();exit;}
@@ -13,7 +15,6 @@ if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["popup-js"])){popup_js();exit;}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["status-popup"])){status_popup();exit;}
-if(isset($_GET["activate-popup"])){activate_popup();exit;}
 if(isset($_POST["fingerprint"])){status_save();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_POST["ArticaWebFingerPrint"])){activate_save();exit;}
@@ -80,7 +81,8 @@ function status_popup(){
     $tpl=new template_admin();
     $q=new postgres_sql();
     $fingerprint=$_GET["status-popup"];
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM fingerprints WHERE fingerprint='$fingerprint'");
+    // Pentest 2026-11-04 : fingerprint (GET) etait concatene dans la requete.
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM fingerprints WHERE fingerprint='".pg_escape_string2($fingerprint)."'");
     $Types[0] = "{artica_captcha_greyzone}";
     $Types[1] = "{artica_captcha_allow}";
     $Types[2] = "{artica_captcha_deny}";
@@ -115,9 +117,11 @@ function json_data_popup():bool{
     $tpl=new template_admin();
     $q=new postgres_sql();
     $fingerprint=$_GET["json-data-popup"];
-    $ligne=$q->mysqli_fetch_array("SELECT jsondata FROM fingerprints WHERE fingerprint='$fingerprint'");
+    // Pentest 2026-11-04 : fingerprint (GET) etait concatene dans la requete.
+    $ligne=$q->mysqli_fetch_array("SELECT jsondata FROM fingerprints WHERE fingerprint='".pg_escape_string2($fingerprint)."'");
     $jsondata=base64_decode($ligne["jsondata"]);
-    echo "<textarea style='width:100%;min-height:450px'>$jsondata</textarea>";
+    // Pentest 2026-11-04 : empreinte JSON envoyee par le navigateur (donnee externe) affichee sans encodage (XSS stockee).
+    echo "<textarea style='width:100%;min-height:450px'>".req_html($jsondata)."</textarea>";
     return true;
 
 }
@@ -143,7 +147,8 @@ function popup(){
     $tpl=new template_admin();
     $q=new postgres_sql();
     $fingerprint=$_GET["popup"];
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM fingerprints WHERE fingerprint='$fingerprint'");
+    // Pentest 2026-11-04 : fingerprint (GET) etait concatene dans la requete.
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM fingerprints WHERE fingerprint='".pg_escape_string2($fingerprint)."'");
     $UserAgent=$ligne["useragent"];
     $jsondata=json_decode(base64_decode($ligne["jsondata"]));
     //var_dump($jsondata);
@@ -216,7 +221,8 @@ function popup(){
         }
     }
 
-    $results=$q->QUERY_SQL("SELECT ipaddr FROM fingerprints_events WHERE fingerprint='$fingerprint'");
+    // Pentest 2026-11-04 : fingerprint (GET) etait concatene dans la requete.
+    $results=$q->QUERY_SQL("SELECT ipaddr FROM fingerprints_events WHERE fingerprint='".pg_escape_string2($fingerprint)."'");
     $zipZoom=false;
     $zips21=array();
     if($q->ok){
@@ -238,6 +244,12 @@ function popup(){
         }
     }
 
+    // Pentest 2026-11-04 : composants de l'empreinte (donnee externe : User-Agent, polices, plugins...) affiches sans encodage (XSS stockee).
+    $zips=array_map('req_html',$zips);
+    $plugins=array_map('req_html',$plugins);
+    $FontArray=array_map('req_html',$FontArray);
+    $LanguageArray=array_map('req_html',$LanguageArray);
+    $screenResolution=array_map('req_html',$screenResolution);
     if(count($zips)>0){
         if(!$zipZoom) {
             $tpl->table_form_field_text("{ipaddresses}", "" . implode(", ", $zips) . "", ico_nic);
@@ -249,21 +261,21 @@ function popup(){
     }
 
     if(strlen($vendor)>0){
-           $tpl->table_form_field_text("{browser}",$vendor,"fad fa-browser");
+           $tpl->table_form_field_text("{browser}",req_html($vendor),"fad fa-browser");
     }
     if(strlen($UserAgent)>0){
-        $tpl->table_form_field_text("{useragent}","<small>$UserAgent</small>","fad fa-browser");
+        $tpl->table_form_field_text("{useragent}","<small>".req_html($UserAgent)."</small>","fad fa-browser");
     }
 
 
     if(strlen($timezone)>0){
-        $tpl->table_form_field_text("{timezone}",$timezone,ico_clock_desk);
+        $tpl->table_form_field_text("{timezone}",req_html($timezone),ico_clock_desk);
     }
     if(strlen($platform)>0){
-        $tpl->table_form_field_text("{OS}",$platform,ico_params);
+        $tpl->table_form_field_text("{OS}",req_html($platform),ico_params);
     }
     if(strlen($videoCard)>0){
-        $tpl->table_form_field_text("{video}","<small>$videoCard</small>","fad fa-camcorder");
+        $tpl->table_form_field_text("{video}","<small>".req_html($videoCard)."</small>","fad fa-camcorder");
     }
 
 
@@ -286,15 +298,12 @@ function popup(){
 }
 function hashServices():array{
     $zids=array();
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT ID,servicename FROM nginx_services WHERE enabled=1 ORDER BY servicename";
-    $results=$q->QUERY_SQL($sql);
-    foreach ($results as $index=>$ligne){
-        $servicename=$ligne["servicename"];
-        $ID=$ligne["ID"];
-        $zids[$ID]=$servicename;
-
-
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/nginx_services?order=servicename");
+    $data=json_decode($resp,true);
+    $rows=(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])) ? $data["rows"] : [];
+    foreach ($rows as $ligne){
+        if(intval(isset($ligne["enabled"])?$ligne["enabled"]:0)!==1){continue;}
+        $zids[$ligne["ID"]]=$ligne["servicename"];
     }
     return $zids;
 }
@@ -304,33 +313,33 @@ function table(){
     $tpl=new template_admin();
     $q=new postgres_sql();
     $t=time();
-    $TRCLASS=null;
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0px'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{fingerprint}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{OS}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{website}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // Deux colonnes portaient width:99% -- impossible pour deux d'entre elles a
+    // la fois; awc laisse les largeurs naturelles.
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th class='center'>{date}</th>";
+    $html[]="<th>{fingerprint}</th>";
+    $html[]="<th>{OS}</th>";
+    $html[]="<th>{website}</th>";
+    $html[]="<th>{ipaddr}</th>";
+    $html[]="<th class='center'>{type}</th>";
+    $html[]="</tr></thead><tbody id='fp-rows'>";
 
 
 
 
-    $search=$_GET["search"];
+    // INJECTION SQL: la saisie n'etait transformee que par un str_replace de
+    // "*" en "%" puis concatenee dans un LIKE '...'. Une apostrophe suffisait a
+    // sortir de la chaine PostgreSQL. On neutralise l'apostrophe, seul
+    // caractere de fin de chaine, en la doublant.
+    $search=(string)($_GET["search"] ?? "");
     $sql="SELECT * FROM fingerprints_events ORDER BY unixtime DESC LIMIT 250";
-
     if(strlen($search)>0){
-        $search="*$search*";
-        $search=str_replace("**","*",$search);
-        $search=str_replace("**","*",$search);
-        $search=str_replace("*","%",$search);
+        $like=str_replace("*","%","*".$search."*");
+        $like=str_replace("%%","%",$like);
+        $like=str_replace("'","''",$like);
         $sql="SELECT * FROM fingerprints_events WHERE (
-            ipaddr::TEXT LIKE '$search' OR webtype LIKE '$search')  ORDER BY unixtime DESC LIMIT 250";
+            ipaddr::TEXT LIKE '$like' OR webtype LIKE '$like')  ORDER BY unixtime DESC LIMIT 250";
     }
     VERBOSE($sql,__LINE__);
     $results=$q->QUERY_SQL($sql);
@@ -349,7 +358,7 @@ function table(){
     $IconOS["iPhone"]="<i class='fas fa-apple-alt'></i>";
     $hashServices=hashServices();
     while($ligne=@pg_fetch_array($results)){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md=md5(serialize($ligne));
         $fingerprint=$ligne["fingerprint"];
         $ipaddr=$ligne["ipaddr"];
@@ -363,45 +372,49 @@ function table(){
             }
         }
 
-        $ligne2=$q->mysqli_fetch_array("SELECT jsondata,useragent,status FROM fingerprints WHERE fingerprint='$fingerprint'");
-        $fingerprint=$tpl->td_href($fingerprint,"","Loadjs('$page?popup-js=$fingerprint&function=$function')");
+        // L'empreinte vient de la base et partait BRUTE dans une seconde requete
+        // SQL ainsi que dans l'URL d'un Loadjs.
+        $fpSql=str_replace("'","''",(string)$fingerprint);
+        $ligne2=$q->mysqli_fetch_array("SELECT jsondata,useragent,status FROM fingerprints WHERE fingerprint='$fpSql'");
+        if(!is_array($ligne2)){$ligne2=array();}
+
         $country="";
         $flag=GetFlags($ligne["country"]);
-        if(strlen($ligne["country"])>0){
-            $country="&nbsp;(".$ligne["country"].")";
+        if(strlen((string)$ligne["country"])>0){
+            $country="&nbsp;(".htmlspecialchars((string)$ligne["country"]).")";
         }
+
+        // $jsondata etait lu par GetPlateForm() AVANT d'etre affecte, une ligne
+        // plus bas: la premiere ligne du tableau interrogeait donc null, et
+        // chacune des suivantes les donnees de la ligne PRECEDENTE.
+        $jsondata=base64_decode((string)($ligne2["jsondata"] ?? ""));
         $OS=GetPlateForm($jsondata);
-        $system="<i class='fas fa-question-circle'></i>&nbsp;($OS)";
-        $jsondata=base64_decode($ligne2["jsondata"]);
+        $system=($IconOS[$OS] ?? "<i class='fas fa-question-circle'></i>")
+               ."&nbsp;(".htmlspecialchars((string)$OS).")";
 
-        if(isset($IconOS[$OS])){
-            $system=$IconOS[$OS]."&nbsp;($OS)";
-        }
+        $fpLink=$tpl->td_href(htmlspecialchars((string)$fingerprint),"",
+            "Loadjs('$page?popup-js=".urlencode((string)$fingerprint)."&function=$function')");
+        $ipLink=$tpl->td_href(htmlspecialchars((string)$ipaddr),null,
+            "Loadjs('fw.modsecurity.threats.php?zoom-ip-js=".urlencode((string)$ipaddr)."')");
+        $ico="<i class='".UserAgentToIcon((string)($ligne2["useragent"] ?? ""))."'></i>&nbsp;";
 
-        $ipaddr=$tpl->td_href($ipaddr,null,"Loadjs('fw.modsecurity.threats.php?zoom-ip-js=$ipaddr')");
-
-        $ico="<i class='".UserAgentToIcon($ligne2["useragent"])."'></i>&nbsp;";
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%' nowrap>$clock$unixtime</td>";
-        $html[]="<td style='width:99%' nowrap>$ico$fingerprint</td>";
-        $html[]="<td style='width:99%' nowrap>$system</td>";
-        $html[]="<td style='width:1%' nowrap>$sitename</td>";
-        $html[]="<td style='width:1%' nowrap><img src='img/$flag'>&nbsp;$ipaddr$country</td>";
-        $html[]="<td style='width:1%' class='center' nowrap>$webtype</td>";
-        $html[]="</tr>";
+        $html[]="<tr id='$md'>"
+            ."<td class='center awc-nowrap awc-mono'>$clock$unixtime</td>"
+            ."<td class='awc-nowrap awc-mono'>$ico$fpLink</td>"
+            ."<td class='awc-nowrap'>$system</td>"
+            ."<td class='awc-nowrap'>$sitename</td>"
+            ."<td class='awc-nowrap'><img src='img/".htmlspecialchars((string)$flag)."'>&nbsp;$ipLink$country</td>"
+            ."<td class='center awc-nowrap'>".htmlspecialchars((string)$webtype)."</td>"
+            ."</tr>";
 
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='6'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    // L'ancien pied -- une <ul class='pagination'> dans un <tfoot> -- etait rempli
+    // par footable; le pager awc vit en dehors du tableau.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='fp-pager'></span></div>";
+    $html[]="</div></div>";
 
 
     $ArticaWebFingerPrint=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaWebFingerPrint"));
@@ -420,34 +433,16 @@ function table(){
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
 
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	$jstiny
-	</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-    return true;
-}
-function isHarmpID():bool{
-    $HarmpID=HarmpID();
-    if($HarmpID==0){return false;}
+    // Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n$jstiny\n</script>";
 
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .$script
+        .awc_pager_js(100,"fp-rows","fp-pager");
     return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
-function HarmpID():int{
-    if(!isset($_SESSION["HARMPID"])){return 0;}
-    if(intval($_SESSION["HARMPID"])==0){
-        return 0;
-    }
-    return intval($_SESSION["HARMPID"]);
 }
 function zoom_ips_popup():bool{
     $fingerprint=$_GET["zoom-ips-popup"];
@@ -455,35 +450,28 @@ function zoom_ips_popup():bool{
     $q=new postgres_sql();
     $hashServices=hashServices();
     $tpl=new template_admin();
-    $results=$q->QUERY_SQL("SELECT count(*) as tcount,ipaddr,siteid,country FROM fingerprints_events WHERE siteid > 0 AND fingerprint='$fingerprint' GROUP BY ipaddr,siteid,country ORDER BY tcount DESC");
+    // Pentest 2026-11-04 : fingerprint (GET) etait concatene dans la requete.
+    $results=$q->QUERY_SQL("SELECT count(*) as tcount,ipaddr,siteid,country FROM fingerprints_events WHERE siteid > 0 AND fingerprint='".pg_escape_string2($fingerprint)."' GROUP BY ipaddr,siteid,country ORDER BY tcount DESC");
 
     if(!$q->ok){
         echo $tpl->div_error($q->mysql_error);
     }
-    $TRCLASS=null;
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0px'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{website}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{requests}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{ipaddr}</th>";
+    $html[]="<th>{website}</th>";
+    $html[]="<th class='center'>{requests}</th>";
+    $html[]="</tr></thead><tbody id='fpip-rows'>";
 
     while($ligne=@pg_fetch_array($results)) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
+        $TRCLASS=null;
         $md = md5(serialize($ligne));
 
         $ipaddr = $ligne["ipaddr"];
         $country="";
         $flag=GetFlags($ligne["country"]);
-        if(strlen($ligne["country"])>0){
-            $country="&nbsp;(".$ligne["country"].")";
+        if(strlen((string)$ligne["country"])>0){
+            $country="&nbsp;(".htmlspecialchars((string)$ligne["country"]).")";
         }
 
 
@@ -495,31 +483,27 @@ function zoom_ips_popup():bool{
                $sitename = $hashServices[$serviceid];
             }
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%' nowrap><img src='img/$flag'>&nbsp;$ipaddr$country</td>";
-        $html[]="<td style='width:1%' nowrap>$sitename</td>";
-        $html[]="<td style='width:1%' class='left' nowrap>$requests</td>";
-        $html[]="</tr>";
+        // La derniere cellule portait class='left' dans un tableau dont les
+        // trois colonnes etaient deja alignees a gauche.
+        $html[]="<tr id='$md'>"
+            ."<td class='awc-nowrap'><img src='img/".htmlspecialchars((string)$flag)."'>&nbsp;"
+            .htmlspecialchars((string)$ipaddr).$country."</td>"
+            ."<td class='awc-nowrap'>$sitename</td>"
+            ."<td class='center awc-nowrap awc-mono'>".htmlspecialchars((string)$requests)."</td>"
+            ."</tr>";
 
 
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='fpip-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>"
+        .awc_pager_js(100,"fpip-rows","fpip-pager");
 
 
 return true;

@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 define("OSPF_PID_PATH","/var/run/quagga/ospfd.pid");
@@ -8,6 +9,10 @@ define("FPDF_FONTPATH",dirname(__FILE__).'/externals/fpdf/font');
 if(!defined("ARTICA_ROOT")){define('ARTICA_ROOT', "/usr/share/artica-postfix");}
 if(!defined("PROGRESS_DIR")){define("PROGRESS_DIR","/usr/share/artica-postfix/ressources/logs/web");}
 if(!defined("UPLOAD_DIR")){define("UPLOAD_DIR","/usr/share/artica-postfix/ressources/conf/upload");}
+// Postfix/messaging management moved to the dedicated artica-postfix daemon (its own
+// Unix socket). /postfix/* and /frontail/* REST calls are routed here in GENERIC_API_CLIENT.
+if(!defined("ARTICA_POSTFIX_SOCK")){define("ARTICA_POSTFIX_SOCK","/run/artica-postfix.sock");}
+if(!defined("ARTICA_WIREGUARD_SOCK")){ define("ARTICA_WIREGUARD_SOCK","/run/artica-wireguard.sock"); }
 ini_set("memory_limit", "1024M");
 if(!isset($GLOBALS["VERBOSE"])){$GLOBALS["VERBOSE"]=false;}
 
@@ -21,7 +26,9 @@ include_once(dirname(__FILE__)."/class.semaphores.php");
 include_once(dirname(__FILE__)."/class.memcached.inc");
 include_once(dirname(__FILE__)."/logs.inc");
 include_once(dirname(__FILE__)."/class.sqlite.inc");
-CheckMemCached();
+if(function_exists("CheckMemCached")) {
+    CheckMemCached();
+}
 if(function_exists("debug_mem")){debug_mem();}
 
 
@@ -131,7 +138,7 @@ class sockets{
         if(!$Decoded){
             return array();
         }
-        $Unser=@unserialize($Decoded);
+        $Unser=@unserialize($Decoded,array("allowed_classes"=>array("stdClass")));
         if(!$Unser){
             return array();
         }
@@ -211,14 +218,230 @@ class sockets{
         $this->REST_API("/system/kernel/set/$key/$value");
         return true;
     }
-    function REST_API_POST_JSON($endpoint, $data):string{
+    /**
+     * En-tetes des appels REST : nomme l'administrateur de la console a
+     * l'origine de l'appel (BSI IT-Grundschutz SYS.1.1, « creation or
+     * modification of users, groups, and permissions »).
+     *
+     * Le daemon ne croit cet en-tete que sur un transport de confiance
+     * (socket UNIX / loopback), exactement comme X-Forwarded-For : sans cette
+     * regle un client TCP pourrait s'attribuer les actions d'un autre
+     * administrateur, ce qui est pire qu'un journal absent. Sans en-tete, le
+     * daemon inscrit « api » -- le cas d'un appel direct a l'API, qui jusqu'ici
+     * ne laissait aucune trace, toute la tracabilite reposant sur les appels
+     * volontaires a admin_tracks() dans les pages.
+     *
+     * La valeur est filtree sur une liste blanche : un retour chariot dans un
+     * en-tete HTTP est une injection d'en-tete.
+     *
+     * @param bool $json ajouter Content-Type: application/json (faux pour un
+     *                   DELETE ou un POST de formulaire, qui n'ont pas de
+     *                   corps JSON).
+     */
+    private function audit_headers($json=true):array{
+        $h=array();
+        if($json){$h[]='Content-Type: application/json';}
+        $uid="";
+        if(isset($GLOBALS["ROOT_UID"])){
+            $uid=$GLOBALS["ROOT_UID"];
+        }elseif(isset($_SESSION["uid"])){
+            $uid=$_SESSION["uid"];
+        }
+        // X-Artica-Console-Role porte le ROLE, la ou X-Artica-Actor porte le
+        // NOM. Distinction indispensable: X-Artica-Actor vaut $_SESSION["uid"],
+        // c'est-a-dire le NOM D'UTILISATEUR pour tous les moteurs sauf le
+        // Manager (seul -100 est rendu "Manager" ci-dessous, pour que les deux
+        // pistes d'audit nomment la meme personne). S'en servir cote daemon
+        // comme controle d'acces faisait donc d'un compte AD, LDAP ou local
+        // nomme "manager" un Manager: il pouvait reinitialiser le second
+        // facteur de n'importe qui, y compris celui du vrai Manager.
+        //
+        // La valeur est une CONSTANTE, jamais une donnee d'identite: aucun nom
+        // de compte ne peut la produire, quel que soit le nom choisi dans
+        // l'annuaire.
+        //
+        // Deux conditions, pas une. $_SESSION["uid"] ne suffit PAS: SetUser()
+        // y range le nom d'utilisateur ($_SESSION["uid"]=$this->username), si
+        // bien qu'un compte litteralement nomme "-100" satisferait un test sur
+        // la seule valeur. ARTICA_SUPERADMIN, lui, n'est pose QUE par
+        // SetManager() (class.artica-logon.inc) -- il decrit le CHEMIN qui a
+        // ouvert la session, pas une chaine que quelqu'un choisit. Les deux
+        // ensemble ne peuvent donc pas etre obtenus en choisissant un nom.
+        //
+        // Pose AVANT la conversion -100 -> "Manager" ci-dessous, qui ne sert
+        // qu'a l'attribution d'audit.
+        if(!empty($_SESSION["ARTICA_SUPERADMIN"]) && strval($uid)==="-100"){
+            $h[]="X-Artica-Console-Role: superadmin";
+        }
+        // Meme convention que admin_tracks() (class.template-admin.inc) : les
+        // deux pistes d'audit doivent nommer la meme personne, sinon elles ne
+        // se recoupent pas.
+        if($uid==-100){$uid="Manager";}
+        $uid=preg_replace('/[^A-Za-z0-9_.@\-]/','',strval($uid));
+        if(strlen($uid)>0){
+            $h[]="X-Artica-Actor: ".substr($uid,0,64);
+        }
+        // Perimetre Artica Meta (tenants, spec 2026-11-13 5.3) : pose sur CHAQUE appel, calcule
+        // depuis la session, aucune page a modifier.
+        foreach($this->META_SCOPE_HEADERS() as $line){$h[]=$line;}
+        return $h;
+    }
+
+    /**
+     * En-tete X-Artica-Meta-Scope de la session courante (Artica Meta multi-tenant, 5.3).
+     *
+     * Le daemon ne croit cet en-tete que sur la socket Unix (sans X-Require-Session) ; absent,
+     * le perimetre est GLOBAL. D'ou un calcul qui ne retombe JAMAIS sur "absent" pour un
+     * compte de tenant :
+     *  - META_SCOPE = "global"            => aucun en-tete (infogerant) ;
+     *  - META_SCOPE = "tenants:<id>,..."  => "tenant:<META_TENANT>" si l'id actif est dans la
+     *    liste, sinon "tenant:0" (perimetre vide cote daemon, jamais global) ;
+     *  - META_SCOPE absent mais AsMetaAdmin dans les privileges de la session (compte sans
+     *    tenant, resolution en echec) => "tenant:0" : parc vide, pas le parc de tous les clients ;
+     *  - sinon (CLI, tache interne, compte sans privilege Meta) => aucun en-tete, comme avant.
+     * Public : les pages qui appellent la socket en cURL direct (telechargements binaires)
+     * doivent ajouter ces lignes a leurs propres en-tetes.
+     */
+    public function META_SCOPE_HEADERS():array{
+        if(!isset($_SESSION) || !is_array($_SESSION)){return array();}
+        $scope=isset($_SESSION["META_SCOPE"])?trim(strval($_SESSION["META_SCOPE"])):"";
+        $privs=isset($_SESSION["privileges_array"])&&is_array($_SESSION["privileges_array"])?$_SESSION["privileges_array"]:array();
+        // Memes predicats que meta_scope_compute() (fin de fichier) : AsMetaAdmin, sous quelque
+        // forme que ce soit, sans droit global => toujours un en-tete tenant, jamais "absent".
+        $hasMeta=privileges_priv_yes($privs,"AsMetaAdmin");
+        $uid=isset($_SESSION["uid"])?strval($_SESSION["uid"]):"";
+        $global=privileges_meta_global($privs) || (!empty($_SESSION["ARTICA_SUPERADMIN"]) && $uid==="-100");
+        if($scope==="global" && ($global || !$hasMeta)){return array();}
+        if(strpos($scope,"tenants:")===0){
+            $ids=array();
+            foreach(explode(",",substr($scope,8)) as $p){
+                $p=trim($p);
+                if(preg_match('/^[0-9]{1,18}$/',$p) && intval($p)>0){$ids[intval($p)]=true;}
+            }
+            $active=0;
+            if(isset($_SESSION["META_TENANT"]) && preg_match('/^[0-9]{1,18}$/',strval($_SESSION["META_TENANT"]))){
+                $active=intval($_SESSION["META_TENANT"]);
+            }
+            if($active<1 || !isset($ids[$active])){$active=0;}
+            return array("X-Artica-Meta-Scope: tenant:$active");
+        }
+        if($hasMeta && !$global){
+            return array("X-Artica-Meta-Scope: tenant:0");
+        }
+        return array();
+    }
+
+    /**
+     * Tenants Artica Meta d'une connexion (spec 2026-11-13 5.2) :
+     * GET /netagents/tenants/owners/resolve?source=&uid=&groups=<ref>&groups=<ref>...
+     *
+     * Route global-only : la requete part SANS X-Artica-Meta-Scope, meme si la session porte
+     * deja un perimetre de tenant (reconstruction des privileges en cours de session).
+     * Rend la liste triee des ids (eventuellement vide), ou null sur TOUT echec : l'appelant
+     * n'accorde alors aucun tenant (echec ferme).
+     */
+    public function META_TENANTS_RESOLVE($source,$uid,$groups=array(),$socket=null){
+        if(!function_exists("curl_init")){return null;}
+        // $socket : chemin de socket de remplacement, pour le harnais de test seulement.
+        if($socket===null){$socket="/usr/share/artica-postfix/bin/run/articarest.sock";}
+        $q=array("source=".rawurlencode(strval($source)),"uid=".rawurlencode(strval($uid)));
+        $seen=array();
+        if(is_array($groups)){
+            foreach($groups as $g){
+                $g=trim(strval($g));
+                if($g===""){continue;}
+                $k=strtolower($g);
+                if(isset($seen[$k])){continue;}
+                $seen[$k]=true;
+                $q[]="groups=".rawurlencode($g);
+            }
+        }
+        $uri="http://localhost/netagents/tenants/owners/resolve?".implode("&",$q);
+        if(strlen($uri)>15000){
+            writelogs("Artica Meta tenants: query too long (".count($seen)." groups), no tenant granted",__FUNCTION__,__FILE__,__LINE__);
+            return null;
+        }
+        $c=curl_init();
+        curl_setopt($c, CURLOPT_TIMEOUT, 13);
+        curl_setopt($c, CURLOPT_UNIX_SOCKET_PATH, $socket);
+        curl_setopt($c, CURLOPT_URL, $uri);
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+        $resp=curl_exec($c);
+        $err=curl_errno($c);
+        $code=intval(curl_getinfo($c, CURLINFO_HTTP_CODE));
+        curl_close($c);
+        if($err>0 || $code!==200 || !is_string($resp)){
+            writelogs("Artica Meta tenants: resolution failed (curl $err, HTTP $code), no tenant granted",__FUNCTION__,__FILE__,__LINE__);
+            return null;
+        }
+        $j=json_decode($resp,true);
+        if(!is_array($j) || !isset($j["tenants"]) || !is_array($j["tenants"])){
+            writelogs("Artica Meta tenants: unreadable resolution answer, no tenant granted",__FUNCTION__,__FILE__,__LINE__);
+            return null;
+        }
+        $ids=array();
+        foreach($j["tenants"] as $id){
+            if(!is_int($id) && !(is_string($id) && preg_match('/^[0-9]{1,18}$/',$id))){continue;}
+            $id=intval($id);
+            if($id>0){$ids[$id]=$id;}
+        }
+        $ids=array_values($ids);
+        sort($ids,SORT_NUMERIC);
+        return $ids;
+    }
+    // $timeout : delai curl en secondes (30 par defaut) ; une route longue (remplacement de brick GlusterFS)
+    // le releve pour ne pas presenter comme un echec une operation que le daemon termine.
+    function REST_API_POST_JSON($endpoint, $data, $timeout=30):string{
         $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+        // /postfix/* and /frontail/* are served by the dedicated artica-postfix daemon (GET path already routes there).
+        $epRoute=ltrim((string)$endpoint,"/");
+        if(substr($epRoute,0,8)=="postfix/" || substr($epRoute,0,9)=="frontail/"){ $unixSocketPath=ARTICA_POSTFIX_SOCK; }
 
         if(!function_exists("curl_init")){
             return json_encode(array("error" => "curl_init not available"));
         }
 
         $cURLConnection = curl_init();
+        $endpointKey = $endpoint;
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, max(1,intval($timeout)));
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_POST, true);
+        curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, $this->audit_headers());
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $this->aclsdb_recover_or_passthru($endpointKey, $resp, function() use ($endpointKey, $data, $timeout) {
+            return $this->REST_API_POST_JSON($endpointKey, $data, $timeout);
+        });
+    }
+    function REST_API_POSTFIX_POST_JSON($endpoint, $data):string{
+        $unixSocketPath = "/run/artica-postfix.sock";
+        // /postfix/* and /frontail/* are served by the dedicated artica-postfix daemon (GET path already routes there).
+        $epRoute=ltrim((string)$endpoint,"/");
+        if(substr($epRoute,0,8)=="postfix/" || substr($epRoute,0,9)=="frontail/"){ $unixSocketPath=ARTICA_POSTFIX_SOCK; }
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        $endpointKey = $endpoint;
         if(substr($endpoint, 0, 1) == "/"){
             $endpoint = substr($endpoint, 1);
         }
@@ -242,16 +465,22 @@ class sockets{
             return json_encode(array("error" => $curl_error));
         }
 
-        return $resp;
+        return $this->aclsdb_recover_or_passthru($endpointKey, $resp, function() use ($endpointKey, $data) {
+            return $this->REST_API_POST_JSON($endpointKey, $data);
+        });
     }
-    function REST_API_PUT_JSON($endpoint, $data){
-        $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+    function REST_API_POSTFIX_PUT_JSON($endpoint, $data){
+        $unixSocketPath = "/run/artica-postfix.sock";
+        // /postfix/* and /frontail/* are served by the dedicated artica-postfix daemon (GET path already routes there).
+        $epRoute=ltrim((string)$endpoint,"/");
+        if(substr($epRoute,0,8)=="postfix/" || substr($epRoute,0,9)=="frontail/"){ $unixSocketPath=ARTICA_POSTFIX_SOCK; }
 
         if(!function_exists("curl_init")){
             return json_encode(array("error" => "curl_init not available"));
         }
 
         $cURLConnection = curl_init();
+        $endpointKey = $endpoint;
         if(substr($endpoint, 0, 1) == "/"){
             $endpoint = substr($endpoint, 1);
         }
@@ -275,16 +504,63 @@ class sockets{
             return json_encode(array("error" => $curl_error));
         }
 
-        return $resp;
+        return $this->aclsdb_recover_or_passthru($endpointKey, $resp, function() use ($endpointKey, $data) {
+            return $this->REST_API_PUT_JSON($endpointKey, $data);
+        });
     }
-    function REST_API_DELETE($endpoint):string{
+    function REST_API_PUT_JSON($endpoint, $data){
         $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+        // /postfix/* and /frontail/* are served by the dedicated artica-postfix daemon (GET path already routes there).
+        $epRoute=ltrim((string)$endpoint,"/");
+        if(substr($epRoute,0,8)=="postfix/" || substr($epRoute,0,9)=="frontail/"){ $unixSocketPath=ARTICA_POSTFIX_SOCK; }
 
         if(!function_exists("curl_init")){
             return json_encode(array("error" => "curl_init not available"));
         }
 
         $cURLConnection = curl_init();
+        $endpointKey = $endpoint;
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, $this->audit_headers());
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $this->aclsdb_recover_or_passthru($endpointKey, $resp, function() use ($endpointKey, $data) {
+            return $this->REST_API_PUT_JSON($endpointKey, $data);
+        });
+    }
+    function REST_API_POSTFIX_DELETE($endpoint):string{
+        // Default to the artica-postfix daemon socket (consistent with REST_API_POSTFIX_POST_JSON);
+        // this is the _POSTFIX_ variant, so every endpoint (transportsec/*, ksmg/*, rspamd/*, …) is
+        // served by that daemon. postfix/* and frontail/* also route there (kept explicit for clarity).
+        $unixSocketPath = ARTICA_POSTFIX_SOCK;
+        $epRoute=ltrim((string)$endpoint,"/");
+        if(substr($epRoute,0,8)=="postfix/" || substr($epRoute,0,9)=="frontail/"){ $unixSocketPath=ARTICA_POSTFIX_SOCK; }
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        $endpointKey = $endpoint;
         if(substr($endpoint, 0, 1) == "/"){
             $endpoint = substr($endpoint, 1);
         }
@@ -304,7 +580,190 @@ class sockets{
             return json_encode(array("error" => $curl_error));
         }
 
-        return $resp;
+        return $this->aclsdb_recover_or_passthru($endpointKey, $resp, function() use ($endpointKey) {
+            return $this->REST_API_DELETE($endpointKey);
+        });
+    }
+    public function REST_API_WIREGUARD($endpoint):string{
+        if(!function_exists("curl_init")){
+            return json_encode(array("Status"=>false,"Error"=>"curl_init not available"));
+        }
+        $cURLConnection=$this->GENERIC_API_CLIENT(ARTICA_WIREGUARD_SOCK,$endpoint);
+        $resp=curl_exec($cURLConnection);
+        $curl_error_num=curl_errno($cURLConnection);
+        $HTTP_CODE=curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE);
+        if(function_exists("curl_close")){ curl_close($cURLConnection); }
+        if($this->is_curl_error($curl_error_num)){
+            return json_encode(array("Status"=>false,"Error"=>"Error connecting to artica-wireguard REST API $curl_error_num","JsonFailed"=>true,"Info"=>""));
+        }
+        if($HTTP_CODE==404){
+            return json_encode(array("Status"=>false,"Error"=>"$endpoint<br>404 Not found (artica-wireguard daemon).","JsonFailed"=>true,"Info"=>""));
+        }
+        return (string)$resp;
+    }
+    public function REST_API_WIREGUARD_POST_JSON($endpoint, $data):string{
+        if(!function_exists("curl_init")){ return json_encode(array("error"=>"curl_init not available")); }
+        $cURLConnection=curl_init();
+        if(substr($endpoint,0,1)=="/"){ $endpoint=substr($endpoint,1); }
+        curl_setopt($cURLConnection,CURLOPT_TIMEOUT,30);
+        curl_setopt($cURLConnection,CURLOPT_UNIX_SOCKET_PATH,ARTICA_WIREGUARD_SOCK);
+        curl_setopt($cURLConnection,CURLOPT_URL,"http://localhost/$endpoint");
+        curl_setopt($cURLConnection,CURLOPT_RETURNTRANSFER,true);
+        curl_setopt($cURLConnection,CURLOPT_POST,true);
+        curl_setopt($cURLConnection,CURLOPT_POSTFIELDS,json_encode($data));
+        curl_setopt($cURLConnection,CURLOPT_HTTPHEADER,array('Content-Type: application/json'));
+        $resp=curl_exec($cURLConnection);
+        $curl_error=curl_error($cURLConnection);
+        if(function_exists("curl_close")){ curl_close($cURLConnection); }
+        if(strlen($curl_error)>0){ return json_encode(array("error"=>$curl_error)); }
+        return (string)$resp;
+    }
+    public function REST_API_WIREGUARD_PUT_JSON($endpoint, $data):string{
+        if(!function_exists("curl_init")){ return json_encode(array("error"=>"curl_init not available")); }
+        $cURLConnection=curl_init();
+        if(substr($endpoint,0,1)=="/"){ $endpoint=substr($endpoint,1); }
+        curl_setopt($cURLConnection,CURLOPT_TIMEOUT,30);
+        curl_setopt($cURLConnection,CURLOPT_UNIX_SOCKET_PATH,ARTICA_WIREGUARD_SOCK);
+        curl_setopt($cURLConnection,CURLOPT_URL,"http://localhost/$endpoint");
+        curl_setopt($cURLConnection,CURLOPT_RETURNTRANSFER,true);
+        curl_setopt($cURLConnection,CURLOPT_CUSTOMREQUEST,"PUT");
+        curl_setopt($cURLConnection,CURLOPT_POSTFIELDS,json_encode($data));
+        curl_setopt($cURLConnection,CURLOPT_HTTPHEADER,array('Content-Type: application/json'));
+        $resp=curl_exec($cURLConnection);
+        $curl_error=curl_error($cURLConnection);
+        if(function_exists("curl_close")){ curl_close($cURLConnection); }
+        if(strlen($curl_error)>0){ return json_encode(array("error"=>$curl_error)); }
+        return (string)$resp;
+    }
+    public function REST_API_WIREGUARD_DELETE($endpoint):string{
+        if(!function_exists("curl_init")){ return json_encode(array("error"=>"curl_init not available")); }
+        $cURLConnection=curl_init();
+        if(substr($endpoint,0,1)=="/"){ $endpoint=substr($endpoint,1); }
+        curl_setopt($cURLConnection,CURLOPT_TIMEOUT,30);
+        curl_setopt($cURLConnection,CURLOPT_UNIX_SOCKET_PATH,ARTICA_WIREGUARD_SOCK);
+        curl_setopt($cURLConnection,CURLOPT_URL,"http://localhost/$endpoint");
+        curl_setopt($cURLConnection,CURLOPT_RETURNTRANSFER,true);
+        curl_setopt($cURLConnection,CURLOPT_CUSTOMREQUEST,"DELETE");
+        $resp=curl_exec($cURLConnection);
+        $curl_error=curl_error($cURLConnection);
+        if(function_exists("curl_close")){ curl_close($cURLConnection); }
+        if(strlen($curl_error)>0){ return json_encode(array("error"=>$curl_error)); }
+        return (string)$resp;
+    }
+    function REST_API_DELETE($endpoint):string{
+        $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+        // /postfix/* and /frontail/* are served by the dedicated artica-postfix daemon (GET path already routes there).
+        $epRoute=ltrim((string)$endpoint,"/");
+        if(substr($epRoute,0,8)=="postfix/" || substr($epRoute,0,9)=="frontail/"){ $unixSocketPath=ARTICA_POSTFIX_SOCK; }
+
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+
+        $cURLConnection = curl_init();
+        $endpointKey = $endpoint;
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "DELETE");
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, $this->audit_headers(false));
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        curl_close($cURLConnection);
+
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
+
+        return $this->aclsdb_recover_or_passthru($endpointKey, $resp, function() use ($endpointKey) {
+            return $this->REST_API_DELETE($endpointKey);
+        });
+    }
+    /**
+     * Transport of the L2 switching routes (/system/network/l2/*) ONLY.
+     *
+     * The daemon binds every L2 transaction (confirm, restore, resolve) to
+     * the operator's console session, so these calls carry three headers
+     * that no other route receives:
+     *   X-Artica-Session      session_id(): operator identity (admin session)
+     *   X-Artica-Remote-Addr  $_SERVER["REMOTE_ADDR"]: audit source address
+     *   X-Artica-Local-Addr   $_SERVER["SERVER_ADDR"]: address the browser is
+     *                         connected to, kept on an SVI when the card that
+     *                         carries it moves into a switch
+     * plus X-Artica-Actor from audit_headers(). Each value is whitelisted: a
+     * line break in a header is a header injection. The call goes straight to
+     * the articarest socket, never through nginx /webapi/ (the daemon refuses
+     * an operator identity that arrives with X-ViaConsole).
+     *
+     * Unlike the other REST_API* helpers it returns the HTTP status with the
+     * decoded body: the console needs 400/409/410 to tell a field error from
+     * a stale generation or an expired window.
+     *
+     * @return array("code"=>int (0 = transport failure),"json"=>array|null,"raw"=>string)
+     */
+    public function REST_API_L2($method,$endpoint,$data=null,$timeout=90):array{
+        $out=array("code"=>0,"json"=>null,"raw"=>"");
+        $method=strtoupper((string)$method);
+        $ep=ltrim((string)$endpoint,"/");
+        if(substr($ep,0,18)!=="system/network/l2/"){
+            $out["raw"]="REST_API_L2 serves /system/network/l2/ only";
+            return $out;
+        }
+        if(!in_array($method,array("GET","POST","PUT","DELETE"),true)){
+            $out["raw"]="REST_API_L2: unsupported method";
+            return $out;
+        }
+        if(!function_exists("curl_init")){
+            $out["raw"]="curl_init not available";
+            return $out;
+        }
+        $headers=$this->audit_headers($data!==null);
+        $sid=function_exists("session_id")?session_id():"";
+        if(is_string($sid) && preg_match('/^[A-Za-z0-9,-]{1,128}$/',$sid)){
+            $headers[]="X-Artica-Session: $sid";
+        }
+        foreach(array("X-Artica-Remote-Addr"=>"REMOTE_ADDR","X-Artica-Local-Addr"=>"SERVER_ADDR") as $hname=>$skey){
+            if(!isset($_SERVER[$skey])){continue;}
+            $ip=trim((string)$_SERVER[$skey]);
+            if(filter_var($ip,FILTER_VALIDATE_IP)!==false){
+                $headers[]="$hname: $ip";
+            }
+        }
+        $c=curl_init();
+        // A mutation applies the network change before it answers (90 s);
+        // the reads of other pages pass a short timeout.
+        $timeout=intval($timeout);
+        if($timeout<1 || $timeout>90){$timeout=90;}
+        curl_setopt($c, CURLOPT_TIMEOUT, $timeout);
+        curl_setopt($c, CURLOPT_UNIX_SOCKET_PATH, "/usr/share/artica-postfix/bin/run/articarest.sock");
+        curl_setopt($c, CURLOPT_URL, "http://localhost/$ep");
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($c, CURLOPT_CUSTOMREQUEST, $method);
+        if($data!==null){
+            $body=(is_array($data) && count($data)==0)?"{}":json_encode($data);
+            curl_setopt($c, CURLOPT_POSTFIELDS, $body);
+        }
+        curl_setopt($c, CURLOPT_HTTPHEADER, $headers);
+        $resp=curl_exec($c);
+        $err=curl_error($c);
+        $out["code"]=intval(curl_getinfo($c,CURLINFO_HTTP_CODE));
+        if(function_exists("curl_close")){curl_close($c);}
+        if(strlen($err)>0 || $resp===false){
+            $out["code"]=0;
+            $out["raw"]=strlen($err)>0?$err:"no answer from the REST API socket";
+            return $out;
+        }
+        $out["raw"]=(string)$resp;
+        $j=json_decode((string)$resp,true);
+        if(is_array($j)){$out["json"]=$j;}
+        return $out;
     }
     public function REST_API_POST($endpoint,$array=array()):string{
         if(!function_exists("curl_init")){
@@ -314,6 +773,7 @@ class sockets{
         }
 
         $cURLConnection=$this->REST_API_CLIENT($endpoint);
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, $this->audit_headers(false));
         curl_setopt($cURLConnection, CURLOPT_POST, true);
         curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, http_build_query($array));
 
@@ -348,7 +808,9 @@ class sockets{
             }
         }
         $resp=json_encode($json);
-        return $resp;
+        return $this->aclsdb_recover_or_passthru($endpoint, $resp, function() use ($endpoint, $array) {
+            return $this->REST_API_POST($endpoint, $array);
+        });
     }
     private function REST_WATCH_CLIENT($endpoint){
         $unixSocketPath="/usr/share/artica-postfix/bin/run/articawatch.sock";
@@ -369,10 +831,17 @@ class sockets{
         return $cURLConnection;
 
     }
+
     private function GENERIC_API_CLIENT($unixSocketPath,$endpoint){
         $cURLConnection = curl_init();
         if(substr($endpoint,0,1)=="/"){
             $endpoint=substr($endpoint,1,strlen($endpoint));
+        }
+        // Postfix/messaging endpoints are served by the dedicated artica-postfix daemon
+        // on its own socket. Route /postfix/* and /frontail/* there regardless of the
+        // socket the caller requested; everything else keeps its original target.
+        if(substr($endpoint,0,8)=="postfix/" || substr($endpoint,0,9)=="frontail/"){
+            $unixSocketPath=ARTICA_POSTFIX_SOCK;
         }
         $Uri="http://localhost/$endpoint";
         $CURLOPT_TIMEOUT=13;
@@ -389,7 +858,54 @@ class sockets{
     }
     private function REST_API_CLIENT($endpoint){
         $unixSocketPath="/usr/share/artica-postfix/bin/run/articarest.sock";
-        return $this->GENERIC_API_CLIENT($unixSocketPath,$endpoint);
+        $c=$this->GENERIC_API_CLIENT($unixSocketPath,$endpoint);
+        // Les GET (REST_API) ne posaient aucun en-tete : sans cette ligne un compte de tenant
+        // Meta lirait tout en GLOBAL. Les POST qui suivent remplacent la liste par
+        // audit_headers(), qui porte la meme ligne.
+        $scope=$this->META_SCOPE_HEADERS();
+        if(count($scope)>0){curl_setopt($c, CURLOPT_HTTPHEADER, $scope);}
+        return $c;
+    }
+
+    /**
+     * Auto-recovery for the wedged-WAL/SHM state on /home/artica/SQLITE/acls.db.
+     *
+     * Detects "disk I/O error" or "database disk image is malformed" in the response
+     * body — both are surfaced by the daemon when its in-process SHM mmap has been
+     * invalidated by a separate writer (PHP lib_sqlite, ImportAclsDB, BackupACLS).
+     * When matched, calls /proxy/acls/db/reset to evict the daemon's pool entries,
+     * then re-invokes the original request via $retry and returns its result.
+     *
+     * Static $depth guard prevents recursion: the retry call hits this same helper
+     * but with $depth=1, so it returns the (possibly still wedged) response without
+     * looping. The reset endpoint itself is never re-armed.
+     *
+     * Shared across all REST_API* variants so they all benefit from one fix point.
+     */
+    private function aclsdb_recover_or_passthru($endpoint, $resp, callable $retry):string {
+        static $depth = 0;
+        if ($depth !== 0) {
+            return $resp;
+        }
+        if ($endpoint === "/proxy/acls/db/reset") {
+            return $resp;
+        }
+        if (!is_string($resp) || $resp === "") {
+            return $resp;
+        }
+        if (strpos($resp, "disk I/O error") === false
+            && strpos($resp, "database disk image is malformed") === false) {
+            return $resp;
+        }
+        $depth++;
+        if (function_exists("writelogs")) {
+            writelogs("$endpoint hit wedged-DB pattern, calling /proxy/acls/db/reset",
+                __FUNCTION__, __FILE__, __LINE__);
+        }
+        $this->REST_API("/proxy/acls/db/reset");
+        $resp = $retry();
+        $depth--;
+        return $resp;
     }
     private function GENERIC_API($endpoint,$cURLConnection){
         if(!function_exists("curl_init")){
@@ -462,6 +978,20 @@ class sockets{
         }
     }
 
+    public function DebianAgentLocked():bool{
+
+        $data=json_decode($this->REST_API("/debianagent/locked"),true);
+        if(!isset($data["Status"])){
+            writelogs("Fatal! Protocol error /debianagent/locked",__FUNCTION__,__FILE__,__LINE__);
+            return false;
+        }
+        if(!$data["Status"]){
+            writelogs("Fatal! {$data["Error"]} error /debianagent/locked",__FUNCTION__,__FILE__,__LINE__);
+            return false;
+        }
+        return boolval($data["locked"]);
+    }
+
     public function HACLUSTERCLIENT_API($endpoint){
         $unixSocketPath="/usr/share/artica-postfix/bin/run/haclusterclient.sock";
         // Fast-fail when the daemon is down or mid-restart — the HaClusterClient
@@ -481,6 +1011,32 @@ class sockets{
         curl_setopt($cURLConnection, CURLOPT_CONNECTTIMEOUT_MS, 500);
         curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 3);
         return $this->GENERIC_API($endpoint,$cURLConnection);
+    }
+    /** POST JSON to the artica-milter API socket (greylist CRUD, fw.postfix.milter.greylist.php). */
+    public function MILTER_API_POST_JSON($endpoint,$data):string{
+        return $this->MILTER_API_METHOD($endpoint,"POST",$data);
+    }
+    /** DELETE on the artica-milter API socket. */
+    public function MILTER_API_DELETE($endpoint):string{
+        return $this->MILTER_API_METHOD($endpoint,"DELETE",null);
+    }
+    private function MILTER_API_METHOD($endpoint,$method,$data):string{
+        if(!function_exists("curl_init")){ return json_encode(array("error" => "curl_init not available")); }
+        $unixSocketPath="/usr/share/artica-postfix/bin/run/artica-milter.sock";
+        if(substr($endpoint,0,1)=="/"){ $endpoint=substr($endpoint,1); }
+        $c=curl_init();
+        curl_setopt($c, CURLOPT_TIMEOUT, 30);
+        curl_setopt($c, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($c, CURLOPT_URL, "http://localhost/$endpoint");
+        curl_setopt($c, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($c, CURLOPT_CUSTOMREQUEST, $method);
+        if($data!==null){
+            curl_setopt($c, CURLOPT_POSTFIELDS, json_encode($data));
+            curl_setopt($c, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+        }
+        $resp=curl_exec($c); $err=curl_error($c); curl_close($c);
+        if(strlen($err)>0){ return json_encode(array("error" => $err)); }
+        return (string)$resp;
     }
     public function MILTER_API($endpoint):string{
         $unixSocketPath="/usr/share/artica-postfix/bin/run/artica-milter.sock";
@@ -658,6 +1214,7 @@ class sockets{
         }
 
         $cURLConnection = curl_init();
+        $endpointKey = $endpoint;
         if(substr($endpoint, 0, 1) == "/"){
             $endpoint = substr($endpoint, 1);
         }
@@ -669,10 +1226,10 @@ class sockets{
         curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($cURLConnection, CURLOPT_POST, true);
         curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, $binary_data);
-        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, array(
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, array_merge(array(
             'Content-Type: application/octet-stream',
             'Content-Length: ' . strlen($binary_data)
-        ));
+        ),$this->META_SCOPE_HEADERS()));
 
         $resp = curl_exec($cURLConnection);
         $curl_error = curl_error($cURLConnection);
@@ -684,7 +1241,9 @@ class sockets{
             return json_encode(array("error" => $curl_error));
         }
 
-        return $resp;
+        return $this->aclsdb_recover_or_passthru($endpointKey, $resp, function() use ($endpointKey, $binary_data) {
+            return $this->REST_API_POST_BINARY($endpointKey, $binary_data);
+        });
     }
 
     public function REST_API($endpoint):string{
@@ -719,6 +1278,13 @@ class sockets{
         }
 
         if($HTTP_CODE==404){
+            // A JSON body is articarest's own refusal ("Volume does not exist", an
+            // unknown id...): the route exists, pass the answer through. Only the
+            // router's plain "Not Found" means the route is absent from the binary.
+            $j=json_decode((string)$resp,true);
+            if(is_array($j) && (array_key_exists("Status",$j) || array_key_exists("success",$j) || array_key_exists("error",$j))){
+                return $resp;
+            }
             $array["Status"]=false;
             $array["Error"]="$endpoint<br>404 Not found, did you use the Correct version of the Web API service?<br>If so, try restarting it to update it.";
             $array["JsonFailed"]=true;
@@ -746,7 +1312,53 @@ class sockets{
                 VERBOSE("$endpoint= [$resp]", __LINE__);
             }
         }
-        return $resp;
+
+        return $this->aclsdb_recover_or_passthru($endpoint, $resp, function() use ($endpoint) {
+            return $this->REST_API($endpoint);
+        });
+    }
+
+    /**
+     * Binary-safe GET against the default articarest socket. REST_API() runs every
+     * response through json_decode() and would corrupt anything that isn't JSON
+     * (e.g. a PNG body) -- this returns the raw bytes untouched, or an empty string
+     * on any transport/HTTP failure. Never route secrets through this as a URL;
+     * callers must fetch the bytes themselves and inline them (e.g. as a data: URI).
+     */
+    public function REST_API_BINARY($endpoint):string{
+        if(!function_exists("curl_init")){
+            return "";
+        }
+        $unixSocketPath = "/usr/share/artica-postfix/bin/run/articarest.sock";
+        $endpoint = (string)$endpoint;
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $uri = "http://localhost/$endpoint";
+
+        $cURLConnection = curl_init();
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 13);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, $uri);
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        $scope=$this->META_SCOPE_HEADERS();
+        if(count($scope)>0){curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, $scope);}
+
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        $HTTP_CODE = curl_getinfo($cURLConnection, CURLINFO_HTTP_CODE);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+
+        if(strlen($curl_error) > 0){
+            VERBOSE("$endpoint $curl_error",__LINE__);
+            return "";
+        }
+        if($HTTP_CODE<200 || $HTTP_CODE>=300){
+            return "";
+        }
+        return (string)$resp;
     }
 
 
@@ -850,6 +1462,107 @@ class sockets{
         }
         return $resp;
     }
+
+
+
+    public function REST_API_POSTFIX($endpoint):string{
+        if(!function_exists("curl_init")){
+            $array["Status"] = false;
+            $array["Error"] = "Error curl_init No such function available";
+            return json_encode($array);
+        }
+        $cURLConnection=$this->GENERIC_API_CLIENT("/run/artica-postfix.sock",$endpoint);
+        $resp = curl_exec($cURLConnection);
+        $curl_error_num=curl_errno($cURLConnection);
+        $HTTP_CODE=curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE);
+
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+        if ($curl_error_num>0){
+            writelogs("$endpoint Error $curl_error_num",__FUNCTION__,__FILE__,__LINE__);
+        }
+
+        if($this->is_curl_error($curl_error_num)){
+            $array["Status"]=false;
+            $array["Error"]="Error Connecting to the REST API server $curl_error_num $this->mysql_error";
+            $array["JsonFailed"]=true;
+            $array["Info"] ="";
+            VERBOSE("$endpoint $this->mysql_error",__LINE__);
+            $this->go_exec_syslog("[FATAL] ".$this->mysql_error);
+            return json_encode($array);
+        }
+
+        if($HTTP_CODE==404){
+            $array["Status"]=false;
+            $array["Error"]="$endpoint<br>404 Not found, did you use the Correct version of the Web API service?<br>If so, try restarting it to update it.";
+            $array["JsonFailed"]=true;
+            $array["Info"] ="";
+            $this->go_exec_syslog("[FATAL] 404 Not found");
+            return json_encode($array);
+        }
+
+        if(function_exists("json_decode")) {
+            json_decode($resp);
+            if (json_last_error() > JSON_ERROR_NONE) {
+                $array["Status"] = false;
+                $array["Error"] = "Error parsing Json [$resp] HTTP CODE $HTTP_CODE " . json_last_error_msg();
+                $array["JsonFailed"]=true;
+                $array["Info"] ="";
+                return json_encode($array);
+            }
+        }
+
+        if(function_exists("VERBOSE")){
+            VERBOSE("$endpoint= [$resp]",__LINE__);
+        }
+        return $resp;
+    }
+    /**
+     * Comme REST_API_POSTFIX(), mais rend le corps TEL QUEL — sans exiger du JSON.
+     *
+     * REST_API_POSTFIX() valide la réponse avec json_decode() et remplace tout corps
+     * non-JSON par un objet d'erreur (« Error parsing Json [...] »). Une route qui rend
+     * du HTML, du CSV ou un PDF y est donc structurellement inaccessible : elle répond
+     * 200, la console affiche {SERVFAIL}. Vécu sur
+     * /postfix/maillog/daily-report/preview, qui rend l'aperçu HTML du rapport.
+     *
+     * Retourne array("http_code"=>int,"content_type"=>string,"body"=>string,"error"=>string).
+     * "error" ne porte QUE les échecs de transport (curl, 404) ; un corps d'erreur
+     * applicatif (JSON {Status:false}) reste dans "body" avec son code HTTP, à charge
+     * pour l'appelant de le lire — deviner l'échec depuis le corps est précisément le
+     * défaut que cette méthode existe pour éviter.
+     */
+    public function REST_API_POSTFIX_RAW($endpoint):array{
+        $out=array("http_code"=>0,"content_type"=>"","body"=>"","error"=>"");
+        if(!function_exists("curl_init")){
+            $out["error"]="Error curl_init No such function available";
+            return $out;
+        }
+        $cURLConnection=$this->GENERIC_API_CLIENT("/run/artica-postfix.sock",$endpoint);
+        $resp=curl_exec($cURLConnection);
+        $curl_error_num=curl_errno($cURLConnection);
+        $out["http_code"]=intval(curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE));
+        $out["content_type"]=(string)curl_getinfo($cURLConnection,CURLINFO_CONTENT_TYPE);
+        if(function_exists("curl_close")){
+            curl_close($cURLConnection);
+        }
+        if($curl_error_num>0){
+            writelogs("$endpoint Error $curl_error_num",__FUNCTION__,__FILE__,__LINE__);
+        }
+        if($this->is_curl_error($curl_error_num)){
+            $out["error"]="Error Connecting to the REST API server $curl_error_num $this->mysql_error";
+            $this->go_exec_syslog("[FATAL] ".$this->mysql_error);
+            return $out;
+        }
+        if($out["http_code"]==404){
+            $out["error"]="$endpoint<br>404 Not found, did you use the Correct version of the Web API service?<br>If so, try restarting it to update it.";
+            $this->go_exec_syslog("[FATAL] 404 Not found");
+            return $out;
+        }
+        $out["body"]=(string)$resp;
+        return $out;
+    }
     public function REST_API_NGINX($endpoint):string{
         if(!function_exists("curl_init")){
             $array["Status"] = false;
@@ -908,7 +1621,69 @@ class sockets{
         return $resp;
     }
 
-    function REST_API_NGINX_POST_JSON($endpoint, $data):string{
+    public function REST_API_PROXYPAC($endpoint):string{
+        if(!function_exists("curl_init")){
+            $array["Status"] = false;
+            $array["Error"] = "Error curl_init No such function available";
+            return json_encode($array);
+        }
+        $cURLConnection=$this->GENERIC_API_CLIENT("/run/proxy-pac-adm.sock",$endpoint);
+        $resp = curl_exec($cURLConnection);
+        $curl_error_num=curl_errno($cURLConnection);
+        $HTTP_CODE=curl_getinfo($cURLConnection,CURLINFO_HTTP_CODE);
+
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+        if ($curl_error_num>0){
+            writelogs("$endpoint Error $curl_error_num",__FUNCTION__,__FILE__,__LINE__);
+        }
+
+        if($this->is_curl_error($curl_error_num)){
+            $array["Status"]=false;
+            $array["Error"]="Error Connecting to the proxy-pac admin socket $curl_error_num $this->mysql_error";
+            $array["JsonFailed"]=true;
+            $array["Info"] ="";
+            VERBOSE("$endpoint $this->mysql_error",__LINE__);
+            return json_encode($array);
+        }
+
+        if($HTTP_CODE>=400){
+            $array["Status"]=false;
+            $array["Error"]="$endpoint<br>HTTP $HTTP_CODE from proxy-pac admin socket";
+            $array["JsonFailed"]=true;
+            $array["Info"] =$resp;
+            return json_encode($array);
+        }
+
+        if(function_exists("json_decode")) {
+            json_decode($resp);
+            if (json_last_error() > JSON_ERROR_NONE) {
+                $array["Status"] = false;
+                $array["Error"] = "Error parsing Json [$resp] HTTP CODE $HTTP_CODE " . json_last_error_msg();
+                $array["JsonFailed"]=true;
+                $array["Info"] ="";
+                return json_encode($array);
+            }
+        }
+
+        if(function_exists("VERBOSE")){
+            VERBOSE("$endpoint= [$resp]",__LINE__);
+        }
+        return $resp;
+    }
+
+    /**
+     * $timeout : delai d'attente en secondes. La valeur par defaut de 30 s
+     * reste celle de tous les appelants existants, mais elle est INFERIEURE
+     * au budget de certaines routes du daemon -- /vitrification/cloud/fetch
+     * s'accorde 60 s. Couper avant lui n'annule rien de son cote (son
+     * contexte est independant de la requete HTTP) : l'appelant recevait donc
+     * une erreur de transport pour un travail qui se terminait normalement
+     * quelques secondes plus tard. Une route plus patiente que 30 s doit
+     * passer son propre delai.
+     */
+    function REST_API_NGINX_POST_JSON($endpoint, $data, $timeout = 30):string{
         $unixSocketPath = "/run/reverse-proxy.sock";
 
         if(!function_exists("curl_init")){
@@ -921,7 +1696,9 @@ class sockets{
         }
         $uri = "http://localhost/$endpoint";
 
-        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, 30);
+        $timeout = intval($timeout);
+        if($timeout < 1){ $timeout = 30; }
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, $timeout);
         curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
         curl_setopt($cURLConnection, CURLOPT_URL, $uri);
         curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
@@ -939,6 +1716,37 @@ class sockets{
             return json_encode(array("error" => $curl_error));
         }
 
+        return $resp;
+    }
+
+    // Same contract as REST_API_NGINX_POST_JSON, with PUT (Docker Relay:
+    // PUT /docker-relay/agents|backends/{uuid}).
+    function REST_API_NGINX_PUT_JSON($endpoint, $data, $timeout = 30):string{
+        $unixSocketPath = "/run/reverse-proxy.sock";
+        if(!function_exists("curl_init")){
+            return json_encode(array("error" => "curl_init not available"));
+        }
+        $cURLConnection = curl_init();
+        if(substr($endpoint, 0, 1) == "/"){
+            $endpoint = substr($endpoint, 1);
+        }
+        $timeout = intval($timeout);
+        if($timeout < 1){ $timeout = 30; }
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, $timeout);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $unixSocketPath);
+        curl_setopt($cURLConnection, CURLOPT_URL, "http://localhost/$endpoint");
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($cURLConnection, CURLOPT_CUSTOMREQUEST, "PUT");
+        curl_setopt($cURLConnection, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($cURLConnection, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+        $resp = curl_exec($cURLConnection);
+        $curl_error = curl_error($cURLConnection);
+        if(function_exists("curl_close")) {
+            curl_close($cURLConnection);
+        }
+        if(strlen($curl_error) > 0){
+            return json_encode(array("error" => $curl_error));
+        }
         return $resp;
     }
 
@@ -1291,10 +2099,10 @@ class sockets{
     }
     public function Bandwidthd_enabled(){
         $TempMemInstalled=0;
-        if(!is_file("/etc/artica-postfix/settings/Daemons/EnableBandwidthd")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableBandwidthd",0);}
+        if(!artica_setting_exists("EnableBandwidthd")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableBandwidthd",0);}
         $EnableBandwidthd=$this->GET_INFO("EnableBandwidthd");
         $EnableIntelCeleron=intval($this->GET_INFO("EnableIntelCeleron"));
-        if(is_file("/etc/artica-postfix/settings/Daemons/TempMemInstalled")){
+        if(artica_setting_exists("TempMemInstalled")){
             $TempMemInstalled=intval($this->GET_INFO("TempMemInstalled"));
         }
 
@@ -1458,7 +2266,7 @@ class sockets{
         $UseRemoteUfdbguardService=intval($this->GET_INFO("UseRemoteUfdbguardService"));
         $PDSNInUfdb=intval($this->GET_INFO("PDSNInUfdb"));
         if($PDSNInUfdb==1){$GLOBALS["EnableUfdbGuard"]=1;return 1;}
-        if(is_file("/etc/artica-postfix/settings/Daemons/SquidUFDBUrgency")){
+        if(artica_setting_exists("SquidUFDBUrgency")){
             $SquidUFDBUrgency=intval($this->GET_INFO("SquidUFDBUrgency"));
         }
 
@@ -2071,19 +2879,22 @@ class sockets{
         }
 
         $keys["Keys"][]= array("key"=>$key,"value"=>$value);
+        // The token exists now (settings.exists.inc caches articarest's answers per request).
+        if(isset($GLOBALS["ARTICA_SETTINGS_EXISTS"])){$GLOBALS["ARTICA_SETTINGS_EXISTS"][$cacheKey]=true;}
 
         $payload = $keys;
         $json=json_decode($this->REST_API_PUT_JSON("/setinfo",$payload));
         // Value changed — update cache with what we just wrote rather than
         // unsetting it, so subsequent reads hit the cache without a refetch.
         self::$info_cache[$cacheKey] = $strVal;
-        if(!$json){return false;}
-        if(!$json->Status){
+        if(!is_object($json)){return false;}
+        $Status=boolval($json->Status ?? false);
+        if(!$Status){
             if(function_exists("writelogs")) {
-                writelogs($json->Error, __FUNCTION__, __FILE__, __LINE__);
+                writelogs(strval($json->Error ?? "setinfo: malformed response (no Status field)"), __FUNCTION__, __FILE__, __LINE__);
             }
         }
-        return  boolval($json->Status);
+        return $Status;
 
     }
     function file_put_contents($filename, $data):bool {
@@ -2164,16 +2975,10 @@ class sockets{
     }
     private function stream_framework($uri,$called=null){
         $results=null;
-        $hollodotme=false;
-        $phversion=phpversion();
-        $phpver=explode(".",phpversion());
-        $MAJOR=$phpver[0];
-        $MINOR=$phpver[1];
-        if($MAJOR>6){
-            if($MINOR>1){
-                $hollodotme=true;
-            }
-        }
+        // Le client FastCGI (hollodotme) demande PHP >= 7.2. L'ancien test
+        // MAJOR>6 && MINOR>1 rejetait 8.0, 8.1, 9.0 et 9.1.
+        $hollodotme=version_compare(PHP_VERSION,"7.2.0",">=");
+        $phversion=PHP_VERSION;
         if($GLOBALS["AS_ROOT"]){
             if(function_exists("writelogs")){writelogs("As root -> \"stream_framework($uri)\" $called",__CLASS__ . "=>" . __FUNCTION__,__FILE__);}
         }
@@ -2190,7 +2995,7 @@ class sockets{
             return $results;
         }
 
-        if(function_exists("writelogs")){writelogs("ERROR: $uri phpv$MAJOR.$MINOR - $phversion not compatible",
+        if(function_exists("writelogs")){writelogs("ERROR: $uri php $phversion not compatible",
             __CLASS__ . "=>" . __FUNCTION__,__FILE__);}
         return "";
     }
@@ -2237,49 +3042,9 @@ class sockets{
         return true;
 
     }
-    public function go_exec_version():string{
-        if(!function_exists("curl_init")){return "";}
-        $cURLConnection = curl_init();
-        curl_setopt($cURLConnection, CURLOPT_URL, "http://127.0.0.1:3334/version");
-        curl_setopt($cURLConnection, CURLOPT_NOPROXY, "*");
-        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
-        $resp = curl_exec($cURLConnection);
-        $curl_error_num=intval(curl_errno($cURLConnection));
-        curl_close($cURLConnection);
-        if($curl_error_num==7){
-            $this->mysql_error="Error Failed to connect() to host";
-            return "0.0.0";
-        }
-        if($curl_error_num==52){
-            $this->mysql_error="Empty reply from server";
-            return "0.0.0";
-        }
-
-        return $resp;
-
-    }
     function jQueryToUse(){
        $jqueryToUse="jquery-3.6.0.min.js";
         return $jqueryToUse;
-    }
-    function _getFrameWorkGO($uri):string{
-
-        if(!is_file("/usr/bin/php-cgi")){
-            writelogs("Unable to found /usr/bin/php-cgi",__FUNCTION__,__FILE__,__LINE__);
-            return "";
-        }
-
-        $uri="http://www.domain.com/$uri";
-        $url=parse_url($uri);
-        $path=$url["path"];
-        if(!isset($url["query"])){$url["query"]=null;}
-        $url["query"]=str_replace("&"," ",$url["query"]);
-        $fullpath="/usr/share/artica-postfix/framework".$path;
-        $cmdline="/usr/bin/php-cgi -f $fullpath {$url["query"]}";
-        $results=$this->go_exec($cmdline);
-        return @implode("\n",$results);
-
-
     }
     public function getGoFramework($cmd){
         $ROOT=ARTICA_ROOT;
@@ -2307,38 +3072,17 @@ class sockets{
                 include_once("/usr/share/artica-postfix/framework/frame.class.inc");
             }
 
-            if($uri=="squid.php?IsIcapClient=yes"){
-                $unix=new unix();
-                if($unix->SQUID_ICAP_ENABLED()){ return "TRUE"; }
-                $this->Runned=true;
-                return "";
-            }
-
             include_once(dirname(__FILE__)."/class.socketAsRoot.inc");
             $socketAsRoot=new SocketsAsRoot($uri);
             $Val=$socketAsRoot->SocketsAsRoot_perform();
             if($socketAsRoot->Runned){return $Val;}
         }
 
-        if($uri=="cmd.php?ldap-restart=yes"){
-            if($this->SquidPerformance>2){return "";}
-            if($this->EnableIntelCeleron==1){return "";}
-            $timeF=dirname(__FILE__)."logs/web/ldap-restart.time";
-            if($this->xfile_time_min($timeF)<3){return "";}
-            @unlink($timeF);
-            $this->file_put_contents($timeF, time());
-        }
         if($uri=="cmd.php?uri=artica_version"){
             if(isset($GLOBALS["artica_version"])){return $GLOBALS["artica_version"];}
             $GLOBALS["artica_version"]=@file_get_contents("/usr/share/artica-postfix/VERSION");
             return $GLOBALS["artica_version"];
         }
-        if($uri=="system.php?MEM_TOTAL_INSTALLEE=yes"){
-            $cachedatas=$this->MEMCACHE_GET("MEM_TOTAL_INSTALLEE");
-            if($cachedatas<>null){return $cachedatas;}
-        }
-
-
         if($uri=="cmd.php?uri=artica_version"){
             $cachedatas=$this->MEMCACHE_GET($CACHE_KEY);
             if($cachedatas<>null){return $cachedatas;}
@@ -2359,26 +3103,18 @@ class sockets{
 
 
 
-        $NOCOMMANDS["cmd.php?ifconfig-all=yes"]=true;
         $NOCOMMANDS["cmd.php?mempy=yes"]=true;
-        $NOCOMMANDS["cmd.php?status-forced=yes"]=true;
-        $NOCOMMANDS["cmd.php?squid-GetOrginalSquidConf"]=true;
-        $NOCOMMANDS["cmd.php?LdapdbSize=yes"]=true;
-        $NOCOMMANDS["squid.php?build-schedules=yes"]=true;
-        $NOCOMMANDS["postgres.php?PostGresSQLDatabaseDirectory=yes"]=true;
         $NOCOMMANDS["services.php?nsswitch=yes"]=true;
         $NOCOMMANDS["cmd.php?postfix-hash-aliases=yes"]=true;
-        $NOCOMMANDS["monit.php?allstatus=yes"]=true;
-        $NOCOMMANDS["cmd.php?resolv-conf"]=true;
         $NOCOMMANDS["squid2.php?sprivs=yes"]=true;
         $NOCOMMANDS["services.php?license-register=yes"]=true;
         $NOCOMMANDS["nginx.php?reverse-fs=yes"]=true;
         if(isset($NOCOMMANDS[trim($uri)])){$CLUSTER=false;}
 
 
-        $NOCOMMANDX["network\.php\?ifconfig-array="]=true;
 
-        foreach ($NOCOMMANDX as $pattern=>$none){
+
+        foreach ($NOCOMMANDS as $pattern=>$none){
             if(preg_match("#$pattern#",$uri)){$CLUSTER=false;break;}
         }
 
@@ -2407,21 +3143,10 @@ class sockets{
 
 
         if(function_exists("VERBOSE")) {VERBOSE("stream_framework($uri)", __LINE__);}
-        $hollodotme=false;
-        $phpver=explode(".",phpversion());
-        $MAJOR=$phpver[0];
-        $MINOR=$phpver[1];
-        if($MAJOR>6){
-            if($MINOR>1){
-                $hollodotme=true;
-            }
-        }
-        if($GLOBALS["VERBOSE"]){echo "***********\nPHP VERSION ->$MAJOR/$MINOR\n***********\n";}
-        if(!$hollodotme){
-            $line=$this->_getFrameWorkGO($uri);
-        }else{
-            $line=$this->stream_framework($uri);
-        }
+        // Le repli php-cgi passait par go-exec (127.0.0.1:3334), absent des
+        // appliances : il rendait toujours "". stream_framework() journalise
+        // lui-meme une version de PHP trop ancienne.
+        $line=$this->stream_framework($uri);
 
         if($GLOBALS["VERBOSE"]){echo "***********\n$line\n***********\n";}
         if(trim($line)==null){return "";}
@@ -2445,7 +3170,7 @@ class sockets{
                 writelogs("Restarting framework !!! 500 - Internal Server Error");
                 shell_exec("/etc/init.d/php5-fpm restart >/dev/null 2>&1");
                 shell_exec("/etc/init.d/artica-phpfpm restart");
-                die("DIE " .__FILE__." Line: ".__LINE__);
+                die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
             }
         }
 
@@ -2454,7 +3179,7 @@ class sockets{
                 writelogs("Restarting framework !!! 500 - Internal Server Error");
                 $this->ToSyslog("Restarting framework !!! 500 - Internal Server Error");
                 shell_exec("/etc/init.d/artica-phpfpm restart");
-                die("DIE " .__FILE__." Line: ".__LINE__);
+                die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
             }
         }
 
@@ -2509,6 +3234,114 @@ class sockets{
         }
         return false;
     }
+    /**
+     * USE_LICENSE_V2: esta máquina usa o licenciamento por certificado?
+     *
+     * E uma DEFINICAO, lida como todas as outras: o registo primeiro, e o
+     * ficheiro de /etc/artica-postfix/settings/Daemons apenas como recurso
+     * quando o registo nao responde.
+     *
+     * Pela ordem contraria -- so o ficheiro -- isto parecia nao funcionar, e
+     * foi o primeiro ensaio em maquina real que o mostrou: o
+     *
+     *     articarest -set-memory-socks UseLicmTLS -value 1
+     *
+     * escreve no registo, e a copia em ficheiro pode vir depois (o SET_INFO
+     * aceita a escrita numa fila assincrona). Quem liga isto a mao -- e e assim
+     * que se liga -- via a consola continuar na versao anterior sem nada que o
+     * explicasse.
+     *
+     * Ligar e desligar: -value 1 e -value 0. Apagar o ficheiro nao basta, e e
+     * por isso que o registo manda: ele e que sabe dizer "desligado".
+     */
+    public function USE_LICENSE_V2():bool{
+        if(isset($GLOBALS["FUNC".__FUNCTION__])){return boolval($GLOBALS["FUNC".__FUNCTION__]);}
+        $r=false;
+        $fromRegistry=trim((string)$this->GET_INFO("UseLicmTLS"));
+        if($fromRegistry!==""){
+            $r=(intval($fromRegistry)==1);
+        }else{
+            $fname="/etc/artica-postfix/settings/Daemons/UseLicmTLS";
+            if(is_file($fname)){$r=(trim(@file_get_contents($fname))=="1");}
+        }
+        $GLOBALS["FUNC".__FUNCTION__]=$r;
+        return $r;
+    }
+    /**
+     * LICENSE_V2: o estado do licenciamento novo, tal como o daemon o publicou.
+     *
+     * Quem o escreve e o licensev2.Publish() no articarest, e e o UNICO que o
+     * escreve: a consola nunca le o certificado nem repete a regra de o
+     * interpretar. Devolve um array vazio quando ainda nao foi publicado --
+     * maquina acabada de arrancar, ou daemon parado.
+     */
+    public function LICENSE_V2():array{
+        if(isset($GLOBALS["FUNC".__FUNCTION__])){return $GLOBALS["FUNC".__FUNCTION__];}
+        $r=array();
+        $blob=trim($this->GET_INFO("LicenseV2"));
+        if(strlen($blob)>0){
+            $json=@base64_decode($blob);
+            if($json!==false){
+                $a=@json_decode($json,true);
+                if(is_array($a)){$r=$a;}
+            }
+        }
+        $GLOBALS["FUNC".__FUNCTION__]=$r;
+        return $r;
+    }
+    /**
+     * LICENSE_V2_CORP: a resposta do portao, no mundo novo.
+     *
+     * Vem calculada do daemon (o campo corp), de proposito: a regra do que
+     * conta como licenca enterprise -- um trial nao conta, um periodo de graca
+     * conta -- vive num sitio so, e esse sitio e quem le o certificado.
+     */
+    public function LICENSE_V2_CORP():bool{
+        $a=$this->LICENSE_V2();
+        if(!isset($a["corp"]) OR !boolval($a["corp"])){return false;}
+
+        /*
+         * Um "sim" publicado e uma FOTOGRAFIA, e um prazo nao avisa ninguem
+         * quando passa.
+         *
+         * O estado so e reescrito quando algo acontece -- um ping, uma
+         * renovacao, um refresh. Uma licenca que expira as 15h00 nao dispara
+         * nada: sem esta verificacao, o Go deixava de dar as features (le o
+         * certificado a cada 2 minutos) e estas 126 paginas continuavam a
+         * dar-las ate ao ciclo seguinte, que pode ser 75 minutos depois.
+         *
+         * Duas datas, e as duas contam: a da licenca e a do certificado. A
+         * credencial morre com a licenca (o servidor corta-lhe a validade pelo
+         * fim dela), mas um relogio adiantado ou uma renovacao falhada podem
+         * separa-las.
+         *
+         * Uma licenca Gold passa por aqui: nao tem prazo nem certificado, e as
+         * duas datas vem a zero.
+         */
+        $agora=time();
+        $expira=isset($a["expire"]) ? intval($a["expire"]) : 0;
+        if($expira>0 AND $expira<=$agora){
+            /*
+             * Expirou -- mas uma licenca paga tem sete dias de graca depois
+             * disso, e e o SERVIDOR que os escreve no documento assinado
+             * (grace_until). Substitui o LicenseINGP da V1, que era um inteiro
+             * local: aqui a data vem dentro do certificado, por isso funciona
+             * offline igual e nao se falsifica com root.
+             *
+             * Um trial leva grace_until a zero e cai no instante.
+             *
+             * Esta linha existe para os dois portoes NAO DISCORDAREM: sem ela, o
+             * Go dava as features durante a graca e estas 126 paginas cortavam-nas
+             * no fim da licenca -- metade do produto a dizer sim e metade a dizer
+             * nao, ao mesmo cliente no mesmo minuto.
+             */
+            $graca=isset($a["grace_until"]) ? intval($a["grace_until"]) : 0;
+            if($graca<=0 OR $graca<=$agora){return false;}
+        }
+        $cert=isset($a["cert_expire"]) ? intval($a["cert_expire"]) : 0;
+        if($cert>0 AND $cert<=$agora){return false;}
+        return true;
+    }
     public function CORP_LICENSE():bool{
         $verbose=false;
         $FINAL_TIME=0;
@@ -2530,6 +3363,26 @@ class sockets{
             if(function_exists("VERBOSE")){VERBOSE("CORP_GOLD = True",__LINE__);}
             $GLOBALS["FUNC".__FUNCTION__]=true;
             return true;
+        }
+        /*
+         * O licenciamento por certificado responde por si, e responde ANTES de
+         * tudo o que vem abaixo -- incluindo o ficheiro CORP_LICENSE, que e
+         * precisamente o risco: um "sim" que ficou de uma licenca antiga e que
+         * continua a dizer sim muito depois de deixar de ser verdade.
+         *
+         * O Gold fica por cima disto (ver acima): e uma licenca individual que
+         * a Artica entrega ao cliente e que o servidor de licencas NAO gera.
+         * Uma maquina Gold nao tem certificado nenhum, e nao pode perder
+         * features por nao ter um que nunca devia ter tido.
+         *
+         * As 126 paginas que chamam esta funcao nao sabem nada disto, e e o
+         * ponto: o interruptor esta aqui e em mais nenhum sitio.
+         */
+        if($this->USE_LICENSE_V2()){
+            $r=$this->LICENSE_V2_CORP();
+            if($verbose){VERBOSE("CORP_LICENSE(v2) = ".($r?"True":"False"),__LINE__);}
+            $GLOBALS["FUNC".__FUNCTION__]=$r;
+            return $r;
         }
         $LicenseInfos=$this->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseInfos"));
         $LicenseINGP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LicenseINGP"));
@@ -2583,37 +3436,18 @@ class sockets{
         $datediff = $your_date - $now ;
         return floor($datediff/(60*60*24));
     }
-    function LANGUAGE_CACHE_IMPORT($array_keys,$lang,$keyname=null):bool{
-        if($GLOBALS["DEBUG_LANG"]){echo __FUNCTION__."::".__LINE__."::<strong style='color:#d32d2d'>FINAL: Saveing $lang $keyname</strong><br>\n";}
-        $memcache=new lib_memcached();
-        $Serialized=serialize($array_keys);
-        $memcache->saveKey($keyname, $Serialized,18000);
-        return true;
-    }
     public function LANGUAGE_DUMP($lang): array{
         if($GLOBALS["AS_ROOT"]){return array();}
         if($lang=="undefined"){return array();}
-        if(!isset($GLOBALS["MEMCACHE_ENABLED"])){$this->MEMCACHE_ENABLED();}
-        $MEMCACHED_KEY=strtoupper("TRANSLATE_LANG_$lang");
-
-        if($GLOBALS["MEMCACHE_ENABLED"]){
-            $memcache=new lib_memcached();
-            $ARRAY=unserialize($memcache->getKey($MEMCACHED_KEY));
-            if(!is_array($ARRAY)){$ARRAY=array();}
-            if(count($ARRAY)>100){return $ARRAY;}
-        }
-
-        if(!$GLOBALS["MEMCACHE_ENABLED"]){
-            if(!isset($GLOBALS["translation_$lang"])){
-                if(isset($_SESSION["translation_$lang"])){
-                    $GLOBALS["translation_$lang"]=$_SESSION["translation_$lang"];
-                }
-            }
-
-            if(isset($GLOBALS["translation_$lang"])){
-                if(count($GLOBALS["translation_$lang"])>100){
-                    return $GLOBALS["translation_$lang"];
-                }
+        // Cache par requête uniquement. L'ancien cache Valkey (TRANSLATE_LANG_xx) n'a jamais
+        // fonctionné : LANGUAGE_CACHE_IMPORT recevait ses arguments inversés et stockait la
+        // chaîne "fr" au lieu du dictionnaire. Le réparer serait pire : 4,8 Mo à transférer
+        // depuis Valkey à chaque page, contre ~8 ms pour relire le fichier local. Sans Valkey,
+        // les 10 Mo du dictionnaire étaient en plus copiés dans la session PHP.
+        if(isset($_SESSION["translation_$lang"])){unset($_SESSION["translation_$lang"]);}
+        if(isset($GLOBALS["translation_$lang"]) && is_array($GLOBALS["translation_$lang"])){
+            if(count($GLOBALS["translation_$lang"])>100){
+                return $GLOBALS["translation_$lang"];
             }
         }
         $filepath=dirname(__FILE__)."/language/$lang.db";
@@ -2638,13 +3472,7 @@ class sockets{
         }
         if(count($data)<500){ writelogs("[$lang]:: Get language file from framework Not an array !",__CLASS__."/".__FUNCTION__,__FILE__); }
 
-        if($GLOBALS["MEMCACHE_ENABLED"]){
-            $this->LANGUAGE_CACHE_IMPORT($lang,$data,$MEMCACHED_KEY);
-            return $data;
-        }
-
         $GLOBALS["translation_$lang"]=$data;
-        $_SESSION["translation_$lang"]=$data;
         return $GLOBALS["translation_$lang"];
 
     }
@@ -2691,4 +3519,212 @@ class sockets{
         }
         return false;
     }
+
+    /* ----------------------------------------------------------------------
+     * mcp-categorization daemon API over its local Unix socket.
+     * The daemon serves the same routes as its mTLS port (44397) without TLS
+     * on /run/mcp-categorization.sock (mode 0660, owner www-data:www-data).
+     * Methods return the raw JSON string (like REST_API_*); the *_array()
+     * helpers json_decode it for convenience.
+     * -------------------------------------------------------------------- */
+    private function MCPCATZ_SOCKET(){
+        return "/run/mcp-categorization.sock";
+    }
+    private function MCPCATZ_CLIENT($endpoint){
+        $cURLConnection = curl_init();
+        if(substr($endpoint,0,1)=="/"){$endpoint=substr($endpoint,1);}
+        $CURLOPT_TIMEOUT=15;
+        if($this->REST_API_TIMEOUT>15){$CURLOPT_TIMEOUT=$this->REST_API_TIMEOUT;}
+        curl_setopt($cURLConnection, CURLOPT_TIMEOUT, $CURLOPT_TIMEOUT);
+        curl_setopt($cURLConnection, CURLOPT_UNIX_SOCKET_PATH, $this->MCPCATZ_SOCKET());
+        curl_setopt($cURLConnection, CURLOPT_URL, "http://localhost/$endpoint");
+        curl_setopt($cURLConnection, CURLOPT_RETURNTRANSFER, true);
+        return $cURLConnection;
+    }
+    public function MCPCATZ_GET($endpoint):string{
+        if(!function_exists("curl_init")){return json_encode(array("error"=>"curl_init not available"));}
+        $c=$this->MCPCATZ_CLIENT($endpoint);
+        $resp=curl_exec($c);
+        $err=curl_error($c);
+        $errno=curl_errno($c);
+        if(function_exists("curl_close")){curl_close($c);}
+        if($errno>0){
+            writelogs("GET $endpoint Error [$errno] $err",__FUNCTION__,__FILE__,__LINE__);
+            return json_encode(array("error"=>$err));
+        }
+        return $resp;
+    }
+    public function MCPCATZ_DELETE($endpoint):string{
+        if(!function_exists("curl_init")){return json_encode(array("error"=>"curl_init not available"));}
+        $c=$this->MCPCATZ_CLIENT($endpoint);
+        curl_setopt($c, CURLOPT_CUSTOMREQUEST, "DELETE");
+        $resp=curl_exec($c);
+        $err=curl_error($c);
+        $errno=curl_errno($c);
+        if(function_exists("curl_close")){curl_close($c);}
+        if($errno>0){
+            writelogs("DELETE $endpoint Error [$errno] $err",__FUNCTION__,__FILE__,__LINE__);
+            return json_encode(array("error"=>$err));
+        }
+        return $resp;
+    }
+    public function MCPCATZ_SEND_JSON($endpoint,$data,$method="POST"):string{
+        if(!function_exists("curl_init")){return json_encode(array("error"=>"curl_init not available"));}
+        $c=$this->MCPCATZ_CLIENT($endpoint);
+        if($method=="POST"){
+            curl_setopt($c, CURLOPT_POST, true);
+        }else{
+            curl_setopt($c, CURLOPT_CUSTOMREQUEST, $method);
+        }
+        curl_setopt($c, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($c, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+        $resp=curl_exec($c);
+        $err=curl_error($c);
+        $errno=curl_errno($c);
+        if(function_exists("curl_close")){curl_close($c);}
+        if($errno>0){
+            writelogs("$method $endpoint Error [$errno] $err",__FUNCTION__,__FILE__,__LINE__);
+            return json_encode(array("error"=>$err));
+        }
+        return $resp;
+    }
+    public function MCPCATZ_POST_JSON($endpoint,$data):string{return $this->MCPCATZ_SEND_JSON($endpoint,$data,"POST");}
+    public function MCPCATZ_PUT_JSON($endpoint,$data):string{return $this->MCPCATZ_SEND_JSON($endpoint,$data,"PUT");}
+
+    /* Issue an mTLS client certificate via the daemon (admin). The daemon holds
+     * the CA key and signs, so the web stack never needs CA access. Returns the
+     * decoded {name,tier,serial,expires,cert_pem,key_pem} or {error}. */
+    public function MCPCATZ_IssueClient($name,$tier,$maxday,$serverip="",$serverport=0):array{
+        $data=array("name"=>$name,"tier"=>$tier,"maxday"=>intval($maxday));
+        if($serverip!=""){$data["server_ip"]=$serverip;$data["server_port"]=intval($serverport)>0?intval($serverport):44397;}
+        $j=json_decode($this->MCPCATZ_POST_JSON("/clients",$data),true);
+        return is_array($j)?$j:array("error"=>"no response from daemon");
+    }
+
+    /* Windows console bundle: same as MCPCATZ_IssueClient with format=p12.
+     * Returns p12_base64 + password (the password is never stored). */
+    public function MCPCATZ_IssueClientP12($name,$tier,$maxday,$serverip,$serverport):array{
+        $data=array("name"=>$name,"tier"=>$tier,"maxday"=>intval($maxday),"format"=>"p12",
+            "server_ip"=>$serverip,"server_port"=>intval($serverport)>0?intval($serverport):44397);
+        $j=json_decode($this->MCPCATZ_POST_JSON("/clients",$data),true);
+        return is_array($j)?$j:array("error"=>"no response from daemon");
+    }
+
+    /* Revoke a client certificate by serial (hex). The daemon revokes live
+     * (rejected at the next handshake) and owns revoked.txt. */
+    public function MCPCATZ_RevokeClient($serial):string{
+        return $this->MCPCATZ_DELETE("/clients/".rawurlencode($serial));
+    }
+
+    /* Convenience wrappers returning decoded arrays. */
+    public function MCPCATZ_Status():array{
+        $j=json_decode($this->MCPCATZ_GET("/status"),true);
+        return is_array($j)?$j:array();
+    }
+    public function MCPCATZ_Version():array{
+        $j=json_decode($this->MCPCATZ_GET("/version"),true);
+        return is_array($j)?$j:array();
+    }
+    public function MCPCATZ_Categorize($domain):array{
+        $j=json_decode($this->MCPCATZ_GET("/categorize/".rawurlencode($domain)),true);
+        return is_array($j)?$j:array();
+    }
+    public function MCPCATZ_CategoriesList():array{
+        $j=json_decode($this->MCPCATZ_GET("/categories/list"),true);
+        return is_array($j)?$j:array();
+    }
+    public function MCPCATZ_CategoriesSearch($q):array{
+        $j=json_decode($this->MCPCATZ_GET("/categories/search?q=".rawurlencode($q)),true);
+        return is_array($j)?$j:array();
+    }
+    public function MCPCATZ_DomainsList($categoryid):array{
+        $j=json_decode($this->MCPCATZ_GET("/categories/".intval($categoryid)."/domains"),true);
+        return is_array($j)?$j:array();
+    }
+    public function MCPCATZ_AddDomain($categoryid,$domain):string{
+        return $this->MCPCATZ_PUT_JSON("/categories/".intval($categoryid)."/domains",array("domain"=>$domain));
+    }
+    public function MCPCATZ_RemoveDomain($categoryid,$domain):string{
+        return $this->MCPCATZ_DELETE("/categories/".intval($categoryid)."/domains/".rawurlencode($domain));
+    }
+    public function MCPCATZ_Reachable():bool{
+        if(!file_exists($this->MCPCATZ_SOCKET())){return false;}
+        $j=$this->MCPCATZ_Status();
+        return isset($j["version"]);
+    }
 }
+
+/*
+ * Artica Meta multi-tenant (spec 2026-11-13 5.2/5.3) : predicats partages par la session
+ * (class.privileges.inc meta_scope_compute()) et par l'en-tete (sockets::META_SCOPE_HEADERS()).
+ * Definis ICI parce que ce fichier est charge par toute requete : une seule definition, jamais
+ * deux copies qui divergent. Definitions INCONDITIONNELLES, donc hissees a la compilation : ce
+ * fichier fait des appels REST pendant son propre chargement (CheckMemCached(), ligne ~30), qui
+ * passent par META_SCOPE_HEADERS() avant que la fin du fichier ne soit executee.
+ */
+    function privileges_priv_yes($privs,$key):bool{
+        if(!is_array($privs) || !isset($privs[$key])){return false;}
+        $v=$privs[$key];
+        if(is_bool($v)){return $v;}
+        if(is_int($v)){return $v===1;}
+        return strtolower(trim(strval($v)))=="yes";
+    }
+    // AsArticaAdministrator implique AsArticaMetaAdmin dans usersMenus (AllRights) : il garde donc
+    // le perimetre global qu'il avait avant les tenants.
+    function privileges_meta_global($privs):bool{
+        if(privileges_priv_yes($privs,"AsArticaMetaAdmin")){return true;}
+        if(privileges_priv_yes($privs,"AsArticaAdministrator")){return true;}
+        return false;
+    }
+    /**
+     * Generation des proprietaires de tenants (cle MetaTenantsGeneration). Chaque jeu de
+     * privileges AsMetaAdmin retient la generation sous laquelle ses tenants ont ete resolus
+     * (META_TENANTS_GEN) ; une generation differente rend ce jeu PERIME, en cache Valkey
+     * (PrivsOf<md5>) comme en session.
+     */
+    function meta_tenants_generation():string{
+        if(!isset($GLOBALS["CLASS_SOCKETS"]) || !is_object($GLOBALS["CLASS_SOCKETS"])){return "";}
+        return trim(strval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MetaTenantsGeneration")));
+    }
+    // Jeu de privileges AsMetaAdmin (non global) resolu sous une autre generation de proprietaires.
+    function meta_tenants_privs_stale($privs):bool{
+        if(!is_array($privs)){return false;}
+        if(!privileges_priv_yes($privs,"AsMetaAdmin") || privileges_meta_global($privs)){return false;}
+        $have=isset($privs["META_TENANTS_GEN"])?trim(strval($privs["META_TENANTS_GEN"])):"";
+        return $have!==meta_tenants_generation();
+    }
+    // Appelee par CheckSessions() a chaque page : true => la session reconstruit ses privileges
+    // (BuildSession), donc META_SCOPE / META_TENANT, avant de servir la page.
+    function meta_tenants_session_stale():bool{
+        if(!isset($_SESSION) || !is_array($_SESSION) || !isset($_SESSION["privileges_array"])){return false;}
+        return meta_tenants_privs_stale($_SESSION["privileges_array"]);
+    }
+    /**
+     * Ruling R-F4 : session authentifiee dont le perimetre Meta n'a jamais ete pose (ouverte
+     * avant la mise a jour, ou session Manager) ou session de tenant sans META_GEN (ouverte
+     * avant R-F3). CheckSessions() appelle alors meta_scope_session_sync() (class.privileges.inc,
+     * charge a la demande) : sans elle, les appels navigateur directs au daemon (/netagents/*,
+     * terminal, console) recevaient 403. Session en attente de 2FA : jamais.
+     */
+    function meta_scope_session_needs_sync():bool{
+        if(!isset($_SESSION) || !is_array($_SESSION)){return false;}
+        if(!isset($_SESSION["uid"]) || strval($_SESSION["uid"])===""){return false;}
+        if(!empty($_SESSION["2FA_PENDING"])){return false;}
+        // Deja tente pour cette session (compte sans privilege Meta : META_SCOPE reste absent) :
+        // pas de chargement de class.privileges.inc a chaque page. BuildSession() / SetUser()
+        // resynchronisent eux-memes a chaque reconstruction des privileges.
+        if(!isset($_SESSION["META_SCOPE"])){return empty($_SESSION["META_SCOPE_SYNCED"]);}
+        if(strpos(strval($_SESSION["META_SCOPE"]),"tenants:")===0 && !isset($_SESSION["META_GEN"])){return true;}
+        return false;
+    }
+    /**
+     * A appeler apres TOUT changement de proprietaires de tenant (page des tenants, Task 10).
+     * Change la generation : chaque cache PrivsOf<md5> d'un compte AsMetaAdmin est ignore a sa
+     * prochaine lecture, et chaque session AsMetaAdmin ouverte reconstruit ses privileges et son
+     * perimetre a sa prochaine page (CheckSessions). Aucune enumeration de cles Valkey.
+     */
+    function meta_tenants_flush_privs_cache():bool{
+        if(!isset($GLOBALS["CLASS_SOCKETS"]) || !is_object($GLOBALS["CLASS_SOCKETS"])){return false;}
+        $gen=strval(time()).bin2hex(random_bytes(4));
+        return (bool)$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MetaTenantsGeneration",$gen);
+    }

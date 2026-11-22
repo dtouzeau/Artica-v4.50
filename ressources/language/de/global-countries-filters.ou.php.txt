@@ -1,4 +1,4 @@
 <countries>L%C3%A4nder</countries>
-<countries_deny_list>Countries deny list</countries_deny_list>
-<deny_country_explain>This section allow you to deny or put in quarantine mail from specifics countries.[br]
-Select on this list below the country to add[br]Artica will use Geo-IP in order to localize the mail[br]It parse SMTP headers and try to determine wich country first routing IPs came from</deny_country_explain>
+<countries_deny_list>Liste blockierter L%C3%A4nder</countries_deny_list>
+<deny_country_explain>In diesem Bereich k&#246;nnen Sie E-Mails aus bestimmten L&#228;ndern ablehnen oder in Quarant&#228;ne stellen.[br]
+W&#228;hlen Sie in der Liste unten das hinzuzuf&#252;gende Land aus[br]Artica verwendet Geo-IP, um die E-Mail zu lokalisieren[br]Es analysiert die SMTP-Header und versucht zu ermitteln, aus welchem Land die ersten Routing-IPs stammen</deny_country_explain>

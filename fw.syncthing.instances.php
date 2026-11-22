@@ -674,11 +674,15 @@ function instance_web():bool{
 }
 
 function getInstanceName($ID):string{
+    // Pentest 2026-11-04 : ID etait concatene dans la requete.
+    $ID=intval($ID);
     $q=new lib_sqlite("/home/artica/SQLITE/syncthing.db");
     $ligne=$q->mysqli_fetch_array("SELECT instancename FROM instances WHERE ID=$ID");
     return strval($ligne["instancename"]);
 }
 function getOwner($ID):string{
+    // Pentest 2026-11-04 : ID etait concatene dans la requete.
+    $ID=intval($ID);
     $q=new lib_sqlite("/home/artica/SQLITE/syncthing.db");
     $ligne=$q->mysqli_fetch_array("SELECT username FROM instances WHERE ID=$ID");
     return strval($ligne["username"]);
@@ -966,8 +970,6 @@ function communications_ports_save(){
 		$sock=new sockets();
 		if($ligne["tcount"]>0){$sock->SET_INFO("ServiceFTPEnabled", 1);}else{$sock->SET_INFO("ServiceFTPEnabled", 0); }
 	
-		$sock=new sockets();
-		$sock->getFrameWork("ftp-proxy.php?reconfigure-silent=yes");
 	
 	}	
 
@@ -1049,17 +1051,20 @@ function table():bool{
     $html[]="</thead>";
     $html[]="<tbody>";
     $filter=1;
+    $binds=array();
     $jsID=array();
-    $search=$_GET["search"];
+    $search=strval($_GET["search"] ?? "");
     if(strlen($search)>0){
+        // Pentest 2026-11-04 : search (GET) etait concatene dans la requete.
         $search="*".$search."*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
-        $search=str_replace("**","%",$search);
-        $filter="WHERE instancename LIKE '$search' or username LIKE '$search'";
+        $search=str_replace("*","%",$search);
+        $filter="(instancename LIKE ? or username LIKE ?)";
+        $binds=array($search,$search);
     }
     $q=new lib_sqlite("/home/artica/SQLITE/syncthing.db");
-    $results=$q->QUERY_SQL("SELECT * FROM instances WHERE $filter ORDER BY instancename ASC");
+    $results=$q->QUERY_SQL_PARAMS("SELECT * FROM instances WHERE $filter ORDER BY instancename ASC",$binds);
     if(!$q->ok){
         echo $tpl->div_error($q->mysql_error);
         return false;

@@ -19,7 +19,9 @@ function session_js(){
 	$uid=$_GET["uid"];
 	$uid_encoded=urlencode($uid);
     $function=$_GET["function"];
-	$tpl->js_dialog("{settings}: $uid","$page?session-tab=$uid_encoded&function=$function");
+	// Pentest 2026-11-04 : uid etait recopie sans encodage dans la page (XSS).
+	$uidT=req_html(req_html($uid));
+	$tpl->js_dialog("{settings}: $uidT","$page?session-tab=$uid_encoded&function=$function");
 }
 
 function session_tab():bool{
@@ -35,7 +37,8 @@ function session_tab():bool{
 
 
 	if($ID>0){
-
+		// Pentest 2026-11-04 : eth etait recopie sans encodage dans la page (XSS).
+		$_GET["eth"]=preg_replace('#[^A-Za-z0-9_.:@-]#','',(string)($_GET["eth"] ?? ""));
 		$array["{firewall_services}"]="fw.rules.services.php?rule-id=$ID&direction=0&eth={$_GET["eth"]}";
 		if($ligne["isClient"]==0){$array["{inbound_object}"]="fw.rules.objects.php?rule-id=$ID&direction=0&eth={$_GET["eth"]}";}
 		$array["{outbound_object}"]="fw.rules.objects.php?rule-id=$ID&direction=1&eth={$_GET["eth"]}";
@@ -52,7 +55,9 @@ function authentication_popup():bool{
     $uidEnc=urlencode($uid);
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $function="Loadjs('fw.openvpn.clients.php?uid-row=$uidEnc')";
-    $ligne=$q->mysqli_fetch_array("SELECT LocalAuth,username,password FROM openvpn_clients WHERE uid='$uid'");
+    // Pentest 2026-11-04 : uid etait concatene dans la requete.
+    $r=$q->QUERY_SQL_PARAMS("SELECT LocalAuth,username,password FROM openvpn_clients WHERE uid=?",array($uid));
+    $ligne=isset($r[0])?$r[0]:array();
 
     $form[]=$tpl->field_hidden("Authentication",$uid);
     $form[]=$tpl->field_checkbox("LocalAuth","{UseLocalDatabase}",$ligne["LocalAuth"],"username,password");
@@ -67,9 +72,12 @@ function authentication_save():bool {
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
 
+    // Pentest 2026-11-04 : username/password/fixip/Authentication etaient concatenes dans la requete.
+    $sql="";
+    $params=array();
     if(isset($_POST["LocalAuth"])) {
-        $sql = sprintf("UPDATE openvpn_clients SET LocalAuth=%s,username='%s',password='%s' WHERE uid='%s'",
-            intval($_POST["LocalAuth"]), $_POST["username"], $_POST["password"], $_POST["Authentication"]);
+        $sql = "UPDATE openvpn_clients SET LocalAuth=?,username=?,password=? WHERE uid=?";
+        $params=array(intval($_POST["LocalAuth"]), $_POST["username"], $_POST["password"], $_POST["Authentication"]);
     }
 
 
@@ -90,14 +98,14 @@ function authentication_save():bool {
 
 
         $_POST["profile"]=intval($_POST["xprofile"]);
-        $sql = sprintf("UPDATE openvpn_clients SET fixip='%s',profile='%s' WHERE uid='%s'",
-            $_POST["fixip"], $_POST["profile"],  $_POST["Authentication"]);
+        $sql = "UPDATE openvpn_clients SET fixip=?,profile=? WHERE uid=?";
+        $params=array($_POST["fixip"], $_POST["profile"],  $_POST["Authentication"]);
     }
 
 
 
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$params);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -143,7 +151,9 @@ function ipaddr_popup(){
         $profiles[$ligne["ID"]]=$ligne["rulename"];
     }
 
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM openvpn_clients WHERE uid='$uid'");
+    // Pentest 2026-11-04 : uid etait concatene dans la requete.
+    $r=$q->QUERY_SQL_PARAMS("SELECT * FROM openvpn_clients WHERE uid=?",array($uid));
+    $ligne=isset($r[0])?$r[0]:array();
 	$form[]=$tpl->field_hidden("Authentication", $uid);
     if(count($profiles)>0){
         $form[]=$tpl->field_array_hash($profiles,"xprofile","{profile}",$ligne["profile"]);

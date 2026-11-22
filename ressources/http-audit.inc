@@ -18,7 +18,10 @@
  */
 class HttpAuditConfig
 {
-    private array $config;
+    // Plancher PHP 7.3: les proprietes typees n'arrivent qu'en 7.4 et font
+    // echouer l'analyse syntaxique du fichier entier. Le type reste documente.
+    /** @var array */
+    private $config;
 
     private function __construct(array $config)
     {

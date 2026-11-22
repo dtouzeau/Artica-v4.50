@@ -1,8 +1,8 @@
 <failure>Versagen</failure>
-<failure_text>The number of queries which resulted in a failure response other than those above</failure_text>
-<recursion>recursion</recursion>
-<recursion_text>The number of queries which caused the server to perform recursion in order to find the final answer</recursion_text>
-<success_text>The number of successful queries made to the server or zone. A successful query is defined as query which returns a NOERROR response other than a referral response</success_text>
-<sum>Sum</sum>
-<sum_text>The sum of all queries</sum_text>
-<_text>All statistics</_text>
+<failure_text>Die Anzahl der Abfragen, die zu einer Fehlerantwort f&#252;hrten, au&#223;er den oben genannten</failure_text>
+<recursion>Rekursion</recursion>
+<recursion_text>Die Anzahl der Abfragen, die den Server veranlassten, eine Rekursion durchzuf&#252;hren, um die endg&#252;ltige Antwort zu finden</recursion_text>
+<success_text>Die Anzahl der erfolgreichen Abfragen an den Server oder die Zone. Eine erfolgreiche Abfrage ist definiert als eine Abfrage, die eine NOERROR-Antwort zur&#252;ckgibt, die keine Verweisantwort ist</success_text>
+<sum>Summe</sum>
+<sum_text>Die Summe aller Abfragen</sum_text>
+<_text>Alle Statistiken</_text>

@@ -1,29 +1,26 @@
-<ADD_BAN_SERVER>Ban a new server</ADD_BAN_SERVER>
-<ADD_BAN_SERVER_TEXT>Add a rule to bann a server by name, parent domains, client address, or networks</ADD_BAN_SERVER_TEXT>
-<ADD_FILTER_EXPRESSION>Add a new expression filter</ADD_FILTER_EXPRESSION>
+<ADD_BAN_SERVER>Zablokuj nowy serwer</ADD_BAN_SERVER>
+<ADD_BAN_SERVER_TEXT>Dodaj regu&#322;&#281; blokowania serwera wed&#322;ug nazwy, domen nadrz&#281;dnych, adresu klienta lub sieci</ADD_BAN_SERVER_TEXT>
+<ADD_FILTER_EXPRESSION>Dodaj nowy filtr wyra&#380;e&#324;</ADD_FILTER_EXPRESSION>
 <ADD_FILTER_EXPRESSION_TEXT>Dodaj now%C4%85 regu%C5%82%C4%99 dopasowuj%C4%85c%C4%85 wyra%C5%BCenia w nag%C5%82%C3%B3wkach wiadomo%C5%9Bci e-mail</ADD_FILTER_EXPRESSION_TEXT>
-<blockips>Reject IP/Name addresses</blockips>
-<blockip_msg>
-Give the value of the address you want to bann.
-Example :
+<blockips>Odrzu&#263; adresy IP/nazwy</blockips>
+<blockip_msg>Podaj warto&#347;&#263; adresu, kt&#243;ry chcesz zablokowa&#263;.
+Przyk&#322;ad:
 192.168.5
 fateback.com
-hotpop.com
-</blockip_msg>
-<blockip_text>This section use postfix to bann client name, parent domains, client address, or networks</blockip_text>
+hotpop.com</blockip_msg>
+<blockip_text>Ta sekcja u&#380;ywa postfix do blokowania nazw klient&#243;w, domen nadrz&#281;dnych, adres&#243;w klient&#243;w lub sieci</blockip_text>
 <delete_headers_regex>Usu%C5%84 wszystkie regu%C5%82y</delete_headers_regex>
 <delete_headers_regex_text>Czy na pewno chcesz usun%C4%85%C4%87 wszystkie regu%C5%82y?</delete_headers_regex_text>
-<error_noaction>Error, select "action"</error_noaction>
-<error_noevent>Error, fill "log" field. This event will be added in postfix log and will returned to client when matching pattern</error_noevent>
-<error_nopattern>Error, fill the regex pattern</error_nopattern>
-<event>Event</event>
-<global_smtp_rules_explain>
-This section consolidate all rules you can define to filter mails, you can add rules and select the module that will handle the filter</global_smtp_rules_explain>
-<goto_globalsmtprules>To show rules list,you need to go to Security Settings/Global SMTP Rules</goto_globalsmtprules>
-<go_to_page>Go to page</go_to_page>
-<import_headers_regex>Import predefined rules</import_headers_regex>
-<import_headers_regex_text>Are you sure to Add predefined rules ?</import_headers_regex_text>
-<log>Postfix log</log>
-<postfix_regex>Filter expressions in headers</postfix_regex>
-<postfix_regex_text>Set rules that matches expressions in SMTP headers of mails received by postfix</postfix_regex_text>
-<search_string>Search string</search_string>
+<error_noaction>B&#322;&#261;d, wybierz &quot;akcj&#281;&quot;</error_noaction>
+<error_noevent>B&#322;&#261;d, wype&#322;nij pole &quot;log&quot;. To zdarzenie zostanie dodane do dziennika postfix i zwr&#243;cone do klienta po dopasowaniu wzorca</error_noevent>
+<error_nopattern>B&#322;&#261;d, wype&#322;nij wzorzec regex</error_nopattern>
+<event>Zdarzenie</event>
+<global_smtp_rules_explain>Ta sekcja konsoliduje wszystkie regu&#322;y, kt&#243;re mo&#380;esz zdefiniowa&#263; do filtrowania wiadomo&#347;ci, mo&#380;esz dodawa&#263; regu&#322;y i wybiera&#263; modu&#322;, kt&#243;ry b&#281;dzie obs&#322;ugiwa&#322; filtr</global_smtp_rules_explain>
+<goto_globalsmtprules>Aby wy&#347;wietli&#263; list&#281; regu&#322;, musisz przej&#347;&#263; do Ustawienia zabezpiecze&#324;/Globalne regu&#322;y SMTP</goto_globalsmtprules>
+<go_to_page>Przejd&#378; do strony</go_to_page>
+<import_headers_regex>Importuj predefiniowane regu&#322;y</import_headers_regex>
+<import_headers_regex_text>Czy na pewno chcesz doda&#263; predefiniowane regu&#322;y?</import_headers_regex_text>
+<log>Dziennik Postfix</log>
+<postfix_regex>Filtruj wyra&#380;enia w nag&#322;&#243;wkach</postfix_regex>
+<postfix_regex_text>Ustaw regu&#322;y pasuj&#261;ce do wyra&#380;e&#324; w nag&#322;&#243;wkach SMTP wiadomo&#347;ci odbieranych przez postfix</postfix_regex_text>
+<search_string>Ci&#261;g wyszukiwania</search_string>

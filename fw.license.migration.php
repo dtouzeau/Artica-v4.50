@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -16,12 +19,19 @@ function js(){
 	
 	
 }
+function prefixLic(){
+    $pref="https://licensing.artica.center";
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("USE_LIC_DEV_CENTER"))==0){
+        return $pref;
+    }
+    return "https://dev.license.artica.systems";
+}
 function popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$t=time();
 	$sock = new sockets();
-
+    $pref = prefixLic();
 	$uuid = $sock->GET_INFO("SYSTEMID");
 	$html="
     <p style='font-size:16px'>{license_migration_explain}</p>
@@ -45,7 +55,7 @@ function StartLicenseMigration$t(){
 	$.ajax({
 
 		type: 'POST',
-		url: 'https://licensing.artica.center/api/get/key',
+		url: '$pref/api/get/key',
 		data: {'X-API-KEY': token,'uuid':'$uuid'},
 		cache: false, 
 		success: function (bucket) {
@@ -63,7 +73,7 @@ function StartLicenseMigration$t(){
 
 function GetToken$t(){
 	window.open(
-		'https://licensing.artica.center/dashboard/endpoint/create/token/$uuid',
+		'$pref/dashboard/endpoint/create/token/$uuid',
 		'MsgWindow', 'width=800,height=500,top=80'
 	  );
 }
@@ -118,7 +128,7 @@ function start_migration() {
 	$ARRAY["TITLE"]="{license_migration_title}";
 	$ARRAY["AFTER"]="location.reload(true);";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=migration-progress')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=migration-progress')";
 	$html="<div id='migration-progress'></div>
 	<script>$jsrestart</script>";
 	echo $html;

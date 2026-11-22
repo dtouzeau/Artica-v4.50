@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.haproxy.inc");
@@ -146,7 +149,7 @@ function backend_zoom(){
     $ARRAY["TITLE"]="{reconfigure} $title";
     $ARRAY["AFTER"]="LoadAjax('backend-list','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $reconfigure_node="Loadjs('fw.progress.php?content=$prgress&mainid=reconfigure-progress-$ID')";
+    $reconfigure_node="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=reconfigure-progress-$ID')";
 
     $html[]="<H2>$title</H2><hr>";
     $html[]="<div id='reconfigure-progress-$ID'></div>";
@@ -168,13 +171,14 @@ function reload_js(){
     $ARRAY["TITLE"]="{reloading}";
     $ARRAY["AFTER"]="LoadAjax('backend-list','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=haexchange-backend-restart');\n";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=haexchange-backend-restart');\n";
 }
 
 function backend_delete(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$ID=$_POST["backend-delete"];
+	// Pentest 2026-11-04 : backend-delete etait concatene dans la requete.
+	$ID=intval($_POST["backend-delete"]);
     $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
     $q->QUERY_SQL("DELETE  FROM haexchange WHERE ID=$ID");
     if(!$q->ok){echo $q->mysql_error;}
@@ -184,7 +188,8 @@ function backend_delete(){
 function backend_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["backend-popup"];
+	// Pentest 2026-11-04 : backend-popup etait recopie sans encodage dans la page (XSS).
+	$ID=intval($_GET["backend-popup"]);
     $ligne=array();
 
     $f[]="mapi";
@@ -230,7 +235,7 @@ function backend_popup(){
     $ARRAY["TITLE"]="{reloading}";
     $ARRAY["AFTER"]="LoadAjax('backend-list','$page?table=yes');$jsadd";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsreload="Loadjs('fw.progress.php?content=$prgress&mainid=haexchange-backend-restart')";
+    $jsreload="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=haexchange-backend-restart')";
 	
 	$jsafter[]="";
 	$tpl->field_hidden("ID",$ID);
@@ -264,7 +269,8 @@ function backend_popup(){
 function backends_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST_XSS();
-    $ID=$_POST["ID"];
+    // Pentest 2026-11-04 : ID et les champs du formulaire etaient concatenes dans la requete.
+    $ID=intval($_POST["ID"]);
     $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
 
     if(!$q->FIELD_EXISTS("haexchange","exchtype")){
@@ -292,10 +298,12 @@ function backends_save(){
     $f[]="imaps";
     $f[]="exchtype";
 
+    $params=array();
     foreach ($f as $field){
         $Add1[]=$field;
-        $Add2[]="'{$_POST[$field]}'";
-        $edit[]="$field='{$_POST[$field]}'";
+        $Add2[]="?";
+        $edit[]="$field=?";
+        $params[]=strval($_POST[$field] ?? "");
     }
 
 
@@ -303,11 +311,11 @@ function backends_save(){
         $sql="INSERT INTO haexchange (".@implode(",",$Add1).")
         VALUES(".@implode(",",$Add2).")";
 
-        $q->QUERY_SQL($sql);
+        $q->QUERY_SQL_PARAMS($sql,$params);
         if(!$q->ok){
             $tpl=new template_admin();
             $q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);
-            echo "jserror:$q->mysql_error";
+            echo (new template_admin())->post_error("$q->mysql_error");
             return;
         }
 
@@ -317,11 +325,11 @@ function backends_save(){
 
     $sql="UPDATE haexchange SET ".@implode(",",$edit)." WHERE ID=$ID";
 
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$params);
     if(!$q->ok){
         $tpl=new template_admin();
         $q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);
-        echo "jserror:$q->mysql_error";
+        echo (new template_admin())->post_error("$q->mysql_error");
         return;
     }
 }
@@ -346,7 +354,7 @@ function table(){
     $ARRAY["TITLE"]="{reloading}";
     $ARRAY["AFTER"]="LoadAjax('backend-list','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsreload="Loadjs('fw.progress.php?content=$prgress&mainid=haexchange-backend-restart')";
+    $jsreload="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=haexchange-backend-restart')";
 
 
     $LoadStatus=LoadStatus();

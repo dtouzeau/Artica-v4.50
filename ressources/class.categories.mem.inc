@@ -291,7 +291,7 @@ function FILL_CATEGORIES_MEM():array{
     $GLOBALS["categories_descriptions"][248]["categoryname"]="Artificial Intelligence";
     $GLOBALS["categories_descriptions"][248]["categorytable"]="category_ai";
     $GLOBALS["categories_descriptions"][248]["category_description"]="{category_ai}";
-    $GLOBALS["categories_descriptions"][248]["category_icon"]="mg/ai-20.png";
+    $GLOBALS["categories_descriptions"][248]["category_icon"]="img/ai-20.png";
     $GLOBALS["categories_descriptions"][248]["master_category"]="";
     $GLOBALS["categories_descriptions"][248]["official_category"]="1";
     $GLOBALS["categories_descriptions"][248]["enabled"]="1";

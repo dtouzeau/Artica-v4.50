@@ -1,89 +1,81 @@
-<about>Cyrus is a highly scalable enterprise mail system designed for use in
-enterprise environments of various sizes using standards based technologies.[br]
-Cyrus technologies scale from independent use in email departments to a system centrally managed in a large enterprise</about>
-<allowallsubscribe>Allow All Subscribe</allowallsubscribe>
-<allowallsubscribe_text>Allow subscription to nonexistent mailboxes.[br]
-This option is typically used on backend servers in a Murder so that users  can  subscribe  to  mailboxes  that  donâ€™t  reside on their "home" server.[br]
-This option can also be used as  a  workaround  for  IMAP  clients which  donâ€™t  play well with nonexistent or unselectable mailboxes (eg.  Microsoft Outlook)
-</allowallsubscribe_text>
+<about>Cyrus &#232; un sistema di posta aziendale altamente scalabile progettato per l'uso in ambienti aziendali di varie dimensioni utilizzando tecnologie basate su standard.[br]
+Le tecnologie Cyrus scalano dall'uso indipendente nei reparti di posta elettronica a un sistema gestito centralmente in una grande azienda</about>
+<allowallsubscribe>Consenti tutte le sottoscrizioni</allowallsubscribe>
+<allowallsubscribe_text>Consenti la sottoscrizione a caselle di posta inesistenti.[br]
+Questa opzione viene tipicamente usata sui server backend in un Murder in modo che gli utenti possano sottoscriversi a caselle di posta che non risiedono sul loro server &quot;home&quot;.[br]
+Questa opzione pu&#242; anche essere usata come soluzione alternativa per i client IMAP che non funzionano bene con caselle di posta inesistenti o non selezionabili (es. Microsoft Outlook)</allowallsubscribe_text>
 <allowanonymouslogin>Consentire il login anonimo</allowanonymouslogin>
-<allowanonymouslogin_text>Permit  logins  by  the user "anonymous" using any password.  Also allows use of the SASL ANONYMOUS mech</allowanonymouslogin_text>
-<autocreateinboxfolders>auto-create sub-folders</autocreateinboxfolders>
-<autocreateinboxfolders_text>
-If a user does not have an INBOX created then the INBOX as well as some INBOX subfolders are created under two conditions.[br]
+<allowanonymouslogin_text>Consente gli accessi da parte dell'utente &quot;anonymous&quot; usando qualsiasi password. Consente anche l'uso del meccanismo SASL ANONYMOUS</allowanonymouslogin_text>
+<autocreateinboxfolders>Crea automaticamente sottocartelle</autocreateinboxfolders>
+<autocreateinboxfolders_text>If a user does not have an INBOX created then the INBOX as well as some INBOX subfolders are created under two conditions.[br]
 [ul]
 [li]1. The user logins via the IMAP or the POP3 protocol. (autocreatequota option must have a nonzero value)[/li]
 [li]2. A message arrives for the user through the LMTPD protocol.(createonpost option must be yes)[/li]
 [/ul]
-this is a list of INBOX`s subfolders separated by a "|", that are automatically created by the server under the previous two situations</autocreateinboxfolders_text>
-<autocreatequota>Auto-Create Quota</autocreatequota>
+this is a list of INBOX's subfolders separated by a &quot;|&quot;, that are automatically created by the server under the previous two situations</autocreateinboxfolders_text>
+<autocreatequota>Crea quota automaticamente</autocreatequota>
 <autocreatequota_text>If  nonzero,  normal  users  may create their own IMAP accounts by creating the mailbox INBOX.[br]
-The user`s quota is set to the  value if it is positive, otherwise the user has unlimited quota.</autocreatequota_text>
-<change_cyrus_password>Change the main password of the Cyrus account that handle Mailboxes system operations</change_cyrus_password>
+The user's quota is set to the  value if it is positive, otherwise the user has unlimited quota.</autocreatequota_text>
+<change_cyrus_password>Cambia la password principale dell'account Cyrus che gestisce le operazioni di sistema delle caselle di posta</change_cyrus_password>
 <config>File di config.</config>
-<createonpost>Create on post</createonpost>
-<createonpost_text>if set, when cyrus receives an incoming mail for an INBOX that does not exist, then the INBOX is automatically created</createonpost_text>
-<cyrquota>Users & quotas</cyrquota>
-<cyrreconstruct_wait>Success send order to middleware daemon, the process is executed in background, please wait few times....</cyrreconstruct_wait>
-<cyrreconstruct_waiting>Waiting order or process to start...</cyrreconstruct_waiting>
-<cyrus_scan_antivirus>Antivirus MailBoxes schedule scan</cyrus_scan_antivirus>
-<cyrus_scan_antivirus_text>Perform antivirus checking perdiodically in order to prevent virus storage on old mails</cyrus_scan_antivirus_text>
-<defaultdomain>Default domain</defaultdomain>
-<defaultdomain_text>The default domain for virtual  domain  support.[br]It's best to think of every user as existing inside a domain.[br]
-Unqualified users are technically inside the domain you will set here</defaultdomain_text>
-<deletemailbox_infos>Are you sure to delete this mailbox, all mails will be defenitively deleted</deletemailbox_infos>
-<duplicatesuppression>Duplicate suppression</duplicatesuppression>
-<duplicatesuppression_text> If enabled, Cyrus will suppress delivery of a message to a mailbox  if  a  message  with the same message-id (or resent-message-id) is recorded as having already been delivered to the mailbox.  Records
-the  mailbox  and  message-id/resent-message-id  of all successful deliveries</duplicatesuppression_text>
-<enable_cyrus_antivirus_scan>Activate the Antivirus Mailboxes Checking</enable_cyrus_antivirus_scan>
-<enable_cyrus_antivirus_scan_text>If you enable this feature, artica will be able to launch a background antivirus checking on your mailboxes files.[br]
-You will be notified by eMail if some objects has been discovered.</enable_cyrus_antivirus_scan_text>
-<howto_cyrus_service>Heach service can be set by it's name
+<createonpost>Crea alla ricezione</createonpost>
+<createonpost_text>Se impostato, quando cyrus riceve una mail in entrata per una INBOX che non esiste, la INBOX viene creata automaticamente</createonpost_text>
+<cyrquota>Utenti e quote</cyrquota>
+<cyrreconstruct_wait>Ordine inviato con successo al daemon middleware, il processo viene eseguito in background, attendere qualche istante....</cyrreconstruct_wait>
+<cyrreconstruct_waiting>In attesa dell'ordine o dell'avvio del processo...</cyrreconstruct_waiting>
+<cyrus_scan_antivirus>Scansione antivirus pianificata delle caselle di posta</cyrus_scan_antivirus>
+<cyrus_scan_antivirus_text>Esegui periodicamente il controllo antivirus per impedire la memorizzazione di virus nelle vecchie email</cyrus_scan_antivirus_text>
+<defaultdomain>Dominio predefinito</defaultdomain>
+<defaultdomain_text>Il dominio predefinito per il supporto dei domini virtuali.[br]&#200; meglio pensare a ogni utente come esistente all'interno di un dominio.[br]
+Gli utenti non qualificati sono tecnicamente all'interno del dominio che imposterai qui</defaultdomain_text>
+<deletemailbox_infos>Sei sicuro di voler eliminare questa casella di posta? Tutte le email verranno eliminate definitivamente</deletemailbox_infos>
+<duplicatesuppression>Soppressione duplicati</duplicatesuppression>
+<duplicatesuppression_text>Se abilitato, Cyrus sopprimer&#224; la consegna di un messaggio a una casella di posta se un messaggio con lo stesso message-id (o resent-message-id) &#232; registrato come gi&#224; consegnato alla casella. Registra la casella e il message-id/resent-message-id di tutte le consegne riuscite</duplicatesuppression_text>
+<enable_cyrus_antivirus_scan>Attiva il controllo antivirus delle caselle di posta</enable_cyrus_antivirus_scan>
+<enable_cyrus_antivirus_scan_text>Se abiliti questa funzionalit&#224;, artica potr&#224; avviare un controllo antivirus in background sui file delle tue caselle di posta.[br]
+Verrai notificato via email se vengono scoperti alcuni oggetti.</enable_cyrus_antivirus_scan_text>
+<howto_cyrus_service>Ogni servizio pu&#242; essere impostato tramite il suo nome
 [ul]
-[li]imaps for imap ssl[/li]
-[li]pop3 for pop3[/li]
-[li]pop3s for pop3 ssl[/li]
-[li]nntp for nntp[/li]
-[li]nntps for nntp ssl[/li]
+[li]imaps per imap ssl[/li]
+[li]pop3 per pop3[/li]
+[li]pop3s per pop3 ssl[/li]
+[li]nntp per nntp[/li]
+[li]nntps per nntp ssl[/li]
 [/ul]
-In other way, you can define wich ip address can handle the protocol :[br]
+In alternativa, puoi definire quale indirizzo IP pu&#242; gestire il protocollo:[br]
 [ul]
 [li]localhost:143[/li]
 [li]127.0.0.1:imap[/li]
 [li]192.168.1.1:imaps[/li]
-[/ul]
-</howto_cyrus_service>
-<mailboxes>mailboxes</mailboxes>
+[/ul]</howto_cyrus_service>
+<mailboxes>caselle di posta</mailboxes>
 <mailboxes_events>Eventi</mailboxes_events>
-<mailboxes_parameters>Mailboxes settings</mailboxes_parameters>
-<mailbox_size>Storage size</mailbox_size>
+<mailboxes_parameters>Impostazioni delle caselle di posta</mailboxes_parameters>
+<mailbox_size>Dimensione di archiviazione</mailbox_size>
 <maxchild>Istanze massime</maxchild>
-<maxchild_text>[b]Max instance[/b][br]The maximum number of instances of this service to spawn.[br]A value of -1 means unlimited.</maxchild_text>
-<maxmessagesize>Max Message Size</maxmessagesize>
-<maxmessagesize_text> Maximum incoming message  size. If  non-zero,  cyrus  will reject  messages  larger  than the value in bytes.[br]
-If set to 0,this will allow messages of any size (the default).</maxmessagesize_text>
-<popminpoll>Pop Minimum pooling</popminpoll>
-<popminpoll_text>Set the minimum amount of time the server  forces  users  to  wait between successive POP logins, in minutes.</popminpoll_text>
-<quotawarn>Quota warning</quotawarn>
-<quotawarn_text>The percent of quota utilization over which the  server  generates warnings to the mail client</quotawarn_text>
-<rebuild_mailboxes>reconstruct mailboxes</rebuild_mailboxes>
-<rebuild_mailboxestext>
-You could rebuilds the master mailboxes file.[br]
-You can use this feature to recover from almost any sort of data corruption.
-</rebuild_mailboxestext>
-<rebuild_mailboxes_text>rebuilds one or more IMAP mailboxes.</rebuild_mailboxes_text>
+<maxchild_text>[b]Istanze massime[/b][br]Il numero massimo di istanze di questo servizio da avviare.[br]Un valore di -1 significa illimitato.</maxchild_text>
+<maxmessagesize>Dimensione massima messaggio</maxmessagesize>
+<maxmessagesize_text>Dimensione massima dei messaggi in entrata. Se diversa da zero, cyrus rifiuter&#224; i messaggi pi&#249; grandi del valore in byte.[br]
+Se impostata a 0, ci&#242; consentir&#224; messaggi di qualsiasi dimensione (predefinito).</maxmessagesize_text>
+<popminpoll>Polling minimo POP</popminpoll>
+<popminpoll_text>Imposta il tempo minimo che il server obbliga gli utenti ad attendere tra accessi POP successivi, in minuti.</popminpoll_text>
+<quotawarn>Avviso quota</quotawarn>
+<quotawarn_text>La percentuale di utilizzo della quota oltre la quale il server genera avvisi al client di posta</quotawarn_text>
+<rebuild_mailboxes>Ricostruisci caselle di posta</rebuild_mailboxes>
+<rebuild_mailboxestext>Potresti ricostruire il file principale delle caselle di posta.[br]
+Puoi usare questa funzionalit&#224; per recuperare da quasi ogni tipo di corruzione dei dati.</rebuild_mailboxestext>
+<rebuild_mailboxes_text>Ricostruisce una o pi&#249; caselle di posta IMAP.</rebuild_mailboxes_text>
 <repair_database>Riparazione del database</repair_database>
-<repair_database_ask>Do you want to perform Recover Cyrus-imap database, it 
-Also performs database cleanup like removing mailbox reservations</repair_database_ask>
-<repair_database_text>Recover Cyrus-imap databases after an application or system failure.</repair_database_text>
-<services_settings>Services Parameters</services_settings>
-<services_settings_text>Define here mailbox services you want to provide on this server</services_settings_text>
-<squatter_reindex>Reindex changed mailboxes (fulltext) approximately every</squatter_reindex>
-<SQUATTER_SERVICE>Cyrus IMAP Indexing</SQUATTER_SERVICE>
-<SQUATTER_SERVICE_EXPL>One of Cyrus IMAP's more sophisticated features is the ability to create indexes of messages and mailboxes
- to allow fast searching of headers and message text.[br]
-The indexing is done using squatter, and is best achieved by launching it at regular intervals.[br]
-Once the indexes have been created, the improvement in search performance is dramatic.</SQUATTER_SERVICE_EXPL>
-<SQUATTER_SERVICE_TEXT>Allow fast searching of headers and message text.</SQUATTER_SERVICE_TEXT>
+<repair_database_ask>Vuoi eseguire il ripristino del database Cyrus-imap?
+Esegue anche la pulizia del database, come la rimozione delle prenotazioni delle caselle di posta</repair_database_ask>
+<repair_database_text>Ripristina i database Cyrus-imap dopo un guasto dell'applicazione o del sistema.</repair_database_text>
+<services_settings>Parametri dei servizi</services_settings>
+<services_settings_text>Definisci qui i servizi di casella di posta che vuoi fornire su questo server</services_settings_text>
+<squatter_reindex>Reindicizza le caselle di posta modificate (fulltext) circa ogni</squatter_reindex>
+<SQUATTER_SERVICE>Indicizzazione Cyrus IMAP</SQUATTER_SERVICE>
+<SQUATTER_SERVICE_EXPL>Una delle funzionalit&#224; pi&#249; sofisticate di Cyrus IMAP &#232; la capacit&#224; di creare indici di messaggi e caselle di posta per consentire la ricerca rapida di intestazioni e testo dei messaggi.[br]
+L'indicizzazione viene eseguita con squatter ed &#232; meglio ottenerla avviandolo a intervalli regolari.[br]
+Una volta creati gli indici, il miglioramento delle prestazioni di ricerca &#232; notevole.</SQUATTER_SERVICE_EXPL>
+<SQUATTER_SERVICE_TEXT>Consente la ricerca rapida di intestazioni e testo dei messaggi.</SQUATTER_SERVICE_TEXT>
 <tools>Strumenti</tools>
-<user>Mailbox</user>
+<user>Casella di posta</user>

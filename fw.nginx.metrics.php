@@ -4,11 +4,9 @@ include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
-if(isset($_GET["ruleid"])){serviceid_js();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_POST["ID"])){Save();exit;}
 if(isset($_GET["main"])){popup();exit;}
-if(isset($_GET["engine"])){engine();exit;}
 if(isset($_GET["graph"])){graph();exit;}
 www_js();
 
@@ -37,13 +35,7 @@ function isHarmpID():bool{
 
     return true;
 }
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
+
 function tabs():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -221,7 +213,10 @@ function graph():bool{
     }
 
     if(count($ydata)<2){
-        echo "// $sql is less than 2";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$sql)."\n"; }
         return false;
     }
 

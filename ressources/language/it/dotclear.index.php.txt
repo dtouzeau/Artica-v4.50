@@ -1,16 +1,15 @@
-<about>Dotclear is an open-source web publishing software created in 2002 by Olivier Meunier.[br]
-A one man's project at first, Dotclear soon gathered a team comprising different personalities with various backgrounds.[br]
-The project's purpose is to provide a user-friendly tool allowing anyone to publish on the web, regardless of their technical skills.
-</about>
-<blog_access>Your blog access</blog_access>
-<blog_access_text>Access to your blog web site</blog_access_text>
-<blog_settings>Your Blog Administration</blog_settings>
-<blog_settings_text>Manage your Blog website by access to the central interface</blog_settings_text>
-<DotClearExternalAdminUri>External URI to Dotclear Administration interface</DotClearExternalAdminUri>
-<DotClearExternalWebUri>External URI to access port</DotClearExternalWebUri>
-<DotClearHttpListenPort>HTTP service listen port</DotClearHttpListenPort>
-<EnableDotClearHTTPService>Enable HTTP service for DotClear</EnableDotClearHTTPService>
-<rebuild_tables>Rebuild tables</rebuild_tables>
-<tables_error>Mysql Tables errors</tables_error>
-<tables_error_text>It seems that some tables missing in database[br]Click on the button bellow in order to install them</tables_error_text>
-<user_dotclear_access>Access to your DotClear area</user_dotclear_access>
+<about>Dotclear &#232; un software di pubblicazione web open-source creato nel 2002 da Olivier Meunier.[br]
+Inizialmente un progetto di una sola persona, Dotclear ha presto riunito un team composto da diverse personalit&#224; con vari background.[br]
+Lo scopo del progetto &#232; fornire uno strumento facile da usare che consenta a chiunque di pubblicare sul web, indipendentemente dalle proprie competenze tecniche.</about>
+<blog_access>Il tuo accesso al blog</blog_access>
+<blog_access_text>Accesso al tuo sito web blog</blog_access_text>
+<blog_settings>La tua amministrazione del Blog</blog_settings>
+<blog_settings_text>Gestisci il tuo sito web Blog accedendo all'interfaccia centrale</blog_settings_text>
+<DotClearExternalAdminUri>URI esterno all'interfaccia di amministrazione di Dotclear</DotClearExternalAdminUri>
+<DotClearExternalWebUri>URI esterno per accedere alla porta</DotClearExternalWebUri>
+<DotClearHttpListenPort>Porta di ascolto del servizio HTTP</DotClearHttpListenPort>
+<EnableDotClearHTTPService>Abilita il servizio HTTP per DotClear</EnableDotClearHTTPService>
+<rebuild_tables>Ricostruisci tabelle</rebuild_tables>
+<tables_error>Errori delle tabelle Mysql</tables_error>
+<tables_error_text>Sembra che alcune tabelle manchino nel database[br]Clicca sul pulsante qui sotto per installarle</tables_error_text>
+<user_dotclear_access>Accesso alla tua area DotClear</user_dotclear_access>

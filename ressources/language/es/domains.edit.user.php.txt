@@ -1,210 +1,207 @@
-<AddAliasesMailing_jstext>Give the full email address that receive mails for this user</AddAliasesMailing_jstext>
-<add_alias>Add new alias</add_alias>
-<add_alias_computer_text>Add new DNS record pointer to this computer</add_alias_computer_text>
-<add_mailing_address>Add new recipient</add_mailing_address>
-<add_new_alias>Add a new alias</add_new_alias>
-<add_new_alias_text>Add a new email address in your aliases database</add_new_alias_text>
+<AddAliasesMailing_jstext>Indique la direcci&#243;n de correo completa que recibe los correos de este usuario</AddAliasesMailing_jstext>
+<add_alias>A&#241;adir nuevo alias</add_alias>
+<add_alias_computer_text>A&#241;adir un nuevo puntero de registro DNS a este equipo</add_alias_computer_text>
+<add_mailing_address>A&#241;adir nuevo destinatario</add_mailing_address>
+<add_new_alias>A&#241;adir un nuevo alias</add_new_alias>
+<add_new_alias_text>A&#241;adir una nueva direcci&#243;n de correo a su base de datos de alias</add_new_alias_text>
 <ADD_USER_GROUP_ASK>%C2%BFEst%C3¡ seguro de a%C3%B1adir a este miembro a este grupo?</ADD_USER_GROUP_ASK>
-<ADD_USER_GROUP_TEXT>Add this member to an existing group</ADD_USER_GROUP_TEXT>
-<aliases_mailing_text>This section means that all messages planned for this users will be duplicated for each email you add.
-[br]This is the same feature like a "mailing list"</aliases_mailing_text>
+<ADD_USER_GROUP_TEXT>A&#241;adir este miembro a un grupo existente</ADD_USER_GROUP_TEXT>
+<aliases_mailing_text>Esta secci&#243;n significa que todos los mensajes previstos para estos usuarios se duplicar&#225;n por cada correo que a&#241;ada.
+[br]Es la misma funci&#243;n que una &quot;lista de correo&quot;</aliases_mailing_text>
 <aliases_text>Aliases significa que este usuario puede tener m%C3¡s de una direcci%C3%B3n de correo electr%C3%B3nico[br].
 los alias de correo electr%C3%B3nico creados apuntar%C3¡n a la direcci%C3%B3n de correo electr%C3%B3nico real del usuario</aliases_text>
-<AllowedSMTPTroughtInternet>Allow Send trought Internet</AllowedSMTPTroughtInternet>
-<AllowedSMTPTroughtInternet_disabled>This feature is disabled. It use MimeDefang plugin.[br]
-If you want to use this feature, [ul]
-[li]Check if MimeDefang plugin is enabled[/li]
-[li]Check if "Activate allow/disallow your Internet email users"[br]option is enabled[/li]
-[/ul]
-</AllowedSMTPTroughtInternet_disabled>
-<AllowedSMTPTroughtInternet_text>If you disable this option, the user will be allowed to send email only to local users,[br]
-if user send to foreign domain, mail will be rejected</AllowedSMTPTroughtInternet_text>
-<amavis_as_settings>Anti-spam settings (amavis)</amavis_as_settings>
+<AllowedSMTPTroughtInternet>Permitir el env&#237;o a trav&#233;s de Internet</AllowedSMTPTroughtInternet>
+<AllowedSMTPTroughtInternet_disabled>Esta funci&#243;n est&#225; desactivada. Utiliza el plugin MimeDefang.[br]
+Si desea utilizar esta funci&#243;n, [ul]
+[li]Compruebe si el plugin MimeDefang est&#225; activado[/li]
+[li]Compruebe si la opci&#243;n &quot;Activate allow/disallow your Internet email users&quot;[br]est&#225; activada[/li]
+[/ul]</AllowedSMTPTroughtInternet_disabled>
+<AllowedSMTPTroughtInternet_text>Si desactiva esta opci&#243;n, el usuario solo podr&#225; enviar correos a usuarios locales,[br]
+si el usuario env&#237;a a un dominio externo, el correo ser&#225; rechazado</AllowedSMTPTroughtInternet_text>
+<amavis_as_settings>Configuraci&#243;n anti-spam (amavis)</amavis_as_settings>
 <amavis_as_settings_text>Definir reglas antispam espec%C3%ADficas para este usuario</amavis_as_settings_text>
 <Antispam>Antispam</Antispam>
 <AUTH_SETTINGS>Configuraci%C3%B3n de la autenticaci%C3%B3n</AUTH_SETTINGS>
-<AUTH_SETTINGS_TEXT>Set username and password in order to connect to this object</AUTH_SETTINGS_TEXT>
-<AV_REMOTE_SCAN>Scan for viruses</AV_REMOTE_SCAN>
-<AV_REMOTE_SCAN_TEXT>Perform a remote scan in order to find viruses on this computer</AV_REMOTE_SCAN_TEXT>
+<AUTH_SETTINGS_TEXT>Establecer nombre de usuario y contrase&#241;a para conectarse a este objeto</AUTH_SETTINGS_TEXT>
+<AV_REMOTE_SCAN>Buscar virus</AV_REMOTE_SCAN>
+<AV_REMOTE_SCAN_TEXT>Realizar un an&#225;lisis remoto para encontrar virus en este equipo</AV_REMOTE_SCAN_TEXT>
 <backup_parameters>Par%C3¡metros de copia de seguridad</backup_parameters>
-<backup_parameters_text>Define backup services for this user</backup_parameters_text>
+<backup_parameters_text>Definir los servicios de copia de seguridad para este usuario</backup_parameters_text>
 <build>Antispam</build>
-<change_password_text>Change the main account password</change_password_text>
-<change_uid>Change identifier</change_uid>
+<change_password_text>Cambiar la contrase&#241;a de la cuenta principal</change_password_text>
+<change_uid>Cambiar identificador</change_uid>
 <change_uid_explain>Cambiar el identificador %C3%BAnico es una operaci%C3%B3n pesada, en la base de datos cada usuario es localizado por su uid, este uid permite a los usuarios conectarse a la interfaz y conectarse a los servicios del sistema como
 Samba, Imap, correo...[br]
 Si cambias el id de usuario, artica intentar%C3¡ reconstruir este usuario con el nuevo userid que establezcas, [BR]
 por favor, compruebe si todas las caracter%C3%ADsticas se traducen después de la operaci%C3%B3n.</change_uid_explain>
 <change_uid_text>Cambiar la cuenta de identificador %C3%BAnico utilizada para iniciar sesi%C3%B3n en los servicios</change_uid_text>
-<CLEAN_USER_DATAS>Clean user datas</CLEAN_USER_DATAS>
-<CLEAN_USER_EXPLAIN>You can perform a cleaning operation in order to remove all datas related to this user</CLEAN_USER_EXPLAIN>
-<computer>Computer</computer>
+<CLEAN_USER_DATAS>Limpiar datos del usuario</CLEAN_USER_DATAS>
+<CLEAN_USER_EXPLAIN>Puede realizar una operaci&#243;n de limpieza para eliminar todos los datos relacionados con este usuario</CLEAN_USER_EXPLAIN>
+<computer>Equipo</computer>
 <ComputerAddAlias>Dar el nombre del ordenador virtual sin el dominio (nombre netbios)</ComputerAddAlias>
-<ComputerCPU>CPU informations</ComputerCPU>
+<ComputerCPU>Informaci&#243;n de la CPU</ComputerCPU>
 <ComputerMacAddress>Direcci%C3%B3n MAC</ComputerMacAddress>
-<ComputerMachineType>Machine Type</ComputerMachineType>
+<ComputerMachineType>Tipo de m&#225;quina</ComputerMachineType>
 <ComputerOS>Sistema operativo</ComputerOS>
 <ComputerRunning>Ejecutar</ComputerRunning>
-<ComputerUpTime>Up Time</ComputerUpTime>
-<computer_ip>Computer IP address</computer_ip>
+<ComputerUpTime>Tiempo de actividad</ComputerUpTime>
+<computer_ip>Direcci&#243;n IP del equipo</computer_ip>
 <computer_name>Nombre del ordenador</computer_name>
-<confirm_repair>Repair this mailbox ? The operation will be executed in background mode...</confirm_repair>
-<delete_messages>Delete messages that does not exists</delete_messages>
+<confirm_repair>&#191;Reparar este buz&#243;n? La operaci&#243;n se ejecutar&#225; en modo de fondo...</confirm_repair>
+<delete_messages>Eliminar mensajes que no existen</delete_messages>
 <delete_messages_text>Si un mensaje existe en un buz%C3%B3n pero no en el otro, y es un mensaje &quot;antiguo&quot; (fue registrado en `msinfo' en la %C3%BAltima sincronizaci%C3%B3n), se asume que el mensaje fue borrado deliberadamente de un almacén, y se elimina del otro.
 [br]Si se pone en verde, este comportamiento estar%C3¡ habilitado[br].</delete_messages_text>
-<delete_this_computer>Delete this computer</delete_this_computer>
-<delete_this_mailbox>Delete This mailbox</delete_this_mailbox>
-<delete_this_mailbox_text>Delete definitively all mailbox datas on the server, this operation will be not reversible</delete_this_mailbox_text>
-<delete_this_user_text>This will delete this user from user's database. All mails and others datas will not be deleted</delete_this_user_text>
+<delete_this_computer>Eliminar este equipo</delete_this_computer>
+<delete_this_mailbox>Eliminar este buz&#243;n</delete_this_mailbox>
+<delete_this_mailbox_text>Eliminar definitivamente todos los datos del buz&#243;n en el servidor, esta operaci&#243;n no ser&#225; reversible</delete_this_mailbox_text>
+<delete_this_user_text>Esto eliminar&#225; este usuario de la base de datos de usuarios. Todos los correos y otros datos no se eliminar&#225;n</delete_this_user_text>
 <dhcpfixed>Direcci%C3%B3n DHCP fija</dhcpfixed>
-<DISCONNECT_FROM_GROUP>Diconnect this user from group</DISCONNECT_FROM_GROUP>
+<DISCONNECT_FROM_GROUP>Desconectar este usuario del grupo</DISCONNECT_FROM_GROUP>
 <displayName>Mostrar nombre</displayName>
-<DnsMXLength>MX Lenght</DnsMXLength>
+<DnsMXLength>Longitud MX</DnsMXLength>
 <DnsType>Registro DNS Tipo de host</DnsType>
 <dnstypea>Direcci%C3%B3n del host</dnstypea>
 <DnsZoneName>Nombre de la zona DNS</DnsZoneName>
-<DotClearUserEnabled>Enable DotClear</DotClearUserEnabled>
-<DotClearUserEnabledText>If DotClear is installed,this user can hav this own DotClear web site by turn to green this option</DotClearUserEnabledText>
-<duplicate_mailto>Duplicate mails to</duplicate_mailto>
-<duplicate_mailto_text>If you fill this field, all mails to this user will be duplicated to the email address set</duplicate_mailto_text>
-<EnableUserSpamLearning>Junk Learning</EnableUserSpamLearning>
-<EnableUserSpamLearning_explain>If mails are saved into Junk folder of your mailbox  mails will be sended [b]each 3 hours[/b] to Spamassassin for analysis in order to increase the Spamassassin detection rate.[br]
-After analyze mails, there will be automatically deleted in order to not polluate junk folder.[br]
-You can create an &quot;Ham&quot; folder and put it good messages in order to decrease false-positive detection.</EnableUserSpamLearning_explain>
-<EnableUserSpamLearning_text>Allow artica parsing the junk/Spam mailbox in order to send junk mails to spamassassin</EnableUserSpamLearning_text>
-<enable_file_share>Enable File Sharing</enable_file_share>
-<error_image_missing>There is an error according gd libraries, make sure you have installed php5-gd or any modules required</error_image_missing>
-<export_mailbox>Synchronize Mailbox</export_mailbox>
-<export_mailbox_text>Synchronize mailbox mails and folders with another mailbox</export_mailbox_text>
-<fdm_cache_not_exists>Warning, fdm has no cache features, artica will not work without this feature, please install fdm first</fdm_cache_not_exists>
-<fdm_not_enabled>Warning, FDM is not enabled, please go to Postfix addons and enable FDM</fdm_not_enabled>
-<fdm_not_installed>Warning, FDM is not installed, artica will not execute your rules, please install fdm first</fdm_not_installed>
+<DotClearUserEnabled>Activar DotClear</DotClearUserEnabled>
+<DotClearUserEnabledText>Si DotClear est&#225; instalado, este usuario puede tener su propio sitio web DotClear poniendo esta opci&#243;n en verde</DotClearUserEnabledText>
+<duplicate_mailto>Duplicar correos a</duplicate_mailto>
+<duplicate_mailto_text>Si rellena este campo, todos los correos a este usuario se duplicar&#225;n a la direcci&#243;n de correo establecida</duplicate_mailto_text>
+<EnableUserSpamLearning>Aprendizaje de correo no deseado</EnableUserSpamLearning>
+<EnableUserSpamLearning_explain>Si los correos se guardan en la carpeta de correo no deseado de su buz&#243;n, los correos se enviar&#225;n [b]cada 3 horas[/b] a SpamAssassin para su an&#225;lisis con el fin de aumentar la tasa de detecci&#243;n de SpamAssassin.[br]
+Despu&#233;s de analizar los correos, se eliminar&#225;n autom&#225;ticamente para no contaminar la carpeta de correo no deseado.[br]
+Puede crear una carpeta &amp;quot;Ham&amp;quot; y poner buenos mensajes en ella para disminuir la detecci&#243;n de falsos positivos.</EnableUserSpamLearning_explain>
+<EnableUserSpamLearning_text>Permitir que artica analice el buz&#243;n de correo no deseado/Spam para enviar correos no deseados a SpamAssassin</EnableUserSpamLearning_text>
+<enable_file_share>Activar el uso compartido de archivos</enable_file_share>
+<error_image_missing>Hay un error relacionado con las bibliotecas gd, aseg&#250;rese de tener instalado php5-gd o los m&#243;dulos necesarios</error_image_missing>
+<export_mailbox>Sincronizar buz&#243;n</export_mailbox>
+<export_mailbox_text>Sincronizar los correos y carpetas del buz&#243;n con otro buz&#243;n</export_mailbox_text>
+<fdm_cache_not_exists>Advertencia, fdm no tiene funciones de cach&#233;, artica no funcionar&#225; sin esta funci&#243;n, instale primero fdm</fdm_cache_not_exists>
+<fdm_not_enabled>Advertencia, FDM no est&#225; activado, vaya a los complementos de Postfix y active FDM</fdm_not_enabled>
+<fdm_not_installed>Advertencia, FDM no est&#225; instalado, artica no ejecutar&#225; sus reglas, instale primero fdm</fdm_not_installed>
 <file_share>Intercambio de archivos</file_share>
 <FinalDateToLive>Fin de vida</FinalDateToLive>
-<FinalDateToLive_text>If you set a date in this field, the account, mailbox will be deleted when reach this date</FinalDateToLive_text>
-<FTPDownloadBandwidth>Bandwidth (in KB/s) to limit download speeds</FTPDownloadBandwidth>
+<FinalDateToLive_text>Si establece una fecha en este campo, la cuenta y el buz&#243;n se eliminar&#225;n cuando se alcance esta fecha</FinalDateToLive_text>
+<FTPDownloadBandwidth>Ancho de banda (en KB/s) para limitar la velocidad de descarga</FTPDownloadBandwidth>
 <FTPDownloadRatio>Ratio de descarga</FTPDownloadRatio>
-<FTPQuotaFiles>Quota (in number of files)</FTPQuotaFiles>
-<FTPQuotaMBytes>Quota (in megabytes)</FTPQuotaMBytes>
-<FTPStatus>Enable FTP access</FTPStatus>
+<FTPQuotaFiles>Cuota (en n&#250;mero de archivos)</FTPQuotaFiles>
+<FTPQuotaMBytes>Cuota (en megabytes)</FTPQuotaMBytes>
+<FTPStatus>Activar el acceso FTP</FTPStatus>
 <FTPUploadBandwidth>Ancho de banda (en KB/s) para limitar la velocidad de subida</FTPUploadBandwidth>
 <FTPUploadRatio>Ratio de la carga</FTPUploadRatio>
-<ftp_access>FTP access</ftp_access>
+<ftp_access>Acceso FTP</ftp_access>
 <gidNumber>Miembro de</gidNumber>
 <givenName>Nombre</givenName>
 <give_computer_name>Por favor, indique un nombre de ordenador real</give_computer_name>
 <groupName>Miembro original de</groupName>
 <groups>Miembro de grupos</groups>
 <homeDirectory>Directorio personal</homeDirectory>
-<homeDirectoryText>The home directory for the account.[br]It must be a UNC path.[br]
- Otherwise, home directory is a fully qualified local path</homeDirectoryText>
-<imapsync_not_installed>MailSync is not installed</imapsync_not_installed>
-<imapsync_not_installed_text>You can go into "Applications setup center" in order to install this tool to perfrom operations</imapsync_not_installed_text>
-<import_mailbox>Import & Synchronize external Mailbox</import_mailbox>
-<import_mailbox_text>Synchronize elements from an external IMAP Mailbox to your internal artica MailBox.</import_mailbox_text>
-<import_now>Import elements now</import_now>
-<inbound_parameters>Inbound parameters</inbound_parameters>
-<in_the_same_organization>in the same messaging organization</in_the_same_organization>
-<joomla_privileges>Joomla privileges</joomla_privileges>
-<joomla_privileges_text>Define the Joomla group privileges of this user</joomla_privileges_text>
-<loginShell>Login Shell</loginShell>
-<loginShellText>The login shells' responsibility is to start the non-login shell and to make sure that your environment variables are set so as to
-ensure that you can get all the default parameters needed at start-up</loginShellText>
-<mailboxes_rules>Mailbox filters</mailboxes_rules>
-<mailboxes_rules_text>Manage filters saved for this mailbox</mailboxes_rules_text>
-<mailbox_priv>Mailbox privileges</mailbox_priv>
-<mailing_list>Mailing list</mailing_list>
-<mail_exchanger>mail exchange</mail_exchanger>
-<mime_defang_feature_not_enabled>This feature is not enabled in MimeDefang</mime_defang_feature_not_enabled>
-<mpa>Administer the mailbox[br](change the mailbox's ACL)</mpa>
-<mpat>Administer</mpat>
-<mpc>Create a new mailbox below the top-level mailbox[br](ordinary users cannot create top-level mailboxes).</mpc>
-<mpct>Create new mailbox</mpct>
-<mpd>Delete a message and/or the mailbox itself.</mpd>
-<mpdt>Delete messages</mpdt>
-<mpi>Insert (move or copy) a message[br] into the mailbox.</mpi>
-<mpit>Insert</mpit>
-<mpl>Look up the[br]name of the mailbox[br](but not its contents).</mpl>
-<mplt>List mailbox</mplt>
-<mpp>Post a message in the mailbox[br]by sending the message to the mailbox's submission address</mpp>
-<mppt>Post a message</mppt>
-<mpr>Read the contents of the mailbox.</mpr>
-<mprt>Read</mprt>
-<mps>Preserve the "seen" and "recent" status[br]of messages across IMAP sessions.</mps>
-<mpst>Preserve status</mpst>
-<mpw>Write (change message flags such as[br] "recent," "answered," and "draft").</mpw>
-<mpwt>Write</mpwt>
+<homeDirectoryText>El directorio de inicio de la cuenta.[br]Debe ser una ruta UNC.[br]
+ De lo contrario, el directorio de inicio es una ruta local completamente cualificada</homeDirectoryText>
+<imapsync_not_installed>MailSync no est&#225; instalado</imapsync_not_installed>
+<imapsync_not_installed_text>Puede ir al &quot;Applications setup center&quot; para instalar esta herramienta y realizar operaciones</imapsync_not_installed_text>
+<import_mailbox>Importar y sincronizar buz&#243;n externo</import_mailbox>
+<import_mailbox_text>Sincronizar elementos desde un buz&#243;n IMAP externo a su buz&#243;n Artica interno.</import_mailbox_text>
+<import_now>Importar elementos ahora</import_now>
+<inbound_parameters>Par&#225;metros de entrada</inbound_parameters>
+<in_the_same_organization>en la misma organizaci&#243;n de mensajer&#237;a</in_the_same_organization>
+<joomla_privileges>Privilegios de Joomla</joomla_privileges>
+<joomla_privileges_text>Definir los privilegios del grupo Joomla de este usuario</joomla_privileges_text>
+<loginShell>Shell de inicio de sesi&#243;n</loginShell>
+<loginShellText>La responsabilidad de los shells de inicio de sesi&#243;n es iniciar el shell de no inicio de sesi&#243;n y asegurarse de que sus variables de entorno est&#233;n configuradas para garantizar que pueda obtener todos los par&#225;metros predeterminados necesarios al arranque</loginShellText>
+<mailboxes_rules>Filtros del buz&#243;n</mailboxes_rules>
+<mailboxes_rules_text>Gestionar los filtros guardados para este buz&#243;n</mailboxes_rules_text>
+<mailbox_priv>Privilegios del buz&#243;n</mailbox_priv>
+<mailing_list>Lista de correo</mailing_list>
+<mail_exchanger>intercambio de correo</mail_exchanger>
+<mime_defang_feature_not_enabled>Esta funci&#243;n no est&#225; activada en MimeDefang</mime_defang_feature_not_enabled>
+<mpa>Administrar el buz&#243;n[br](cambiar la ACL del buz&#243;n)</mpa>
+<mpat>Administrar</mpat>
+<mpc>Crear un nuevo buz&#243;n debajo del buz&#243;n de nivel superior[br](los usuarios normales no pueden crear buzones de nivel superior).</mpc>
+<mpct>Crear nuevo buz&#243;n</mpct>
+<mpd>Eliminar un mensaje y/o el buz&#243;n en s&#237;.</mpd>
+<mpdt>Eliminar mensajes</mpdt>
+<mpi>Insertar (mover o copiar) un mensaje[br] en el buz&#243;n.</mpi>
+<mpit>Insertar</mpit>
+<mpl>Buscar el[br]nombre del buz&#243;n[br](pero no su contenido).</mpl>
+<mplt>Listar buz&#243;n</mplt>
+<mpp>Publicar un mensaje en el buz&#243;n[br]enviando el mensaje a la direcci&#243;n de env&#237;o del buz&#243;n</mpp>
+<mppt>Publicar un mensaje</mppt>
+<mpr>Leer el contenido del buz&#243;n.</mpr>
+<mprt>Leer</mprt>
+<mps>Conservar el estado &quot;seen&quot; y &quot;recent&quot;[br]de los mensajes entre sesiones IMAP.</mps>
+<mpst>Conservar el estado</mpst>
+<mpw>Escribir (cambiar las marcas del mensaje como[br] &quot;recent&quot;, &quot;answered&quot; y &quot;draft&quot;).</mpw>
+<mpwt>Escribir</mpwt>
 <netressources>Recursos de red</netressources>
 <network_infos>Informaci%C3%B3n sobre la red</network_infos>
-<no_feature_dhcp_server_not_enabled>The DHCP server mode feature is disabled, you must enable it before enabling this feature</no_feature_dhcp_server_not_enabled>
-<no_mailbox_user>This user have no mailbox currently</no_mailbox_user>
-<OCS_DEPLOY_WINDOWS>OCS Agent remote installation</OCS_DEPLOY_WINDOWS>
-<OCS_DEPLOY_WINDOWS_TEXT>Install the OCS Windows agent on this computer</OCS_DEPLOY_WINDOWS_TEXT>
+<no_feature_dhcp_server_not_enabled>El modo de servidor DHCP est&#225; desactivado, debe activarlo antes de activar esta funci&#243;n</no_feature_dhcp_server_not_enabled>
+<no_mailbox_user>Este usuario no tiene buz&#243;n actualmente</no_mailbox_user>
+<OCS_DEPLOY_WINDOWS>Instalaci&#243;n remota del agente OCS</OCS_DEPLOY_WINDOWS>
+<OCS_DEPLOY_WINDOWS_TEXT>Instalar el agente OCS de Windows en este equipo</OCS_DEPLOY_WINDOWS_TEXT>
 <openports>Puertos abiertos</openports>
-<out_of_organization>Out of the Organization</out_of_organization>
-<profile>profile</profile>
-<recipient_translations>Recipient eMail address translations</recipient_translations>
-<remote_imap_password>Source imap password</remote_imap_password>
-<remote_imap_server>Source imap server</remote_imap_server>
-<remote_imap_username>Source imap username</remote_imap_username>
-<repair_mailbox>repair this mailbox</repair_mailbox>
-<repair_mailbox_infos>This feature will try to repair this mailbox by reconstruct the folders structure, delete seen index file...[br]
-After processing mailbox the imap server engine will be restarted...</repair_mailbox_infos>
-<repair_mailbox_text>Some problems to access or to run this mailbox, try to Repair this mailbox </repair_mailbox_text>
-<SambaAdminServerDefined>Server IP/Name for paths</SambaAdminServerDefined>
-<sambaHomeDrive>Home directory Map Letter</sambaHomeDrive>
+<out_of_organization>Fuera de la organizaci&#243;n</out_of_organization>
+<profile>perfil</profile>
+<recipient_translations>Traducciones de la direcci&#243;n de correo del destinatario</recipient_translations>
+<remote_imap_password>Contrase&#241;a imap de origen</remote_imap_password>
+<remote_imap_server>Servidor imap de origen</remote_imap_server>
+<remote_imap_username>Nombre de usuario imap de origen</remote_imap_username>
+<repair_mailbox>reparar este buz&#243;n</repair_mailbox>
+<repair_mailbox_infos>Esta funci&#243;n intentar&#225; reparar este buz&#243;n reconstruyendo la estructura de carpetas, eliminando el archivo de &#237;ndice seen...[br]
+Despu&#233;s de procesar el buz&#243;n, el motor del servidor imap se reiniciar&#225;...</repair_mailbox_infos>
+<repair_mailbox_text>Algunos problemas para acceder o ejecutar este buz&#243;n, intente reparar este buz&#243;n</repair_mailbox_text>
+<SambaAdminServerDefined>IP/Nombre del servidor para rutas</SambaAdminServerDefined>
+<sambaHomeDrive>Letra de unidad del directorio personal</sambaHomeDrive>
 <sambaHomePath>Directorio personal</sambaHomePath>
-<sambaPrimaryGroupSID>Initial Group</sambaPrimaryGroupSID>
-<sambaProfilePath>Profile directory</sambaProfilePath>
+<sambaPrimaryGroupSID>Grupo inicial</sambaPrimaryGroupSID>
+<sambaProfilePath>Directorio de perfil</sambaProfilePath>
 <SAMBA_ERROR_CLICK>Haga clic en m%C3%AD para obtener m%C3¡s informaci%C3%B3n</SAMBA_ERROR_CLICK>
-<SAMBA_ERROR_REPORT>The samba server report :</SAMBA_ERROR_REPORT>
-<SAMBA_ERROR_USER>Error on this user</SAMBA_ERROR_USER>
+<SAMBA_ERROR_REPORT>El servidor samba informa:</SAMBA_ERROR_REPORT>
+<SAMBA_ERROR_USER>Error en este usuario</SAMBA_ERROR_USER>
 <SAMBA_GROUP_PRIVILEGES>Privilegios de grupo</SAMBA_GROUP_PRIVILEGES>
-<SAMBA_GROUP_PRIVILEGES_TEXT>Set user's privileges by selecting the appropriate group</SAMBA_GROUP_PRIVILEGES_TEXT>
-<SAMBA_GROUP_PRIVILEGES_WIZARD>This wizard will help to define the user privileges by selecting a pre-defined group.[br]Select the appropriate group that will store this user.[br]
-Selecting this group is mandatory if you want to use Artica Server has a primary Domain controler.[br]
-It will enable the connection of this user on the Domain</SAMBA_GROUP_PRIVILEGES_WIZARD>
-<scan_it>Launch nmap scan...</scan_it>
-<SCHEDULE_SCAN_COMPUTER>Schedule scan</SCHEDULE_SCAN_COMPUTER>
-<SCHEDULE_SCAN_COMPUTER_TEXT>schedule the defined antivirus scan, in order to execute antivirus analysis periodically</SCHEDULE_SCAN_COMPUTER_TEXT>
-<SeAddUsersPrivilege>Add users and groups to the domain</SeAddUsersPrivilege>
-<search_in_orgnization>Search in Organization</search_in_orgnization>
-<SeBackupPrivilege>Back up files and directories</SeBackupPrivilege>
-<SeDiskOperatorPrivilege>Manage disk shares</SeDiskOperatorPrivilege>
+<SAMBA_GROUP_PRIVILEGES_TEXT>Establecer los privilegios del usuario seleccionando el grupo apropiado</SAMBA_GROUP_PRIVILEGES_TEXT>
+<SAMBA_GROUP_PRIVILEGES_WIZARD>Este asistente ayudar&#225; a definir los privilegios del usuario seleccionando un grupo predefinido.[br]Seleccione el grupo apropiado que almacenar&#225; a este usuario.[br]
+Seleccionar este grupo es obligatorio si desea usar el servidor Artica como controlador de dominio principal.[br]
+Permitir&#225; la conexi&#243;n de este usuario al dominio</SAMBA_GROUP_PRIVILEGES_WIZARD>
+<scan_it>Iniciar escaneo nmap...</scan_it>
+<SCHEDULE_SCAN_COMPUTER>Programar escaneo</SCHEDULE_SCAN_COMPUTER>
+<SCHEDULE_SCAN_COMPUTER_TEXT>Programar el escaneo antivirus definido, para ejecutar el an&#225;lisis antivirus peri&#243;dicamente</SCHEDULE_SCAN_COMPUTER_TEXT>
+<SeAddUsersPrivilege>Agregar usuarios y grupos al dominio</SeAddUsersPrivilege>
+<search_in_orgnization>Buscar en la organizaci&#243;n</search_in_orgnization>
+<SeBackupPrivilege>Hacer copia de seguridad de archivos y directorios</SeBackupPrivilege>
+<SeDiskOperatorPrivilege>Gestionar recursos compartidos de disco</SeDiskOperatorPrivilege>
 <see_events>Ver los %C3%BAltimos eventos</see_events>
-<SeMachineAccountPrivilege>Add machines to domain</SeMachineAccountPrivilege>
-<sender_canonical_text>Transform your original eMail address when mails will be forwarded trough internet</sender_canonical_text>
-<sender_parameters>Sender Settings</sender_parameters>
-<sender_parameters_text>Define email rewriting sent address and others parameters when sending mails</sender_parameters_text>
-<SePrintOperatorPrivilege>Manage printers</SePrintOperatorPrivilege>
+<SeMachineAccountPrivilege>Agregar m&#225;quinas al dominio</SeMachineAccountPrivilege>
+<sender_canonical_text>Transformar su direcci&#243;n de correo original cuando los correos se reenv&#237;en a trav&#233;s de Internet</sender_canonical_text>
+<sender_parameters>Configuraci&#243;n del remitente</sender_parameters>
+<sender_parameters_text>Definir la direcci&#243;n de reescritura de env&#237;o de correo y otros par&#225;metros al enviar correos</sender_parameters_text>
+<SePrintOperatorPrivilege>Gestionar impresoras</SePrintOperatorPrivilege>
 <SeRemoteShutdownPrivilege>Forzar el apagado desde un sistema remoto</SeRemoteShutdownPrivilege>
-<SeRestorePrivilege>Restore files and directories</SeRestorePrivilege>
-<SeTakeOwnershipPrivilege>Take ownership of files or other objects</SeTakeOwnershipPrivilege>
+<SeRestorePrivilege>Restaurar archivos y directorios</SeRestorePrivilege>
+<SeTakeOwnershipPrivilege>Tomar posesi&#243;n de archivos u otros objetos</SeTakeOwnershipPrivilege>
 <SimpleGroupWareActive>Simple Groupware</SimpleGroupWareActive>
-<smb_infos>Share informations</smb_infos>
-<smb_infos_text>Display internal samba informations of this user</smb_infos_text>
-<sync_find_user>Find target mailbox</sync_find_user>
+<smb_infos>Informaci&#243;n de compartici&#243;n</smb_infos>
+<smb_infos_text>Mostrar la informaci&#243;n interna de samba de este usuario</smb_infos_text>
+<sync_find_user>Buscar buz&#243;n de destino</sync_find_user>
 <test_connection>Prueba tu conexi%C3%B3n...</test_connection>
-<transforme_mailto>Change the email address</transforme_mailto>
-<transforme_mailto_text>If you fill this field, message email address to this user will be transformed to the email address set</transforme_mailto_text>
-<UidNumber>Numeric Identifier</UidNumber>
-<UidNumberText>This attribute must contains an integer that uniquely identifies a user in an administrative domain</UidNumberText>
-<uid_number>UID number</uid_number>
-<UserSystemInfos>System Parameters</UserSystemInfos>
-<UserSystemInfos_text>Define users information such has the numeric identifier,login Shell...</UserSystemInfos_text>
-<USER_DOES_NOT_EXISTS>This user does not exists in the Database</USER_DOES_NOT_EXISTS>
-<USER_DOES_NOT_EXISTS_EXPLAIN>The user ID requested is not properly set in the database.[br]Sure that this user has been deleted and some traces are stored in the database</USER_DOES_NOT_EXISTS_EXPLAIN>
-<user_has_no_quota>This user have no quota.This mailbox is illimited...</user_has_no_quota>
-<user_is_an_obm_user>Access Enabled to OBM Calendar</user_is_an_obm_user>
-<USER_MAILBOX_WIZARD_STEP1>This wizard will help you to create a new mailbox for this user.[br]
-First is to define if the mailbox will have a limited size.[br]
-Give here the maximal size of the mailbox in MB.[br]
-[b]If you want an illimited mailbox, keep the field to 0 value[/b]
-</USER_MAILBOX_WIZARD_STEP1>
-<user_no_mailbox>This user have currently no mailbox folder created on the Mailboxes server</user_no_mailbox>
-<user_quota>This mailbox is limited.[br]If you want to remove the quota and transform it to illimited, set "0" in the field</user_quota>
-<user_transport>SMTP relay</user_transport>
+<transforme_mailto>Cambiar la direcci&#243;n de correo</transforme_mailto>
+<transforme_mailto_text>Si rellena este campo, la direcci&#243;n de correo del mensaje a este usuario se transformar&#225; en la direcci&#243;n de correo establecida</transforme_mailto_text>
+<UidNumber>Identificador num&#233;rico</UidNumber>
+<UidNumberText>Este atributo debe contener un entero que identifique de forma &#250;nica a un usuario en un dominio administrativo</UidNumberText>
+<uid_number>N&#250;mero UID</uid_number>
+<UserSystemInfos>Par&#225;metros del sistema</UserSystemInfos>
+<UserSystemInfos_text>Definir informaci&#243;n de usuario como el identificador num&#233;rico, el shell de inicio de sesi&#243;n...</UserSystemInfos_text>
+<USER_DOES_NOT_EXISTS>Este usuario no existe en la base de datos</USER_DOES_NOT_EXISTS>
+<USER_DOES_NOT_EXISTS_EXPLAIN>El ID de usuario solicitado no est&#225; correctamente establecido en la base de datos.[br]Seguro que este usuario ha sido eliminado y quedan algunos rastros en la base de datos</USER_DOES_NOT_EXISTS_EXPLAIN>
+<user_has_no_quota>Este usuario no tiene cuota. Este buz&#243;n es ilimitado...</user_has_no_quota>
+<user_is_an_obm_user>Acceso activado al calendario OBM</user_is_an_obm_user>
+<USER_MAILBOX_WIZARD_STEP1>Este asistente le ayudar&#225; a crear un nuevo buz&#243;n para este usuario.[br]
+Primero hay que definir si el buz&#243;n tendr&#225; un tama&#241;o limitado.[br]
+Indique aqu&#237; el tama&#241;o m&#225;ximo del buz&#243;n en MB.[br]
+[b]Si desea un buz&#243;n ilimitado, mantenga el campo en el valor 0[/b]</USER_MAILBOX_WIZARD_STEP1>
+<user_no_mailbox>Este usuario actualmente no tiene ninguna carpeta de buz&#243;n creada en el servidor de buzones</user_no_mailbox>
+<user_quota>Este buz&#243;n est&#225; limitado.[br]Si desea eliminar la cuota y transformarlo en ilimitado, ponga &quot;0&quot; en el campo</user_quota>
+<user_transport>Rel&#233; SMTP</user_transport>
 <user_transport_text>Definir un servidor de correo de ruta espec%C3%ADfico para este usuario</user_transport_text>
 <use_ssl>Usar SSL</use_ssl>
-<VolatileIPAddress>Use DHCP</VolatileIPAddress>
-<warn_import>The importation will be launched in background,to follow the operation click on the logs icon in order to see if the operation will be successfull</warn_import>
+<VolatileIPAddress>Usar DHCP</VolatileIPAddress>
+<warn_import>La importaci&#243;n se iniciar&#225; en segundo plano; para seguir la operaci&#243;n, haga clic en el icono de registros para ver si la operaci&#243;n ser&#225; exitosa</warn_import>

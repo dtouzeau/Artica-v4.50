@@ -82,7 +82,8 @@ function restart_vpn(){
 }
 
 function add_vpn(){
-    $ID=$_GET["add-vpn"];
+    // Pentest 2026-11-04 : ID numerique (injection shell et traversee /etc/ppp/peers root).
+    $ID=intval($_GET["add-vpn"]);
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $cmd="$php5 /usr/share/artica-postfix/exec.pptp-client.php --build";
@@ -96,7 +97,8 @@ function add_vpn(){
 }
 
 function start_vpn(){
-    $ID=$_GET["start-vpn"];
+    // Pentest 2026-11-04 : ID numerique (injection shell et traversee /etc/ppp/peers root).
+    $ID=intval($_GET["start-vpn"]);
     $unix=new unix();
     $pon=$unix->find_program("pon");
     $cmd="$pon PPTP_{$ID} >/dev/null 2>&1";
@@ -104,7 +106,8 @@ function start_vpn(){
     shell_exec($cmd);
 }
 function stop_vpn(){
-    $ID=$_GET["stop-vpn"];
+    // Pentest 2026-11-04 : ID numerique (injection shell et traversee /etc/ppp/peers root).
+    $ID=intval($_GET["stop-vpn"]);
     $unix=new unix();
     $pon=$unix->find_program("poff");
     $cmd="$pon PPTP_{$ID} >/dev/null 2>&1";
@@ -113,7 +116,8 @@ function stop_vpn(){
 }
 
 function remove_vpn(){
-    $ID=$_GET["remove-vpn"];
+    // Pentest 2026-11-04 : ID numerique (injection shell et traversee /etc/ppp/peers root).
+    $ID=intval($_GET["remove-vpn"]);
     $unix=new unix();
     $pon=$unix->find_program("poff");
     $cmd="$pon PPTP_{$ID} >/dev/null 2>&1";
@@ -144,7 +148,7 @@ function searchlogs(){
     }
 
     $search=$unix->StringToGrep($search);
-    $cmd="$grep --binary-files=text -i -E '$search' $source_file 2>&1|$tail -n $rp >$target_file 2>&1";
+    $cmd="$grep --binary-files=text -i -E ".fw_shell_quote($search)." $source_file 2>&1|$tail -n $rp >$target_file 2>&1";
     writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
     shell_exec("$cmd");
 

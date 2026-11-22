@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);

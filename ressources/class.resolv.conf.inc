@@ -255,9 +255,22 @@ class resolv_conf{
 
         $f[]="# HaClusterClient = $HaClusterClient";
         $f[]="# DoNotUseLocalDNSCache = $DoNotUseLocalDNSCache";
-        if($DoNotUseLocalDNSCache==0){
-            $this->UseTCP=1;
-        }
+        // NE PAS forcer UseTCP ici. "options use-vc" est une option GLOBALE du
+        // resolveur glibc : elle s'applique a TOUS les nameservers du fichier, pas
+        // au seul cache local. Sur une appliance dont les serveurs de repli ne
+        // servent pas le DNS en TCP (frequent : ils repondent en UDP et avalent le
+        // SYN tcp/53), chaque resolution part alors dans un timeout complet.
+        // Mesure sur proxyclg101 (2026-09-04) : 65 568 ms pour une resolution a
+        // froid, contre 18 ms sans use-vc -- ce qui a tue toute la chaine Kerberos.
+        // Le choix appartient a l'exploitant via ResolvConfUseTCP (case {useTCPPort}
+        // de fw.dns.servers.php), deja lue dans buildConf(); l'ecraser ici rendait
+        // ce reglage sans effet des que le cache DNS local etait actif.
+        //
+        // Note : cette methode build() n'a AUCUN appelant (verifie sur l'appliance)
+        // et n'ecrit pas /etc/resolv.conf. Le generateur qui fait foi est
+        // resolv/resolv.go cote daemon, atteint par save() via
+        // /system/network/nohup/resolvapply. Corrige tout de meme, pour que les deux
+        // rendus ne divergent pas et n'induisent pas en erreur le prochain lecteur.
 
         $this->progress("{building}",10);
         $HaClusterUseLBAsDNS=0;

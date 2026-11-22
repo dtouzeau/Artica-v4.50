@@ -87,11 +87,11 @@ class postfix_certificate{
 	}
 
     private function GetMainSubCertificate($SUBID):array{
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $sql="SELECT * FROM subcertificates WHERE ID=$SUBID";
-
-
-        $ligne=$q->mysqli_fetch_array($sql);
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $row=$cdb->subGetById(intval($SUBID));
+        if(!is_object($row)){return array("","","");}
+        $ligne=(array)$row;
         if(!isset($ligne["bundle"])){$ligne["bundle"]="";}
         $crt_content=str_replace("\\n","\n",base64_decode($ligne["crt"]));
         $privkey_content=str_replace("\\n","\n",base64_decode($ligne["srca"]));
@@ -102,15 +102,11 @@ class postfix_certificate{
     }
 
     private function GetMainCertificate($CommonName=null,$certid=0):array{
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $sql="SELECT `UsePrivKeyCrt`,`crt`,`csr`,`srca`,`clientkey`,`clientcert`,`privkey`,`SquidCert`,`Squidkey`,`bundle`
-		FROM sslcertificates WHERE CommonName='$CommonName'";
-        if($certid>0){
-            $sql="SELECT `UsePrivKeyCrt`,`crt`,`srca`,`clientkey`,`clientcert`,`privkey`,`SquidCert`,`Squidkey`,`bundle`
-		FROM sslcertificates WHERE ID=$certid";
-        }
-
-        $ligne=$q->mysqli_fetch_array($sql);
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $row=($certid>0)?$cdb->getById(intval($certid)):$cdb->getByCommonName((string)$CommonName);
+        if(!is_object($row)){return array("","","");}
+        $ligne=(array)$row;
         $srca_content="";
         $bundle="";
 

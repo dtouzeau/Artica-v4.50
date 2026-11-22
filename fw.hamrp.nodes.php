@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 	include_once(dirname(__FILE__).'/ressources/class.templates.inc');
     include_once(dirname(__FILE__).'/ressources/class.users.menus.inc');
     include_once(dirname(__FILE__).'/ressources/class.harmp.inc');
@@ -8,7 +10,7 @@
 
 	if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 	$user=new usersMenus();
-	if(!$user->AsAnAdministratorGeneric){die("DIE " .__FILE__." Line: ".__LINE__);}
+	if(!$user->AsAnAdministratorGeneric){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
     if(isset($_GET["host-event-search"])){host_events_search();exit;}
     if(isset($_GET["host-top-buttons"])){host_top_buttons();exit;}
     if(isset($_POST["update-agent"])){update_agent();exit;}
@@ -17,7 +19,6 @@
 	if(isset($_GET["table"])){table();exit;}
 	if(isset($_GET["search"])){search();exit;}
 	if(isset($_GET["service-toolbox"])){services_toolbox();exit;}
-    if(isset($_GET["system-clean"])){system_clean_js();exit;}
     if(isset($_POST["system-clean"])){system_clean_perform();exit;}
     if(isset($_GET["host-js"])){host_js();exit;}
     if(isset($_GET["host-status"])){host_status();exit;}
@@ -27,7 +28,6 @@
     if(isset($_GET["update-js"])){update_agent_js();exit;}
 
 
-    if(isset($_POST["RustDeskEncryptedOnly"])){section_global_save();exit;}
 
     if(isset($_GET["config-locked"])){config_locked();exit;}
     if(isset($_GET["group-js"])){group_js();exit;}
@@ -47,8 +47,6 @@
     if(isset($_GET["add-node-popup"])){add_node_popup();exit;}
     if(isset($_GET["nodes-list"])){nodes_list();exit;}
 
-    if(isset($_POST["DockerExportTime"])){section_export_save();exit;}
-    if(isset($_POST["WorkDir"])){section_workingdir_save();exit;}
 	
 page();
 
@@ -109,11 +107,15 @@ function host_events(){
     echo "</div>";
 }
 function host_events_search():bool{
-    $uuid=$_GET["host-event-search"];
+    // Searches a node log through framework/hamrp.php (grep run as root).
+    if(!fw_progress_page_priv("AsWebMaster|AsSystemAdministrator")){return false;}
+    $uuid=(string)($_GET["host-event-search"] ?? "");
+    if(!preg_match('/^[A-Za-z0-9._:-]{1,128}$/',$uuid)){return fw_progress_bad_value("host-event-search");}
     $tpl=new template_admin();
     $MAIN       = $tpl->format_search_protocol($_GET["search"]);
-    $MAIN["uuid"]=$uuid;
-    $line       = base64_encode(serialize($MAIN));
+    // JSON, not serialize(): the handler runs as root and no longer unserializes anything.
+    $query=array("uuid"=>$uuid,"MAX"=>intval($MAIN["MAX"] ?? 200),"TERM"=>(string)($MAIN["TERM"] ?? ""));
+    $line       = urlencode(base64_encode(json_encode($query)));
     $target     = PROGRESS_DIR."/$uuid.articarest.search";
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("hamrp.php?adrest-events=$line");
 
@@ -224,9 +226,12 @@ function host_delete_perform():bool{
 }
 
 function host_parameters():bool{
+    if(!fw_progress_page_priv("AsWebMaster|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $uuid=$_GET["host-parameters"];
+    // Node uuid: it reaches a root shell through framework/hamrp.php (--sync-single).
+    $uuid=(string)($_GET["host-parameters"] ?? "");
+    if(!preg_match('/^[A-Za-z0-9._:-]{1,128}$/',$uuid)){return fw_progress_bad_value("host-parameters");}
     $harmpnode=new harmpnode($uuid);
     $function = $_GET["function"];
     $groupid=$harmpnode->groupid;
@@ -578,17 +583,32 @@ function group_popup(){
 }
 function group_save():bool{
     $tpl=new template_admin();
-    $array=$tpl->CLEAN_POST("groupid");
+    $tpl->CLEAN_POST("groupid");
     $ID=intval($_POST["groupid"]);
 
-    $sql="UPDATE groups SET ".@implode(",",$array["EDIT"])." WHERE ID=$ID";
-    $sql_add="INSERT INTO groups (".@implode(",",$array["FIELDS_ADD"]).") VALUES (".@implode(",",$array["VALUES_ADD"]).")";
+    // Pentest 2026-11-04 : les NOMS des champs POST etaient concatenes dans la requete
+    // (CLEAN_POST n'echappe que les valeurs) : colonnes en liste blanche, valeurs liees.
+    $allowed=array("groupname","comment","EnableRedis");
+    $cols=array();$binds=array();
+    foreach ($allowed as $col){
+        if(!isset($_POST[$col])){continue;}
+        $cols[]=$col;
+        $binds[]=$_POST[$col];
+    }
+    if(count($cols)==0){
+        echo $tpl->post_error("No data");
+        return false;
+    }
+    $edit=array();
+    foreach ($cols as $col){$edit[]="`$col`=?";}
+    $sql="UPDATE groups SET ".@implode(",",$edit)." WHERE ID=$ID";
+    $sql_add="INSERT INTO groups (`".@implode("`,`",$cols)."`) VALUES (".@implode(",",array_fill(0,count($cols),"?")).")";
 
     if($ID==0){
         $sql=$sql_add;
     }
     $q = new lib_sqlite("/home/artica/SQLITE/hamrp.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$binds);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error."<br>$sql_add");
         return false;

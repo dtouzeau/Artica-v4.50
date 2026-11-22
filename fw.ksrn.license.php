@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 
 $GLOBALS["VERBOSE"]=false;
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('html_errors',0);ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);}
@@ -128,7 +131,7 @@ function trial_js():string{
     $ARRAY["AFTER"]="Loadjs('$page?refreshjs=yes');";
     $ARRAY["AFTER_FAILED"]="LoadAjaxSilent('ksrn-license-status','$page?ksrn-license-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-ksrnlics-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ksrnlics-restart')";
 }
 function check_js():string{
     $page=CurrentPageName();
@@ -139,7 +142,7 @@ function check_js():string{
     $ARRAY["AFTER"]="Loadjs('$page?refreshjs=yes');";
     $ARRAY["AFTER_FAILED"]="LoadAjaxSilent('ksrn-license-status','$page?ksrn-license-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-ksrnlics-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ksrnlics-restart')";
 }
 function status(){
     if($GLOBALS["VERBOSE"]){VERBOSE(__FUNCTION__,__LINE__);}

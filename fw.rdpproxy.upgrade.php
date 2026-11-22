@@ -7,24 +7,12 @@ $GLOBALS["CLASS_SOCKETS"]       = new sockets();
 $users                          = new usersMenus();
 $tpl                            = new template_admin();
 if(!$users->AsSystemAdministrator){$tpl->js_no_privileges();exit();}
-if(isset($_GET["popup"])){popup();exit;}
 js();
 
 
+// L'ancien framework lancait "exec.rdpproxy.php --upgrade", un script qui
+// n'existe plus : la mise a jour de ReDemPtion passe par le paquet APP_RDPPROXY
+// du miroir (aupdate/Installv2), comme tout autre logiciel.
 function js(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$tpl->js_dialog6("{APP_RDPPROXY}::{installing} ", "$page?popup=yes",650);
-}
-
-
-function popup(){
-	$t=time();
-    $tpl=new template_admin();
-    $jsrestart=$tpl->framework_buildjs("rdpproxy.php?upgrade=yes",
-        "squid.rdpproxy.upgrade",
-        "squid.rdpproxy.upgrade.log","progress-php7-$t",
-        "dialogInstance6.close();");
-	$html="<div id='progress-php7-$t'></div><script>$jsrestart</script>";
-	echo $html;
+	echo "Loadjs('fw.system.upgrade-software.php?product=APP_RDPPROXY');";
 }

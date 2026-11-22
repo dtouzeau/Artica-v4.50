@@ -1,7 +1,11 @@
 <?php
+// Service Pack 9 2026-10-10
 
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
+// Pentest 2026-11-04 : sdate/ksrn-table-providers/ksrn-table-catz/category-details-js etaient recopies sans encodage dans la page (XSS).
+foreach(array("sdate","ksrn-table-providers","ksrn-table-catz") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET[$xssk]);}}
+foreach(array("category-details-js","category-details-table") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=intval($_GET[$xssk]);}}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["KRSN_DEBUG"])){Save();exit;}
 if(isset($_GET["ksrn-status"])){status();exit;}
@@ -31,7 +35,8 @@ function details_provider_js(){
     $tpl    = new template_admin();
     $provider=$_GET["providers-details-js"];
     $sdate=$_GET["sdate"];
-    $tpl->js_dialog1("$provider","$page?providers-details-table=$provider&sdate=$sdate");
+    // Pentest 2026-11-04 : providers-details-js etait recopie sans encodage dans la page (XSS).
+    $tpl->js_dialog1($provider,"$page?providers-details-table=".req_url($provider)."&sdate=$sdate");
 }
 function details_category_js(){
     $page   = CurrentPageName();
@@ -250,7 +255,7 @@ function restart_js():string{
     $ARRAY["TITLE"]="{KSRN} {restarting_service}";
     $ARRAY["AFTER"]="LoadAjaxSilent('ksrn-status','$page?ksrn-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-ksrn-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ksrn-restart')";
 }
 
 function tabs():string{
@@ -484,6 +489,8 @@ function details_category_table(){
 
     $sdate      = $_GET["sdate"];
     $category_id= $_GET["category-details-table"];
+    // Pentest 2026-11-04 : category-details-table etait concatene dans la requete.
+    $category_id= pg_escape_string2($category_id);
     $sitesql    = "statscom_websites.sitename";
     $filterCate = "AND ksrn.category='$category_id'";
     $filterdom  = ",statscom_websites WHERE (ksrn.siteid=statscom_websites.siteid) $filterCate AND";
@@ -550,6 +557,8 @@ function details_provider_table(){
     $tpl        = new template_admin();
     $today      = date("Y-m-d 00:00:00");
     $provider   = $_GET["providers-details-table"];
+    // Pentest 2026-11-04 : providers-details-table etait concatene dans la requete.
+    $provider   = pg_escape_string2($provider);
 
 
     $today      = date("Y-m-d 00:00:00");
@@ -654,7 +663,7 @@ function table_provider(){
     $page=CurrentPageName();
     while ($ligne = pg_fetch_assoc($results)) {
         $provider=$ligne["provider"];
-        $js="Loadjs('$page?providers-details-js=$provider&sdate={$_GET["ksrn-table-providers"]}')";
+        $js="Loadjs('$page?providers-details-js=".req_url($provider)."&sdate={$_GET["ksrn-table-providers"]}')";
 
         if($provider==null){$provider="Unknown";}
         $provider=$tpl->td_href("$provider","{details} $provider",$js);
@@ -720,7 +729,7 @@ function table_categories(){
     $page=CurrentPageName();
     while ($ligne = pg_fetch_assoc($results)) {
         $category=$ligne["category"];
-        $js="Loadjs('$page?category-details-js=$category&sdate=$sdate')";
+        $js="Loadjs('$page?category-details-js=".req_url($category)."&sdate=$sdate')";
 
         $sname=$catz->CategoryIntToStr($category);
         $provider=$tpl->td_href("$sname","{details} $sname",$js);

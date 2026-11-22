@@ -1,14 +1,14 @@
-<artica_confs>Artica files parameters</artica_confs>
-<artica_confs_explain>Backup all configurations files stored in /etc/artica-postfix</artica_confs_explain>
-<backup_container>Build Backup container each</backup_container>
-<CYRUS_ADD_RESOURCES>Add a storage resource</CYRUS_ADD_RESOURCES>
-<CYRUS_ADD_RESOURCES_TEXT>Browse Auto-mount center and select a connected resource</CYRUS_ADD_RESOURCES_TEXT>
-<CYR_BACKUP_NOW>The backup order has sent to framework, it will be executed in background mode, check logs in few times</CYR_BACKUP_NOW>
-<databases_backup_explain>Backup all databases systems include Mysql Databases and LDAP database</databases_backup_explain>
-<GENERIC_BACKUP>Backup your server datas</GENERIC_BACKUP>
-<GENERIC_BACKUP_TEXT>Schedule a backup using the Automount control center</GENERIC_BACKUP_TEXT>
-<mailboxes_backup_explain>Backup all your mailboxes datas files to the target source</mailboxes_backup_explain>
+<artica_confs>Parametry plik&#243;w Artica</artica_confs>
+<artica_confs_explain>Wykonaj kopi&#281; zapasow&#261; wszystkich plik&#243;w konfiguracyjnych przechowywanych w /etc/artica-postfix</artica_confs_explain>
+<backup_container>Tw&#243;rz kontener kopii zapasowej co</backup_container>
+<CYRUS_ADD_RESOURCES>Dodaj zas&#243;b pami&#281;ci masowej</CYRUS_ADD_RESOURCES>
+<CYRUS_ADD_RESOURCES_TEXT>Przegl&#261;daj centrum automatycznego montowania i wybierz pod&#322;&#261;czony zas&#243;b</CYRUS_ADD_RESOURCES_TEXT>
+<CYR_BACKUP_NOW>Polecenie kopii zapasowej zosta&#322;o wys&#322;ane do frameworka, zostanie wykonane w tle, sprawd&#378; dzienniki za chwil&#281;</CYR_BACKUP_NOW>
+<databases_backup_explain>Wykonaj kopi&#281; zapasow&#261; wszystkich system&#243;w baz danych, w tym baz danych Mysql i bazy danych LDAP</databases_backup_explain>
+<GENERIC_BACKUP>Wykonaj kopi&#281; zapasow&#261; danych serwera</GENERIC_BACKUP>
+<GENERIC_BACKUP_TEXT>Zaplanuj kopi&#281; zapasow&#261; za pomoc&#261; centrum sterowania Automount</GENERIC_BACKUP_TEXT>
+<mailboxes_backup_explain>Wykonaj kopi&#281; zapasow&#261; wszystkich plik&#243;w danych skrzynek pocztowych do &#378;r&#243;d&#322;a docelowego</mailboxes_backup_explain>
 <max_backup_container>Maks. pojemniki</max_backup_container>
-<RestoreFromRsyncPathNow>Restore from resource now</RestoreFromRsyncPathNow>
-<RestoreFromRsyncPath_warn>Notice: All current datas on this server will be overrided by the backup container.[br]be sure you want to perform this operation on this server</RestoreFromRsyncPath_warn>
-<STOP_SERVICES_BACKUP_EXPLAIN>This will stop all necessary services before perform backup</STOP_SERVICES_BACKUP_EXPLAIN>
+<RestoreFromRsyncPathNow>Przywr&#243;&#263; z zasobu teraz</RestoreFromRsyncPathNow>
+<RestoreFromRsyncPath_warn>Uwaga: Wszystkie bie&#380;&#261;ce dane na tym serwerze zostan&#261; nadpisane przez kontener kopii zapasowej.[br]upewnij si&#281;, &#380;e chcesz wykona&#263; t&#281; operacj&#281; na tym serwerze</RestoreFromRsyncPath_warn>
+<STOP_SERVICES_BACKUP_EXPLAIN>Spowoduje to zatrzymanie wszystkich niezb&#281;dnych us&#322;ug przed wykonaniem kopii zapasowej</STOP_SERVICES_BACKUP_EXPLAIN>

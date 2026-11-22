@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 
 
 function bandwidthd_pid(){
@@ -20,7 +21,7 @@ function bandwidthd(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("BandwidthdInstalled",1);
 	}
 	$l[]="installed=1";
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableBandwidthd")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableBandwidthd",0);}
+	if(!artica_setting_exists("EnableBandwidthd")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableBandwidthd",0);}
 	
 	$EnableBandwidthd=$GLOBALS["CLASS_SOCKETS"]->Bandwidthd_enabled();
 	

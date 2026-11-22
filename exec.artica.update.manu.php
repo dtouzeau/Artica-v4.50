@@ -1,4 +1,5 @@
 <?php
+// Post SP10 - 13/10/2026
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(function_exists("posix_getuid")){if(posix_getuid()<>0){die("Cannot be used in web server mode\n\n");}}
 include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 include_once(dirname(__FILE__).'/ressources/class.ldap.inc');
@@ -261,13 +262,18 @@ function install($filename):bool{
     shell_exec("/etc/init.d/artica-ad-rest restart >/dev/null 2>&1 &");
 	
 	echo "Starting......: ".date("H:i:s")." Restarting Scheduler....\n";
+	// Moteur porte dans le daemon Go (module SystemTasks): jumelle proxy de
+	// /system/tasks/defaults appele plus bas. /defaults et non /schedule/apply
+	// car une mise a jour peut apporter de nouveaux types par defaut; le semis
+	// est idempotent et ne supprime rien.
 	if(is_file("/etc/init.d/squid")) {
-        shell_exec("$nohup $php $ARTICA_BASE/exec.squid.php --build-schedules >/dev/null 2>&1 &");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/tasks/defaults");
     }
 	build_progress("{restarting} Artica...",88);
-	shell_exec("$nohup $php $ARTICA_BASE/exec.schedules.php --defaults >/dev/null 2>&1 &");
+	// Moteur porte dans le daemon Go (module SystemTasks).
+	$GLOBALS["CLASS_SOCKETS"]->REST_API("/system/tasks/defaults");
 	build_progress("{restarting} Artica...",90);
-    shell_exec("$nohup $php $ARTICA_BASE/exec.verif.packages.php >/dev/null 2>&1 &");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/aptget/verif-packages/run");
 	build_progress("{restarting} Artica...",100);
 	echo "Starting......: ".date("H:i:s")." Done you can close the screen....\n";
 

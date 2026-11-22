@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!isset($GLOBALS["DEBUG_MEMCACHE"])){$GLOBALS["DEBUG_MEMCACHE"]=false;}
 include_once(dirname(__FILE__)."/class.valkey.inc");
 class lib_memcached{
@@ -87,7 +88,7 @@ function CheckMemCached():bool{
     if(isset($_SESSION["UseMemCacheClient"])){
         $GLOBALS["UseMemCacheClient"]=intval($_SESSION["UseMemCacheClient"]);
     }
-    if(!is_file("/etc/artica-postfix/settings/Daemons/UseMemCacheClient")){
+    if(!artica_setting_exists("UseMemCacheClient")){
         $_SESSION["UseMemCacheClient"]=0;
         $GLOBALS["UseMemCacheClient"]=0;
         return false;

@@ -1,44 +1,43 @@
-<APP_BACKUPPC_TEXT>BackupPC is a high-performance, enterprise-grade system for backing up Linux, WinXX and MacOSX PCs and laptops to a server's disk.</APP_BACKUPPC_TEXT>
-<BackupPCNightlyPeriod>Nightly period</BackupPCNightlyPeriod>
-<BackupPCNightlyPeriod_text>How many days (runs) it takes BackupPC nightly to traverse the entire pool.[br]
- Normally this is 1, which means every night it runs, it does traverse the entire pool removing unused pool files
- </BackupPCNightlyPeriod_text>
-<BACKUPPC_FOLDER_LIST_TEXT>This section list all network shared folders that will be remotely backuped.</BACKUPPC_FOLDER_LIST_TEXT>
+<APP_BACKUPPC_TEXT>O BackupPC &#233; um sistema de alto desempenho e de n&#237;vel empresarial para fazer backup de PCs e laptops Linux, WinXX e MacOSX no disco de um servidor.</APP_BACKUPPC_TEXT>
+<BackupPCNightlyPeriod>Per&#237;odo noturno</BackupPCNightlyPeriod>
+<BackupPCNightlyPeriod_text>Quantos dias (execu&#231;&#245;es) o BackupPC nightly leva para percorrer todo o pool.[br]
+ Normalmente &#233; 1, o que significa que todas as noites em que &#233; executado, percorre todo o pool removendo os arquivos do pool n&#227;o utilizados</BackupPCNightlyPeriod_text>
+<BACKUPPC_FOLDER_LIST_TEXT>Esta se&#231;&#227;o lista todas as pastas compartilhadas de rede que ser&#227;o objeto de backup remoto.</BACKUPPC_FOLDER_LIST_TEXT>
 <FullAgeMax>Remover os backups antigos</FullAgeMax>
-<FullAgeMax_text>Very old full backups are removed after x days</FullAgeMax_text>
-<FullKeepCntMin>Keep x incrementals</FullKeepCntMin>
-<FullKeepCntMin_text>Number of incremental backups to keep</FullKeepCntMin_text>
-<FullPeriod>Minimum period in days between full backups</FullPeriod>
-<FullPeriod_text>Minimum period in days between full backups. A full dump will only be done if at least this much time has elapsed since the last full dump</FullPeriod_text>
-<IncrAgeMax>Remove old incrementals</IncrAgeMax>
-<IncrAgeMax_text>Very old incremental backups are removed after x days</IncrAgeMax_text>
-<IncrPeriod>Minimum period between incremental backups</IncrPeriod>
-<IncrPeriod_text>Minimum period between incremental backups</IncrPeriod_text>
+<FullAgeMax_text>Os backups completos muito antigos s&#227;o removidos ap&#243;s x dias</FullAgeMax_text>
+<FullKeepCntMin>Manter x incrementais</FullKeepCntMin>
+<FullKeepCntMin_text>N&#250;mero de backups incrementais a manter</FullKeepCntMin_text>
+<FullPeriod>Per&#237;odo m&#237;nimo em dias entre backups completos</FullPeriod>
+<FullPeriod_text>Per&#237;odo m&#237;nimo em dias entre backups completos. Um dump completo s&#243; ser&#225; feito se tiver decorrido pelo menos este tempo desde o &#250;ltimo dump completo</FullPeriod_text>
+<IncrAgeMax>Remover incrementais antigos</IncrAgeMax>
+<IncrAgeMax_text>Os backups incrementais muito antigos s&#227;o removidos ap&#243;s x dias</IncrAgeMax_text>
+<IncrPeriod>Per&#237;odo m&#237;nimo entre backups incrementais</IncrPeriod>
+<IncrPeriod_text>Per&#237;odo m&#237;nimo entre backups incrementais</IncrPeriod_text>
 <MaxBackupPCNightlyJobs>N%C3%BAmero m%C3¡ximo de backups a manter</MaxBackupPCNightlyJobs>
-<MaxBackupPCNightlyJobs_text>Each night, at the first wakeup, BackupPC is run.[br]
-Its job is to remove unneeded files in the pool, ie: files that only have one link.</MaxBackupPCNightlyJobs_text>
+<MaxBackupPCNightlyJobs_text>Todas as noites, no primeiro wakeup, o BackupPC &#233; executado.[br]
+O seu trabalho &#233; remover os arquivos desnecess&#225;rios no pool, ou seja: os arquivos que t&#234;m apenas um link.</MaxBackupPCNightlyJobs_text>
 <MaxBackups>N%C3%BAmero m%C3¡ximo de backups a manter</MaxBackups>
-<MaxBackups_text>Maximum number of simultaneous backups to run</MaxBackups_text>
-<MaxOldLogFiles>Maximum number of log files</MaxOldLogFiles>
-<MaxOldLogFiles_text>Maximum number of log files we keep around in log directory. These files are aged nightly. A setting of 14 means the log directory will contain about 2 weeks of old log files</MaxOldLogFiles_text>
-<PartialAgeMax>Max age of a failed backup</PartialAgeMax>
-<PartialAgeMax_text>A failed full backup is saved as a partial backup.[br]
-This parameter sets the age of the partial full in days: if the partial backup is older than this number of days, then rsync will ignore (not use) the partial full when the next backup is run</PartialAgeMax_text>
-<Reason_archive_done>archive done</Reason_archive_done>
-<Reason_archive_failed>archive failed</Reason_archive_failed>
-<Reason_backup_done>done</Reason_backup_done>
-<Reason_backup_failed>backup failed</Reason_backup_failed>
-<Reason_nothing_to_do>idle</Reason_nothing_to_do>
-<Reason_no_ping>no ping</Reason_no_ping>
-<Reason_restore_done>restore done</Reason_restore_done>
-<Reason_restore_failed>restore failed</Reason_restore_failed>
+<MaxBackups_text>N&#250;mero m&#225;ximo de backups simult&#226;neos a executar</MaxBackups_text>
+<MaxOldLogFiles>N&#250;mero m&#225;ximo de arquivos de log</MaxOldLogFiles>
+<MaxOldLogFiles_text>N&#250;mero m&#225;ximo de arquivos de log que mantemos no diret&#243;rio de logs. Esses arquivos s&#227;o envelhecidos todas as noites. Uma configura&#231;&#227;o de 14 significa que o diret&#243;rio de logs conter&#225; cerca de 2 semanas de arquivos de log antigos</MaxOldLogFiles_text>
+<PartialAgeMax>Idade m&#225;xima de um backup falhado</PartialAgeMax>
+<PartialAgeMax_text>Um backup completo falhado &#233; salvo como backup parcial.[br]
+Este par&#226;metro define a idade do completo parcial em dias: se o backup parcial for mais antigo que este n&#250;mero de dias, o rsync ignorar&#225; (n&#227;o usar&#225;) o completo parcial na pr&#243;xima execu&#231;&#227;o do backup</PartialAgeMax_text>
+<Reason_archive_done>arquivamento conclu&#237;do</Reason_archive_done>
+<Reason_archive_failed>arquivamento falhou</Reason_archive_failed>
+<Reason_backup_done>conclu&#237;do</Reason_backup_done>
+<Reason_backup_failed>backup falhou</Reason_backup_failed>
+<Reason_nothing_to_do>inativo</Reason_nothing_to_do>
+<Reason_no_ping>sem ping</Reason_no_ping>
+<Reason_restore_done>restaura&#231;&#227;o conclu&#237;da</Reason_restore_done>
+<Reason_restore_failed>restaura&#231;&#227;o falhou</Reason_restore_failed>
 <startTime>Hor%C3¡rio de in%C3%ADcio</startTime>
-<Status_backup_in_progress>backup in progress</Status_backup_in_progress>
-<Status_backup_starting>backup starting</Status_backup_starting>
-<Status_idle>idle</Status_idle>
-<Status_link_pending>link pending</Status_link_pending>
-<Status_link_running>link running</Status_link_running>
-<Status_restore_in_progress>restore in progress</Status_restore_in_progress>
-<Status_restore_starting>restore starting</Status_restore_starting>
-<TopDir>Backup storage path</TopDir>
-<TopDir_text>where all the backup data is stored</TopDir_text>
+<Status_backup_in_progress>backup em andamento</Status_backup_in_progress>
+<Status_backup_starting>iniciando backup</Status_backup_starting>
+<Status_idle>inativo</Status_idle>
+<Status_link_pending>link pendente</Status_link_pending>
+<Status_link_running>link em execu&#231;&#227;o</Status_link_running>
+<Status_restore_in_progress>restaura&#231;&#227;o em andamento</Status_restore_in_progress>
+<Status_restore_starting>iniciando restaura&#231;&#227;o</Status_restore_starting>
+<TopDir>Caminho de armazenamento de backup</TopDir>
+<TopDir_text>onde todos os dados de backup s&#227;o armazenados</TopDir_text>

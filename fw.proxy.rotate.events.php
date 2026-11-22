@@ -1,5 +1,13 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["page2"])){page2();exit;}
@@ -36,15 +44,10 @@ function search(){
 	$tpl=new template_admin();
 	$max=0;$date=null;$c=0;
 	
-	$MAIN=$tpl->format_search_protocol($_GET["search"]);
-	
-	$line=base64_encode(serialize($MAIN));
-	$sock->getFrameWork("syslog.php?rotate-logs=$line");
-	$filename=PROGRESS_DIR."/rotate.syslog";
 	$date_text=$tpl->_ENGINE_parse_body("{date}");
 	$events=$tpl->_ENGINE_parse_body("{events}");
 	$html[]="
-<table class=\"table table-hover\">
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>
 	<thead>
     	<tr>
         	
@@ -54,12 +57,9 @@ function search(){
         	<th>$events</th>
         </tr>
   	</thead>
-	<tbody>
+	<tbody id='rotateevents-rows'>
 ";
 	
-	$data=explode("\n",@file_get_contents($filename));
-	if(count($data)>3){$_SESSION["LEGAL_LOGS_SEARCH"]=$_GET["search"];}
-
     $MAIN=$tpl->format_search_protocol($_GET["search"]);
     $sock=new sockets();
     $rp=intval($MAIN["MAX"]);
@@ -78,6 +78,7 @@ function search(){
         echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
     }
 
+    if(is_array($json->Events) && count($json->Events)>3){$_SESSION["LEGAL_LOGS_SEARCH"]=$_GET["search"];}
     foreach ($json->Events as $line){
 		$line=trim($line);
 		$array=ParseLine($line);
@@ -115,12 +116,12 @@ function search(){
 		
 	}
 	
-	$html[]="</tbody></table>";
-    $search=@file_get_contents(PROGRESS_DIR."/rotate.syslog.pattern");
-	$html[]="<div><i>$search</i></div>";
-
-
-    $TINY_ARRAY["TITLE"]="{legal_logs}: {events} &laquo;$search&raquo;";
+	$html[]="</tbody></table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='rotateevents-pager'></span></div></div></div>";
+    // Le titre reprend le terme saisi (l'ancien motif grep du framework, supprime, y
+    // laissait des fragments de regex comme "Oct\s+.*?").
+    $term=trim(strval($MAIN["TERM"]));
+    $TINY_ARRAY["TITLE"]="{legal_logs}: {events}";
+    if($term<>""){$TINY_ARRAY["TITLE"].=" &laquo;".htmlspecialchars($term,ENT_QUOTES)."&raquo;";}
     $TINY_ARRAY["ICO"]="fas fa-eye";
     $TINY_ARRAY["EXPL"]="{legal_logs_explain}";
     $TINY_ARRAY["URL"]="logs-rotate";
@@ -130,8 +131,11 @@ function search(){
 
 
     $html[]="<script>$jstiny</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"rotateevents-rows","rotateevents-pager");
 }
+// Pentest 2026-11-04 : ligne de journal logrotate (donnee externe) affichee sans encodage (XSS stockee).
 function ParseLine($line):array{
     $MONTHS=array("Jan"=>1,"Feb"=>2,"Mar"=>3,"Apr"=>4,"May"=>5,"Jun"=>6,"Jul"=>7,"Aug"=>8,"Sep"=>9,"Oct"=>10,"Nov"=>11,"Dec"=>12);
 
@@ -141,8 +145,8 @@ function ParseLine($line):array{
         $DayNum = $re[2];
         $Time = $re[3];
         $pid = $re[4];
-        $Binary=$re[5];
-        $line = $re[7] . "&nbsp;(<i>$re[6]</i>)"; $xtime = strtotime(date("Y") . "-" . $MonthNum . "-" . $DayNum . " $Time");
+        $Binary=req_html($re[5]);
+        $line = req_html($re[7]) . "&nbsp;(<i>".req_html($re[6])."</i>)"; $xtime = strtotime(date("Y") . "-" . $MonthNum . "-" . $DayNum . " $Time");
         $FTime = date("Y-m-d H:i:s", $xtime);
         $curDate = date("Y-m-d");
         $FTime = trim(str_replace($curDate, "", $FTime));
@@ -160,9 +164,9 @@ function ParseLine($line):array{
         $MonthNum = $MONTHS[$MonthText];
         $DayNum = $re[2];
         $Time = $re[3];
-        $Binary = $re[4];
+        $Binary = req_html($re[4]);
         $pid = $re[5];
-        $line = $re[6];
+        $line = req_html($re[6]);
         $xtime = strtotime(date("Y") . "-" . $MonthNum . "-" . $DayNum . " $Time");
         $FTime = date("Y-m-d H:i:s", $xtime);
         $curDate = date("Y-m-d");

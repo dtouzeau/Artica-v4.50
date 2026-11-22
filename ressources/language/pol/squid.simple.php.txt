@@ -1,27 +1,26 @@
-<acl_is_allowed>is allowed to pass trought the proxy</acl_is_allowed>
+<acl_is_allowed>ma pozwolenie na przej&#347;cie przez proxy</acl_is_allowed>
 <dansguardian_listen_port>Port, na kt&oacute;rym nas%u0142uchuje DansGuardian</dansguardian_listen_port>
 <deny_ext>Blokuj pliki</deny_ext>
-<deny_ext_add>Add an extension file</deny_ext_add>
-<deny_ext_add_text>This section restrict users to download remote files by specific extension name (exe,vbs,shs...). it is usefull to protect against malicious programs </deny_ext_add_text>
-<enable_kav4proxy>Enable Kaspersky For SQUID</enable_kav4proxy>
-<enable_kav4proxy_text>Kaspersky For SQUID use ICAP protocol to hook requests from SQUID.[br]If you disable this option, SQUID will
-not send requests to Kaspersky and protocols will pass directly trought SQUID
-</enable_kav4proxy_text>
-<enable_kav_macro>Build performances rules</enable_kav_macro>
-<enable_kav_macro_text>To prevent freeze, low downloads on specific streams and big files, push the button in order to bypass the antivirus</enable_kav_macro_text>
-<info>Infos</info>
+<deny_ext_add>Dodaj rozszerzenie pliku</deny_ext_add>
+<deny_ext_add_text>Ta sekcja uniemo&#380;liwia u&#380;ytkownikom pobieranie zdalnych plik&#243;w o okre&#347;lonym rozszerzeniu (exe, vbs, shs...). Jest przydatna do ochrony przed z&#322;o&#347;liwymi programami</deny_ext_add_text>
+<enable_kav4proxy>W&#322;&#261;cz Kaspersky For SQUID</enable_kav4proxy>
+<enable_kav4proxy_text>Kaspersky For SQUID u&#380;ywa protoko&#322;u ICAP do przechwytywania &#380;&#261;da&#324; z SQUID.[br]Je&#347;li wy&#322;&#261;czysz t&#281; opcj&#281;, SQUID
+nie b&#281;dzie wysy&#322;a&#322; &#380;&#261;da&#324; do Kaspersky, a protoko&#322;y przejd&#261; bezpo&#347;rednio przez SQUID</enable_kav4proxy_text>
+<enable_kav_macro>Zbuduj regu&#322;y wydajno&#347;ci</enable_kav_macro>
+<enable_kav_macro_text>Aby zapobiec zawieszaniu si&#281; i powolnym pobieraniom przy okre&#347;lonych strumieniach i du&#380;ych plikach, naci&#347;nij przycisk, aby pomin&#261;&#263; antywirus</enable_kav_macro_text>
+<info>Informacje</info>
 <listen_port_chain>Port, na kt&oacute;rym nas%u0142uchuje SQUID. DansGuardian %u0142%u0105czy si%u0119 do tego portu.</listen_port_chain>
-<listen_port_text>Give the listen port that users must set in their web clients</listen_port_text>
-<Safe_ports>Allow web ports</Safe_ports>
-<Safe_ports_add>Add access port</Safe_ports_add>
-<Safe_ports_text>Set here a list of remote ports allowed to pass trought the proxy</Safe_ports_text>
-<squid_ip_client_text>Add TCP/IP addresses group or single address in order to allow them to surf</squid_ip_client_text>
+<listen_port_text>Podaj port nas&#322;uchu, kt&#243;ry u&#380;ytkownicy musz&#261; ustawi&#263; w swoich klientach web</listen_port_text>
+<Safe_ports>Zezw&#243;l na porty web</Safe_ports>
+<Safe_ports_add>Dodaj port dost&#281;pu</Safe_ports_add>
+<Safe_ports_text>Ustaw tutaj list&#281; zdalnych port&#243;w, kt&#243;re mog&#261; przechodzi&#263; przez proxy</Safe_ports_text>
+<squid_ip_client_text>Dodaj grup&#281; adres&#243;w TCP/IP lub pojedynczy adres, aby umo&#380;liwi&#263; im przegl&#261;danie</squid_ip_client_text>
 <squid_ldap_auth>Uwierzytelnianie LDAP</squid_ldap_auth>
-<squid_ldap_auth_text>If you enable this option, Users stored in yours organizations will be authenticated in order to allow them to surf</squid_ldap_auth_text>
+<squid_ldap_auth_text>Je&#347;li w&#322;&#261;czysz t&#281; opcj&#281;, u&#380;ytkownicy przechowywani w Twoich organizacjach zostan&#261; uwierzytelnieni, aby umo&#380;liwi&#263; im przegl&#261;danie</squid_ldap_auth_text>
 <squid_listen_port>Port, na kt&oacute;rym nas%u0142uchuje Squid</squid_listen_port>
-<squid_network> Web Access</squid_network>
-<squid_network_ex>These users can access all the websites</squid_network_ex>
-<squid_network_text>Specify here IP address, subnet that allow to access</squid_network_text>
-<squid_simple_intro>This section allow you to define simple rules according standards Squid needs, It use predefined acl, somes rules that you have saved in advanced configuration
-could be deleted or corrupted.</squid_simple_intro>
+<squid_network>Dost&#281;p Web</squid_network>
+<squid_network_ex>Ci u&#380;ytkownicy mog&#261; uzyska&#263; dost&#281;p do wszystkich witryn</squid_network_ex>
+<squid_network_text>Okre&#347;l tutaj adres IP, podsie&#263;, kt&#243;ra zezwala na dost&#281;p</squid_network_text>
+<squid_simple_intro>Ta sekcja umo&#380;liwia definiowanie prostych regu&#322; zgodnie ze standardowymi potrzebami Squid. U&#380;ywa predefiniowanych acl; niekt&#243;re regu&#322;y zapisane w konfiguracji zaawansowanej
+mog&#261; zosta&#263; usuni&#281;te lub uszkodzone.</squid_simple_intro>
 <tcp_address_text>Kt&oacute;ry interfejs musi u%u017Cywa%u0107 DansGuardian do nas%u0142uchiwania po%u0142%u0105cze%u0144.</tcp_address_text>

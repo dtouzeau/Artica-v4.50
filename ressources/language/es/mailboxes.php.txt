@@ -1,39 +1,34 @@
-<add_pop3_imap_text>In order to enable POP3/IMAP access for this user, 
-you must set mailbox password. 
-Give the password for this user</add_pop3_imap_text>
+<add_pop3_imap_text>Para habilitar el acceso POP3/IMAP para este usuario,
+debe establecer la contrase&#241;a del buz&#243;n.
+Indique la contrase&#241;a para este usuario</add_pop3_imap_text>
 <ARRAY_TITLE>DOMINIOS LOCALES</ARRAY_TITLE>
 <bt_add_domain>Agregar un nuevo dominio</bt_add_domain>
-<edit_pop3_imap_text>If you want to edit this user,
-you must set the password for this user
-Set the new or old password</edit_pop3_imap_text>
-<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>You have already set a rule for this domain to relay all emails to an another mail server.[br]
-In this case, you are not allowed to add alias/domain/Mailbox system.
-</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
-<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>You have already set a rule for this domain to relay all emails to an another mail server.[br]
-In this case, you are not allowed to add alias/domain/Mailbox system.
-</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
+<edit_pop3_imap_text>Si desea editar este usuario,
+debe establecer la contrase&#241;a para este usuario
+Establezca la nueva o la antigua contrase&#241;a</edit_pop3_imap_text>
+<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>Ya ha establecido una regla para este dominio para retransmitir todos los correos a otro servidor de correo.[br]
+En este caso, no se le permite a&#241;adir un sistema de alias/dominio/buz&#243;n.</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
+<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>Ya ha establecido una regla para este dominio para retransmitir todos los correos a otro servidor de correo.[br]
+En este caso, no se le permite a&#241;adir un sistema de alias/dominio/buz&#243;n.</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
 <expand_domain>Direcci%C3%B3n</expand_domain>
-<expand_domain_goto>&nbsp;</expand_domain_goto>
+<expand_domain_goto>&amp;nbsp;</expand_domain_goto>
 <expand_domain_mailbox>IMAP/POP3</expand_domain_mailbox>
 <expand_domain_object>Objetos</expand_domain_object>
-<expand_domain_target>GO TO</expand_domain_target>
-<js_add_user>Add a user mailboxes - redirection</js_add_user>
-<js_del_alias>Delete this alias rule</js_del_alias>
-<js_del_domain>Delete the domain and aliases</js_del_domain>
-<js_del_transport>Delete this transport target</js_del_transport>
-<js_edit_alias>Edit this alias rule</js_edit_alias>
+<expand_domain_target>IR A</expand_domain_target>
+<js_add_user>A&#241;adir un buz&#243;n de usuario - redirecci&#243;n</js_add_user>
+<js_del_alias>Eliminar esta regla de alias</js_del_alias>
+<js_del_domain>Eliminar el dominio y los alias</js_del_domain>
+<js_del_transport>Eliminar este destino de transporte</js_del_transport>
+<js_edit_alias>Editar esta regla de alias</js_edit_alias>
 <js_edit_mailbox_storage>Agregar/Editar buzones de almacenamiento de correo</js_edit_mailbox_storage>
-<js_edit_transport>Edit the transport target for this domain</js_edit_transport>
-<js_expand_domain>Expand this domain to view settings</js_expand_domain>
-<PAGE_TEXT>This area is designed to manage local domains of your network. These domains store your mailboxes or local emails</PAGE_TEXT>
-<title>Manage Mailboxes and domains</title>
-<xdelete_alias_text>Are you sure to remove this alias rule? 
-mailbox will be not deleted but the Postfix mail system will be no able to transfert emails for this alias
-</xdelete_alias_text>
-<xdelete_domain_text>Are tou sure to remove this domain ? 
-aliases and/or transport generated for this domain will be removed too
-mailboxes will not remove
-</xdelete_domain_text>
-<xdelete_transport_text>Are you sure to remove this transport rule?
-aliases generated for this domain will be removed too
-</xdelete_transport_text>
+<js_edit_transport>Editar el destino de transporte para este dominio</js_edit_transport>
+<js_expand_domain>Expandir este dominio para ver la configuraci&#243;n</js_expand_domain>
+<PAGE_TEXT>Esta &#225;rea est&#225; dise&#241;ada para gestionar los dominios locales de su red. Estos dominios almacenan sus buzones o correos locales</PAGE_TEXT>
+<title>Gestionar buzones y dominios</title>
+<xdelete_alias_text>&#191;Est&#225; seguro de que desea eliminar esta regla de alias?
+El buz&#243;n no se eliminar&#225;, pero el sistema de correo Postfix no podr&#225; transferir correos para este alias</xdelete_alias_text>
+<xdelete_domain_text>&#191;Est&#225; seguro de que desea eliminar este dominio?
+Los alias y/o transportes generados para este dominio tambi&#233;n se eliminar&#225;n
+los buzones no se eliminar&#225;n</xdelete_domain_text>
+<xdelete_transport_text>&#191;Est&#225; seguro de que desea eliminar esta regla de transporte?
+Los alias generados para este dominio tambi&#233;n se eliminar&#225;n</xdelete_transport_text>

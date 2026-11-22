@@ -1,14 +1,14 @@
-<about>Mailfromd is a general-purpose mail filtering daemon. It is able to interact with any MTA that supports milter or pmilter protocol,
-such as Sendmail , Postfix and MeTA1..[br]
-It is able to filter both incoming and outgoing messages using criteria of arbitrary complexity,[br]
-supplied by the administrator in the form of a script file.</about>
+<about>Mailfromd ist ein Mail-Filter-Daemon f&#252;r allgemeine Zwecke. Es kann mit jedem MTA interagieren, der das Milter- oder Pmilter-Protokoll unterst&#252;tzt,
+wie Sendmail, Postfix und MeTA1.[br]
+Es kann sowohl eingehende als auch ausgehende Nachrichten anhand von Kriterien beliebiger Komplexit&#228;t filtern,[br]
+die vom Administrator in Form einer Skriptdatei bereitgestellt werden.</about>
 <apply_to_server>Einstellungen anwenden</apply_to_server>
-<close_windows>All operations are completed, you can close this windows...</close_windows>
-<enabled_plugins>Plugins Enabled</enabled_plugins>
-<global_settings>Plugins & settings</global_settings>
-<save_to_ldap_success> save settings to LDAP server</save_to_ldap_success>
-<save_to_server_success>Success Send order to framework </save_to_server_success>
-<script>Mailfromd user script</script>
-<service_mailfromd_failed>Failed !!! the service did not respond in time,check your script</service_mailfromd_failed>
-<service_mailfromd_suc>Success,  all settings are now in production mode</service_mailfromd_suc>
-<USE_CLIENT_SCRIPT>Use your script instead artica script</USE_CLIENT_SCRIPT>
+<close_windows>Alle Vorg&#228;nge sind abgeschlossen, Sie k&#246;nnen dieses Fenster schlie&#223;en...</close_windows>
+<enabled_plugins>Aktivierte Plugins</enabled_plugins>
+<global_settings>Plugins &amp; Einstellungen</global_settings>
+<save_to_ldap_success>Einstellungen auf dem LDAP-Server speichern</save_to_ldap_success>
+<save_to_server_success>Erfolg, Befehl an das Framework gesendet</save_to_server_success>
+<script>Mailfromd-Benutzerskript</script>
+<service_mailfromd_failed>Fehlgeschlagen!!! Der Dienst hat nicht rechtzeitig geantwortet, &#252;berpr&#252;fen Sie Ihr Skript</service_mailfromd_failed>
+<service_mailfromd_suc>Erfolg, alle Einstellungen sind jetzt im Produktionsmodus</service_mailfromd_suc>
+<USE_CLIENT_SCRIPT>Ihr Skript anstelle des Artica-Skripts verwenden</USE_CLIENT_SCRIPT>

@@ -3,6 +3,13 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.openssh.inc");
 
+// Pentest 2026-11-04 : user/delete-js/switch-js/hostkey-js/hostname etaient recopies sans encodage dans la page (XSS).
+foreach(array("user","delete-js","switch-js") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_.@$-]/','',(string)$_GET[$k]);}
+}
+foreach(array("hostkey-js","hostname") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_.:-]/','',(string)$_GET[$k]);}
+}
 if(isset($_GET["sshproxy-status"])){service_status();exit;}
 if(isset($_GET["sshproxy-settings"])){service_settings();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -169,7 +176,9 @@ function hostkey_popup(){
     $q=new lib_sqlite("/home/artica/SQLITE/sshd.db");
     $hostname=$q->SearchAntiXSS($hostname);
 
-    $ligne=$q->mysqli_fetch_array("SELECT privkey FROM sshproxy_keys WHERE hostname='$hostname'");
+    // Pentest 2026-11-04 : hostname etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT privkey FROM sshproxy_keys WHERE hostname=?",array($hostname));
+    $ligne=isset($rows[0])?$rows[0]:array();
     $privkey=base64_decode($ligne["privkey"]);
     $jsafter="dialogInstance2.close();$function();";
     $form[]=$tpl->field_hidden("hostname",$hostname);
@@ -185,8 +194,9 @@ function hostkey_safe():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/sshd.db");
     $privkey=base64_encode($q->SearchAntiXSS($privkey));
     $hostname=$q->SearchAntiXSS($hostname);
-    $q->QUERY_SQL("DELETE FROM sshproxy_keys WHERE  hostname='$hostname'");
-    $q->QUERY_SQL("INSERT INTO sshproxy_keys (privkey ,hostname) VALUES ('$privkey','$hostname')");
+    // Pentest 2026-11-04 : hostname etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM sshproxy_keys WHERE  hostname=?",array($hostname));
+    $q->QUERY_SQL_PARAMS("INSERT INTO sshproxy_keys (privkey ,hostname) VALUES (?,?)",array($privkey,$hostname));
 
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
@@ -201,7 +211,8 @@ function forward_delete():bool{
     $username=$_GET["delete-js"];
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/sshd.db");
-    $q->QUERY_SQL("DELETE FROM sshproxy WHERE username='$username'");
+    // Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM sshproxy WHERE username=?",array($username));
     admin_tracks("Remove SSH Proxy for $username");
     header("content-type: application/x-javascript");
     echo "$('#$md').remove();";
@@ -215,7 +226,9 @@ function forward_popup():bool{
     $user=$_GET["user"];
     $btn="{apply}";
     $q=new lib_sqlite("/home/artica/SQLITE/sshd.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM sshproxy WHERE username='$user'");
+    // Pentest 2026-11-04 : user etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT * FROM sshproxy WHERE username=?",array($user));
+    $ligne=isset($rows[0])?$rows[0]:array();
 
     if($user<>null){
         $title=$user;
@@ -238,11 +251,11 @@ function forward_save():bool{
     $array=$tpl->CLEAN_POST_XSS();
     $username=$_POST["username"];
     $q=new lib_sqlite("/home/artica/SQLITE/sshd.db");
-    $q->QUERY_SQL("DELETE FROM sshproxy WHERE username='$username'");
+    // Pentest 2026-11-04 : username et les NOMS de champs POST etaient concatenes dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM sshproxy WHERE username=?",array($username));
 
 
-    $sql="INSERT INTO sshproxy (".@implode(",",$array["FIELDS_ADD"]).") VALUES (".@implode(",",$array["VALUES_ADD"]).")";
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS("INSERT INTO sshproxy (`username`,`hostname`,`port`) VALUES (?,?,?)",array($username,$_POST["hostname"],intval($_POST["port"])));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -256,13 +269,15 @@ function forward_switch():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_GET_XSS();
     $username=$_GET["switch-js"];
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM sshproxy WHERE username='$username'");
+    // Pentest 2026-11-04 : switch-js etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT enabled FROM sshproxy WHERE username=?",array($username));
+    $ligne=isset($rows[0])?$rows[0]:array("enabled"=>0);
     if($ligne["enabled"]==1){
-        $q->QUERY_SQL("UPDATE sshproxy SET enabled=0 WHERE username='$username'");
+        $q->QUERY_SQL_PARAMS("UPDATE sshproxy SET enabled=0 WHERE username=?",array($username));
         admin_tracks("Set SSH Proxy $username as disbaled");
 
     }else{
-        $q->QUERY_SQL("UPDATE sshproxy SET enabled=1 WHERE username='$username'");
+        $q->QUERY_SQL_PARAMS("UPDATE sshproxy SET enabled=1 WHERE username=?",array($username));
         admin_tracks("Set SSH Proxy $username as enabled");
     }
     if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return false;}
@@ -292,8 +307,9 @@ function forward_table():bool{
 
     $search=$q->PatternToSearch($_GET["search"]);
     $TRCLASS=null;
-    $sql="SELECT * FROM sshproxy WHERE ( (username LIKE '$search') OR ( hostname LIKE '$search') ) LIMIT 250";
-    $results=$q->QUERY_SQL($sql);
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $sql="SELECT * FROM sshproxy WHERE ( (username LIKE ?) OR ( hostname LIKE ?) ) LIMIT 250";
+    $results=$q->QUERY_SQL_PARAMS($sql,array($search,$search));
     if(!$q->ok){
         echo $tpl->div_error($q->mysql_error);
     }
@@ -321,7 +337,8 @@ function forward_table():bool{
         $enabled=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?switch-js=$username')");
         $delete=$tpl->icon_delete("Loadjs('$page?delete-js=$username&md=$md')");
 
-        $ligne2=$q->mysqli_fetch_array("SELECT privkey FROM sshproxy_keys WHERE hostname='$hostname'");
+        $rows2=$q->QUERY_SQL_PARAMS("SELECT privkey FROM sshproxy_keys WHERE hostname=?",array($hostname));
+        $ligne2=isset($rows2[0])?$rows2[0]:array();
         if(!isset($ligne2["privkey"])){
             $ligne2["privkey"]="";
         }

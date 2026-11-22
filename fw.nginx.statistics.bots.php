@@ -1,11 +1,12 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["data-find"])){data_find();exit;}
 if(isset($_GET["worldmap"])){worldmap();exit;}
-if(isset($_GET["map-data"])){worldmap_data();exit;}
 if(isset($_GET["trustit"])){trustit();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -13,7 +14,6 @@ if(isset($_GET["top-status-botnets"])){top_status();exit;}
 if(isset($_GET["chart-top-botnets"])){chart_top_botnets();exit;}
 if(isset($_GET["chart-top-sites"])){chart_top_sites();exit;}
 if(isset($_GET["cnx-botnets-today"])){graphs_botnets_today();exit;}
-if(isset($_GET["top-htons-1"])){HtonsWidgets();exit;}
 if(isset($_GET["parameters-js"])){parameters_js();exit;}
 if(isset($_GET["parameters-popup"])){parameters_popup();exit;}
 if(isset($_POST["UseAbusesIPReputationKey"])){parameters_save();exit;}
@@ -117,8 +117,11 @@ function top_status():bool{
     $TINY_ARRAY["TITLE"]=$title;
     $TINY_ARRAY["ICO"]="fa-regular fa-user-robot";
     $TINY_ARRAY["EXPL"]="{statistics_nginx_botnets_explain}";
+    // NE PAS reintroduire un "$TINY_ARRAY[\"BUTTONS\"]=\"\";" apres cette ligne:
+    // un reste de mise au point ecrasait les boutons juste apres leur
+    // construction, et fw.progress.php vide alors #tiny-button -> le bouton
+    // {parameters} (handler ?parameters-js=yes, ligne 19) etait injoignable.
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
-    $TINY_ARRAY["BUTTONS"]="";
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
     $html[]="<table style='width:100%'>";
@@ -197,7 +200,10 @@ function graphs_botnets_today():bool{
     }
     if(count($xdata)<2){
         header("content-type: application/x-javascript");
-        echo "// $sql;";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$sql)."\n"; }
         echo "// Count = ".count($xdata)." <2";
         return true;
     }
@@ -235,7 +241,10 @@ function chart_top_botnets(){
     $results=$q->QUERY_SQL($query);
     if(!$q->ok){
         header("content-type: application/x-javascript");
-        echo "// $q->mysql_error;";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$q->mysql_error)."\n"; }
         return true;
     }
     while($ligne=@pg_fetch_assoc($results)){
@@ -246,7 +255,10 @@ function chart_top_botnets(){
     }
     if(count($MAIN)<2){
         header("content-type: application/x-javascript");
-        echo "// $query;";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$query)."\n"; }
         echo "// Count = ".count($MAIN)." <2";
         return true;
     }
@@ -271,7 +283,10 @@ function chart_top_sites(){
     $results=$q->QUERY_SQL($query);
     if(!$q->ok){
         header("content-type: application/x-javascript");
-        echo "// $q->mysql_error;";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$q->mysql_error)."\n"; }
         return true;
     }
     while($ligne=@pg_fetch_assoc($results)){
@@ -282,7 +297,10 @@ function chart_top_sites(){
     }
     if(count($MAIN)<2){
         header("content-type: application/x-javascript");
-        echo "// $query;";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$query)."\n"; }
         echo "// Count = ".count($MAIN)." <2";
         return true;
     }
@@ -301,23 +319,7 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
 
-    return true;
-}
 function data_search():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -330,12 +332,33 @@ function data_search():bool{
     echo "</div>";
     return true;
 }
+// Condition indexable sur l'adresse d'une ligne botnets : IPv4 -> ipaddr OU srcip (hton,
+// lignes d'avant la migration), IPv6 -> ipaddr seul. $ip doit être une adresse validée.
+function bots_ip_where($ip):string{
+    $ip=strtolower(trim(strval($ip)));
+    if(filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)!==false){
+        return "(ipaddr='$ip'::inet OR srcip=".sprintf("%u",ip2long($ip)).")";
+    }
+    if(filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV6)!==false){
+        return "ipaddr='$ip'::inet";
+    }
+    return "FALSE";
+}
+// Littéral LIKE sûr quel que soit standard_conforming_strings : antislash et NUL retirés,
+// apostrophe doublée (pg_escape_string2 produit \' qui ne protège pas quand le réglage est on).
+function bots_like_literal($s):string{
+    $s=str_replace(array("\\","\0"),"",strval($s));
+    return str_replace("'","''",$s);
+}
 function trustit(){
-    $srcip=$_GET["trustit"];
-    $category=$_GET["category"];
-    $function=$_GET["function"];
+    $srcip=trim(strval($_GET["trustit"]));
+    if(filter_var($srcip,FILTER_VALIDATE_IP)===false){return;}
+    // Adresse non specifiee (0.0.0.0, ::) : ligne historique sans adresse, jamais de UPDATE
+    if(in_array(inet_pton($srcip),array(inet_pton("0.0.0.0"),inet_pton("::")),true)){return;}
+    $category=pg_escape_string2($_GET["category"]);
+    $function=preg_replace('/[^A-Za-z0-9_]/','',strval($_GET["function"]));
     $q=new postgres_sql();
-    $q->QUERY_SQL("UPDATE botnets SET trusted=1 WHERE category='$category' AND srcip='$srcip'");
+    $q->QUERY_SQL("UPDATE botnets SET trusted=1 WHERE category='$category' AND ".bots_ip_where($srcip));
     echo "$function();";
 
 }
@@ -343,7 +366,7 @@ function data_find():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $function=$_GET["function"];
-    $html[]="<table id='table-fireqos-interfaces' class=\"table table-stripped\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{family}</th>";
@@ -364,8 +387,8 @@ function data_find():bool{
         $suspicious1="WHERE trusted=0";
 
     }
-    $query = "SELECT SUM(counter) as hits,category,ua,srcip,trusted,hostname
-    FROM botnets $suspicious1 GROUP by category,ua,srcip,trusted,hostname ORDER by hits DESC LIMIT 250";
+    $query = "SELECT SUM(counter) as hits,category,ua,host(COALESCE(ipaddr,'0.0.0.0'::inet + srcip)) AS srcip,trusted,hostname
+    FROM botnets $suspicious1 GROUP by category,ua,host(COALESCE(ipaddr,'0.0.0.0'::inet + srcip)),trusted,hostname ORDER by hits DESC LIMIT 250";
 
 
     $search=$_GET["search"];
@@ -374,11 +397,12 @@ function data_find():bool{
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $query = "SELECT SUM(counter) as hits,category,ua,srcip,trusted,hostname
-    FROM botnets WHERE ( (ua LIKE '$search') OR (category LIKE '$search') OR (hostname LIKE '$search')) GROUP by category,ua,srcip,trusted,hostname ORDER by hits DESC LIMIT 250";
+        $search=bots_like_literal($search);
+        $query = "SELECT SUM(counter) as hits,category,ua,host(COALESCE(ipaddr,'0.0.0.0'::inet + srcip)) AS srcip,trusted,hostname
+    FROM botnets WHERE ( (ua LIKE '$search') OR (category LIKE '$search') OR (hostname LIKE '$search')) GROUP by category,ua,host(COALESCE(ipaddr,'0.0.0.0'::inet + srcip)),trusted,hostname ORDER by hits DESC LIMIT 250";
         if(isset($_GET["suspicious"])){
-            $query = "SELECT SUM(counter) as hits,category,ua,srcip,trusted
-    FROM botnets WHERE trusted=0 AND ( (ua LIKE '$search') OR (category LIKE '$search') OR (hostname LIKE '$search')) GROUP by category,ua,srcip,trusted,hostname ORDER by hits DESC LIMIT 250";
+            $query = "SELECT SUM(counter) as hits,category,ua,host(COALESCE(ipaddr,'0.0.0.0'::inet + srcip)) AS srcip,trusted
+    FROM botnets WHERE trusted=0 AND ( (ua LIKE '$search') OR (category LIKE '$search') OR (hostname LIKE '$search')) GROUP by category,ua,host(COALESCE(ipaddr,'0.0.0.0'::inet + srcip)),trusted,hostname ORDER by hits DESC LIMIT 250";
 
         }
     }
@@ -393,19 +417,24 @@ function data_find():bool{
     $results=$q->QUERY_SQL($query);
     if(!$q->ok){
         header("content-type: application/x-javascript");
-        echo "// $q->mysql_error;";
+        // Le SQL/erreur tient sur PLUSIEURS lignes: un "//" n'en commente que la
+        // premiere, la suite s'executerait comme du JavaScript. On aplatit, et on
+        // ne divulgue la requete qu'en mode ?verbose.
+        if(!empty($GLOBALS["VERBOSE"])){ echo "// ".preg_replace('#\s+#'," ",$q->mysql_error)."\n"; }
         return true;
     }
     $TRCLASS="";
     while($ligne=@pg_fetch_assoc($results)){
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md=md5(serialize($ligne));
         $category=$ligne["category"];
         $srcip=$ligne["srcip"];
         $trusted=$ligne["trusted"];
         $ua=$ligne["ua"];
-        $ipaddr=long2ip($srcip);
+        // Ligne historique sans adresse (srcip=0, ipaddr NULL) : ne pas afficher 0.0.0.0
+        $known=(filter_var($srcip,FILTER_VALIDATE_IP)!==false AND $srcip!=="0.0.0.0");
+        $ipaddr=$known?$srcip:"{unknown_address_pre_ipv6}";
         $ico_check="";
         $hits=$ligne["hits"];
         if($trusted==1){
@@ -413,37 +442,39 @@ function data_find():bool{
         }
         $hostname=$ligne["hostname"];
         $hostc="<i class='".ico_computer."'></i>&nbsp;";
-        if(strlen($hostname)<3) {
+        if(strlen($hostname)<3 AND $known) {
             $hostc="";
-            $hostname = gethostbyaddr($ipaddr);
-            $q->QUERY_SQL("UPDATE botnets SET hostname='$hostname' WHERE srcip='$srcip'");
+            $hostname = pg_escape_string2(gethostbyaddr($srcip));
+            $q->QUERY_SQL("UPDATE botnets SET hostname='$hostname' WHERE ".bots_ip_where($srcip));
             if(!$q->ok){
                 echo $tpl->div_error($q->mysql_error);
             }
         }
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%' nowrap><i class='fa-regular fa-user-robot'></i>&nbsp;<strong>$category</strong></td>";
-        $html[]="<td style='width:1%' nowrap>$ipaddr<br><small>$hostc$hostname</small></td>";
-        $html[]="<td style='width:99%'>$ua</td>";
+        // Pentest 2026-11-04 : User-Agent, nom d'hote inverse et categorie (donnee externe) affiches sans encodage (XSS stockee).
+        $html[]="<td style='width:1%' nowrap><i class='fa-regular fa-user-robot'></i>&nbsp;<strong>".req_html($category)."</strong></td>";
+        $html[]="<td style='width:1%' nowrap>$ipaddr<br><small>$hostc".req_html($hostname)."</small></td>";
+        $html[]="<td style='width:99%'>".req_html($ua)."</td>";
         $html[]="<td style='width:1%' class='center' nowrap><strong>$ico_check</strong></td>";
         $html[]="<td style='width:1%' class='center' nowrap><strong>$hits</strong></td>";
-        if(isset($_GET["suspicious"])){
-            $js="Loadjs('$page?trustit=$srcip&category=$category&function=$function')";
+        if(isset($_GET["suspicious"]) AND $known){
+            $js="Loadjs('$page?trustit=".urlencode($srcip)."&category=".urlencode($ligne["category"])."&function=$function')";
             $hostkey="<button class='btn btn-default btn-xs' OnClick=\"$js\">{trusted}</button>";
             $html[]="<td style='width:1%' class='center' nowrap>$hostkey</td>";
+        }elseif(isset($_GET["suspicious"])){
+            $html[]="<td style='width:1%'>&nbsp;</td>";
         }
 
         $html[]="</tr>";
 
     }
 
-    $html[]="</tbody>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div></div></div>";
     $html[]="<script>";
     $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
     return true;
 
 }

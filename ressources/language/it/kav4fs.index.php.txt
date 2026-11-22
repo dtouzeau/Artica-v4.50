@@ -1,12 +1,11 @@
-<APP_KAV4FS_ABOUT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.[br]
-Kaspersky Anti-Virus for Linux allows to:
+<APP_KAV4FS_ABOUT>Kaspersky Anti-virus for Linux File Server &#232; progettato per proteggere i file server che eseguono sistemi operativi Linux.[br]
+Kaspersky Anti-Virus per Linux consente di:
 [ul] 
-[li]Ensure real-time protection of the file system against malicious code:[br]
-intercept and analyze attempts to access files, disinfect and delete infected objects.[/li]
-[li]Scan objects on-demand: search infected and suspicious files (including files in the specified scan scopes); analyze files; disinfect or delete infected files.[/li]
-[li]Quarantine suspicious and infected files.[/li]
-[li]Create a copy of an infected object in the backup storage before disinfect or delete attempt to make it possible to restore such an object.[/li]
-[/ul]
-</APP_KAV4FS_ABOUT>
-<APP_KAV4FS_TEXT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.</APP_KAV4FS_TEXT>
-<LICENSE_INSTALL>Install a license</LICENSE_INSTALL>
+[li]Garantire la protezione in tempo reale del file system contro il codice dannoso:[br]
+intercettare e analizzare i tentativi di accesso ai file, disinfettare ed eliminare gli oggetti infetti.[/li]
+[li]Scansionare gli oggetti su richiesta: cercare file infetti e sospetti (inclusi i file negli ambiti di scansione specificati); analizzare i file; disinfettare o eliminare i file infetti.[/li]
+[li]Mettere in quarantena file sospetti e infetti.[/li]
+[li]Creare una copia di un oggetto infetto nell'archivio di backup prima del tentativo di disinfezione o eliminazione, per rendere possibile il ripristino di tale oggetto.[/li]
+[/ul]</APP_KAV4FS_ABOUT>
+<APP_KAV4FS_TEXT>Kaspersky Anti-virus for Linux File Server &#232; progettato per proteggere i file server che eseguono sistemi operativi Linux.</APP_KAV4FS_TEXT>
+<LICENSE_INSTALL>Installa una licenza</LICENSE_INSTALL>

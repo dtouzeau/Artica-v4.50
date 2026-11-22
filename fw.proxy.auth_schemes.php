@@ -5,8 +5,13 @@ $GLOBALS["SCHEME"]["ntlm"]="{ntlm_authentication}";
 $GLOBALS["SCHEME"]["basic"]="{basic_authentication}";
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : explain-this-rule/rule-delete-js etaient recopies sans encodage dans la page (XSS).
+foreach(array("explain-this-rule","rule-delete-js") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=intval($_GET[$xssk]);}}
 if(isset($_GET["explain-this-rule"])){echo EXPLAIN_THIS_RULE($_GET["explain-this-rule"]);exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -96,21 +101,22 @@ function rule_delete_js(){
 	
 }
 function rule_enable(){
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+	$tpl=new template_admin();
 	header("content-type: application/x-javascript");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM squid_auth_schemes_acls WHERE ID='{$_GET["enable-js"]}'");
-	if(intval($ligne["enabled"])==0){
-		
-		$js="$( \"#acl-{$_GET["enable-js"]}\" ).removeClass( \"text-muted\" );";
-		$enabled=1;
-		}
-		else{
-			$js="$( \"#acl-{$_GET["enable-js"]}\" ).addClass( \"text-muted\" );";
-			$enabled=0;
-		}
-	
-	$q->QUERY_SQL("UPDATE squid_auth_schemes_acls SET enabled='$enabled' WHERE ID='{$_GET["enable-js"]}'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."')";return;}
+	$ID=intval($_GET["enable-js"]);
+	$data=acls_api_get("/proxy/auth-schemes/acls/$ID");
+	if(!is_array($data)){
+		echo "alert('auth-schemes get failed for ID=$ID');\n";
+		return;
+	}
+	$enabled_src=intval($data["enabled"] ?? 0);
+	$enabled=($enabled_src==0) ? 1 : 0;
+	$js=($enabled_src==0)
+		? "$( \"#acl-$ID\" ).removeClass( \"text-muted\" );"
+		: "$( \"#acl-$ID\" ).addClass( \"text-muted\" );";
+
+	list($ok,$err)=acls_api_send("PUT","/proxy/auth-schemes/acls/$ID",["enabled"=>$enabled]);
+	if(!$ok){echo "alert('".$tpl->javascript_parse_text($err)."');\n";return;}
 	echo $js;
 }
 
@@ -118,9 +124,9 @@ function rule_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ID=intval($_GET["rule-id-js"]);
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT aclname FROM squid_auth_schemes_acls WHERE ID='$ID'");
-	$tpl->js_dialog("{rule}: $ID {$ligne["aclname"]}","$page?rule-tabs=$ID");
+	$data=acls_api_get("/proxy/auth-schemes/acls/$ID");
+	$ruleName=is_array($data) ? ($data["ruleName"] ?? "") : "";
+	$tpl->js_dialog("{rule}: $ID $ruleName","$page?rule-tabs=$ID");
 }
 
 
@@ -142,66 +148,38 @@ function rule_tabs(){
 function rule_settings(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["rule-settings"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM squid_auth_schemes_acls WHERE ID='{$_GET["rule-settings"]}'");
-
-
+	$ID=intval($_GET["rule-settings"]);
+	$data=acls_api_get("/proxy/auth-schemes/acls/$ID");
+	if(!is_array($data)){
+		echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}"));
+		return;
+	}
 
     $explain=$tpl->_ENGINE_parse_body("{new_acls_rule_auth_schemes_explain}");
-    $ligne["rulename"]=utf8_encode($ligne["rulename"]);
+    $ruleName=$tpl->utf8_encode($data["ruleName"] ?? "");
 
 	$form[]=$tpl->field_hidden("rule-save", "$ID");
-	$form[]=$tpl->field_text("rulename", "{rule_name}", $ligne["rulename"],true);
-	$form[]=$tpl->field_array_hash($GLOBALS["SCHEME"], "ztype", "{authentication_method}", $ligne["ztype"]);
-	$form[]=$tpl->field_proxy_ports("aclport", "{method}", $ligne["aclport"]);
+	$form[]=$tpl->field_text("rulename", "{rule_name}", $ruleName,true);
+	$form[]=$tpl->field_array_hash($GLOBALS["SCHEME"], "ztype", "{authentication_method}", $data["zType"] ?? "");
+	$form[]=$tpl->field_proxy_ports("aclport", "{method}", $data["aclPort"] ?? 0);
 	$jsafter="LoadAjax('table-authscheme-rules','$page?table=yes');";
-	$html=$tpl->form_outside($ligne["rulename"], @implode("\n", $form),$explain,"{apply}",$jsafter,"AsDansGuardianAdministrator");
+	$html=$tpl->form_outside($ruleName, @implode("\n", $form),$explain,"{apply}",$jsafter,"AsDansGuardianAdministrator");
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 function rule_save(){
-	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-	$ID=$_POST["rule-save"];
-	$rulename=sqlite_escape_string2(utf8_decode($_POST["rulename"]));
-	$TempName=md5(time());
-	
-	$FF[]="`rulename`";
-	$FF[]="`ztype`";
-	$FF[]="`aclport`";
-	$FF[]="`zorder`";
-	$FF[]="`enabled`";
-	
-	$FA[]="'$rulename'";
-	$FA[]="'{$_POST["ztype"]}'";
-	$FA[]="'{$_POST["aclport"]}'";
-	$FA[]="'{$_POST["zorder"]}'";
-	$FA[]="'{$_POST["enabled"]}'";
-	
-	foreach ($FF as $index=>$key){$FB[]="$key={$FA[$index]}";}
-	
-	$sql="UPDATE squid_auth_schemes_acls SET ".@implode(",", $FB)." WHERE ID=$ID";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
-
-    admin_tracks("Update a new authentication {$_POST["ztype"]} sheme rule $rulename");
-	
-	$c=0;
-	$sql="SELECT ID FROM squid_auth_schemes_acls ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-	
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE squid_auth_schemes_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return;}
-		$c++;
-	}
-	
-	
+	$ID=intval($_POST["rule-save"]);
+	$body=[
+		"ruleName" => url_decode_special_tool($_POST["rulename"] ?? ""),
+		"zType"    => $_POST["ztype"]  ?? "",
+		"aclPort"  => intval($_POST["aclport"] ?? 0),
+	];
+	list($ok,$err)=acls_api_send("PUT","/proxy/auth-schemes/acls/$ID",$body);
+	if(!$ok){echo htmlspecialchars($err);return;}
+    admin_tracks("Update authentication {$_POST["ztype"]} scheme rule {$_POST["rulename"]}");
 }
 
 function new_rule_js(){
@@ -216,7 +194,6 @@ function new_rule_js(){
 function new_rule_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$q=new mysql_squid_builder();
     $explain=$tpl->_ENGINE_parse_body("{new_acls_rule_auth_schemes_explain}");
     $form[]=$tpl->field_hidden("newrule", "yes");
 	$form[]=$tpl->field_text("rulename", "{rule_name}", null,true);
@@ -233,52 +210,15 @@ function new_rule_popup(){
 
 function rule_move(){
 	$tpl=new template_admin();
-	$ID=$_GET["acl-rule-move"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$sql="SELECT zorder FROM squid_auth_schemes_acls WHERE `ID`='$ID'";
-	$ligne=$q->mysqli_fetch_array($sql);
-	if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-	$xORDER_ORG=intval($ligne["zorder"]);
-	$xORDER=$xORDER_ORG;
-	
-	
-	if($_GET["acl-rule-dir"]==1){$xORDER=$xORDER_ORG-1;}
-	if($_GET["acl-rule-dir"]==0){$xORDER=$xORDER_ORG+1;}
-	if($xORDER<0){$xORDER=0;}
-	$sql="UPDATE squid_auth_schemes_acls SET zorder=$xORDER WHERE `ID`='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-	if($_GET["acl-rule-dir"]==1){
-		$xORDER2=$xORDER+1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE squid_auth_schemes_acls SET zorder=$xORDER2 WHERE `ID`<>'$ID' AND zorder=$xORDER";
-		$q->QUERY_SQL($sql);
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
+	$ID=intval($_GET["acl-rule-move"]);
+	$dir=intval($_GET["acl-rule-dir"]);
+	list($ok,$err)=acls_api_send("PUT","/proxy/auth-schemes/acls/$ID/move",["dir"=>$dir]);
+	if(!$ok){
+		header("content-type: application/x-javascript");
+		echo "alert('".$tpl->javascript_parse_text($err)."');";
+		return;
 	}
-	if($_GET["acl-rule-dir"]==0){
-		$xORDER2=$xORDER-1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE squid_auth_schemes_acls SET zorder=$xORDER2 WHERE `ID`<>'{$_GET["acl-rule-move"]}'";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-	}
-
-	$c=0;
-	$sql="SELECT ID FROM squid_auth_schemes_acls ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE squid_auth_schemes_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if($GLOBALS["VERBOSE"]){echo "UPDATE squid_auth_schemes_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}\n";}
-		$c++;
-	}
-
-
+	if($GLOBALS["VERBOSE"]){echo "// rule_move ID=$ID dir=$dir OK\n";}
 }
 
 
@@ -308,53 +248,48 @@ function table(){
     $btns=$tpl->table_buttons($topbuttons);
 
 
-	$html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='number' style='width:1%'>$order</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>$rulename</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$description}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize center'>$enabled</th>";
-	$html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
+	$html[]="<th>$order</th>";
+	$html[]="<th class='awc-nowrap'>$rulename</th>";
+	$html[]="<th>{$description}</th>";
+	$html[]="<th class='center'>$enabled</th>";
+	$html[]="<th></th>";
+	$html[]="<th></th>";
+	$html[]="<th></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='authschemes-rows'>";
 	
-	$jsAfter="LoadAjax('table-proxyheader-rules','$page?table=yes');";
-	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-	$results=$q->QUERY_SQL("SELECT * FROM squid_auth_schemes_acls ORDER BY zorder");
+	$rows=acls_api_get("/proxy/auth-schemes/acls");
+	if(!is_array($rows)){$rows=[];}
 	$TRCLASS=null;
-	
-	
-	foreach($results as $index=>$ligne) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+
+	foreach($rows as $ligne) {
+		$TRCLASS=null;
 		$MUTED=null;
-		$ID=$ligne["ID"];
-		$ligne['rulename']=utf8_encode($ligne['rulename']);
-		
+		$ID=intval($ligne["id"]);
+		$ruleName=htmlspecialchars($ligne["ruleName"] ?? "");
+
 		$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
 		$js="Loadjs('$page?rule-id-js=$ID')";
-		if($ligne["enabled"]==0){$MUTED=" text-muted";}
-		
-	
+		if(intval($ligne["enabled"] ?? 1)==0){$MUTED=" text-muted";}
+
 		$explain=EXPLAIN_THIS_RULE($ID);
 		$up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
 		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
-		
-		
+
 		$html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
-		$html[]="<td class=\"center\" style='width:1%' nowrap>{$ligne["zorder"]}</td>";
-		$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
+		$html[]="<td class=\"center\" style='width:1%' nowrap>".intval($ligne["xOrder"] ?? 0)."</td>";
+		$html[]="<td style='vertical-align:middle' style='width:1%' nowrap>". $tpl->td_href($ruleName,"{click_to_edit}",$js)."</td>";
 		$html[]="<td style='vertical-align:middle'>$explain</td>";
-		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')")."</td>";
+		$html[]="<td class='center' style='width:1%' nowrap>".$tpl->icon_check(intval($ligne["enabled"] ?? 1),"Loadjs('$page?enable-js=$ID')")."</td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
 		$html[]="<td style='vertical-align:middle' width=1% class='center' nowrap>$delete</center></td>";
 		$html[]="</tr>";
-	
+
 	}
     $html[]="<tr class='$TRCLASS{$MUTED}' id='acl-$ID'>";
     $html[]="<td class=\"center\" style='width:1%' nowrap>999999</td>";
@@ -366,16 +301,10 @@ function table(){
     $html[]="</tr>";
 	
 	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='authschemes-pager'></span></div>";
+	$html[]="</div></div>";
 
 
     $TINY_ARRAY["BUTTONS"]=$btns;
@@ -392,82 +321,47 @@ function table(){
     NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 </script>";
 	
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"authschemes-rows","authschemes-pager");
     return true;
 }
 
 function new_rule_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-	
-	$rulename=sqlite_escape_string2(utf8_decode($_POST["rulename"]));
-	$headervalue=base64_encode($_POST["headervalue"]);
-	$TempName=md5(time());
-	
-	$FF[]="`rulename`";
-	$FF[]="`ztype`";
-	$FF[]="`aclport`";
-	$FF[]="`zorder`";
-	$FF[]="`enabled`";
-	
-	$FA[]="'$TempName'";
-	$FA[]="'{$_POST["ztype"]}'";
-	$FA[]="'{$_POST["aclport"]}'";
-	$FA[]=99999;
-	$FA[]=1;
-	
-
-	
-	$sql="INSERT INTO squid_auth_schemes_acls (".@implode(",", $FF).") VALUES (".@implode(",", $FA).")";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
-    admin_tracks("Creating a new authentication {$_POST["ztype"]} sheme rule $rulename");
-	
-	$ligne=$q->mysqli_fetch_array("SELECT ID FROM squid_auth_schemes_acls WHERE rulename='$TempName'");
-	$LASTID=$ligne["ID"];
-	
-	$q->QUERY_SQL("UPDATE squid_auth_schemes_acls SET rulename='$rulename' WHERE ID='$LASTID'");
-	
-	$c=0;
-	$sql="SELECT ID FROM squid_auth_schemes_acls ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE squid_auth_schemes_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return;}
-		$c++;
-	}
+	$body=[
+		"ruleName" => url_decode_special_tool($_POST["rulename"] ?? ""),
+		"zType"    => $_POST["ztype"]  ?? "",
+		"aclPort"  => intval($_POST["aclport"] ?? 0),
+	];
+	list($ok,$err)=acls_api_send("POST","/proxy/auth-schemes/acls",$body);
+	if(!$ok){echo htmlspecialchars($err);return;}
+    admin_tracks("Creating a new authentication {$_POST["ztype"]} scheme rule {$_POST["rulename"]}");
 }
 
 function rule_delete($ID){
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM squid_auth_schemes_acls WHERE ID=$ID");
-    $rulename=$ligne["rulename"];
-	$q->QUERY_SQL("DELETE FROM squid_auth_schemes_link WHERE aclid='$ID'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";return false;}
-	$q->QUERY_SQL("DELETE FROM squid_auth_schemes_acls WHERE ID='$ID'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";return false;}
-    admin_tracks("Deleted authentication rule $rulename");
+	$tpl=new template_admin();
+	$data=acls_api_get("/proxy/auth-schemes/acls/$ID");
+	$ruleName=is_array($data) ? ($data["ruleName"] ?? $ID) : $ID;
+	list($ok,$err)=acls_api_send("DELETE","/proxy/auth-schemes/acls/$ID");
+	if(!$ok){echo "alert('".$tpl->javascript_parse_text($err)."');";return false;}
+    admin_tracks("Deleted authentication rule $ruleName");
 	return true;
-	
 }
 function EXPLAIN_THIS_RULE($ID){
-
 	$acls=new squid_acls_groups();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM squid_auth_schemes_acls WHERE ID=$ID");
-	$aclport=$ligne["aclport"];
-	$ztype=$ligne["ztype"];
+	$data=acls_api_get("/proxy/auth-schemes/acls/$ID");
+	if(!is_array($data)){return "";}
+	$aclport=$data["aclPort"] ?? 0;
+	$ztype=$data["zType"]    ?? "";
 
 	$PORTS_DIRECTIONS=$acls->PORTS_DIRECTIONS();
-	$method[]="{when_connecting_to_method} &laquo;{$PORTS_DIRECTIONS[$aclport]}&raquo;, ";
-	$objects=$acls->getobjectsNameFromAclrule($ligne['ID'],"black","squid_auth_schemes_link");
+	$method[]="{when_connecting_to_method} &laquo;".($PORTS_DIRECTIONS[$aclport] ?? $aclport)."&raquo;, ";
+	$objects=$acls->getobjectsNameFromAclrule(intval($data["id"] ?? $ID),"black","squid_auth_schemes_link");
 	if(count($objects)>0){$method[]="{for_objects} ". @implode(", {and} ", $objects);}
 
-
-    $sheme=$GLOBALS["SCHEME"][$ztype];
-
+    $sheme=$GLOBALS["SCHEME"][$ztype] ?? $ztype;
 	$method[]="{then} {provide_auth_sheme} &laquo;&laquo;$sheme&raquo;&raquo;";
 	$FINAL=@implode(" ", $method);
 
@@ -476,7 +370,6 @@ function EXPLAIN_THIS_RULE($ID){
     if(isset($_GET["explain-this-rule"])){
         return $tpl->_ENGINE_parse_body($FINAL);
     }
-
-    return  $tpl->_ENGINE_parse_body("<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID'>$FINAL</span>");
+    return $tpl->_ENGINE_parse_body("<span id='explain-this-rule-$ID' data='$page?explain-this-rule=$ID'>$FINAL</span>");
 }
 

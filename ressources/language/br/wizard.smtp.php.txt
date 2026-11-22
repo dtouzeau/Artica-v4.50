@@ -1,17 +1,17 @@
 <company>Companhia</company>
 <company_domain>Dê aqui o nome da sua empresa que ser%C3¡ a referência da sua organizaç%C3£o e o nome do seu dom%C3%ADnio de mensagens que tenha domain.tld tem o seu primeiro nome de dom%C3%ADnio SMTP</company_domain>
 <company_domain_t>O nome da sua empresa e nome de dom%C3%ADnio</company_domain_t>
-<domain_routing>Routing Domain</domain_routing>
-<domain_routing_local>Your master domain will be stored locally in this server</domain_routing_local>
-<domain_routing_remote>You master domain need to be relayed to MDA system (a mailbox server)[br]Please give the name or the IP address of your mail server to relay mails trought Artica server</domain_routing_remote>
-<domain_routing_text>How your master domain will be relayed trought Postfix ?</domain_routing_text>
-<first_email>First email address</first_email>
-<first_email_text>Set the first user/eMail address that will in charge to receive system events and mail server notifications</first_email_text>
-<smtp_domain>SMTP domain name</smtp_domain>
-<smtp_relay>SMTP server address</smtp_relay>
-<welcome_first_wizard>Welcome on first wizard</welcome_first_wizard>
-<wizard_finish>Wizard is finish</wizard_finish>
-<wizard_finish_failed>Please come back to last pages, some elements are missing</wizard_finish_failed>
-<wizard_finish_text>Click on the Apply button in order to build your settings and make it in production mode</wizard_finish_text>
-<wizard_smtp_intro>This wizard will help you to define first parameters in order to make your server in production mode...
-Follow steps in order to activate messaging on this server...</wizard_smtp_intro>
+<domain_routing>Dom&#237;nio de encaminhamento</domain_routing>
+<domain_routing_local>O seu dom&#237;nio mestre ser&#225; armazenado localmente neste servidor</domain_routing_local>
+<domain_routing_remote>O seu dom&#237;nio mestre precisa ser retransmitido para o sistema MDA (um servidor de caixas de correio)[br]Indique o nome ou o endere&#231;o IP do seu servidor de e-mail para retransmitir e-mails atrav&#233;s do servidor Artica</domain_routing_remote>
+<domain_routing_text>Como o seu dom&#237;nio mestre ser&#225; retransmitido atrav&#233;s do Postfix?</domain_routing_text>
+<first_email>Primeiro endere&#231;o de e-mail</first_email>
+<first_email_text>Defina o primeiro endere&#231;o de usu&#225;rio/e-mail que ser&#225; respons&#225;vel por receber eventos do sistema e notifica&#231;&#245;es do servidor de e-mail</first_email_text>
+<smtp_domain>Nome de dom&#237;nio SMTP</smtp_domain>
+<smtp_relay>Endere&#231;o do servidor SMTP</smtp_relay>
+<welcome_first_wizard>Bem-vindo ao primeiro assistente</welcome_first_wizard>
+<wizard_finish>O assistente est&#225; conclu&#237;do</wizard_finish>
+<wizard_finish_failed>Volte &#224;s &#250;ltimas p&#225;ginas, alguns elementos est&#227;o em falta</wizard_finish_failed>
+<wizard_finish_text>Clique no bot&#227;o Aplicar para construir as suas configura&#231;&#245;es e coloc&#225;-las em modo de produ&#231;&#227;o</wizard_finish_text>
+<wizard_smtp_intro>Este assistente ajudar&#225; voc&#234; a definir os primeiros par&#226;metros para colocar o seu servidor em modo de produ&#231;&#227;o...
+Siga os passos para ativar as mensagens neste servidor...</wizard_smtp_intro>

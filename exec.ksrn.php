@@ -189,7 +189,7 @@ function update_version(){
         @unlink($old_krsn_dst);
         if(is_file("/root/squid-good.tgz")){@unlink("/root/squid-good.tgz");}
         squid_admin_mysql(0, "{shield_migration} (3)", null, __FILE__, __LINE__);
-        shell_exec("$php /usr/share/artica-postfix/exec.go.shield.server.php --install");
+        shell_exec("/usr/sbin/artica-phpfpm-service -rest-api /goshield/install ");
 
     }
     if(is_file($krsn_src)){@unlink($krsn_src);}

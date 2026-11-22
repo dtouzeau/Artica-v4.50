@@ -40,7 +40,7 @@ function run_remove(){
 	$unix=new unix();
 	$php=$unix->LOCATE_PHP5_BIN();
 	build_progress("{reconfiguring_proxy_service}",80);
-	system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+	system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 	build_progress("{reloading_proxy_service}",90);
 	squid_admin_mysql(2, "{reloading_proxy_service} (".__FUNCTION__.")", null,__FILE__,__LINE__);
 	shell_exec("/etc/init.d/squid reload --force --script=".basename(__FILE__));

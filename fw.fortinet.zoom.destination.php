@@ -1,4 +1,6 @@
 <?php
+// Pentest 2026-11-04 : record (adresse IP) etait recopie sans encodage dans la page et dans un commentaire JS (XSS).
+if(isset($_GET["record"])){$_GET["record"]=preg_replace('#[^0-9A-Fa-f.:]#','',(string)$_GET["record"]);}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
@@ -60,10 +62,16 @@ function popup(){
 
 }
 
+// Pentest 2026-11-04 : field et record etaient concatenes dans la requete.
+function zoom_destination_field($default){
+    $field=isset($_GET["field"])?strval($_GET["field"]):"";
+    if(!in_array($field,array("srcip","dstip","service"),true)){return $default;}
+    return $field;
+}
 function graph_top_sources_query(){
-    $record=$_GET["record"];
+    $record=pg_escape_string2($_GET["record"]);
     $time=$_GET["time"];
-    $field=$_GET["field"];
+    $field=zoom_destination_field("srcip");
     if($time=="today") {
         return "SELECT SUM(rcvbytes) as tsize,$field as zfield FROM fortigate_access WHERE dstip='$record' GROUP BY $field ORDER BY tsize DESC LIMIT 15";
     }
@@ -158,9 +166,10 @@ function graph_table(){
 }
 
 function linear_query(){
-    $record=$_GET["record"];
+    // Pentest 2026-11-04 : field et record etaient concatenes dans la requete.
+    $record=pg_escape_string2($_GET["record"]);
     $time=$_GET["time"];
-    $field=$_GET["field"];
+    $field=zoom_destination_field("dstip");
     if($time=="today") {
         return "SELECT SUM(rcvbytes) as tsize,zdate FROM fortigate_access WHERE $field='$record' GROUP BY zdate ORDER by zdate";
     }

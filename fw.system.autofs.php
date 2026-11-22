@@ -1,6 +1,12 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.autofs.inc");
+// Le kit de tables awc_* vit dans class.statistics_appliance.inc. L'inclusion doit
+// etre INCONDITIONNELLE : placee dans le bootstrap if(!class_exists("sockets")),
+// elle ne s'executerait jamais -- class.template-admin.inc a deja charge
+// class.sockets.inc -- et la page mourrait sur "Call to undefined function
+// awc_table_style()", c'est-a-dire un spinner qui ne se vide jamais.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_POST["SSH_UPDATE"])){ssh_form_save();exit;}
 if(isset($_GET["main"])){main();exit;}
@@ -8,7 +14,6 @@ if(isset($_GET["wizard"])){wizard_js();exit;}
 if(isset($_GET["wizard1"])){wizard1();exit;}
 if(isset($_GET["wizard-js2"])){wizard_js2();exit;}
 if(isset($_GET["wizard2"])){wizard2();exit;}
-if(isset($_POST["ID"])){zone_save();exit;}
 if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_GET["enable-js"])){enable_js();exit;}
 if(isset($_POST["wizard1"])){save();exit;}
@@ -47,10 +52,12 @@ function enable_js():bool{
     $md=$_GET["md"];
     $mountpointenc=urlencode($mountpoint);
 	$q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM autofs WHERE mountpoint='$mountpoint'");
+	// Pentest 2026-11-04 : enable-js (GET) etait concatene dans la requete.
+	$rows=$q->QUERY_SQL_PARAMS("SELECT enabled FROM autofs WHERE mountpoint=?",array($mountpoint));
+	$ligne=(is_array($rows) && isset($rows[0]))?$rows[0]:array();
 	if(!$q->ok){echo "alert('$q->mysql_error')";return false;}
 	if(intval($ligne["enabled"])==0){$enable=1;}else{$enable=0;}
-	$q->QUERY_SQL("UPDATE autofs SET enabled='$enable' WHERE mountpoint='$mountpoint'");
+	$q->QUERY_SQL_PARAMS("UPDATE autofs SET enabled=? WHERE mountpoint=?",array($enable,$mountpoint));
     if($enable==0) {
         admin_tracks("Disable auto-mount point $mountpoint");
     }else{
@@ -89,8 +96,9 @@ function autofs_status():bool{
 function ssh_form_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $idenc=$_GET["ssh-form-js"];
-    $id=base64_decode($idenc);
+    // Pentest 2026-11-04 : ssh-form-js etait recopie sans encodage dans la page (XSS).
+    $idenc=preg_replace('#[^A-Za-z0-9+/=]#','',(string)$_GET["ssh-form-js"]);
+    $id=req_html(req_html(base64_decode($idenc)));
     $tpl->js_dialog2("SSH: $id","$page?ssh-form-popup=$idenc",850);
     return true;
 
@@ -98,8 +106,9 @@ function ssh_form_js():bool{
 function sftp_form_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $idenc=$_GET["sftp-form-js"];
-    $id=base64_decode($idenc);
+    // Pentest 2026-11-04 : sftp-form-js etait recopie sans encodage dans la page (XSS).
+    $idenc=preg_replace('#[^A-Za-z0-9+/=]#','',(string)$_GET["sftp-form-js"]);
+    $id=req_html(req_html(base64_decode($idenc)));
     $tpl->js_dialog2("FTP: $id","$page?sftp-form-popup=$idenc",850);
     return true;
 }
@@ -119,21 +128,23 @@ function wizard_js2():bool{
 }
 
 function delete_js():bool{
-	$id=$_GET["delete-js"];
-	$md=$_GET["id"];
+	// Pentest 2026-11-04 : delete-js et id etaient recopies sans encodage dans la page (XSS).
+	$id=(string)$_GET["delete-js"];
+	$md=preg_replace('#[^A-Za-z0-9_-]#','',(string)$_GET["id"]);
 	$tpl=new template_admin();
 	$final="$('#$md').remove();";
-	$tpl->js_confirm_delete($id, "delete", $id,$final);
+	$tpl->js_confirm_delete(req_html($id), "delete", $id,$final);
     return true;
 }
 
 function delete():bool{
 	$id=$_POST["delete"];
 	$q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
-	$q->QUERY_SQL("DELETE FROM autofs WHERE mountpoint='$id'");
+	// Pentest 2026-11-04 : delete (POST) etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM autofs WHERE mountpoint=?",array($id));
 	if(!$q->ok){echo $q->mysql_error;return false;}
     admin_tracks("Removing Auto-mount connection $id");
-	$q->QUERY_SQL("DELETE FROM automount_davfs WHERE local_dir='$id'");
+	$q->QUERY_SQL_PARAMS("DELETE FROM automount_davfs WHERE local_dir=?",array($id));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/autofs/reconfigure");
     return true;
 
@@ -264,9 +275,12 @@ function sftp_form_popup():bool{
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
     $autofs=new autofs();
-    $idenc=$_GET["sftp-form-popup"];
+    // Pentest 2026-11-04 : sftp-form-popup etait recopie sans encodage dans la page (XSS).
+    $idenc=preg_replace('#[^A-Za-z0-9+/=]#','',(string)$_GET["sftp-form-popup"]);
     $id=base64_decode($idenc);
-    $ligne=$q->mysqli_fetch_array("SELECT automountInformation FROM autofs WHERE mountpoint='$id'");
+    // Pentest 2026-11-04 : le point de montage (GET, base64) etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT automountInformation FROM autofs WHERE mountpoint=?",array($id));
+    $ligne=(is_array($rows) && isset($rows[0]))?$rows[0]:array();
     $automountInformation=base64_decode($ligne["automountInformation"]);
     $ARRAY=$autofs->parseCommand($automountInformation);
     $form[]=$tpl->field_hidden("ftpid",$idenc);
@@ -303,7 +317,8 @@ function sftp_form_save():bool{
     admin_tracks("Saving Automount FTP session {$_POST["PROXYSERVER"]}");
     $encrypt=base64_encode("sftp:".base64_encode(serialize($_POST)));
     $q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
-    $q->QUERY_SQL("UPDATE autofs SET automountInformation='$encrypt' WHERE mountpoint='$id'");
+    // Pentest 2026-11-04 : ftpid (POST) etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE autofs SET automountInformation=? WHERE mountpoint=?",array($encrypt,$id));
     if(!$q->ok){
         $tpl->post_error($q->mysql_error);
         return false;
@@ -318,9 +333,12 @@ function ssh_form_popup():bool{
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
     $autofs=new autofs();
-    $idenc=$_GET["ssh-form-popup"];
+    // Pentest 2026-11-04 : ssh-form-popup etait recopie sans encodage dans la page (XSS).
+    $idenc=preg_replace('#[^A-Za-z0-9+/=]#','',(string)$_GET["ssh-form-popup"]);
     $id=base64_decode($idenc);
-    $ligne=$q->mysqli_fetch_array("SELECT automountInformation FROM autofs WHERE mountpoint='$id'");
+    // Pentest 2026-11-04 : le point de montage (GET, base64) etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT automountInformation FROM autofs WHERE mountpoint=?",array($id));
+    $ligne=(is_array($rows) && isset($rows[0]))?$rows[0]:array();
     $automountInformation=base64_decode($ligne["automountInformation"]);
     $ARRAY=$autofs->parseCommand($automountInformation);
     $form[]=$tpl->field_hidden("SSH_UPDATE",$id);
@@ -349,35 +367,45 @@ function ssh_form_save():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
     $autofs=new autofs();
     
-    $ligne=$q->mysqli_fetch_array("SELECT automountInformation FROM autofs WHERE mountpoint='$id'");
+    // Pentest 2026-11-04 : SSH_UPDATE (POST) etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT automountInformation FROM autofs WHERE mountpoint=?",array($id));
+    $ligne=(is_array($rows) && isset($rows[0]))?$rows[0]:array();
     $automountInformation=base64_decode($ligne["automountInformation"]);
     $ARRAY=$autofs->parseCommand($automountInformation);
 
-    $PRIVKEY=trim($_POST["PRIVKEY"]);
-    $OLD_PRIVKEY=trim($ARRAY["PRIVKEY"]);
+    $PRIVKEY=trim($_POST["PRIVKEY"] ?? "");
+    $OLD_PRIVKEY=trim($ARRAY["PRIVKEY"] ?? "");
     if(!isset($_POST["AUTHKEY"])){
         $_POST["AUTHKEY"]=null;
     }
 
-    if($_POST["AUTHKEY"]==null){
-        $md=md5($PRIVKEY);
-        @file_put_contents(PROGRESS_DIR."/$md.key",$PRIVKEY);
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("sshd.php?ssh-kegen-key=$md");
-        $_POST["AUTHKEY"]=@file_get_contents(PROGRESS_DIR."/$md.keygen");
-    }
-
-    if($PRIVKEY<>$OLD_PRIVKEY){
-        writelogs("PROVKEY DIFFER",__FUNCTION__,__FILE__,__LINE__);
-        $md=md5($PRIVKEY);
-        @file_put_contents(PROGRESS_DIR."/$md.key",$PRIVKEY);
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("sshd.php?ssh-kegen-key=$md");
-        $_POST["AUTHKEY"]=@file_get_contents(PROGRESS_DIR."/$md.keygen");
+    // Derive the public key when we have none, or when the private key was
+    // edited. These were two separate blocks, each writing the private key to
+    // PROGRESS_DIR/<md5-of-the-key>.key so framework/sshd.php?ssh-kegen-key
+    // could run `ssh-keygen -y` and leave the answer in a sibling file. The key
+    // now travels in the request body and never touches the disk.
+    if($PRIVKEY<>null){
+        if($PRIVKEY<>$OLD_PRIVKEY){
+            writelogs("Private key changed, deriving a new public key",__FUNCTION__,__FILE__,__LINE__);
+        }
+        if($_POST["AUTHKEY"]==null || $PRIVKEY<>$OLD_PRIVKEY){
+            $pubkey=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/ssh/keypair/publickey",array("PrivateKey"=>$PRIVKEY)));
+            if(!is_object($pubkey) || !isset($pubkey->Status) || !$pubkey->Status){
+                $keyError="Unable to read this private key.";
+                if(is_object($pubkey) && isset($pubkey->Error) && strlen($pubkey->Error)>0){
+                    $keyError="$keyError\n{$pubkey->Error}";
+                }
+                echo $keyError;
+                return false;
+            }
+            $_POST["AUTHKEY"]=$pubkey->AuthorizedKey;
+        }
     }
 
     foreach ($_POST as $key=>$val){$ARRAY[$key]=$val;}
     $pattern=":sshfs:".base64_encode(serialize($_POST));
     $pattern=base64_encode($pattern);
-    $q->QUERY_SQL("UPDATE autofs SET automountInformation='$pattern' WHERE mountpoint='$id'");
+    $q->QUERY_SQL_PARAMS("UPDATE autofs SET automountInformation=? WHERE mountpoint=?",array($pattern,$id));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/autofs/reconfigure");
     return true;
 }
@@ -444,14 +472,31 @@ function save_final():bool{
     if(isset($_POST["SSH_SERVER"])){
         $local_dir=addslashes($_POST["SSH_LOCAL_DIR"]);
         if($local_dir==null){$local_dir="ssh_".time();}
-        $sock=new sockets();
-        $time=time();
-        $tfile=PROGRESS_DIR."/$time";
-        $sock->getFrameWork("sshd.php?build-key-pair=$time");
-        $data=unserialize(@file_get_contents($tfile));
-        $_POST["PRIVKEY"]=$data["PRIV"];
-        $_POST["PUBLICKEY"]=$data["PUB"];
-        $_POST["AUTHKEY"]=$data["KEYGEN"];
+        // Key material comes back inside the response. The old path called
+        // framework/sshd.php?build-key-pair=<time>, which wrote a serialized
+        // file under PROGRESS_DIR for this line to read back — and never
+        // reported failure, so a missing ssh-keypair-gen binary silently saved
+        // a mount with empty keys.
+        $keys=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/ssh/keypair/build"));
+        if(!is_object($keys)){
+            echo "Unable to generate the SSH key pair: no answer from the service.";
+            return false;
+        }
+        if(!isset($keys->Status) || !$keys->Status){
+            $sshError="Unable to generate the SSH key pair.";
+            if(isset($keys->Error) && strlen($keys->Error)>0){$sshError="$sshError\n{$keys->Error}";}
+            echo $sshError;
+            return false;
+        }
+        // Same 50-byte floor the autofs configurator applies before writing the
+        // sshfs identity file — refuse here rather than fail at mount time.
+        if(!isset($keys->PrivateKey) || strlen($keys->PrivateKey)<50){
+            echo "Unable to generate the SSH key pair: the returned private key is empty or truncated.";
+            return false;
+        }
+        $_POST["PRIVKEY"]=$keys->PrivateKey;
+        $_POST["PUBLICKEY"]=$keys->PublicKey;
+        $_POST["AUTHKEY"]=$keys->AuthorizedKey;
         $pattern=":sshfs:".base64_encode(serialize($_POST));
 
     }
@@ -488,7 +533,7 @@ function save_final():bool{
 	if(isset($_POST["HTTP_LOCAL_DIR"])){
 		$uri=$_POST["HTTP_SERVER"];
 		if(!preg_match("#^http.*?:\/\/#",$uri,$re)){
-			echo "{$_POST["HTTP_SERVER"]}: Bad format\nuse https://... or http://...";
+			echo req_html($_POST["HTTP_SERVER"]).": Bad format\nuse https://... or http://...";
 			return false;
 		}
 		$_POST["HTTP_LOCAL_DIR"]=strtolower($tpl->StripSpecialsChars($_POST["HTTP_LOCAL_DIR"]));
@@ -500,8 +545,10 @@ function save_final():bool{
 		$password=addslashes($_POST["HTTP_PASSWORD"]);
 		$user=addslashes($_POST["HTTP_USER"]);
 		$local_dir=addslashes($_POST["HTTP_LOCAL_DIR"]);
-		$q->QUERY_SQL("DELETE FROM automount_davfs WHERE local_dir='$local_dir'");
-		$q->QUERY_SQL("INSERT INTO automount_davfs (user,password,uri,local_dir) VALUES ('$user','$password','$uri','$local_dir')");
+		// Pentest 2026-11-04 : addslashes() n'echappe rien en SQLite ; user/password/uri/local_dir
+		// (POST) etaient concatenes dans la requete.
+		$q->QUERY_SQL_PARAMS("DELETE FROM automount_davfs WHERE local_dir=?",array($local_dir));
+		$q->QUERY_SQL_PARAMS("INSERT INTO automount_davfs (user,password,uri,local_dir) VALUES (?,?,?,?)",array($user,$password,$uri,$local_dir));
 		if(!$q->ok){echo $q->mysql_error;return false;}
 	}
 	$pattern=base64_encode($pattern);
@@ -510,7 +557,8 @@ function save_final():bool{
     $q->QUERY_SQL($sql);
 	if(!$q->ok){echo $q->mysql_error."<br>$sql";return false;}
 
-	$q->QUERY_SQL("INSERT OR IGNORE INTO autofs (mountpoint,enabled,automountInformation) VALUES ('$local_dir',1,'$pattern')");
+	// Pentest 2026-11-04 : le repertoire local (POST) etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("INSERT OR IGNORE INTO autofs (mountpoint,enabled,automountInformation) VALUES (?,1,?)",array($local_dir,$pattern));
 	if(!$q->ok){echo $q->mysql_error;}
     admin_tracks_post("Saving Auto-mount connection:");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/autofs/reconfigure");
@@ -569,26 +617,26 @@ function main(){
 
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
-    $html[]="<td style='vertical-align:top;width:200px'  nowrap>";
-    $html[]="<div id='autofs-status' style='width:200px'></div>";
+    // La tuile rendue par widget_vert/widget_grey fait 335px : une cellule de 200px
+    // la laissait deborder sur le tableau et rogner sa premiere colonne.
+    $html[]="<td style='vertical-align:top;width:350px' nowrap>";
+    $html[]="<div id='autofs-status' style='width:335px'></div>";
     $html[]="</td>";
     $html[]="<td style='vertical-align:top;width:76%'>";
-	$html[]="<table id='table-dns-forward-zones' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-
-	$TRCLASS=null;
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>&nbsp;</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{$local_directory_name}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$proto</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$source</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$uri</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>$enable</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>$delete</center></th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]=awc_table_style();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'>";
+	$html[]="<thead><tr>";
+	$html[]="<th>{$local_directory_name}</th>";
+	$html[]="<th>$proto</th>";
+	$html[]="<th>$source</th>";
+	$html[]="<th>$uri</th>";
+	$html[]="<th class='center'>$enable</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead>";
+	// L'id du <tbody> est le point d'ancrage de awc_pager_js() : sans lui le pager
+	// rend vide et toutes les lignes s'affichent d'un bloc, en silence.
+	$html[]="<tbody id='autofs-rows'>";
 
 
     $q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
@@ -601,7 +649,6 @@ function main(){
 	
 	$autofs=new autofs(null,true);
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$color_href=null;
 		$md=md5(serialize($ligne));
 		$id=$ligne["mountpoint"];
@@ -609,7 +656,7 @@ function main(){
 		$automountInformation=base64_decode($ligne["automountInformation"]);
         $configured=1;
 
-        $main_status="<span id='main-status-$md'><span class='label label-default'>{inactive}</span></span>";
+        $main_status="<span class='awc-badge awc-badge-off'>{inactive}</span>";
 
 
 		$ARRAY=$autofs->parseCommand($automountInformation);
@@ -664,24 +711,40 @@ function main(){
 
 
         if($configured==1){
-            $main_status="<span id='main-status-$md'><span class='label label-primary'>{active2}</span></span>";
+            $main_status="<span class='awc-badge awc-badge-on'>{active2}</span>";
         }
 
-		$html[]="<tr class='$TRCLASS' id='$md' $color_href>";
-        $html[]="<td $color_href style='width:1%;text-align: center' nowrap>$main_status</td>";
-        $html[]="<td $color_href style='width:1%;text-align: center' nowrap>
-                <span id='folder-$md'>$status</span></td>";
-        $html[]="<td $color_href style='width:1%' nowrap><span id='dir-$md'>$local_directory_uri</span></td>";
-		$html[]="<td>{$ARRAY["FS"]}</td>";
-		$html[]="<td>{$ARRAY["SRC"]}$ttoltip_error</td>";
-		$html[]="<td>{$ARRAY["BROWSER_URI"]}</td>";
-		$html[]="<td class=center style='width:1%'>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js={$ligne["mountpoint"]}&md=$md')",null,"AsDnsAdministrator")."</center></td>";
-		$html[]="<td class=center style='width:1%'>".$tpl->icon_delete("Loadjs('$page?delete-js=$idenc&id=$md')","AsDnsAdministrator")."</center></td>";
-		$html[]="</tr>";
+		// Les quatre identifiants ci-dessous sont pilotes en direct par row_status() :
+		// le <tr> lui-meme, folder-$md, dir-$md et main-status-$md. Les perdre
+		// couperait le rafraichissement de ligne sans aucune erreur visible.
+		$off=($configured==1)?"":" awc-ico-off";
+		$offn=($configured==1)?"":" awc-name-off";
+		$h ="<tr id='$md'>";
+		$h.="<td><div class='awc-ident'>";
+		$h.="<span class='awc-ico$off' id='folder-$md'>$status</span>";
+		$h.="<span><span class='awc-name$offn' id='dir-$md'>$local_directory_uri</span>";
+		$h.="<div class='awc-meta'>".htmlspecialchars((string)$id)."</div>";
+		$h.="</span></div></td>";
+		$h.="<td class='awc-mono'>".htmlspecialchars((string)$ARRAY["FS"])."</td>";
+		$h.="<td>{$ARRAY["SRC"]}$ttoltip_error</td>";
+		$h.="<td class='awc-mono'>{$ARRAY["BROWSER_URI"]}</td>";
+		$h.="<td class='center'><span id='main-status-$md'>$main_status</span></td>";
+		$h.="<td><div class='awc-acts'>";
+		$h.=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js={$ligne["mountpoint"]}&md=$md')",null,"AsDnsAdministrator");
+		$h.=$tpl->icon_delete("Loadjs('$page?delete-js=$idenc&id=$md')","AsDnsAdministrator");
+		$h.="</div></td>";
+		$h.="</tr>";
+		$html[]=$h;
 	}
 
+	if(count($results)==0){
+		$html[]="<tr><td colspan='6'><div class='awc-empty'>{no_mount_points}</div></td></tr>";
+	}
 	$html[]="</tbody>";
-	$html[]="</table>";
+	$html[]="</table></div>";
+	$html[]="<div class='awc-foot'><span>".count($results)." {mount_points}</span>";
+	$html[]="<span class='awc-pg' id='autofs-pager'></span></div>";
+	$html[]="</div></div>";
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</table>";
@@ -694,12 +757,14 @@ function main(){
     $jsRefresh=$tpl->RefreshInterval_js("autofs-status",$page,"autofs-status=yes");
 	$html[]="
 	<script>
-        NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
+        NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."
         $jstiny
         $jsRefresh
     </script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    // Le pager se concatene APRES l'analyse : le corps de sa fonction serait lu
+    // comme un {token} par le regex #{(.+?)}# de _ENGINE_parse_body.
+    echo $tpl->_ENGINE_parse_body($html).awc_pager_js(25,"autofs-rows","autofs-pager");
     return true;
 }
 function CheckDir($DirPathEnc):string{
@@ -732,16 +797,22 @@ function row_status():bool{
     $local_directory_name="/automounts/$mountpoint";
     $local_directory_nameurl=urlencode("$local_directory_name");
     $local_directory_nameenc=base64_encode($local_directory_name);
-    $local_directory_uri=$tpl->td_href($local_directory_name,"{browse}","Loadjs('fw.browse-directory2.php?field-id=0&title=$local_directory_nameurl&basepath=$local_directory_nameenc')");
+    // Pentest 2026-11-04 : row-status etait recopie sans encodage dans la page (XSS).
+    $local_directory_nameH=req_html($local_directory_name);
+    $local_directory_uri=$tpl->td_href($local_directory_nameH,"{browse}","Loadjs('fw.browse-directory2.php?field-id=0&title=$local_directory_nameurl&basepath=$local_directory_nameenc')");
 
     $q=new lib_sqlite("/home/artica/SQLITE/autofs.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM autofs WHERE mountpoint='$mountpoint'");
+    // Pentest 2026-11-04 : row-status (GET) etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT * FROM autofs WHERE mountpoint=?",array($mountpoint));
+    $ligne=(is_array($rows) && isset($rows[0]))?$rows[0]:array();
 
     $automountInformation=base64_decode($ligne["automountInformation"]);
     $configured=1;
 
     $status = "<i class='text-danger fa-solid fa-folder'></i>";
-    $main_status="<span class='label label-default'>{inactive}</span>";
+    // Meme balisage que la table : un label Bootstrap ici ferait retomber la ligne
+    // rafraichie sur l'ancien style, une fois sur deux selon qu'elle a ete redessinee.
+    $main_status="<span class='awc-badge awc-badge-off'>{inactive}</span>";
 
 
     $ARRAY=$autofs->parseCommand($automountInformation);
@@ -750,10 +821,10 @@ function row_status():bool{
     if(!isset($LOCALDIRS[$mountpoint])) {$configured=0;}
 
     if($configured==1) {
-        $main_status = "<span class='label label-primary'>{active2}</span>";
+        $main_status = "<span class='awc-badge awc-badge-on'>{active2}</span>";
         $OPEN = CheckDir($local_directory_uri);
         if ($OPEN == "") {
-            $local_directory_uri=$local_directory_name;
+            $local_directory_uri=$local_directory_nameH;
         }else{
             $status="<i class='fa-solid fa-folder' style='color:rgb(24, 166, 137)'></i>";
         }
@@ -763,7 +834,7 @@ function row_status():bool{
     if($ligne["enabled"]==0){
         VERBOSE("$local_directory_name configured=0 (disabled)",__LINE__);
         $status="<i class='fa-solid fa-folder'></i>";
-        $local_directory_uri=$local_directory_name;
+        $local_directory_uri=$local_directory_nameH;
         $color_href="#A0A0A0";
     }
 

@@ -36,6 +36,8 @@ class UploadHandler
         'max_height' => 'Image exceeds maximum height',
         'min_height' => 'Image requires a minimum height',
         'abort' => 'File upload aborted',
+        // %free et %dir sont remplaces par disk_full_message().
+        'disk_full' => 'There is no space left on the disk to receive this file (%free free in %dir). Free some disk space, then try again.',
         'image_resize' => 'Failed to resize image'
     );
 
@@ -364,9 +366,54 @@ class UploadHandler
         return $this->fix_integer_overflow($val);
     }
 
+    // Disque plein : PHP ne sait que dire "Failed to write file to disk" (code 7),
+    // ou bien le deplacement vers upload_dir est tronque ("File upload aborted").
+    // Le code 7 vient aussi d'un dossier temporaire non inscriptible : on n'accuse
+    // le disque que si l'espace libre est vraiment inferieur a ce qui a ete envoye.
+    protected function disk_full_message($dir, $needed) {
+        if (!is_dir($dir)) {
+            return null;
+        }
+        $free = @disk_free_space($dir);
+        if ($free === false) {
+            return null;
+        }
+        $needed = max((float)$needed, 1048576.0);
+        if ($free >= $needed) {
+            return null;
+        }
+        $units = array('B', 'KB', 'MB', 'GB', 'TB');
+        $human = (float)$free;
+        $i = 0;
+        while ($human >= 1024 && $i < count($units) - 1) {
+            $human /= 1024;
+            $i++;
+        }
+        $human = ($i == 0 ? (string)(int)$human : sprintf('%.1f', $human)).' '.$units[$i];
+        return str_replace(array('%free', '%dir'), array($human, rtrim($dir, '/')),
+            $this->get_error_message('disk_full'));
+    }
+
+    protected function upload_tmp_dir() {
+        $dir = ini_get('upload_tmp_dir');
+        if (!$dir) {
+            $dir = sys_get_temp_dir();
+        }
+        return $dir;
+    }
+
     protected function validate($uploaded_file, $file, $error, $index) {
         if ($error) {
             $file->error = $this->get_error_message($error);
+            if ((int)$error === UPLOAD_ERR_CANT_WRITE) {
+                $needed = $this->fix_integer_overflow(
+                    (int)$this->get_server_var('CONTENT_LENGTH')
+                );
+                $full = $this->disk_full_message($this->upload_tmp_dir(), $needed);
+                if ($full !== null) {
+                    $file->error = $full;
+                }
+            }
             return false;
         }
         $content_length = $this->fix_integer_overflow(
@@ -1103,8 +1150,13 @@ class UploadHandler
             } else {
                 $file->size = $file_size;
                 if (!$content_range && $this->options['discard_aborted_uploads']) {
-                    unlink($file_path);
+                    @unlink($file_path);
                     $file->error = $this->get_error_message('abort');
+                    // Copie tronquee : le plus souvent upload_dir est plein.
+                    $full = $this->disk_full_message($upload_dir, $file->size);
+                    if ($full !== null) {
+                        $file->error = $full;
+                    }
                 }
             }
             $this->set_additional_file_properties($file);

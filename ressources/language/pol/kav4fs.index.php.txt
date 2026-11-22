@@ -1,12 +1,11 @@
-<APP_KAV4FS_ABOUT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.[br]
-Kaspersky Anti-Virus for Linux allows to:
+<APP_KAV4FS_ABOUT>Kaspersky Anti-virus for Linux File Server jest przeznaczony do ochrony serwer&#243;w plik&#243;w dzia&#322;aj&#261;cych w systemach operacyjnych Linux.[br]
+Kaspersky Anti-Virus dla Linux umo&#380;liwia:
 [ul] 
-[li]Ensure real-time protection of the file system against malicious code:[br]
-intercept and analyze attempts to access files, disinfect and delete infected objects.[/li]
-[li]Scan objects on-demand: search infected and suspicious files (including files in the specified scan scopes); analyze files; disinfect or delete infected files.[/li]
-[li]Quarantine suspicious and infected files.[/li]
-[li]Create a copy of an infected object in the backup storage before disinfect or delete attempt to make it possible to restore such an object.[/li]
-[/ul]
-</APP_KAV4FS_ABOUT>
-<APP_KAV4FS_TEXT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.</APP_KAV4FS_TEXT>
-<LICENSE_INSTALL>Install a license</LICENSE_INSTALL>
+[li]Zapewnienie ochrony systemu plik&#243;w w czasie rzeczywistym przed z&#322;o&#347;liwym kodem:[br]
+przechwytywanie i analizowanie pr&#243;b dost&#281;pu do plik&#243;w, leczenie i usuwanie zainfekowanych obiekt&#243;w.[/li]
+[li]Skanowanie obiekt&#243;w na &#380;&#261;danie: wyszukiwanie zainfekowanych i podejrzanych plik&#243;w (w tym plik&#243;w w okre&#347;lonych zakresach skanowania); analizowanie plik&#243;w; leczenie lub usuwanie zainfekowanych plik&#243;w.[/li]
+[li]Poddawanie kwarantannie podejrzanych i zainfekowanych plik&#243;w.[/li]
+[li]Tworzenie kopii zainfekowanego obiektu w magazynie kopii zapasowych przed pr&#243;b&#261; leczenia lub usuni&#281;cia, aby umo&#380;liwi&#263; przywr&#243;cenie takiego obiektu.[/li]
+[/ul]</APP_KAV4FS_ABOUT>
+<APP_KAV4FS_TEXT>Kaspersky Anti-virus for Linux File Server jest przeznaczony do ochrony serwer&#243;w plik&#243;w dzia&#322;aj&#261;cych w systemach operacyjnych Linux.</APP_KAV4FS_TEXT>
+<LICENSE_INSTALL>Zainstaluj licencj&#281;</LICENSE_INSTALL>

@@ -1,14 +1,14 @@
-<add_nameserver>Add a name server</add_nameserver>
+<add_nameserver>A&#241;adir un servidor de nombres</add_nameserver>
 <add_nameserver_text>Indique la direcci%C3%B3n IP o el nombre de host de su servidor DNS</add_nameserver_text>
-<add_search_domains>Add a search domain</add_search_domains>
-<add_search_domain_text>Give a domain name</add_search_domain_text>
+<add_search_domains>A&#241;adir un dominio de b&#250;squeda</add_search_domains>
+<add_search_domain_text>Indique un nombre de dominio</add_search_domain_text>
 <infos_dnsmasq>[br][b]Nota: DNSMASQ est%C3¡ instalado[/b], en este caso, la configuraci%C3%B3n de DNS dirigir%C3¡ la configuraci%C3%B3n local de DNSMASQ en lugar de su configuraci%C3%B3n de red.
 [br]La configuraci%C3%B3n de los servidores DNS de la red s%C3%B3lo apuntar%C3¡ al proceso local de DNSMASQ[br].</infos_dnsmasq>
-<nic_dns_search>Search list for host-name lookup</nic_dns_search>
-<nic_dns_search_text>The search list is normally determined from the local domain name; by default, it contains only the local domain name.&lt;br&gt; This may be changed by listing the desired domain search path.&lt;br&gt;
-If you refer to another server just by its name without the domain added on, DNS on your client will append the server name 
-to each domain in this list and do an DNS lookup on each to get the remote servers IP address.&lt;br&gt;
-This is a handy time saving feature to have so that you can refer to servers in the same domain by only their servername without having to specify the domain.
-&lt;br&gt;&lt;strong&gt;The first domain listed must be the home domain of your network and The search list is currently limited to six domains with a total of 256 characters.</nic_dns_search_text>
+<nic_dns_search>Lista de b&#250;squeda para la resoluci&#243;n de nombres de host</nic_dns_search>
+<nic_dns_search_text>La lista de b&#250;squeda se determina normalmente a partir del nombre de dominio local; por defecto, contiene solo el nombre de dominio local.&lt;br&gt; Esto puede cambiarse listando la ruta de b&#250;squeda de dominios deseada.&lt;br&gt;
+Si se refiere a otro servidor solo por su nombre sin el dominio a&#241;adido, el DNS de su cliente a&#241;adir&#225; el nombre del servidor 
+a cada dominio de esta lista y har&#225; una b&#250;squeda DNS en cada uno para obtener la direcci&#243;n IP de los servidores remotos.&lt;br&gt;
+Esta es una pr&#225;ctica funci&#243;n para ahorrar tiempo, de modo que pueda referirse a servidores del mismo dominio solo por su nombre de servidor sin tener que especificar el dominio.
+&lt;br&gt;&lt;strong&gt;El primer dominio listado debe ser el dominio principal de su red y la lista de b&#250;squeda est&#225; actualmente limitada a seis dominios con un total de 256 caracteres.</nic_dns_search_text>
 <nic_nameserver_text>Direcciones IP de sus servidores DNS.[br]La biblioteca de resoluci%C3%B3n los consulta en el orden indicado</nic_nameserver_text>
-<nic_static_dns_text>If your ISP provides you with a fixed or static IP DNS address server, and you want to host your own mail server</nic_static_dns_text>
+<nic_static_dns_text>Si su ISP le proporciona un servidor de direcciones DNS de IP fija o est&#225;tica, y desea alojar su propio servidor de correo</nic_static_dns_text>

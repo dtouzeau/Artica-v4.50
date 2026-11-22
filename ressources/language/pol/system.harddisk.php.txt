@@ -1,2 +1,2 @@
-<folders_statistics>Folders statistics</folders_statistics>
-<parameters_text>You can modify/add folders you want to see in the statistics pie</parameters_text>
+<folders_statistics>Statystyki folder&#243;w</folders_statistics>
+<parameters_text>Mo&#380;esz modyfikowa&#263;/dodawa&#263; foldery, kt&#243;re chcesz widzie&#263; na wykresie ko&#322;owym statystyk</parameters_text>

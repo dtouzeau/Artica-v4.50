@@ -2,6 +2,7 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.autofs.inc");
+include_once(dirname(__FILE__)."/ressources/class.syslog.tls.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_POST["LogSynWazuh"])){backup_parameters_save();exit;}
 if(isset($_POST["LogSynRTEnabled"])){backup_parameters_save();exit;}
@@ -19,15 +20,8 @@ if(isset($_GET["directory-params-popup"])){directory_params_popup();exit;}
 if(isset($_GET["backup-params-popup"])){backup_parameters_popup();exit;}
 if(isset($_POST["client_hostname"])){client_package_save();exit;}
 if(isset($_POST["RsyslogInterface"])){save();exit;}
-if(isset($_GET["refeshindex"])){refeshindex();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["status-start"])){status_start();exit;}
-if(isset($_GET["logs-sink-install"])){log_sink_install();exit;}
-if(isset($_GET["logs-sink-uninstall"])){log_sink_uninstall();exit;}
-if(isset($_GET["disable-ssl-ask"])){disable_ssl_ask();exit;}
-if(isset($_POST["disable-ssl"])){disable_ssl_confirm();exit;}
-if(isset($_GET["download-ca"])){download_ca();exit;}
-if(isset($_GET["client-package-js"])){client_package_js();exit;}
 if(isset($_GET["client-package-popup"])){client_package_popup();exit;}
 if(isset($_GET["client-package-download"])){client_package_download();exit;}
 if(isset($_GET["logsink-status"])){service_status();exit;}
@@ -71,7 +65,12 @@ function tabs(){
 function run_backup_js():bool{
     $tpl=new template_admin();
     admin_tracks("Launched Log Sink backup task manually");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("syslog.php?log-sink-backup=yes");
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/syslog/logsink/backup?force=1"));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        $error=(is_object($json) && isset($json->Error))?$json->Error:"articarest: ".json_last_error_msg();
+        $tpl->js_error($error);
+        return false;
+    }
     $tpl->js_display_results("{run_backup_performed}",false,$tpl->javascript_parse_text("{run_backup}"));
     return true;
 }
@@ -236,76 +235,36 @@ function backup_parameters_save():bool{
     $tpl=new template_admin();
     $tpl->SAVE_POSTs();
     admin_tracks_post("Saving Log sink parameters");
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("syslog.php?log-sink-params=yes");
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/syslog/logsink/schedules"));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        echo (is_object($json) && isset($json->Error))?$json->Error:"articarest: ".json_last_error_msg();
+        return false;
+    }
     return true;
 }
 
 function client_package_download():bool{
-    $CONFIG=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LOGSINKWIZARD"));
-    $FINAL_CONF=$CONFIG["FINAL_CONF"];
-
-    $client_hostname=$CONFIG["client_hostname"];
-    $fsize=strlen($FINAL_CONF);
-    $hostname=php_uname('n');
-    header('Content-type:multipart/encrypted');
-    header('Content-Transfer-Encoding: binary');
-    header("Content-Disposition: attachment; filename=\"$client_hostname.$hostname.conf\"");
-    header("Pragma: public");
-    header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-    header("Content-Length: ".$fsize);
-    ob_clean();
-    flush();
-    echo $FINAL_CONF;
-    return true;
-
+    return syslogtls_client_package_download();
 }
-
-
 function client_package_popup():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-
-    $CONFIG=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LOGSINKWIZARD"));
-
-    if(!isset($CONFIG["server_hostname"])){$CONFIG["server_hostname"]=null;}
-    
-    if($CONFIG["server_hostname"]==null){$CONFIG["server_hostname"]=php_uname('n');}
-    $form[]=$tpl->field_text("client_hostname","{acl_srcdomain}",$CONFIG["client_hostname"],true);
-    $form[]=$tpl->field_text("server_hostname","{server_name}",$CONFIG["server_hostname"],true);
-    $form[]=$tpl->field_password("client_password","{passphrase} (32 {characters})",$CONFIG["client_password"],true);
-
-    $jsrestart=$tpl->framework_buildjs("syslog.php?create-client-ssl=yes",
-        "syslog.ssl.progress",
-        "syslog.ssl.log",
-        "client-ssl-create",
-        "dialogInstance2.close();document.location.href='/$page?client-package-download=yes';"
-    );
-
-
+    $jsafter="dialogInstance2.close();document.location.href='/$page?client-package-download=yes';";
     $html[]="<div id='client-ssl-create'></div>";
-    $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{create}",$jsrestart,"AsSystemAdministrator");
+    $html[]=syslogtls_client_package_form($tpl,$jsafter);
     echo $tpl->_ENGINE_parse_body($html);
     return true;
-
 }
 function client_package_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    if(strlen($_POST["client_password"])<32){
-        echo $tpl->post_error("{passphrase} (32 {characters})!");
+    $error=syslogtls_client_package_build($_POST["client_hostname"],$_POST["server_hostname"],$_POST["client_password"]);
+    if($error<>""){
+        echo $tpl->post_error($error);
         return false;
     }
-    if(strlen($_POST["client_password"])>32){
-        echo $tpl->post_error("{passphrase} (32 {characters})!");
-        return false;
-    }
-
-
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LOGSINKWIZARD",serialize($_POST));
-    admin_tracks("Creating Log sink client template for ".$_POST["client_hostname"]);
+    admin_tracks("Creating Log sink client package for ".$_POST["client_hostname"]);
     return true;
-    //QwIfX6NVtfdZyjm0XWHZpwIz1Mfrvcw5WAjNI
 }
 function status_start():bool{
     $page=CurrentPageName();

@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 
 class firecracker{
     private $uuid="";
@@ -11,7 +13,7 @@ class firecracker{
     public function ImagesList():array{
         $zimages=array();
         $sock=new sockets();
-        $json=json_decode($sock->REST_API("/firecracker/images"));
+        $json=json_decode($sock->REST_API_FIRECR("/firecracker/images"));
         foreach($json->Images as $fname=>$time){
             if (is_numeric($fname)){
                 continue;

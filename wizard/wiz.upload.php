@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 if(is_file("/etc/artica-postfix/WIZARD_INSTALL_EXECUTED")){
     echo header('location:/fw.login.php');
     exit;

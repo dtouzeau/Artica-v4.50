@@ -1,19 +1,21 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["ShowID-js"])){ShowID_js();exit;}
 if(isset($_GET["ShowID"])){ShowID();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["empty-js"])){empty_js();exit;}
-if(isset($_POST["empty"])){empty_table();exit;}
 page();
 
 function ShowID_js(){
@@ -109,8 +111,11 @@ function table(){
         if(strlen($array["subject"])<3){
             continue;
         }
+        // Pentest 2026-11-04 : sujet/contenu des evenements du cluster (donnee externe) affiches sans encodage (XSS stockee).
+        // Encodes avant la decoration : les marqueurs remplaces ensuite ne contiennent ni < > & ni quote.
+        $array["subject"]=req_html($array["subject"]);
 		$zdate=$array["date"];
-        $Content=$array["content"];
+        $Content=req_html($array["content"]);
         $prio_class="label-primary";
         if(isset($array["prio"])) {
             $prio_class = $array["prio"];

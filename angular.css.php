@@ -1,13 +1,30 @@
 <?php
+// Post SP10 - 13/10/2026 - 05/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-    $ArticaBackGroundColor=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaBackGroundColor"));
-    $ArticaBackGroundBodyColor=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaBackGroundBodyColor"));
-    $ArticaFontColor=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaFontColor"));
-    if($ArticaBackGroundColor==null){$ArticaBackGroundColor="#ffffff";}
-    if($ArticaBackGroundBodyColor==null){$ArticaBackGroundBodyColor="#f3f3f4";}
-    if($ArticaFontColor==null){$ArticaFontColor="#676a6c";}
+    // Les trois couleurs de console passent desormais par brand_palette(), qui
+    // porte le controle de licence. Ce fichier n'en avait AUCUN : sans licence
+    // Corporate, les couleurs personnalisees s'appliquaient quand meme, a la
+    // difference de fw.login.php qui, lui, revenait partiellement a l'usine.
+    // class.brand.inc est un fichier NEUF : garde is_file() + function_exists(),
+    // sinon une appliance ou il n'est pas deploye rend un fatal.
+    $BRANDINC=dirname(__FILE__)."/ressources/class.brand.inc";
+    if(is_file($BRANDINC)){include_once($BRANDINC);}
+    $BRANDPAL=array();
+    if(function_exists("brand_palette")){$BRANDPAL=brand_palette();}
+    if(count($BRANDPAL)>0){
+        $ArticaBackGroundColor=$BRANDPAL["card_bg"];
+        $ArticaBackGroundBodyColor=$BRANDPAL["body_bg"];
+        $ArticaFontColor=$BRANDPAL["text"];
+    }else{
+        $ArticaBackGroundColor=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaBackGroundColor"));
+        $ArticaBackGroundBodyColor=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaBackGroundBodyColor"));
+        $ArticaFontColor=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaFontColor"));
+        if($ArticaBackGroundColor==null){$ArticaBackGroundColor="#ffffff";}
+        if($ArticaBackGroundBodyColor==null){$ArticaBackGroundBodyColor="#f3f3f4";}
+        if($ArticaFontColor==null){$ArticaFontColor="#676a6c";}
+    }
 
 header("Content-type: text/css");
 if(!isset($_COOKIE["userfont"])){$_COOKIE["userfont"]=null;}
@@ -21,7 +38,8 @@ if($_COOKIE["userfont"]==null){
 		$fontFamily="font-family: \"open sans\",\"Helvetica Neue\",Helvetica,Arial,sans-serif;";
 		$html=$html.$fontFamily;
 	}else{
-		$fontFamily="font-family: '{$_COOKIE["userfont"]}','Trebuchet MS', 'Helvetica', sans-serif;";
+		$safefont=preg_replace('/[^a-zA-Z0-9 -]/','',$_COOKIE["userfont"]);
+		$fontFamily="font-family: '$safefont','Trebuchet MS', 'Helvetica', sans-serif;";
 		$html=$html.$fontFamily;
 	}
 }
@@ -210,6 +228,7 @@ h1, h2, h3, h4, h5, h6 {
 .dialog900 .modal-dialog { width: 900px; }
 .dialog950 .modal-dialog { width: 950px; }
 .dialog980 .modal-dialog { width: 980px; }
+.dialog1024 .modal-dialog { width: 1024px; }
 .dialog1030 .modal-dialog { width: 1030px; }
 .dialog1100 .modal-dialog { width: 1100px; }
 .dialog1500 .modal-dialog { width: 1150px; }
@@ -1722,6 +1741,29 @@ display: inline-block;
     mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 300'%3E%3Cpath fill-rule='evenodd' d='M150 0c-25 0-48 6-69 17l16 27c16-8 34-13 53-13V0zm0 0v31c19 0 37 5 53 13l16-27C198 6 175 0 150 0zM242 35l-26 21c15 17 24 40 26 64h31c-2-31-13-60-31-85zM273 180h-31c-2 24-11 47-26 64l26 21c18-25 29-54 31-85zM150 300c25 0 48-6 69-17l-16-27c-16 8-34 13-53 13v31zm0 0v-31c-19 0-37-5-53-13l-16 27c21 11 44 17 69 17zM58 265l26-21c-15-17-24-40-26-64H27c2 31 13 60 31 85zM27 120h31c2-24 11-47 26-64L58 35c-18 25-29 54-31 85zM150 90c-50 0-95 30-110 60 15 30 60 60 110 60s95-30 110-60c-15-30-60-60-110-60zm0 15a45 45 0 100 90 45 45 0 000-90zm0 25a20 20 0 110 40 20 20 0 010-40zM70 142h25v4H70v-4zm-2 2a3 3 0 11-6 0 3 3 0 016 0zm7 12h20v4H75v-4zm-2 2a3 3 0 11-6 0 3 3 0 016 0zm132-16h25v4h-25v-4zm27 2a3 3 0 11-6 0 3 3 0 016 0zm-27 12h20v4h-20v-4zm22 2a3 3 0 11-6 0 3 3 0 016 0z'/%3E%3C/svg%3E\");
 }
 
+/* FontAwesome-like custom icon: Kaspersky (K monogram). Same mask technique as .fa-decisionip above.
+   The left menu renders it as <i class=\"fa fa-kaspersky\"> (LeftMenu forces the \"fa\" prefix when
+   ICO has no space), so we neutralise FontAwesome's ::before glyph and paint the mask on the element. */
+.fa-kaspersky{
+display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    background-color: currentColor;
+
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-position: center;
+    mask-position: center;
+
+    -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M22 14 V86 M22 50 L74 14 M22 50 L76 86' fill='none' stroke='%23000' stroke-width='15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");
+    mask-image: url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M22 14 V86 M22 50 L74 14 M22 50 L76 86' fill='none' stroke='%23000' stroke-width='15' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\");
+}
+.fa-kaspersky::before{content:none !important;}
+.fa-kaspersky-color{ background-color: #00A88E; }
+
 .popover {
     z-index: 999999 !important;
 }
@@ -1729,5 +1771,76 @@ display: inline-block;
 
 .select2-container{box-sizing:border-box;display:inline-block;margin:0;position:relative;vertical-align:middle;}.select2-container .select2-selection--single{box-sizing:border-box;cursor:pointer;display:block;height:28px;user-select:none;-webkit-user-select:none;}.select2-container .select2-selection--single .select2-selection__rendered{display:block;padding-left:8px;padding-right:20px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}.select2-container[dir=\"rtl\"] .select2-selection--single .select2-selection__rendered{padding-right:8px;padding-left:20px;}.select2-container .select2-selection--multiple{box-sizing:border-box;cursor:pointer;display:block;min-height:32px;user-select:none;-webkit-user-select:none;}.select2-container .select2-selection--multiple .select2-selection__rendered{display:inline-block;overflow:hidden;padding-left:8px;text-overflow:ellipsis;white-space:nowrap;}.select2-container .select2-search--inline{float:left;}.select2-container .select2-search--inline .select2-search__field{box-sizing:border-box;border:none;font-size:100%;margin-top:5px;}.select2-container .select2-search--inline .select2-search__field::-webkit-search-cancel-button{-webkit-appearance:none;}.select2-dropdown{background-color:white;border:1px solid #aaa;border-radius:4px;box-sizing:border-box;display:block;position:absolute;left:-100000px;width:100%;z-index:1051;}.select2-results{display:block;}.select2-results__options{list-style:none;margin:0;padding:0;}.select2-results__option{padding:6px;user-select:none;-webkit-user-select:none;}.select2-results__option[aria-selected]{cursor:pointer;}.select2-container--open .select2-dropdown{left:0;}.select2-container--open .select2-dropdown--above{border-bottom:none;border-bottom-left-radius:0;border-bottom-right-radius:0;}.select2-container--open .select2-dropdown--below{border-top:none;border-top-left-radius:0;border-top-right-radius:0;}.select2-search--dropdown{display:block;padding:4px;}.select2-search--dropdown .select2-search__field{padding:4px;width:100%;box-sizing:border-box;}.select2-search--dropdown .select2-search__field::-webkit-search-cancel-button{-webkit-appearance:none;}.select2-search--dropdown.select2-search--hide{display:none;}.select2-close-mask{border:0;margin:0;padding:0;display:block;position:fixed;left:0;top:0;min-height:100%;min-width:100%;height:auto;width:auto;opacity:0;z-index:99;background-color:#fff;filter:alpha(opacity=0);}.select2-hidden-accessible{border:0;clip:rect(0 0 0 0);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;}.select2-container--default .select2-selection--single{background-color:#fff;border:1px solid #aaa;border-radius:4px;}.select2-container--default .select2-selection--single .select2-selection__rendered{color:#444;line-height:28px;}.select2-container--default .select2-selection--single .select2-selection__clear{cursor:pointer;float:right;font-weight:bold;}.select2-container--default .select2-selection--single .select2-selection__placeholder{color:#999;}.select2-container--default .select2-selection--single .select2-selection__arrow{height:26px;position:absolute;top:1px;right:1px;width:20px;}.select2-container--default .select2-selection--single .select2-selection__arrow b{border-color:#888 transparent transparent transparent;border-style:solid;border-width:5px 4px 0 4px;height:0;left:50%;margin-left:-4px;margin-top:-2px;position:absolute;top:50%;width:0;}.select2-container--default[dir=\"rtl\"] .select2-selection--single .select2-selection__clear{float:left;}.select2-container--default[dir=\"rtl\"] .select2-selection--single .select2-selection__arrow{left:1px;right:auto;}.select2-container--default.select2-container--disabled .select2-selection--single{background-color:#eee;cursor:default;}.select2-container--default.select2-container--disabled .select2-selection--single .select2-selection__clear{display:none;}.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b{border-color:transparent transparent #888 transparent;border-width:0 4px 5px 4px;}.select2-container--default .select2-selection--multiple{background-color:white;border:1px solid #aaa;border-radius:4px;cursor:text;}.select2-container--default .select2-selection--multiple .select2-selection__rendered{box-sizing:border-box;list-style:none;margin:0;padding:0 5px;width:100%;}.select2-container--default .select2-selection--multiple .select2-selection__placeholder{color:#999;margin-top:5px;float:left;}.select2-container--default .select2-selection--multiple .select2-selection__clear{cursor:pointer;float:right;font-weight:bold;margin-top:5px;margin-right:10px;}.select2-container--default .select2-selection--multiple .select2-selection__choice{background-color:#e4e4e4;border:1px solid #aaa;border-radius:4px;cursor:default;float:left;margin-right:5px;margin-top:5px;padding:0 5px;}.select2-container--default .select2-selection--multiple .select2-selection__choice__remove{color:#999;cursor:pointer;display:inline-block;font-weight:bold;margin-right:2px;}.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover{color:#333;}.select2-container--default[dir=\"rtl\"] .select2-selection--multiple .select2-selection__choice,.select2-container--default[dir=\"rtl\"] .select2-selection--multiple .select2-selection__placeholder{float:right;}.select2-container--default[dir=\"rtl\"] .select2-selection--multiple .select2-selection__choice{margin-left:5px;margin-right:auto;}.select2-container--default[dir=\"rtl\"] .select2-selection--multiple .select2-selection__choice__remove{margin-left:2px;margin-right:auto;}.select2-container--default.select2-container--focus .select2-selection--multiple{border:solid black 1px;outline:0;}.select2-container--default.select2-container--disabled .select2-selection--multiple{background-color:#eee;cursor:default;}.select2-container--default.select2-container--disabled .select2-selection__choice__remove{display:none;}.select2-container--default.select2-container--open.select2-container--above .select2-selection--single,.select2-container--default.select2-container--open.select2-container--above .select2-selection--multiple{border-top-left-radius:0;border-top-right-radius:0;}.select2-container--default.select2-container--open.select2-container--below .select2-selection--single,.select2-container--default.select2-container--open.select2-container--below .select2-selection--multiple{border-bottom-left-radius:0;border-bottom-right-radius:0;}.select2-container--default .select2-search--dropdown .select2-search__field{border:1px solid #aaa;}.select2-container--default .select2-search--inline .select2-search__field{background:transparent;border:none;outline:0;}.select2-container--default .select2-results>.select2-results__options{max-height:200px;overflow-y:auto;}.select2-container--default .select2-results__option[role=group]{padding:0;}.select2-container--default .select2-results__option[aria-disabled=true]{color:#999;}.select2-container--default .select2-results__option[aria-selected=true]{background-color:#ddd;}.select2-container--default .select2-results__option .select2-results__option{padding-left:1em;}.select2-container--default .select2-results__option .select2-results__option .select2-results__group{padding-left:0;}.select2-container--default .select2-results__option .select2-results__option .select2-results__option{margin-left:-1em;padding-left:2em;}.select2-container--default .select2-results__option .select2-results__option .select2-results__option .select2-results__option{margin-left:-2em;padding-left:3em;}.select2-container--default .select2-results__option .select2-results__option .select2-results__option .select2-results__option .select2-results__option{margin-left:-3em;padding-left:4em;}.select2-container--default .select2-results__option .select2-results__option .select2-results__option .select2-results__option .select2-results__option .select2-results__option{margin-left:-4em;padding-left:5em;}.select2-container--default .select2-results__option .select2-results__option .select2-results__option .select2-results__option .select2-results__option .select2-results__option .select2-results__option{margin-left:-5em;padding-left:6em;}.select2-container--default .select2-results__option--highlighted[aria-selected]{background-color:#5897fb;color:white;}.select2-container--default .select2-results__group{cursor:default;display:block;padding:6px;}.select2-container--classic .select2-selection--single{background-color:#f6f6f6;border:1px solid #aaa;border-radius:4px;outline:0;background-image:-webkit-linear-gradient(top, #ffffff 50%, #eeeeee 100%);background-image:-o-linear-gradient(top, #ffffff 50%, #eeeeee 100%);background-image:linear-gradient(to bottom, #ffffff 50%, #eeeeee 100%);background-repeat:repeat-x;filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#eeeeee', GradientType=0);}.select2-container--classic .select2-selection--single:focus{border:1px solid #5897fb;}.select2-container--classic .select2-selection--single .select2-selection__rendered{color:#444;line-height:28px;}.select2-container--classic .select2-selection--single .select2-selection__clear{cursor:pointer;float:right;font-weight:bold;margin-right:10px;}.select2-container--classic .select2-selection--single .select2-selection__placeholder{color:#999;}.select2-container--classic .select2-selection--single .select2-selection__arrow{background-color:#ddd;border:none;border-left:1px solid #aaa;border-top-right-radius:4px;border-bottom-right-radius:4px;height:26px;position:absolute;top:1px;right:1px;width:20px;background-image:-webkit-linear-gradient(top, #eeeeee 50%, #cccccc 100%);background-image:-o-linear-gradient(top, #eeeeee 50%, #cccccc 100%);background-image:linear-gradient(to bottom, #eeeeee 50%, #cccccc 100%);background-repeat:repeat-x;filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#eeeeee', endColorstr='#cccccc', GradientType=0);}.select2-container--classic .select2-selection--single .select2-selection__arrow b{border-color:#888 transparent transparent transparent;border-style:solid;border-width:5px 4px 0 4px;height:0;left:50%;margin-left:-4px;margin-top:-2px;position:absolute;top:50%;width:0;}.select2-container--classic[dir=\"rtl\"] .select2-selection--single .select2-selection__clear{float:left;}.select2-container--classic[dir=\"rtl\"] .select2-selection--single .select2-selection__arrow{border:none;border-right:1px solid #aaa;border-radius:0;border-top-left-radius:4px;border-bottom-left-radius:4px;left:1px;right:auto;}.select2-container--classic.select2-container--open .select2-selection--single{border:1px solid #5897fb;}.select2-container--classic.select2-container--open .select2-selection--single .select2-selection__arrow{background:transparent;border:none;}.select2-container--classic.select2-container--open .select2-selection--single .select2-selection__arrow b{border-color:transparent transparent #888 transparent;border-width:0 4px 5px 4px;}.select2-container--classic.select2-container--open.select2-container--above .select2-selection--single{border-top:none;border-top-left-radius:0;border-top-right-radius:0;background-image:-webkit-linear-gradient(top, #ffffff 0%, #eeeeee 50%);background-image:-o-linear-gradient(top, #ffffff 0%, #eeeeee 50%);background-image:linear-gradient(to bottom, #ffffff 0%, #eeeeee 50%);background-repeat:repeat-x;filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffff', endColorstr='#eeeeee', GradientType=0);}.select2-container--classic.select2-container--open.select2-container--below .select2-selection--single{border-bottom:none;border-bottom-left-radius:0;border-bottom-right-radius:0;background-image:-webkit-linear-gradient(top, #eeeeee 50%, #ffffff 100%);background-image:-o-linear-gradient(top, #eeeeee 50%, #ffffff 100%);background-image:linear-gradient(to bottom, #eeeeee 50%, #ffffff 100%);background-repeat:repeat-x;filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#eeeeee', endColorstr='#ffffff', GradientType=0);}.select2-container--classic .select2-selection--multiple{background-color:white;border:1px solid #aaa;border-radius:4px;cursor:text;outline:0;}.select2-container--classic .select2-selection--multiple:focus{border:1px solid #5897fb;}.select2-container--classic .select2-selection--multiple .select2-selection__rendered{list-style:none;margin:0;padding:0 5px;}.select2-container--classic .select2-selection--multiple .select2-selection__clear{display:none;}.select2-container--classic .select2-selection--multiple .select2-selection__choice{background-color:#e4e4e4;border:1px solid #aaa;border-radius:4px;cursor:default;float:left;margin-right:5px;margin-top:5px;padding:0 5px;}.select2-container--classic .select2-selection--multiple .select2-selection__choice__remove{color:#888;cursor:pointer;display:inline-block;font-weight:bold;margin-right:2px;}.select2-container--classic .select2-selection--multiple .select2-selection__choice__remove:hover{color:#555;}.select2-container--classic[dir=\"rtl\"] .select2-selection--multiple .select2-selection__choice{float:right;}.select2-container--classic[dir=\"rtl\"] .select2-selection--multiple .select2-selection__choice{margin-left:5px;margin-right:auto;}.select2-container--classic[dir=\"rtl\"] .select2-selection--multiple .select2-selection__choice__remove{margin-left:2px;margin-right:auto;}.select2-container--classic.select2-container--open .select2-selection--multiple{border:1px solid #5897fb;}.select2-container--classic.select2-container--open.select2-container--above .select2-selection--multiple{border-top:none;border-top-left-radius:0;border-top-right-radius:0;}.select2-container--classic.select2-container--open.select2-container--below .select2-selection--multiple{border-bottom:none;border-bottom-left-radius:0;border-bottom-right-radius:0;}.select2-container--classic .select2-search--dropdown .select2-search__field{border:1px solid #aaa;outline:0;}.select2-container--classic .select2-search--inline .select2-search__field{outline:0;}.select2-container--classic .select2-dropdown{background-color:white;border:1px solid transparent;}.select2-container--classic .select2-dropdown--above{border-bottom:none;}.select2-container--classic .select2-dropdown--below{border-top:none;}.select2-container--classic .select2-results>.select2-results__options{max-height:200px;overflow-y:auto;}.select2-container--classic .select2-results__option[role=group]{padding:0;}.select2-container--classic .select2-results__option[aria-disabled=true]{color:grey;}.select2-container--classic .select2-results__option--highlighted[aria-selected]{background-color:#3875d7;color:white;}.select2-container--classic .select2-results__group{cursor:default;display:block;padding:6px;}.select2-container--classic.select2-container--open .select2-dropdown{border-color:#5897fb;}
 ";
+// --- Barre du haut : une ligne tant que c'est physiquement possible ---------
+//
+// .navbar-header flottait a gauche et ul.navbar-top-links a droite. Deux
+// flottants ne negocient pas : des que leur largeur cumulee depasse celle du
+// <nav>, le <ul> decroche EN BLOC sur une seconde ligne. Mesure sur une
+// appliance a 9 entrees : bascule a 1400px, le <nav> passant de 60 a 110px.
+//
+// La rangee flex ne cree pas de place, elle en RECUPERE, dans un ordre
+// delibere : la barre de recherche cede en premier (environ 200px, et son
+// contenu n a pas a etre lu en permanence), puis le libelle le plus long se
+// tronque en ellipse (environ 60px). Le hamburger, lui, n est jamais comprime
+// -- min-width:44px -- parce qu il replie le menu et doit rester cliquable.
+//
+// Seule l entree portant .tb-shrink se tronque (fw-top-bar.php, {active_requests}) :
+// les libelles sont des noeuds texte nus apres leur <i>, donc une ellipse posee
+// plus haut les rognerait TOUS. min-width:6.5em est mesure : c est le plancher
+// qui laisse survivre le premier mot -- "Active..." -- au lieu de reduire
+// l entree a son icone seule.
+//
+// Hors surcouche de marque a dessein : c est une question de mise en page, pas
+// de couleurs, et le defaut frappe aussi les appliances sans white-label.
+$html=$html."
+nav.navbar-static-top{display:flex;align-items:center;flex-wrap:nowrap;}
+nav.navbar-static-top > .navbar-header{float:none;flex:0 0 auto;min-width:44px;display:flex;align-items:center;}
+nav.navbar-static-top > .navbar-header .navbar-form-custom{min-width:0;overflow:hidden;}
+nav.navbar-static-top > .navbar-header .navbar-form-custom .form-control{width:100%;min-width:0;}
+nav.navbar-static-top > ul.navbar-top-links{float:none;flex:0 1 auto;display:flex;flex-wrap:nowrap;align-items:center;justify-content:flex-end;min-width:0;margin-left:auto;}
+nav.navbar-static-top > ul.navbar-top-links > li{float:none;flex:0 0 auto;}
+nav.navbar-static-top > ul.navbar-top-links > li.tb-shrink{flex:0 1 auto;min-width:6.5em;}
+nav.navbar-static-top > ul.navbar-top-links > li.tb-shrink > a{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+/* Sous cette largeur le contenu ne rentre plus, meme entierement comprime : la
+   jauge CPU commencerait a recouvrir le mot Search. On rend alors la main a la
+   mise en page d origine, dont le repli en deux lignes est propre et lisible.
+   Le seuil depend du nombre d entrees de la barre, qui varie selon les services
+   installes : sur une appliance tres chargee il peut devoir etre releve. */
+@media (max-width:1299px){
+ nav.navbar-static-top{display:block;}
+ nav.navbar-static-top > .navbar-header{float:left;display:block;}
+ nav.navbar-static-top > ul.navbar-top-links{float:right;display:block;}
+ nav.navbar-static-top > ul.navbar-top-links > li{float:left;}
+}
+/* Meme repli, pose par TopBarFit() (fw-top-bar.php) au-dessus du seuil quand la
+   liste de droite deborde malgre tout : sans lui, justify-content:flex-end la
+   faisait deborder vers la GAUCHE, et la jauge CPU recouvrait le lien
+   Demander a Artica AI (signale par un client le 2026-10-06). L en-tete de
+   gauche ne se comprime plus (flex:0 0 auto) : c est la liste qui cede. */
+nav.navbar-static-top.tb-wrap{display:block;}
+nav.navbar-static-top.tb-wrap > .navbar-header{float:left;display:block;}
+nav.navbar-static-top.tb-wrap > ul.navbar-top-links{float:right;display:block;}
+nav.navbar-static-top.tb-wrap > ul.navbar-top-links > li{float:left;}
+/* Lien Demander a Artica AI : un lien texte plutot qu un bouton, plus etroit. */
+/* Meme geometrie que le bouton menu (.minimalize-styl-2 : marge haute 14px,
+   30px de haut) : les deux restent alignes en une comme en deux lignes. */
+";
+
+// Barre d'actions table_buttons() : couleur du bouton principal = accent de marque.
+if(function_exists("table_buttons_css")){$html=$html.table_buttons_css($BRANDPAL);}
+// Formulaires form_outside() + field_* : cartes, libelles au-dessus, interrupteurs On/Off.
+if(function_exists("afrm_css")){$html=$html.afrm_css($BRANDPAL);}
+// Kit ak- commun aux pages refaites d'apres Stitch (cartes, tuiles, pastilles, tables, boutons, formulaires).
+$UIKITINC=dirname(__FILE__)."/ressources/class.ui.kit.inc";
+if(is_file($UIKITINC)){include_once($UIKITINC);}
+if(function_exists("ak_kit_css")){$html=$html.ak_kit_css($BRANDPAL);}
+if(count($BRANDPAL)>0){$html=$html.brand_css_overlay($BRANDPAL);}
 @file_put_contents("css/angular.css.php.css",$html);
+// Zoom choisi dans "Mon compte" (cookie ConsoleZoom). 0 = automatique : rien ici, le
+// niveau depend de l'ecran et c'est js/console-zoom.js qui le pose. Ajoute APRES
+// l'ecriture du fichier ci-dessus : c'est un reglage propre a chaque navigateur.
+if(function_exists("console_zoom_current")){
+    $ConsoleZoom=console_zoom_current();
+    if($ConsoleZoom>0 && $ConsoleZoom!=100){$html=$html."\nhtml{zoom:".sprintf("%.2f",$ConsoleZoom/100)."}\n";}
+}
 echo $html;

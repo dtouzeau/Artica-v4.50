@@ -71,7 +71,8 @@ function events_backend_search(){
     }
     if (!is_object($json) || empty($json->success)) {
         $err = (is_object($json) && isset($json->error)) ? $json->error : "API error";
-        echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}<hr>" . htmlspecialchars($err)));
+        // div_error() encode deja son texte (pas de double encodage).
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}<hr>" . $err));
         return;
     }
 
@@ -109,7 +110,6 @@ function events_backend_search(){
     	<tr>
         	<th>$date_text</th>
         	<th>{level}</th>
-        	<th>{function}</th>
         	<th>$events_text</th>
         </tr>
   	</thead>
@@ -134,16 +134,20 @@ function events_backend_search(){
         $FTime = $xtime > 0 ? date("Y-m-d H:i:s", $xtime) : "-";
         $curDate = date("Y-m-d");
         $FTime = trim(str_replace($curDate, "", $FTime));
-
+        // Pentest 2026-11-04 : message d'evenement du noeud (donnee externe) affiche sans encodage (XSS stockee).
+        $event->msg=html_safe_fragment($tpl->_ENGINE_parse_body($event->msg));
         // Escape braces so _ENGINE_parse_body doesn't treat user payload as a translation key.
-        $func = str_replace(["{","}"], ["&#123;","&#125;"], htmlspecialchars($event->func ?? ""));
-        $msg  = str_replace(["{","}"], ["&#123;","&#125;"], htmlspecialchars($event->msg  ?? ""));
+        $func = str_replace(["{","}"], ["&#123;","&#125;"], req_html($event->func ?? ""));
 
+        $event->msg=str_replace("SyncPostgreSQL.go[acluster/ClusterClientRestore.SyncPostgreSQL:","",$event->msg);
+        $event->msg=str_replace("SyncSQLite.go[acluster/ClusterClientRestore.ImportSQLite:","",$event->msg);
+        $event->msg=str_replace("ClusterClientRestore.go[acluster/ClusterClientRestore.Restore:","",$event->msg);
         $html[]="<tr>
 				<td style='width:1%' nowrap>$FTime</td>
-				<td style='width:1%' nowrap><span class='label $clsLabel' style='color:#fff'>$name</span></td>
-				<td style='width:1%' nowrap><span style='font-family:monospace'>$func</span></td>
-				<td><span class='$clsText'>$msg</span></td>
+				<td style='width:1%' nowrap>
+				    <span class='label $clsLabel' style='color:#fff'>$name</span>
+				    </td>
+				<td style='width:99%'><span class='$clsText'>$event->msg</span><div style='color:#aeadad;font-size:11px'>$func</div></td>
 				</tr>";
     }
 

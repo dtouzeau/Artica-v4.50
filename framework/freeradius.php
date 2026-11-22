@@ -1,24 +1,22 @@
 <?php
+// Post SP10 - 13/10/2026
 
 include_once(dirname(__FILE__)."/frame.class.inc"); 
 include_once(dirname(__FILE__)."/class.unix.inc");
-
 
 if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["uninstall"])){uninstall();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["restart"])){restart();exit;}
 if(isset($_GET["reload"])){reload();exit;}
-if(isset($_GET["test-auth"])){test_auth();exit;}
 if(isset($_GET["radtest"])){radtest();exit;}
 if(isset($_GET["syslog"])){searchInSyslog();exit;}
-
 
 reset($_GET);
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
-die("DIE " .__FILE__." Line: ".__LINE__);
+die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 
 function install(){
 	$unix=new unix();
@@ -96,11 +94,6 @@ function reload(){
 
 
 }
-function events(){
-	$unix=new unix();
-	$syslog=$unix->LOCATE_SYSLOG_PATH();
-}
-
 function searchInSyslog(){
 	$unix=new unix();
 	$grep=$unix->find_program("grep");
@@ -173,27 +166,3 @@ function radtest(){
 }
 
 
-function test_auth(){
-	$unix=new unix();
-	$username=base64_decode($_GET["username"]);
-	$password=base64_decode($_GET["password"]);
-	$radtest=$unix->find_program("radtest");
-	$username=$unix->shellEscapeChars($username);
-	$password=$unix->shellEscapeChars($password);
-	$resultsA="\t\t*********************************\n\t\t*********** FAILED *******************\n\t\t*********************************\n";
-	$mainpassword=@file_get_contents("/etc/artica-postfix/ldap_settings/password");
-	$mainpassword=$unix->shellEscapeChars($mainpassword);
-	$cmdline="$radtest $username $password localhost 0 $mainpassword 2>&1";
-	writelogs_framework("$cmdline",__FUNCTION__,__FILE__,__LINE__);
-	exec($cmdline,$results);
-	foreach ($results as $num=>$ligne){
-	
-		if(preg_match("#Access-Accept#", $ligne)){$resultsA="\t\t*********************************\n\t\t*********** SUCCESS ******************\n\t\t*********************************\n";}
-	}
-	
-	$resultsA=str_replace("*", " * ", $resultsA);
-	
-	echo "<articadatascgi>". base64_encode($resultsA.@implode("\n", $results))."</articadatascgi>";
-	
-	
-}

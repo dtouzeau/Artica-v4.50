@@ -1,21 +1,21 @@
-<available_version>Available version</available_version>
-<CONNEXIONS_FILTERS_PRODUCTS>connections filters softwares</CONNEXIONS_FILTERS_PRODUCTS>
-<CONTENTS_FILTERS_PRODUCTS>contents filters sofwtares</CONTENTS_FILTERS_PRODUCTS>
-<CORE_PRODUCTS>core softwares</CORE_PRODUCTS>
-<current_version>Current version</current_version>
-<installation_lauched>Installation has been launched in background,
-you will see the status of the setup in few times</installation_lauched>
+<available_version>Versione disponibile</available_version>
+<CONNEXIONS_FILTERS_PRODUCTS>Software di filtri delle connessioni</CONNEXIONS_FILTERS_PRODUCTS>
+<CONTENTS_FILTERS_PRODUCTS>Software di filtri dei contenuti</CONTENTS_FILTERS_PRODUCTS>
+<CORE_PRODUCTS>Software di base</CORE_PRODUCTS>
+<current_version>Versione attuale</current_version>
+<installation_lauched>L'installazione &#232; stata avviata in background,
+vedrai lo stato della configurazione tra poco</installation_lauched>
 <install_upgrade>Installare o aggiornare</install_upgrade>
-<LICENSED_FILTERS_PRODUCTS>Commercial filters softwares</LICENSED_FILTERS_PRODUCTS>
-<MAIL_TOOLS>Mail tools</MAIL_TOOLS>
-<proxy_packages>Proxy softwares</proxy_packages>
-<refresh_index_file>Refresh index file (test connection)</refresh_index_file>
-<setup_index_explain>This section allow you to install applications that is not compiled or not installed correctly by your distribution[br]
-In some cases softwares must be comiled with specifics tokens to be more usefull.[br]
-This section allow you to send order to install softwares...</setup_index_explain>
-<smtp_packages>Messaging softwares</smtp_packages>
+<LICENSED_FILTERS_PRODUCTS>Software di filtri commerciali</LICENSED_FILTERS_PRODUCTS>
+<MAIL_TOOLS>Strumenti di posta</MAIL_TOOLS>
+<proxy_packages>Software proxy</proxy_packages>
+<refresh_index_file>Aggiorna il file indice (testa la connessione)</refresh_index_file>
+<setup_index_explain>Questa sezione ti permette di installare applicazioni non compilate o non installate correttamente dalla tua distribuzione[br]
+In alcuni casi il software deve essere compilato con token specifici per essere pi&#249; utile.[br]
+Questa sezione ti permette di inviare l'ordine di installare software...</setup_index_explain>
+<smtp_packages>Software di messaggistica</smtp_packages>
 <software>Software</software>
-<STATS_TOOLS>Statistics softwares</STATS_TOOLS>
-<stat_packages>Statistics softwares</stat_packages>
+<STATS_TOOLS>Software di statistica</STATS_TOOLS>
+<stat_packages>Software di statistica</stat_packages>
 <system_packages>Pacchetti di sistema</system_packages>
-<web_packages>web/groupware softwares</web_packages>
+<web_packages>Software web/groupware</web_packages>

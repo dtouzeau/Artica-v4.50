@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 //$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
@@ -37,7 +38,8 @@ function table(){
 function delete(){
 	$pattern=$_GET["delete"];
 	$q=new postgres_sql();
-	$q->QUERY_SQL("DELETE FROM rbl_emails WHERE pattern='$pattern'");
+	// Pentest 2026-11-04 : delete (pattern) etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM rbl_emails WHERE pattern=$1",array((string)$pattern));
 	echo "$('#{$_GET["md"]}').remove()\n";
 }
 
@@ -45,14 +47,17 @@ function pattern_enable(){
 	$tpl=new template_admin();
 	$pattern=$_GET["enabled"];
 	$q=new postgres_sql();
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM rbl_emails WHERE pattern='$pattern'");
-	$enabled=intval($ligne["enabled"]);
+	// Pentest 2026-11-04 : enabled (pattern) etait concatene dans la requete.
+	$res=$q->QUERY_SQL_PARAMS("SELECT enabled FROM rbl_emails WHERE pattern=$1",array((string)$pattern));
+	$ligne=$res?pg_fetch_assoc($res):array();
+	if(!is_array($ligne)){$ligne=array();}
+	$enabled=intval($ligne["enabled"] ?? 0);
 	if($enabled==0){
-		$q->QUERY_SQL("UPDATE rbl_emails SET enabled=1 WHERE pattern='$pattern'");
+		$q->QUERY_SQL_PARAMS("UPDATE rbl_emails SET enabled=1 WHERE pattern=$1",array((string)$pattern));
 		if(!$q->ok){$tpl->js_microdaliog_danger("MySQL ERROR",$q->mysql_error);}
 		return;
 	}
-	$q->QUERY_SQL("UPDATE rbl_emails SET enabled=0 WHERE pattern='$pattern'");
+	$q->QUERY_SQL_PARAMS("UPDATE rbl_emails SET enabled=0 WHERE pattern=$1",array((string)$pattern));
 	if(!$q->ok){$tpl->js_microdaliog_danger("MySQL ERROR",$q->mysql_error);}
 }
 
@@ -100,7 +105,8 @@ function pattern_popup(){
 	}else{
 		$bt="{apply}";
 		$form[]=$tpl->field_pattern("pattern", "{address}", null,true);
-		$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM rbl_emails WHERE pattern='$pattern'"));
+		// Pentest 2026-11-04 : pattern-popup etait concatene dans la requete.
+		$ligne=pg_fetch_array($q->QUERY_SQL_PARAMS("SELECT * FROM rbl_emails WHERE pattern=$1",array((string)$pattern)));
 		$description=$ligne["description"];
 		$title=$pattern." - {$ligne["zdate"]}";
 	}
@@ -117,7 +123,8 @@ function pattern_save(){
 	$date=date("Y-m-d H:i:s");
 	$q=new postgres_sql();
 
-	$q->QUERY_SQL("INSERT INTO rbl_emails (pattern,description,zDate) VALUES ('$pattern','$description','$date') ON CONFLICT DO NOTHING");
+	// Pentest 2026-11-04 : pattern et description etaient concatenes dans la requete.
+	$q->QUERY_SQL_PARAMS("INSERT INTO rbl_emails (pattern,description,zDate) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING",array((string)$pattern,(string)$description,$date));
 	if(!$q->ok){echo "$pattern: $q->mysql_error";}
 
 
@@ -148,7 +155,7 @@ function search(){
 	$ARRAY["CMD"]="rbldnsd.php?compile=yes";
 	$ARRAY["TITLE"]="{APP_RBLDNSD} {compile_rules}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-rbldnsd-restart')";
+	$jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-rbldnsd-restart')";
 
 	$topbuttons[] = array("Loadjs('$page?pattern-js=&function={$_GET["function"]}');", ico_plus, "{new_address}");
 	$topbuttons[] = array("Loadjs('$page?pattern-import-js=&function={$_GET["function"]}');');", ico_import, "{import}");

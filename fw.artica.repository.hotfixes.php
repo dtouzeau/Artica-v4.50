@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 /**
  * Artica InstantHotfix console
  * Create a temporary Hotfixes storage for updating quickly a bunch of Artica servers
@@ -19,7 +20,7 @@ function js():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_is_provider($users)){   // televersement de hotfix : gestion du depot, infogerant
         return $tpl->js_error("{no_privileges}");
     }
     return $tpl->js_dialog6("InstantHotfix", "$page?tabs=yes", 600);
@@ -50,6 +51,8 @@ function upload_popup():bool{
     return true;
 }
 function upload_uploaded_js():bool{
+    if(!artrepo_can_write()){$tpl=new template_admin();$tpl->js_error("{ERROR_NO_PRIVS}");return false;}
+    if(!fw_progress_page_priv("AsArticaMetaAdmin")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $filename=$_GET["file-uploaded"];
     $fileencode=urlencode($filename);
@@ -74,12 +77,14 @@ function hotfixes_start():bool{
     return true;
 }
 function hotfixes_delete_js():bool{
+    if(!artrepo_can_write()){$tpl=new template_admin();$tpl->js_error("{ERROR_NO_PRIVS}");return false;}
     $tpl=new template_admin();
     $md=$_GET["hotfixes-delete"];
     $filename=$_GET["f"];
     return $tpl->js_confirm_delete($filename,"hotfixes-delete",$md,"$('#$md').remove()");
 }
 function hotfixes_delete_confirm():bool{
+    if(!artrepo_can_write()){$tpl=new template_admin();echo $tpl->post_error("{ERROR_NO_PRIVS}");return false;}
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $md=$_POST["hotfixes-delete"];

@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+# v10/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
@@ -11,6 +13,7 @@ include_once(dirname(__FILE__)."/ressources/prefetch-info.inc"); __prefetchCommo
 clean_xss_deep();
 
 if(isset($_GET["notifs"])){notifs();exit;}
+if(isset($_GET["support-dismiss"])){support_dismiss();exit;}
 if(isset($_GET["seen-updated"])){see_updated();exit;}
 if(isset($_GET["SetToken"])){SetToken();exit;}
 if(isset($_POST["SetToken"])){SetTokenConfirm();exit;}
@@ -38,9 +41,11 @@ function see_updated(){
     }
 
 
-	$ID=$_GET["seen-updated"];
+	$ID=intval($_GET["seen-updated"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/nightly.db");
-	$q->QUERY_SQL("UPDATE history SET asseen=1 WHERE ID=$ID");
+	if($ID>0 && $q->TABLE_EXISTS("history")){
+		$q->QUERY_SQL("UPDATE history SET asseen=1 WHERE ID=$ID");
+	}
 	header("content-type: application/x-javascript");
 	echo "LoadAjaxSilent('artica-notifs-barr','{$HTTP_X_ARTICA_SUBFOLDER}fw.icon.top.php?notifs=yes');";
 }
@@ -104,11 +109,18 @@ function notifs(){
     $LIBCACHE_PERL = true;
     $AD_CARE = true;
     $LIBMILTER = false;
-    $PYTHON_CARE = true;
     $users          = new usersMenus();
     $GLOBALS["CLASS_USERS"]=$users;
     if(!$users->AsAnAdministratorGeneric){return null;}
     $tpl            = new template_admin();
+
+    // Toutes les notifications lisent articarest (GET_INFO, REST_API). Daemon
+    // arrete, chaque cle vaut 0 ou "" : la cloche se remplirait de fausses
+    // alertes (ex. "Fin de support de votre OS" sur une Debian 13). On n'affiche rien.
+    if(!notifs_articarest_alive()){
+        echo "<script>\n".notifs_minibars_js($users,$tpl)."\n</script>\n";
+        return;
+    }
     $LicenseINGP    = 0;
     $ERR            = array();
     $page           = CurrentPageName();
@@ -122,12 +134,35 @@ function notifs(){
 
     $VM_DISK_SLOW=VM_DISK_SLOW();
     $NEED_ZSWAP=NEED_ZSWAP();
-
     if($VM_DISK_SLOW<>null){$ERR[]=$VM_DISK_SLOW;}
     if($NEED_ZSWAP<>null){$ERR[]=$NEED_ZSWAP;}
+    $NOTIF_NOT_CATEGORIZED=NOTIF_NOT_CATEGORIZED();
+    if(strlen($NOTIF_NOT_CATEGORIZED)>3){
+        $ERR[]=$NOTIF_NOT_CATEGORIZED;
+    }
 
     $FOUND_AD_SERVER=FOUND_AD_SERVER();
     if($FOUND_AD_SERVER<>null){$ERR[]=$FOUND_AD_SERVER;}
+
+    $NOTIF_SUPPORT_UNREAD=NOTIF_SUPPORT_UNREAD();
+    if(count($NOTIF_SUPPORT_UNREAD)>0){
+        foreach ($NOTIF_SUPPORT_UNREAD as $NOTE){
+            $ERR[]=$NOTE;
+        }
+    }
+
+    // Failles du noyau EN COURS D'EXECUTION (articarest aptget/kernel_cve.go) :
+    // une entree par CVE tant que la machine n'a pas redemarre sur un noyau corrige.
+    foreach (NOTIF_KERNEL_CVES() as $NOTE){
+        $ERR[]=$NOTE;
+    }
+
+    $NOTIF_SUPPORT_TICKETS=NOTIF_SUPPORT_TICKETS();
+    if(count($NOTIF_SUPPORT_TICKETS)>0){
+        foreach ($NOTIF_SUPPORT_TICKETS as $NOTE){
+            $ERR[]=$NOTE;
+        }
+    }
 
 
     $errorFile="/usr/share/artica-postfix/ressources/logs/NFQueue/error.txt";
@@ -138,7 +173,6 @@ function notifs(){
    if($REVERSE_APPLIANCE){
         $SEE_SSHPROXY=false;
         $LIBCACHE_PERL=false;
-        $PYTHON_CARE=false;
         $AD_CARE=false;
    }
 
@@ -182,6 +216,20 @@ function notifs(){
             $ERR[] = "{certificates_center}||$txt||DANGER||js:document.location.href='/certificate-center'";
         }
     }
+    // Volume des archives de journaux (articarest, logrotate.Capacity —
+    // /logs/capacity/check, en cache une heure cote daemon) : cloche quand le
+    // volume de BackupMaxDaysDir ne peut pas tenir BackupMaxDays jours.
+    $cap=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/logs/capacity/check"),true);
+    if(is_array($cap) && !empty($cap["Status"]) && isset($cap["Data"]) && is_array($cap["Data"]) && empty($cap["Data"]["sufficient"])){
+        $captitle=str_replace("|","/",(string)($cap["Data"]["title"] ?? "{VolStockLogsInsuffisant}"));
+        $captxt=str_replace("|","/",(string)($cap["Data"]["text"] ?? ""));
+        $captxt=$tpl->_ENGINE_parse_body($captxt);
+        $captitle=$tpl->_ENGINE_parse_body($captitle);
+        $ERR[] = "$captitle||$captxt||WARN||js:Loadjs('fw.proxy.rotate.php');";
+    }
+
+
+    
     if(!is_array($UfdbguardSMTPNotifs)){$UfdbguardSMTPNotifs=array();}
     if(!isset($UfdbguardSMTPNotifs["ENABLED_SQUID_WATCHDOG"])){$UfdbguardSMTPNotifs["ENABLED_SQUID_WATCHDOG"]=0;}
 
@@ -237,9 +285,7 @@ function notifs(){
         $ERR[] =$NOTIF_HOTFIX_OFF;
     }
 
-    
-    //$CRC32_INTERFACES_DB=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CRC32_INTERFACES_DB");
-    //$CRC32_INTERFACES_CURRENT=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("CRC32_INTERFACES_CURRENT");
+
     $GrubSectionSeen = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GrubSectionSeen"));
     $SSHProxySectionSeen = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SSHProxySectionSeen"));
     $BTMMPWarn = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BTMMPWarn"));
@@ -258,13 +304,6 @@ function notifs(){
         $ERR[] = "{failedloginattempts}||$BTMMPWarnText||WARN||js:Loadjs('fw.system.watchdog.php?failedloginattempts-js=yes');||js:Loadjs('$page?SetToken=BTMMPWarn&value=0');";
     }
 
-    /*
-    if($CRC32_INTERFACES_CURRENT<>null){
-        if($CRC32_INTERFACES_DB<>$CRC32_INTERFACES_CURRENT) {
-            $ERR[] = "{apply_network_configuration}||{notif_netchange}||INFO||js:Loadjs('fw.network.apply.php');";
-        }
-    }
-*/
     $EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
     if($EnableSuricata==0){
         $HideSuricataManagerIco = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideSuricataManagerIco"));
@@ -279,7 +318,7 @@ function notifs(){
         if ($HideBootManagerIco == 0) {
             if ($GrubSectionSeen == 0) {
                 $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableGrubSkin", 1);
-                $ERR[] = "{new_feature_notice}||{boot_manager}||INFO||js:Loadjs('fw.system.information.php?boot-manager-js&seen=yes');||js:Loadjs('$page?SetToken=HideBootManagerIco');";
+                $ERR[] = "{new_feature_notice}||{boot_manager_explain}||INFO||js:Loadjs('fw.system.information.php?boot-manager-js&seen=yes');||js:Loadjs('$page?SetToken=HideBootManagerIco');";
             }
         }
         if($SQUIDEnable==1) {
@@ -367,80 +406,15 @@ function notifs(){
             }
         }
     }
-    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
-    if($Enablehacluster==1){
-        $NOTIF_APP_HAPROXY_CLUSTER=NOTIF_APP_HAPROXY_CLUSTER($UPDATES_ARRAY);
-        if($NOTIF_APP_HAPROXY_CLUSTER<>null){$ERR[]=$NOTIF_APP_HAPROXY_CLUSTER;}
-        //APP_HAPROXY_CLUSTER
-    }
-    $NOTIF_X_TABLES_PACKAGE_INSTALLED=NOTIF_X_TABLES_PACKAGE_INSTALLED($UPDATES_ARRAY);
-    if(count($NOTIF_X_TABLES_PACKAGE_INSTALLED)>0){
-        foreach ($NOTIF_X_TABLES_PACKAGE_INSTALLED as $NGINX_NOTE){
-            $ERR[]=$NGINX_NOTE;
-        }
-    }
+    // Nouvelles versions des paquets geres par Artica : UNE notification, le
+    // detail est le tableau de fw.updates.packages.php (class.updates.packages.inc).
+    $NOTIF_ARTICA_PACKAGES=NOTIF_ARTICA_PACKAGES($UPDATES_ARRAY);
+    if($NOTIF_ARTICA_PACKAGES<>""){$ERR[]=$NOTIF_ARTICA_PACKAGES;}
 
-    $NOTIF_AUTOFS=NOTIF_AUTOFS($UPDATES_ARRAY);
-    if($NOTIF_AUTOFS<>null){$ERR[]=$NOTIF_AUTOFS;}
-
-    $NOTIF_SAMBA=NOTIF_SAMBA($UPDATES_ARRAY);
-    if($NOTIF_SAMBA<>null){$ERR[]=$NOTIF_SAMBA;}
-
-    $NOTIF_APP_PROFTPD=NOTIF_APP_PROFTPD($UPDATES_ARRAY);
-    if($NOTIF_APP_PROFTPD<>null){$ERR[]=$NOTIF_APP_PROFTPD;}
-
-    $NOTIF_MONIT=NOTIF_MONIT($UPDATES_ARRAY);
-    if($NOTIF_MONIT<>null){$ERR[]=$NOTIF_MONIT;}
-
-    $NOTIF_NAGIOS=NOTIF_NAGIOS($UPDATES_ARRAY);
-    if($NOTIF_NAGIOS<>null){$ERR[]=$NOTIF_NAGIOS;}
-
-    $NOTIF_APP_OPENVPN=NOTIF_APP_OPENVPN($UPDATES_ARRAY);
-    if($NOTIF_APP_OPENVPN<>null){$ERR[]=$NOTIF_APP_OPENVPN;}
-
-    $NOTIF_APP_GO_SHIELD_VERSION=NOTIF_APP_GO_SHIELD_VERSION($UPDATES_ARRAY);
-    if($NOTIF_APP_GO_SHIELD_VERSION<>null){$ERR[]=$NOTIF_APP_GO_SHIELD_VERSION;}
-
-    $NOTIF_APP_SURICATA_VERSION=NOTIF_APP_SURICATA_VERSION($UPDATES_ARRAY);
-    if($NOTIF_APP_SURICATA_VERSION<>null){$ERR[]=$NOTIF_APP_SURICATA_VERSION;}
-
-    $NOTIF_ADREST_VERSION=NOTIF_ADREST_VERSION($UPDATES_ARRAY);
-    if($NOTIF_ADREST_VERSION<>null){$ERR[]=$NOTIF_ADREST_VERSION;}
-
-     $NOTIF_APP_MYSQL_VERSION=NOTIF_APP_MYSQL_VERSION($UPDATES_ARRAY);
-    if($NOTIF_APP_MYSQL_VERSION<>null){$ERR[]=$NOTIF_APP_MYSQL_VERSION;}
-
-    $NOTIF_APP_MSKTUTIL_VERSION=NOTIF_APP_MSKTUTIL_VERSION($UPDATES_ARRAY);
-    if($NOTIF_APP_MSKTUTIL_VERSION<>null){$ERR[]=$NOTIF_APP_MSKTUTIL_VERSION;}
-
-    $NOTIF_APP_UFDBGUARD=NOTIF_APP_UFDBGUARD();
-    if($NOTIF_APP_UFDBGUARD<>null){$ERR[]=$NOTIF_APP_UFDBGUARD;}
-
-    $NOTIFS_UNBOUNDD=NOTIFS_UNBOUND($UPDATES_ARRAY);
-    if($NOTIFS_UNBOUNDD<>null){$ERR[]=$NOTIFS_UNBOUNDD;}
-
-    $NOTIF_APP_WAZHU_VERSION=NOTIF_APP_WAZHU_VERSION($UPDATES_ARRAY);
-    if($NOTIF_APP_WAZHU_VERSION<>null){$ERR[]=$NOTIF_APP_WAZHU_VERSION;}
-
-    $NOTIF_APP_ZABBIX_VERSION=NOTIF_APP_ZABBIX_VERSION($UPDATES_ARRAY);
-    if($NOTIF_APP_ZABBIX_VERSION<>null){$ERR[]=$NOTIF_APP_ZABBIX_VERSION;}
-
-    $NOTIF_NETDATA=NOTIF_NETDATA($UPDATES_ARRAY);
-    if($NOTIF_NETDATA<>null){$ERR[]=$NOTIF_NETDATA;}
-
-    $NOTIF_CLAMAV=NOTIF_CLAMAV($UPDATES_ARRAY);
-    if($NOTIF_CLAMAV<>null){$ERR[]=$NOTIF_CLAMAV;}
-
+    // NOTIFS_NGINX ne porte plus que le mode urgence de nginx.
     $NOTIFS_NGINX=NOTIFS_NGINX($UPDATES_ARRAY);
     if(count($NOTIFS_NGINX)>0){
         foreach ($NOTIFS_NGINX as $NGINX_NOTE){
-            $ERR[]=$NGINX_NOTE;
-        }
-    }
-
-    $NOTIFS_RDS_PROXY=NOTIFS_RDS_PROXY($UPDATES_ARRAY);
-    if(count($NOTIFS_RDS_PROXY)>0){
-        foreach ($NOTIFS_RDS_PROXY as $NGINX_NOTE){
             $ERR[]=$NGINX_NOTE;
         }
     }
@@ -459,95 +433,36 @@ function notifs(){
             $ERR[]=$NOTE;
         }
     }
-    $CVE_2022_29155=CVE_2022_29155();
-    if(count($CVE_2022_29155)>0){
-        foreach ($CVE_2022_29155 as $NOTE){
-            $ERR[]=$NOTE;
-        }
-    }
 
-    VERBOSE("<hr>NOTIFS_SYSLOGD -----------------------------------------------",__LINE__);
-    $NOTIFS_SYSLOGD=NOTIFS_SYSLOGD($UPDATES_ARRAY);
-    if(count($NOTIFS_SYSLOGD)>0){
-        foreach ($NOTIFS_SYSLOGD as $NOTE){
-            $ERR[]=$NOTE;
-        }
-    }
 
+    // NOTIFS_DNSDIST ne porte plus que l'alerte � aucune interface d'ecoute �.
     $NOTIFS_DNSDIST=NOTIFS_DNSDIST($UPDATES_ARRAY);
     if(count($NOTIFS_DNSDIST)>0){
         foreach ($NOTIFS_DNSDIST as $NOTE){
             $ERR[]=$NOTE;
         }
     }
-    $NOTIFS_DNSDIST9=NOTIFS_DNSDIST9($UPDATES_ARRAY);
-    if(strlen($NOTIFS_DNSDIST9)>10){
-            $ERR[]=$NOTIFS_DNSDIST9;
-        }
-
-    $NOTIFS_APP_CROWDSEC=NOTIFS_APP_CROWDSEC($UPDATES_ARRAY);
-    if(strlen($NOTIFS_APP_CROWDSEC)>10){
-        $ERR[]=$NOTIFS_APP_CROWDSEC;
-    }
 
 
-    VERBOSE("<hr>NOTIFS_REDIS -----------------------------------------------",__LINE__);
-    $NOTIFS_REDIS=NOTIFS_REDIS($UPDATES_ARRAY);
-    if(count($NOTIFS_REDIS)>0){
-        foreach ($NOTIFS_REDIS as $NOTE){
-            $ERR[]=$NOTE;
-        }
-    }
-
-    VERBOSE("<hr>NOTIF_WP_CLI -----------------------------------------------",__LINE__);
-    $NOTIF_WP_CLI=NOTIF_WP_CLI($UPDATES_ARRAY);
-    if(count($NOTIF_WP_CLI)>0){
-        foreach ($NOTIF_WP_CLI as $NOTE){
-            $ERR[]=$NOTE;
-        }
-    }
-
-    $STOP_APP_NGINX_CONSOLE_WARN=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("STOP_APP_NGINX_CONSOLE_WARN"));
-    if($STOP_APP_NGINX_CONSOLE_WARN==0) {
-        VERBOSE("<hr>NOTIFS_APP_NGINX_CONSOLE -----------------------------------------------", __LINE__);
-        $NOTIFS_APP_NGINX_CONSOLE = NOTIFS_APP_NGINX_CONSOLE($UPDATES_ARRAY);
-        if (count($NOTIFS_APP_NGINX_CONSOLE) > 0) {
-            foreach ($NOTIFS_APP_NGINX_CONSOLE as $NOTE) {
-                $ERR[] = $NOTE;
-            }
-        }
-    }
-
-    $NOTIFS_PDNS=NOTIFS_PDNS($UPDATES_ARRAY);
-    if(count($NOTIFS_PDNS)>0){
-        foreach ($NOTIFS_PDNS as $NOTE){
-            $ERR[]=$NOTE;
-        }
-    }
-
-    $NOTFS_CICAP=NOTIFS_CICAP($UPDATES_ARRAY);
-    if(count($NOTFS_CICAP)>0){
-        foreach ($NOTFS_CICAP as $NOTE){
-            $ERR[]=$NOTE;
-        }
-    }
-
-
-	if($users->SQUID_INSTALLED){
+	if($SQUIDEnable==1){
 	    VERBOSE("NOTIFS_SQUID",__LINE__);
 		$NOTIFS=$icon->NOTIFS_SQUID($UPDATES_ARRAY);
 		if(count($NOTIFS)>0){
 			foreach ($NOTIFS as $notif){
+                // NOTIFS_SQUID est relu depuis un cache Valkey : une valeur ecrite
+                // avant le deplacement des versions vers fw.updates.packages.php
+                // porterait encore l'annonce d'une nouvelle version de Squid.
+                if(strpos((string)$notif,"upgrade-software.php?product=APP_SQUID")!==false){continue;}
 				$ERR[]=$notif;
 			}
 		}
 	}
 
-
+    $ArticaRestStatus=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/status"),true);
     $DEBIAN_VERSION=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DEBIAN_VERSION"));
     if($DEBIAN_VERSION<7) {
         $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/status"));
-        $DEBIAN_VERSION = $json->DebianVersion;
+        $DEBIAN_VERSION = intval($json->DebianVersion ?? 0);
     }
     if($DEBIAN_VERSION==10){
         $HideDebian10SupportMonths=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideDebian10SupportMonths"));
@@ -561,7 +476,7 @@ function notifs(){
     $HideDebian10DnsDist=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideDebian10DnsDist"));
     $EnableDNSDist=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist"));
     if($EnableDNSDist==1){
-         if($DEBIAN_VERSION<12){
+         if($DEBIAN_VERSION>0 && $DEBIAN_VERSION<12){
             if($HideDebian10DnsDist==0){
                 $SOFT_NO_LONGER_SUPPORT=$tpl->_ENGINE_parse_body("{SOFT_NO_LONGER_SUPPORT}");
                 $SOFT_NO_LONGER_SUPPORT=str_replace("%p","{APP_DNSDIST}",$SOFT_NO_LONGER_SUPPORT);
@@ -572,7 +487,7 @@ function notifs(){
     }
 
     if(!$users->AsDockerWeb) {
-        if($DEBIAN_VERSION<10){
+        if($DEBIAN_VERSION>0 && $DEBIAN_VERSION<10){ // 0 = version inconnue, pas une vieille Debian
             if($HideDebianIco==0){
                 $ERR[] = "{error_old_debian_version}||{error_limited_support_text}||WARN||||js:Loadjs('$page?SetToken=HideSystemdIco');";
             }
@@ -589,33 +504,6 @@ function notifs(){
     }
 
     if(!$users->AsDockerWeb) {
-        $ArticaAutoUpateOfficial = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaAutoUpateOfficial"));
-        $ArticaAutoUpateNightly = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaAutoUpateNightly"));
-        $ArticaDisablePatchs = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaDisablePatchs"));
-        $HideArticaAutoUpdateIco = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideArticaAutoUpdateIco"));
-
-        if ($HideArticaAutoUpdateIco == 0) {
-            if ($users->AsSystemAdministrator) {
-                $TEST_UPDATE = true;
-                if ($ArticaAutoUpateOfficial == 0 and $ArticaAutoUpateNightly == 0 and $ArticaDisablePatchs == 1) {
-                    $TEST_UPDATE = false;
-                }
-
-                if ($TEST_UPDATE) {
-                    $Updates = 0;
-                    $q = new lib_sqlite("/home/artica/SQLITE/sys_schedules.db");
-                    if ($q->TABLE_EXISTS("system_schedules")) {
-                        $ligne = $q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM system_schedules WHERE TaskType=83");
-                        $Updates = intval($ligne["tcount"]);
-                    }
-                    if ($Updates == 0) {
-                        $ERR[] = "{schedule}: {update_artica}||{no_update_artica}||INFO||js:window.location.href='/artica-tasks-update';||js:Loadjs('$page?SetToken=HideArticaAutoUpdateIco');";
-                    }
-                }
-            }
-        }
-
-
         $tpl = new template_admin();
         $EnableRDPProxy = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRDPProxy"));
         if ($EnableRDPProxy == 1) {
@@ -794,7 +682,12 @@ function notifs(){
         if ($users->AsSystemAdministrator) {
             if (is_file("/home/artica/SQLITE/nightly.db")) {
                 $q = new lib_sqlite("/home/artica/SQLITE/nightly.db");
-                $results = $q->QUERY_SQL("SELECT * FROM history WHERE asseen=0 ORDER BY updated DESC");
+                // Installation neuve : la table history n'existe qu'apres le premier controle des mises a jour.
+                $results = array();
+                if ($q->TABLE_EXISTS("history")) {
+                    $results = $q->QUERY_SQL("SELECT * FROM history WHERE asseen=0 ORDER BY updated DESC");
+                    if (!is_array($results)) { $results = array(); }
+                }
                 $page = CurrentPageName();
 
                 if (count($results) > 2) {
@@ -843,10 +736,6 @@ function notifs(){
 
             }
 
-        }
-
-        if (isset($UPDATES_ARRAY["APP_XKERNEL"])) {
-            $ERR[] = APP_XKERNEL();
         }
 
         $ERR[]=NOTIF_LATEST_KERNEL();
@@ -916,11 +805,7 @@ function notifs(){
     }
 
     $PostfixEnable=intval($GLOBALS['CLASS_SOCKETS']->GET_INFO("EnablePostfix"));
-    if($PostfixEnable==1) {
-        if (!is_file("/usr/bin/mhonarc")) {
-            $ERR[] = "{Warninmhonarc}||js:Loadjs('fw.php7.0-mhonarc.php')";
-        }
-    }
+
 
     if ($UnboundEnabled==1){
         if (!is_file("/usr/lib/x86_64-linux-gnu/libprotobuf-c.so.1.0.0")) {
@@ -949,12 +834,6 @@ function notifs(){
             }
         }
 
-        if($PYTHON_CARE) {
-            $python_error = python_error();
-            if ($python_error <> null) {
-                $ERR[] = $python_error;
-            }
-        }
 
 
 
@@ -977,24 +856,13 @@ function notifs(){
                 }
             }
         }
-
-
-        if (intval(@file_get_contents("/etc/artica-postfix/LOCAL_GEN_EXECUTED")) == 0) {
-
-            $ERR[] = "{LOCALES_NOT_COMPILED}||js:Loadjs('fw.system.locales.progress.php')";
-        } else {
-
-            $LOCALE = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LOCALE"));
-            if ($LOCALE == null) {
-                $ERR[] = "{LOCALES_NOT_DEFINED}||js:Loadjs('fw.system.locale.php')";
-            }
-            $search = ' UTF-8';
-            if(preg_match("/{$search}/i", $LOCALE)) {
-                $ERR[] = "{NEED_REBUILD_LOCALES}||js:Loadjs('fw.system.locale.php')";
-            }
-
-
+        $LOCALES_NOT_COMPILED=LOCALES_NOT_COMPILED($ArticaRestStatus);
+        if(strlen($LOCALES_NOT_COMPILED)>1){
+            $ERR[] = $LOCALES_NOT_COMPILED;
         }
+
+
+
         $EnableDNSFilterd = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSFilterd"));
         if ($EnableDNSFilterd == 1) {
             $DNSFILTERD_NUM_DATABASES = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSFILTERD_NUM_DATABASES"));
@@ -1022,15 +890,7 @@ function notifs(){
             }
         }
 	}}
-    if(!$users->AsDockerWeb) {
-        if (is_file("/home/artica/SQLITE/bugzilla.db")) {
-            $q = new lib_sqlite("/home/artica/SQLITE/bugzilla.db");
-            $ligne2 = $q->mysqli_fetch_array("SELECT count(*) as tcount FROM `bugs`");
-            if ($ligne2["tcount"] > 0) {
-                $ERR[] = "{$ligne2["tcount"]} {tickets_not_closed}||js:LoadAjaxSilent('MainContent','fw.bugzilla.php');";
-            }
-        }
-    }
+
 
     $class_text="text-danger";
     $icon=ico_emergency;
@@ -1041,7 +901,20 @@ function notifs(){
         $CC++;
     }
 
-    if($CC==0){return;}
+    // Barres CPU/RAM du bandeau: la minuterie qui les alimente etait armee en fin
+    // de fonction, donc APRES le return ci-dessous. Sur une appliance sans aucune
+    // notification ($CC==0) elle n'etait jamais posee, et les deux barres restaient
+    // figees sur le "0%" statique emis par fw-top-bar.php -- alors que
+    // fw.system.status.php?top-cpu=yes repondait parfaitement. Le bandeau n'a aucun
+    // rapport avec la cloche: on arme la minuterie dans les deux branches // Dispo uniquement si Admin.
+
+    $jsMiniBars=notifs_minibars_js($users,$tpl);
+
+    if($CC==0){
+        echo "<script>\n$jsMiniBars\n</script>\n";
+        return;
+    }
+
 
     echo "<a class=\"dropdown-toggle count-info\" data-toggle=\"dropdown\" href=\"#\">
         <i class=\"text-warning fa fa-bell\"></i>  <span class=\"label label-danger\">$CC</span>
@@ -1084,6 +957,15 @@ function notifs(){
             $btn_text="{more_information}";
         }
         $hide=null;
+
+        // btnhide: choisit le libelle du bouton de rejet, comme btntxt: le fait
+        // pour celui d'action. Lu ICI et non dans la boucle plus bas: $btn_hide
+        // est consomme des le bloc suivant.
+        foreach ($ft as $ixh=>$ch){
+            if($ixh<5){continue;}
+            if(!is_string($ch)){continue;}
+            if(preg_match("#^btnhide:(.+)#",$ch,$fh)){$btn_hide=$fh[1];$ft[$ixh]=null;}
+        }
 
 		if(isset($ft[4])){
             $hideNotif=$ft[4];
@@ -1142,10 +1024,13 @@ echo "<li style='font-weight:bold;font-size:14px'>
 </li>
 <li class=\"divider\"></li>";
 }
+
+    $js=$jsMiniBars;   // calculee plus haut, pour etre aussi emise quand $CC==0
+
     echo "</ul>\n";
     echo "<script>\n";
     echo "\tif(document.getElementById('WSUSOFFLINE-STATE') ){\n\t\tLoadAjaxSilent('WSUSOFFLINE-STATE','fw.wsusoffline.php?status=yes');\n\t}\n";
-    echo "Loadjs('fw.system.status.php?top-cpu=yes');\n";
+    echo "$js\n";
     echo "</script>\n";
 
 
@@ -1173,31 +1058,6 @@ function _php_error():string{
     if(count($bad)==0){return "";}
 
     return "{missing_php_modules}: ".@implode(", ",$bad)."||{missing_php_modules_explain}||||DANGER||";
-}
-
-function python_error():string{
-    return "";
-    $page=CurrentPageName();
-	if(!is_file("/usr/bin/pip")){return "{WarningPythonPip}||js:Loadjs('fw.python-pip.php')";}
-	if(!is_file("/home/artica/SQLITE/python-packages.db")){return "{WarningPythonCollection}||js:Loadjs('fw.python-collection.php')";}
-	$q=new lib_sqlite("/home/artica/SQLITE/python-packages.db");
-    $EnableElasticSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableElasticSearch"));
-	$HidePythonElasticSearch=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HidePythonElasticSearch"));
-    if($EnableElasticSearch==0){$HidePythonElasticSearch=1;}
-
-	if($HidePythonElasticSearch==0) {
-        $ligne = $q->mysqli_fetch_array("SELECT package_version FROM python_packages WHERE package_name='elasticsearch'");
-        if (strlen(trim($ligne["package_version"])) == 0) {
-            return "{WarningPythonElasticSearch}||||js:Loadjs('fw.python-pip.install.php?package=elasticsearch')||DANGER||js:Loadjs('$page?SetToken=HidePythonElasticSearch');";
-        }
-
-    }
-	$ligne=$q->mysqli_fetch_array("SELECT package_version FROM python_packages WHERE package_name='python-memcached'");
-	if(strlen(trim($ligne["package_version"]))==0){
-		return "{WarningPythonMemCached}||js:Loadjs('fw.python-pip.install.php?package=python-memcached')";
-	}
-
-return "";
 }
 
 function CheckAds($ERR){
@@ -1252,14 +1112,48 @@ function update_find_lts($array):int{
     return intval($keyMain);
 }
 
+/**
+ * Hotfix installe sur cette machine, lu a la source : la ligne 2 de
+ * fw.updates.php ($GLOBALS["HOTFIX"]="20260908-02";), que le paquet hotfix
+ * reecrit a chaque application. C'est la meme lecture que
+ * exec.artica.update.manu.php::CurrentHotFix() et futils.ArticaCurrentHotfix()
+ * cote daemon. Retourne "" si aucun hotfix n'est installe.
+ */
+function hotfix_current():string{
+    $f=explode("\n",(string)@file_get_contents(dirname(__FILE__)."/fw.updates.php"));
+    foreach ($f as $line){
+        if(preg_match("#GLOBALS\[.*?HOTFIX.*?\].*?([0-9\-]+)#",$line,$re)){
+            return $re[1];
+        }
+    }
+    return "";
+}
+/** "20260908-02" -> 2026090802 : les hotfix se comparent comme des entiers. */
+function hotfix_to_int(string $ver):int{
+    return intval(preg_replace("#[^0-9]#","",$ver));
+}
+/**
+ * Vrai si $candidate est STRICTEMENT plus recent que le hotfix installe.
+ * UPDATE_TO_HOTFIX est un reglage persistant que le daemon ne recalcule qu'a
+ * son rythme (cache 5 min + index depot) : apres l'application d'un hotfix il
+ * peut encore designer une version deja depassee. La page ne doit donc jamais
+ * l'afficher sans le comparer a ce qui tourne reellement.
+ */
+function hotfix_is_newer(string $candidate):bool{
+    $cand=hotfix_to_int($candidate);
+    if($cand==0){return false;}
+    $cur=hotfix_to_int(hotfix_current());
+    return $cand>$cur;
+}
 function NOTIF_HOTFIX_OFF():string{
     $sock=new sockets();
     $sock->REST_API("/system/artica/latestHotfix");
     $page=CurrentPageName();
-    $UPDATE_TO_HOTFIX=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UPDATE_TO_HOTFIX");
+    $UPDATE_TO_HOTFIX=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UPDATE_TO_HOTFIX"));
     if (strlen($UPDATE_TO_HOTFIX)<5){
         return "";
     }
+    if(!hotfix_is_newer($UPDATE_TO_HOTFIX)){return "";}
     $ToKenHide="HideOffHotFix$UPDATE_TO_HOTFIX";
     $Hideen=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($ToKenHide));
     if($Hideen==1){return "";}
@@ -1288,6 +1182,7 @@ function NOTIF_HOTFIX_DEV():string{
             return "";
         }
     }
+    if(!hotfix_is_newer((string)$HotFixStringAvailabe)){return "";}
     $tpl=new template_admin();
     $new_available_hotfix_text=$tpl->_ENGINE_parse_body("{new_available_hotfix_text}");
     $new_available_hotfix_text=str_replace("%s",$HotFixStringAvailabe,$new_available_hotfix_text);
@@ -1306,83 +1201,33 @@ function update_find_latest_nightly($array):int{
 
 	return intval($keyMain);
 }
-function APP_XKERNEL():string{
-    $HideArticaXTNDPIco=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideArticaXTNDPIco"));
-    $NEEDRESTART=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NEEDRESTART"));
-    if($NEEDRESTART==1){
-        return "";
+
+
+// Une entree de cloche par faille du noyau signalee vulnerable par le daemon
+// (GET /system/debian/kernel/cves). Pas de bouton de rejet : l'entree disparait
+// d'elle-meme au redemarrage sur un noyau corrige. Daemon trop ancien (route
+// absente) ou reponse illisible : rien.
+function NOTIF_KERNEL_CVES():array{
+    $out=array();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/debian/kernel/cves"),true);
+    if(!is_array($json) || empty($json["Status"]) || !isset($json["Data"]) || !is_array($json["Data"])){
+        return $out;
     }
-
-    if($HideArticaXTNDPIco==1){return "";}
-
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/xtables"));
-    if($json->Status){return "";}
-
-    if(!property_exists($json,"Version")) {return "";}
-    $kernver=$json->Version;
-    $page       = CurrentPageName();
-    $tpl=new template_admin();
-
-    $def    = $tpl->_ENGINE_parse_body("{kernel_modules_update_explain}");
-    $def    = str_replace("%s","$kernver",$def);
-
-    return "{kernel_modules_update}||$def||WARN||js:Loadjs('fw.system.upgrade-software.php?product=APP_XTABLES');||js:Loadjs('$page?SetToken=HideArticaXTNDPIco');";
-}
-
-function NOTIF_APP_PROFTPD($UPDATES_ARRAY){
-    $tphp = "fw.system.upgrade-software.php";
-    $EnableProFTPD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableProFTPD"));
-    if($EnableProFTPD==0){return "";}
-    $HideNewVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewProftpdVer"));
-    if($HideNewVer==1){return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_PROFTPD",
-            "TOKEN_VER"=>"ProFTPDVersion",
-            "TOKEN_ENABLED"=>"EnableProFTPD")
-    );
-
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
+    foreach ($json["Data"] as $row){
+        if(!is_array($row) || empty($row["vulnerable"])){continue;}
+        $cve=preg_replace('#[^A-Z0-9-]#','',(string)($row["cve"] ?? ""));
+        if($cve==""){continue;}
+        // Aucun correctif pour cette serie (Debian 10 en 4.19) : la mise a jour du
+        // noyau de la console resterait en 4.19, le bouton ouvre la page du wiki
+        // (noyau ELTS linux-6.1). Le champ 4 est le bouton de rejet : laisse vide.
+        if(empty($row["fixed_in"])){
+            $url="https://wiki.articatech.com/maintenance/security/$cve";
+            $out[]="$cve||Please update the Linux kernel||DANGER||js:s_PopUpFull('$url',1024,768,'Wiki');||||btntxt:{more_information}";
+            continue;
+        }
+        $out[]="$cve||Please update the Linux kernel||DANGER||js:Loadjs('fw.system.upgrade-kernel.php');";
     }
-
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_PROFTPD}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_PROFTPD')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-
-}
-function NOTIF_APP_HAPROXY_CLUSTER($UPDATES_ARRAY):string{
-    $tphp = "fw.system.upgrade-software.php";
-    $HideNewVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewHaclusterVer"));
-    if($HideNewVer==1){return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $AVAILABLE_VER      = $tpl->HAPROXY_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER == 0) {
-        VERBOSE("APP_HAPROXY_CLUSTER AVAILABLE_VER=$AVAILABLE_VER",__LINE__);
-        return "";}
-
-    $master_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HAPROXY_VERSION");
-    $NewVer=$UPDATES_ARRAY["APP_HAPROXY"][$AVAILABLE_VER]["VERSION"];
-    VERBOSE("APP_HAPROXY New version: $NewVer",__LINE__);
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_HAPROXY_CLUSTER}", $STEXT);
-    $STEXT = str_replace("%ver", $master_version, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    return "$STEXT||js:Loadjs('$tphp?product=APP_HAPROXY')||WARN||||js:Loadjs('$page?SetToken=HideNewHaclusterVer');";
-
-
+    return $out;
 }
 
 function NOTIF_LATEST_KERNEL():string{
@@ -1454,404 +1299,144 @@ function APP_ARP_SCANNER():string{
 
 }
 
-function NOTIF_SAMBA($UPDATES_ARRAY):string{
-
-    $Installed= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SAMBA_INSTALLED"));
-    if($Installed==0){
-        return "";
-    }
-    $tphp = "fw.system.upgrade-software.php";
-    $HideNewVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewSambaVer"));
-    if($HideNewVer==1){return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-    $MAIN_KEY="APP_SAMBA";
-    if(!isset($UPDATES_ARRAY[$MAIN_KEY])){return "";}
-
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $AVAILABLE_VER      = $tpl->SAMBA_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-
-    if ($AVAILABLE_VER == 0) {
-        VERBOSE("Samba AVAILABLE_VER=$AVAILABLE_VER",__LINE__);
-        return "";
-    }
-
-    $master_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SAMBA_VERSION");
-    $NewVer=$UPDATES_ARRAY[$MAIN_KEY][$AVAILABLE_VER]["VERSION"];
-    VERBOSE("New version: $NewVer",__LINE__);
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{".$MAIN_KEY."}", $STEXT);
-    $STEXT = str_replace("%ver", $master_version, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    return "$STEXT||js:Loadjs('$tphp?product=$MAIN_KEY')||WARN||||js:Loadjs('$page?SetToken=HideNewSambaVer');";
-}
-function NOTIF_AUTOFS($UPDATES_ARRAY):string{
-
-    $AutoFSInstalled= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AutoFSInstalled"));
-    if($AutoFSInstalled==0){
-        return "";
-    }
-    $tphp = "fw.system.upgrade-software.php";
-    $HideNewVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewAutoFSVer"));
-    if($HideNewVer==1){return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-    $MAIN_KEY="APP_AUTOFS";
-    if(!isset($UPDATES_ARRAY[$MAIN_KEY])){return "";}
-
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $AVAILABLE_VER      = $tpl->AUTOFS_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-
-    if ($AVAILABLE_VER == 0) {
-        VERBOSE("AutoFS AVAILABLE_VER=$AVAILABLE_VER",__LINE__);
-        return "";
-    }
-
-    $master_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_AUTOFS_VERSION");
-    $NewVer=$UPDATES_ARRAY[$MAIN_KEY][$AVAILABLE_VER]["VERSION"];
-    VERBOSE("New version: $NewVer",__LINE__);
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{".$MAIN_KEY."}", $STEXT);
-    $STEXT = str_replace("%ver", $master_version, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    return "$STEXT||js:Loadjs('$tphp?product=$MAIN_KEY')||WARN||||js:Loadjs('$page?SetToken=HideNewAutoFSVer');";
-}
-function NOTIF_MONIT($UPDATES_ARRAY):string{
-    $tphp = "fw.system.upgrade-software.php";
-    $HideNewVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewMonitVer"));
-    if($HideNewVer==1){return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $AVAILABLE_VER      = $tpl->MONIT_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER == 0) {
-        VERBOSE("Monit AVAILABLE_VER=$AVAILABLE_VER",__LINE__);
-        return "";}
-
-    $master_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_MONIT_VERSION");
-    $NewVer=$UPDATES_ARRAY["APP_MONIT"][$AVAILABLE_VER]["VERSION"];
-    VERBOSE("New version: $NewVer",__LINE__);
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_MONIT}", $STEXT);
-    $STEXT = str_replace("%ver", $master_version, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    return "$STEXT||js:Loadjs('$tphp?product=APP_MONIT')||WARN||||js:Loadjs('$page?SetToken=HideNewMonitVer');";
-}
-function NOTIF_NAGIOS($UPDATES_ARRAY):string{
-    $EnableDaemon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNagiosClient"));
-
-    if($EnableDaemon==0){
-        VERBOSE("EnableDaemon=$EnableDaemon",__LINE__);
-        return "";
-    }
-
-
-    $tphp = "fw.system.upgrade-software.php";
-    $HideNewVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewNagiosVer"));
-    if($HideNewVer==1){return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $AVAILABLE_VER      = $tpl->NAGIOS_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER == 0) {
-        VERBOSE("Nagios AVAILABLE_VER=$AVAILABLE_VER",__LINE__);
-        return "";}
-
-    $master_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NAGIOS_CLIENT_VERSION");
-    $NewVer=$UPDATES_ARRAY["APP_NAGIOS_CLIENT"][$AVAILABLE_VER]["VERSION"];
-    VERBOSE("New version: $NewVer",__LINE__);
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_NAGIOS_CLIENT}", $STEXT);
-    $STEXT = str_replace("%ver", $master_version, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    return "$STEXT||js:Loadjs('$tphp?product=APP_NAGIOS_CLIENT')||WARN||||js:Loadjs('$page?SetToken=HideNewNagiosVer');";
-}
-function NOTIF_NETDATA($UPDATES_ARRAY){
-    $tphp = "fw.system.upgrade-software.php";
-    $HideNewVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewNetDataVer"));
-    if($HideNewVer==1){return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-    $EnableDaemon=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NetDATAEnabled"));
-
-    if($EnableDaemon==0){
-        VERBOSE("EnableDaemon=$EnableDaemon",__LINE__);
-        return "";
-    }
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $AVAILABLE_VER      = $tpl->NETDATA_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER == 0) {
-        VERBOSE("Netdata AVAILABLE_VER=$AVAILABLE_VER",__LINE__);
-        return "";}
-    $master_version=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NETDATA_VERSION");
-    $NewVer=$UPDATES_ARRAY["APP_NETDATA"][$AVAILABLE_VER]["VERSION"];
-    VERBOSE("New version: $NewVer",__LINE__);
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_NETDATA}", $STEXT);
-    $STEXT = str_replace("%ver", $master_version, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    return "$STEXT||js:Loadjs('$tphp?product=APP_NETDATA')||WARN||||js:Loadjs('$page?SetToken=HideNewNetDataVer');";
-
-
-}
-
-
-function NOTIF_CLAMAV($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-    $EnableClamavDaemon = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableClamavDaemon"));
-    if($EnableClamavDaemon==0){return "";}
-    $HideNewClamdVer    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewClamdVer"));
-    if($HideNewClamdVer==1){return "";}
-    $AVAILABLE_VER      = $tpl->CLAMAV_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER == 0) { return "";}
-    $NewVer=$UPDATES_ARRAY["APP_CLAMAV"][$AVAILABLE_VER]["VERSION"];
-    return "{APP_AV_SCANNER_UPDATE} $NewVer||{APP_AV_SCANNER_UPDATE_TEXT}||WARN||js:Loadjs('fw.system.upgrade-software.php?product=APP_CLAMAV');||js:Loadjs('$page?SetToken=HideNewClamdVer');";
-}
-
-
-function NOTIFS_RDS_PROXY($UPDATES_ARRAY):array{
-    $tpl = new template_admin();
-    $page = CurrentPageName();
-    $ERR = array();
-
-    $tphp = "fw.system.upgrade-software.php";
-    $EnableRDPProxy = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRDPProxy"));
-    if ($EnableRDPProxy == 0) {
-        return $ERR;
-    }
-    if (!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {
-        return $ERR;
-    }
-    $APP_RDPPROXY_VERSION = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RDPPROXY_VERSION");
 
 
 
-    $Token = "HideCiCAPNewVerIco$APP_RDPPROXY_VERSION";
-    $HideNewVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewVer == 1) {
-        return $ERR;
-    }
-    $AVAILABLE_VER = $tpl->PRDPROXY_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER > 0){
-        $NewVer = $UPDATES_ARRAY["APP_RDPPROXY"][$AVAILABLE_VER]["VERSION"];
-        $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-        $STEXT = str_replace("%product", "{APP_RDPPROXY}", $STEXT);
-        $STEXT = str_replace("%ver", $APP_RDPPROXY_VERSION, $STEXT);
-        $STEXT = str_replace("%next", $NewVer, $STEXT);
-        $ERR[] = "$STEXT||js:Loadjs('$tphp?product=APP_RDPPROXY')||WARN||||js:Loadjs('$page?SetToken=$Token');";
 
+// Reponses du support reperees par la surveillance des 3 minutes
+// (supporttool/watch.go) et pas encore ecartees.
+//
+// Deux boutons: celui d'action ouvre le fil pour lire la reponse, celui de
+// rejet la retire de la cloche. Le format d'entree les porte aux positions 3 et
+// 4; btnhide: en 5 nomme le second « {ignore} » plutot que « {hide} ».
+function NOTIF_SUPPORT_UNREAD():array{
+    $ERR=array();
+    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator){return $ERR;}
+    $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/support/unread")),true);
+    if(!is_array($resp) || empty($resp["Status"])){return $ERR;}
+    $data=isset($resp["data"])?$resp["data"]:null;
+    if(!is_array($data)){return $ERR;}
+    $page=CurrentPageName();
+    foreach($data as $u){
+        if(!is_array($u)){continue;}
+        $tid=intval(isset($u["ticketId"])?$u["ticketId"]:0);
+        $thid=intval(isset($u["threadId"])?$u["threadId"]:0);
+        if($tid<1 || $thid<1){continue;}
+        $number=preg_replace("/[^0-9]/","",(string)(isset($u["number"])?$u["number"]:""));
+        $subject=support_notif_clean(isset($u["subject"])?$u["subject"]:"");
+        $from=support_notif_clean(isset($u["from"])?$u["from"]:"");
+        $prev=support_notif_clean(isset($u["preview"])?$u["preview"]:"");
+        if(strlen($prev)>160){$prev=substr($prev,0,160)."...";}
+        $title="{new_message} #".$number.($subject!==""?" - ".$subject:"");
+        $explain=($from!==""?$from." &middot; ":"").$prev;
+        $ERR[]=$title."||".$explain."||INFO"
+              ."||js:Loadjs('fw.support.php?show-js=".$tid."');"
+              ."||js:Loadjs('".$page."?support-dismiss=".$thid."');"
+              ."||btnhide:{ignore}";
     }
     return $ERR;
 }
-function NOTIFS_SYSLOGD($UPDATES_ARRAY):array{
-    $tpl = new template_admin();
-    $page = CurrentPageName();
-    $ERR = array();
-    $tphp = "fw.system.upgrade-software.php";
 
-    if (!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {
-        return $ERR;
-    }
-    $APP_RSYSLOGD_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_SYSLOGD_VERSION");
-    VERBOSE("APP_RSYSLOGD_VERSION = $APP_RSYSLOGD_VERSION",__LINE__);
-    $Token = "HideSyslogdNewVerIco$APP_RSYSLOGD_VERSION";
-    $HideNewCicapVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewCicapVer == 1) {
-        return $ERR;
-    }
+// Le geste « {ignore} ». Loadjs EXECUTE la reponse: on rend le rafraichissement
+// de la cloche, sans quoi l'entree resterait a l'ecran jusqu'au prochain cycle.
+function support_dismiss(){
+    $id=intval($_GET["support-dismiss"]);
+    if($id<1){return;}
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/support/unread/dismiss/".$id);
+    echo "LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');";
+}
 
-    $AVAILABLE_VER = $tpl->SYSLOG_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER > 0){
-        $NewVer = $UPDATES_ARRAY["APP_SYSLOGD"][$AVAILABLE_VER]["VERSION"];
-        $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-        $STEXT = str_replace("%product", "{APP_RSYSLOG}", $STEXT);
-        $STEXT = str_replace("%ver", $APP_RSYSLOGD_VERSION, $STEXT);
-        $STEXT = str_replace("%next", $NewVer, $STEXT);
-        $ERR[] = "$STEXT||js:Loadjs('$tphp?product=APP_SYSLOGD')||WARN||||js:Loadjs('$page?SetToken=$Token');";
+// Tickets de support encore ouverts.
+//
+// Le bouton d'action de la cloche porte DEJA le libelle {fix_it} par defaut
+// (voir notifs(): $btn_text="{fix_it}"): c'est le bouton demande, il n'y a
+// aucun jeton a declarer. Le clic ouvre le fil de discussion par
+// fw.support.php?show-js=<id>, qui passe par js_dialog1 -- donc une modale
+// par-dessus la page courante, sans quitter ce que l'operateur consultait.
+//
+// Format d'une entree: titre||explication||NIVEAU||js:<code>. L'action est en
+// position 3 et non 1: en position 1 elle EFFACE l'explication
+// (notifs(): if(preg_match("#^js:(.+)#",$explain)) { $js=...; $explain=null; }),
+// or on veut les deux. La position 4 est reservee au bouton « masquer », qui
+// n'a pas de sens ici: l'entree disparait d'elle-meme quand le ticket se ferme.
+function NOTIF_SUPPORT_TICKETS():array{
+    $ERR=array();
+    // Un ticket peut contenir des donnees d'exploitation: meme exigence que les
+    // ecritures de fw.support.php.
+    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator){return $ERR;}
+    // Aucun compte de support: on ne paie pas l'aller-retour REST. La cloche est
+    // rebatie a chaque rafraichissement du bandeau, sur toutes les pages.
+    if(intval(base64_decode((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("supportMID")))<1){return $ERR;}
 
+    $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/support/db/tickets")),true);
+    if(!is_array($resp) || empty($resp["Status"])){return $ERR;}
+    if(!isset($resp["data"]) || !is_array($resp["data"])){return $ERR;}
+
+    $tpl=new template_admin();
+    $n=0;
+    foreach($resp["data"] as $t){
+        if(!is_array($t)){continue;}
+        $id=intval($t["id"] ?? 0);
+        if($id<1){continue;}
+        // Le portail ne publie pas « ouvert » mais un statut: tout ce qui n'est
+        // ni clos ni indesirable reste a traiter. Et un ticket supprime cote
+        // portail garde son statut « active » -- c'est l'etat qui le dit.
+        $status=strtolower(trim((string)($t["status"] ?? "")));
+        if($status==="closed" || $status==="spam"){continue;}
+        if(strtolower(trim((string)($t["state"] ?? "")))==="deleted"){continue;}
+        // Une cloche n'est pas une liste de tickets: au-dela, la page de support.
+        if($n>=10){break;}
+        $n++;
+
+        $number=preg_replace("/[^0-9]/","",(string)($t["number"] ?? ""));
+        $subject=support_notif_clean($t["subject"] ?? "");
+        if($subject===""){$subject="#".$number;}
+        $updated=intval($t["updatedAt"] ?? 0);
+
+        $title="{support} #".$number." - ".$subject;
+        $explain="{open}";
+        if($updated>0){$explain.=" &middot; {last_update} ".$tpl->time_to_date($updated,true);}
+
+        $ERR[]=$title."||".$explain."||INFO||js:Loadjs('fw.support.php?show-js=".$id."');";
     }
     return $ERR;
 }
-function NOTIFS_CICAP($UPDATES_ARRAY):array{
-    $tpl = new template_admin();
-    $page = CurrentPageName();
-    $ERR = array();
 
-    $tphp = "fw.system.upgrade-software.php";
-    $CicapEnabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CicapEnabled"));
-    if ($CicapEnabled == 0) {
-        return $ERR;
-    }
-    if (!$GLOBALS["CLASS_USERS"]->AsSquidAdministrator) {
-        return $ERR;
-    }
-    $CicapVersion = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("CicapVersion");
-    $Token = "HideCiCAPNewVerIco$CicapVersion";
-    $HideNewCicapVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewCicapVer == 1) {
-        return $ERR;
-    }
-    $AVAILABLE_VER = $tpl->CICAP_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER > 0){
-        $NewVer = $UPDATES_ARRAY["APP_C_ICAP"][$AVAILABLE_VER]["VERSION"];
-        $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-        $STEXT = str_replace("%product", "{APP_C_ICAP}", $STEXT);
-        $STEXT = str_replace("%ver", $CicapVersion, $STEXT);
-        $STEXT = str_replace("%next", $NewVer, $STEXT);
-        $ERR[] = "$STEXT||js:Loadjs('$tphp?product=APP_C_ICAP')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-    }
-    return $ERR;
+// Le sujet vient du portail, donc de l'exterieur. Deux dangers propres a cette
+// cloche, en plus de l'echappement HTML: « || » est le SEPARATEUR de champs --
+// une barre verticale dans un sujet decalerait tous les champs suivants et
+// transformerait le niveau en explication -- et _ENGINE_parse_body lit tout
+// {mot} comme un jeton a resoudre.
+function support_notif_clean($s):string{
+    $s=str_replace(array("|","{","}"),array("/","(",")"),(string)$s);
+    return htmlspecialchars(trim($s),ENT_QUOTES,"UTF-8");
 }
+
 
 
 //
-function NOTIF_WP_CLI($UPDATES_ARRAY){
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $ERR                = array();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWordpressManagement"));
-    if($EnableSoft==0) {return $ERR;}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return $ERR;}
-    $WP_CLIENT_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("WP_CLIENT_VERSION");
-    $Token              = "HideWpCliNewVerIco$WP_CLIENT_VERSION";
-    $HideNewVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewVer == 1) {return $ERR;}
-    $AVAILABLE_VER = $tpl->WP_CLI_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER ==0 ) {return $ERR;}
-    $NewVer = $UPDATES_ARRAY["WP_CLIENT"][$AVAILABLE_VER]["VERSION"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{WP_CLIENT}", $STEXT);
-    $STEXT = str_replace("%ver", $WP_CLIENT_VERSION, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=WP_CLIENT')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-    return $ERR;
-}
-function NOTIFS_APP_NGINX_CONSOLE($UPDATES_ARRAY):array{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $ERR                = array();
 
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return $ERR;}
-    $CurrentVer=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_CONSOLE_VERSION");
-    $Token              = "HideArticaNginxNewVerIco$CurrentVer";
-    $HideNewVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewVer == 1) {return $ERR;}
-    $AVAILABLE_VER = $tpl->APP_NGINX_CONSOLE_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER ==0 ) {return $ERR;}
-    $NewVer = $UPDATES_ARRAY["APP_NGINX_CONSOLE"][$AVAILABLE_VER]["VERSION"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_ARTICAWEBCONSOLE}", $STEXT);
-    $STEXT = str_replace("%ver", $CurrentVer, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_NGINX_CONSOLE')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-    return $ERR;
+// La notification unique � x paquets geres par Artica a mettre a jour �. Son
+// bouton de rejet passe par fw.updates.packages.php et non par SetToken : la
+// valeur memorisee est une empreinte calculee cote serveur, que SetTokenConfirm
+// (qui compare des entiers) ne saurait relire.
+function NOTIF_ARTICA_PACKAGES($UPDATES_ARRAY):string{
+    include_once(dirname(__FILE__)."/ressources/class.updates.packages.inc");
+    $rows=artica_packages_updates(false,$UPDATES_ARRAY);
+    $count=count($rows);
+    if($count==0){return "";}
+    if(pkgupd_notif_hidden($rows)){return "";}
+    $tpl=new template_admin();
+    $title=str_replace("%s",$count,$tpl->_ENGINE_parse_body("{x_artica_packages_to_update}"));
+    return "$title||{x_artica_packages_to_update_explain}||WARN||js:Loadjs('fw.updates.packages.php?js=yes');||js:Loadjs('fw.updates.packages.php?hide-notif-js=yes');||btntxt:{details}";
 }
 
-function NOTIFS_REDIS($UPDATES_ARRAY):array{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $ERR                = array();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedisService"));
-    if($EnableSoft==0) {return $ERR;}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return $ERR;}
-    $APP_REDIS_SERVER_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_REDIS_SERVER_VERSION");
-    $Token              = "HideRedisNewVerIco$APP_REDIS_SERVER_VERSION";
-    $HideNewVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewVer == 1) {return $ERR;}
-    $AVAILABLE_VER = $tpl->REDIS_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-    if ($AVAILABLE_VER ==0 ) {return $ERR;}
-    $NewVer = $UPDATES_ARRAY["APP_REDIS_SERVER"][$AVAILABLE_VER]["VERSION"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_REDIS_SERVER}", $STEXT);
-    $STEXT = str_replace("%ver", $APP_REDIS_SERVER_VERSION, $STEXT);
-    $STEXT = str_replace("%next", $NewVer, $STEXT);
-    $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_REDIS_SERVER')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-    return $ERR;
-}
-function NOTIFS_APP_CROWDSEC($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableCrowdSec"));
-    if($EnableSoft==0) {return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsDnsAdministrator) {return "";}
-
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_CROWDSEC",
-            "TOKEN_VER"=>"APP_CROWDSEC_VERSION",
-            "TOKEN_ENABLED"=>"EnableCrowdSec")
-    );
-
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_CROWDSEC}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_CROWDSEC')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
-function NOTIFS_DNSDIST9($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist"));
-    if($EnableSoft==0) {return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsDnsAdministrator) {return "";}
-
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_DNSDIST9",
-            "TOKEN_VER"=>"APP_DNSDIST_VERSION",
-            "TOKEN_ENABLED"=>"EnableDNSDist")
-    );
-
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_DNSDIST9}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_DNSDIST9')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
 function NOTIFS_DNSDIST($UPDATES_ARRAY){
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
     $ERR                = array();
     $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist"));
     if($EnableSoft==0) {return $ERR;}
     if(!$GLOBALS["CLASS_USERS"]->AsDnsAdministrator) {return $ERR;}
-    $APP_DNSDIST_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DNSDIST_VERSION");
-    $Token              = "HideDNSDISTNewVerIco$APP_DNSDIST_VERSION";
-    //
-
-    $HideNewNginxVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewNginxVer == 0) {
-        $AVAILABLE_VER = $tpl->DNSDIST_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-        if ($AVAILABLE_VER >0 ) {
-            $NewVer = $UPDATES_ARRAY["APP_DNSDIST"][$AVAILABLE_VER]["VERSION"];
-            $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-            $STEXT = str_replace("%product", "{APP_DNSDIST}", $STEXT);
-            $STEXT = str_replace("%ver", $APP_DNSDIST_VERSION, $STEXT);
-            $STEXT = str_replace("%next", $NewVer, $STEXT);
-            $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_DNSDIST')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-        }
-    }
+    // La nouvelle version de dnsdist est une ligne de fw.updates.packages.php.
 
     $PowerDNSListenAddr=explode("\n",trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSListenAddr")));
     $Count=0;
@@ -1868,104 +1453,6 @@ function NOTIFS_DNSDIST($UPDATES_ARRAY){
     }
 
     return $ERR;
-}
-
-function NOTIFS_UNBOUND($UPDATES_ARRAY){
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $ERR                = array();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
-    if($EnableSoft==0) {return $ERR;}
-    if(!$GLOBALS["CLASS_USERS"]->AsDnsAdministrator) {return $ERR;}
-
-
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_UNBOUND",
-            "TOKEN_VER"=>"UnboundVersion",
-            "TOKEN_ENABLED"=>"UnboundEnabled")
-    );
-
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_UNBOUND}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_UNBOUND')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-
-}
-
-function NOTIF_APP_UFDBGUARD():string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $users=new usersMenus();
-    VERBOSE("AsDansGuardianAdministrator",__LINE__);
-    if(!$GLOBALS["CLASS_USERS"]->AsDansGuardianAdministrator) {return "";}
-    $EnableUfdbGuard=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUfdbGuard");
-
-    if($EnableUfdbGuard==0){
-        VERBOSE("EnableUfdbGuard == 0",__LINE__);
-        return "";
-    }
-    $info=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/webfilter/latestver"),true);
-
-    if(!isset($info["Version"])){
-        VERBOSE("/webfilter/latestver Version == 0",__LINE__);
-        return "";
-    }
-    $NeVer=$info["Version"];
-
-    VERBOSE("/webfilter/latestver Version == $NeVer",__LINE__);
-
-    if($NeVer==""){
-        return "";
-    }
-    $Curver=$info["CurVer"];
-
-    $Token="DisableUfdbguardV$NeVer";
-    if($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token)){
-        return "";
-    }
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_UFDBGUARDD}", $STEXT);
-    $STEXT = str_replace("%ver", $Curver, $STEXT);
-    $STEXT = str_replace("%next", $NeVer, $STEXT);
-    return  "$STEXT||js:Loadjs('fw.ufdb.upgrade.php')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
-
-function NOTIF_APP_ZABBIX_VERSION($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $ERR                = array();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableZabbixAgent"));
-    if($EnableSoft==0) {return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_ZABBIX_AGENT",
-            "TOKEN_VER"=>"APP_ZABBIX_AGENT_VERSION",
-            "TOKEN_ENABLED"=>"EnableZabbixAgent")
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_ZABBIX_AGENT}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_ZABBIX_AGENT')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
 }
 
 function RPF_FILTER():string{
@@ -1987,135 +1474,29 @@ function RPF_FILTER():string{
 
 }
 
-function NOTIF_APP_WAZHU_VERSION($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $ERR                = array();
-    $EnableSoft         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWazhuCLient"));
-    if($EnableSoft==0) {return "";}
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
+function NOTIF_NOT_CATEGORIZED():string{
+    $page=CurrentPageName();
 
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_WAZHU",
-            "TOKEN_VER"=>"APP_WAZHU_VERSION",
-            "TOKEN_ENABLED"=>"EnableWazhuCLient")
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
+    $GoShieldNotCategorized=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldNotCategorized"));
+    if($GoShieldNotCategorized==1){
         return "";
     }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_WAZHU}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_WAZHU')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
-function NOTIF_ADREST_VERSION($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"SQUID_AD_RESTFULL",
-            "TOKEN_VER"=>"ARTICAREST_VERSION",
-            )
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
+    $GoShieldNotCategorizedSeen=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoShieldNotCategorizedSeen"));
+    if($GoShieldNotCategorizedSeen==1){
         return "";
     }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{SQUID_AD_RESTFULL}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=SQUID_AD_RESTFULL')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
-function NOTIF_APP_MSKTUTIL_VERSION($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_MSKTUTIL",
-            "TOKEN_VER"=>"MSKTUTIL_VERSION",
-            "TOKEN_ENABLED"=>"MSKTUTIL_INSTALLED")
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
+    $GoShieldServerEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Enable"));
+    if($GoShieldServerEnable==0){
         return "";
     }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_MSKTUTIL}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_MSKTUTIL')||WARN||||js:Loadjs('$page?SetToken=$Token');";
+    return "{improve_website_categorization}||{improve_website_categorization2}||INFO||js:Loadjs('fw.ksrn.uncategorized.php?ask-js=yes')||js:Loadjs('$page?SetToken=GoShieldNotCategorizedSeen');";
+
 
 }
 
 
 
-function NOTIF_APP_MYSQL_VERSION($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
 
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_MYSQL",
-            "TOKEN_VER"=>"APP_MYSQL_VERSION",
-            "TOKEN_ENABLED"=>"EnableMySQL")
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_MYSQL}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_MYSQL')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-}
-function NOTIF_APP_OPENVPN($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $EnableOpenVPNServer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenVPNServer"));
-    if ($EnableOpenVPNServer == 0) {
-        return "";
-    }
-    if (!$GLOBALS["CLASS_USERS"]->AsVPNManager) {
-        return "";
-    }
-    if (!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {
-        return "";
-    }
-
-    $RESULTS = $tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY" => $UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY" => "APP_OPENVPN",
-            "TOKEN_VER" => "OpenVPNVersion",
-            "TOKEN_ENABLED" => "EnableOpenVPNServer")
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_OPENVPN}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_OPENVPN')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
 function NOTIF_APP_GO_SHIELD_CRASHES():string{
 
     $GOSHIELD_CRASHES=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("GOSHIELD_CRASHES"));
@@ -2125,161 +1506,16 @@ function NOTIF_APP_GO_SHIELD_CRASHES():string{
     return "";
 }
 
-function NOTIF_APP_GO_SHIELD_VERSION($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
 
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_GO_SHIELD_SERVER",
-            "TOKEN_VER"=>"APP_GO_SHIELD_VERSION",
-            "TOKEN_ENABLED"=>"Go_Shield_Server_Enable")
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{GO_SHIELD_SERVER}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_GO_SHIELD_SERVER')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
-function NOTIF_APP_SURICATA_VERSION($UPDATES_ARRAY):string{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return "";}
-
-    $RESULTS=$tpl->NOTIF_ARRAY(
-        array("UPDATES_ARRAY"=>$UPDATES_ARRAY,
-            "TOKEN_UPDATE_ARRAY"=>"APP_SURICATA",
-            "TOKEN_VER"=>"SURICATA_VERSION",
-            "TOKEN_ENABLED"=>"EnableSuricata")
-    );
-
-    if(!isset($RESULTS["NEW_VER"])){
-        return "";
-    }
-    $Token=$RESULTS["HIDE_TOKEN"];
-    $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-    $STEXT = str_replace("%product", "{APP_SURICATA}", $STEXT);
-    $STEXT = str_replace("%ver", $RESULTS["CUR_VER"], $STEXT);
-    $STEXT = str_replace("%next", $RESULTS["NEW_VER"], $STEXT);
-    return  "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_SURICATA')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-
-}
-
-function NOTIFS_PDNS($UPDATES_ARRAY):array{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
-    $ERR                = array();
-    $EnableFeature         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePDNS"));
-    if($EnableFeature==0) {return $ERR;}
-    if(!$GLOBALS["CLASS_USERS"]->AsDnsAdministrator) {return $ERR;}
-    $PDNS_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PDNSVersion");
-    $Token              = "HidePDNSNewVerIco$PDNS_VERSION";
-
-    $HideNewNginxVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewNginxVer == 0) {
-        $AVAILABLE_VER = $tpl->PDNS_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-        if ($AVAILABLE_VER >0 ) {
-            $NewVer = $UPDATES_ARRAY["APP_PDNS"][$AVAILABLE_VER]["VERSION"];
-            $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-            $STEXT = str_replace("%product", "{APP_PDNS}", $STEXT);
-            $STEXT = str_replace("%ver", $PDNS_VERSION, $STEXT);
-            $STEXT = str_replace("%next", $NewVer, $STEXT);
-            $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_PDNS')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-        }
-    }
-
-
-    return $ERR;
-}
-function  NOTIF_X_TABLES_PACKAGE_INSTALLED($UPDATES_ARRAY):array{
-    $tpl                = new template_admin();
-    $ERR                = array();
-    $KERNEL             = php_uname('r');
-    $page               = CurrentPageName();
-    $Token              = "HidexTablesNewVerIco$KERNEL";
-
-    $HideToken = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if($HideToken==1){return $ERR;}
-    VERBOSE("Kernel Version = $KERNEL",__LINE__);
-    if(preg_match("#([0-9\.]+)\+deb([0-9]+)([\+0-9]+)-amd64#",$KERNEL,$re)){
-        $KERNEL="$re[1]+deb$re[2]-amd64";
-    }
-
-    if(is_file("/lib/modules/$KERNEL/extra/xt_ndpi.ko") OR (is_file("/lib/modules/$KERNEL/updates/xt_ndpi.ko.xz"))){return $ERR;}
-    VERBOSE("/lib/modules/$KERNEL/extra/xt_ndpi.ko... Is there a new one --> NO?",__LINE__);
-    if(!isset($UPDATES_ARRAY["APP_XTABLES"])){
-        VERBOSE("UPDATES_ARRAY[APP_XTABLES]) not set.",__LINE__);
-        return $ERR;
-    }
-
-
-    $KERNEL = str_replace( "+deb13", "",$KERNEL);
-    $KERNEL = str_replace("+deb14", "",$KERNEL);
-    $KERNEL = str_replace("+deb15", "",$KERNEL);
-    $KERNEL = str_replace( "+deb16", "",$KERNEL);
-    $KERNEL = str_replace( "+deb17", "",$KERNEL);
-    $KERNEL = str_replace( "+deb18", "",$KERNEL);
-    $KERNEL = str_replace( "+deb19", "",$KERNEL);
-    $KERNEL = str_replace( "+deb20", "",$KERNEL);
-    $KERNEL=str_replace("-amd64","",$KERNEL);
-    if(preg_match("#^([0-9\.]+)#",$KERNEL,$re)){
-        $KERNEL=$re[1];
-    }
-
-
-
-    VERBOSE("KERNEL=$KERNEL",__LINE__);
-    foreach ($UPDATES_ARRAY["APP_XTABLES"] as $index=>$main){
-        $VERSION=$main["VERSION"];
-        VERBOSE("$VERSION <> $KERNEL ?",__LINE__);
-        if($VERSION<>$KERNEL){continue;}
-        VERBOSE("Key:$index : $VERSION",__LINE__);
-        $STEXT=$tpl->_ENGINE_parse_body("{APP_NDPI_NEW}");
-        $STEXT=str_replace("%s",$KERNEL,$STEXT);
-        $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_XTABLES&filter-key=$index')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-        return $ERR;
-
-    }
-
-    return $ERR;
-}
 
 function NOTIFS_NGINX($UPDATES_ARRAY):array{
-    $tpl                = new template_admin();
-    $page               = CurrentPageName();
     $ERR                = array();
 
     $EnableNginx        = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx"));
     $NginxEmergency     = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NginxEmergency"));
-    $NGINX_MIGRATION_440= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NGINX_MIGRATION_440"));
     if($EnableNginx==0) {return $ERR;}
-
-
-
-
     if(!$GLOBALS["CLASS_USERS"]->AsSystemAdministrator) {return $ERR;}
-    $APP_NGINX_VERSION  = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_NGINX_VERSION");
-    $Token              = "HideNgInxNewVerIco$APP_NGINX_VERSION";
-
-    $HideNewNginxVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if ($HideNewNginxVer == 0) {
-        $AVAILABLE_VER = $tpl->NGINX_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-        if ($AVAILABLE_VER >0 ) {
-            $NewVer = $UPDATES_ARRAY["APP_NGINX"][$AVAILABLE_VER]["VERSION"];
-            $STEXT = $tpl->_ENGINE_parse_body("{NEW_VERSION_TEXT}");
-            $STEXT = str_replace("%product", "{APP_NGINX}", $STEXT);
-            $STEXT = str_replace("%ver", $APP_NGINX_VERSION, $STEXT);
-            $STEXT = str_replace("%next", $NewVer, $STEXT);
-            $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-software.php?product=APP_NGINX')||WARN||||js:Loadjs('$page?SetToken=$Token');";
-        }
-    }
+    // La nouvelle version de nginx est une ligne de fw.updates.packages.php.
     if ($NginxEmergency == 1) {
         $ERR[] = "{nginx_emergency_mode}||js:Loadjs('fw.nginx.emergency.remove.php');";
     }
@@ -2297,18 +1533,7 @@ function CVE_2021_44142():array{
     $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-samba.php')||DANGER||||js:Loadjs('$page?SetToken=$Token');";
     return $ERR;
 }
-function CVE_2022_29155():array{
-    $page=CurrentPageName();
-    $Token              = "HideCVE202229155I";
-    $CVE=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CVE-2022-29155"));
-    if($CVE==0){return array();}
-    $HideToken = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($Token));
-    if($HideToken==1){return array();}
-    $STEXT="{security}:{APP_OPENLDAP} CVE-2022-29155";
-    $ERR[] = "$STEXT||js:Loadjs('fw.system.upgrade-openldap.php')||DANGER||||js:Loadjs('$page?SetToken=$Token');";
-    return $ERR;
 
-}
 function NOTIF_MAIN_APT_GET_JSON():string{
     $DisableOsSystemUpdate = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableOsSystemUpdate"));
     if ($DisableOsSystemUpdate == 1) {
@@ -2342,6 +1567,22 @@ function NOTIF_MAIN_APT_GET_JSON():string{
     return "$package_number {system_packages_can_be_upgraded}||js:document.location.href='/os-update'||WARN";
 
 }
+function notifs_articarest_alive():bool{
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/ping"),true);
+    return is_array($json) && !empty($json["Status"]);
+}
+function notifs_minibars_js($users,$tpl):string{
+    // Dispo uniquement pour les administrateurs.
+    if($users->AsProxyMonitor
+        or $users->AsSystemAdministrator
+        or $users->AsDebianSystem
+        or $users->AsFirewallManager
+        or $users->AsMailBoxAdministrator
+        or $users->AsVPNManager){
+        return $tpl->RefreshInterval_Loadjs("mini-bars", "fw.system.status.php", "top-cpu=yes");
+    }
+    return "";
+}
 function deb10_js():bool{
     $page=currentPageName();
     $tpl=new template_admin();
@@ -2353,6 +1594,40 @@ function deb10_popup():bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
+
+function LOCALES_NOT_COMPILED($ArticaRestStatus):string{
+
+    if (!isset($ArticaRestStatus["LocalGenExecTime"])) {
+        return "";
+    }
+
+    if (isset($ArticaRestStatus["LocalRunning"]) && $ArticaRestStatus["LocalRunning"]) {
+        return "";
+    }
+
+    $LocalGenExecTime = 0;
+    if (isset($ArticaRestStatus["LocalGenExecTime"])) {
+        $LocalGenExecTime = intval($ArticaRestStatus["LocalGenExecTime"]);
+    }
+
+    if ($LocalGenExecTime == 0) {
+        return "{LOCALES_NOT_COMPILED}||js:Loadjs('fw.system.locales.progress.php')";
+    }
+
+    $LOCALE = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LOCALE"));
+    if ($LOCALE == null) {
+        return "{LOCALES_NOT_DEFINED}||js:Loadjs('fw.system.locale.php')";
+    }
+    $search = ' UTF-8';
+    if (preg_match("/$search/i", $LOCALE)) {
+        return "{NEED_REBUILD_LOCALES}||js:Loadjs('fw.system.locale.php')";
+    }
+    return "";
+}
+
+
+
+
 function FOUND_AD_SERVER():string{
     $DisableAdDiscover=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableAdDiscover"));
     if($DisableAdDiscover==1){
@@ -2412,6 +1687,8 @@ function VM_DISK_TWEAK():string{
     $page=CurrentPageName();
     $Token="DisableVMDiskOptimize";
     $DiskVMMustOptimize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DiskVMMustOptimize"));
+    $DiskVMOptimized=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DiskVMOptimized"));
+    if($DiskVMOptimized==1){return "";}
     if($DiskVMMustOptimize==0){return $ERR;}
     if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableVMDiskOptimize"))==1){return $ERR;}
     $optimizations_for_vm=$tpl->_ENGINE_parse_body("{optimizations_for_vm}");

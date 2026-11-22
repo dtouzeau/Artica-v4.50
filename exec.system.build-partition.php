@@ -17,7 +17,6 @@ if($argv[1]=="--unlink"){disk_unlink($argv[2]);exit();}
 if($argv[1]=="--full"){disk_build_unique_partition($argv[2],$argv[3],$argv[4]);exit();}
 if($argv[1]=="--1part"){FindFirstPartition($argv[2]);exit();}
 if($argv[1]=="--extend"){extend($argv[2]);exit();}
-if($argv[1]=="--move"){move_to($argv[2]);exit();}
 
 
 function build_progress_extend($text,$pourc){
@@ -31,108 +30,6 @@ function build_progress_extend($text,$pourc){
 
 }
 
-function move_to($encoded){
-    $mounted    = base64_decode($encoded);
-    $unix       = new unix();
-    $rsync      = $unix->find_program("rsync");
-    $rm         = $unix->find_program("rm");
-    $cp         = $unix->find_program("cp");
-
-    $ln         = $unix->find_program("ln");
-    if(!is_file($rsync)){
-        echo "Rsync, no such binary\n";
-        build_progress_extend("{move_to} {failed}",110);
-        return false;
-    }
-
-    build_progress_extend("{move_to} $mounted",5);
-    echo "Move System Directories to the partition mounted on $mounted\n";
-    $DirSrc="$mounted/system";
-
-    $DIRS[]="/home/artica/patchsBackup";
-    $DIRS[]="/home/artica/tmp";
-    $DIRS[]="/home/artica/influx";
-    $DIRS[]="/home/artica/philesight";
-
-    $DIRS[]="/var/cache/apt";
-    $DIRS[]="/var/lib/clamav";
-    $DIRS[]="/usr/lib/jvm";
-    $DIRS[]="/var/lib/apt";
-    $DIRS[]="/usr/share/locale";
-    $DIRS[]="/usr/share/artica-postfix/angular";
-    $DIRS[]="/var/log";
-    $DIRS[]="/usr/lib/x86_64-linux-gnu/dri";
-
-    if(!is_dir($DirSrc)) {
-        @mkdir($DirSrc);
-    }
-    if(!is_dir($DirSrc)){
-        echo "$DirSrc permission denied.";
-    }
-
-    $c=10;
-    foreach ($DIRS as $DirectorySource){
-        $c++;
-        $useCP          = false;
-        $DirAsSource    = $DirectorySource;
-        if(is_link($DirectorySource)){
-            $useCP=true;
-            $DirectorySource=readlink($DirectorySource);
-        }
-        if(!is_dir($DirectorySource)){
-            echo "$DirectorySource no such directory\n";
-            continue;
-        }
-        $DirectoryTarget="$DirSrc$DirAsSource";
-
-        if($DirectorySource==$DirectoryTarget){
-            echo "$DirectorySource is the same of $DirectoryTarget\n";
-            continue;
-        }
-        build_progress_extend("{move_to} $DirectorySource",$c);
-
-        if(!is_dir($DirectoryTarget)){@mkdir($DirectoryTarget,0755,true);}
-        echo "\n\n1) Copy $DirectorySource to $DirectoryTarget\n";
-        if(!$useCP) {
-            $cmd = "$rsync -arulHpEXogt $DirectorySource/ $DirectoryTarget/ 2>&1";
-        }else{
-            $cmd = "$cp -rfd $DirectorySource/* $DirectoryTarget/ 2>&1";
-        }
-        $rsyncresults=array();
-        exec($cmd,$rsyncresults);
-        foreach ($rsyncresults as $line){
-            echo $line."\n";
-        }
-
-        echo "1.1) Get sizes..\n";
-        $size1=$unix->DIRSIZE_BYTES($DirectorySource,false);
-        $size2=$unix->DIRSIZE_BYTES($DirectoryTarget,false);
-        $results=$size1-$size2;
-        $resultsKO=squid_admin_mysql_FormatBytes($results/1024);
-        echo "2) Size diff = $results ($resultsKO) ".
-            "Source dir = ".squid_admin_mysql_FormatBytes($size1/1024).
-            " > > Dest dir = ".squid_admin_mysql_FormatBytes($size2/1024).
-            "\n";
-        if($results>937886){
-            echo "Issue during copy...\n";
-            shell_exec("$rm -rf $DirectoryTarget");
-            continue;
-        }
-
-        echo "3) Remove $DirectorySource directory\n";
-        shell_exec("$rm -rf $DirectorySource");
-
-        if(is_dir($DirectorySource)){shell_exec("$rm -rf $DirectorySource");}
-        echo "4) Symlink $DirectoryTarget to $DirAsSource \n";
-        shell_exec("$ln -sf $DirectoryTarget $DirAsSource");
-
-
-    }
-
-
-
-    build_progress_extend("{success}",100);
-}
 
 function extend($path){
     $unix=new unix();

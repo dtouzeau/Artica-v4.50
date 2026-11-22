@@ -1,4 +1,6 @@
 <?php
+// stamp 01/11/2026
+include_once(dirname(__FILE__)."/class.request.filter.inc"); // md/function* : identifiants seulement (pentest 2026-11-04)
 include_once(dirname(__FILE__)."/class.sessions.inc");
 $GLOBALS["posix_getuid"]=1000;
 if(function_exists("posix_getuid")){$GLOBALS["posix_getuid"]=posix_getuid();}
@@ -165,7 +167,10 @@ class templates{
 
 
 
-    function javascript_parse_text($content,$noremovecrlf=0){
+    // $keepaccents: skip replace_accents(). That step dates from JavaScript
+    // served in ISO-8859-1; text that reaches the browser as an XHR response
+    // (post_error's "jserror:" body, decoded as UTF-8) must keep its accents.
+    function javascript_parse_text($content,$noremovecrlf=0,$keepaccents=false){
         if(is_null($content)){
             return "";
         }
@@ -222,7 +227,7 @@ class templates{
 
         //$content=replace_accents($content);
         $content=html_entity_decode($content);
-        $content=replace_accents($content);
+        if(!$keepaccents){$content=replace_accents($content);}
         if(!isset($_SESSION["DoNotutf8EncodeJS"])){
             $sock=new sockets();
             $_SESSION["DoNotutf8EncodeJS"]=$sock->GET_INFO("DoNotutf8EncodeJS");
@@ -249,6 +254,7 @@ class templates{
             $content=str_replace("\\n","\n",$content);
 
         }
+        $content=str_replace("&#39;","'",$content);
         $content=str_replace("'","`",$content);
         $content=str_replace("\`","`",$content);
         $content=str_replace("\\n\\n","\\n",$content);
@@ -306,7 +312,10 @@ class templates{
             $this->language=$this->repairLanguage();
         }
 
-        $keyText="$this->language$text";
+        // La date des packs entre dans la cle : un hotfix qui remplace <lang>.db (ou en.db, repli)
+        // invalide aussitot les traductions mises en cache (retour RWE du 14/11 : jetons affiches
+        // bruts jusqu'a 31 min apres la mise a jour).
+        $keyText="$this->language$text".$this->language_packs_stamp();
         $KeyMD5="TRANSLATE_".md5($keyText);
         $memcached=new lib_memcached();
         $value=$memcached->getKey($KeyMD5);
@@ -340,8 +349,21 @@ class templates{
             }
         }
 
-        $memcached->saveKey($KeyMD5, $value,1880);
+        // Un jeton sans traduction n'est jamais mis en cache : il doit apparaitre des que le pack
+        // le contient.
+        if($value!==null && $value!==""){
+            $memcached->saveKey($KeyMD5, $value,1880);
+        }
         return $value;
+    }
+
+    // language_packs_stamp : dates de <langue>.db et en.db (cache de la requete).
+    private function language_packs_stamp():string{
+        $k="LANGUAGE_PACKS_STAMP_$this->language";
+        if(isset($GLOBALS[$k])){return $GLOBALS[$k];}
+        $dir=dirname(__FILE__)."/language";
+        $GLOBALS[$k]=intval(@filemtime("$dir/$this->language.db")).".".intval(@filemtime("$dir/en.db"));
+        return $GLOBALS[$k];
     }
 
 
@@ -355,14 +377,10 @@ class templates{
         if("$Hour:$Mins:$secs"=="12:00:00"){return "{midday}";}
 
 
+        // {midnight}/{midday} remplacent l'heure seulement a l'instant exact (ci-dessus).
+        // Ils remplacaient aussi l'heure 00 et 12 en entier : 12:52:47 devenait
+        // "Midi 52:47", lu comme des minutes:secondes (fw.rdpproxy.mfa.php, 10/2026).
         if($secs<>"00"){
-            if($Hour=="00"){
-                return "{midnight} $Mins:$secs";
-            }
-            if($Hour=="12"){
-                return "{midday} $Mins:$secs";
-            }
-
             return "$Hour:$Mins:$secs";
         }
         if($secs=="00"){
@@ -372,14 +390,6 @@ class templates{
         }
         if($secs=="00"){
             if($Mins<>"00"){
-
-                if($Hour=="00"){
-                    return "{midnight} {$Mins}mn";
-                }
-                if($Hour=="12"){
-                    return "{midday} {$Mins}mn";
-                }
-
                 return "{$Hour}h {$Mins}mn";
             }
         }
@@ -388,6 +398,25 @@ class templates{
     return "";
 
     }
+    /**
+     * Rendu final d'une date localisee: du TEXTE brut UTF-8, jamais du HTML.
+     *
+     * Les tokens de date de la base de traduction portent leurs accents en
+     * entites HTML -- fr: <august>Ao&ucirc;t</august>, <february>F&eacute;vrier</february>,
+     * <december>D&eacute;cembre</december>. Les renvoyer telles quelles fonctionne
+     * tant que l'appelant les injecte brutes, mais tout appelant qui fait
+     * htmlspecialchars() -- c'est a dire le bon reflexe -- reechappe le "&" et
+     * affiche litteralement "Ao&ucirc;t" a l'ecran (bug remonte en 08/2026 sur
+     * les evenements systeme et les incidents).
+     *
+     * Le contrat est donc: time_to_date() renvoie du texte, a l'appelant de
+     * l'echapper selon son contexte. Le shell est en <meta charset="utf-8">,
+     * l'accent decode s'affiche donc correctement dans les deux cas.
+     */
+    private function date_to_text($parsed):string{
+        return html_entity_decode((string)$parsed,ENT_QUOTES,"UTF-8");
+    }
+
     function time_to_date($xtime,$time=false){
         if(!is_numeric($xtime)){
             VERBOSE("$xtime NOT NUMERIC",__LINE__);
@@ -399,11 +428,11 @@ class templates{
 
         if($time){
             if(date("Y-m-d")==date("Y-m-d",$xtime)){
-                return $this->_ENGINE_parse_body($this->hour_to_human($xtime));
+                return $this->date_to_text($this->_ENGINE_parse_body($this->hour_to_human($xtime)));
             }
             $yesterday=date("Y-m-d",strtotime('Yesterday'));
             if(date("Y-m-d",$xtime)==$yesterday){
-                return $this->_ENGINE_parse_body("{yesterday} ".$this->hour_to_human($xtime));
+                return $this->date_to_text($this->_ENGINE_parse_body("{yesterday} ".$this->hour_to_human($xtime)));
             }
         }
         $dateT=date("{l} {F} d",$xtime);
@@ -423,7 +452,7 @@ class templates{
             if($time){$dateT=$dateT." ".$this->hour_to_human($xtime);}
         }
 
-        return $this->_ENGINE_parse_body($dateT);
+        return $this->date_to_text($this->_ENGINE_parse_body($dateT));
 
     }
 
@@ -457,13 +486,15 @@ class templates{
         $content=str_replace("<input type='button'","<input type='button' class='button'",$content);
         $content=str_replace("reverse-porxy","Reverse-Proxy",$content);
         $content=str_replace("web sites","websites",$content);
+        $content=str_replace("&amp;laquo;","&laquo;",$content);
+        $content=str_replace("&amp;raquo;","&raquo;",$content);
         $content=str_replace("\`","`",$content);
         $content=str_replace('\"',"&quot;",$content);
         $content=str_replace('%C3%89',"&Eacute;",$content);
         $content=str_replace('%C3§','&ccedil;',$content);
         $content=str_ireplace('%C3§','&ccedil;',$content);
         $content=str_ireplace('â%80%99',"'",$content);
-        $content=str_ireplace("â%80%A2","&bull;",$content);
+        $content=str_ireplace("â%80f%A2","&bull;",$content);
         $content=str_ireplace('â%80%94','&mdash;',$content);
         $content=str_ireplace('â%80%A6','&hellip;',$content);
         $content=str_ireplace('â%86%92',"&rightarrow;",$content);
@@ -518,7 +549,16 @@ class templates{
 
     private function replace_strings($text){
         $text=str_replace('"',"&quot;",$text);
-        $text=str_replace("'","`",$text);
+        // L'apostrophe suit desormais le meme traitement que le guillemet de la
+        // ligne precedente: une ENTITE, et non un backtick. La conversion en
+        // backtick protegeait les jetons injectes dans un litteral JavaScript,
+        // mais au prix du texte lui-meme -- 6031 libelles francais (un quart du
+        // corpus) s'affichaient "d`ecoute". Une entite HTML ne casse ni un
+        // litteral JS ni un attribut simple-quote, et le navigateur la rend
+        // comme une apostrophe.
+        // javascript_parse_text() la retransforme en backtick pour les contextes
+        // JavaScript, qui eux ne decodent pas les entites.
+        $text=str_replace("'","&#39;",$text);
         $text=str_ireplace("[br][br]","[br]",$text);
         $text=str_ireplace("[br].",".[br]",$text);
         $text=str_ireplace('[code]','<code>',$text);
@@ -561,7 +601,7 @@ class templates{
             $text=str_replace('%ORGA',$_SESSION["ou"],$text);
         }
 
-
+        
         $text=str_ireplace('%u0153','oe',$text);
         $text=str_ireplace('%u201C','&laquo;',$text);
         $text=str_ireplace('%u201D','&raquo;',$text);
@@ -601,6 +641,19 @@ class templates{
                 return $t;
             }
         }
+        if(!isset($_COOKIE["change-artica-name"]) OR !isset($_SESSION["change-artica-name"])){
+            if(!isset($_SESSION["change-artica-name-checked"])){
+                if($GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
+                    $ppname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ChangeArticaName"));
+                    $_SESSION["change-artica-name-checked"]=1;
+                    if(strlen($ppname)>1){
+                        $_COOKIE["change-artica-name"]=$ppname;
+                        $_SESSION["change-artica-name"]=$ppname;
+                    }
+                }
+            }
+        }
+
 
         if(isset($_COOKIE["artica-language"])){
             $this->language=$_COOKIE["artica-language"];
@@ -652,16 +705,29 @@ class templates{
                             $text=str_replace($r[0][$a],"<a href=\"$b\">",$text);}
                     }
                     if(isset($_COOKIE["change-artica-name"])){
-                        $text=str_ireplace("d'Artica",$_COOKIE["change-artica-name"],$text);
-                        $text=str_ireplace("d`Artica",$_COOKIE["change-artica-name"],$text);
-                        $text=str_ireplace("Artica",$_COOKIE["change-artica-name"],$text);
-                        $text=str_ireplace("artica",$_COOKIE["change-artica-name"],$text);
+                        if(strlen($_COOKIE["change-artica-name"])>1) {
+                            $text = str_ireplace("d'Artica", $_COOKIE["change-artica-name"], $text);
+                            $text = str_ireplace("d`Artica", $_COOKIE["change-artica-name"], $text);
+                            $text = str_ireplace("Artica", $_COOKIE["change-artica-name"], $text);
+                            $text = str_ireplace("artica", $_COOKIE["change-artica-name"], $text);
+                        }
                     }
                     if(isset($_SESSION["change-artica-name"])){
-                        $text=str_ireplace("d'Artica",$_SESSION["change-artica-name"],$text);
-                        $text=str_ireplace("d`Artica",$_SESSION["change-artica-name"],$text);
-                        $text=str_ireplace("Artica",$_SESSION["change-artica-name"],$text);
-                        $text=str_ireplace("artica",$_SESSION["change-artica-name"],$text);
+                        if(strlen($_SESSION["change-artica-name"])>1) {
+                            $text = str_ireplace("d'Artica", $_SESSION["change-artica-name"], $text);
+                            $text = str_ireplace("d`Artica", $_SESSION["change-artica-name"], $text);
+                            $text = str_ireplace("Artica", $_SESSION["change-artica-name"], $text);
+                            $text = str_ireplace("artica", $_SESSION["change-artica-name"], $text);
+                        }
+                    }
+                    // Certains imports MCP/manuel ont re-encode un texte qui
+                    // portait deja des entites (&ocirc; → &amp;ocirc;). Le
+                    // navigateur affiche alors litteralement "&ocirc;". On
+                    // demele UNIQUEMENT &amp; + nom/numero d'entite ; un
+                    // "&amp;" isolé (DNS & SPF) n'a pas de ";" apres le nom
+                    // et reste intact.
+                    if(strpos($text,"&amp;")!==false){
+                        $text=preg_replace('/&amp;([a-zA-Z][a-zA-Z0-9]+|#[0-9]+|#x[0-9A-Fa-f]+);/','&$1;',$text);
                     }
                     $text=$this->replaceAccentsWithHtmlEntities($text);
                     $content=str_replace("{{$val}}",$text,$content);
@@ -1480,6 +1546,8 @@ function BuildSession($uid,$nominiadm=false){
         setcookie("mem-logon-user", $_POST["artica_username"], time() + 172800);
     }
     $_SESSION["privileges_array"]=$privs->privs;
+    // META_SCOPE / META_TENANT (Artica Meta, tenants) : rafraichis a chaque reconstruction.
+    if(function_exists("meta_scope_session_sync")){meta_scope_session_sync($privs->privs);}
     foreach ($privs->privs as $key=>$val){
         if($DebugWebConsoleAuth==1) {
             writelogs("Privilege: $key = $val", __FUNCTION__, __FILE__,__LINE__);
@@ -1608,6 +1676,11 @@ function noback(){
     $noback["listen.snapshots.php"]=true;
     $noback["pfx.php"]=true;
     $noback["fw.login.php"]=true;
+    // Sans cette entree, CheckSessions() renverrait le point de reception
+    // des assertions vers fw.login.php?disconnect=yes: la session qui porte
+    // l'etat du flux SAML n'a pas encore d'uid, donc elle est vue comme
+    // expiree, et l'assertion n'arriverait jamais.
+    $noback["fw.login.saml.php"]=true;
     $noback["fw.captcha.php"]=true;
     $noback["fw.login.acls.php"]=true;
     $noback["fw.login.gateway.php"]=true;
@@ -2729,7 +2802,7 @@ function json_error_show($error,$indexColumn=0,$full=false){
 
     $cellerrornodata=array('id' => 1,'cell' => $finalArray);
     $data['page'] = 1;$data['total'] = 1;$data['rows'][] = $cellerrornodata;echo json_encode($data);
-    die("DIE " .__FILE__." Line: ".__LINE__);
+    die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 
 
 }

@@ -1,28 +1,28 @@
-<APP_BACKUP_TEXT>Backup artica settings and required datas automatically</APP_BACKUP_TEXT>
-<APP_IPTABLES_TEXT>ipchains is a free software based firewall for Linux.</APP_IPTABLES_TEXT>
-<APP_NMAP_TEXT>Discover computers and services on a computer network</APP_NMAP_TEXT>
-<APP_NTPD_TEXT>Maintain your system clock automatically</APP_NTPD_TEXT>
-<APP_ROUNDCUBE_TEXT>Configure and integrate RoundCube WebMail in  your system</APP_ROUNDCUBE_TEXT>
-<artica_autoupdate_text>Update Artica main program periodically</artica_autoupdate_text>
-<artica_performances>Artica performances</artica_performances>
-<artica_performances_text>Personalize some parameters to reduce or increase performances modules</artica_performances_text>
-<dns>DNS & resolutions</dns>
-<edit_acls>Edit LDAP Access List</edit_acls>
-<folders_monitor_text>Monitor your hard disk and follow folders size</folders_monitor_text>
-<mysql_database>Mysql Database</mysql_database>
-<mysql_database_text>Manage mysql settings and enable/disable mysql engine</mysql_database_text>
+<APP_BACKUP_TEXT>Automatycznie tw&#243;rz kopi&#281; zapasow&#261; ustawie&#324; Artica i wymaganych danych</APP_BACKUP_TEXT>
+<APP_IPTABLES_TEXT>ipchains to darmowa zapora oparta na oprogramowaniu dla systemu Linux.</APP_IPTABLES_TEXT>
+<APP_NMAP_TEXT>Wykrywaj komputery i us&#322;ugi w sieci komputerowej</APP_NMAP_TEXT>
+<APP_NTPD_TEXT>Automatycznie utrzymuj zegar systemowy</APP_NTPD_TEXT>
+<APP_ROUNDCUBE_TEXT>Skonfiguruj i zintegruj RoundCube WebMail w swoim systemie</APP_ROUNDCUBE_TEXT>
+<artica_autoupdate_text>Okresowo aktualizuj g&#322;&#243;wny program Artica</artica_autoupdate_text>
+<artica_performances>Wydajno&#347;&#263; Artica</artica_performances>
+<artica_performances_text>Spersonalizuj niekt&#243;re parametry, aby zmniejszy&#263; lub zwi&#281;kszy&#263; wydajno&#347;&#263; modu&#322;&#243;w</artica_performances_text>
+<dns>DNS i rozwi&#261;zywanie nazw</dns>
+<edit_acls>Edytuj list&#281; dost&#281;pu LDAP</edit_acls>
+<folders_monitor_text>Monitoruj sw&#243;j dysk twardy i &#347;led&#378; rozmiar folder&#243;w</folders_monitor_text>
+<mysql_database>Baza danych Mysql</mysql_database>
+<mysql_database_text>Zarz&#261;dzaj ustawieniami mysql oraz w&#322;&#261;czaj/wy&#322;&#261;czaj silnik mysql</mysql_database_text>
 <network>Sie%C4%87 i karty sieciowe</network>
-<nic_dynamic_dns_text>maintains the IP address of your host name.checks periodically whether your IP address stored by the DNS server is the real current address.</nic_dynamic_dns_text>
-<nic_static_dns_text>Manage hosts and minimal settings for hosts names resolutions</nic_static_dns_text>
-<per_user_addressbook>Per user Address Book</per_user_addressbook>
-<per_user_addressbook_explain>If you set to green, remote mail clients will be able to add or query the LDAP server has their own address book,each user will have an access to it's own NAB</per_user_addressbook_explain>
-<remote_addressbook>Address Book</remote_addressbook>
-<remote_addressbook_explain>If you set to green, remote mail clients such has Thunderbird or Outlook Express will be able to parse the LDAP server has an Address Book storage.</remote_addressbook_explain>
-<remote_addressbook_text>Enable or disable this system has a global address book</remote_addressbook_text>
-<repository_manager>repository manager</repository_manager>
-<repository_manager_text>Update and install packages according your system repositories manager</repository_manager_text>
-<services>Services</services>
+<nic_dynamic_dns_text>Utrzymuje adres IP Twojej nazwy hosta. Okresowo sprawdza, czy adres IP przechowywany przez serwer DNS jest rzeczywistym bie&#380;&#261;cym adresem.</nic_dynamic_dns_text>
+<nic_static_dns_text>Zarz&#261;dzaj hostami i minimalnymi ustawieniami rozwi&#261;zywania nazw host&#243;w</nic_static_dns_text>
+<per_user_addressbook>Ksi&#261;&#380;ka adresowa per u&#380;ytkownik</per_user_addressbook>
+<per_user_addressbook_explain>Je&#347;li ustawisz na zielono, zdalni klienci poczty b&#281;d&#261; mogli dodawa&#263; lub odpytywa&#263; serwer LDAP jako w&#322;asn&#261; ksi&#261;&#380;k&#281; adresow&#261;, ka&#380;dy u&#380;ytkownik b&#281;dzie mia&#322; dost&#281;p do w&#322;asnego NAB</per_user_addressbook_explain>
+<remote_addressbook>Ksi&#261;&#380;ka adresowa</remote_addressbook>
+<remote_addressbook_explain>Je&#347;li ustawisz na zielono, zdalni klienci poczty, tacy jak Thunderbird czy Outlook Express, b&#281;d&#261; mogli przetwarza&#263; serwer LDAP jako magazyn ksi&#261;&#380;ki adresowej.</remote_addressbook_explain>
+<remote_addressbook_text>W&#322;&#261;cz lub wy&#322;&#261;cz ten system jako globaln&#261; ksi&#261;&#380;k&#281; adresow&#261;</remote_addressbook_text>
+<repository_manager>mened&#380;er repozytori&#243;w</repository_manager>
+<repository_manager_text>Aktualizuj i instaluj pakiety zgodnie z mened&#380;erem repozytori&#243;w systemu</repository_manager_text>
+<services>Us&#322;ugi</services>
 <system>System &amp; Sprz%C4%99t</system>
-<update>Update & Maintain</update>
-<usb_section>Manage USB devices</usb_section>
-<usb_section_text>Create a dedicated device for backup features and connect/disconnect usb devices</usb_section_text>
+<update>Aktualizuj i konserwuj</update>
+<usb_section>Zarz&#261;dzaj urz&#261;dzeniami USB</usb_section>
+<usb_section_text>Utw&#243;rz dedykowane urz&#261;dzenie do funkcji kopii zapasowych oraz pod&#322;&#261;czaj/od&#322;&#261;czaj urz&#261;dzenia usb</usb_section_text>

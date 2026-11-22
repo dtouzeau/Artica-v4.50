@@ -1,10 +1,22 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $GLOBALS["CLASS_SOCKETS"]->heads_exec_root($argv);
 if($GLOBALS["VERBOSE"]){echo "Loading includes...\n";}
 include_once(dirname(__FILE__).'/ressources/class.squid.inc');
 include_once(dirname(__FILE__).'/ressources/class.c-icap.squidguard.inc');
+
+function icap_reconfigure(){
+    // Rebuild Squid global-access ACLs + ICAP config natively inside articarest.
+    // ?wait=1 runs squidacls.RunAcls()+RunIPCAP() synchronously so the steps
+    // that follow (squid restart, cluster push) see the regenerated config —
+    // preserving the synchronous semantics of the old shell-out to
+    // "exec.squid.global.access.php --icap-silent". Timeout is raised because a
+    // full ACL compile can exceed the 13s REST default.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=180;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/icap?wait=1");
+}
 //exec.c-icap.php --reconfigure
 if(isset($argv[1])) {
     if ($argv[1]=="--threats"){die();}
@@ -466,13 +478,16 @@ function build($aspid=false){
 	}
 
     build_progress_restart('{reconfigure}',40);
-    shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build-schedules");
+    // Moteur porte dans le daemon Go (module SystemTasks): chemin de
+    // reconfiguration, donc /schedule/apply (reconstruction de /etc/cron.d) et
+    // non /tasks/defaults. `exec.squid.php --build-schedules` n'existe plus.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/schedule/apply");
 
 
     if(is_file($squidbin)){
         if(is_file("/etc/init.d/squid")){
             build_progress_restart('{reconfigure}',45);
-            shell_exec("$php /usr/share/artica-postfix/exec.squid.global.access.php --icap-silent");
+            icap_reconfigure();
         }
     }
 

@@ -1,11 +1,10 @@
-<artica_backup_storage>Artica backup storage</artica_backup_storage>
-<artica_backup_storage_explain>You will find here the size of your mails storage.
-[br]Mails storage means 3 areas.[br]
+<artica_backup_storage>Magazyn kopii zapasowych Artica</artica_backup_storage>
+<artica_backup_storage_explain>Tutaj znajdziesz rozmiar swojego magazynu poczty.
+[br]Magazyn poczty obejmuje 3 obszary.[br]
 
 [ul]
-[li][b]Indexed Queue[/b] means all message that are indexed in the Mysql database and used to query them[/li]
-[li][b]Quarantines means[/b] all messages detected has virus or SPAM and saved in quarantine area[/li]
-[li][b]Backup[/b] means (if you have enabled "Backup On The Fly" features) all messages stored has backup mode[/li]
-[li][b]Attachments[/b] are the attached files stored in the indexed queue[/li]
-[/ul] 
-</artica_backup_storage_explain>
+[li][b]Indeksowana kolejka[/b] oznacza wszystkie wiadomo&#347;ci zindeksowane w bazie danych MySQL i u&#380;ywane do ich odpytywania[/li]
+[li][b]Kwarantanny[/b] oznacza wszystkie wiadomo&#347;ci wykryte jako wirus lub SPAM i zapisane w obszarze kwarantanny[/li]
+[li][b]Backup[/b] oznacza (je&#347;li w&#322;&#261;czy&#322;e&#347; funkcje &quot;Backup On The Fly&quot;) wszystkie wiadomo&#347;ci przechowywane w trybie kopii zapasowej[/li]
+[li][b]Za&#322;&#261;czniki[/b] to za&#322;&#261;czone pliki przechowywane w indeksowanej kolejce[/li]
+[/ul]</artica_backup_storage_explain>

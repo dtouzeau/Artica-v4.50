@@ -1,12 +1,12 @@
 <administrator>Administrador</administrator>
 <admin_password>Contrase&ntilde;a global &quot;Admin&quot;</admin_password>
-<admin_password_help>By default a Super administrator called "admin" is set in order to manage your web site.[br]This "admin" user is independant and is not stored in the global database.[br]
- [br]The default password is "secret" and you must change it for security reason</admin_password_help>
+<admin_password_help>De forma predeterminada, se establece un superadministrador llamado &quot;admin&quot; para gestionar su sitio web.[br]Este usuario &quot;admin&quot; es independiente y no se almacena en la base de datos global.[br]
+ [br]La contrase&#241;a predeterminada es &quot;secret&quot; y debe cambiarla por razones de seguridad</admin_password_help>
 <APP_JOOMLA_NOT_INSTALLED>Su Joomla no esta instalado</APP_JOOMLA_NOT_INSTALLED>
 <connection_user>Conexion uid</connection_user>
-<connection_user_help>Set here an user login that helping your web site to authenticate internals users inside your web site administration panel</connection_user_help>
+<connection_user_help>Establezca aqu&#237; un inicio de sesi&#243;n de usuario que ayude a su sitio web a autenticar a los usuarios internos dentro del panel de administraci&#243;n de su sitio web</connection_user_help>
 <install_your_joomla>Instalar su Joomla</install_your_joomla>
-<install_your_joomla_text>Install the joomla main program in order to open your web service</install_your_joomla_text>
+<install_your_joomla_text>Instale el programa principal de joomla para abrir su servicio web</install_your_joomla_text>
 <joomlaservername>Nombre del servidor web</joomlaservername>
 <joomlaservername_help>Defina aqu%C3%AD el nombre de dominio/servidor a%C3%B1adido en su DNS p%C3%BAblico/privado.[br]
 Por ejemplo, si quiere que este servidor tenga www.mycompany.com, establezca aqu%C3%AD &quot;www.mycompany.com&quot;[br]

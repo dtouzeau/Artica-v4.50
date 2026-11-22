@@ -35,15 +35,16 @@ $sql="SELECT * FROM prads_tot ORDER BY syn DESC";
             $field="ipaddr";
         }
 
+        // Pentest 2026-11-04 : search (GET) etait concatene dans la requete.
         if(strpos("   $stringtofind","*")>0){
-            $stringtofind=str_replace("*","%");
-            $where="WHERE text($field) LIKE '$stringtofind'";
+            $stringtofind=str_replace("*","%",$stringtofind);
+            $where="WHERE text($field) LIKE '".pg_escape_string2($stringtofind)."'";
         }else{
-            $where="WHERE $field='$stringtofind'";
+            $where="WHERE $field='".pg_escape_string2($stringtofind)."'";
         }
 
        if(preg_match("#\/[0-9]+#",$stringtofind)){
-           $where="WHERE ipaddr << inet '$stringtofind'";
+           $where="WHERE ipaddr << inet '".pg_escape_string2($stringtofind)."'";
        }
 
 

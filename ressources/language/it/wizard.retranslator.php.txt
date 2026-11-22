@@ -1,13 +1,11 @@
-<WIZARD_COMPILE>Save your parameters</WIZARD_COMPILE>
-<WIZARD_COMPILE_EXPLAIN>Check your parameters, if they are correct, click on "Save your parameters" button to make them in production mode</WIZARD_COMPILE_EXPLAIN>
-<WIZARD_HTTPD_ENGINE_RETRANS_EXPLAIN>Providing require updates require HTTP/FTP or SMB protocol, the best way is to setup a HTTP web server engine.[br]
-Artica can do it for you.[br]In this case, you will just set Kaspersky products to download updates from this HTTP service.</WIZARD_HTTPD_ENGINE_RETRANS_EXPLAIN>
-<WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS>Choose Kaspersky products</WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS>
-<WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS_EXPLAIN>
-You will find here 3 Kaspersky products family.[br]
-[b]Kaspersky For Windows Workstation[/b] will construct the web server only for Windows protection updates.[br]
-[b]Kaspersky administration KIT[/b] is the biggest it will construct the web server for all products managed by the Kaspersky global console.[br]
-[b]Kaspersky Unix gateways[/b] is only for Unix products used to protect a mail/proxy server with Artica.[br]
-</WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS_EXPLAIN>
-<WIZARD_RETRANSLATOR_EXPLAIN>This wizard will help you to define which components you need to set and running the HTTP service in order to provides updates</WIZARD_RETRANSLATOR_EXPLAIN>
-<WIZARD_RETRANSLATOR_WELCOME>Welcome to the retranslator wizard</WIZARD_RETRANSLATOR_WELCOME>
+<WIZARD_COMPILE>Salva i tuoi parametri</WIZARD_COMPILE>
+<WIZARD_COMPILE_EXPLAIN>Verifica i tuoi parametri, se sono corretti, clicca sul pulsante &quot;Salva i tuoi parametri&quot; per metterli in modalit&#224; produzione</WIZARD_COMPILE_EXPLAIN>
+<WIZARD_HTTPD_ENGINE_RETRANS_EXPLAIN>Fornire gli aggiornamenti necessari richiede il protocollo HTTP/FTP o SMB, il modo migliore &#232; configurare un motore di server web HTTP.[br]
+Artica pu&#242; farlo per te.[br]In questo caso, dovrai solo impostare i prodotti Kaspersky per scaricare gli aggiornamenti da questo servizio HTTP.</WIZARD_HTTPD_ENGINE_RETRANS_EXPLAIN>
+<WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS>Scegli i prodotti Kaspersky</WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS>
+<WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS_EXPLAIN>Qui troverai 3 famiglie di prodotti Kaspersky.[br]
+[b]Kaspersky For Windows Workstation[/b] costruir&#224; il server web solo per gli aggiornamenti di protezione di Windows.[br]
+[b]Kaspersky administration KIT[/b] &#232; la pi&#249; grande, costruir&#224; il server web per tutti i prodotti gestiti dalla console globale Kaspersky.[br]
+[b]Kaspersky Unix gateways[/b] &#232; solo per i prodotti Unix utilizzati per proteggere un server di posta/proxy con Artica.[br]</WIZARD_RETRANSLATOR_CHOOSE_COMPONENTS_EXPLAIN>
+<WIZARD_RETRANSLATOR_EXPLAIN>Questa procedura guidata ti aiuter&#224; a definire quali componenti devi impostare ed eseguire il servizio HTTP per fornire gli aggiornamenti</WIZARD_RETRANSLATOR_EXPLAIN>
+<WIZARD_RETRANSLATOR_WELCOME>Benvenuto nella procedura guidata del retranslator</WIZARD_RETRANSLATOR_WELCOME>

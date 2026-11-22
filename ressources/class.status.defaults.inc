@@ -1,21 +1,7 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-function OPENDKIM_VERSION():string{
-	if(isset($GLOBALS["OPENDKIM_VERSION"])){return $GLOBALS["OPENDKIM_VERSION"];}
 
-	$opendkim=$GLOBALS["CLASS_UNIX"]->find_program("opendkim");
-
-	exec("$opendkim -V 2>&1",$results);
-	foreach ($results as $line){
-		if(!preg_match("#OpenDKIM Filter v([0-9\.]+)#", $line,$re)){
-			if($GLOBALS["VERBOSE"]){echo "VERSION NO MATCH: \"$line\"\n";}
-			continue;}
-		$GLOBALS["OPENDKIM_VERSION"]=$re[1];
-		return $GLOBALS["OPENDKIM_VERSION"];
-
-	}
-return "";
-}
 
 
 function ARTICAREST_VERSION():string{
@@ -135,27 +121,6 @@ function APP_DNSCRYPT_PROXY_VERSION(){
 	}
 }
 
-
-
-
-
-
-
-
-function APP_DOCKER_VERSION():string{
-    if(isset($GLOBALS[__FUNCTION__])){return $GLOBALS[__FUNCTION__];}
-    $bin=$GLOBALS["CLASS_UNIX"]->find_program("dockerd");
-    exec("$bin -v 2>&1",$results);
-    foreach ($results as $line){
-        $line=trim($line);
-        if($line==null){continue;}
-        if(!preg_match("#Docker version\s+([0-9\.\-]+),#i",$line,$re)){continue;}
-        $GLOBALS[__FUNCTION__]=$re[1];
-        return strval($GLOBALS[__FUNCTION__]);
-    }
-    return "";
-
-}
 
 //
 
@@ -1112,6 +1077,31 @@ function __ArchStruct(){
 
 //##############################################################################
 
+function __statusIsArticaManagedUnit($svc){
+    // A .service whose ExecStart drives an Artica binary is owned by an Artica
+    // module (afirewall/firehol, redsocks, conntrackd...) and must NEVER be
+    // disabled by this distro self-repair pass: afirewall re-enables firehol, so
+    // disabling it never converges and each SysV `disable` re-runs
+    // update-rc.d -> `daemon-reload` on every exec.status.php cycle
+    // (firehol daemon-reload storm, 10.8.0.9 2026-08-30). Mirror of the Go guard
+    // isArticaManagedUnit() in aptget/VerifyRun.go.
+    $paths=array(
+        "/etc/systemd/system/$svc",
+        "/etc/systemd/system/multi-user.target.wants/$svc",
+        "/usr/lib/systemd/system/$svc",
+        "/lib/systemd/system/$svc",
+    );
+    foreach($paths as $pth){
+        if(!is_file($pth)){continue;}
+        $c=@file_get_contents($pth);
+        if($c===false){continue;}
+        if(strpos($c,"artica-phpfpm-service")!==false){return true;}
+        if(strpos($c,"/usr/sbin/articarest")!==false){return true;}
+        if(strpos($c,"/usr/share/artica-postfix/bin/articarest")!==false){return true;}
+    }
+    return false;
+}
+
 function Build_default_values(){
 	$unix=new unix();
     $baseName=basename(__FILE__);
@@ -1196,9 +1186,14 @@ function Build_default_values(){
 
 
 	}
-	@chmod("/var/log/artica-webauth.log",0755);
+	// 0640 www-data:adm -- meme valeur que exec.clean.logs.php et que
+	// aperms.SetPermissions. Un journal n'a pas besoin du bit x, et celui-ci
+	// est la trace de QUI s'est connecte a la console : il ne doit etre
+	// modifiable que par son ecrivain (php-fpm) et lisible que par
+	// l'exploitation (groupe adm, comme /var/log/syslog).
+	@chmod("/var/log/artica-webauth.log",0640);
 	@chown("/var/log/artica-webauth.log","www-data");
-	@chgrp("/var/log/artica-webauth.log","www-data");
+	@chgrp("/var/log/artica-webauth.log","adm");
 
     if(!is_file("$SetDaemons/SquidGuardClientMaxMemoryItems")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidGuardClientMaxMemoryItems", 100000);}
 	if(!is_file("$SetDaemons/SquidLogsExceptions")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogsExceptions", "127.0.0.1");}
@@ -1220,8 +1215,8 @@ function Build_default_values(){
 
 
 
-	if(!is_file("/etc/artica-postfix/settings/Daemons/TempWizard")){@touch("/etc/artica-postfix/settings/Daemons/TempWizard");@chown("/etc/artica-postfix/settings/Daemons/TempWizard","www-data");@chgrp("/etc/artica-postfix/settings/Daemons/TempWizard", "www-data");}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/TempWizardback")){@touch("/etc/artica-postfix/settings/Daemons/TempWizardback");@chown("/etc/artica-postfix/settings/Daemons/TempWizardback","www-data");@chgrp("/etc/artica-postfix/settings/Daemons/TempWizardback", "www-data");}
+	if(!artica_setting_exists("TempWizard")){@touch("/etc/artica-postfix/settings/Daemons/TempWizard");@chown("/etc/artica-postfix/settings/Daemons/TempWizard","www-data");@chgrp("/etc/artica-postfix/settings/Daemons/TempWizard", "www-data");}
+	if(!artica_setting_exists("TempWizardback")){@touch("/etc/artica-postfix/settings/Daemons/TempWizardback");@chown("/etc/artica-postfix/settings/Daemons/TempWizardback","www-data");@chgrp("/etc/artica-postfix/settings/Daemons/TempWizardback", "www-data");}
 
 	if(is_file("/etc/init.d/.depend.boot")){@unlink("/etc/init.d/.depend.boot");}
 	if(is_file("/etc/init.d/.depend.start")){@unlink("/etc/init.d/.depend.start");}
@@ -1304,14 +1299,12 @@ function Build_default_values(){
     $f[]="fireqos.service";
     $f[]="krb5-kdc.service";
     $f[]="lighttpd.service";
-    $f[]="lm-sensors.service";
     $f[]="mariadb.service";
     $f[]="munin-node.service";
     $f[]="nfs-client.target";
     $f[]="nmbd.service";
     $f[]="ntp.service";
     $f[]="open-vm-tools.service";
-    $f[]="opendkim.service";
     $f[]="ospfd.service";
     $f[]="php7.3-fpm.service";
     $f[]="postfix.service";
@@ -1329,29 +1322,58 @@ function Build_default_values(){
     $f[]="wpa_supplicant.service";
     $f[]="zebra.service";
     $systemctl=$unix->find_program("systemctl");
-    foreach ($f as $systemd_file){
-        if(is_file("/var/lib/systemd/deb-systemd-helper-enabled/$systemd_file.dsh-also")){
-            shell_exec("$systemctl disable $systemd_file");
-            continue;
-        }
-        if(is_file("/var/lib/systemd/deb-systemd-helper-enabled/multi-user.target.wants/$systemd_file")){
-            shell_exec("$systemctl disable $systemd_file");
-            continue;
-        }
-        if(is_file("/usr/lib/systemd/system/$systemd_file")){
-           shell_exec("$systemctl disable $systemd_file");
-           continue;
-        }
-        if(is_file("/etc/systemd/system/$systemd_file")){
-            shell_exec("$systemctl disable $systemd_file");
-            continue;
-        }
-        $systemd_file=str_replace(".service","@.service",$systemd_file);
-        if(is_file("/usr/lib/systemd/system/$systemd_file")){
-            shell_exec("$systemctl disable $systemd_file");
-            continue;
-        }
+    // Only disable services that are ACTUALLY enabled, and coalesce the implicit
+    // daemon-reload into a single one.
+    //
+    // The previous loop gated `systemctl disable` on unit-FILE existence
+    // (is_file /usr/lib/systemd/system/$svc, etc.), which is true for every
+    // installed package — so it re-disabled already-disabled services on EVERY
+    // run. Build_default_values() runs ~every 5 min (exec.status.php), and each
+    // `systemctl disable` internally runs update-rc.d -> systemd-sysv-install ->
+    // `daemon-reload`, which re-executes every generator: ~18 daemon-reloads in a
+    // 1s burst every 5 min, flooding the journal with "systemd-sysv-generator ...
+    // Overwriting existing symlink" and burning CPU.
+    //
+    // `is-enabled` is read-only (no reload); we collect the units that are truly
+    // enabled, disable each with `--no-reload`, then issue ONE `daemon-reload`.
+    // In steady state (everything already disabled) nothing is disabled and no
+    // reload happens at all.
+    $toDisable=array();
 
+    if(strlen($systemctl)>3) {
+        foreach ($f as $systemd_file) {
+            // Never disable an Artica-managed unit (firehol/redsocks/conntrackd...):
+            // afirewall re-enables it, so this would loop forever + daemon-reload storm.
+            if (__statusIsArticaManagedUnit($systemd_file)) { continue; }
+            $state = @shell_exec("$systemctl is-enabled $systemd_file 2>/dev/null");
+            if (!is_null($state)) {
+                $state = trim($state);
+            }
+            if ($state == "enabled" || $state == "enabled-runtime") {
+                $toDisable[] = $systemd_file;
+                continue;
+            }
+            $tpl = "";
+            // Fall back to the template (@.service) form the old code also handled.
+            if (!is_null($systemd_file)) {
+                $tpl = str_replace(".service", "@.service", $systemd_file);
+            }
+            if ($tpl != $systemd_file) {
+                $Text = @shell_exec("$systemctl is-enabled $tpl 2>/dev/null");
+                if (!is_null($Text)) {
+                    $stateTpl = trim($Text);
+                    if ($stateTpl == "enabled" || $stateTpl == "enabled-runtime") {
+                        $toDisable[] = $tpl;
+                    }
+                }
+            }
+        }
+        if (count($toDisable) > 0) {
+            foreach ($toDisable as $systemd_file) {
+                shell_exec("$systemctl --no-reload disable $systemd_file 2>/dev/null");
+            }
+            shell_exec("$systemctl daemon-reload 2>/dev/null");
+        }
     }
 
 	$SET0[]="EnableVirtualDomainsInMailBoxes";
@@ -1363,7 +1385,6 @@ function Build_default_values(){
 	$SET0[]="EnableProxyCompressor";
 	$SET0[]="EnableFreeRadius";
 	$SET0[]="StoreIDUrgency";
-	$SET0[]="LMSensorsEnable";
 	$SET0[]="PDNSStatsEnabled";
 	$SET0[]="DisableOsSystemUpdate";
 	$SET0[]="UseRemoteUfdbguardService";
@@ -1380,7 +1401,7 @@ function Build_default_values(){
 
 	foreach ($SET0 as $filename){
 		if(!is_file("$SetDaemons/$filename")){
-			$GLOBALS["CLASS_SOCKETS"]->SET_INFO("$filename", 0);
+			$GLOBALS["CLASS_SOCKETS"]->SET_INFO($filename, 0);
 		}
 	}
 
@@ -1420,7 +1441,6 @@ function Build_default_values(){
 	$losetup=$GLOBALS["CLASS_UNIX"]->find_program("losetup");
 	$vconfig=$GLOBALS["CLASS_UNIX"]->find_program("vconfig");
 	$iscsiadm=$GLOBALS["CLASS_UNIX"]->find_program("iscsiadm");
-	$arpd=$GLOBALS["CLASS_UNIX"]->find_program("arpd");
 	$iscsid=$GLOBALS["CLASS_UNIX"]->find_program("iscsid");
 	$ftp_proxy=$GLOBALS["CLASS_UNIX"]->find_program("ftp-proxy");
 	$wifidog=$GLOBALS["CLASS_UNIX"]->find_program("wifidog");
@@ -1432,7 +1452,7 @@ function Build_default_values(){
 	$ebtables=$GLOBALS["CLASS_UNIX"]->find_program("ebtables");
 	$squid27=$GLOBALS["CLASS_UNIX"]->find_program("squid27");
 	$offlineimap=$GLOBALS["CLASS_UNIX"]->find_program("offlineimap");
-	$postscreen=$GLOBALS["CLASS_UNIX"]->LOCATE_POSTFIX_POSTSCREEN();
+
 	$ipset=$GLOBALS["CLASS_UNIX"]->find_program("ipset");
 	$aspell=$GLOBALS["CLASS_UNIX"]->find_program("aspell");
 	$muninnode=$GLOBALS["CLASS_UNIX"]->find_program("munin-node");
@@ -1469,7 +1489,6 @@ function Build_default_values(){
 	$pptp=$GLOBALS["CLASS_UNIX"]->find_program("pptp");
 	$pear=$GLOBALS["CLASS_UNIX"]->find_program("pear");
 	$tc=$GLOBALS["CLASS_UNIX"]->find_program("tc");
-	$sensors_detect=$GLOBALS["CLASS_UNIX"]->find_program("sensors-detect");
 	$ziproxy=$GLOBALS["CLASS_UNIX"]->find_program("ziproxy");
 	$iwconfig=$GLOBALS["CLASS_UNIX"]->find_program("iwconfig");
 	$namebench=$GLOBALS["CLASS_UNIX"]->find_program("namebench");
@@ -1493,7 +1512,6 @@ function Build_default_values(){
 	$doh_server=$GLOBALS["CLASS_UNIX"]->find_program("doh-server");
 	$linkbalancerbin=$GLOBALS["CLASS_UNIX"]->find_program("link-balancer");
 	$filebeat=$GLOBALS["CLASS_UNIX"]->find_program("filebeat");
-	$opendkim=$GLOBALS["CLASS_UNIX"]->find_program("opendkim");
 	$prads=$GLOBALS["CLASS_UNIX"]->find_program("prads");
 	$php5ExtensionDir=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("php5ExtensionDir");
 
@@ -1524,8 +1542,6 @@ function Build_default_values(){
 
 
 
-	$BugzillaChecked=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BugzillaChecked"));
-	if($BugzillaChecked==0){shell_exec("$nohup $php5 $BArticaP/exec.bugzilla.php --get-user >/dev/null 2>&1");}
 
     if(!is_file($namebench)){$namebench=$GLOBALS["CLASS_UNIX"]->find_program("namebench.py");}
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("LOCATE_PHP5_BIN", $php5);
@@ -1757,10 +1773,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("UPDATE_IPSETS_INSTALLED", 0);
 	}
 
-	if(is_file($opendkim)) {
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("OPENDKIM_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("OPENDKIM_VERSION",OPENDKIM_VERSION());
-	}
 
 	if(is_file($prads)) {
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_PRADS_INSTALLED", 1);
@@ -1864,27 +1876,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_MILTER_GREYLIST_VERSION",0);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MilterGreyListEnabled",0);
 	}
-    if(is_file($dockerd)){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_DOCKER_INSTALLED", 1);
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_DOCKER_VERSION", APP_DOCKER_VERSION());
-    }else{
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("APP_DOCKER_INSTALLED", 0);
-    }
-    if(is_file($mimedefang)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MimeDefangInstalled", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MimeDefangVersion", mimedefang_version());
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MimeDefangInstalled", 0);
-
-	}
-
-
-	if(is_file("/usr/libexec/postfix/mailspy")){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MILTER_SPY_INSTALLED",1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("MILTER_SPY_INSTALLED",0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableMilterSpyDaemon",0);
-	}
 
 	if(is_file($procmail)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("PROCMAIL_INSTALLED",1);
@@ -1965,14 +1956,7 @@ function Build_default_values(){
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("IPTABLES_ACCOUNTING_EXISTS", 0);
 	}
-	if(is_file($sensors_detect)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SENSORS_INSTALLED", 1);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SensorsInstalled", 1);
 
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SENSORS_INSTALLED", 0);
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SensorsInstalled", 0);
-	}
 	if(is_file($ziproxy)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ZIPROXY_INSTALLED", 1);
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ZIPROXY_VERSION", ZIPROXY_VERSION());
@@ -1989,15 +1973,8 @@ function Build_default_values(){
 
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("IWLWIFI_INSTALLED", 1);
 
-    if(is_file("/usr/bin/php7.3")){
-        if(is_file("/usr/bin/php7.4")){
-            if(!is_link("/usr/bin/php7.3")) {
-                shell_exec("$ln -sf /usr/bin/php7.4 /usr/bin/php7.3");
-                squid_admin_mysql(1, "Success installing fake PHP compatibility client php7.3 to php7.4",
-                    null,__FILE__,__LINE__);
-            }
-        }
-    }
+    // Ne jamais remplacer /usr/bin/php7.3 par un lien vers php7.4 : ce binaire
+    // appartient au paquet php7.3-cli, et la descente PHP2Shell (aptget) en a besoin.
 
 
 
@@ -2430,11 +2407,7 @@ function Build_default_values(){
 	}else{
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("offlineimap_installed",0);
 	}
-	if(is_file($postscreen)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("POSTSCREEN_INSTALLED",1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("POSTSCREEN_INSTALLED",0);
-	}
+
 	if(is_file($ipset)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("IPSET_INSTALLED",1);
 	}else{
@@ -2561,11 +2534,6 @@ function Build_default_values(){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ISCSID_INSTALLED",0);
 	}
 
-	if(is_file($arpd)){
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ARPD_INSTALLED",1);
-	}else{
-		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ARPD_INSTALLED",0);
-	}
 
 	if(is_file($hostapd)){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("HOSTAPD_INSTALLED",1);
@@ -2639,17 +2607,6 @@ function Build_default_values(){
 
 //**************************************************************************************************
 
-//**************************************************************************************************
-	if(!is_file("/etc/cron.d/artica-clean-postgresql")){
-		$GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("artica-clean-postgresql",
-			"30 3 * * *","exec.clean.postgres.php");
-		shell_exec2("/etc/init.d/cron reload");
-
-	}
-//**************************************************************************************************
-
-
-
 
 	if(!is_file("/usr/lib/apache2/modules/mod_cband.so")){
 		$GLOBALS["CLASS_SOCKETS"]->SET_INFO("ApacheModCbandInstalled", 0);
@@ -2671,16 +2628,16 @@ function Build_default_values(){
 
 	if(is_file("/etc/cron.d/access-failed-parser")){@unlink("/etc/cron.d/access-failed-parser");}
 	if(is_file("/etc/cron.d/access-logs-parser")){@unlink("/etc/cron.d/access-logs-parser");}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableWebFTPFilter")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableWebFTPFilter", 0);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableDNSPerfs")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableDNSPerfs", 1);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableSquidQuotasBandwidth")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSquidQuotasBandwidth", 0);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/SquidQuotaBandwidthRefresh")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidQuotaBandwidthRefresh", 30);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableMacAddressFilter")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableMacAddressFilter", 1);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/InfluxSyslogRemote")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("InfluxSyslogRemote", 0);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableSuricata")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSuricata", 0);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/cgroupsEnabled")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("cgroupsEnabled", 0);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/cgroupsEnabled")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("cgroupsEnabled", 0);}
-	if(!is_file("/etc/artica-postfix/settings/Daemons/EnableClamavUnofficial")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableClamavUnofficial", 0);}
+	if(!artica_setting_exists("EnableWebFTPFilter")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableWebFTPFilter", 0);}
+	if(!artica_setting_exists("EnableDNSPerfs")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableDNSPerfs", 1);}
+	if(!artica_setting_exists("EnableSquidQuotasBandwidth")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSquidQuotasBandwidth", 0);}
+	if(!artica_setting_exists("SquidQuotaBandwidthRefresh")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidQuotaBandwidthRefresh", 30);}
+	if(!artica_setting_exists("EnableMacAddressFilter")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableMacAddressFilter", 1);}
+	if(!artica_setting_exists("InfluxSyslogRemote")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("InfluxSyslogRemote", 0);}
+	if(!artica_setting_exists("EnableSuricata")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSuricata", 0);}
+	if(!artica_setting_exists("cgroupsEnabled")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("cgroupsEnabled", 0);}
+	if(!artica_setting_exists("cgroupsEnabled")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("cgroupsEnabled", 0);}
+	if(!artica_setting_exists("EnableClamavUnofficial")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableClamavUnofficial", 0);}
 
 	$EnableClamavUnofficial=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableClamavUnofficial"));
 
@@ -2788,7 +2745,7 @@ function buildCronStatistics(){
 
 }
 function buildCronStatistics_run(){
-	if(!is_file("/etc/artica-postfix/settings/Daemons/SquidStatsMonthQueue")){return;}
+	if(!artica_setting_exists("SquidStatsMonthQueue")){return;}
 	$SquidStatsMonthQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidStatsMonthQueue"));
 	if($SquidStatsMonthQueue==0){return;}
 	if(system_is_overloaded()){return;}
@@ -2804,7 +2761,7 @@ function buildCronStatistics_run(){
 function buildCronStatistics_year_run(){
 
 	$cmd="{$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.squid.stats.compress.php --compress-year >/dev/null 2>&1 &";
-	if(!is_file("/etc/artica-postfix/settings/Daemons/SquidStatsYearQueue")){return;}
+	if(!artica_setting_exists("SquidStatsYearQueue")){return;}
 	$SquidStatsYearQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidStatsYearQueue"));
 	if($SquidStatsYearQueue==0){return;}
 	if(system_is_overloaded()){return;}
@@ -2835,14 +2792,6 @@ function PERSONAL_CATEGORIES_CRON(){
         $RESTART_CRON=true;
     }
 
-
-
-	if(is_file("/etc/init.d/proxy-pac")){
-		if(!is_file("/etc/cron.d/proxy-pac-stats")){
-			$GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("proxy-pac-stats","*/10 * * * *","exec.proxy-pac.stats.php");
-			$RESTART_CRON=true;
-		}
-	}
     $useCGuardCategories=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("useCGuardCategories"));
 
     if($useCGuardCategories==1){

@@ -1,25 +1,25 @@
-<AV_SCAN_PARAMETERS>Scan parameters</AV_SCAN_PARAMETERS>
-<AV_SCAN_PARAMETERS_TEXT>Define how to scan this computer</AV_SCAN_PARAMETERS_TEXT>
-<cure>Cure</cure>
-<f0>Detect Only</f0>
-<f1>Cure/skip</f1>
-<f2>Cure failed delete/skip</f2>
-<f3>Cure failed delete all</f3>
+<AV_SCAN_PARAMETERS>Scan-Parameter</AV_SCAN_PARAMETERS>
+<AV_SCAN_PARAMETERS_TEXT>Festlegen, wie dieser Computer gescannt werden soll</AV_SCAN_PARAMETERS_TEXT>
+<cure>Heilen</cure>
+<f0>Nur erkennen</f0>
+<f1>Heilen/&#252;berspringen</f1>
+<f2>Heilung fehlgeschlagen, l&#246;schen/&#252;berspringen</f2>
+<f3>Heilung fehlgeschlagen, alle l&#246;schen</f3>
 <f4>Alle l%C3%B6schen</f4>
-<Heuristic>Enable heuristic scanner</Heuristic>
-<i0>Just scan for virus presence; do not modify the files.</i0>
-<i1>Cure infected objects; if disinfection fails - skip it.</i1>
-<i2>Cure infected objects; if disinfection fails and the object is a simple one - delete it; if the infected object is inside a container - skip it.</i2>
-<i3>Cure infected objects; if disinfection fails and the object is a simple one - delete it; if the infected object is inside a container - delete the whole container.</i3>
-<i4>Delete infected objects and containers.</i4>
-<MailBases>e-mail databases</MailBases>
-<MailPlain>Plain text messages</MailPlain>
-<Recursion>Recursion scanning</Recursion>
-<SCAN_ARCHIVES>Archives files</SCAN_ARCHIVES>
-<SCAN_PACKED>Scan packed files</SCAN_PACKED>
+<Heuristic>Heuristischen Scanner aktivieren</Heuristic>
+<i0>Nur auf Virenpr&#228;senz scannen; die Dateien nicht &#228;ndern.</i0>
+<i1>Infizierte Objekte heilen; wenn die Desinfektion fehlschl&#228;gt - &#252;berspringen.</i1>
+<i2>Infizierte Objekte heilen; wenn die Desinfektion fehlschl&#228;gt und das Objekt einfach ist - l&#246;schen; wenn das infizierte Objekt in einem Container ist - &#252;berspringen.</i2>
+<i3>Infizierte Objekte heilen; wenn die Desinfektion fehlschl&#228;gt und das Objekt einfach ist - l&#246;schen; wenn das infizierte Objekt in einem Container ist - den gesamten Container l&#246;schen.</i3>
+<i4>Infizierte Objekte und Container l&#246;schen.</i4>
+<MailBases>E-Mail-Datenbanken</MailBases>
+<MailPlain>Klartextnachrichten</MailPlain>
+<Recursion>Rekursives Scannen</Recursion>
+<SCAN_ARCHIVES>Archivdateien</SCAN_ARCHIVES>
+<SCAN_PACKED>Komprimierte Dateien scannen</SCAN_PACKED>
 <SelfExtArchives>Selbstextrahierende Dateien</SelfExtArchives>
-<shares_access>Shares access</shares_access>
-<shares_access_text>Set the username/password allowing to connect to the target computer</shares_access_text>
-<START_SCAN_COMPUTER>Perfom scanning</START_SCAN_COMPUTER>
-<START_SCAN_COMPUTER_TEXT>Launch the scan on targeted computer and try to discover some viruses</START_SCAN_COMPUTER_TEXT>
-<SUCCESS_LAUNCH_SCAN_PC>The order has been successfully sent to the daemon to perform a background scan of this computer</SUCCESS_LAUNCH_SCAN_PC>
+<shares_access>Freigabezugriff</shares_access>
+<shares_access_text>Den Benutzernamen/das Passwort festlegen, mit dem die Verbindung zum Zielcomputer hergestellt werden kann</shares_access_text>
+<START_SCAN_COMPUTER>Scan durchf&#252;hren</START_SCAN_COMPUTER>
+<START_SCAN_COMPUTER_TEXT>Den Scan auf dem Zielcomputer starten und versuchen, Viren zu entdecken</START_SCAN_COMPUTER_TEXT>
+<SUCCESS_LAUNCH_SCAN_PC>Der Befehl wurde erfolgreich an den Daemon gesendet, um einen Hintergrundscan dieses Computers durchzuf&#252;hren</SUCCESS_LAUNCH_SCAN_PC>

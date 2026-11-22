@@ -2,12 +2,12 @@
 <ASSP_INTERFACE_TEXT>Abra la interfaz original ASSP</ASSP_INTERFACE_TEXT>
 <ASSP_NOT_INSTALLED>ASSP no est&aacute; instalado</ASSP_NOT_INSTALLED>
 <ASSP_NOT_INSTALLED_TEXT>Haga clic en este icono para instalar ASSP y jugar con esta funcion</ASSP_NOT_INSTALLED_TEXT>
-<DelayEmbargoTime>Embargo time</DelayEmbargoTime>
+<DelayEmbargoTime>Tiempo de embargo</DelayEmbargoTime>
 <DelayEmbargoTime_text>Introduzca el n%C3%BAmero de minutos durante los cuales la entrega, relacionada con la nueva &quot;tripleta&quot; (direcci%C3%B3n IP del host remitente
 host + mail from + rcpt to), se rechaza con un fallo temporal.[br]
 El valor por defecto es de 5 minutos.</DelayEmbargoTime_text>
-<DelayExpiryTime>Expiry time</DelayExpiryTime>
-<DelayExpiryTime_text>Enter the number of days for which whitelisted 'tuplet' is considered valid. Default is 36 days.</DelayExpiryTime_text>
+<DelayExpiryTime>Tiempo de expiraci&#243;n</DelayExpiryTime>
+<DelayExpiryTime_text>Introduzca el n&#250;mero de d&#237;as durante los cuales un 'tuplet' en la lista blanca se considera v&#225;lido. El valor predeterminado es 36 d&#237;as.</DelayExpiryTime_text>
 <DelayGripvalue>Gripvalue</DelayGripvalue>
 <DelayGripvalue_text>Esto restringir%C3¡ el retardo/la lista de grips a las IPs con un valor de grips superior a este valor.[br]
 Por ejemplo 0.4.[br]
@@ -15,19 +15,18 @@ Puede establecerlo m%C3¡s alto, a 0.5, si quiere retrasar s%C3%B3lo las IPs con
 La griplist local se construye durante rebuildspamdb y se sube a la base de datos global.[br]
 A cambio, se descarga la griplist global.[br]
 El Gripvalue se calcula a partir del &quot;spamminess&quot; , donde 0 significa que el bloque IP nunca env%C3%ADa spam y 1 que siempre env%C3%ADa spam.</DelayGripvalue_text>
-<DelaySSL>SSL Greylisting</DelaySSL>
-<DelaySSL_text>Enable Greylisting for SSL Connections.</DelaySSL_text>
+<DelaySSL>Greylisting SSL</DelaySSL>
+<DelaySSL_text>Habilitar el greylisting para conexiones SSL.</DelaySSL_text>
 <DelayWaitTime>Tiempo de espera</DelayWaitTime>
-<DelayWaitTime_text>Enter the number of hours to wait for delivery attempts related with recognised 'triplet'; delivery is accepted
-immediately and the 'tuplet' (IP address of the sending host + sender's domain) is safelisted.[br]
-Default is 28 hours.</DelayWaitTime_text>
-<EnableDelaying_text>
-Greylisting involves sending a temporary 451 SMTP error code to the sending server when a message is received, 
-along with sending this error code ASSP creates a Triplet and stores this.[br]
- On the second delivery attempt if the Embargo Time set by the ASSP admin for the Triplet has been surpassed the message 
- will be accepted and a Tuplet will be created and not delayed again for an Expiry Time set by the ASSP admin.</EnableDelaying_text>
-<MessageScoringLowerLimit>Tag messages whose score exceeds</MessageScoringLowerLimit>
-<MessageScoringLowerLimitTag>Tag text</MessageScoringLowerLimitTag>
-<MessageScoringUpperLimit>Block messages whose score exceeds</MessageScoringUpperLimit>
-<messages_scoring>Messages scoring</messages_scoring>
-<messages_scoring_text>Define scores that will be block messages</messages_scoring_text>
+<DelayWaitTime_text>Introduzca el n&#250;mero de horas que se esperar&#225; para los intentos de entrega relacionados con un 'triplet' reconocido; la entrega se acepta
+inmediatamente y el 'tuplet' (direcci&#243;n IP del host emisor + dominio del remitente) se a&#241;ade a la lista segura.[br]
+El valor predeterminado es 28 horas.</DelayWaitTime_text>
+<EnableDelaying_text>El greylisting consiste en enviar un c&#243;digo de error SMTP 451 temporal al servidor emisor cuando se recibe un mensaje;
+junto con el env&#237;o de este c&#243;digo de error, ASSP crea un Triplet y lo almacena.[br]
+ En el segundo intento de entrega, si se ha superado el tiempo de embargo establecido por el administrador de ASSP para el Triplet, el mensaje
+ se aceptar&#225; y se crear&#225; un Tuplet que no se volver&#225; a retrasar durante un tiempo de expiraci&#243;n establecido por el administrador de ASSP.</EnableDelaying_text>
+<MessageScoringLowerLimit>Etiquetar mensajes cuya puntuaci&#243;n supere</MessageScoringLowerLimit>
+<MessageScoringLowerLimitTag>Texto de etiqueta</MessageScoringLowerLimitTag>
+<MessageScoringUpperLimit>Bloquear mensajes cuya puntuaci&#243;n supere</MessageScoringUpperLimit>
+<messages_scoring>Puntuaci&#243;n de mensajes</messages_scoring>
+<messages_scoring_text>Defina las puntuaciones que bloquear&#225;n los mensajes</messages_scoring_text>

@@ -1,8 +1,7 @@
-<ENABLE_MAILMAN>Enable Mailing list service</ENABLE_MAILMAN>
-<ENABLE_MAILMAN_TEXT>Turn this feature to green in order to enable the Mailman mailing list distribution list</ENABLE_MAILMAN_TEXT>
-<mailman_intro>
-Mailman is free software for managing electronic mail discussion and e-newsletter lists.[br]
-Mailman is integrated with the web, making it easy for users to manage their accounts and for list owners to administer their lists.[br]
-Mailman supports built-in archiving, automatic bounce processing, content filtering, digest delivery, spam filters, and more.[br]
-Mailman is free software, distributed under the GNU General Public License. Mailman is written in the Python programming language, with a little bit of C code for security.[br]
-The name of this software is spelled Mailman with a capital leading M and a lowercase second m. It is incorrect to spell it "MailMan". </mailman_intro>
+<ENABLE_MAILMAN>W&#322;&#261;cz us&#322;ug&#281; list mailingowych</ENABLE_MAILMAN>
+<ENABLE_MAILMAN_TEXT>Ustaw t&#281; funkcj&#281; na zielono, aby w&#322;&#261;czy&#263; list&#281; dystrybucyjn&#261; Mailman</ENABLE_MAILMAN_TEXT>
+<mailman_intro>Mailman to wolne oprogramowanie do zarz&#261;dzania listami dyskusyjnymi e-mail i biuletynami elektronicznymi.[br]
+Mailman jest zintegrowany z sieci&#261;, co u&#322;atwia u&#380;ytkownikom zarz&#261;dzanie kontami, a w&#322;a&#347;cicielom list administrowanie nimi.[br]
+Mailman obs&#322;uguje wbudowan&#261; archiwizacj&#281;, automatyczne przetwarzanie odbi&#263;, filtrowanie tre&#347;ci, dostarczanie skr&#243;t&#243;w, filtry spamu i wi&#281;cej.[br]
+Mailman to wolne oprogramowanie, rozpowszechniane na licencji GNU General Public License. Mailman jest napisany w j&#281;zyku programowania Python, z odrobin&#261; kodu C dla bezpiecze&#324;stwa.[br]
+Nazw&#281; tego oprogramowania pisze si&#281; Mailman, z wielkim pocz&#261;tkowym M i ma&#322;ym drugim m. Pisanie jej jako &quot;MailMan&quot; jest niepoprawne.</mailman_intro>

@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 putenv('LDAPTLS_REQCERT=never');
 $_ENV['LDAPTLS_REQCERT'] = 'never';
 
@@ -16,9 +18,6 @@ if(isset($_POST["fullhosname"])){Save();exit;}
 if(isset($_GET["enable-feature"])){enable_feature();exit;}
 if(isset($_GET["disable-feature"])){disable_feature();exit;}
 
-if(isset($_GET["configuration-file"])){configuration_file_js();exit;}
-if(isset($_GET["configuration-popup"])){configuration_file();exit;}
-if(isset($_POST["conf"])){configuration_file_save();exit;}
 if(isset($_GET["repair"])){reconfigure();exit;}
 page();
 
@@ -48,31 +47,53 @@ function enable_feature():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
 
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableAdLDAPAuth",1);
-    $jsrestart=$tpl->framework_buildjs("/proxy/nohup/reconfigure","squid.articarest.nohup","squid.access.center.progress.log",
-        "adauth-ldap-restart",
-        "LoadAjax('adauth-ldap-table','$page?table=yes')"
+    // Squid runs /lib/squid3/artica-proxy-auth, installed by articarest from the
+    // shipped copy. With neither of them, enabling the method writes an
+    // auth_param line to a missing program and the proxy no longer starts.
+    if(!is_file("/usr/share/artica-postfix/bin/artica-proxy-auth") && !is_file("/lib/squid3/artica-proxy-auth")){
+        $tpl->js_error("{squid_ldap_auth_helper_missing}");
+        return false;
+    }
 
-    );
-
-    echo $jsrestart;
+    $err=squidadldap_set(true);
+    if($err<>""){
+        $tpl->js_error($err);
+        return false;
+    }
+    admin_tracks("Enabled the proxy LDAP authentication (EnableAdLDAPAuth=1)");
+    echo "LoadAjax('adauth-ldap-table','$page?table=yes');";
     return true;
 }
 
-function disable_feature(){
-    $page=CurrentPageName();
+function disable_feature():bool{
     $tpl=new template_admin();
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableAdLDAPAuth",0);
-    $jsrestart=$tpl->framework_buildjs("/proxy/nohup/reconfigure","squid.articarest.nohup","squid.access.center.progress.log",
-        "adauth-ldap-restart",
-        "document.location.href='/ad-state'"
-
-    );
-
-
-
-    echo $jsrestart;
+    $err=squidadldap_set(false);
+    if($err<>""){
+        $tpl->js_error($err);
+        return false;
+    }
+    admin_tracks("Disconnected the proxy LDAP authentication (EnableAdLDAPAuth=0)");
+    echo "document.location.href='/ad-state';";
     return true;
+}
+
+// articarest PUT /proxy/auth/ldap : enregistre EnableAdLDAPAuth puis reconstruit
+// authenticate.conf et RECHARGE Squid (/proxy/nohup/reconfigure ne rechargeait pas).
+// Rend "" si accepte, sinon le message d'erreur.
+function squidadldap_set($enabled):string{
+    $users=new usersMenus();
+    if(!$users->AsSquidAdministrator){
+        return "{ERROR_NO_PRIVS2}";
+    }
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/proxy/auth/ldap",
+        array("enabled"=>(bool)$enabled)));
+    if(!is_object($json)){
+        return "articarest: /proxy/auth/ldap unavailable";
+    }
+    if(!property_exists($json,"Status") || !$json->Status){
+        return property_exists($json,"Error")?(string)$json->Error:"error";
+    }
+    return "";
 }
 
 function reconfigure():bool{
@@ -80,8 +101,13 @@ function reconfigure():bool{
     $tpl=new template_admin();
     header("content-type: application/x-javascript");
 
-    $sock=new sockets();
-    $sock->getGoFramework("exec.hotspot.templates.php");
+    // The directory connections the LDAP helper binds against are written by
+    // the daemon (they used to be a side effect of exec.hotspot.templates.php).
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/activedirectory/connections/hotspot"));
+    if(!$json || !property_exists($json,"Status") || !$json->Status){
+        $tpl->js_error(($json && property_exists($json,"Error"))?$json->Error:"{error}");
+        return false;
+    }
 
     echo "LoadAjax('adauth-ldap-table','$page?table=yes');";
     return true;
@@ -190,7 +216,7 @@ function Save(){
     if(!$IP->isValid($ipaddr)){
         $err=$tpl->_ENGINE_parse_body("{ad_full_hostname_resolve_issue}");
         $err=str_replace("%s",$kerberosActiveDirectoryHost,$err);
-        echo "jserror:$err";
+        echo (new template_admin())->post_error("$err");
         return false;
     }
 
@@ -214,7 +240,7 @@ function Save(){
     if(!$ldap_connection){
         $DIAG[]="{Connection_Failed_to_connect_to_DC} $ldap_prefix$ldapserver:$ldap_port";
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror:".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG)));
         @ldap_close();
         return false;
     }
@@ -241,7 +267,7 @@ function Save(){
 
             $DIAG[]=ldap_err2str(ldap_errno($ldap_connection));
             if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-            echo "jserror:".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+            echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG)));
             return false;
         }
     }
@@ -253,7 +279,7 @@ function Save(){
 
         $DIAG[]=ldap_err2str($error_code);
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror:".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG)));
         return false;
     }
 
@@ -261,7 +287,7 @@ function Save(){
     $dse=new ad_rootdse($_POST["ADNETIPADDR"], $ldap_port, $KerberosUsername, $KerberosPassword,$_POST["LDAP_SSL"],$_POST["LDAP_TLS"]);
     $RootDSE=$dse->RootDSE();
     if(!$dse->ok){
-        echo "jserror:".$tpl->_ENGINE_parse_body($dse->mysql_error);
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body($dse->mysql_error));
         return false;
     }
 
@@ -277,7 +303,7 @@ function Save(){
     if($search){
         $PLEASE_REMOVE_CMP_AD=$tpl->_ENGINE_parse_body("{PLEASE_REMOVE_CMP_AD}");
         $PLEASE_REMOVE_CMP_AD=str_replace("%cmp",$hostname,$PLEASE_REMOVE_CMP_AD);
-        echo "jserror:$PLEASE_REMOVE_CMP_AD";
+        echo (new template_admin())->post_error("$PLEASE_REMOVE_CMP_AD");
         return;
     }
 
@@ -293,10 +319,12 @@ function Save(){
 }
 
 function file_uploaded(){
+    if(!fw_progress_page_priv("AsSquidAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
-    $file=$_GET["file-uploaded"];
+    $file=fw_progress_upload_name($_GET["file-uploaded"] ?? "");   // REST segment, see fw_progress_upload_name
+    if($file===""){return fw_progress_bad_value("file-uploaded");}
 
     $jsrestart=$tpl->framework_buildjs(
         "/kerberos/keytab/install/$file",

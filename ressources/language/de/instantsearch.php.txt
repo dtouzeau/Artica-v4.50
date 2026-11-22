@@ -1,7 +1,7 @@
-<crawl_each>Crawl server each</crawl_each>
-<crawl_each_0>If you set 0 value, the feature will be available for your users but the server will be only crawled manually</crawl_each_0>
-<crawl_now>Crawl now!</crawl_now>
-<InstantSearch_enable>Enable InstantSearch</InstantSearch_enable>
-<InstantSearch_enable_text>If you turn to green this feature, users will be allow to query artica to find documents stored on this server.[br]
-Artica will crawl your server in order to parse documents according user's privileges.[br]
-In this case, no document could be lost, a simply search engine will be displayed in order to find the right information</InstantSearch_enable_text>
+<crawl_each>Server durchsuchen alle</crawl_each>
+<crawl_each_0>Wenn Sie den Wert 0 festlegen, ist die Funktion f&#252;r Ihre Benutzer verf&#252;gbar, aber der Server wird nur manuell durchsucht</crawl_each_0>
+<crawl_now>Jetzt durchsuchen!</crawl_now>
+<InstantSearch_enable>InstantSearch aktivieren</InstantSearch_enable>
+<InstantSearch_enable_text>Wenn Sie diese Funktion auf Gr&#252;n schalten, d&#252;rfen Benutzer Artica abfragen, um auf diesem Server gespeicherte Dokumente zu finden.[br]
+Artica durchsucht Ihren Server, um Dokumente entsprechend den Benutzerberechtigungen zu analysieren.[br]
+In diesem Fall kann kein Dokument verloren gehen. Es wird einfach eine Suchmaschine angezeigt, um die richtigen Informationen zu finden</InstantSearch_enable_text>

@@ -1,273 +1,244 @@
-<add_a_license>Install new key</add_a_license>
-<add_a_license_text>Upgrade your license file by upload it to your server</add_a_license_text>
-<add_clientip>Add new source IP adress</add_clientip>
-<add_clienturl>Add new web destination URI</add_clienturl>
-<add_ExcludeMimeType>Add Mime rule</add_ExcludeMimeType>
-<add_ExcludeURL>Add URL</add_ExcludeURL>
-<add_group_text>Add a filter group according yours clients ip addresses </add_group_text>
-<add_not_rule>Add a notification rule</add_not_rule>
-<AdminAddresses>Administrators addresses</AdminAddresses>
-<AdminAddresses_text>List of administrative e-mail addresses for notifications.</AdminAddresses_text>
-<AdminSubject>Administrators subject</AdminSubject>
-<AdminSubject_text>Subject of the custom notification message sent to admin</AdminSubject_text>
-<Allow204>204 error support</Allow204>
-<Allow204_text>If set, then IcapServer supports 204 response. If no, then no 204 response allowed from icapserver</Allow204_text>
-<AnswerMode>Answer mode</AnswerMode>
-<AnswerMode_text>
-[b]The answer mode of object[/b][br]
-The following values are available:[ul]
-[li][b]complete[/b]: send the object back only when it downloaded and checked for viruses.[/li]
-[li][b]partial[/b]: 	send parts of the object while downloading.After the object is downloaded, it is checked against viruses and if it is ok, than send the latest part of the object.
-[/ul]
-</AnswerMode_text>
-<BasesErrorAction>Action performed over objects in cases, when the application fails to load the anti-virus databases.</BasesErrorAction>
+<add_a_license>Installa nuova chiave</add_a_license>
+<add_a_license_text>Aggiorna il tuo file di licenza caricandolo sul tuo server</add_a_license_text>
+<add_clientip>Aggiungi nuovo indirizzo IP di origine</add_clientip>
+<add_clienturl>Aggiungi nuovo URI di destinazione web</add_clienturl>
+<add_ExcludeMimeType>Aggiungi regola MIME</add_ExcludeMimeType>
+<add_ExcludeURL>Aggiungi URL</add_ExcludeURL>
+<add_group_text>Aggiungi un gruppo di filtro in base agli indirizzi IP dei tuoi client</add_group_text>
+<add_not_rule>Aggiungi una regola di notifica</add_not_rule>
+<AdminAddresses>Indirizzi degli amministratori</AdminAddresses>
+<AdminAddresses_text>Elenco di indirizzi e-mail amministrativi per le notifiche.</AdminAddresses_text>
+<AdminSubject>Oggetto degli amministratori</AdminSubject>
+<AdminSubject_text>Oggetto del messaggio di notifica personalizzato inviato all'admin</AdminSubject_text>
+<Allow204>Supporto errore 204</Allow204>
+<Allow204_text>Se impostato, IcapServer supporta la risposta 204. In caso contrario, nessuna risposta 204 &#232; consentita dall'icapserver</Allow204_text>
+<AnswerMode>Modalit&#224; di risposta</AnswerMode>
+<AnswerMode_text>[b]La modalit&#224; di risposta dell'oggetto[/b][br]
+Sono disponibili i seguenti valori:[ul]
+[li][b]complete[/b]: rispedisci l'oggetto solo quando &#232; stato scaricato e controllato per virus.[/li]
+[li][b]partial[/b]: invia parti dell'oggetto durante il download. Dopo che l'oggetto &#232; scaricato, viene controllato per virus e, se &#232; a posto, viene inviata l'ultima parte dell'oggetto.
+[/ul]</AnswerMode_text>
+<BasesErrorAction>Azione eseguita sugli oggetti nei casi in cui l'applicazione non riesce a caricare i database antivirus.</BasesErrorAction>
 <by_a_license>Ottenere una nuova licenza</by_a_license>
-<by_a_license_text>Buy OnLine now and give the product ready to filter yours mails</by_a_license_text>
-<ClientIP>From IPs</ClientIP>
-<ClientIP_text>Set source IP address of the client that has requested an object through
-    proxy. Objects requested from a specified IP address and located at an
-    address defined by the URL parameter will be processed using the
-    rules of this group. The following information can be used to specify the
-    value for the ClientIP parameter:
-        â€¢192.168.12.1
-        â€¢192.168.12.0/24
-        â€¢192.168.12.1/255.255.255.0
-    Regular expressions are also allowed as the values, e.g.:
-        â€¢^192\.168\.12\..*
-</ClientIP_text>
-<ClientURI>To web sites</ClientURI>
-<ClientURI_text>Set the destination of the requests, (usually ".*")
-    e.g.:
-       â€¢ www.website.tm/.*
-You should enter the ^ . [ $ ( ) | * + ? { \ symbols
-between the \. escape characters.       
-
-</ClientURI_text>
-<CorruptedAction>Action over damaged objects.</CorruptedAction>
-<Cure>Cure</Cure>
-<CuredAction>Action over disinfected objects.</CuredAction>
-<Cure_text>Try to cure infected files</Cure_text>
+<by_a_license_text>Acquista online ora e rendi il prodotto pronto a filtrare le tue email</by_a_license_text>
+<ClientIP>Da IP</ClientIP>
+<ClientIP_text>Imposta l'indirizzo IP di origine del client che ha richiesto un oggetto tramite
+    proxy. Gli oggetti richiesti da un indirizzo IP specificato e situati a un
+    indirizzo definito dal parametro URL verranno elaborati usando le
+    regole di questo gruppo. Le seguenti informazioni possono essere usate per specificare il
+    valore per il parametro ClientIP:
+        &#8226;192.168.12.1
+        &#8226;192.168.12.0/24
+        &#8226;192.168.12.1/255.255.255.0
+    Sono ammesse anche espressioni regolari come valori, es.:
+        &#8226;^192\.168\.12\..*</ClientIP_text>
+<ClientURI>Verso siti web</ClientURI>
+<ClientURI_text>Imposta la destinazione delle richieste (di solito &quot;.*&quot;)
+    es.:
+       &#8226; www.website.tm/.*
+Devi inserire i simboli ^ . [ $ ( ) | * + ? { \
+tra i caratteri di escape \.</ClientURI_text>
+<CorruptedAction>Azione sugli oggetti danneggiati.</CorruptedAction>
+<Cure>Cura</Cure>
+<CuredAction>Azione sugli oggetti disinfettati.</CuredAction>
+<Cure_text>Prova a curare i file infetti</Cure_text>
 <DefaultAction>Predefinito</DefaultAction>
-<DefaultAction_text>Specifies action to be taken when the message or one of its parts is found to be infected.
-[br]Possible actions are:[ul]
-[li][b]warn[/b] - replace messages with a warning and send it along;[/li]
-[li][b]drop[/b] - accept messages with SMTP success code, but silently drop it;[/li]
-[li][b]reject[/b] - reject messages with an SMTP error code;[/li]
-[li][b]cure[/b] - try to cure infected message, otherwise delete it;[/li]
-[li][b]delete[/b] - delete infected part and optionally replacing it with a notice;[/li]
-[li][b]skip[/b] - scan the message/part but no changes are made[/li]
-[li][b]Noscan[/b]- is this case messages are not scanned at all.[/li]
+<DefaultAction_text>Specifica l'azione da intraprendere quando il messaggio o una delle sue parti risulta infetto.
+[br]Le azioni possibili sono:[ul]
+[li][b]warn[/b] - sostituisce i messaggi con un avviso e li inoltra;[/li]
+[li][b]drop[/b] - accetta i messaggi con codice di successo SMTP, ma li scarta silenziosamente;[/li]
+[li][b]reject[/b] - rifiuta i messaggi con un codice di errore SMTP;[/li]
+[li][b]cure[/b] - prova a curare il messaggio infetto, altrimenti lo elimina;[/li]
+[li][b]delete[/b] - elimina la parte infetta, sostituendola facoltativamente con un avviso;[/li]
+[li][b]skip[/b] - scansiona il messaggio/parte ma non viene apportata alcuna modifica[/li]
+[li][b]Noscan[/b] - in questo caso i messaggi non vengono scansionati affatto.[/li]
 [/ul]
-Note: to replace a deleted part with a notice, turn on Use Place holder Notice.
-</DefaultAction_text>
-<default_rule>Default antivirus rule</default_rule>
-<default_rule_text>This rule is the defult rule used when others groups rules are not set or didn't match</default_rule_text>
-<EnableNotifications>Enable notifications</EnableNotifications>
-<EnableNotifications_text>Switch to turn notification functionality on or off.</EnableNotifications_text>
-<enable_kavmilter>Enable Antivirus Milter service</enable_kavmilter>
+Nota: per sostituire una parte eliminata con un avviso, attiva Use Place holder Notice.</DefaultAction_text>
+<default_rule>Regola antivirus predefinita</default_rule>
+<default_rule_text>Questa regola &#232; la regola predefinita utilizzata quando le regole di altri gruppi non sono impostate o non corrispondono</default_rule_text>
+<EnableNotifications>Abilita notifiche</EnableNotifications>
+<EnableNotifications_text>Interruttore per attivare o disattivare la funzionalit&#224; di notifica.</EnableNotifications_text>
+<enable_kavmilter>Abilita il servizio Milter antivirus</enable_kavmilter>
 <ErrorAction>Errore</ErrorAction>
-<ErrorAction_text>When the scanning process generates an error, or the scanning target is corrupted, a specific action can be taken
+<ErrorAction_text>Quando il processo di scansione genera un errore, o l'obiettivo della scansione &#232; corrotto, pu&#242; essere intrapresa un'azione specifica
 [ul]
-[li][b]warn[/b] - replace messages with a warning and send it along;[/li]
-[li][b]delete[/b] - delete infected part and optionally replacing it with a notice;[/li]
-[li][b]skip[/b] - scan the message/part but no changes are made[/li]
-[/ul]
-
-</ErrorAction_text>
-<ExcludeMimeType>By Mime Type</ExcludeMimeType>
-<ExcludeMimeTypeExplain>
-Set an exception mask for filtering by MIME type (regular
-expressions can be used). The application will not perform
-anti-virus scanning of objects with MIME type, which does not
-match the specified mask.
-        â€¢ ^audio/mpeg$
-        â€¢ ^application/vnd.ms.wms-hdr.asfv1$
-        â€¢ ^application/x-mms-framed$
-</ExcludeMimeTypeExplain>
-<excludes>Excludes</excludes>
-<ExcludeURL>By URI</ExcludeURL>
-<ExcludeURLExplain>
-Set an exception mask for filtering by URL
-type (POSIX Extended Regular Expressions can be used).
-The application will not perform anti-virus scanning
-of objects with URL which matches the specified mask.
-        â€¢www\.example\.com.*
-        â€¢www\.localsite\.local.*
-You should enter the ^ . [ $ ( ) | * + ? { \ symbols
-between the \. escape characters.
-</ExcludeURLExplain>
-<flow>Flow</flow>
+[li][b]warn[/b] - sostituisce i messaggi con un avviso e li inoltra;[/li]
+[li][b]delete[/b] - elimina la parte infetta, sostituendola facoltativamente con un avviso;[/li]
+[li][b]skip[/b] - scansiona il messaggio/parte ma non viene apportata alcuna modifica[/li]
+[/ul]</ErrorAction_text>
+<ExcludeMimeType>Per tipo MIME</ExcludeMimeType>
+<ExcludeMimeTypeExplain>Imposta una maschera di eccezione per il filtraggio per tipo MIME (possono
+essere usate espressioni regolari). L'applicazione non eseguir&#224;
+la scansione antivirus degli oggetti con tipo MIME che non
+corrisponde alla maschera specificata.
+        &#8226; ^audio/mpeg$
+        &#8226; ^application/vnd.ms.wms-hdr.asfv1$
+        &#8226; ^application/x-mms-framed$</ExcludeMimeTypeExplain>
+<excludes>Esclusioni</excludes>
+<ExcludeURL>Per URI</ExcludeURL>
+<ExcludeURLExplain>Imposta una maschera di eccezione per il filtraggio per URL
+(possono essere usate le espressioni regolari estese POSIX).
+L'applicazione non eseguir&#224; la scansione antivirus
+degli oggetti con URL che corrisponde alla maschera specificata.
+        &#8226;www\.example\.com.*
+        &#8226;www\.localsite\.local.*
+Devi inserire i simboli ^ . [ $ ( ) | * + ? { \
+tra i caratteri di escape \..</ExcludeURLExplain>
+<flow>Flusso</flow>
 <globalsettings>Impostazioni globali</globalsettings>
 <icapserver_1>Parametri di servizio</icapserver_1>
-<icapserver_2>icapserver protocol settings</icapserver_2>
-<IdleChildren>Idle children</IdleChildren>
-<IdleChildren_text>The number of child processes are not used in the connections processing</IdleChildren_text>
-<idle_processes>Idle processes</idle_processes>
-<InfectedAction>action over infected objects.</InfectedAction>
-<kav4proxy_licence_add>Add a Kaspersky For Squid License key</kav4proxy_licence_add>
-<kav4proxy_licence_text>Upload the *.key file about Kaspersky for Squid in order to update the licence.</kav4proxy_licence_text>
+<icapserver_2>Impostazioni del protocollo icapserver</icapserver_2>
+<IdleChildren>Processi figli inattivi</IdleChildren>
+<IdleChildren_text>Il numero di processi figli non utilizzati nell'elaborazione delle connessioni</IdleChildren_text>
+<idle_processes>Processi inattivi</idle_processes>
+<InfectedAction>Azione sugli oggetti infetti.</InfectedAction>
+<kav4proxy_licence_add>Aggiungi una chiave di licenza Kaspersky For Squid</kav4proxy_licence_add>
+<kav4proxy_licence_text>Carica il file *.key relativo a Kaspersky for Squid per aggiornare la licenza.</kav4proxy_licence_text>
 <license>Licenza</license>
-<LicenseErrorAction>Action over scanned objects if the application has failed to load the license key information.</LicenseErrorAction>
+<LicenseErrorAction>Azione sugli oggetti scansionati se l'applicazione non &#232; riuscita a caricare le informazioni della chiave di licenza.</LicenseErrorAction>
 <licenseproxy>Licenza</licenseproxy>
-<ListenAddress>Listen Address</ListenAddress>
-<ListenAddress_text>Address where icap server listens for connections</ListenAddress_text>
-<LogFacility>Save logs in</LogFacility>
-<LogFacility_text>The target of the kavmilter logging system. Can be:
-[br][b]syslog[/b] - all messages are sent to syslog as "mail" facility;
-[br][b]file[/b]   - messages are logged to a file specified.</LogFacility_text>
-<LogFilepath>Path of file log</LogFilepath>
-<LogRotate>Log rotate</LogRotate>
-<LogRotate_text>When the size of the log file grows over RotateSize value, the log file will be renamed as explained above.[br]
-See comment from "Log Rotate option".</LogRotate_text>
+<ListenAddress>Indirizzo di ascolto</ListenAddress>
+<ListenAddress_text>Indirizzo dove il server icap ascolta le connessioni</ListenAddress_text>
+<LogFacility>Salva i log in</LogFacility>
+<LogFacility_text>La destinazione del sistema di logging di kavmilter. Pu&#242; essere:
+[br][b]syslog[/b] - tutti i messaggi vengono inviati a syslog come facility &quot;mail&quot;;
+[br][b]file[/b] - i messaggi vengono registrati in un file specificato.</LogFacility_text>
+<LogFilepath>Percorso del file di log</LogFilepath>
+<LogRotate>Rotazione log</LogRotate>
+<LogRotate_text>Quando la dimensione del file di log supera il valore RotateSize, il file di log verr&#224; rinominato come spiegato sopra.[br]
+Vedi il commento dell'opzione &quot;Log Rotate&quot;.</LogRotate_text>
 <MaxChildren>Processo figlio max.</MaxChildren>
-<MaxChildren_text>Maximal number of children processes</MaxChildren_text>
+<MaxChildren_text>Numero massimo di processi figli</MaxChildren_text>
 <MaxConnections>Connessioni massime</MaxConnections>
-<MaxConnections_text>The maximum number of connections, IcapServer is able to support. [br]
-If set, then Max-Connections header is added in the OPTIONS response.[br] If zero, then dont set this header</MaxConnections_text>
-<MaxEnginesPerChild>Man Engines per child</MaxEnginesPerChild>
-<MaxEnginesPerChild_text>The maximal number of antiviral engines for every child. if 0 than no limit.[br]
-If number of antiviral engines reaches the limit, then new check requests are queued until the number of engines became less then the limit.</MaxEnginesPerChild_text>
-<MaxReqsPerChild>Max requests per child</MaxReqsPerChild>
-<MaxReqsPerChild_text>The maximal number of requests processes by one child.[br] If it exeeded, than child proceess shutdown.[br]The shutdown procedure works in the following manner:[ul][li]In this way all the current requests are handled properly.After all the requests[/li][li]handled - connection is closed. No new connections accepted by this child.[/li][/ul]</MaxReqsPerChild_text>
-<MaxScanRequests>Max scanning request</MaxScanRequests>
-<MaxScanRequests_text>How many concurrent scanning requests to perform (0 means unlimited.)</MaxScanRequests_text>
-<MaxScanTime>Max Scanning time</MaxScanTime>
-<MaxScanTime_text>Limits the number of seconds to spend on a message or part scan.[br]If exceeded, an error is issued.</MaxScanTime_text>
-<MaxSendDelayTime>Max delay time in seconds</MaxSendDelayTime>
-<MaxSendDelayTime_text>
-The delay time in seconds.[br]
-This parameter makes sense in partial mode.[br]
-If the file is not started to send back from the icapserver to icapclient during this time, than start to send parts of this file to icapclient.
-</MaxSendDelayTime_text>
-<MessageSubject>Default Subject</MessageSubject>
-<MessageSubject_text>The subject of the default notification message</MessageSubject_text>
-<MilterTimeout>Milter timeout</MilterTimeout>
-<MilterTimeout_text>#  When the program is run in background as a service (-f switch is not used)
-it is supervised by a watchdog, which restarts it in case of failure.[br]
-This specifies how many retries should be attempted to restart the filter.[br]
-To always retry, with no count limit, specify -1.</MilterTimeout_text>
+<MaxConnections_text>Il numero massimo di connessioni che IcapServer &#232; in grado di supportare. [br]
+Se impostato, l'header Max-Connections viene aggiunto nella risposta OPTIONS.[br] Se zero, questo header non viene impostato</MaxConnections_text>
+<MaxEnginesPerChild>Motori max per child</MaxEnginesPerChild>
+<MaxEnginesPerChild_text>Il numero massimo di motori antivirus per ogni child. Se 0, allora nessun limite.[br]
+Se il numero di motori antivirus raggiunge il limite, le nuove richieste di controllo vengono accodate finch&#233; il numero di motori non diventa inferiore al limite.</MaxEnginesPerChild_text>
+<MaxReqsPerChild>Richieste max per child</MaxReqsPerChild>
+<MaxReqsPerChild_text>Il numero massimo di richieste elaborate da un child.[br] Se superato, il processo child viene arrestato.[br]La procedura di arresto funziona nel modo seguente:[ul][li]In questo modo tutte le richieste correnti vengono gestite correttamente. Dopo che tutte le richieste[/li][li]sono gestite - la connessione viene chiusa. Nessuna nuova connessione viene accettata da questo child.[/li][/ul]</MaxReqsPerChild_text>
+<MaxScanRequests>Richieste max di scansione</MaxScanRequests>
+<MaxScanRequests_text>Quante richieste di scansione simultanee eseguire (0 significa illimitato).</MaxScanRequests_text>
+<MaxScanTime>Tempo massimo di scansione</MaxScanTime>
+<MaxScanTime_text>Limita il numero di secondi da dedicare alla scansione di un messaggio o di una parte.[br]Se superato, viene emesso un errore.</MaxScanTime_text>
+<MaxSendDelayTime>Tempo massimo di ritardo in secondi</MaxSendDelayTime>
+<MaxSendDelayTime_text>Il tempo di ritardo in secondi.[br]
+Questo parametro ha senso in modalit&#224; parziale.[br]
+Se il file non inizia a essere rispedito dall'icapserver all'icapclient durante questo tempo, allora inizia a inviare parti di questo file all'icapclient.</MaxSendDelayTime_text>
+<MessageSubject>Oggetto predefinito</MessageSubject>
+<MessageSubject_text>L'oggetto del messaggio di notifica predefinito</MessageSubject_text>
+<MilterTimeout>Timeout milter</MilterTimeout>
+<MilterTimeout_text>#  Quando il programma viene eseguito in background come servizio (l'opzione -f non &#232; usata), &#232; supervisionato da un watchdog, che lo riavvia in caso di errore.[br]
+Questo specifica quanti tentativi devono essere effettuati per riavviare il filtro.[br]
+Per riprovare sempre, senza limite di conteggio, specifica -1.</MilterTimeout_text>
 <notifications>Notifiche</notifications>
-<NotifySender>Notify sender</NotifySender>
-<NotifySender_text>
-Specify situations(message actions) upon which a notification is to be issued to sender, recipient or admin.[br]
-Available options are:
+<NotifySender>Notifica il mittente</NotifySender>
+<NotifySender_text>Specifica le situazioni (azioni sui messaggi) in cui deve essere emessa una notifica a mittente, destinatario o admin.[br]
+Le opzioni disponibili sono:
 [ul]
-[li][b]infected[/b] - least one object was infected (DefaultAction was taken);[/li]
-[li][b]suspicious[/b] - least one object was found to be suspicious (SuspiciousAction was taken);[/li]
-[li][b]protected[/b] - least one object was protected (ProtectedAction was taken);[/li]
-[li][b]filtered[/b] - least one object matched one of the filtering rules;[/li]
-[li][b]error[/b] - least one object was erroneous (ErrorAction was taken);[/li]
-[li][b]none[/b] - disable notifications for sender;[/li]
-[li][b]all[/b] - enable all notifications for sender.[/li]
+[li][b]infected[/b] - almeno un oggetto era infetto (&#232; stata eseguita DefaultAction);[/li]
+[li][b]suspicious[/b] - almeno un oggetto &#232; stato trovato sospetto (&#232; stata eseguita SuspiciousAction);[/li]
+[li][b]protected[/b] - almeno un oggetto era protetto (&#232; stata eseguita ProtectedAction);[/li]
+[li][b]filtered[/b] - almeno un oggetto corrispondeva a una delle regole di filtraggio;[/li]
+[li][b]error[/b] - almeno un oggetto era errato (&#232; stata eseguita ErrorAction);[/li]
+[li][b]none[/b] - disabilita le notifiche per il mittente;[/li]
+[li][b]all[/b] - abilita tutte le notifiche per il mittente.[/li]
 [/ul]
 
-Additionally the following admin options can be specified:
+Inoltre possono essere specificate le seguenti opzioni admin:
 [ul]
-[li][b]discard[/b] - message was discarded through reject or drop;[/li]
-[li][b]fault[/b] - the program generated a fault;[/li]
-[li][b]update[/b]- a new bases update was downloaded;[/li]
+[li][b]discard[/b] - il messaggio &#232; stato scartato tramite reject o drop;[/li]
+[li][b]fault[/b] - il programma ha generato un errore;[/li]
+[li][b]update[/b] - &#232; stato scaricato un nuovo aggiornamento delle basi;[/li]
 
 
-Note: if several actions are taken upon a message, only one notification message is sent;[br]
-the sending decision is taken by analyzing the above mentioned action list to match least one action.
-</NotifySender_text>
-<performances>Performances</performances>
-<PostmasterAddress>Send notification from</PostmasterAddress>
-<PreviewSize>Preview size</PreviewSize>
-<PreviewSize_text> The number of bytes that can be send by ICAP client to icapserver during preview</PreviewSize_text>
-<ProtectedAction>Protected</ProtectedAction>
-<ProtectedAction_text>
-When the scanned message part is protected either with a password or encrypted, the following actions can be taken:
-[ul][li][b]delete[/b] - delete infected part and optionally replacing it with a notice;[/li]
-[li][b]skip[/b] - scan the message/part but no changes are made[/li][/ul]
-</ProtectedAction_text>
-<ProxyAddress>Proxy address</ProxyAddress>
-<ProxyAddress_text>
-Proxy syntax is [b]"http://"[username:password@][url:port]"[/b][br]  Username & password may absent.[br] If the address is absent then 
-environment variable http_proxy is searched for it.</ProxyAddress_text>
-<ReceiverSubject>Recipient subject</ReceiverSubject>
-<ReceiverSubject_text>Subject of the custom notification message sent to receiver.</ReceiverSubject_text>
-<RegionSettings>Servers group</RegionSettings>
-<RegionSettings_text>User region. It is used to choose the update server</RegionSettings_text>
-<requests_per_min>Requests per minutes</requests_per_min>
-<RotateRounds>Rotate rounds</RotateRounds>
-<RotateRounds_text>The limit for the number of renamed log files. Rotation will begin when this limit is reached</RotateRounds_text>
-<RotateSize>Max size before rotate</RotateSize>
-<RotateSize_text>When the size of the log file grows over the value, the log file will be renamed</RotateSize_text>
-<rule_flow>Rule flow</rule_flow>
+Nota: se vengono eseguite pi&#249; azioni su un messaggio, viene inviata una sola notifica;[br]
+la decisione di invio viene presa analizzando l'elenco di azioni sopra menzionato per trovare almeno un'azione corrispondente.</NotifySender_text>
+<performances>Prestazioni</performances>
+<PostmasterAddress>Invia notifica da</PostmasterAddress>
+<PreviewSize>Dimensione anteprima</PreviewSize>
+<PreviewSize_text>Il numero di byte che il client ICAP pu&#242; inviare all'icapserver durante l'anteprima</PreviewSize_text>
+<ProtectedAction>Protetto</ProtectedAction>
+<ProtectedAction_text>Quando la parte del messaggio scansionata &#232; protetta con una password o crittografata, possono essere intraprese le seguenti azioni:
+[ul][li][b]delete[/b] - elimina la parte infetta, sostituendola facoltativamente con un avviso;[/li]
+[li][b]skip[/b] - scansiona il messaggio/parte ma non viene apportata alcuna modifica[/li][/ul]</ProtectedAction_text>
+<ProxyAddress>Indirizzo proxy</ProxyAddress>
+<ProxyAddress_text>La sintassi del proxy &#232; [b]&quot;http://&quot;[username:password@][url:port]&quot;[/b][br] Nome utente e password possono essere assenti.[br] Se l'indirizzo &#232; assente, viene cercata la variabile d'ambiente http_proxy.</ProxyAddress_text>
+<ReceiverSubject>Oggetto del destinatario</ReceiverSubject>
+<ReceiverSubject_text>Oggetto del messaggio di notifica personalizzato inviato al destinatario.</ReceiverSubject_text>
+<RegionSettings>Gruppo di server</RegionSettings>
+<RegionSettings_text>Regione utente. Viene utilizzata per scegliere il server di aggiornamento</RegionSettings_text>
+<requests_per_min>Richieste al minuto</requests_per_min>
+<RotateRounds>Cicli di rotazione</RotateRounds>
+<RotateRounds_text>Il limite per il numero di file di log rinominati. La rotazione inizier&#224; quando questo limite viene raggiunto</RotateRounds_text>
+<RotateSize>Dimensione massima prima della rotazione</RotateSize>
+<RotateSize_text>Quando la dimensione del file di log supera il valore, il file di log verr&#224; rinominato</RotateSize_text>
+<rule_flow>Flusso delle regole</rule_flow>
 <RunAsGid>RunAsGid</RunAsGid>
-<runasuid>Run as UID</runasuid>
-<ScanArchives>Scan Archives</ScanArchives>
-<ScanArchives_text>Whether or not to scan into archives.</ScanArchives_text>
-<ScanCodeanalyzer>Use heuristics</ScanCodeanalyzer>
-<ScanCodeanalyzer_text>If turned on, it will use heuristics to find possible malware (including unknown) with the cost of some extra CPU time.</ScanCodeanalyzer_text>
-<ScanMailBases>Check mail bases</ScanMailBases>
-<ScanMailPlain>Check plain mail files</ScanMailPlain>
+<runasuid>Esegui come UID</runasuid>
+<ScanArchives>Scansiona archivi</ScanArchives>
+<ScanArchives_text>Se scansionare o meno all'interno degli archivi.</ScanArchives_text>
+<ScanCodeanalyzer>Usa euristiche</ScanCodeanalyzer>
+<ScanCodeanalyzer_text>Se attivato, utilizzer&#224; euristiche per trovare possibile malware (incluso quello sconosciuto) al costo di un po' di tempo CPU aggiuntivo.</ScanCodeanalyzer_text>
+<ScanMailBases>Controlla le basi di posta</ScanMailBases>
+<ScanMailPlain>Controlla i file di posta in testo semplice</ScanMailPlain>
 <scanner>Scanner</scanner>
-<ScanPacked>Scan compressed executables</ScanPacked>
-<ScanPacked_text>Scan compressed executables</ScanPacked_text>
-<ScanPolicy>Messages Policy</ScanPolicy>
-<ScanPolicy_text>Scanning policy defines how a message should be analyzed:[ul]
-[li]message - scan the whole message for viruses, and if found infected, scan each part;[/li]
-[li]combined - first scan the whole message, then scan each part regardless of message scan result.[/li]
-[/ul]
-
-</ScanPolicy_text>
-<scan_options>Scanner options</scan_options>
-<scan_options_text>This section contains the settings for actions over scanned</scan_options_text>
-<SenderSubject>Sender subject</SenderSubject>
-<SenderSubject_text>Subject of the custom notification message sent to sender.</SenderSubject_text>
-<services>Services</services>
-<ServiceSocket>Socket Service</ServiceSocket>
-<ServiceSocket_text>The milter tcp or unix socket on which to listen for sendmail connections.
-[br]This should be either:[br]
-[br]inet:port@ip-address  - listen on specified port (use inet6 for IPv6);
-[br]local:/path/to/socket - listen on local Unix socket.</ServiceSocket_text>
+<ScanPacked>Scansiona eseguibili compressi</ScanPacked>
+<ScanPacked_text>Scansiona eseguibili compressi</ScanPacked_text>
+<ScanPolicy>Policy dei messaggi</ScanPolicy>
+<ScanPolicy_text>La policy di scansione definisce come un messaggio deve essere analizzato:[ul]
+[li]message &#8211; scansiona l'intero messaggio per virus e, se infetto, scansiona ogni parte;[/li]
+[li]combined &#8211; prima scansiona l'intero messaggio, poi scansiona ogni parte indipendentemente dal risultato della scansione del messaggio.[/li]
+[/ul]</ScanPolicy_text>
+<scan_options>Opzioni dello scanner</scan_options>
+<scan_options_text>Questa sezione contiene le impostazioni per le azioni sugli oggetti scansionati</scan_options_text>
+<SenderSubject>Oggetto del mittente</SenderSubject>
+<SenderSubject_text>Oggetto del messaggio di notifica personalizzato inviato al mittente.</SenderSubject_text>
+<services>Servizi</services>
+<ServiceSocket>Servizio socket</ServiceSocket>
+<ServiceSocket_text>Il socket TCP o Unix di milter su cui ascoltare le connessioni di sendmail.
+[br]Questo dovrebbe essere:[br]
+[br]inet:port@ip-address &#8211; ascolta sulla porta specificata (usa inet6 per IPv6);
+[br]local:/path/to/socket &#8211; ascolta sul socket Unix locale.</ServiceSocket_text>
 <SuspiciousAction>Sospetto</SuspiciousAction>
-<SuspiciousAction_text>
-When the scanned message part is found to be suspicious, the following actions can be taken:
-[br]Possible actions are:[ul]
-[li][b]warn[/b] - replace messages with a warning and send it along;[/li]
-[li][b]drop[/b] - accept messages with SMTP success code, but silently drop it;[/li]
-[li][b]reject[/b] - reject messages with an SMTP error code;[/li]
-[li][b]delete[/b] - delete infected part and optionally replacing it with a notice;[/li]
-[li][b]skip[/b] - scan the message/part but no changes are made[/li]
+<SuspiciousAction_text>Quando la parte del messaggio scansionata risulta sospetta, possono essere intraprese le seguenti azioni:
+[br]Le azioni possibili sono:[ul]
+[li][b]warn[/b] - sostituisce i messaggi con un avviso e li inoltra;[/li]
+[li][b]drop[/b] - accetta i messaggi con codice di successo SMTP, ma li scarta silenziosamente;[/li]
+[li][b]reject[/b] - rifiuta i messaggi con un codice di errore SMTP;[/li]
+[li][b]delete[/b] - elimina la parte infetta, sostituendola facoltativamente con un avviso;[/li]
+[li][b]skip[/b] - scansiona il messaggio/parte ma non viene apportata alcuna modifica[/li]
 [/ul]
-Note: to replace a deleted part with a notice, turn on Use Place holder Notice.
-</SuspiciousAction_text>
-<TempDir>Temp Path</TempDir>
-<TempDir_text>Directory where to create and use temporary files.</TempDir_text>
+Nota: per sostituire una parte eliminata con un avviso, attiva Use Place holder Notice.</SuspiciousAction_text>
+<TempDir>Percorso temp</TempDir>
+<TempDir_text>Directory in cui creare e usare i file temporanei.</TempDir_text>
 <timeout>Timeout</timeout>
-<total_connections>Total connections</total_connections>
-<total_processes>Total processes</total_processes>
-<traffic_per_min>Traffic per minutes</traffic_per_min>
-<UpdateServerUrl>Update server url</UpdateServerUrl>
-<UpdateServerUrl_text>
-URL syntax can be:[ul]
-[li]http://location/ - to use HTTP protocol;[/li]
-[li]ftp://location/  - to use FTP protocol;[/li]
-[li]/local/path      - to use a local path.[/li]
+<total_connections>Connessioni totali</total_connections>
+<total_processes>Processi totali</total_processes>
+<traffic_per_min>Traffico al minuto</traffic_per_min>
+<UpdateServerUrl>URL del server di aggiornamento</UpdateServerUrl>
+<UpdateServerUrl_text>La sintassi dell'URL pu&#242; essere:[ul]
+[li]http://location/ &#8211; per usare il protocollo HTTP;[/li]
+[li]ftp://location/ &#8211; per usare il protocollo FTP;[/li]
+[li]/local/path &#8211; per usare un percorso locale.[/li]
 [/ul]</UpdateServerUrl_text>
-<UseAVBasesSet>Antivirus bases level</UseAVBasesSet>
-<UseAVBasesSet_text>
-Kaspersky Lab provides for all its products antivirus bases with several levels of protection, namely not only against viruses and common malware, but also against spyware/adware and other new threats.
-[br]Define this keyword to select one of:
+<UseAVBasesSet>Livello delle basi antivirus</UseAVBasesSet>
+<UseAVBasesSet_text>Kaspersky Lab fornisce per tutti i suoi prodotti basi antivirus con diversi livelli di protezione, ovvero non solo contro virus e malware comuni, ma anche contro spyware/adware e altre nuove minacce.
+[br]Definisci questa parola chiave per selezionare una tra:
 [ul]
-[li]standard    - update and use the standard bases;[/li]
-[li]extended    - use extended bases that besides standard detects riskware, pornware, spyware, adware, remote administration programs and utilities that can be used by malicious users/programs;[/li]
-[li]redundant - exhaustive protection, besides extended adds detection for even more programs that have a harmful potential (so called x-files database, e.g. credit card number generators, 
-virus simulators, network scanners etc.)[/li]
+[li]standard &#8211; aggiorna e usa le basi standard;[/li]
+[li]extended &#8211; usa basi estese che oltre alle standard rilevano riskware, pornware, spyware, adware, programmi di amministrazione remota e utility che possono essere usati da utenti/programmi malevoli;[/li]
+[li]redundant &#8211; protezione esaustiva, che oltre a extended aggiunge il rilevamento di ancora pi&#249; programmi con potenziale dannoso (il cosiddetto database x-files, ad es. generatori di numeri di carte di credito, simulatori di virus, scanner di rete ecc.)[/li]
 [/ul]
-To learn more about extended antivirus databases visit: http://www.kaspersky.com/avupdates
-</UseAVBasesSet_text>
-<UsePlaceholderNotice>Place holder Notice</UsePlaceholderNotice>
-<UsePlaceholderNotice_text>If checked each deleted part will be replaced with a notice about the action.[br]
-If unchecked, the respective parts will be completely removed from the message, leaving it as if that part never existed</UsePlaceholderNotice_text>
-<UseProxy>Use a proxy</UseProxy>
-<UseUpdateServerUrl>Use a specific server URL</UseUpdateServerUrl>
-<UseUpdateServerUrlOnly>Only use this url</UseUpdateServerUrlOnly>
-<UseUpdateServerUrlOnly_text>if "checked", keepup2date tries to perform an update from Update Server Url, 
-and in case of failure it tries to perform an update from servers  list specified in updcfg.xml.</UseUpdateServerUrlOnly_text>
-<UseUpdateServerUrl_text>Whether or not to use a specific server URL.[br]If "checked", keepup2date tries to perform an update from Update Server Url</UseUpdateServerUrl_text>
-<WarningAction>Action over an object resembling a known virus.</WarningAction>
-<WhenDetectViruses>When detect Viruses</WhenDetectViruses>
+Per saperne di pi&#249; sui database antivirus estesi visita: http://www.kaspersky.com/avupdates</UseAVBasesSet_text>
+<UsePlaceholderNotice>Avviso segnaposto</UsePlaceholderNotice>
+<UsePlaceholderNotice_text>Se selezionato, ogni parte eliminata verr&#224; sostituita con un avviso sull'azione.[br]
+Se deselezionato, le rispettive parti verranno completamente rimosse dal messaggio, lasciandolo come se quella parte non fosse mai esistita</UsePlaceholderNotice_text>
+<UseProxy>Usa un proxy</UseProxy>
+<UseUpdateServerUrl>Usa un URL del server specifico</UseUpdateServerUrl>
+<UseUpdateServerUrlOnly>Usa solo questo URL</UseUpdateServerUrlOnly>
+<UseUpdateServerUrlOnly_text>se &quot;selezionato&quot;, keepup2date tenta di eseguire un aggiornamento dall'URL del server di aggiornamento,
+e in caso di errore tenta di eseguire un aggiornamento dall'elenco di server specificato in updcfg.xml.</UseUpdateServerUrlOnly_text>
+<UseUpdateServerUrl_text>Se utilizzare o meno un URL del server specifico.[br]Se &quot;selezionato&quot;, keepup2date tenta di eseguire un aggiornamento dall'URL del server di aggiornamento</UseUpdateServerUrl_text>
+<WarningAction>Azione su un oggetto che assomiglia a un virus noto.</WarningAction>
+<WhenDetectViruses>Quando vengono rilevati virus</WhenDetectViruses>

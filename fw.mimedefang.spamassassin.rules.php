@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 
 $GLOBALS["ACTIONSAV"][0]="{block_attachments_and_pass}";
 $GLOBALS["ACTIONSAV"][1]="{save_message_in_quarantine}";
@@ -9,6 +10,9 @@ $GLOBALS["ACTIONSAV"][3]="{do_nothing}";
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
+// Pentest 2026-11-04 : delete-rule-js/rule-js/popup/eth etaient recopies sans encodage dans la page (XSS).
+foreach(array("delete-rule-js","rule-js","popup") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=preg_replace('/[^A-Za-z0-9]/','',(string)$_GET[$xssk]);}}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["rule-js"])){rule_js();exit;}
@@ -75,7 +79,9 @@ function rule_delete_js(){
 	$tpl=new template_admin();
 	$md5=$_GET["delete-rule-js"];
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_spamassassin WHERE zmd5='$md5'");
+	// Pentest 2026-11-04 : delete-rule-js etait concatene dans la requete.
+	$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_spamassassin WHERE zmd5=?",array((string)$md5));
+	$ligne=isset($r[0]) ? $r[0] : array();
 	$mailfrom=$ligne["mailfrom"];
 	$mailto=$ligne["mailto"];
 	$type_text=$tpl->javascript_parse_text($GLOBALS["ACTIONSAV"][$type]);
@@ -85,7 +91,8 @@ function rule_delete_js(){
 function rule_delete_perform(){
 	$md5=$_POST["delete"];
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$q->QUERY_SQL("DELETE FROM mimedefang_spamassassin WHERE zmd5='$md5'");
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM mimedefang_spamassassin WHERE zmd5=?",array((string)$md5));
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -98,7 +105,9 @@ function rule_js(){
 	
 	if($md5<>null){
 		$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_spamassassin WHERE zmd5='$md5'");
+		// Pentest 2026-11-04 : rule-js etait concatene dans la requete.
+		$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_spamassassin WHERE zmd5=?",array((string)$md5));
+		$ligne=isset($r[0]) ? $r[0] : array();
 		$mailfrom=$ligne["mailfrom"];
 		$mailto=$ligne["mailto"];
 		$title="$mailfrom > $mailto";
@@ -124,37 +133,39 @@ function rule_save(){
 				`MimeDefangMaxQuartime`,
 				`MimeDefangQuarteMail`,
 				`MimeDefangQuartDest`
-		) VALUES ('$new_zmd5','{$_POST["mailfrom"]}','{$_POST["mailto"]}',
-			'{$_POST["XSpamStatusHeaderScore"]}',
-			'{$_POST["SpamAssBlockWithRequiredScore"]}',
-			'{$_POST["SpamAssassinRequiredScore"]}',
-			'{$_POST["MimeDefangMaxQuartime"]}',
-			'{$_POST["MimeDefangQuarteMail"]}',
-			'{$_POST["MimeDefangQuartDest"]}'
-		
-		)";
+		) VALUES (?,?,?,?,?,?,?,?,?)";
+	// Pentest 2026-11-04 : les champs du formulaire etaient concatenes dans la requete.
+	$sqladdParams=array($new_zmd5,(string)$_POST["mailfrom"],(string)$_POST["mailto"],
+			(string)$_POST["XSpamStatusHeaderScore"],
+			(string)$_POST["SpamAssBlockWithRequiredScore"],
+			(string)$_POST["SpamAssassinRequiredScore"],
+			(string)$_POST["MimeDefangMaxQuartime"],
+			(string)$_POST["MimeDefangQuarteMail"],
+			(string)$_POST["MimeDefangQuartDest"]);
 	
+	// Pentest 2026-11-04 : mailfrom/mailto etaient recopies sans encodage dans la reponse (XSS).
 	if($zmd5==null){
 		$ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_spamassassin WHERE zmd5='$zmd5'");
-		if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
-		$q->QUERY_SQL($sqladd);
-		if(!$q->ok){echo $q->mysql_error."<br>$sqladd";}
+		if($ligne["zmd5"]<>null){echo req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
+		$q->QUERY_SQL_PARAMS($sqladd,$sqladdParams);
+		if(!$q->ok){echo htmlspecialchars($q->mysql_error,ENT_QUOTES);}
 		return;
 	}
 
 	
 	
 	if($new_zmd5==$zmd5){
-		$q->QUERY_SQL("UPDATE mimedefang_spamassassin SET `type`='{$_POST["ztype"]}' WHERE zmd5='$zmd5'");
+		// Pentest 2026-11-04 : ztype et zmd5 etaient concatenes dans la requete.
+		$q->QUERY_SQL_PARAMS("UPDATE mimedefang_spamassassin SET `type`=? WHERE zmd5=?",array((string)$_POST["ztype"],(string)$zmd5));
 		if(!$q->ok){echo $q->mysql_error;}
 		return;
 	}
 	
 	$ligne=$q->mysqli_fetch_array("SELECT zmd5 FROM mimedefang_spamassassin WHERE zmd5='$new_zmd5'");
-	if($ligne["zmd5"]<>null){echo "{$_POST["mailfrom"]} --> {$_POST["mailto"]} Already exists\n";return;}
+	if($ligne["zmd5"]<>null){echo req_html($_POST["mailfrom"])." --> ".req_html($_POST["mailto"])." Already exists\n";return;}
 	
-	$q->QUERY_SQL("DELETE FROM mimedefang_spamassassin WHERE zmd5='$zmd5'");
-	$q->QUERY_SQL($sqladd);
+	$q->QUERY_SQL_PARAMS("DELETE FROM mimedefang_spamassassin WHERE zmd5=?",array((string)$zmd5));
+	$q->QUERY_SQL_PARAMS($sqladd,$sqladdParams);
 	if(!$q->ok){echo $q->mysql_error;}
 	
 }
@@ -177,7 +188,9 @@ function popup(){
 	if($md5<>null){
 		$bt="{apply}";
 		$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM mimedefang_spamassassin WHERE zmd5='$md5'");
+		// Pentest 2026-11-04 : popup etait concatene dans la requete.
+		$r=$q->QUERY_SQL_PARAMS("SELECT * FROM mimedefang_spamassassin WHERE zmd5=?",array((string)$md5));
+		$ligne=isset($r[0]) ? $r[0] : array();
 		$mailfrom=$ligne["mailfrom"];
 		$mailto=$ligne["mailto"];
 		$type=$ligne["type"];
@@ -254,7 +267,7 @@ function table(){
 	$prgress=base64_encode(serialize($ARRAY));
 	$add="Loadjs('$page?rule-js=',true);";
 	
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedf-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedf-restart')";
 	
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
 	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>";

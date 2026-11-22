@@ -5,7 +5,6 @@ if(posix_getuid()<>0){echo "<H1>???</H1>";die();}
 if(isset($_GET["uninstall"])){uninstall();exit;}
 if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_GET["reload"])){reload();exit;}
 if(isset($_GET["restart"])){restart();exit;}
 if(isset($_GET["events"])){rustdesk_events();exit;}
 if(isset($_GET["change-key-perform"])){rustdesk_chkey();}

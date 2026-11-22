@@ -1,1 +1,1 @@
-<title>Postfix services settings</title>
+<title>Ustawienia us&#322;ug Postfix</title>

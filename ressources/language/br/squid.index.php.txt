@@ -1,22 +1,19 @@
-<accept_time>Accept time</accept_time>
-<access_list>Rules list</access_list>
+<accept_time>Tempo de aceita&#231;&#227;o</accept_time>
+<access_list>Lista de regras</access_list>
 <access_rule>Regras de acesso</access_rule>
 <access_rules>Regras de Acesso</access_rules>
 <access_rules_back>Retaura regras padr&atilde;o</access_rules_back>
-<access_rules_back_text>This will rebuild to default access rules, [b]all your rules settings will be deleted[/b] and rebuild</access_rules_back_text>
-<access_rules_text>Allowing or Denying access based on defined access lists[br]
-"Access Control list" are linked to a rule statement that tells Squid whether or not to deny or allow traffic that matches the ACL.[br]
-Squid matches each Web access request it receives by checking the rule list from top to bottom.[br]
-If it finds a match, it enforces the allow or deny statement and stops reading further.[br]
-You have to be careful not to place a deny statement in the list that blocks a similar allow statement below it.
-</access_rules_text>
+<access_rules_back_text>Isto ir&#225; reconstruir as regras de acesso padr&#227;o, [b]todas as configura&#231;&#245;es das suas regras ser&#227;o exclu&#237;das[/b] e reconstru&#237;das</access_rules_back_text>
+<access_rules_text>Permitir ou negar acesso com base em listas de acesso definidas[br]
+As &quot;Listas de controle de acesso&quot; est&#227;o vinculadas a uma instru&#231;&#227;o de regra que diz ao Squid se deve negar ou permitir o tr&#225;fego que corresponde &#224; ACL.[br]
+O Squid corresponde cada requisi&#231;&#227;o de acesso Web que recebe verificando a lista de regras de cima para baixo.[br]
+Se encontrar uma correspond&#234;ncia, aplica a instru&#231;&#227;o de permitir ou negar e para de ler adiante.[br]
+Voc&#234; deve ter cuidado para n&#227;o colocar na lista uma instru&#231;&#227;o de nega&#231;&#227;o que bloqueie uma instru&#231;&#227;o de permiss&#227;o semelhante abaixo dela.</access_rules_text>
 <acl>Acl</acl>
 <acls>Lista de Controle de acesso (ACLs)</acls>
-<acls_text>Access control settings are among the most important features of Squid.[br]
-You can configure Squid to set filters for various entities and at different granularities (e.g. filters for specific protocols,
-filters for certain types of commands, filters for specific routers, filters for specified domains, etc).[br]
-</acls_text>
-<acl_arp>Ethernet Address (unix only)</acl_arp>
+<acls_text>As configura&#231;&#245;es de controle de acesso est&#227;o entre os recursos mais importantes do Squid.[br]
+Voc&#234; pode configurar o Squid para definir filtros para v&#225;rias entidades e em diferentes granularidades (por exemplo, filtros para protocolos espec&#237;ficos, filtros para certos tipos de comandos, filtros para roteadores espec&#237;ficos, filtros para dom&#237;nios especificados, etc).[br]</acls_text>
+<acl_arp>Endere&#231;o Ethernet (apenas Unix)</acl_arp>
 <acl_arp_text>Esta opç%C3£o funciona apenas para clientes na mesma sub-rede local e é suportada em plataformas espec%C3%ADficas.[br]
 Linux, Solaris e algumas variantes BSD suportam esse tipo de ACL.[br]
 Essa ACL fornece um método de controle de acesso relativamente seguro, pois os endereços MAC s%C3£o geralmente mais dif%C3%ADceis de falsificar do que os endereços IP.[br]
@@ -26,44 +23,42 @@ Também garante que os clientes estejam na rede local (caso contr%C3¡rio, a res
 ACLARP refere-se ao endereço MAC da interface Ethernet 11:12:13:14:15:16[br]
 [br][b]Nota[/b]
 [br][i]O proxy s%C3%B3 consegue determinar o endereço MAC para clientes na mesma sub-rede. Se o cliente estiver em uma sub-rede diferente, o proxy n%C3£o consegue obter seu endereço MAC.[/i]</acl_arp_text>
-<acl_arp_title>Ethernet (MAC) address matching</acl_arp_title>
-<acl_browser>Browser matching</acl_browser>
+<acl_arp_title>Correspond&#234;ncia de endere&#231;o Ethernet (MAC)</acl_arp_title>
+<acl_browser>Correspond&#234;ncia de navegador</acl_browser>
 <acl_browser_text>Express%C3£o regular que identifica o tipo de navegador do cliente com base no cabeçalho User-Agent.[br]
 Isso permite que as ACL operem de acordo com o navegador utilizado. Por exemplo, é poss%C3%ADvel criar uma ACL para usu%C3¡rios Netscape e outra para usu%C3¡rios Internet Explorer.[br]
 Exemplo:[br]
 [b]MOZILLA[/b][br]
 Esta regra corresponde às requisiç%C3µes provenientes de navegadores cujo cabeçalho User-Agent contém a palavra-chave MOZILLA.</acl_browser_text>
-<acl_browser_title>Browser Name matching</acl_browser_title>
-<acl_dst>Web Server Address</acl_dst>
-<acl_dstdomain>Web Server Hostname</acl_dstdomain>
-<acl_dstdomain_text>When matching to be done based on the destination servers domain, you can use this acl type.[br]
-[i]Note: Here "." is more important.[/i][br]
-[b]Example:[/b]
-[br][blk] .kovaiteam.com[/blk][br]This looks for *.kovaiteam.com from URL
-</acl_dstdomain_text>
+<acl_browser_title>Correspond&#234;ncia com o nome do navegador</acl_browser_title>
+<acl_dst>Endere&#231;o do servidor web</acl_dst>
+<acl_dstdomain>Nome de host do servidor Web</acl_dstdomain>
+<acl_dstdomain_text>Quando a correspond&#234;ncia deve ser feita com base no dom&#237;nio dos servidores de destino, voc&#234; pode usar este tipo de acl.[br]
+[i]Nota: Aqui &quot;.&quot; &#233; mais importante.[/i][br]
+[b]Exemplo:[/b]
+[br][blk] .kovaiteam.com[/blk][br]Isto procura *.kovaiteam.com a partir da URL</acl_dstdomain_text>
 <acl_dstdomain_title>Isso se refere ao dom%C3%ADnio de destino, ou seja, o dom%C3%ADnio de origem onde o servidor de origem est%C3¡ localizado</acl_dstdomain_title>
-<acl_dstdom_regex>Web Server Regexp</acl_dstdom_regex>
-<acl_dstdom_regex_text>Matching done on destination domain based on regular expression[br]
-[b]Example:[/b]
+<acl_dstdom_regex>Regexp do servidor web</acl_dstdom_regex>
+<acl_dstdom_regex_text>A correspond&#234;ncia &#233; feita no dom&#237;nio de destino com base em uma express&#227;o regular[br]
+[b]Exemplo:[/b]
 [br][blk] redhat[/blk][br]
-This looks for the word redhat from the client's reqest
-</acl_dstdom_regex_text>
-<acl_dstdom_regex_title>Provides match against destination domain</acl_dstdom_regex_title>
-<acl_dst_as>Dest AS Number</acl_dst_as>
+Isto procura a palavra redhat na requisi&#231;&#227;o do cliente</acl_dstdom_regex_text>
+<acl_dstdom_regex_title>Fornece correspond&#234;ncia com o dom&#237;nio de destino</acl_dstdom_regex_title>
+<acl_dst_as>N&#250;mero AS de destino</acl_dst_as>
 <acl_dst_as_text>O n%C3%BAmero do sistema autônomo tipo ACL é geralmente usado apenas em Cache Peer, ou ICP, restriç%C3µes de acesso [br].
 Os n%C3%BAmeros de sistemas autônomos s%C3£o usados em organizaç%C3µes que possuem m%C3%BAltiplos links de Internet e roteadores operando sob uma %C3%BAnica autoridade administrativa, usando
 o mesmo protocolo de porta de entrada.
 br] As decis%C3µes de roteamento s%C3£o ent%C3£o baseadas no conhecimento do AS, além de outros dados poss%C3%ADveis.[br][br][br][br][br
 Um exemplo para encaminhar todas as solicitaç%C3µes para AS#1241 e somente aquelas para mycache.mydomain.net[br]</acl_dst_as_text>
-<acl_dst_as_title>Destination Autonomous System Number is the AS number of the server being queried</acl_dst_as_title>
+<acl_dst_as_title>O Destination Autonomous System Number &#233; o n&#250;mero AS do servidor consultado</acl_dst_as_title>
 <acl_dst_text>[ul]
 [li]172.16.1.0/24 â%80%94 refere-se à rede inteira 172.16.1.0[/li]
 [li]172.16.1.25/32 â%80%94 refere-se a um %C3%BAnico host[/li]
 [li]172.16.1.25-172.16.1.35 â%80%94 refere-se a um intervalo de endereços IP de 172.16.1.25 a 172.16.1.35[/li]
 [/ul]</acl_dst_text>
-<acl_dst_title>Same as "Client Address" but looks for destination IP Address</acl_dst_title>
-<acl_external>External Program</acl_external>
-<acl_external_text>[b]Example:[/b]
+<acl_dst_title>Igual a &quot;Endere&#231;o do cliente&quot; mas procura o endere&#231;o IP de destino</acl_dst_title>
+<acl_external>Programa externo</acl_external>
+<acl_external_text>[b]Exemplo:[/b]
 [br]
 auth_param basic program put your authenticator here[br]
 auth_param basic children 20[br]
@@ -73,57 +68,52 @@ external_acl_type checkip children=20 %LOGIN %SRC /usr/local/Squid/bin/checkip.p
 acl password external checkip[br]
 acl it src 172.16.20.1-172.16.20.199/255.255.255.255[br]
 http_access allow it password[br]
-Allows user if user belongs to a group that is allowed during a given time and using a given ip.[br]
-</acl_external_text>
-<acl_external_title> Provides match against external ACL lookup via a helper class defined by the "external acl type" tag</acl_external_title>
+Permite o usu%C3¡rio se ele pertencer a um grupo autorizado durante um determinado per%C3%ADodo e utilizar um endereço IP autorizado.[br]</acl_external_text>
+<acl_external_title>Fornece correspond&#234;ncia com busca ACL externa atrav&#233;s de uma classe helper definida pela tag &quot;external acl type&quot;</acl_external_title>
 <acl_ident>Nome do usu%C3¡rio</acl_ident>
-<acl_ident_regex>User name (regex)</acl_ident_regex>
-<acl_ident_regex_text>Same as "User name" but matching is done on ident output.
+<acl_ident_regex>Nome de usu&#225;rio (regex)</acl_ident_regex>
+<acl_ident_regex_text>Igual a &quot;Nome de usu&#225;rio&quot; mas a correspond&#234;ncia &#233; feita na sa&#237;da do ident.
 [br]
-[b]Note: Need an external ident server server running on the client machines[/b]
+[b]Nota: &#201; necess&#225;rio um servidor ident externo em execu&#231;&#227;o nas m&#225;quinas cliente[/b]
+[br]</acl_ident_regex_text>
+<acl_ident_regex_title>Fornece correspond&#234;ncia de strings na sa&#237;da do ident</acl_ident_regex_title>
+<acl_ident_text>Correspond&#234;ncia baseada em buscas ident.[br]
+[b]Nota: &#201; necess&#225;rio um servidor ident externo em execu&#231;&#227;o nas m&#225;quinas cliente[/b]
 [br]
-</acl_ident_regex_text>
-<acl_ident_regex_title>Provides string match on ident output</acl_ident_regex_title>
-<acl_ident_text>Matching based on iden lookups.[br]
-[b]Note: Need an external ident server server running on the client machines[/b]
-[br]
-[b]Example:[/b][br][blk]
-You can use ident to allow specific users access to your cache. [br]
-In your Squid.conf configuration file you would write something like this,
+[b]Exemplo:[/b][br][blk]
+Voc&#234; pode usar ident para permitir que usu&#225;rios espec&#237;ficos acessem a sua cache. [br]
+No seu arquivo de configura&#231;&#227;o Squid.conf voc&#234; escreveria algo como isto,
 [br]ident_lookup_access allow all
 [br]acl friends ident [b]kim lisa frank joe[/b]
 [br]http_access allow friends
-[br]http_access deny all[/blk][br]
-</acl_ident_text>
-<acl_ident_title>Provides string matching on user name</acl_ident_title>
-<acl_maxconn>Maximum Connections</acl_maxconn>
-<acl_maxconn_text>Matching is true when the defined number of HTTP connections has been established for a client
+[br]http_access deny all[/blk][br]</acl_ident_text>
+<acl_ident_title>Fornece correspond&#234;ncia de strings no nome de usu&#225;rio</acl_ident_title>
+<acl_maxconn>Conex&#245;es m&#225;ximas</acl_maxconn>
+<acl_maxconn_text>A correspond&#234;ncia &#233; verdadeira quando o n&#250;mero definido de conex&#245;es HTTP foi estabelecido para um cliente
 [br]
-[b]Example:[/b]
+[b]Exemplo:[/b]
 [br][blk]5[/blk][br]
-will allow a maximum of 5 http connection to access
-</acl_maxconn_text>
-<acl_maxconn_title>Matches when the client's IP address has more than the specified number of HTTP connections established</acl_maxconn_title>
-<acl_max_user_ip>Max User IP</acl_max_user_ip>
-<acl_max_user_ip_text>If -s is specified then the limit is strict, denying browsing from any further IP addresses until the ttl has expired.[br]
-Without -s Squid will just annoy the user by "randomly" denying requests.[br]
-(the counter is then reset each time the limit is reached and a request is denied).[br]
-The authenticate_ip_ttl parameter controls the timeout on the ip entries.[br]
-[br][b]Note:[br]
-1. Any authentication program must be running for this. [br]
-NCSA will a simple configuration.
-[br]2. In acceleration mode or where there is mesh of child proxies, clients may appear to come from multiple addresses if they are going through proxy farms, so a limit of 1 may cause user problems.[/b]
+permitir&#225; um m&#225;ximo de 5 conex&#245;es http para acessar</acl_maxconn_text>
+<acl_maxconn_title>Corresponde quando o endere&#231;o IP do cliente estabeleceu mais do que o n&#250;mero especificado de conex&#245;es HTTP</acl_maxconn_title>
+<acl_max_user_ip>M&#225;x. IP de usu&#225;rio</acl_max_user_ip>
+<acl_max_user_ip_text>Se -s for especificado, ent&#227;o o limite &#233; estrito, negando a navega&#231;&#227;o a partir de quaisquer endere&#231;os IP adicionais at&#233; que o ttl tenha expirado.[br]
+Sem -s o Squid apenas irritar&#225; o usu&#225;rio ao negar requisi&#231;&#245;es &quot;aleatoriamente&quot;.[br]
+(o contador &#233; ent&#227;o redefinido cada vez que o limite &#233; atingido e uma requisi&#231;&#227;o &#233; negada).[br]
+O par&#226;metro authenticate_ip_ttl controla o tempo limite das entradas de ip.[br]
+[br][b]Nota:[br]
+1. Qualquer programa de autentica&#231;&#227;o deve estar em execu&#231;&#227;o para isto. [br]
+O NCSA ser&#225; uma configura&#231;&#227;o simples.
+[br]2. No modo de acelera&#231;&#227;o ou onde h&#225; uma malha de proxies filhos, os clientes podem parecer vir de m&#250;ltiplos endere&#231;os se estiverem passando por fazendas de proxy, ent&#227;o um limite de 1 pode causar problemas aos usu&#225;rios.[/b]
 [br]
-[b]Example:[/b]
+[b]Exemplo:[/b]
 [br][blk]
 authenticate_ip_ttl 2 hours[br]
 acl maxuser max_user_ip -s 2[br]
 http_access deny maxuser[br][/blk][br]
 
-The same user can log to a maximum of 2 times from two different machines and when he tries to login for the third time from a third system, he will not be allowed to browse
-</acl_max_user_ip_text>
-<acl_max_user_ip_title>This will be matched when the same user attempts to log in for more than the specified number of times from different ip addresses</acl_max_user_ip_title>
-<acl_method>Request Method</acl_method>
+O mesmo usu&#225;rio pode fazer login no m&#225;ximo 2 vezes a partir de duas m&#225;quinas diferentes e quando ele tentar fazer login pela terceira vez a partir de um terceiro sistema, n&#227;o ser&#225; permitido navegar</acl_max_user_ip_text>
+<acl_max_user_ip_title>Isto ser&#225; correspondido quando o mesmo usu&#225;rio tentar fazer login mais do que o n&#250;mero especificado de vezes a partir de endere&#231;os IP diferentes</acl_max_user_ip_title>
+<acl_method>M&#233;todo da requisi&#231;&#227;o</acl_method>
 <acl_method_text>[UL]
 [li]GET[/li]
 [li]PUT[/li]
@@ -133,174 +123,149 @@ The same user can log to a maximum of 2 times from two different machines and wh
 [li]PURGE[/li]
 [/UL]</acl_method_text>
 <acl_method_title>Este tipo de ACL corresponde ao método HTTP nos cabeçalhos de solicitaç%C3£o. Isto inclui os métodos GET, PUT, etc.</acl_method_title>
-<acl_myip>Proxy IP Address</acl_myip>
-<acl_myip_text>Using this acl type, we can specify the local IP address on which the clients connections exists.[br]
-This allows ACLs to be constructed that only match one physical network, if multiple interfaces are present on the proxy, among other things
+<acl_myip>Endere&#231;o IP do proxy</acl_myip>
+<acl_myip_text>Usando este tipo de ACL, podemos especificar o endere&#231;o IP local no qual as conex&#245;es dos clientes existem.[br]
+Isto permite construir ACLs que correspondem a apenas uma rede f&#237;sica, se houver v&#225;rias interfaces presentes no proxy, entre outras coisas
 [br]
-[b]Example:[/b]
-[br][blk]172.16.1.53/32[/blk][br]
-</acl_myip_text>
-<acl_myip_title>The local IP address on which the client connection exists.</acl_myip_title>
+[b]Exemplo:[/b]
+[br][blk]172.16.1.53/32[/blk][br]</acl_myip_text>
+<acl_myip_title>O endere&#231;o IP local no qual a conex&#227;o do cliente existe.</acl_myip_title>
 <acl_myport>Porta proxy</acl_myport>
-<acl_myport_text>Matching done on local interface port
+<acl_myport_text>A correspond&#234;ncia &#233; feita na porta da interface local
 [br]
-[b]Example:[/b]
-[br][blk]3128[/blk][br]
-</acl_myport_text>
-<acl_myport_title>This provides match against local socket TCP port</acl_myport_title>
-<acl_name>Give the name of this acl</acl_name>
+[b]Exemplo:[/b]
+[br][blk]3128[/blk][br]</acl_myport_text>
+<acl_myport_title>Isto fornece correspond&#234;ncia com a porta TCP do socket local</acl_myport_title>
+<acl_name>Indique o nome desta acl</acl_name>
 <acl_port>Porta remota</acl_port>
-<acl_port_text>Matching done on the destination port like 80, 8080, 9000...</acl_port_text>
-<acl_port_title>This ACL matches on the destination port for the request</acl_port_title>
-<acl_proto>Remote Protocol</acl_proto>
-<acl_proto_text>values was [ul]
+<acl_port_text>A correspond&#234;ncia &#233; feita na porta de destino como 80, 8080, 9000...</acl_port_text>
+<acl_port_title>Esta ACL corresponde &#224; porta de destino da requisi&#231;&#227;o</acl_port_title>
+<acl_proto>Protocolo remoto</acl_proto>
+<acl_proto_text>os valores eram [ul]
 [li]http[/li]
 [li]ftp[/li]
 [li]gopher[/li]
 [li]wais[/li]
-[li]cache_object[/li][/ul]
-</acl_proto_text>
-<acl_proto_title>This ACL matches on the protocol of the request</acl_proto_title>
-<acl_proxy_auth>External Auth</acl_proxy_auth>
-<acl_proxy_auth_regex>External Auth Regexp</acl_proxy_auth_regex>
-<acl_proxy_auth_regex_text>Matching based on regular expressions using external authentication process[br]
-[i]Note that authentication cannot work on a [b]transparent proxy or HTTP accelerator[/b][/i].[br]
-The HTTP protocol does not provide for two authentication stages (one local and one on remote Web sites).
-[br]So in order to use an authenticator, your proxy must operate as a traditional proxy, where a client will respond appropriately to a proxy authentication request
-as well as external Web server authentication requests.[br]
-[i]Note: "External Auth" [b]can't be used in a transparent proxy.[/b] It collides with any authentication done by origin servers.
-[br]It may seem like it works at first, but it doesn't.[br][/i]
-When a Proxy-Authentication header is sent but it is not needed during ACL checking the username is NOT logged in access.log.
-[br][br]Example(s)[br]
+[li]cache_object[/li][/ul]</acl_proto_text>
+<acl_proto_title>Esta ACL corresponde ao protocolo da requisi&#231;&#227;o</acl_proto_title>
+<acl_proxy_auth>Autentica&#231;&#227;o externa</acl_proxy_auth>
+<acl_proxy_auth_regex>Regexp de autentica&#231;&#227;o externa</acl_proxy_auth_regex>
+<acl_proxy_auth_regex_text>Correspond&#234;ncia baseada em express&#245;es regulares usando processo de autentica&#231;&#227;o externo[br]
+[i]Note que a autentica&#231;&#227;o n&#227;o pode funcionar em um [b]proxy transparente ou acelerador HTTP[/b][/i].[br]
+O protocolo HTTP n&#227;o prev&#234; duas etapas de autentica&#231;&#227;o (uma local e uma em sites Web remotos).
+[br]Portanto, para usar um autenticador, o seu proxy deve operar como um proxy tradicional, onde um cliente responder&#225; adequadamente a uma requisi&#231;&#227;o de autentica&#231;&#227;o de proxy bem como a requisi&#231;&#245;es de autentica&#231;&#227;o de servidor Web externo.[br]
+[i]Nota: &quot;Autentica&#231;&#227;o Externa&quot; [b]n&#227;o pode ser usada em um proxy transparente.[/b] Ela entra em conflito com qualquer autentica&#231;&#227;o feita pelos servidores de origem.
+[br]Pode parecer que funciona no in&#237;cio, mas n&#227;o funciona.[br][/i]
+Quando um cabe&#231;alho Proxy-Authentication &#233; enviado mas n&#227;o &#233; necess&#225;rio durante a verifica&#231;&#227;o de ACL, o nome de usu&#225;rio N&#195;O &#233; registrado no access.log.
+[br][br]Exemplo(s)[br]
  [b]-i mesh[/b][br]
-[i]The above configuration will allow *mesh* if it give valid username and password.[/i]
-</acl_proxy_auth_regex_text>
-<acl_proxy_auth_regex_title>Calls an external authenticator process, but allows regex pattern or case insensitive matches</acl_proxy_auth_regex_title>
-<acl_proxy_auth_text>Some of the authenticator helper programs available for Squid are PAM, NCSA, UNIX passwd, SMB, NTLM, etc.[br]
-[i]Note that authentication cannot work on a [b]transparent proxy or HTTP accelerator[/b][/i].[br]
-The HTTP protocol does not provide for two authentication stages (one local and one on remote Web sites).
-[br]So in order to use an authenticator, your proxy must operate as a traditional proxy, where a client will respond appropriately to a proxy authentication request
-as well as external Web server authentication requests.[br]
-[i]Note: "External Auth" [b]can't be used in a transparent proxy.[/b] It collides with any authentication done by origin servers.
-[br]It may seem like it works at first, but it doesn't.[br][/i]
-When a Proxy-Authentication header is sent but it is not needed during ACL checking the username is NOT logged in access.log.
-
-[br][br]Example(s)[br]
+[i]A configura&#231;&#227;o acima permitir&#225; *mesh* se fornecer nome de usu&#225;rio e senha v&#225;lidos.[/i]</acl_proxy_auth_regex_text>
+<acl_proxy_auth_regex_title>Chama um processo autenticador externo, mas permite padr&#245;es regex ou correspond&#234;ncias sem diferenciar mai&#250;sculas de min&#250;sculas</acl_proxy_auth_regex_title>
+<acl_proxy_auth_text>Alguns dos programas auxiliares autenticadores dispon&#237;veis para o Squid s&#227;o PAM, NCSA, UNIX passwd, SMB, NTLM, etc.[br]
+[i]Note que a autentica&#231;&#227;o n&#227;o pode funcionar em um [b]proxy transparente ou acelerador HTTP[/b][/i].[br]
+O protocolo HTTP n&#227;o prev&#234; duas etapas de autentica&#231;&#227;o (uma local e uma em sites Web remotos).
+[br]Portanto, para usar um autenticador, o seu proxy deve operar como um proxy tradicional, onde um cliente responder&#225; adequadamente a uma requisi&#231;&#227;o de autentica&#231;&#227;o de proxy bem como a requisi&#231;&#245;es de autentica&#231;&#227;o de servidor Web externo.[br]
+[i]Nota: &quot;Autentica&#231;&#227;o Externa&quot; [b]n&#227;o pode ser usada em um proxy transparente.[/b] Ela entra em conflito com qualquer autentica&#231;&#227;o feita pelos servidores de origem.
+[br]Pode parecer que funciona no in&#237;cio, mas n&#227;o funciona.[br][/i]
+Quando um cabe&#231;alho Proxy-Authentication &#233; enviado mas n&#227;o &#233; necess&#225;rio durante a verifica&#231;&#227;o de ACL, o nome de usu&#225;rio N&#195;O &#233; registrado no access.log.
+[br][br]Exemplo(s)[br]
 [b]ramesh senthil muthu[/b][br]
-[i]The above configuration will allow ramesh, senthil and muthu if they give valid username and password.[/i]
-</acl_proxy_auth_text>
-<acl_proxy_auth_title>Calls an external authenticator process to decide whether the request will be allowed</acl_proxy_auth_title>
-<acl_rep_mime_type>Reply MIME Type</acl_rep_mime_type>
-<acl_rep_mime_type_text>
-Also, using this, you can detect file download or some types HTTP tunneling requests.[br]
-This has no effect in http_access rules.[br]
-It only has effect in rules that affect the reply data stream such as http_reply_access.[br]
-[b]Example:[/b]
+[i]A configura&#231;&#227;o acima permitir&#225; ramesh, senthil e muthu se eles fornecerem nome de usu&#225;rio e senha v&#225;lidos.[/i]</acl_proxy_auth_text>
+<acl_proxy_auth_title>Chama um processo autenticador externo para decidir se a requisi&#231;&#227;o ser&#225; permitida</acl_proxy_auth_title>
+<acl_rep_mime_type>Tipo MIME da resposta</acl_rep_mime_type>
+<acl_rep_mime_type_text>Tamb&#233;m, usando isto, voc&#234; pode detectar download de arquivos ou alguns tipos de requisi&#231;&#245;es de tunelamento HTTP.[br]
+Isto n&#227;o tem efeito nas regras http_access.[br]
+S&#243; tem efeito em regras que afetam o fluxo de dados da resposta, como http_reply_access.[br]
+[b]Exemplo:[/b]
 [br][blk]acl m2 rep_mime_type [b]^application/pdf$[/b]
 [br]http_reply_access deny m2
 [/blk][br]
-This blocks access to application/pdf mime type
-</acl_rep_mime_type_text>
-<acl_rep_mime_type_title>Match against the mime type of the reply received by Squid</acl_rep_mime_type_title>
-<acl_req_mime_type>Request MIME Type</acl_req_mime_type>
-<acl_req_mime_type_text>Using this you can detect file [b]upload[/b] or some types HTTP tunneling requests
-[b]Example:[/b]
+Isto bloqueia o acesso ao tipo mime application/pdf</acl_rep_mime_type_text>
+<acl_rep_mime_type_title>Corresponde ao tipo MIME da resposta recebida pelo Squid</acl_rep_mime_type_title>
+<acl_req_mime_type>Tipo MIME da requisi&#231;&#227;o</acl_req_mime_type>
+<acl_req_mime_type_text>Com isto voc&#234; pode detectar [b]upload[/b] de arquivos ou alguns tipos de requisi&#231;&#245;es de tunelamento HTTP
+[b]Exemplo:[/b]
 [br][blk]acl mymime req_mime_type text[/blk][br]
-This acl looks for the pattern "text" in request mime header.[br]
-[b]Note: This does NOT match the reply. You cannot use this to match the returned file type.[/b]
-</acl_req_mime_type_text>
-<acl_req_mime_type_title>Match against the mime type of the request generated by the client</acl_req_mime_type_title>
-<acl_rule_allow>[b]Allow[/b] when match rule click to Deny it</acl_rule_allow>
-<acl_rule_deny>[b]Deny[/b] and exit when match rule click to allow it</acl_rule_deny>
-<acl_src>Client Address</acl_src>
+Esta acl procura o padr&#227;o &quot;text&quot; no cabe&#231;alho MIME da requisi&#231;&#227;o.[br]
+[b]Nota: isto N&#195;O corresponde &#224; resposta. Voc&#234; n&#227;o pode usar isto para corresponder ao tipo de arquivo retornado.[/b]</acl_req_mime_type_text>
+<acl_req_mime_type_title>Corresponde ao tipo MIME da requisi&#231;&#227;o gerada pelo cliente</acl_req_mime_type_title>
+<acl_rule_allow>[b]Permitir[/b] quando a regra corresponder, clique para neg&#225;-la</acl_rule_allow>
+<acl_rule_deny>[b]Negar[/b] e sair quando a regra corresponder, clique para permiti-la</acl_rule_deny>
+<acl_src>Endere&#231;o do cliente</acl_src>
 <acl_srcdomain>Nome do host do cliente</acl_srcdomain>
-<acl_srcdomain_text>Matching can be either a single domain name, or a list or domain names, or the path to a file that contains a list of domain names.[br]
-If a path to a file, it must be surrounded by parentheses. This ACL type can increase the latency, and decrease throughput significantly on a loaded cache, as it must perform an address-to-name lookup for each request, so it is usually preferable to use the Client IP Address
-type.[br]
-[b]Example:[/b] .kovaiteam.com (Here "." is more important.)
-</acl_srcdomain_text>
-<acl_srcdomain_title>Provides matches against the client domain name</acl_srcdomain_title>
-<acl_srcdom_regex>Client Regexp</acl_srcdom_regex>
-<acl_srcdom_regex_text>Matching can be either a single domain name, or a list of domain names, or a path to a file that contains a list of domain names.[br]
-If a path to a file is specified, it must be surrounded parentheses[br]
-[b]Example:[/b] kovai - This looks for the word kovai from the client domain name.
-</acl_srcdom_regex_text>
-<acl_srcdom_regex_title>Matches against the client domain name</acl_srcdom_regex_title>
-<acl_src_as>Source AS Number</acl_src_as>
-<acl_src_as_text>The autonomous system number ACL types are generally only used in Cache Peer, or ICP, access restrictions.[br]
-Autonomous system numbers are used in organizations that have multiple internet links and routers operating under a single administrative authority using
-the same gateway protocol.[br]
-Routing decisions are then based on knowledge of the AS in addition to other possible data.[br]
-[b]Give a number in the field[/b]
-</acl_src_as_text>
-<acl_src_as_title>Source Autonomous System Number is another AS related ACL type, and matches on the AS number of the source of the request</acl_src_as_title>
-<acl_src_text>Matching done based on clients ip address[br]
+<acl_srcdomain_text>A correspond&#234;ncia pode ser um &#250;nico nome de dom&#237;nio, uma lista de nomes de dom&#237;nio ou o caminho para um arquivo que cont&#233;m uma lista de nomes de dom&#237;nio.[br]
+Se for um caminho para um arquivo, deve estar entre par&#234;nteses. Este tipo de ACL pode aumentar a lat&#234;ncia e diminuir significativamente a taxa de transfer&#234;ncia em uma cache carregada, pois deve realizar uma busca de endere&#231;o-para-nome para cada requisi&#231;&#227;o, por isso geralmente &#233; prefer&#237;vel usar o tipo Endere&#231;o IP do Cliente.[br]
+[b]Exemplo:[/b] .kovaiteam.com (Aqui &quot;.&quot; &#233; mais importante.)</acl_srcdomain_text>
+<acl_srcdomain_title>Fornece correspond&#234;ncias com o nome de dom&#237;nio do cliente</acl_srcdomain_title>
+<acl_srcdom_regex>Regexp do cliente</acl_srcdom_regex>
+<acl_srcdom_regex_text>A correspond&#234;ncia pode ser um &#250;nico nome de dom&#237;nio, uma lista de nomes de dom&#237;nio ou um caminho para um arquivo que cont&#233;m uma lista de nomes de dom&#237;nio.[br]
+Se um caminho para um arquivo for especificado, deve estar entre par&#234;nteses[br]
+[b]Exemplo:[/b] kovai - Isto procura a palavra kovai no nome de dom&#237;nio do cliente.</acl_srcdom_regex_text>
+<acl_srcdom_regex_title>Corresponde ao nome de dom&#237;nio do cliente</acl_srcdom_regex_title>
+<acl_src_as>N&#250;mero AS de origem</acl_src_as>
+<acl_src_as_text>Os tipos de ACL do n&#250;mero de sistema aut&#244;nomo geralmente s&#227;o usados apenas em restri&#231;&#245;es de acesso Cache Peer ou ICP.[br]
+Os n&#250;meros de sistema aut&#244;nomo s&#227;o usados em organiza&#231;&#245;es que t&#234;m v&#225;rios links de internet e roteadores operando sob uma &#250;nica autoridade administrativa usando o mesmo protocolo de gateway.[br]
+As decis&#245;es de roteamento s&#227;o ent&#227;o baseadas no conhecimento do AS al&#233;m de outros dados poss&#237;veis.[br]
+[b]Insira um n&#250;mero no campo[/b]</acl_src_as_text>
+<acl_src_as_title>O Source Autonomous System Number &#233; outro tipo de ACL relacionado ao AS, e corresponde ao n&#250;mero AS da origem da requisi&#231;&#227;o</acl_src_as_title>
+<acl_src_text>A correspond&#234;ncia &#233; feita com base no endere&#231;o IP dos clientes[br]
 [ul]
-[li]172.16.1.0/24 - refers to the whole Network with address 172.16.1.0[/li]
-[li]172.16.1.25/32 - refers to a single source[/li]
-[li]172.16.1.25-172.16.1.35/32 - refers range of IP Addresses from 172.16.1.25-172.16.1.35[/li]
-[/ul]
-</acl_src_text>
-<acl_src_title>The IP address of the requesting client, or the clients IP Address</acl_src_title>
+[li]172.16.1.0/24 - refere-se a toda a rede com endere&#231;o 172.16.1.0[/li]
+[li]172.16.1.25/32 - refere-se a uma &#250;nica origem[/li]
+[li]172.16.1.25-172.16.1.35/32 - refere-se a um intervalo de endere&#231;os IP de 172.16.1.25-172.16.1.35[/li]
+[/ul]</acl_src_text>
+<acl_src_title>O endere&#231;o IP do cliente solicitante, ou o endere&#231;o IP dos clientes</acl_src_title>
 <acl_time>Data e Hora</acl_time>
-<acl_time_text>Provides timed filter settings.[br]
-This feature is often used to block some types of content or some sections of the internet during business or class hours.
-[br]Many companies block pornography, entertainment, sports, and other clearly non-work related sites during business hours, but then unblock them after hours.
-[br]This might improve workplace efficiency in some situations (or it might just offend the employees).[br]
-This ACL type allows you to enter days of the week and a time range, or select all hours of the selected days :
-[br][b]S=Sunday; M=Monday; T=Tuesday; W=Wednesday; H=Thursday; F=Friday; A=Saturday.[/b]
-[br][b]Example:[/b] M 9:00-17:00 - Refers day of Monday and time from 9:00 to 17:00.
-</acl_time_text>
-<acl_time_title>This type is just what it sounds like, providing a means to create ACLs that are active during certain times of the day or certain days of the week.</acl_time_title>
-<acl_urlpath_regex>URL Path regex</acl_urlpath_regex>
-<acl_urlpath_regex_text>This acl type expects for the particular pattern alone from the given URLs. If found the words, it will match it[br]
-[b]Example:[/b]
+<acl_time_text>Fornece configura&#231;&#245;es de filtro temporizadas.[br]
+Este recurso &#233; frequentemente usado para bloquear alguns tipos de conte&#250;do ou algumas se&#231;&#245;es da internet durante o hor&#225;rio comercial ou de aula.
+[br]Muitas empresas bloqueiam pornografia, entretenimento, esportes e outros sites claramente n&#227;o relacionados ao trabalho durante o hor&#225;rio comercial, mas depois os desbloqueiam fora do expediente.
+[br]Isto pode melhorar a efici&#234;ncia no local de trabalho em algumas situa&#231;&#245;es (ou pode apenas ofender os funcion&#225;rios).[br]
+Este tipo de ACL permite inserir dias da semana e um intervalo de tempo, ou selecionar todas as horas dos dias selecionados :
+[br][b]S=Domingo; M=Segunda; T=Ter&#231;a; W=Quarta; H=Quinta; F=Sexta; A=S&#225;bado.[/b]
+[br][b]Exemplo:[/b] M 9:00-17:00 - Refere-se ao dia de Segunda e hor&#225;rio das 9:00 &#224;s 17:00.</acl_time_text>
+<acl_time_title>Este tipo &#233; exatamente o que parece, fornecendo um meio de criar ACLs que est&#227;o ativas durante certos hor&#225;rios do dia ou certos dias da semana.</acl_time_title>
+<acl_urlpath_regex>Regex de caminho de URL</acl_urlpath_regex>
+<acl_urlpath_regex_text>Este tipo de ACL espera apenas o padr&#227;o espec&#237;fico das URLs fornecidas. Se encontrar as palavras, ir&#225; corresponder[br]
+[b]Exemplo:[/b]
 [br][blk] -i index.html[/blk][br]
-Reject contains the pattern index.html. 
-</acl_urlpath_regex_text>
-<acl_urlpath_regex_title>This ACL matches on the URL path minus any protocol, port, and host name information</acl_urlpath_regex_title>
-<acl_url_regex>URL full Path regex</acl_url_regex>
-<acl_url_regex_text>This ACL can be used to provide access control based on parts of the URL or a case insensitive match of the URL, and much more.[br]
-The regular expressions used in Squid are provided by the GNU Regex library which is documented in the section 7 and 3 regex
-manpages.[br] Regular expressions are also discussed briefly in a nice article by Guido Socher at LinuxFocus.[br]
-[b]Example:[/b]
+Rejeita, cont&#233;m o padr&#227;o index.html.</acl_urlpath_regex_text>
+<acl_urlpath_regex_title>Esta ACL corresponde ao caminho da URL menos qualquer informa&#231;&#227;o de protocolo, porta e nome de host</acl_urlpath_regex_title>
+<acl_url_regex>Regex de caminho completo da URL</acl_url_regex>
+<acl_url_regex_text>Esta ACL pode ser usada para fornecer controle de acesso baseado em partes da URL ou uma correspond&#234;ncia da URL sem diferenciar mai&#250;sculas de min&#250;sculas, e muito mais.[br]
+As express&#245;es regulares usadas no Squid s&#227;o fornecidas pela biblioteca GNU Regex, documentada nas manpages das se&#231;&#245;es 7 e 3 sobre regex.[br] As express&#245;es regulares tamb&#233;m s&#227;o discutidas brevemente em um bom artigo de Guido Socher no LinuxFocus.[br]
+[b]Exemplo:[/b]
 [br][blk]-i ^http://www.google.co.in/index.html[/blk][br]
-reject contains the entire url http://www.google.co.in/index.html
-</acl_url_regex_text>
-<acl_url_regex_title>Matches using a regular expression on the complete URL</acl_url_regex_title>
-<activate_plugins>Proxy plugins activation</activate_plugins>
-<activate_plugins_text>Enable/disable services that allow you to filter your users like (url filtering and antivirus)</activate_plugins_text>
-<additional_caches>Additional caches</additional_caches>
-<add_acl>Add an acl rule to this rule</add_acl>
-<add_a_service_in_group>Add an ICAP service in this group</add_a_service_in_group>
+rejeita, cont&#233;m a url inteira http://www.google.co.in/index.html</acl_url_regex_text>
+<acl_url_regex_title>Corresponde usando uma express&#227;o regular na URL completa</acl_url_regex_title>
+<activate_plugins>Ativa&#231;&#227;o dos plugins do proxy</activate_plugins>
+<activate_plugins_text>Habilitar/desabilitar servi&#231;os que permitem filtrar os seus usu&#225;rios como (filtragem de URL e antiv&#237;rus)</activate_plugins_text>
+<additional_caches>Caches adicionais</additional_caches>
+<add_acl>Adicionar uma regra acl a esta regra</add_acl>
+<add_a_service_in_group>Adicionar um servi&#231;o ICAP neste grupo</add_a_service_in_group>
 <add_cache_dir>Novo Cache</add_cache_dir>
-<add_cache_dir_text>Add a new cache storage folder</add_cache_dir_text>
+<add_cache_dir_text>Adicionar uma nova pasta de armazenamento de cache</add_cache_dir_text>
 <add_icap_class>Novo grupo</add_icap_class>
-<add_icap_rule>Add a new Access rule</add_icap_rule>
-<add_icap_service>Add a new ICAP service</add_icap_service>
-<add_rule_here>Add a restriction rule after this rule</add_rule_here>
-<allow_all_days>Allow all the time...No restrictions</allow_all_days>
-<allow_network>Allow computers trought the proxy by IP addresses</allow_network>
-<apply_squid>Apply settings</apply_squid>
-<apply_squid_text>Save your parameters and apply them on production mode</apply_squid_text>
-<authenticate_users>Authenticate users</authenticate_users>
-<authenticate_users_explain>If you set to "green" users will be authenticated. In this case, a popup will be show in order to set the username and password before allow Internet access[br]
-If you set to "red" users will be not authenticated and can go trought Internet without sending authentication logon
-</authenticate_users_explain>
-<authenticate_users_text>Use the Artica users database (ldap) in order to ask username/password to users for navigate trought Internet</authenticate_users_text>
-<bypass>Bypass</bypass>
-<cache_dir>Cache directories</cache_dir>
-<cache_dir_level1>first-level subdirectories</cache_dir_level1>
-<cache_dir_level1_text>Number of first-level subdirectories which will be created under the Directory. The default is 16</cache_dir_level1_text>
-<cache_dir_level2>second-level subdirectories</cache_dir_level2>
-<cache_dir_level2_text>
-number of second-level subdirectories which will be created under each first-level directory. The default is
+<add_icap_rule>Adicionar uma nova regra de acesso</add_icap_rule>
+<add_icap_service>Adicionar um novo servi&#231;o ICAP</add_icap_service>
+<add_rule_here>Adicionar uma regra de restri&#231;&#227;o ap&#243;s esta regra</add_rule_here>
+<allow_all_days>Permitir sempre... Sem restri&#231;&#245;es</allow_all_days>
+<allow_network>Permitir computadores atrav&#233;s do proxy por endere&#231;os IP</allow_network>
+<apply_squid>Aplicar as configura&#231;&#245;es</apply_squid>
+<apply_squid_text>Salve os seus par&#226;metros e aplique-os em modo de produ&#231;&#227;o</apply_squid_text>
+<authenticate_users>Autenticar usu&#225;rios</authenticate_users>
+<authenticate_users_explain>Se voc&#234; definir como &quot;verde&quot; os usu&#225;rios ser&#227;o autenticados. Neste caso, ser&#225; mostrado um popup para definir o nome de usu&#225;rio e a senha antes de permitir o acesso &#224; Internet[br]
+Se voc&#234; definir como &quot;vermelho&quot; os usu&#225;rios n&#227;o ser&#227;o autenticados e podem acessar a Internet sem enviar o login de autentica&#231;&#227;o</authenticate_users_explain>
+<authenticate_users_text>Usar o banco de dados de usu&#225;rios do Artica (ldap) para pedir nome de usu&#225;rio/senha aos usu&#225;rios para navegar na Internet</authenticate_users_text>
+<bypass>Ignorar</bypass>
+<cache_dir>Diret&#243;rios da cache</cache_dir>
+<cache_dir_level1>subdiret&#243;rios de primeiro n&#237;vel</cache_dir_level1>
+<cache_dir_level1_text>N&#250;mero de subdiret&#243;rios de primeiro n&#237;vel que ser&#227;o criados sob o Diret&#243;rio. O valor padr&#227;o &#233; 16</cache_dir_level1_text>
+<cache_dir_level2>subdiret&#243;rios de segundo n&#237;vel</cache_dir_level2>
+<cache_dir_level2_text>n&#250;mero de subdiret&#243;rios de segundo n&#237;vel que ser&#227;o criados sob cada diret&#243;rio de primeiro n&#237;vel. O valor padr&#227;o &#233;
 256</cache_dir_level2_text>
-<cache_dir_text>
-All objects which are to be cached are stored in the disk space defined by this section.[br]
-This defines the path to cache directory, cache directory name, type and size of the cache area.
-</cache_dir_text>
-<cache_mem>ideal amount of memory</cache_mem>
+<cache_dir_text>Todos os objetos que ser&#227;o armazenados em cache s&#227;o salvos no espa&#231;o em disco definido por esta se&#231;&#227;o.[br]
+Isto define o caminho para o diret&#243;rio da cache, o nome do diret&#243;rio da cache, o tipo e o tamanho da &#225;rea da cache.</cache_dir_text>
+<cache_mem>quantidade ideal de mem&#243;ria</cache_mem>
 <cache_mem_text>Esta configuraç%C3£o define a quantidade ideal de mem%C3%B3ria utilizada para objetos em trânsito, objetos ativos (hot) e objetos em cache negativo.[br]
 Os dados desses objetos s%C3£o armazenados em blocos de 4 KB.[br]
 Este parâmetro especifica o limite superior ideal do tamanho total dos blocos de 4 KB alocados.[br]
@@ -316,219 +281,199 @@ Nota: Esta diretiva n%C3£o define o tamanho m%C3¡ximo do processo.[br]
 Ela limita apenas um aspecto do uso de mem%C3%B3ria do serviço Proxy.[br]
 O serviço Proxy também utiliza mem%C3%B3ria para outras finalidades.[br]
 Como resultado, o tamanho do processo pode chegar a ser duas ou três vezes maior do que o valor configurado aqui.[/blk]</cache_mem_text>
-<cache_replacement_policy>Cache Replacement Policy</cache_replacement_policy>
+<cache_replacement_policy>Pol&#237;tica de substitui&#231;&#227;o da cache</cache_replacement_policy>
 <cache_replacement_policy_text>[b]
-The cache replacement policy parameter determines which objects are to be replaced when disk space is needed[/b][br]
-Whenever space for new objects were not found in the disk,[br] "Cache Replacement Policy" determines which objects in the cache
-memory (disk) should be replaced.[br]
-The cache replacement policies is of four types. They are[ul]
-[li][b]Squid's original list based LRU policy:[/b]
-
-</cache_replacement_policy_text>
-<cache_settings>Cache parameters</cache_settings>
+O par&#226;metro da pol&#237;tica de substitui&#231;&#227;o da cache determina quais objetos devem ser substitu&#237;dos quando &#233; necess&#225;rio espa&#231;o em disco[/b][br]
+Sempre que n&#227;o for encontrado espa&#231;o para novos objetos no disco,[br] a &quot;Cache Replacement Policy&quot; determina quais objetos na mem&#243;ria
+da cache (disco) devem ser substitu&#237;dos.[br]
+As pol&#237;ticas de substitui&#231;&#227;o da cache s&#227;o de quatro tipos. S&#227;o elas[ul]
+[li][b]A pol&#237;tica LRU original do Squid baseada em lista:[/b]</cache_replacement_policy_text>
+<cache_settings>Par&#226;metros da cache</cache_settings>
 <cache_size>Tamanho da cache</cache_size>
-<cache_size_text>Mbytes is the amount of disk space (MB) to use under this directory.[br]
-The default is 100 MB.[br]
-Change this to suit your configuration.[br]
-Do NOT put the size of your disk drive here.[br]Instead, if you want Squid to use the entire disk drive,subtract 20% and use that value.</cache_size_text>
-<cache_swap_high>SWAP High</cache_swap_high>
-<cache_swap_high_text>This option define when the replacement should take place.[br]Replacement begins when the swap (disk) usage is above the low-water mark and attempts to maintain utilization near the low-water mark.[br]As swap utilization gets close to high-water mark object eviction becomes more aggressive.
-[br]If utilization is close to the low-water mark less replacement is done each time.</cache_swap_high_text>
-<cache_swap_low>SWAP Low</cache_swap_low>
-<cache_swap_low_text>This option define when the replacement should take place.[br]Replacement begins when the swap (disk) usage is above the low-water mark and attempts to maintain utilization near the low-water mark.[br]As swap utilization gets close to high-water mark object eviction becomes more aggressive.[br]If utilization is close to the low-water mark less replacement is done each time.</cache_swap_low_text>
-<cache_title>Cache & performances</cache_title>
-<cache_type>Cache Format</cache_type>
+<cache_size_text>Mbytes &#233; a quantidade de espa&#231;o em disco (MB) a usar sob este diret&#243;rio.[br]
+O valor padr&#227;o &#233; 100 MB.[br]
+Altere isto para se adequar &#224; sua configura&#231;&#227;o.[br]
+N&#195;O coloque aqui o tamanho do seu disco.[br]Em vez disso, se voc&#234; quiser que o Squid use todo o disco, subtraia 20% e use esse valor.</cache_size_text>
+<cache_swap_high>SWAP alto</cache_swap_high>
+<cache_swap_high_text>Esta op&#231;&#227;o define quando a substitui&#231;&#227;o deve ocorrer.[br]A substitui&#231;&#227;o come&#231;a quando o uso do swap (disco) est&#225; acima do limite m&#237;nimo e tenta manter a utiliza&#231;&#227;o perto do limite m&#237;nimo.[br]&#192; medida que a utiliza&#231;&#227;o do swap se aproxima do limite m&#225;ximo, a remo&#231;&#227;o de objetos torna-se mais agressiva.
+[br]Se a utiliza&#231;&#227;o estiver perto do limite m&#237;nimo, menos substitui&#231;&#227;o &#233; feita a cada vez.</cache_swap_high_text>
+<cache_swap_low>SWAP baixo</cache_swap_low>
+<cache_swap_low_text>Esta op&#231;&#227;o define quando a substitui&#231;&#227;o deve ocorrer.[br]A substitui&#231;&#227;o come&#231;a quando o uso do swap (disco) est&#225; acima do limite m&#237;nimo e tenta manter a utiliza&#231;&#227;o perto do limite m&#237;nimo.[br]&#192; medida que a utiliza&#231;&#227;o do swap se aproxima do limite m&#225;ximo, a remo&#231;&#227;o de objetos torna-se mais agressiva.[br]Se a utiliza&#231;&#227;o estiver perto do limite m&#237;nimo, menos substitui&#231;&#227;o &#233; feita a cada vez.</cache_swap_low_text>
+<cache_title>Cache e desempenho</cache_title>
+<cache_type>Formato da cache</cache_type>
 <change_main_cache_path>Alterar o caminho do cache principal</change_main_cache_path>
-<change_main_cache_path_explain>This operation will create the main cache path to a new directory.[br]
-[b]The old directory will be not removed you will have to do it yourself[/b].[br]
-All cache datas will be erased during the operation</change_main_cache_path_explain>
+<change_main_cache_path_explain>Esta opera&#231;&#227;o criar&#225; o caminho da cache principal em um novo diret&#243;rio.[br]
+[b]O diret&#243;rio antigo n&#227;o ser&#225; removido, voc&#234; ter&#225; que faz&#234;-lo voc&#234; mesmo[/b].[br]
+Todos os dados da cache ser&#227;o apagados durante a opera&#231;&#227;o</change_main_cache_path_explain>
 <CICAP_AV>Clam Antivirus (C-icap)</CICAP_AV>
-<CICAP_AV_TEXT>Configure the c-cicap software that link Squid with clam antivirus</CICAP_AV_TEXT>
-<class_name>Grouping rule</class_name>
-<config_error>Error in configuration</config_error>
-<connection_time>Connection time</connection_time>
-<connection_time_explain>You will define time restrictions for the group's users you have selected, each time [b]over[/b] days and time will be deny</connection_time_explain>
-<connection_time_text>Define connection time for each organization group</connection_time_text>
+<CICAP_AV_TEXT>Configurar o software c-icap que liga o Squid ao antiv&#237;rus clam</CICAP_AV_TEXT>
+<class_name>Regra de agrupamento</class_name>
+<config_error>Erro na configura&#231;&#227;o</config_error>
+<connection_time>Tempo de conex&#227;o</connection_time>
+<connection_time_explain>Voc&#234; definir&#225; restri&#231;&#245;es de tempo para os usu&#225;rios do grupo que selecionou, cada vez [b]fora[/b] dos dias e horas ser&#225; negado</connection_time_explain>
+<connection_time_text>Definir o tempo de conex&#227;o para cada grupo de organiza&#231;&#227;o</connection_time_text>
 <connect_timeout>Conectar time-out</connect_timeout>
-<connect_timeout_text>
-[b]Numeric time-units[/b][br]
-The time duration until which squid waits for the reply from the origin server.[br]
-If it exceeds this squid will respond with the error message [blk]â€œConnection timed outâ€[/blk] to the client</connect_timeout_text>
-<dansguardian_rules_text>Create your filters rules in order to enable one of them in your groups</dansguardian_rules_text>
-<dead_peer_timeout>Dead peer time-out</dead_peer_timeout>
-<dead_peer_timeout_text>
-This controls how long Squid waits to declare a peer cache as [b]"dead."[/b][br]
-If there are no ICP replies received in this amount of time,[br]
-Squid will declare the peer dead and not expect to receive any further ICP replies.[br]
-However, it continues to send ICP queries, and will mark the peer as alive upon receipt of the first subsequent ICP reply.
+<connect_timeout_text>[b]Unidades de tempo num&#233;ricas[/b][br]
+A dura&#231;&#227;o de tempo at&#233; a qual o Squid aguarda a resposta do servidor de origem.[br]
+Se exceder, o Squid responder&#225; ao cliente com a mensagem de erro [blk]&quot;Connection timed out&quot;[/blk]</connect_timeout_text>
+<dansguardian_rules_text>Crie as suas regras de filtros para ativar uma delas nos seus grupos</dansguardian_rules_text>
+<dead_peer_timeout>Time-out de peer morto</dead_peer_timeout>
+<dead_peer_timeout_text>Isto controla quanto tempo o Squid aguarda para declarar uma cache peer como [b]&quot;morta&quot;[/b].[br]
+Se nenhuma resposta ICP for recebida nesse per&#237;odo de tempo,[br]
+o Squid declarar&#225; o peer como morto e n&#227;o esperar&#225; receber mais respostas ICP.[br]
+No entanto, ele continua a enviar consultas ICP e marcar&#225; o peer como vivo ao receber a primeira resposta ICP subsequente.
 [br]
-[b]Caution[/b][br]
+[b]Aten&#231;&#227;o[/b][br]
 [blk]
-This timeout also affects when Squid expects to receive ICP replies from peers.[br]
-If more than 'dead_peer' seconds have passed since the last ICP reply was received,
-[br]Squid will not expect to receive an ICP reply on the next query.
-[br]Thus, if your time between requests is greater than this timeout,[br]
-you will see a lot of requests sent DIRECT to origin servers instead of to your parents.[/blk]
-</dead_peer_timeout_text>
-<delete_acl_in_access>Double-click to [b]Delete[/b] this acl</delete_acl_in_access>
+Este timeout tamb&#233;m afeta quando o Squid espera receber respostas ICP dos peers.[br]
+Se mais de 'dead_peer' segundos se passaram desde a &#250;ltima resposta ICP recebida,
+[br]o Squid n&#227;o esperar&#225; receber uma resposta ICP na pr&#243;xima consulta.
+[br]Assim, se o seu tempo entre requisi&#231;&#245;es for maior que este timeout,[br]
+voc&#234; ver&#225; muitas requisi&#231;&#245;es enviadas DIRETAMENTE aos servidores de origem em vez de aos seus parents.[/blk]</dead_peer_timeout_text>
+<delete_acl_in_access>D&#234; um duplo clique para [b]excluir[/b] esta acl</delete_acl_in_access>
 <delete_icap_class>Excluir esse grupo</delete_icap_class>
-<delete_service_in_class>[b]double-click[/b] to Delete this service from this group</delete_service_in_class>
+<delete_service_in_class>[b]d&#234; um duplo clique[/b] para excluir este servi&#231;o deste grupo</delete_service_in_class>
 <deny_websites>Bloqueio de sites</deny_websites>
-<deny_websites_explain>Give the URI of the web site you want to block eg "http://www.sussex.ac.uk"</deny_websites_explain>
-<deny_websites_text>Ban URIs and entire web-sites</deny_websites_text>
+<deny_websites_explain>Indique o URI do site que voc&#234; deseja bloquear, ex. &quot;http://www.sussex.ac.uk&quot;</deny_websites_explain>
+<deny_websites_text>Banir URIs e sites inteiros</deny_websites_text>
 <deny_website_label>Site da Internet</deny_website_label>
 <dns_nameservers>Servidores DNS</dns_nameservers>
-<dns_nameservers_text>Normally defaults to resolv.conf, which simply means that Squid's parent DNS servers will be drawn from the /etc/resolv.conf file
-found on the system Squid runs on. It is possible to select other DNS servers if needed</dns_nameservers_text>
-<dns_servers_text>Normally defaults to resolv.conf,[br]you can define DNS servers in order to accelerate the proxy adresses resolution</dns_servers_text>
-<dns_timeout>DNS Time-out</dns_timeout>
-<dns_timeout_text>
-[b]Numeric time-units[/b][br]
-This tag is used to set the DNS Query time-out.[br]
-If no response is received to a DNS query within this time then all DNS servers for[br]
-the queried domain is assumed to be unavailable</dns_timeout_text>
-<enable_dansguardian>Enable DansGuardian</enable_dansguardian>
-<enable_dansguardian_text>DansGuardian will perform URL filtering scanning according rules you will personalize[br]It will help you to prevent accessing to bad web sites</enable_dansguardian_text>
-<enable_kavproxy>Enable Kaspersky Antivirus</enable_kavproxy>
-<enable_kavproxy_text>Kaspersky Antivirus For Squid will perform a virus scan on the fly in all web pages and downloaded files</enable_kavproxy_text>
-<enable_squid_service>Enable/disable HTTP Proxy</enable_squid_service>
-<enable_squid_service_explain>If turn to red, all Proxy http related software will be off,you will be able to enable Proxy service in the future</enable_squid_service_explain>
-<enable_squid_service_text>Enable or disable the entire HTTP Proxy service.</enable_squid_service_text>
-<error_kavproxy_not_installed>Kaspersky For Proxy Server is not installed</error_kavproxy_not_installed>
-<error_no_auth_squid>Error: Authenticate users feature is not enabled, this feature support only if you use LDAP database authentication</error_no_auth_squid>
-<error_squid_icap_not_compliance>Squid is not compiled with ICAP protocol</error_squid_icap_not_compliance>
-<error_squid_upto_three>Your version is too old (need up to 3.0)</error_squid_upto_three>
-<events_stats>Events & statistics</events_stats>
-<feature_not_installed>There is some features missing, or the product is not installed</feature_not_installed>
-<file_blocking>Files blocking</file_blocking>
-<file_blocking_text>Define files rules in order to block downloads</file_blocking_text>
-<filters>Filtering</filters>
+<dns_nameservers_text>Normalmente o padr&#227;o &#233; resolv.conf, o que significa simplesmente que os servidores DNS parent do Squid ser&#227;o obtidos do arquivo /etc/resolv.conf encontrado no sistema em que o Squid &#233; executado. &#201; poss&#237;vel selecionar outros servidores DNS se necess&#225;rio</dns_nameservers_text>
+<dns_servers_text>Normalmente o padr&#227;o &#233; resolv.conf,[br]voc&#234; pode definir servidores DNS para acelerar a resolu&#231;&#227;o dos endere&#231;os do proxy</dns_servers_text>
+<dns_timeout>Time-out DNS</dns_timeout>
+<dns_timeout_text>[b]Unidades de tempo num&#233;ricas[/b][br]
+Esta tag &#233; usada para definir o time-out da consulta DNS.[br]
+Se nenhuma resposta for recebida a uma consulta DNS dentro deste tempo, todos os servidores DNS para[br]
+o dom&#237;nio consultado s&#227;o considerados indispon&#237;veis</dns_timeout_text>
+<enable_dansguardian>Habilitar o DansGuardian</enable_dansguardian>
+<enable_dansguardian_text>O DansGuardian realizar&#225; uma an&#225;lise de filtragem de URL de acordo com as regras que voc&#234; personalizar[br]Ajudar&#225; voc&#234; a impedir o acesso a sites maliciosos</enable_dansguardian_text>
+<enable_kavproxy>Habilitar o Kaspersky Antivirus</enable_kavproxy>
+<enable_kavproxy_text>O Kaspersky Antivirus For Squid realizar&#225; uma an&#225;lise de v&#237;rus em tempo real em todas as p&#225;ginas web e arquivos baixados</enable_kavproxy_text>
+<enable_squid_service>Habilitar/desabilitar o proxy HTTP</enable_squid_service>
+<enable_squid_service_explain>Se for definido como vermelho, todo o software relacionado com o proxy http estar&#225; desligado, voc&#234; poder&#225; habilitar o servi&#231;o de proxy no futuro</enable_squid_service_explain>
+<enable_squid_service_text>Habilitar ou desabilitar todo o servi&#231;o de proxy HTTP.</enable_squid_service_text>
+<error_kavproxy_not_installed>O Kaspersky For Proxy Server n&#227;o est&#225; instalado</error_kavproxy_not_installed>
+<error_no_auth_squid>Erro: o recurso de autentica&#231;&#227;o de usu&#225;rios n&#227;o est&#225; habilitado, este recurso s&#243; &#233; suportado se voc&#234; usar autentica&#231;&#227;o por banco de dados LDAP</error_no_auth_squid>
+<error_squid_icap_not_compliance>O Squid n&#227;o est&#225; compilado com o protocolo ICAP</error_squid_icap_not_compliance>
+<error_squid_upto_three>A sua vers&#227;o &#233; muito antiga (precisa de at&#233; 3.0)</error_squid_upto_three>
+<events_stats>Eventos e estat&#237;sticas</events_stats>
+<feature_not_installed>Faltam alguns recursos, ou o produto n&#227;o est&#225; instalado</feature_not_installed>
+<file_blocking>Bloqueio de arquivos</file_blocking>
+<file_blocking_text>Definir regras de arquivos para bloquear downloads</file_blocking_text>
+<filters>Filtragem</filters>
 <fqdncache_size>Cache de nomes de dom%C3%ADnio totalmente qualificado</fqdncache_size>
-<fqdncache_size_text>Defines the size of in memory cache needed for fully qualified domain names[br]
-This is used to specify maximum number of entries for fully qualified domain names.[br]
-Defaults to 1024, which is usually a safe value. In environments where DNS queries are slow, raising this may help.
-</fqdncache_size_text>
-<from_ip>From TCP/IP address</from_ip>
-<give_value>Set the value</give_value>
-<group_service_menus>Group services</group_service_menus>
-<http_access>Proxy restrictions</http_access>
-<http_ports>http ports</http_ports>
+<fqdncache_size_text>Define o tamanho da cache em mem&#243;ria necess&#225;ria para os nomes de dom&#237;nio totalmente qualificados[br]
+Isto &#233; usado para especificar o n&#250;mero m&#225;ximo de entradas para nomes de dom&#237;nio totalmente qualificados.[br]
+O valor padr&#227;o &#233; 1024, que normalmente &#233; um valor seguro. Em ambientes onde as consultas DNS s&#227;o lentas, aument&#225;-lo pode ajudar.</fqdncache_size_text>
+<from_ip>Do endere&#231;o TCP/IP</from_ip>
+<give_value>Definir o valor</give_value>
+<group_service_menus>Servi&#231;os de grupo</group_service_menus>
+<http_access>Restri&#231;&#245;es do proxy</http_access>
+<http_ports>portas http</http_ports>
 <http_reply_access>Restriç%C3µes de resposta de proxy</http_reply_access>
 <http_reply_access_text>Isso complementa as â%80%9CRestriç%C3µes de proxyâ%80%9D, que permitem ou negam as respostas dos clientes.[br]
 Isso é usado para filtragem com base nas correspondências de acl, mas na resposta das solicitaç%C3µes do cliente.[br]
 Se nenhuma das linhas de acesso causar uma correspondência, ser%C3¡ aplicado o oposto da %C3%BAltima linha.[br]
 Portanto, é uma boa pr%C3¡tica terminar as regras com uma entrada â%80%9Callow allâ%80%9D (permitir tudo) ou â%80%9Cdeny allâ%80%9D (negar tudo).</http_reply_access_text>
 <icap_access>Regras de acesso ICAP</icap_access>
-<icap_access_text>This section builds up an access control list that is processed for each HTTP request.[br]
-If all of the acls match, processing stops at this line.[br]
-If the action is to allow, then the specified class or service will be used for this request.[br]
-If the action is to deny, then processing will stop without using ICAP for this request.[br]
-To make a deny rule clearer, you can use the special class [b]"None"[/b] there</icap_access_text>
+<icap_access_text>Esta se&#231;&#227;o constr&#243;i uma lista de controle de acesso que &#233; processada para cada requisi&#231;&#227;o HTTP.[br]
+Se todas as acl corresponderem, o processamento para nesta linha.[br]
+Se a a&#231;&#227;o for permitir, ent&#227;o a classe ou servi&#231;o especificado ser&#225; usado para esta requisi&#231;&#227;o.[br]
+Se a a&#231;&#227;o for negar, o processamento parar&#225; sem usar ICAP para esta requisi&#231;&#227;o.[br]
+Para tornar uma regra de nega&#231;&#227;o mais clara, voc&#234; pode usar a&#237; a classe especial [b]&quot;None&quot;[/b]</icap_access_text>
 <icap_class>Grupo</icap_class>
-<icap_class_list>Group list</icap_class_list>
-<icap_class_title>Grouping ICAP service rules</icap_class_title>
-<icap_class_title_text>Grouping rules (as icap_class) collects services for a service list.[br]
-This is useful when you want to use more than one ICAP service per request</icap_class_title_text>
-<icap_service>ICAP services</icap_service>
-<icap_service_menus>ICAP services</icap_service_menus>
-<icp_access>ICP restrictions</icp_access>
-<icp_access_text>Allowing or Denying access to the ICP port based on defined access list</icp_access_text>
-<ident_lookup_access>Lookup restrictions</ident_lookup_access>
-<ident_lookup_access_text>
-A list of ACL elements which, if matched, cause an ident (RFC 931) lookup to be performed for this request[br]
-This tag allows or denies ident lookups an matching the access lists.[br]
-[b]Note: Only src type ACL checks are fully supported. A src_domain ACL might work at times, but it will not always provide the correct
-result.[br]This option may be disabled by using --disable-ident-lookups with the configure script.[/b]
-</ident_lookup_access_text>
-<ipcache_high>IP addresses cache high</ipcache_high>
-<ipcache_high_text>the high water marks for the IP addresses cache size</ipcache_high_text>
-<ipcache_low>IP addresses cache low</ipcache_low>
-<ipcache_low_text>the low water marks for the IP addresses cache size</ipcache_low_text>
+<icap_class_list>Lista de grupos</icap_class_list>
+<icap_class_title>Agrupar regras de servi&#231;o ICAP</icap_class_title>
+<icap_class_title_text>As regras de agrupamento (como icap_class) coletam servi&#231;os para uma lista de servi&#231;os.[br]
+Isto &#233; &#250;til quando voc&#234; deseja usar mais de um servi&#231;o ICAP por requisi&#231;&#227;o</icap_class_title_text>
+<icap_service>Servi&#231;os ICAP</icap_service>
+<icap_service_menus>Servi&#231;os ICAP</icap_service_menus>
+<icp_access>Restri&#231;&#245;es ICP</icp_access>
+<icp_access_text>Permitir ou negar o acesso &#224; porta ICP com base na lista de acesso definida</icp_access_text>
+<ident_lookup_access>Restri&#231;&#245;es de lookup</ident_lookup_access>
+<ident_lookup_access_text>Uma lista de elementos ACL que, se corresponderem, causam a execu&#231;&#227;o de uma busca ident (RFC 931) para esta requisi&#231;&#227;o[br]
+Esta tag permite ou nega buscas ident com base na correspond&#234;ncia com as listas de acesso.[br]
+[b]Nota: apenas verifica&#231;&#245;es ACL do tipo src s&#227;o totalmente suportadas. Uma ACL src_domain pode funcionar &#224;s vezes, mas nem sempre fornecer&#225; o resultado
+correto.[br]Esta op&#231;&#227;o pode ser desativada usando --disable-ident-lookups com o script configure.[/b]</ident_lookup_access_text>
+<ipcache_high>Cache de endere&#231;os IP alta</ipcache_high>
+<ipcache_high_text>o limite m&#225;ximo (high water mark) para o tamanho da cache de endere&#231;os IP</ipcache_high_text>
+<ipcache_low>Cache de endere&#231;os IP baixa</ipcache_low>
+<ipcache_low_text>o limite m&#237;nimo (low water mark) para o tamanho da cache de endere&#231;os IP</ipcache_low_text>
 <ipcache_size>Tamanho do cache de endereços IP</ipcache_size>
-<ipcache_size_text>The size of the cache used for IP addresses</ipcache_size_text>
-<limits>Limits</limits>
-<listen_port_text>Wich port your clients will connect to ? Define here the main port used by the proxy server</listen_port_text>
-<main_cache>Main cache</main_cache>
-<main_cache_size>Main cache size</main_cache_size>
-<maximum_object_size>Maximum object size</maximum_object_size>
-<maximum_object_size_in_memory>Maximum object size in memory</maximum_object_size_in_memory>
-<maximum_object_size_in_memory_text>Defines maximum size of the object to be kept in memory cache[br]
-Objects greater than the size specified in this tag will not be kept in the memory cache.[br]
-This should be set high enough to keep objects accessed frequently in memory to improve performance at the same time low enough to[br]
-keep larger objects from hoarding "ideal amount of memory".
-</maximum_object_size_in_memory_text>
-<maximum_object_size_text>
-Objects larger than this size will NOT be saved on disk.[br]
-The value is specified in kilobytes, and the default is 4 MB.[br]
-If you wish to get a high BYTES hit ratio, you should probably increase this (one 32 MB object hit counts for 3200 10 KB hits).[br]
-If you wish to increase speed more than your want to save bandwidth, you should leave this low.[br]
-During the initial downloading of a file, the downloading time seems to be a normal one,[br]
-but if you download the same file again, the time it takes for download will be very minimum.[br]
-This indicates that, the file comes from the Cache.
-</maximum_object_size_text>
-<minimum_object_size>Minimum object size</minimum_object_size>
-<minimum_object_size_text>Objects smaller than this size will NOT be saved on disk.  The value is specified in kilobytes, and the default is 0 KB, which means there is no minimum.
-
-</minimum_object_size_text>
-<miss_access>Miss restrictions</miss_access>
-<miss_access_text>
-Used to force your neighbours to use you as sibling instead of parent[br]It forces the neighbouring peers to treat you as sibling instead of parent.
-</miss_access_text>
-<mode_port>Protocol used</mode_port>
-<must_create_acl_first>[b]You need to create one acl rule before[/b]</must_create_acl_first>
-<must_create_group_first>[b]You need to create one group before[/b]</must_create_group_first>
-<must_icap_service_before>You must create one ICAP service before</must_icap_service_before>
-<netport>Proxy addresses and ports</netport>
-<netsslport>SSL addresses and ports</netsslport>
-<net_settings>Network parameters</net_settings>
-<peer_connect_timeout>Peer connect time-out</peer_connect_timeout>
-<peer_connect_timeout_text>
-[b]Numeric time-units[/b][br]
-This parameter specifies how long to wait for a pending TCP connection to a peer cache.[br]
-The default is 30 seconds.[br]
-You may also set different timeout values for individual neighbors[br]
-with the 'connect-timeout' option on a 'cache_peer' line
-</peer_connect_timeout_text>
-<rebuild_kaspersky_service>Rebuild Kaspersky services</rebuild_kaspersky_service>
+<ipcache_size_text>O tamanho da cache usada para os endere&#231;os IP</ipcache_size_text>
+<limits>Limites</limits>
+<listen_port_text>A qual porta os seus clientes se conectar&#227;o ? Defina aqui a porta principal usada pelo servidor proxy</listen_port_text>
+<main_cache>Cache principal</main_cache>
+<main_cache_size>Tamanho da cache principal</main_cache_size>
+<maximum_object_size>Tamanho m&#225;ximo do objeto</maximum_object_size>
+<maximum_object_size_in_memory>Tamanho m&#225;ximo do objeto na mem&#243;ria</maximum_object_size_in_memory>
+<maximum_object_size_in_memory_text>Define o tamanho m&#225;ximo do objeto a ser mantido na cache de mem&#243;ria[br]
+Objetos maiores que o tamanho especificado nesta tag n&#227;o ser&#227;o mantidos na cache de mem&#243;ria.[br]
+Isto deve ser definido alto o suficiente para manter na mem&#243;ria os objetos acessados com frequ&#234;ncia para melhorar o desempenho e, ao mesmo tempo, baixo o suficiente para[br]
+impedir que objetos maiores acumulem a &quot;quantidade ideal de mem&#243;ria&quot;.</maximum_object_size_in_memory_text>
+<maximum_object_size_text>Objetos maiores que este tamanho N&#195;O ser&#227;o salvos no disco.[br]
+O valor &#233; especificado em kilobytes, e o padr&#227;o &#233; 4 MB.[br]
+Se voc&#234; deseja obter uma alta taxa de acertos em BYTES, provavelmente deve aumentar isto (um acerto de objeto de 32 MB conta como 3200 acertos de 10 KB).[br]
+Se voc&#234; deseja aumentar a velocidade mais do que economizar largura de banda, deve deixar este valor baixo.[br]
+Durante o download inicial de um arquivo, o tempo de download parece normal,[br]
+mas se voc&#234; baixar o mesmo arquivo novamente, o tempo ser&#225; muito m&#237;nimo.[br]
+Isto indica que o arquivo vem da cache.</maximum_object_size_text>
+<minimum_object_size>Tamanho m&#237;nimo do objeto</minimum_object_size>
+<minimum_object_size_text>Objetos menores que este tamanho N&#195;O ser&#227;o salvos no disco. O valor &#233; especificado em kilobytes, e o padr&#227;o &#233; 0 KB, o que significa que n&#227;o h&#225; m&#237;nimo.</minimum_object_size_text>
+<miss_access>Restri&#231;&#245;es de miss</miss_access>
+<miss_access_text>Usado para for&#231;ar os seus vizinhos a us&#225;-lo como sibling em vez de parent[br]For&#231;a os peers vizinhos a trat&#225;-lo como sibling em vez de parent.</miss_access_text>
+<mode_port>Protocolo usado</mode_port>
+<must_create_acl_first>[b]Voc&#234; precisa criar uma regra acl antes[/b]</must_create_acl_first>
+<must_create_group_first>[b]Voc&#234; precisa criar um grupo antes[/b]</must_create_group_first>
+<must_icap_service_before>Voc&#234; deve criar um servi&#231;o ICAP antes</must_icap_service_before>
+<netport>Endere&#231;os e portas do proxy</netport>
+<netsslport>Endere&#231;os e portas SSL</netsslport>
+<net_settings>Par&#226;metros de rede</net_settings>
+<peer_connect_timeout>Time-out de conex&#227;o peer</peer_connect_timeout>
+<peer_connect_timeout_text>[b]Unidades de tempo num&#233;ricas[/b][br]
+Este par&#226;metro especifica quanto tempo aguardar por uma conex&#227;o TCP pendente a uma cache peer.[br]
+O padr&#227;o &#233; 30 segundos.[br]
+Voc&#234; tamb&#233;m pode definir valores de timeout diferentes para neighbors individuais[br]
+com a op&#231;&#227;o 'connect-timeout' em uma linha 'cache_peer'</peer_connect_timeout_text>
+<rebuild_kaspersky_service>Reconstruir os servi&#231;os Kaspersky</rebuild_kaspersky_service>
 <reply_access_rules>Responder as regras de acesso</reply_access_rules>
-<reqmod_postcache>Outgoing (after cache)</reqmod_postcache>
-<reqmod_precache>Outgoing (before cache)</reqmod_precache>
+<reqmod_postcache>Enviado (depois da cache)</reqmod_postcache>
+<reqmod_precache>Enviado (antes da cache)</reqmod_precache>
 <request_body_max_size>Tamanho m%C3¡ximo de um corpo de solicitaç%C3£o HTTP</request_body_max_size>
 <request_body_max_size_text>Isso especifica o tamanho m%C3¡ximo de um corpo de solicitaç%C3£o HTTP.[br]
 Em outras palavras, o tamanho m%C3¡ximo de uma solicitaç%C3£o PUT/POST.[br]
 Um usu%C3¡rio que tenta enviar uma solicitaç%C3£o com um corpo maior que esse limite recebe uma mensagem de erro â%80%9CSolicitaç%C3£o inv%C3¡lidaâ%80%9D.[br]
 Se você definir esse parâmetro como zero, n%C3£o ser%C3¡ imposto nenhum limite.</request_body_max_size_text>
-<respmod_postcache>Incoming (after cache)</respmod_postcache>
-<respmod_precache>Incoming (before cache)</respmod_precache>
-<saveconf>Apply settings</saveconf>
-<select_acl_type>Select acl type</select_acl_type>
-<should_connected_to>Should be connected to</should_connected_to>
-<squid_aufs>Threads Squid storage (aufs)</squid_aufs>
-<squid_diskd>Fork Squid storage (diskd)</squid_diskd>
-<squid_status>SQUID Daemon status</squid_status>
-<squid_timeouts>SQUID Time-outs settings</squid_timeouts>
-<squid_ufs>standard Squid Storage (ufs)</squid_ufs>
-<ssl_ports>SLL ports</ssl_ports>
-<switch_access_rules>Switch to access rule:</switch_access_rules>
-<to_ip>To TCP/IP address</to_ip>
+<respmod_postcache>Recebido (depois da cache)</respmod_postcache>
+<respmod_precache>Recebido (antes da cache)</respmod_precache>
+<saveconf>Aplicar as configura&#231;&#245;es</saveconf>
+<select_acl_type>Selecionar o tipo de acl</select_acl_type>
+<should_connected_to>Deve estar conectado a</should_connected_to>
+<squid_aufs>Armazenamento Squid Threads (aufs)</squid_aufs>
+<squid_diskd>Armazenamento Squid Fork (diskd)</squid_diskd>
+<squid_status>Status do daemon SQUID</squid_status>
+<squid_timeouts>Configura&#231;&#245;es de time-outs do SQUID</squid_timeouts>
+<squid_ufs>Armazenamento padr&#227;o do Squid (ufs)</squid_ufs>
+<ssl_ports>Portas SSL</ssl_ports>
+<switch_access_rules>Mudar para a regra de acesso:</switch_access_rules>
+<to_ip>Para o endere&#231;o TCP/IP</to_ip>
 <transparent_mode>Proxy transparente</transparent_mode>
-<transparent_mode_explain>A transparent cache is so named because it works by intercepting the network traffic transparently to the browser.[br]
-In this mode, the cache short-circuits the retrieval process if the desired file is in the cache.[br]
-Transparent caches are especially useful to ISPs because they require no browser setup modification.</transparent_mode_explain>
-<transparent_mode_text>Act your proxy has transparent by catching request instead changing navigators parameters</transparent_mode_text>
-<ufs>standard Squid Storage (ufs)</ufs>
+<transparent_mode_explain>Uma cache transparente &#233; assim chamada porque funciona interceptando o tr&#225;fego de rede de forma transparente para o navegador.[br]
+Neste modo, a cache curto-circuita o processo de recupera&#231;&#227;o se o arquivo desejado estiver na cache.[br]
+As caches transparentes s&#227;o especialmente &#250;teis para os ISP porque n&#227;o requerem qualquer modifica&#231;&#227;o da configura&#231;&#227;o do navegador.</transparent_mode_explain>
+<transparent_mode_text>Fa&#231;a o seu proxy agir como transparente capturando as requisi&#231;&#245;es em vez de alterar os par&#226;metros dos navegadores</transparent_mode_text>
+<ufs>Armazenamento padr&#227;o do Squid (ufs)</ufs>
 <url>url</url>
-<use_http_port>Use HTTP ports listed</use_http_port>
-<visible_hostname>Visible hostname</visible_hostname>
-<visible_hostname_intro>Set the virtual name of this server, that will show on errors</visible_hostname_intro>
-<visible_hostname_text>
-If you want to present a special hostname in error messages, etc then define this.[br]
-Otherwise, the return value of default system hostname will be used.[br]
-If you have multiple caches in a cluster and get errors about IP-forwarding,[br] you must set them to have individual names with this setting.[br]
-When the error message appears in the browser, it will show as it is generated from this</visible_hostname_text>
-<vpoint>vectoring point</vpoint>
-<web_server_reponse>The web server response</web_server_reponse>
-<your_network>Your network</your_network>
-<your_network_loupe>Network control center</your_network_loupe>
-<your_network_loupe_text>See the schema of your settings</your_network_loupe_text>
-<your_network_text>Define here your network configuration in order to allow computers accessing trought internet</your_network_text>
+<use_http_port>Usar as portas HTTP listadas</use_http_port>
+<visible_hostname>Nome de host vis&#237;vel</visible_hostname>
+<visible_hostname_intro>Definir o nome virtual deste servidor, que ser&#225; exibido nos erros</visible_hostname_intro>
+<visible_hostname_text>Se voc&#234; quiser apresentar um nome de host especial em mensagens de erro, etc., defina isto.[br]
+Caso contr&#225;rio, ser&#225; usado o valor de retorno do nome de host padr&#227;o do sistema.[br]
+Se voc&#234; tiver v&#225;rios caches em um cluster e receber erros sobre encaminhamento de IP,[br] deve atribuir a eles nomes individuais com esta configura&#231;&#227;o.[br]
+Quando a mensagem de erro aparecer no navegador, ela ser&#225; mostrada como gerada a partir disto</visible_hostname_text>
+<vpoint>ponto de vetoriza&#231;&#227;o</vpoint>
+<web_server_reponse>A resposta do servidor web</web_server_reponse>
+<your_network>A sua rede</your_network>
+<your_network_loupe>Centro de controle de rede</your_network_loupe>
+<your_network_loupe_text>Ver o esquema das suas configura&#231;&#245;es</your_network_loupe_text>
+<your_network_text>Defina aqui a sua configura&#231;&#227;o de rede para permitir que os computadores acessem atrav&#233;s da internet</your_network_text>

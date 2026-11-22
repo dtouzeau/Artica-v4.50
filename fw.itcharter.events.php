@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -69,9 +70,7 @@ function search(){
 	
 	$MAIN=$tpl->format_search_protocol($_GET["search"]);
 	
-	$line=base64_encode(serialize($MAIN));
-	$sock->getFrameWork("itchart.php?syslog=$line");
-	$filename=PROGRESS_DIR."/itchart.syslog";
+	$data=$tpl->logfile_search("itcharter",$MAIN);
 	$date_text=$tpl->_ENGINE_parse_body("{date}");
 	$events=$tpl->_ENGINE_parse_body("{events}");
 	$html[]="
@@ -86,9 +85,7 @@ function search(){
 	<tbody>
 ";
 	
-	$data=explode("\n",@file_get_contents($filename));
 	if(count($data)>3){$_SESSION["ITCHARTER_SEARCH"]=$_GET["search"];}
-	rsort($data);
 
 	
 	foreach ($data as $line){
@@ -105,8 +102,9 @@ function search(){
 		$FTime=date("Y-m-d H:i:s",$xtime);
 		$curDate=date("Y-m-d");
 		$FTime=trim(str_replace($curDate, "", $FTime));
-		$pid=$re[4];
-		$line=$re[5];
+		// Pentest 2026-11-04 : ligne de journal itcharter (donnee externe) affiche sans encodage (XSS stockee).
+		$pid=req_html($re[4]);
+		$line=req_html($re[5]);
 
         $line=str_replace(". ",".<br>",$line);
 

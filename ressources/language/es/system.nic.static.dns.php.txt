@@ -1,8 +1,8 @@
-<add_nameserver>Add a name server</add_nameserver>
+<add_nameserver>A&#241;adir un servidor de nombres</add_nameserver>
 <add_nameserver_text>Indique la direcci%C3%B3n IP o el nombre de host de su servidor DNS</add_nameserver_text>
-<add_search_domains>Add a search domain</add_search_domains>
-<add_search_domain_text>Give a domain name</add_search_domain_text>
-<nic_dns_search>Search list for host-name lookup</nic_dns_search>
+<add_search_domains>A&#241;adir un dominio de b&#250;squeda</add_search_domains>
+<add_search_domain_text>Indique un nombre de dominio</add_search_domain_text>
+<nic_dns_search>Lista de b&#250;squeda para la resoluci&#243;n de nombres de host</nic_dns_search>
 <nic_dns_search_text>La lista de b%C3%BAsqueda se determina normalmente a partir del nombre del dominio local; por defecto, s%C3%B3lo contiene el nombre del dominio local[br] Esto puede cambiarse enumerando la ruta de b%C3%BAsqueda del dominio deseado[br].
 Si se refiere a otro servidor s%C3%B3lo por su nombre sin a%C3%B1adir el dominio, el DNS de su cliente a%C3%B1adir%C3¡ el nombre del servidor
 a cada dominio de la lista y har%C3¡ una b%C3%BAsqueda DNS en cada uno de ellos para obtener la direcci%C3%B3n IP del servidor remoto%u2019.[br]

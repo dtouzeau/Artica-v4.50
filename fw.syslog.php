@@ -7,7 +7,11 @@ $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 include_once("ressources/class.resolv.conf.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
-if(isset($_GET["form"])){form_search();exit;}
+if(isset($_GET["form"])){tabs();exit;}
+if(isset($_GET["form-search"])){form_search();exit;}
+if(isset($_GET["top"])){top();exit;}
+if(isset($_GET["banned"])){banned();exit;}
+if(isset($_GET["unban-js"])){unban_js();exit;}
 if(isset($_GET["zoom-js"])){zoomjs();exit;}
 if(isset($_GET["zoom-popup"])){zoom_popup();exit;}
 page();
@@ -34,8 +38,9 @@ function zoom_popup(){
         $html[]=$tpl->div_error($resolv->mysql_error);
     }
 
-    $html[]="<H1>$ip</H1>";
-    $html[]="<H2>$hostname</H2>";
+    // Pentest 2026-11-04 : nom inverse (PTR choisi par le proprietaire de l'IP : donnee externe) affiche sans encodage (XSS stockee).
+    $html[]="<H1>".req_html($ip)."</H1>";
+    $html[]="<H2>".req_html($hostname)."</H2>";
 
     echo $tpl->_ENGINE_parse_body($html);
 
@@ -60,6 +65,123 @@ function page(): bool{
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
+// Deux onglets : le journal (recherche) et le classement « Top ».
+function tabs(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $array["{events}"]="$page?form-search=yes";
+    $array["{fw_events_top}"]="$page?top=24";
+    $array["{fw_banned}"]="$page?banned=yes";
+    echo $tpl->tabs_default($array);
+}
+
+// Onglet « Bannis » : sources arrêtées par le blocage automatique (GET
+// /firewall/autoban), avec déblocage (DELETE /firewall/autoban/{ip}).
+function banned(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/autoban"),true);
+    $html=array();
+    $html[]="<div id='fw-banned' style='margin-top:10px'>";
+    if(!is_array($json) || empty($json["Status"])){
+        $html[]=$tpl->div_error("{fw_api_no_answer}");
+        $html[]="</div>";
+        echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+        return;
+    }
+    $rows=is_array($json["Data"] ?? null)?$json["Data"]:array();
+    $html[]="<table class='table table-striped'><thead><tr><th>{ipaddr}</th><th>{country}</th><th>{hostname}</th><th>{fw_ban_remaining}</th><th>&nbsp;</th></tr></thead><tbody>";
+    if(count($rows)==0){$html[]="<tr><td colspan='5'>{no_data}</td></tr>";}
+    foreach($rows as $r){
+        $ip=(string)($r["ip"] ?? "");
+        if(filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)===false){continue;}
+        $rem=intval($r["remaining"] ?? 0);
+        $remTxt=$rem>=3600?sprintf("%dh%02d",intdiv($rem,3600),intdiv($rem%3600,60)):sprintf("%d min",max(1,intdiv($rem,60)));
+        $country=req_html((string)($r["country"] ?? ""));
+        $rdns=req_html((string)($r["rdns"] ?? ""));
+        $btn=$tpl->button_autnonome("{fw_unban}","Loadjs('$page?unban-js=".urlencode($ip)."')",ico_unlock,"AsFirewallManager",0,"btn-warning");
+        $html[]="<tr><td><strong>$ip</strong></td><td>$country</td><td>$rdns</td><td>$remTxt</td><td style='width:1%'>$btn</td></tr>";
+    }
+    $html[]="</tbody></table></div>";
+    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+}
+
+function unban_js(){
+    header("content-type: application/x-javascript");
+    $page=CurrentPageName();
+    $ip=(string)($_GET["unban-js"] ?? "");
+    if(filter_var($ip,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)===false){echo "alert('invalid address');";return;}
+    $resp=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API_DELETE("/firewall/autoban/".rawurlencode($ip)),true);
+    if(!is_array($resp) || empty($resp["Status"])){
+        $err=req_js((string)($resp["Error"] ?? "API"));
+        echo "alert('$err');";
+        return;
+    }
+    admin_tracks("Unbanned $ip from the firewall automatic blocking");
+    echo "LoadAjax('fw-banned','$page?banned=yes');";
+}
+
+// Classement des règles, sources et ports sur une période (GET
+// /firewall/events/top, calculé par le daemon depuis firewall.log).
+function top(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $hours=intval($_GET["top"]);
+    if(!in_array($hours,array(1,24,168))){$hours=24;}
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/events/top?hours=$hours"),true);
+    if(!is_array($json) || empty($json["Status"])){
+        echo $tpl->div_error("{error}<hr>".req_html((string)($json["Error"] ?? "API")));
+        return;
+    }
+    $d=$json["Data"];
+    $html=array();
+    $html[]="<div id='fw-events-top'>";
+    $btns=array();
+    foreach(array(1=>"1h",24=>"24h",168=>"{last_7_days}") as $h=>$label){
+        $cls=$h==$hours?"btn-primary":"btn-default";
+        $btns[]="<button class='btn $cls btn-sm' onclick=\"LoadAjax('fw-events-top','$page?top=$h');\">$label</button>";
+    }
+    $html[]="<div style='margin:10px 0'>".implode("&nbsp;",$btns)."&nbsp;&nbsp;"
+        .intval($d["events"] ?? 0)." {events}, ".intval($d["rejected"] ?? 0)." {rejected}</div>";
+    $html[]="<div class='row'>";
+    $html[]=top_table($tpl,"{fw_top_rules}",$d["rules"] ?? array(),"rule");
+    $html[]=top_table($tpl,"{fw_top_sources}",$d["sources"] ?? array(),"src");
+    $html[]=top_table($tpl,"{fw_top_ports}",$d["ports"] ?? array(),"port");
+    $html[]="</div></div>";
+    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+}
+
+function top_table($tpl,$title,$rows,$kind):string{
+    $h=array();
+    $h[]="<div class='col-md-4'><h3>$title</h3>";
+    $h[]="<table class='table table-striped'><tbody>";
+    if(!is_array($rows) || count($rows)==0){
+        $h[]="<tr><td>{no_data}</td></tr>";
+    }
+    foreach((is_array($rows)?$rows:array()) as $r){
+        $count=intval($r["count"] ?? 0);
+        $key=req_html((string)($r["key"] ?? ""));
+        if($kind=="rule"){
+            $action=($r["action"] ?? "")=="reject"
+                ?"<span class='label label-danger'>DENY</span>"
+                :"<span class='label label-info'>LOG</span>";
+            $id=intval($r["rule_id"] ?? 0);
+            $label=$id>0?req_html((string)($r["label"] ?? "")):"Default";
+            // Règle supprimée depuis : son nom n'existe plus, aucun lien.
+            if($id>0 && $label===""){$label="{deleted} (#$id)";}
+            elseif($id>0){$label=$tpl->td_href($label,null,"Loadjs('fw.rules.php?ruleid-js=$id')");}
+            $h[]="<tr><td style='width:1%'>$action</td><td>$label</td><td style='width:1%;text-align:right'><strong>$count</strong></td></tr>";
+            continue;
+        }
+        if($kind=="src"){
+            $key=$tpl->td_href($key,"","Loadjs('fw.modsecurity.threats.php?zoom-ip-js=$key')");
+        }
+        $h[]="<tr><td>$key</td><td style='width:1%;text-align:right'><strong>$count</strong></td></tr>";
+    }
+    $h[]="</tbody></table></div>";
+    return implode("\n",$h);
+}
+
 function form_search():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -166,17 +288,52 @@ function search(){
 		$ruleid=0;
 		$rulename=null;
 		$ACTION=null;$OUT=null;
+		// Champs du noyau propres à CETTE ligne : sans remise à zéro, un ICMP
+		// (sans SPT/DPT) affichait les ports de la ligne précédente.
+		$KEYS=array();
         $ico="";
 		$FF=false;
-		if(!preg_match("#^(.+?)\s+([0-9])+\s+([0-9:]+)\s+.+?kernel.+?FIREHOL:(.+)#", $line,$re)){continue;}
+		// Préfixes posés par le pare-feu Go : « ARTICA:REJECT: » (rejet, politique
+		// ou action Drop) et « ARTICA:LOG:<id>: » (action « Log only »). Seules
+		// les lignes FIREHOL: étaient lues : ces événements n'apparaissaient pas.
+		$artica=null;
+		if(preg_match("#^(.+?)\s+([0-9]+)\s+([0-9:]+)\s+.+?kernel.+?ARTICA:(REJECT|LOG|BAN):(?:([0-9]+):)?(.*)#", $line,$ra)){
+			$artica=$ra;
+			$re=array($ra[0],$ra[1],$ra[2],$ra[3],$ra[6]);
+		}elseif(!preg_match("#^(.+?)\s+([0-9]+)\s+([0-9:]+)\s+.+?kernel.+?FIREHOL:(.+)#", $line,$re)){continue;}
 		
 		$date="$re[1] $re[2] ".date('Y')." $re[3]";
 		$xtime=strtotime($date);
 		$FTime=date("Y-m-d H:i:s",$xtime);
 		$curDate=date("Y-m-d");
 		$FTime=trim(str_replace($curDate, "", $FTime));
-		$line=$re[4];
-		
+		// Pentest 2026-11-04 : ligne "kernel" du journal (tout processus local peut en ecrire une : donnee externe)
+		// affichee sans encodage (XSS stockee). Encodee avant le decoupage : les marqueurs cherches ensuite
+		// (PASS-, DENY-, SRC=...) ne contiennent ni < > & ni quote.
+		$line=req_html($re[4]);
+		$line=preg_replace('#^(TRANSIT|LIMIT):#','',$line);
+
+		if($artica!==null){
+			$aid=intval($artica[5] ?? 0);
+			if($artica[4]=="REJECT"){
+				$ACTION="<span class='label label-danger'>&nbsp;&nbsp;&nbsp;&nbsp;DENY&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+				$rulename="Default";
+				// ARTICA:REJECT:TRANSIT: (politique du trafic traversant),
+				// ARTICA:REJECT:<id>:LIMIT: (limite de connexions d'une règle).
+				if(strpos((string)$artica[6],"TRANSIT:")===0){$rulename=$tpl->_ENGINE_parse_body("{fw_transit_policy}");}
+				if(strpos((string)$artica[6],"LIMIT:")===0){$ACTION="<span class='label label-warning'>&nbsp;&nbsp;&nbsp;&nbsp;LIMIT&nbsp;&nbsp;&nbsp;&nbsp;</span>";}
+			}elseif($artica[4]=="BAN"){
+				// Blocage automatique : source bannie à cet instant.
+				$ACTION="<span class='label label-danger'>&nbsp;&nbsp;&nbsp;&nbsp;BAN&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+				$rulename=$tpl->_ENGINE_parse_body("{fw_banned_auto}");
+			}else{
+				$ACTION="<span class='label label-info'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;LOG&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>";
+			}
+			if($aid>0){
+				$rulename=isset($RULESNAMES[$aid])?$tpl->td_href($RULESNAMES[$aid],null,"Loadjs('fw.rules.php?ruleid-js=$aid')"):"Unknown ($aid)";
+			}
+		}
+
 		if(preg_match("#SYN FLOOD:(.+)#",$line,$re)){
 			$rulename="SYN FLOOD";
 			$ACTION="<span class='label label-warning'>FLOOD</span>";
@@ -267,7 +424,7 @@ function search(){
                 $rulename = $RULESNAMES[$re[1]];
                 if($re[1]>0) {
                     $rulename = $tpl->td_href($rulename, null,
-                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function={$_GET["function"]}')");
+                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function=".req_url($_GET["function"] ?? "")."')");
                 }
             }
         }
@@ -283,7 +440,7 @@ function search(){
                 $rulename = $RULESNAMES[$re[1]];
                 if($re[1]>0) {
                     $rulename = $tpl->td_href($rulename, null,
-                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function={$_GET["function"]}')");
+                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function=".req_url($_GET["function"] ?? "")."')");
                 }
             }
 
@@ -299,7 +456,7 @@ function search(){
                 $rulename = $RULESNAMES[$re[1]];
                 if($re[1]>0) {
                     $rulename = $tpl->td_href($rulename, null,
-                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function={$_GET["function"]}')");
+                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function=".req_url($_GET["function"] ?? "")."')");
                 }
             }
 
@@ -330,7 +487,7 @@ function search(){
                 $rulename = $RULESNAMES[$re[1]];
                 if($re[1]>0) {
                     $rulename = $tpl->td_href($rulename, null,
-                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function={$_GET["function"]}')");
+                        "Loadjs('fw.rules.php?ruleid-js={$re[1]}}&function=".req_url($_GET["function"] ?? "")."')");
                 }
             }
 
@@ -486,7 +643,7 @@ function search(){
         if(isset($INTERFACES[$KEYS["OUT"]])) {
             $OUT = $INTERFACES[$KEYS["OUT"]];
         }
-		$IN=$INTERFACES[$KEYS["IN"]];
+		$IN=$INTERFACES[$KEYS["IN"]] ?? null;
 		$MAC_DEST=null;
 		$MAC_SRC=null;
 		if(isset($KEYS["MAC"])){
@@ -510,11 +667,13 @@ function search(){
         }
         if(strlen($modtools->hostname)>3){
             if(!preg_match("#^[0-9\.]+$#",$modtools->hostname)) {
-                $hostname = "&nbsp;<small>(" . $modtools->hostname . ")</small>";
+                $hostname = "&nbsp;<small>(" . req_html($modtools->hostname) . ")</small>";
             }
         }
 
-        $src=$tpl->td_href($KEYS["SRC"],"","Loadjs('fw.modsecurity.threats.php?zoom-ip-js={$KEYS["SRC"]}')");
+        // $KEYS vient de $line deja encodee : texte decode pour td_href (qui encode), URL encodee pour le JS.
+        $SRC_RAW=html_entity_decode((string)($KEYS["SRC"] ?? ""),ENT_QUOTES,"ISO-8859-1");
+        $src=$tpl->td_href($SRC_RAW,"","Loadjs('fw.modsecurity.threats.php?zoom-ip-js=".req_url($SRC_RAW)."')");
 
 
 
@@ -525,10 +684,10 @@ function search(){
 				<td style='width:1%' nowrap>$rulename</td>
 				<td style='width:1%' nowrap>$IN</td>
                 <td>$ico$flag$src$MAC_SRC$hostname</td>  
-                <td style='width:1%' nowrap>{$KEYS["SPT"]}</td>                  
+                <td style='width:1%' nowrap>".($KEYS["SPT"] ?? "-")."</td>                  
                 <td style='width:1%' nowrap>$OUT</td>
                 <td style='width:1%' nowrap>{$KEYS["DST"]}$MAC_DEST</td>
-                <td style='text-align: right;width:1%' nowrap><i class='$fleche'></i>&nbsp;<strong style='font-size:14px'>{$KEYS["DPT"]}</strong></td>    
+                <td style='text-align: right;width:1%' nowrap><i class='$fleche'></i>&nbsp;<strong style='font-size:14px'>".($KEYS["DPT"] ?? "-")."</strong></td>    
                 </tr>";
 		
 	}

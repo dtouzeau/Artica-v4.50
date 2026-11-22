@@ -59,7 +59,6 @@ function get_provider_types():array{
             "linode" => "Linode",
             "vultr" => "Vultr",
             "gcloud" => "Google Cloud DNS",
-            "azure" => "Azure DNS",
             "dnsimple" => "DNSimple",
             "ns1" => "NS1",
             "bookmyname" => "BookMyName",
@@ -126,13 +125,6 @@ function get_provider_fields(string $providerType):array{
         "gcloud" => array(
             "project" => array("label" => "Project ID", "type" => "text", "required" => true),
             "service_account_json" => array("label" => "Service Account JSON", "type" => "textarea", "required" => true)
-        ),
-        "azure" => array(
-            "client_id" => array("label" => "Client ID", "type" => "text", "required" => true),
-            "client_secret" => array("label" => "Client Secret", "type" => "password", "required" => true),
-            "subscription_id" => array("label" => "Subscription ID", "type" => "text", "required" => true),
-            "tenant_id" => array("label" => "Tenant ID", "type" => "text", "required" => true),
-            "resource_group" => array("label" => "Resource Group", "type" => "text", "required" => true)
         ),
         "dnsimple" => array(
             "api_token" => array("label" => "API Token", "type" => "password", "required" => true)
@@ -219,7 +211,7 @@ function providers_list():bool{
     $providerTypes = get_provider_types();
 
     $html = array();
-    $html[] = "<table class='table table-bordered table-striped'>";
+    $html[] = "<table class='table table-stripped'>";
     $html[] = "<thead><tr>";
     $html[] = "<th>{name}</th>";
     $html[] = "<th></th>";
@@ -645,7 +637,7 @@ function provider_certificates():bool{
     }
 
     $html = array();
-    $html[] = "<table class='table table-bordered table-striped'>";
+    $html[] = "<table class='table table-stripped'>";
     $html[] = "<thead><tr>";
     $html[] = "<th>{domain}</th>";
     $html[] = "<th>{email}</th>";
@@ -669,8 +661,20 @@ function provider_certificates():bool{
         $email = isset($cert->email) ? $cert->email : "";
         $expiryDate = isset($cert->expiry_date) ? $cert->expiry_date : "";
 
+        // Show the full SAN set when the certificate covers more than the CN.
+        $domainCell = htmlspecialchars($commonName);
+        if(isset($cert->domains) && is_array($cert->domains) && count($cert->domains) > 1){
+            $sans = array();
+            foreach($cert->domains as $d){
+                if((string)$d !== "" && $d !== $commonName){ $sans[] = htmlspecialchars((string)$d); }
+            }
+            if(count($sans) > 0){
+                $domainCell .= "<br><small class='text-muted'>SAN: ".implode(", ", $sans)."</small>";
+            }
+        }
+
         $html[] = "<tr>";
-        $html[] = "<td>".htmlspecialchars($commonName)."</td>";
+        $html[] = "<td>".$domainCell."</td>";
         $html[] = "<td>".htmlspecialchars($email)."</td>";
         $html[] = "<td>".htmlspecialchars($expiryDate)."</td>";
         $html[] = "<td><span class='label $daysClass'>$daysLeft {days}</span></td>";

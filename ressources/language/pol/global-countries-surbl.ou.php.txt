@@ -1,19 +1,16 @@
-<action_100_pourc>Action when score up to 100%</action_100_pourc>
-<rbl_servers>SURBL servers</rbl_servers>
-<surbl_explain>
-A Universal Resource Identifier (URI) is a standard means of addressing resources on the Web.[br]
-Common URIs such as Uniform Resource Locators (URLs) and Uniform Resource Names (URNs) are used to identify the destination of hypertext links as well as the sources of images,
-information and other objects in a Web Page. [br]
-URLs are most generally used in web sites but can also be included as part of an email message body e.g. to attract new visitors to a web site.[br]
+<action_100_pourc>Akcja, gdy wynik osi&#261;gnie 100%</action_100_pourc>
+<rbl_servers>Serwery SURBL</rbl_servers>
+<surbl_explain>Universal Resource Identifier (URI) to standardowy spos&#243;b adresowania zasob&#243;w w sieci.[br]
+Powszechne URI, takie jak Uniform Resource Locators (URL) i Uniform Resource Names (URN), s&#261; u&#380;ywane do identyfikacji miejsca docelowego &#322;&#261;czy hipertekstowych, a tak&#380;e &#378;r&#243;de&#322; obraz&#243;w,
+informacji i innych obiekt&#243;w na stronie Web. [br]
+URL s&#261; zazwyczaj u&#380;ywane w witrynach internetowych, ale mog&#261; by&#263; r&#243;wnie&#380; zawarte jako cz&#281;&#347;&#263; tre&#347;ci wiadomo&#347;ci e-mail, np. w celu przyci&#261;gni&#281;cia nowych odwiedzaj&#261;cych do witryny.[br]
 
-SURBLs differ from most other RBLs in that they are used to detect spam based on message body URIs.[br]
-Unlike most other RBLs, SURBLs are not used to block spam senders.[br] Instead they allow you to block messages that have spam hosts (e.g. web servers, domains, web sites) which are mentioned in message bodies. [br]
-This module use pourcent method to judge if a mail is sended by a black web or spamer computer.[br]
-In the table below, you must reach 1OO% with a list of surbl servers database.[br]to increase the detection rate, you may exceed 100% of results[br]For example you can set[br]
+SURBL r&#243;&#380;ni&#261; si&#281; od wi&#281;kszo&#347;ci innych RBL tym, &#380;e s&#261; u&#380;ywane do wykrywania spamu na podstawie URI w tre&#347;ci wiadomo&#347;ci.[br]
+W przeciwie&#324;stwie do wi&#281;kszo&#347;ci innych RBL, SURBL nie s&#261; u&#380;ywane do blokowania nadawc&#243;w spamu.[br] Zamiast tego pozwalaj&#261; blokowa&#263; wiadomo&#347;ci zawieraj&#261;ce hosty spamu (np. serwery web, domeny, witryny) wymienione w tre&#347;ci wiadomo&#347;ci. [br]
+Ten modu&#322; u&#380;ywa metody procentowej do oceny, czy wiadomo&#347;&#263; jest wysy&#322;ana przez czarny web lub komputer spamera.[br]
+W poni&#380;szej tabeli musisz osi&#261;gn&#261;&#263; 100% z list&#261; baz danych serwer&#243;w surbl.[br]aby zwi&#281;kszy&#263; wska&#378;nik wykrywania, mo&#380;esz przekroczy&#263; 100% wynik&#243;w[br]Na przyk&#322;ad mo&#380;esz ustawi&#263;[br]
 [ul]
-[li]rhsbl.ahbl.org as 20%[/li]
-[li]multi.surbl.org as 30%[/li]
-[li]adult.rhs.mailpolice.com as 70%[/li]
-[/ul][br]
-
-</surbl_explain>
+[li]rhsbl.ahbl.org jako 20%[/li]
+[li]multi.surbl.org jako 30%[/li]
+[li]adult.rhs.mailpolice.com jako 70%[/li]
+[/ul][br]</surbl_explain>

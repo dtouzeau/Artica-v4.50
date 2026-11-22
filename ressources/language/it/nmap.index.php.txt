@@ -1,19 +1,19 @@
-<about>Nmap is a security scanner originally written by Gordon Lyon (Fyodor).[br]
-It may be used to discover computers and services on a computer network,
-thus creating a "map" of the network.[br]
-Just like many simple port scanners, Nmap is capable of discovering passive services on a network despite
-the fact that such services aren't advertising themselves with a service discovery protocol.[br]
-In addition Nmap may be able to determine various details about the remote computers.[br]
-These include operating system, device type, uptime, software product used to run a service,
-exact version number of that product, presence of some firewall techniques and, on a local area network, even vendor of the remote network card.</about>
-<add_network>Add a new network to scan</add_network>
-<add_network_text>add IP range to scan in order to discover new remote computers</add_network_text>
-<ip>TCP/IP Address</ip>
-<mask>Network mask</mask>
-<networks_list>Networks list</networks_list>
-<NmapRotateMinutes>Pooling time (in minutes)</NmapRotateMinutes>
-<NmapScanEnabled>Enable scanning your network</NmapScanEnabled>
-<nmap_logs>NMAP events</nmap_logs>
-<nmap_logs_text>See events ordered by artica</nmap_logs_text>
-<perform_scan>Perform scan</perform_scan>
-<perform_scan_text>Perform a scan now and broacast your networks to discover nodes</perform_scan_text>
+<about>Nmap &#232; uno scanner di sicurezza scritto originariamente da Gordon Lyon (Fyodor).[br]
+Pu&#242; essere utilizzato per scoprire computer e servizi in una rete di computer,
+creando cos&#236; una &quot;mappa&quot; della rete.[br]
+Proprio come molti semplici scanner di porte, Nmap &#232; in grado di scoprire i servizi passivi in una rete nonostante
+il fatto che tali servizi non si annuncino con un protocollo di rilevamento dei servizi.[br]
+Inoltre Nmap pu&#242; determinare vari dettagli sui computer remoti.[br]
+Questi includono il sistema operativo, il tipo di dispositivo, l'uptime, il prodotto software utilizzato per eseguire un servizio,
+il numero di versione esatto di quel prodotto, la presenza di alcune tecniche di firewall e, in una rete locale, persino il produttore della scheda di rete remota.</about>
+<add_network>Aggiungi una nuova rete da scansionare</add_network>
+<add_network_text>Aggiungi un intervallo di IP da scansionare per scoprire nuovi computer remoti</add_network_text>
+<ip>Indirizzo TCP/IP</ip>
+<mask>Maschera di rete</mask>
+<networks_list>Elenco delle reti</networks_list>
+<NmapRotateMinutes>Tempo di polling (in minuti)</NmapRotateMinutes>
+<NmapScanEnabled>Abilita la scansione della tua rete</NmapScanEnabled>
+<nmap_logs>Eventi NMAP</nmap_logs>
+<nmap_logs_text>Visualizza gli eventi ordinati da artica</nmap_logs_text>
+<perform_scan>Esegui scansione</perform_scan>
+<perform_scan_text>Esegui una scansione ora e trasmetti nelle tue reti per scoprire i nodi</perform_scan_text>

@@ -1,14 +1,14 @@
-<artica_confs>Artica files parameters</artica_confs>
+<artica_confs>Par&#225;metros de archivos de Artica</artica_confs>
 <artica_confs_explain>Todas las copias de seguridad y configuraciones de los archivos se almacenan en /etc/artica-postfix</artica_confs_explain>
-<backup_container>Build Backup container each</backup_container>
-<CYRUS_ADD_RESOURCES>Add a storage resource</CYRUS_ADD_RESOURCES>
-<CYRUS_ADD_RESOURCES_TEXT>Browse Auto-mount center and select a connected resource</CYRUS_ADD_RESOURCES_TEXT>
-<CYR_BACKUP_NOW>The backup order has sent to framework, it will be executed in background mode, check logs in few times</CYR_BACKUP_NOW>
-<databases_backup_explain>Backup all databases systems include Mysql Databases and LDAP database</databases_backup_explain>
-<GENERIC_BACKUP>Backup your server datas</GENERIC_BACKUP>
-<GENERIC_BACKUP_TEXT>Schedule a backup using the Automount control center</GENERIC_BACKUP_TEXT>
-<mailboxes_backup_explain>Backup all your mailboxes datas files to the target source</mailboxes_backup_explain>
+<backup_container>Crear contenedor de copia de seguridad cada</backup_container>
+<CYRUS_ADD_RESOURCES>A&#241;adir un recurso de almacenamiento</CYRUS_ADD_RESOURCES>
+<CYRUS_ADD_RESOURCES_TEXT>Explore el centro de Auto-montaje y seleccione un recurso conectado</CYRUS_ADD_RESOURCES_TEXT>
+<CYR_BACKUP_NOW>La orden de copia de seguridad se ha enviado al framework, se ejecutar&#225; en modo de fondo, consulte los registros en breve</CYR_BACKUP_NOW>
+<databases_backup_explain>Realice una copia de seguridad de todos los sistemas de bases de datos, incluidas las bases de datos Mysql y la base de datos LDAP</databases_backup_explain>
+<GENERIC_BACKUP>Haga una copia de seguridad de los datos de su servidor</GENERIC_BACKUP>
+<GENERIC_BACKUP_TEXT>Programe una copia de seguridad usando el centro de control Automount</GENERIC_BACKUP_TEXT>
+<mailboxes_backup_explain>Realice una copia de seguridad de todos los archivos de datos de sus buzones en la fuente de destino</mailboxes_backup_explain>
 <max_backup_container>Contenedores m%C3¡ximos</max_backup_container>
-<RestoreFromRsyncPathNow>Restore from resource now</RestoreFromRsyncPathNow>
-<RestoreFromRsyncPath_warn>Notice: All current datas on this server will be overrided by the backup container.[br]be sure you want to perform this operation on this server</RestoreFromRsyncPath_warn>
-<STOP_SERVICES_BACKUP_EXPLAIN>This will stop all necessary services before perform backup</STOP_SERVICES_BACKUP_EXPLAIN>
+<RestoreFromRsyncPathNow>Restaurar desde el recurso ahora</RestoreFromRsyncPathNow>
+<RestoreFromRsyncPath_warn>Aviso: Todos los datos actuales de este servidor ser&#225;n sobrescritos por el contenedor de copia de seguridad.[br]aseg&#250;rese de que desea realizar esta operaci&#243;n en este servidor</RestoreFromRsyncPath_warn>
+<STOP_SERVICES_BACKUP_EXPLAIN>Esto detendr&#225; todos los servicios necesarios antes de realizar la copia de seguridad</STOP_SERVICES_BACKUP_EXPLAIN>

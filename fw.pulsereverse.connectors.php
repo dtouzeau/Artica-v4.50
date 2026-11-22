@@ -54,6 +54,8 @@ function pulse_js():bool{
     $GlobalStatus=FrontendStatus();
 
     foreach ($list as $ID) {
+        // Pentest 2026-11-04 : ID (parametre pulse-js) etait concatene dans la requete.
+        $ID=intval($ID);
         $ligne=$q->mysqli_fetch_array("SELECT * FROM connectors WHERE ID=$ID");
         $td_backendname=base64_encode(td_backendname($ligne,$GlobalStatus));
         $td_frontendname=base64_encode(td_frontendname($ligne));

@@ -1,6 +1,12 @@
 <?php
+// Service Pack 9
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.ip2host.inc");
+// INCONDITIONNEL: awc_table_style() vient de la. Place dans le bootstrap
+// conditionnel ci-dessus, l'include ne s'executerait jamais (class.sockets.inc
+// est deja chargee par class.template-admin.inc) et la page mourrait sur
+// "Call to undefined function awc_table_style()" -- une roue qui tourne sans fin.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["query"])){query();exit;}
@@ -35,6 +41,7 @@ function query_popup(){
     $results=$q->QUERY_SQL("SELECT zdate FROM statscom_days GROUP BY zdate ORDER BY zdate DESC");
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
+    $DATES=array();
     $DATES[date("Y-m-d")]=$tpl->time_to_date(time());
     $DATES[date("Y-m-d",strtotime( '-1 days' ))]=$tpl->time_to_date(strtotime( '-1 days' ));
 
@@ -46,6 +53,7 @@ function query_popup(){
     $results=$q->QUERY_SQL("SELECT username,ipaddr,mac FROM statscom_users GROUP BY username,ipaddr,mac ORDER BY username,ipaddr,mac");
     if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
 
+    $ARRAY_MAC=array();$ARRAY_USER=array();$ARRAY_IP=array();
     while ($ligne = pg_fetch_assoc($results)) {
         $username=$ligne["username"];
         $ipaddr=$ligne["ipaddr"];
@@ -64,6 +72,7 @@ function query_popup(){
 
 
 
+    $TIMES=array();$MINS=array();
     for($i=0;$i<24;$i++){
         $h=$i;
         if($i<10){$h="0{$i}";}
@@ -76,6 +85,7 @@ function query_popup(){
         $h="$h";
         $MINS[$h]=$h;
     }
+    $form=array();
     $form[]=$tpl->field_section("{from_date}");
     $form[]=$tpl->field_array_hash($DATES,"FROM","nonull:{from_date}",$_SESSION["STATSCOM_DAY"]["FROM"]);
 
@@ -126,368 +136,567 @@ function query_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
 
+    // Le formulaire ne porte que les dates: USER / IP / MAC / SIZE ne sont
+    // postes par aucun champ. Les lire sans garde emet un warning PHP 8 a
+    // chaque enregistrement et ecrase les valeurs deja en session par null.
     $_SESSION["STATSCOM_DAY"]["FROM"]=$_POST["FROM"];
     $_SESSION["STATSCOM_DAY"]["TO"]=$_POST["TO"];
     $_SESSION["STATSCOM_DAY"]["FROMH"]=$_POST["FROM_HOUR"].":".$_POST["FROM_MIN"];
     $_SESSION["STATSCOM_DAY"]["TOH"]=$_POST["TO_HOUR"].":".$_POST["TO_MIN"];
-    $_SESSION["STATSCOM_DAY"]["USER"]=$_POST["USER"];
-    $_SESSION["STATSCOM_DAY"]["IP"]=$_POST["IP"];
-    $_SESSION["STATSCOM_DAY"]["MAC"]=$_POST["MAC"];
-    $_SESSION["STATSCOM_DAY"]["SIZE"]=$_POST["SIZE"];
+    if(isset($_POST["USER"])){$_SESSION["STATSCOM_DAY"]["USER"]=$_POST["USER"];}
+    if(isset($_POST["IP"])){$_SESSION["STATSCOM_DAY"]["IP"]=$_POST["IP"];}
+    if(isset($_POST["MAC"])){$_SESSION["STATSCOM_DAY"]["MAC"]=$_POST["MAC"];}
+    if(isset($_POST["SIZE"])){$_SESSION["STATSCOM_DAY"]["SIZE"]=$_POST["SIZE"];}
     BUILD_DEFAULT_DATA();
 
+}
+
+/**
+ * Palette ordonnee des graphiques.
+ *
+ * Quinze parts ne tiennent pas dans une legende Chart.js: la legende de chaque
+ * camembert est le TABLEAU pose a cote. Le graphique et le tableau parcourent
+ * les memes donnees dans le meme ordre, si bien que l'INDEX fait la
+ * correspondance entre une part et sa ligne -- d'ou une palette fixe et
+ * ordonnee, jamais une couleur tiree au hasard.
+ */
+function stb_palette():array{
+    return array("#006a62","#26a69a","#1c84c6","#865300","#ba1a1a","#7e57c2",
+                 "#00838f","#ef6c00","#2e7d32","#ad1457","#4527a0","#00695c",
+                 "#c62828","#5d4037","#37474f");
+}
+
+function stb_color($i):string{
+    $p=stb_palette();
+    return $p[intval($i) % count($p)];
+}
+
+/**
+ * Feuille de style de la page.
+ *
+ * Emise PAR l'appelant, concatenee AUTOUR de _ENGINE_parse_body() et jamais
+ * dedans: la regex #{(.+?)}# du moteur lit chaque corps de regle CSS comme un
+ * {jeton} et declenche une recherche memcached par regle.
+ */
+function stb_css():string{
+    if(isset($GLOBALS["STB_CSS_DONE"])){return "";}
+    $GLOBALS["STB_CSS_DONE"]=true;
+    return "<style>
+.stb-card{background:#ffffff;border:1px solid #bcc9c6;border-radius:12px;padding:16px;margin:12px 0}
+.stb-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.stb-ico{width:34px;height:34px;border-radius:8px;background:rgba(0,106,98,.1);color:#006a62;
+ display:inline-flex;align-items:center;justify-content:center;font-size:15px;flex:0 0 auto}
+.stb-title{font-size:14px;font-weight:700;line-height:20px;color:#111d23}
+.stb-sub{font-size:12px;line-height:16px;color:#6d7a77;margin-top:2px}
+.stb-grid{display:grid;grid-template-columns:minmax(260px,360px) minmax(280px,620px);gap:24px;
+ justify-content:center;align-items:start}
+@media(max-width:1100px){.stb-grid{grid-template-columns:minmax(0,1fr)}}
+.stb-cv{position:relative;height:340px;width:100%}
+.stb-cv-wide{position:relative;height:300px;width:100%}
+.stb-wait{display:flex;align-items:center;justify-content:center;height:100%;min-height:120px;
+ color:#6d7a77;font-size:13px}
+.stb-sw{display:inline-block;width:4px;height:14px;border-radius:2px;vertical-align:middle;margin-right:8px}
+.stb-lnk{color:#111d23;text-decoration:none}
+.stb-lnk:hover{color:#006a62;text-decoration:underline}
+.stb-meta{font-size:11px;line-height:15px;color:#6d7a77;margin-top:2px}
+.stb-meta a{color:#6d7a77;text-decoration:none}
+.stb-meta a:hover{color:#006a62;text-decoration:underline}
+</style>";
+}
+
+/**
+ * Identifiant de div recu en parametre, ramene a [A-Za-z0-9_-].
+ *
+ * Il est interpole dans du JavaScript executable (getElementById, cle de
+ * registre): une valeur brute venue de $_GET y injecterait du code dans la
+ * session de l'administrateur connecte.
+ */
+function stb_divid($key):string{
+    $v=isset($_GET[$key])?$_GET[$key]:"";
+    return preg_replace('/[^A-Za-z0-9_-]/','',(string)$v);
+}
+
+/**
+ * Periode courante, lue une seule fois.
+ *
+ * Les quatre fonctions de donnees recopiaient ces six lignes; deux copies
+ * divergentes auraient donne deux graphiques sur deux periodes differentes
+ * dans la meme page, sans rien d'anormal a l'ecran.
+ */
+function stb_period():array{
+    BUILD_DEFAULT_DATA();
+    $t1=strtotime("{$_SESSION["STATSCOM_DAY"]["FROM"]} {$_SESSION["STATSCOM_DAY"]["FROMH"]}:00");
+    $t2=strtotime("{$_SESSION["STATSCOM_DAY"]["TO"]} {$_SESSION["STATSCOM_DAY"]["TOH"]}:00");
+    return array(
+        "t1"=>$t1,
+        "t2"=>$t2,
+        "from"=>date("Y-m-d H:i:s",$t1),
+        "to"=>date("Y-m-d H:i:s",$t2),
+        "diffmin"=>intval($_SESSION["STATSCOM_DAY"]["DIFF_MIN"]));
+}
+
+/** Pas de la frise: le libelle affiche et l'expression SQL de regroupement. */
+function stb_timeline_unit($diffmin):array{
+    $hours=intval($diffmin)/60;
+    if($hours>48){ return array("LABEL"=>"{daily}", "SQL"=>"date_part('day', zdate)", "MODE"=>"day"); }
+    if($hours>6){  return array("LABEL"=>"{hourly}","SQL"=>"date_part('hour', zdate)","MODE"=>"hour"); }
+    return array("LABEL"=>"{each_10minutes}","SQL"=>"zdate","MODE"=>"raw");
+}
+
+/**
+ * Chargeur Chart.js d'une reponse Loadjs.
+ *
+ * Le shell charge deja Chart.js, mais un fragment n'a aucune garantie a ce
+ * sujet et le fichier est VERSIONNE (Chart.min.js n'existe pas). Les quatre
+ * graphiques partent en parallele: sans file d'attente, quatre <script>
+ * identiques seraient injectes en meme temps.
+ */
+function stb_chart_loader_js():string{
+    return "
+if(typeof window.StbChart!=='function'){
+ window.StbChart=function(cb){
+  if(typeof Chart!=='undefined'){cb();return;}
+  var q=window.__StbChartQ=window.__StbChartQ||[];
+  q.push(cb);
+  if(window.__StbChartLoading){return;}
+  window.__StbChartLoading=true;
+  var s=document.createElement('script');
+  s.src='angular/js/plugins/chartJs/Chart.min.4.5.1.js';
+  s.onload=function(){window.__StbChartLoading=false;var i;for(i=0;i<q.length;i++){try{q[i]();}catch(e){}}q.length=0;};
+  document.head.appendChild(s);
+ };
+}
+";
+}
+
+/**
+ * Injecte un <canvas> dans $divid et y construit le graphique.
+ *
+ * Le conteneur porte .stb-cv (position:relative + hauteur fixe) et le
+ * graphique est responsive avec maintainAspectRatio:false: c'est la seule
+ * combinaison qui survive a une creation dans un conteneur encore invisible,
+ * ou le canvas mesurerait une largeur nulle.
+ *
+ * L'instance precedente est detruite: un rafraichissement recree le canvas et
+ * laisserait sinon un objet Chart vivant accroche a un noeud detache.
+ */
+function stb_chart_render_js($divid,$config):string{
+    $js=array();
+    $js[]=stb_chart_loader_js();
+    $js[]="(function(){";
+    $js[]="var d=document.getElementById('$divid'); if(!d){return;}";
+    $js[]="d.innerHTML=\"<canvas id='$divid-cv'></canvas>\";";
+    $js[]="StbChart(function(){";
+    $js[]="var c=document.getElementById('$divid-cv'); if(!c){return;}";
+    $js[]="window.StbCharts=window.StbCharts||{};";
+    $js[]="if(window.StbCharts['$divid']){try{window.StbCharts['$divid'].destroy();}catch(e){}}";
+    $js[]="window.StbCharts['$divid']=new Chart(c,$config);";
+    $js[]="});";
+    $js[]="})();";
+    return @implode("\n",$js);
+}
+
+/** Message a la place du graphique quand la periode ne rend aucune ligne. */
+function stb_chart_empty_js($divid,$text):string{
+    $html=json_encode("<div class='stb-wait'>".$text."</div>");
+    return "(function(){var d=document.getElementById('$divid'); if(!d){return;} d.innerHTML=$html;})();";
+}
+
+/** Tableau JS de valeurs numeriques, formatees en PHP. */
+function stb_numbers_js(array $values):string{
+    $out=array();
+    foreach($values as $v){ $out[]=sprintf("%.2f",floatval($v)); }
+    return "[".@implode(",",$out)."]";
+}
+
+/** Chaine JS sure: les entites <, >, ', " et & sont echappees en \\uXXXX. */
+function stb_js(string $text):string{
+    return json_encode($text, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+}
+
+/** Tableau JS de chaines. */
+function stb_strings_js(array $values):string{
+    $out=array();
+    foreach($values as $v){ $out[]=stb_js((string)$v); }
+    return "[".@implode(",",$out)."]";
+}
+
+/** Configuration d'un anneau: une part par entree, couleur = index de la palette. */
+function stb_doughnut_config(array $labels,array $values,string $unit):string{
+    $colors=array();
+    $i=0;
+    foreach($labels as $ignored){ $colors[]=stb_color($i); $i++; }
+    $l=stb_strings_js(array_values($labels));
+    $v=stb_numbers_js(array_values($values));
+    $c=stb_strings_js($colors);
+    $u=stb_js($unit);
+    return "{type:'doughnut',"
+        ."data:{labels:$l,datasets:[{data:$v,backgroundColor:$c,borderColor:'#ffffff',borderWidth:2}]},"
+        ."options:{responsive:true,maintainAspectRatio:false,cutout:'55%',"
+        ."plugins:{legend:{display:false},"
+        ."tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.formattedValue+' '+$u;}}}}}}";
+}
+
+/**
+ * Configuration de la frise.
+ *
+ * Echelle x de CATEGORIES avec des libelles deja formates en PHP: aucun
+ * adaptateur de date n'est charge dans la console, si bien qu'une echelle
+ * type:'time' leve une erreur et ne dessine rien.
+ */
+function stb_line_config(array $labels,array $values,string $unit):string{
+    $l=stb_strings_js(array_values($labels));
+    $v=stb_numbers_js(array_values($values));
+    $u=stb_js($unit);
+    return "{type:'line',"
+        ."data:{labels:$l,datasets:[{data:$v,borderColor:'#006a62',"
+        ."backgroundColor:'rgba(0,106,98,.12)',borderWidth:2,fill:true,tension:.3,"
+        ."pointRadius:2,pointHoverRadius:4,pointBackgroundColor:'#006a62'}]},"
+        ."options:{responsive:true,maintainAspectRatio:false,"
+        ."interaction:{mode:'index',intersect:false},"
+        ."plugins:{legend:{display:false},"
+        ."tooltip:{callbacks:{label:function(c){return ' '+c.formattedValue+' '+$u;}}}},"
+        ."scales:{y:{beginAtZero:true,title:{display:true,text:$u},"
+        ."grid:{color:'rgba(188,201,198,.35)'}},"
+        ."x:{grid:{display:false},ticks:{autoSkip:true,maxRotation:0,maxTicksLimit:16}}}}}";
+}
+
+/**
+ * Tableau-legende d'un camembert (design awc-*).
+ *
+ * $rows: une entree par part, dans l'ORDRE du graphique --
+ * array("HTML"=>cellule de gauche deja construite, "VALUE"=>cellule de droite).
+ * La pastille de couleur est posee ici, a partir du meme index que la part.
+ */
+function stb_legend_table(string $headLabel,string $headValue,array $rows,string $footLeft,string $footRight):string{
+    $h=array();
+    $h[]="<div class='awc-card'><div class='awc-scroll'>";
+    $h[]="<table class='awc-tbl awc-tbl-compact'>";
+    $h[]="<thead><tr><th>$headLabel</th><th style='text-align:right'>$headValue</th></tr></thead>";
+    $h[]="<tbody>";
+    if(count($rows)==0){
+        $h[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $i=0;
+        foreach($rows as $row){
+            $color=stb_color($i);
+            $h[]="<tr>";
+            $h[]="<td><span class='stb-sw' style='background:$color'></span>".$row["HTML"]."</td>";
+            $h[]="<td class='awc-right awc-nowrap'>".$row["VALUE"]."</td>";
+            $h[]="</tr>";
+            $i++;
+        }
+    }
+    $h[]="</tbody></table></div>";
+    $h[]="<div class='awc-foot'><span>$footLeft</span><span><strong>$footRight</strong></span></div>";
+    $h[]="</div>";
+    return @implode("\n",$h);
+}
+
+/** Entete d'une carte de la page. */
+function stb_card_head(string $icon,string $title,string $subtitle):string{
+    $h=array();
+    $h[]="<div class='stb-head'>";
+    $h[]="<span class='stb-ico'><i class='$icon'></i></span>";
+    $h[]="<span><span class='stb-title'>$title</span><div class='stb-sub'>$subtitle</div></span>";
+    $h[]="</div>";
+    return @implode("\n",$h);
+}
+
+/** Carte pleine largeur de la frise. */
+function stb_card_timeline(string $divid,string $subtitle):string{
+    $h=array();
+    $h[]="<div class='stb-card'>";
+    $h[]=stb_card_head("fas fa-chart-area","{downloaded_flow} (MB)",$subtitle);
+    $h[]="<div id='$divid' class='stb-cv-wide'><div class='stb-wait'>{loading}</div></div>";
+    $h[]="</div>";
+    return @implode("\n",$h);
+}
+
+/** Carte « graphique + tableau-legende » d'un TOP. */
+function stb_card_top(string $icon,string $title,string $subtitle,string $chartDiv,string $tableDiv):string{
+    $h=array();
+    $h[]="<div class='stb-card'>";
+    $h[]=stb_card_head($icon,$title,$subtitle);
+    $h[]="<div class='stb-grid'>";
+    $h[]="<div id='$chartDiv' class='stb-cv'><div class='stb-wait'>{loading}</div></div>";
+    $h[]="<div id='$tableDiv'><div class='stb-wait'>{loading}</div></div>";
+    $h[]="</div>";
+    $h[]="</div>";
+    return @implode("\n",$h);
+}
+
+/**
+ * Charge utile d'un tableau-legende, passee dans l'URL par le repondeur du
+ * graphique.
+ *
+ * JSON et non serialize(): la valeur transite par le navigateur, et
+ * unserialize() sur une entree que l'utilisateur peut reecrire instancie des
+ * objets. Encodage rawurlencode a l'aller: un '+' de base64 vaut une ESPACE
+ * dans une chaine de requete, ce qui cassait silencieusement le decodage et
+ * rendait un tableau vide sans la moindre erreur.
+ */
+function stb_payload_encode(array $data):string{
+    return rawurlencode(base64_encode(json_encode($data)));
+}
+
+function stb_payload_decode($key):array{
+    $raw=isset($_GET[$key])?(string)$_GET[$key]:"";
+    if(strlen($raw)<3){return array();}
+    $decoded=base64_decode($raw,true);
+    if($decoded===false){return array();}
+    $data=json_decode($decoded,true);
+    if(!is_array($data)){return array();}
+    return $data;
 }
 
 function template(){
     $t=time();
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $imgwait="<img src='/img/Eclipse-0.9s-120px.gif'>";
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top'><div id='vertical-timeline-$t'>$imgwait</div></td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    $period=stb_period();
+    $unit=stb_timeline_unit($period["diffmin"]);
 
+    $subtitle=$tpl->time_to_date($period["t1"])." &rarr; ".$tpl->time_to_date($period["t2"]);
 
-
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top' width='2%' nowrap><div id='top-sites-table-$t'>$imgwait</div></td>";
-    $html[]="<td style='vertical-align:top'><div id='top-sites-$t' style='height:600px;width:1340px'>$imgwait</div></td>";
-    $html[]="</tr>";
-
-
-    $html[]="<tr>";
-    $html[]="<td colspan=2><hr></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top' width='2%' nowrap><div id='top-sites-categories-$t'>$imgwait</div></td>";
-    $html[]="<td style='vertical-align:top'><div id='top-categories-$t' style='height:600px;width:1340px'>$imgwait</div></td>";
-    $html[]="</tr>";
-
-
-
-    $html[]="<tr>";
-    $html[]="<td colspan=2><hr></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top' width='2%' nowrap><div id='top-users-table-$t'>$imgwait</div></td>";
-    $html[]="<td style='vertical-align:top'><div id='top-users-$t' style='height:600px;width:1340px'>$imgwait</div></td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    $html=array();
+    $html[]=stb_card_timeline("vertical-timeline-$t",$subtitle." &middot; ".$unit["LABEL"]);
+    $html[]=stb_card_top("fas fa-globe","{top_websites_by_size}","MB","top-sites-$t","top-sites-table-$t");
+    $html[]=stb_card_top("fas fa-folder-tree","{top_categories_by_size}","MB","top-categories-$t","top-sites-categories-$t");
+    $html[]=stb_card_top("fas fa-users","{top_members}","MB","top-users-$t","top-users-table-$t");
 
     $html[]="<script>";
+    $html[]="NoSpinner();";
     $html[]="Loadjs('$page?vertical-timeline=yes&id=vertical-timeline-$t');";
     $html[]="Loadjs('$page?top-sites=yes&id=top-sites-$t&suffix=$t');";
     $html[]="Loadjs('$page?top-users=yes&id=top-users-$t&suffix=$t');";
     $html[]="Loadjs('$page?top-categories=yes&id=top-categories-$t&suffix=$t');";
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
 
+    echo stb_css().$tpl->_ENGINE_parse_body(@implode("\n",$html));
 
 }
 
 function top_sites(){
     $page=CurrentPageName();
-    $t=$_GET["suffix"];
+    $t=stb_divid("suffix");
+    $divid=stb_divid("id");
     $tpl=new template_admin();
     $q=new postgres_sql();
-    BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["STATSCOM_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
-    $time1=strtotime("{$_SESSION["STATSCOM_DAY"]["FROM"]} {$_SESSION["STATSCOM_DAY"]["FROMH"]}:00");
-    $time2=strtotime("{$_SESSION["STATSCOM_DAY"]["TO"]} {$_SESSION["STATSCOM_DAY"]["TOH"]}:00");
-    $strtime=date("Y-m-d H:i:s",$time1);
-    $strtoTime=date("Y-m-d H:i:s",$time2);
+    $period=stb_period();
 
-    $sql="SELECT SUM(statscom.size) as size,statscom_websites.familysite,statscom.siteid FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by familysite,statscom.siteid ORDER BY size DESC LIMIT 15";
+    $sql="SELECT SUM(statscom.size) as size,statscom_websites.familysite,statscom.siteid FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND zdate >'{$period["from"]}' and zdate < '{$period["to"]}' GROUP by familysite,statscom.siteid ORDER BY size DESC LIMIT 15";
 
-    $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-    $PieData2=array();
+
+    $labels=array();$values=array();$rows=array();
     while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
-        $PieData2[$ligne["familysite"]]=array($size,$ligne["siteid"]);
-        $PieData[$ligne["familysite"]]=$size;
+        $sizeMB=round(($ligne["size"]/1024)/1024,2);
+        $labels[]=$ligne["familysite"];
+        $values[]=$sizeMB;
+        $rows[]=array("site"=>$ligne["familysite"],"siteid"=>intval($ligne["siteid"]),"kb"=>$ligne["size"]/1024);
     }
 
-    $encoded=base64_encode(serialize($PieData2));
+    if(count($labels)==0){
+        echo stb_chart_empty_js($divid,$tpl->javascript_parse_text("{no_data}"));
+        echo "LoadAjax('top-sites-table-$t','$page?sites-table=".stb_payload_encode(array())."');";
+        return;
+    }
 
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->PieDatas=$PieData;
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle = "{top_websites_by_size} (MB)";
-    $highcharts->Title=$highcharts->PiePlotTitle;
-    echo $highcharts->BuildChart();
-
-    echo "LoadAjax('top-sites-table-$t','$page?sites-table=$encoded');";
-
+    echo stb_chart_render_js($divid,stb_doughnut_config($labels,$values,"MB"));
+    echo "\nLoadAjax('top-sites-table-$t','$page?sites-table=".stb_payload_encode($rows)."');";
 
 }
 function top_categories(){
     $page=CurrentPageName();
-    $t=$_GET["suffix"];
+    $t=stb_divid("suffix");
+    $divid=stb_divid("id");
     $tpl=new template_admin();
     $q=new postgres_sql();
-    BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["STATSCOM_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
-    $time1=strtotime("{$_SESSION["STATSCOM_DAY"]["FROM"]} {$_SESSION["STATSCOM_DAY"]["FROMH"]}:00");
-    $time2=strtotime("{$_SESSION["STATSCOM_DAY"]["TO"]} {$_SESSION["STATSCOM_DAY"]["TOH"]}:00");
-    $strtime=date("Y-m-d H:i:s",$time1);
-    $strtoTime=date("Y-m-d H:i:s",$time2);
+    $period=stb_period();
 
-    $sql="SELECT SUM(statscom.size) as size,statscom_websites.category FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by category ORDER BY size DESC LIMIT 15";
+    $sql="SELECT SUM(statscom.size) as size,statscom_websites.category FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND zdate >'{$period["from"]}' and zdate < '{$period["to"]}' GROUP by category ORDER BY size DESC LIMIT 15";
 
-    $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
     $catz=new mysql_catz();
+
+    $labels=array();$values=array();$rows=array();
     while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
         $category=$catz->CategoryIntToStr($ligne["category"]);
-        $PieData[$category]=$size;
-        $PieData2[$ligne["category"]]=$ligne["size"]/1024;
+        $labels[]=$category;
+        $values[]=round(($ligne["size"]/1024)/1024,2);
+        $rows[]=array("category"=>$category,"categoryid"=>$ligne["category"],"kb"=>$ligne["size"]/1024);
     }
 
-    $encoded=base64_encode(serialize($PieData2));
+    if(count($labels)==0){
+        echo stb_chart_empty_js($divid,$tpl->javascript_parse_text("{no_data}"));
+        echo "LoadAjax('top-sites-categories-$t','$page?categories-table=".stb_payload_encode(array())."');";
+        return;
+    }
 
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->PieDatas=$PieData;
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle = "{top_categories_by_size} (MB)";
-    $highcharts->Title=$highcharts->PiePlotTitle;
-    echo $highcharts->BuildChart();
-
-    echo "LoadAjax('top-sites-categories-$t','$page?categories-table=$encoded');";
-
+    echo stb_chart_render_js($divid,stb_doughnut_config($labels,$values,"MB"));
+    echo "\nLoadAjax('top-sites-categories-$t','$page?categories-table=".stb_payload_encode($rows)."');";
 
 }
 
 function categories_table(){
     $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
-    $html[]="<tr>";
-    $html[]="<th>{category}</th>";
-    $html[]="<th>{size}</th>";
-    $html[]="</tr>";
-    $table=unserializeb64($_GET["categories-table"]);
-    $catz=new mysql_catz();
-    foreach ( $table as $categoryid=>$sizeM) {
+    $table=stb_payload_decode("categories-table");
 
-        $category=$catz->CategoryIntToStr($categoryid);
-        $link=$tpl->td_href($category,null,"Loadjs('fw.statscom.browse.categories.php?category=$categoryid')");
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$link</strong></td>";
-        $html[]="<td><strong>". FormatBytes($sizeM)."</strong></td>";
-        $html[]="</tr>";
-
+    $rows=array();$totalKB=0;
+    foreach ($table as $entry) {
+        $categoryid=isset($entry["categoryid"])?$entry["categoryid"]:"";
+        $category=isset($entry["category"])?$entry["category"]:"";
+        $kb=floatval(isset($entry["kb"])?$entry["kb"]:0);
+        $totalKB=$totalKB+$kb;
+        $js="Loadjs('fw.statscom.browse.categories.php?category=".urlencode($categoryid)."')";
+        $label="<a href=\"javascript:blur();\" class='stb-lnk' OnClick=\"$js\">".htmlspecialchars($category)."</a>";
+        $rows[]=array("HTML"=>$label,"VALUE"=>FormatBytes($kb));
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+
+    echo awc_table_style().$tpl->_ENGINE_parse_body(
+        stb_legend_table("{category}","{size}",$rows,"{total}",FormatBytes($totalKB)));
 
 }
 
 function top_users(){
 
     $page=CurrentPageName();
-    $t=$_GET["suffix"];
+    $t=stb_divid("suffix");
+    $divid=stb_divid("id");
     $tpl=new template_admin();
     $q=new postgres_sql();
-    BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["STATSCOM_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
-    $time1=strtotime("{$_SESSION["STATSCOM_DAY"]["FROM"]} {$_SESSION["STATSCOM_DAY"]["FROMH"]}:00");
-    $time2=strtotime("{$_SESSION["STATSCOM_DAY"]["TO"]} {$_SESSION["STATSCOM_DAY"]["TOH"]}:00");
-    $strtime=date("Y-m-d H:i:s",$time1);
-    $strtoTime=date("Y-m-d H:i:s",$time2);
+    $period=stb_period();
 
-    $sql="SELECT SUM(size) as size,username,ipaddr,mac FROM statscom  WHERE zdate >'$strtime' and zdate < '$strtoTime' GROUP by username,ipaddr,mac ORDER BY size DESC LIMIT 15";
+    $sql="SELECT SUM(size) as size,username,ipaddr,mac FROM statscom  WHERE zdate >'{$period["from"]}' and zdate < '{$period["to"]}' GROUP by username,ipaddr,mac ORDER BY size DESC LIMIT 15";
 
-    $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-    $PieData2=array();
+
+    $resolveIP2HOST=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("resolveIP2HOST"));
+    $labels=array();$values=array();$rows=array();
     while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
         $username=$ligne["username"];
         $ipaddr=$ligne["ipaddr"];
-        $resolveIP2HOST=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("resolveIP2HOST"));
+        $MAC=$ligne["mac"];
         if($resolveIP2HOST==1){
             $host= new ip2host($ipaddr);
             $ipaddr=$host->output;
         }
-        $MAC=$ligne["mac"];
-        $issu=array();
-        $issu[]=$username;
-        $issu[]=$MAC;
-        $issu[]=$ipaddr;
-        $PieData2[@implode("|",$issu)]=$size;
-        if($username<>null){
-            $PieData[$username]=$size;
-            continue;
-        }
-        if($MAC<>null){
-            $PieData[$MAC]=$size;
-            continue;
-        }
-        $PieData[$ipaddr]=$size;
+        // L'etiquette de la part reprend l'identifiant le plus parlant dont on
+        // dispose; le tableau, lui, montre les trois.
+        $label=$username;
+        if($label==null){$label=$MAC;}
+        if($label==null){$label=$ipaddr;}
+        $labels[]=$label;
+        $values[]=round(($ligne["size"]/1024)/1024,2);
+        $rows[]=array("username"=>$username,"mac"=>$MAC,"ipaddr"=>$ipaddr,"kb"=>$ligne["size"]/1024);
     }
 
-    $encoded=base64_encode(serialize($PieData2));
+    if(count($labels)==0){
+        echo stb_chart_empty_js($divid,$tpl->javascript_parse_text("{no_data}"));
+        echo "LoadAjax('top-users-table-$t','$page?users-table=".stb_payload_encode(array())."');";
+        return;
+    }
 
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->PieDatas=$PieData;
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle = "{top_members} (MB)";
-    $highcharts->Title=$highcharts->PiePlotTitle;
-    echo $highcharts->BuildChart();
-
-    echo "LoadAjax('top-users-table-$t','$page?users-table=$encoded');";
-
+    echo stb_chart_render_js($divid,stb_doughnut_config($labels,$values,"MB"));
+    echo "\nLoadAjax('top-users-table-$t','$page?users-table=".stb_payload_encode($rows)."');";
 
 }
 
 function sites_table(){
     $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
-    $html[]="<tr>";
-    $html[]="<th>{domains}</th>";
-    $html[]="<th>{size}</th>";
-    $html[]="</tr>";
-    $table=unserializeb64($_GET["sites-table"]);
-    foreach ( $table as $site=>$array) {
-        $sizeM=$array[0];
-        $siteid=$array[1];
+    $table=stb_payload_decode("sites-table");
 
-        $link=$tpl->td_href("$site",null,"Loadjs('fw.statscom.browse.website.php?siteid=$siteid')");
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$link</strong></td>";
-        $html[]="<td>".FormatBytes($sizeM*1024)."</td>";
-        $html[]="</tr>";
-
+    $rows=array();$totalKB=0;
+    foreach ($table as $entry) {
+        $site=isset($entry["site"])?$entry["site"]:"";
+        $siteid=intval(isset($entry["siteid"])?$entry["siteid"]:0);
+        $kb=floatval(isset($entry["kb"])?$entry["kb"]:0);
+        $totalKB=$totalKB+$kb;
+        $js="Loadjs('fw.statscom.browse.website.php?siteid=$siteid')";
+        $label="<a href=\"javascript:blur();\" class='stb-lnk' OnClick=\"$js\">".htmlspecialchars($site)."</a>";
+        $rows[]=array("HTML"=>$label,"VALUE"=>FormatBytes($kb));
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+
+    echo awc_table_style().$tpl->_ENGINE_parse_body(
+        stb_legend_table("{domains}","{size}",$rows,"{total}",FormatBytes($totalKB)));
 }
+
+/** Lien vers la fiche d'un membre, pour un des trois identifiants. */
+function stb_member_link(string $field,string $value,string $class):string{
+    $js="Loadjs('fw.statscom.browse.users.php?field=$field&value=".urlencode($value)."')";
+    $cls=($class<>"")?" class='$class'":"";
+    return "<a href=\"javascript:blur();\"$cls OnClick=\"$js\">".htmlspecialchars($value)."</a>";
+}
+
 function users_table(){
 
     $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
-    $html[]="<tr>";
-    $html[]="<th>{member}</th>";
-    $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["users-table"]));
-    foreach ( $table as $site=>$sizeM) {
-        $h=explode("|",$site);
-        $t=array();
-        if($h[0]<>null){
-            $t[]=$tpl->td_href($h[0],null,"Loadjs('fw.statscom.browse.users.php?field=username&value=".urlencode($h[0])."')");
-        }
-        if($h[1]<>null){
-            $t[]=$tpl->td_href($h[1],null,"Loadjs('fw.statscom.browse.users.php?field=mac&value=".urlencode($h[1])."')");
-        }
-        if($h[2]<>null){
-            $t[]=$tpl->td_href($h[2],null,"Loadjs('fw.statscom.browse.users.php?field=ipaddr&value=".urlencode($h[2])."')");
-        }
+    $table=stb_payload_decode("users-table");
 
-        $html[]="<tr>";
-        $html[]="<td><strong>".@implode("&nbsp;|&nbsp;",$t)."</strong></td>";
-        $html[]="<td>".FormatBytes($sizeM*1024)."</td>";
-        $html[]="</tr>";
+    $rows=array();$totalKB=0;
+    foreach ($table as $entry) {
+        $username=(string)(isset($entry["username"])?$entry["username"]:"");
+        $mac=(string)(isset($entry["mac"])?$entry["mac"]:"");
+        $ipaddr=(string)(isset($entry["ipaddr"])?$entry["ipaddr"]:"");
+        $kb=floatval(isset($entry["kb"])?$entry["kb"]:0);
+        $totalKB=$totalKB+$kb;
 
+        // Un identifiant principal en clair, les autres en seconde ligne: les
+        // trois alignes sur une ligne debordaient la colonne des la premiere
+        // adresse MAC.
+        $main=null;$meta=array();
+        if($username<>""){ $main=stb_member_link("username",$username,"stb-lnk"); }
+        if($mac<>""){
+            $lnk=stb_member_link("mac",$mac,"");
+            if($main==null){$main=stb_member_link("mac",$mac,"stb-lnk");}else{$meta[]=$lnk;}
+        }
+        if($ipaddr<>""){
+            $lnk=stb_member_link("ipaddr",$ipaddr,"");
+            if($main==null){$main=stb_member_link("ipaddr",$ipaddr,"stb-lnk");}else{$meta[]=$lnk;}
+        }
+        if($main==null){$main="<span class='awc-none'>{unknown}</span>";}
+
+        $cell=$main;
+        if(count($meta)>0){ $cell=$cell."<div class='stb-meta'>".@implode(" &middot; ",$meta)."</div>"; }
+        $rows[]=array("HTML"=>$cell,"VALUE"=>FormatBytes($kb));
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+
+    echo awc_table_style().$tpl->_ENGINE_parse_body(
+        stb_legend_table("{member}","{size}",$rows,"{total}",FormatBytes($totalKB)));
 }
 
 function vertical_time_line(){
     $tpl=new template_admin();
     $q=new postgres_sql();
-    BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["STATSCOM_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
-    $time1=strtotime("{$_SESSION["STATSCOM_DAY"]["FROM"]} {$_SESSION["STATSCOM_DAY"]["FROMH"]}:00");
-    $time2=strtotime("{$_SESSION["STATSCOM_DAY"]["TO"]} {$_SESSION["STATSCOM_DAY"]["TOH"]}:00");
-    $strtime=date("Y-m-d H:i:s",$time1);
-    $strtoTime=date("Y-m-d H:i:s",$time2);
-    $UNIT="{each_10minutes}";
-    $SQL_DATE="zdate";
+    $divid=stb_divid("id");
+    $period=stb_period();
+    $unit=stb_timeline_unit($period["diffmin"]);
 
-
-
-    if($DIFF_HOURS>6){
-        $UNIT="{hourly}";
-        $SQL_DATE="date_part('hour', zdate)";
-    }
-
-    if($DIFF_HOURS>48) {
-        $UNIT = "{daily}";
-        $SQL_DATE = "date_part('day', zdate)";
-    }
-
-    $sql="SELECT SUM(size) as size,$SQL_DATE as zdate FROM statscom WHERE zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
-
+    $sql="SELECT SUM(size) as size,{$unit["SQL"]} as zdate FROM statscom WHERE zdate >'{$period["from"]}' and zdate < '{$period["to"]}' GROUP by {$unit["SQL"]} ORDER BY {$unit["SQL"]}";
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
+    $dayword=$tpl->_ENGINE_parse_body("{day}");
+    $labels=array();$values=array();
     while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
-        echo "// {$ligne["zdate"]}\n";
-        $stime=strtotime($ligne["zdate"]);
-        $datetext=date("H:i",$stime);
-        if($DIFF_HOURS>6){
-            $datetext="{$ligne["zdate"]}h";
-        }
-        if($DIFF_HOURS>48){
-            $datetext=$tpl->_ENGINE_parse_body("{day}")." {$ligne["zdate"]}";
-        }
-        $xdata[]=$datetext;
-        $ydata[]=$size;
+        $datetext=date("H:i",strtotime($ligne["zdate"]));
+        if($unit["MODE"]=="hour"){ $datetext="{$ligne["zdate"]}h"; }
+        if($unit["MODE"]=="day"){  $datetext="$dayword {$ligne["zdate"]}"; }
+        $labels[]=$datetext;
+        $values[]=round(($ligne["size"]/1024)/1024,2);
     }
 
+    if(count($labels)==0){
+        echo stb_chart_empty_js($divid,$tpl->javascript_parse_text("{no_data}"));
+        return;
+    }
 
-    $stimeFrom=$tpl->time_to_date($time1);
-    $stimeTo=$tpl->time_to_date($time2);
-    $title="{downloaded_flow} (MB) $stimeFrom - $stimeTo {$UNIT}";
-    $timetext=$_GET["interval"];
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->xAxis=$xdata;
-    $highcharts->Title=$title;
-    $highcharts->TitleFontSize="14px";
-    $highcharts->AxisFontsize="12px";
-    $highcharts->yAxisTtitle="MB";
-    $highcharts->xAxis_labels=true;
-
-    $highcharts->LegendSuffix="MB";
-    $highcharts->xAxisTtitle=$timetext;
-    $highcharts->datas=array("{size}"=>$ydata);
-    echo $highcharts->BuildChart();
+    echo stb_chart_render_js($divid,stb_line_config($labels,$values,"MB"));
 
 }
 
@@ -496,6 +705,7 @@ function vertical_time_line(){
 function page(){
     $tpl=new template_admin();
     $page=CurrentPageName();
+    $html=array();
     $html[]="<div class='row ibox-content white-bg'>";
     $html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top: 10px'>";
     $html[]=$tpl->button_label_table("{build_query}",
@@ -520,7 +730,12 @@ function query(){
     //86340 = 24H
     // 172740  =
 
+    BUILD_DEFAULT_DATA();
 
+    $USER=isset($_SESSION["STATSCOM_DAY"]["USER"])?$_SESSION["STATSCOM_DAY"]["USER"]:null;
+    $IP=isset($_SESSION["STATSCOM_DAY"]["IP"])?$_SESSION["STATSCOM_DAY"]["IP"]:null;
+    $MAC=isset($_SESSION["STATSCOM_DAY"]["MAC"])?$_SESSION["STATSCOM_DAY"]["MAC"]:null;
+    $SIZE=isset($_SESSION["STATSCOM_DAY"]["SIZE"])?$_SESSION["STATSCOM_DAY"]["SIZE"]:0;
 
     $time1=strtotime( $_SESSION["STATSCOM_DAY"]["FROM"]." ". $_SESSION["STATSCOM_DAY"]["FROMH"]);
     $time2=strtotime($_SESSION["STATSCOM_DAY"]["TO"]." ". $_SESSION["STATSCOM_DAY"]["TOH"]);
@@ -532,7 +747,7 @@ function query(){
         return;
     }
 
-
+    $TITLES=array();
 
     if($seconds<259150){
         $TABLE_SELECTED="statscom";
@@ -562,62 +777,61 @@ function query(){
     $TITLES[]="(".distanceOfTimeInWords(strtotime($date1),strtotime($date2)).")";
 
 
-    if($_SESSION["STATSCOM_DAY"]["USER"]<>null){
-        $TITLES[]="{and} {member} {$_SESSION["STATSCOM_DAY"]["USER"]}";
-        $WHEREU=" AND username='{$_SESSION["STATSCOM_DAY"]["USER"]}'";
+    if($USER<>null){
+        $TITLES[]="{and} {member} $USER";
+        // Pentest 2026-11-04 : USER, IP, MAC et les dates (session alimentee par le POST) etaient concatenes dans la requete.
+        $WHEREU=" AND username='".pg_escape_string2($USER)."'";
     }
-    if($_SESSION["STATSCOM_DAY"]["IP"]<>null){
-        $TITLES[]="{and} {ipaddr} {$_SESSION["STATSCOM_DAY"]["IP"]}";
-        $WHEREI=" AND ipaddr='{$_SESSION["STATSCOM_DAY"]["IP"]}'";
+    if($IP<>null){
+        $TITLES[]="{and} {ipaddr} $IP";
+        $WHEREI=" AND ipaddr='".pg_escape_string2($IP)."'";
     }
-    if($_SESSION["STATSCOM_DAY"]["MAC"]<>null){
-        $TITLES[]="{and} {MAC} {$_SESSION["STATSCOM_DAY"]["MAC"]}";
-        $WHEREM=" AND mac='{$_SESSION["STATSCOM_DAY"]["MAC"]}'";
+    if($MAC<>null){
+        $TITLES[]="{and} {MAC} $MAC";
+        $WHEREM=" AND mac='".pg_escape_string2($MAC)."'";
     }
-    if( intval($_SESSION["STATSCOM_DAY"]["SIZE"])>0){
-        $size_q=round(intval( $_SESSION["STATSCOM_DAY"]["SIZE"])*1024);
+    if( intval($SIZE)>0){
+        $size_q=round(intval($SIZE)*1024);
         $WHERES=" $TABLE_SELECTED.size > $size_q AND";
     }
 
+    $html=array();
     $html[]="<H2 style='margin-top: 10px'>".@implode(" ",$TITLES)."</H2>";
 
 
-    $sql="SELECT SUM($TABLE_SELECTED.hits) as hits, 
+    $sql="SELECT SUM($TABLE_SELECTED.hits) as hits,
     SUM($TABLE_SELECTED.size) as size,
     $TABLE_SELECTED.username,
     $TABLE_SELECTED.ipaddr,
     $TABLE_SELECTED.mac,
     $TABLE_SELECTED.zdate,
     statscom_websites.sitename,
-    statscom_websites.category   
+    statscom_websites.category
     FROM $TABLE_SELECTED,statscom_websites WHERE{$WHERES}
     statscom_websites.siteid=$TABLE_SELECTED.siteid AND
-    $TABLE_SELECTED.zdate >='$date1' AND  $TABLE_SELECTED.zdate <= '$date2'{$WHEREU}{$WHEREI}{$WHEREM}
+    $TABLE_SELECTED.zdate >='".pg_escape_string2($date1)."' AND  $TABLE_SELECTED.zdate <= '".pg_escape_string2($date2)."'{$WHEREU}{$WHEREI}{$WHEREM}
     GROUP BY $TABLE_SELECTED.zdate,$TABLE_SELECTED.username,$TABLE_SELECTED.ipaddr,$TABLE_SELECTED.mac,statscom_websites.sitename, statscom_websites.category ORDER BY $TABLE_SELECTED.zdate
     LIMIT {$_SESSION["STATSCOM_DAY"]["LIMIT"]}";
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){
-        echo  $tpl->_ENGINE_parse_body($html);
+        echo  $tpl->_ENGINE_parse_body(@implode("\n",$html));
         echo  $tpl->div_error("{$seconds}s<br>".$q->mysql_error."<br>$sql");
         return;
     }
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" 
-    data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{sitename}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{member}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{MAC}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{hits}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // En-tete bati par le composant partage: les huit <th> etaient recopies a
+    // la main avec leurs attributs data-sortable, qui derivaient page a page.
+    $fields=array();
+    $fields[]="{date}";
+    $fields[]="{sitename}";
+    $fields[]="{category}";
+    $fields[]="{member}";
+    $fields[]="{MAC}";
+    $fields[]="{ipaddr}";
+    $fields[]="{size}";
+    $fields[]="{hits}";
+    $html[]=$tpl->table_head($fields,"table-$t");
 
     $td1=$tpl->table_td1prc_Left();
     $tdfree=$tpl->table_tdfree();
@@ -638,27 +852,20 @@ function query(){
         $username=$ligne["username"];
         $mac=$ligne["mac"];
 
-        $params=array();
-        $params[]="username=".urlencode($username);
-        $params[]="category=".urlencode($category_id);
-        $params[]="sitename=".urlencode($sitename);
-        $params[]="mac=".urlencode($mac);
-        $params[]="ipaddr=".urlencode($ipaddr);
-        $params[]="date1=".urlencode($date1);
-        $params[]="date2=".urlencode($date2);
-
-        $parm=@implode("&",$params);
-
-        $category=$tpl->td_href($category,"{statistics}","Loadjs('fw.statscom.category.php?data=yes&$params')");
+        // fw.statscom.category.php n'existe pas: le lien tombait sur un 404 que
+        // Loadjs avale sans rien dire. La fiche d'une categorie, c'est
+        // fw.statscom.browse.categories.php -- la meme que le tableau du TOP.
+        $categoryCell=$tpl->td_href($category,"{statistics}",
+            "Loadjs('fw.statscom.browse.categories.php?category=".urlencode($category_id)."')");
 
 
         $html[]="<tr style='vertical-align:middle' class='$TRCLASS'>";
-        $html[]="<td $td1>$date</td>";
-        $html[]="<td $tdfree>$sitename</td>";
-        $html[]="<td $td1>$category</td>";
-        $html[]="<td $td1>$username</td>";
-        $html[]="<td $td1>$mac</td>";
-        $html[]="<td $td1>$ipaddr</td>";
+        $html[]="<td $td1>".htmlspecialchars($date)."</td>";
+        $html[]="<td $tdfree>".htmlspecialchars($sitename)."</td>";
+        $html[]="<td $td1>$categoryCell</td>";
+        $html[]="<td $td1>".htmlspecialchars($username)."</td>";
+        $html[]="<td $td1>".htmlspecialchars($mac)."</td>";
+        $html[]="<td $td1>".htmlspecialchars($ipaddr)."</td>";
         $html[]="<td $td1>$size</td>";
         $html[]="<td $td1>$hits</td>";
         $html[]="</tr>";
@@ -666,21 +873,7 @@ function query(){
 
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) }); 
-</script>";
+    $html[]=$tpl->table_footer("table-$t",8,true);
 
     echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 

@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if (!defined('CURLOPTTYPE_OBJECTPOINT')){define('CURLOPTTYPE_OBJECTPOINT', 10000);}
 if (!defined('CURLOPT_NOPROXY')){define('CURLOPT_NOPROXY', CURLOPTTYPE_OBJECTPOINT + 177);}
@@ -109,13 +110,13 @@ class influx{
 		
 		if(!isset($GLOBALS["InfluxUseRemotePort"])){
 			$GLOBALS["InfluxUseRemotePort"]=0;
-			if(is_file("/etc/artica-postfix/settings/Daemons/InfluxUseRemotePort")){
+			if(artica_setting_exists("InfluxUseRemotePort")){
 				$GLOBALS["InfluxUseRemotePort"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("InfluxUseRemotePort"));
 			}
 			if($GLOBALS["InfluxUseRemotePort"]==0){$GLOBALS["InfluxUseRemotePort"]=8086;}
 		}
 		if(!isset($GLOBALS["EnableInfluxDB"])){
-			if(!is_file("/etc/artica-postfix/settings/Daemons/EnableInfluxDB")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableInfluxDB", 1);}
+			if(!artica_setting_exists("EnableInfluxDB")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableInfluxDB", 1);}
 			$GLOBALS["EnableInfluxDB"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableInfluxDB"));
 		}
 		

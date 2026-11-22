@@ -1,15 +1,15 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_POST["TailScaleHostname"])){SaveSettings();exit;}
-if(isset($_POST["RDPProxyAuthookDebug"])){video_params_save();exit;}
-if(isset($_POST["RDPProxyPort"])){SaveSettings();exit;}
+// RDPProxyPort est une cle du catalogue Artica Meta (politique rdsproxy) : refusee sous verrou.
+if(isset($_POST["RDPProxyPort"])){include_once(dirname(__FILE__)."/ressources/class.rdpproxy.meta.inc");if(rdpproxy_meta_refuse_post()){exit;}SaveSettings();exit;}
 if(isset($_POST["TailScaleAuthorizationKey"])){authorizationkey_save();exit;}
 if(isset($_GET["authorizationkey-js"])){authorizationkey_js();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["settings"])){settings();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
-if(isset($_GET["about"])){about();exit;}
 if(isset($_GET["widgets"])){widgets();exit;}
 if(isset($_GET["loggoff"])){loggoff();exit;}
 if(isset($_GET["disconnect"])){disconnect();exit;}
@@ -90,6 +90,10 @@ function settings(){
 
 function SaveSettings(){
     $tpl=new template_admin();
+    // SAVE_POSTs ecrit toute cle postee : jamais les cles du verrou Artica Meta du RDS Proxy.
+    include_once(dirname(__FILE__)."/ressources/class.rdpproxy.meta.inc");
+    if(rdpproxy_meta_refuse_post()){return;}
+    rdpproxy_meta_strip_lock_keys();
     $log=$tpl->SAVE_POSTs();
     foreach ($log as $key=>$val){
         $tt[]="$key = $val";
@@ -124,6 +128,12 @@ function nodes():bool{
             if($TxBytes>1024){
                 $TxBytes=FormatBytes($TxBytes/1024);
             }
+            // Pentest 2026-11-04 : nom/adresse d'un pair tailscale (donnee externe) affiches sans encodage (XSS stockee).
+            $index=req_html($index);
+            $HostName=req_html($HostName);
+            $TailAddr=req_html($TailAddr);
+            $TxBytes=req_html($TxBytes);
+            $RxBytes=req_html($RxBytes);
             $html[]="<tr class='$TRCLASS' id='$index'>";
 
             $html[]="<td width=50% ><strong>$HostName</strong></td>";
@@ -188,7 +198,7 @@ function table(){
     $ARRAY["TITLE"]="{restarting_service}";
     $ARRAY["AFTER"]="LoadAjax('tailscale-status-table','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $restartService="Loadjs('fw.progress.php?content=$prgress&mainid=progress-tailscale-restart');";
+    $restartService="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-tailscale-restart');";
 
 
     $html[]="<table style='width:100%'>";
@@ -306,7 +316,9 @@ function widgets():bool{
         $btn["name"]="{please_sign_in}";
         $btn["icon"]="fas fa-sign-in-alt";
         if($AuthURL<>null) {
-            $btn["js"] = "s_PopUpFull('$AuthURL','1024','900');";
+            // Pentest 2026-11-04 : AuthURL (reponse tailscale, donnee externe) dans une chaine JS sans encodage.
+            $AuthURL_js=req_js($AuthURL);
+            $btn["js"] = "s_PopUpFull('$AuthURL_js','1024','900');";
         }else{
             $btn["js"] = "s_PopUpFull('/tailscale-web/')";
         }

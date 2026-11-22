@@ -1,12 +1,12 @@
 <add_a_rule>Adicionar uma nova regra</add_a_rule>
 <edit_a_rule>Regra de ediç%C3£o</edit_a_rule>
-<error_header>Please select value in header field</error_header>
-<error_pattern>Please type a pattern to detect</error_pattern>
-<match_pattern>Match pattern</match_pattern>
-<only_regex_off>(Only if use regex pattern is switched off)</only_regex_off>
-<rules_list>Rules list</rules_list>
-<select_header_field>if in</select_header_field>
-<user_delete>Delete mail</user_delete>
-<user_quarantine>Put mail into quarantine</user_quarantine>
-<user_skip_antispam>Skip antispam process</user_skip_antispam>
-<use_regex>Use regex pattern</use_regex>
+<error_header>Selecione um valor no campo de cabe&#231;alho</error_header>
+<error_pattern>Digite um padr&#227;o para detetar</error_pattern>
+<match_pattern>Padr&#227;o de correspond&#234;ncia</match_pattern>
+<only_regex_off>(Apenas se o uso do padr&#227;o regex estiver desativado)</only_regex_off>
+<rules_list>Lista de regras</rules_list>
+<select_header_field>se em</select_header_field>
+<user_delete>Eliminar e-mail</user_delete>
+<user_quarantine>Colocar o e-mail em quarentena</user_quarantine>
+<user_skip_antispam>Ignorar o processo antispam</user_skip_antispam>
+<use_regex>Usar padr&#227;o regex</use_regex>

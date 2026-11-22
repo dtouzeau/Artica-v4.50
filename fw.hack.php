@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -23,9 +24,9 @@ function startx()
         }
 
     }
-    $ip = urlencode($ip);
     $tpl->squid_admin_mysql(0,"Hack! Wrong URI from $ip [action=Deny IP]",null,__FILE__,__LINE__);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("firehol.php?block-this=$ip");
+    // Le daemon valide l'adresse (IPv4 publique uniquement) et pose la règle sans shell.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/webconsole/ban/".rawurlencode($ip));
     return true;
 }
 

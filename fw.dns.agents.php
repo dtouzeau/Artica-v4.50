@@ -1,7 +1,12 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : delete-js/id etaient recopies sans encodage dans la page (XSS).
+if(isset($_GET["delete-js"])){$_GET["delete-js"]=intval($_GET["delete-js"]);}
+if(isset($_GET["id"])){$_GET["id"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["id"]);}
 if(isset($_GET["td"])){td_row();exit;}
 if(isset($_GET["search"])){main();exit;}
 if(isset($_GET["main"])){main();exit;}
@@ -76,7 +81,9 @@ function rule_save():bool{
     $port=intval($_POST["port"]);
     $apikey=trim($_POST["apikey"]);
     $ssl=intval($_POST["ssl"]);
-    $sql="INSERT INTO dnsagents (hostname,port,apikey,ssl) VALUES ('$hostname','$port','$apikey',$ssl)";
+    // Pentest 2026-11-04 : hostname/apikey etait concatene dans la requete.
+    $sql="INSERT INTO dnsagents (hostname,port,apikey,ssl) VALUES (?,'$port',?,$ssl)";
+    $params=array($hostname,$apikey);
     $q=new lib_sqlite("/home/artica/SQLITE/dns.db");
 
     if(!$q->FIELD_EXISTS("dnsagents","ssl")){
@@ -84,9 +91,10 @@ function rule_save():bool{
     }
 
     if($ID>0) {
-        $sql="UPDATE dnsagents SET port='$port',ssl=$ssl,apikey='$apikey',hostname='$hostname',iserror=0,errortext='' WHERE ID=$ID";
+        $sql="UPDATE dnsagents SET port='$port',ssl=$ssl,apikey=?,hostname=?,iserror=0,errortext='' WHERE ID=$ID";
+        $params=array($apikey,$hostname);
     }
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$params);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -102,7 +110,8 @@ function delete_js(){
 	$tpl=new templates();
 	$t=time();
 	$ask=$tpl->javascript_parse_text("{pdns_delete_domain_ask}");	
-	$id=$_GET["delete-js"];
+	// Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+	$id=intval($_GET["delete-js"]);
 	
 	$q=new mysql_pdns();
 	$sql="SELECT name FROM domains WHERE id=$id";
@@ -142,7 +151,7 @@ function newdomain_save(){
     $tpl->CLEAN_POST();
 	$q=new mysql_pdns();
     $MyHostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
-    $q->QUERY_SQL("ALTER TABLE `records` ALTER `articasrv` SET DEFAULT '$MyHostname'");
+    $q->QUERY_SQL("ALTER TABLE `records` ALTER `articasrv` SET DEFAULT '".mysql_escape_string2($MyHostname)."'");
     $q->QUERY_SQL("ALTER TABLE `records` ALTER `explainthis` SET DEFAULT ''");
     $domain=trim(strtolower($_POST["newdomain"]));
 	$domain=url_decode_special_tool($domain);
@@ -168,7 +177,8 @@ function newdomain_save(){
     return true;
 }
 function domain_delete(){
-	$id=$_POST["delete"];
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$id=intval($_POST["delete"]);
 	$q=new mysql_pdns();
 
 	$Domain=$q->GetDomainName($id);
@@ -311,18 +321,18 @@ function main(){
     $TRCLASS=null;
 
 
-	$html[]="<table id='table-dns-forward-zones' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{hostname}</th>";
-    $html[]="<th class='text-capitalize' data-type='text'>{records}</center></th>";
-    $html[]="<th class='text-capitalize' data-type='text' nowrap>{last_scan}</center></th>";
+    $html[]="<th class='text-capitalize' data-type='text'>{records}</th>";
+    $html[]="<th class='text-capitalize' data-type='text' nowrap>{last_scan}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>DEL</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='dnsagz-rows'>";
 
     $search="*{$_GET["search"]}*";
     $search=str_replace("**","*",$search);
@@ -334,14 +344,16 @@ function main(){
 	$q->QUERY_SQL("CREATE TABLE IF NOT EXISTS dnsagents (ID INTEGER PRIMARY KEY AUTOINCREMENT,iserror INTEGER DEFAULT 0,errortext TEXT NOT NULL DEFAULT '',hostname TEXT NOT NULL DEFAULT '',port INTEGER NOT NULL DEFAULT 8000, apikey TEXT NOT NULL DEFAULT '', scantime INTEGER NOT NULL DEFAULT 0, content TEXT NOT NULL DEFAULT '',enabled INTEGER NOT NULL DEFAULT 1, 
 datamd5 TEXT NOT NULL DEFAULT '',records INTEGER NOT NULL DEFAULT 0,ssl INTEGER NOT NULL DEFAULT 0,version TEXT NOT NULL DEFAULT '',dhcpdata TEXT NOT NULL DEFAULT '',dhcprecords INTEGER NOT NULL DEFAULT 0)");
 
-    $results=$q->QUERY_SQL("SELECT * FROM dnsagents WHERE hostname LIKE '$search'");
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS("SELECT * FROM dnsagents WHERE hostname LIKE ?",array($search));
 
 
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);}
+	// Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS) via l'erreur SQL.
+	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128(req_html($q->mysql_error));}
 	
 
 	foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $hostname=$ligne["hostname"];
         $dhcprecords="";
         $port=$ligne["port"];
@@ -370,24 +382,14 @@ datamd5 TEXT NOT NULL DEFAULT '',records INTEGER NOT NULL DEFAULT 0,ssl INTEGER 
         $html[]="<td style='width:99%'>$hostnam</td>";
 		$html[]="<td style='width:1%;text-align: right' nowrap>".FormatNumber($records)."</td>";
         $html[]="<td style='width:1%' nowrap><span id='agent-time-$ID'>$time</span></td>";
-        $html[]="<td style='width:1%;vertical-align:middle;' class='center' nowrap>$enable_icon</center></td>";
-		$html[]="<td style='width:1%;vertical-align:middle;' class='center' nowrap>$delete_icon</center></td>";
+        $html[]="<td style='width:1%;vertical-align:middle;' class='center' nowrap>$enable_icon</td>";
+		$html[]="<td style='width:1%;vertical-align:middle;' class='center' nowrap>$delete_icon</td>";
 		$html[]="</tr>";
 	}
 
 	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-
-
-	$html[]="<tr>";
-	$rows=6;
-	$html[]="<td colspan='$rows'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='dnsagz-pager'></span></div></div></div>";
 
 
     $help_url="https://wiki.articatech.com/en/dns/artica-activedirectory-dns-agent";
@@ -414,10 +416,11 @@ datamd5 TEXT NOT NULL DEFAULT '',records INTEGER NOT NULL DEFAULT 0,ssl INTEGER 
 	<script>
 	$jstiny
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-dns-forward-zones').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+echo awc_table_style()
+    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"dnsagz-rows","dnsagz-pager");
 }
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}
 function DistanceInMns($time){
@@ -428,6 +431,7 @@ function DistanceInMns($time){
 }
 
 function isPdnsError($domain_id):string{
+    $domain_id=intval($domain_id);
     VERBOSE(__FUNCTION__,__LINE__);
     $q          = new mysql_pdns();
     $tpl        = new template_admin();

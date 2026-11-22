@@ -1,17 +1,81 @@
 <?php
 include_once(dirname(__FILE__)."/class.modsecurity.inc");
 include_once(dirname(__FILE__)."/class.nginx.templates.inc");
-include_once(dirname(__FILE__)."/class.nginx.reverse.proxy.inc");
 
+
+
+
+if (!function_exists('fetch_nginx_service_row')) {
+function fetch_nginx_service_row($ID):array{
+    $ID=intval($ID);
+    if($ID==0){return [];}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/ID/$ID");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"]) || count($data["rows"])==0){return [];}
+    return $data["rows"][0];
+}
+}
+
+// fetch_stream_ports_for_service returns all stream_ports rows for a service.
+if (!function_exists('fetch_stream_ports_for_service')) {
+function fetch_stream_ports_for_service($serviceid):array{
+    $serviceid=intval($serviceid);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/stream_ports/serviceid/$serviceid");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){return [];}
+    return $data["rows"];
+}
+}
+
+// fetch_ngx_directories_enabled_for_service returns enabled ngx_directories
+// rows for a service via the daemon API, sorted by directory PHP-side.
+if (!function_exists('fetch_ngx_directories_enabled_for_service')) {
+function fetch_ngx_directories_enabled_for_service($serviceid):array{
+    $serviceid=intval($serviceid);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/ngx_directories/serviceid/$serviceid");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){return [];}
+    $rows=array();
+    foreach($data["rows"] as $r){
+        if(intval(isset($r["enabled"])?$r["enabled"]:0)===1){$rows[]=$r;}
+    }
+    usort($rows,function($a,$b){return strcmp(isset($a["directory"])?$a["directory"]:"",isset($b["directory"])?$b["directory"]:"");});
+    return $rows;
+}
+}
+
+// fetch_ngx_subdir_items_for_dir returns ngx_subdir_items rows for a directory
+// sorted by zorder PHP-side.
+if (!function_exists('fetch_ngx_subdir_items_for_dir')) {
+function fetch_ngx_subdir_items_for_dir($directoryid):array{
+    $directoryid=intval($directoryid);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/ngx_subdir_items/directoryid/$directoryid");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){return [];}
+    $rows=$data["rows"];
+    usort($rows,function($a,$b){return intval(isset($a["zorder"])?$a["zorder"]:0) - intval(isset($b["zorder"])?$b["zorder"]:0);});
+    return $rows;
+}
+}
+
+// fetch_httrack_site_for_service returns the first httrack_sites row for a
+// given serviceid (httrack maps 1-to-1 with nginx services). Empty on miss.
+if (!function_exists('fetch_httrack_site_for_service')) {
+function fetch_httrack_site_for_service($serviceid):array{
+    $serviceid=intval($serviceid);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/httrack_sites/serviceid/$serviceid");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"]) || count($data["rows"])==0){return [];}
+    return $data["rows"][0];
+}
+}
 
 function ifFrontEndSSL($SERVICE_ID):bool {
     $nginxsock = new socksngix($SERVICE_ID);
     $ssl_certificate=$nginxsock->GET_INFO("ssl_certificate");
     if($ssl_certificate==null){return false;}
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-
-    $results=$q->QUERY_SQL("SELECT * FROM stream_ports WHERE serviceid='$SERVICE_ID'");
+    $results=fetch_stream_ports_for_service($SERVICE_ID);
     foreach ($results as $index=>$ligne){
         $options=unserialize(base64_decode($ligne["options"]));
         $ssl=intval($options["ssl"]);
@@ -39,9 +103,8 @@ function StringToPRCE($pattern):string{
 function get_nginx_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    return strval($ligne["servicename"]);
+    $ligne=fetch_nginx_service_row($ID);
+    return isset($ligne["servicename"]) ? strval($ligne["servicename"]) : "";
 }
 function proxy_upstream_name($SERVICE_ID):string{
     $get_servicename=get_nginx_servicename($SERVICE_ID);
@@ -348,9 +411,8 @@ function proxy_buffering($SERVICE_ID):string{
 function GetServiceType($SERVICE_ID):int{
     $SERVICE_ID=intval($SERVICE_ID);
     if($SERVICE_ID==0){return 0;}
-    $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT `type` FROM nginx_services WHERE ID=$SERVICE_ID");
-    return intval($ligne["type"]);
+    $ligne=fetch_nginx_service_row($SERVICE_ID);
+    return intval(isset($ligne["type"])?$ligne["type"]:0);
 }
 
 function build_httpreverse($MASTER_LINE,$SERVICE_ID,$DEFAULT_SERVER=false):string{
@@ -360,7 +422,6 @@ function build_httpreverse($MASTER_LINE,$SERVICE_ID,$DEFAULT_SERVER=false):strin
     $AS_SSL                 = ifFrontEndSSL($SERVICE_ID);
     $servicename            = $MASTER_LINE["servicename"];
     $zorder                 = intval($MASTER_LINE["zorder"]);
-    $q                      = new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $nginxsock              = new socksngix(0);
     $sock                   = new socksngix($SERVICE_ID);
     $DenyAccess             = intval($sock->GET_INFO("DenyAccess"));
@@ -544,7 +605,7 @@ function build_httpreverse($MASTER_LINE,$SERVICE_ID,$DEFAULT_SERVER=false):strin
 
 
 //-------------------------------------------------------------------------------------------------
-    $results=$q->QUERY_SQL("SELECT * FROM ngx_directories WHERE serviceid='$SERVICE_ID' AND enabled=1 ORDER BY directory");
+    $results=fetch_ngx_directories_enabled_for_service($SERVICE_ID);
     $CountOfDirectories=count($results);
     $f[]="";
     $f[]="# Count of Locations: $CountOfDirectories";
@@ -586,7 +647,7 @@ function build_httpreverse($MASTER_LINE,$SERVICE_ID,$DEFAULT_SERVER=false):strin
         $f[]="\tlocation$signe $Directory {";
         $f[]="#\t\tDirectoryID:$SERVICE_ID:$DirectoryID (redirect={$options["REDIRECT_HTTP"]})";
         $redirect=trim(parse_redirect($Directory,$options["REDIRECT_HTTP"]));
-        $resultsItems=$q->QUERY_SQL("SELECT * FROM ngx_subdir_items WHERE directoryid='$DirectoryID' ORDER BY zorder");
+        $resultsItems=fetch_ngx_subdir_items_for_dir($DirectoryID);
         foreach ($resultsItems as $index=>$ligneItems){
                 if($ligneItems["item"]=="*"){$ligneItems["item"]="all";}
                 $f[]="\t\t$item_prefix {$ligneItems["item"]};";
@@ -807,14 +868,11 @@ function parse_redirect($Directory,$REDIRECT_HTTP=null):string{
 }
 
 function  WebCopyExcludes($SERVICE_ID,$reverseProxy):string{
-    $q              = new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $tt=array();
-    if(!$q->FIELD_EXISTS("httrack_sites","exclude")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD exclude TEXT NULL");
-    }
-
-    $WebCopy=$q->mysqli_fetch_array("SELECT exclude FROM httrack_sites WHERE serviceid=$SERVICE_ID");
-    $exclude=$WebCopy["exclude"];
+    // Daemon owns the httrack_sites.exclude column (DBConf.go FixTables); the
+    // PHP-side ALTER TABLE check is no longer needed.
+    $WebCopy=fetch_httrack_site_for_service($SERVICE_ID);
+    $exclude=isset($WebCopy["exclude"])?$WebCopy["exclude"]:"";
     if($exclude==null){$exclude="*.gz,*.zip,*.exe,*.iso,*.nrg,*.pdf";}
     $excludes=explode(",",$exclude);
     foreach ($excludes as $ext){
@@ -861,9 +919,8 @@ function WebCopyRoot($SERVICE_ID):string{
 
 function WebCopyEnabled($SERVICE_ID):int{
     if(intval($SERVICE_ID)==0){return 0;}
-    $q              = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $WebCopy=$q->mysqli_fetch_array("SELECT * FROM httrack_sites WHERE serviceid=$SERVICE_ID");
-    $WebCopyEnabled=intval($WebCopy["enabled"]);
+    $WebCopy=fetch_httrack_site_for_service($SERVICE_ID);
+    $WebCopyEnabled=intval(isset($WebCopy["enabled"])?$WebCopy["enabled"]:0);
     $workingdir="/home/artica/WebCopy/$SERVICE_ID";
     if(!is_file($workingdir."/EXEC")){return 0;}
     return $WebCopyEnabled;
@@ -1132,12 +1189,7 @@ function x_nginx_pagespeed($SERVICE_ID=0){
     @chown("www-data","/etc/nginx/pagespeed");
 
     if(!x_nginx_pagespeed_global()){
-        $unix=new unix();
-        $php=$unix->LOCATE_PHP5_BIN();
-        shell_exec("$php /usr/share/artica-postfix/exec.nginx.php --restart-build");
-        if(!x_nginx_pagespeed_global()){
-            return "# Unable to set main configuration...!\n";
-        }
+        return "# Unable to set main configuration...!\n";
     }
 
 

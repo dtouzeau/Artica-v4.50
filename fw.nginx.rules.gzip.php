@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
 if(isset($_GET["service-js"])){service_js();exit;}
@@ -198,12 +200,13 @@ function popup_table(){
     $html[]="</div>";
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{acl_rep_mime_type}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
@@ -228,20 +231,8 @@ function popup_table(){
 
     }
 
-        $html[]="</tbody>";
-        $html[]="<tfoot>";
-
-        $html[]="<tr>";
-        $html[]="<td colspan='3'>";
-        $html[]="<ul class='pagination pull-right'></ul>";
-        $html[]="</td>";
-        $html[]="</tr>";
-        $html[]="</tfoot>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-        $html[]="$(document).ready(function() { $('#$tableid').footable( { \"filtering\": { \"enabled\": true";
-        $html[]="},\"sorting\": { \"enabled\": true },";
-        $html[]="\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         }

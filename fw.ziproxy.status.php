@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.openvpn.inc");
@@ -30,6 +31,12 @@ function ufdbdebug_popup(){
 	$sock=new sockets();
 	$UfdbDebugAll=intval(($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbDebugAll")));
 	
+	// Reglage tenu par une politique Artica Meta (ufdbrules) : pas de bascule locale.
+	include_once(dirname(__FILE__)."/ressources/class.ufdbrules.meta.inc");
+	if(count(ufdbrules_meta_locked_keys(array("UfdbDebugAll")))>0){
+		echo $tpl->div_error(ufdbrules_meta_text());
+		return;
+	}
 	if($UfdbDebugAll==1){$UfdbDebugAll=0;}else{$UfdbDebugAll=1;}
 	$sock->SET_INFO("UfdbDebugAll", $UfdbDebugAll);
 	
@@ -118,7 +125,7 @@ function table(){
 	$ARRAY["TITLE"]="{restarting_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-Ziproxystatus','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-Ziproxy-restart');";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-Ziproxy-restart');";
 	
 	
 	$html[]="<table style='width:100%'>";

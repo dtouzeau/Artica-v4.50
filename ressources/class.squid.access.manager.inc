@@ -1,7 +1,9 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 include_once(dirname(__FILE__)."/class.squid.acls.inc");
 include_once(dirname(__FILE__)."/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/class.http_access_defaults.inc");
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class squid_access_manager{
 	private $acls;
@@ -16,8 +18,8 @@ class squid_access_manager{
         if(preg_match("#^[567]\.#",$this->SquidVersion)){$this->isSquid5=true;}
 		
 		
-		if(!is_file("/etc/artica-postfix/settings/Daemons/AllowWindowsUpdates")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowWindowsUpdates", 1);}
-		if(is_file("/etc/artica-postfix/settings/Daemons/SquidUrgency")){
+		if(!artica_setting_exists("AllowWindowsUpdates")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowWindowsUpdates", 1);}
+		if(artica_setting_exists("SquidUrgency")){
 			$this->SquidUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidUrgency"));
 		}
 		$this->acls=new squid_acls();
@@ -39,129 +41,19 @@ class squid_access_manager{
 	
 	
 	function build_all():bool{
-		$this->deny_global();
-		$this->allow_auth();
-		$this->url_rewrite_access();
+        $this->url_rewrite_access();
 		return true;
 	}
 
-
-	
-	
-
-	
-	
-	function deny_global():bool{
-		$f=array();
-		$f[]="acl DnsIPfake dst 127.0.0.3";
-		$f[]="http_access deny DnsIPfake all";
-		$f[]="";
-		
-		
-		if($this->SquidUrgency){
-			$f[]="#Emergency mode !!! ";
-			@file_put_contents("/etc/squid3/GlobalAccessManager_deny.conf", @implode("\n",$f));
-			return true;
-		}
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$this->acl_extensions();
-		$head1=null;
-		$sql="SELECT *  FROM `global_whitelist` WHERE enabled=1 and deny_global=1";
-		$results = $q->QUERY_SQL($sql);
-		if(!$q->ok){echo $q->mysql_error."\n";}
-		$f[]="# ". date("Y-md-H:i:s");
-		$f[]="# Deny auth ".count($results)." rules";
-		
-		foreach ($results as $index=>$ligne){
-			$acls_name="Group{$ligne["groupid"]}";
-			if(!$this->acls->availableGroups[$ligne["groupid"]]){
-				$f[]="# [$index] Group{$ligne["groupid"]} unavailable For rule {$ligne["groupid"]}";
-				continue;}
-			$f[]="http_access deny $acls_name all";
-				
-		}
-		
-		
-		$sql="SELECT *  FROM `global_whitelist` WHERE enabled=1 and deny_ext=1";
-		$results = $q->QUERY_SQL($sql);
-		if(!$q->ok){echo $q->mysql_error."\n";}
-		$ext=0;
-		foreach ($results as $index=>$ligne){
-			$acls_name="Group{$ligne["groupid"]}";
-			if(!$this->acls->availableGroups[$ligne["groupid"]]){continue;}
-			$ext++;
-			$f[]="http_access deny $acls_name BlockDangerousFiles all";
-		
-		}		
-
-		
-		if($ext>0){$head1="acl BlockDangerousFiles urlpath_regex -i \"/etc/squid3/dangerous_extensions.conf\"\n"; }
-		
-		
-		@file_put_contents("/etc/squid3/GlobalAccessManager_deny.conf", $head1.@implode("\n",$f). "\n");
-        return true;
-	}
-	
-	
-	function acl_extensions(){
-		$cachefile="/etc/squid3/dangerous_extensions.conf";
-		$extz[]="exe";
-		$extz[]="pif";
-		$extz[]="application";
-		$extz[]="gadget";
-		$extz[]="msi";
-		$extz[]="msu";
-		$extz[]="msp";
-		$extz[]="com";
-		$extz[]="scr";
-		$extz[]="hta";
-		$extz[]="cpl";
-		$extz[]="msc";
-		$extz[]="bat";
-		$extz[]="cmd";
-		$extz[]="vb";
-		$extz[]="vbs";
-		$extz[]="vbe";
-		$extz[]="jse";
-		$extz[]="ws";
-		$extz[]="wsf";
-		$extz[]="wsc";
-		$extz[]="wsh";
-		$extz[]="ps1";
-		$extz[]="ps1xml";
-		$extz[]="ps2";
-		$extz[]="ps2xml";
-		$extz[]="psc1";
-		$extz[]="psc2";
-		$extz[]="msh";
-		$extz[]="msh1";
-		$extz[]="msh2";
-		$extz[]="mshxml";
-		$extz[]="msh2xml";
-		$extz[]="scf";
-		$extz[]="lnk";
-		$extz[]="inf";
-		$extz[]="reg";
-
-		foreach ($extz as $ext){
-			$f[]="\.$ext(\?.*)?$";
-		}
-		$f[]="";
-		@file_put_contents("$cachefile", @implode("\n", $f));
-		
-	}
-	
-	function deny_ufdb():bool{
-		$cachefile="/etc/squid3/GlobalAccessManager_url_rewrite.conf";
-        if(!is_file($cachefile)){@touch($cachefile);}
-    	return true;
-	}
-	
-
-	
 	private function url_rewrite_access():bool{
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $results = $q->QUERY_SQL("SELECT * FROM squid_url_rewrite_acls WHERE enabled=1 ORDER BY zorder");
+        // acls.db is API-only — list url-rewrite ACL rules via the acls backend (enabled only, zorder).
+        $rw=acls_api_get("/proxy/url-rewrite/acls");
+        $results=array();
+        if(is_array($rw)){foreach($rw as $r){
+            if(!is_array($r)){continue;}
+            if(intval($r["enabled"] ?? 0)!=1){continue;}
+            $results[]=array("ID"=>intval($r["id"] ?? 0),"aclport"=>intval($r["aclPort"] ?? 0),"ztype"=>(string)($r["zType"] ?? ""),"rulename"=>(string)($r["ruleName"] ?? ""));
+        }}
         $anotates=array();
         $HEADERS=array();
         $squid_acls_groups = new squid_acls_groups();
@@ -203,34 +95,7 @@ class squid_access_manager{
 
 
 
-	function allow_auth(){
 
-
-
-        $f=array();
-		
-		if($this->SquidUrgency==1){
-			@file_put_contents("/etc/squid3/GlobalAccessManager_auth.conf", "# Emergency mode!\n");
-			return;
-		}
-		
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT *  FROM `global_whitelist` WHERE enabled=1 and deny_auth=1";
-		$results = $q->QUERY_SQL($sql);
-		
-		if(count($results)>0){
-			foreach ($results as $index=>$ligne){
-				$acls_name="Group{$ligne["groupid"]}";
-				if(!$this->acls->availableGroups[$ligne["groupid"]]){continue;}
-				$f[]="http_access allow $acls_name";
-				
-			}
-		
-		}
-		
-		@file_put_contents("/etc/squid3/GlobalAccessManager_auth.conf", @implode("\n",$f). "\n");
-		
-	}
 	
 
 	

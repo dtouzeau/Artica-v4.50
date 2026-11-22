@@ -1,6 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 $GLOBALS["ztype"][0]="{dstdomain}";
@@ -70,20 +73,21 @@ function deny_cache_popup(){
 	$items=$_GET["deny-cache-popup"];
 	$btn="{add}";
 	$jsAdd=";BootstrapDialog1.close()";
+	$ligne=[];
 	if($items==null){
 		$form[]=$tpl->field_text("item", "{item}", null);
 		$title="{new_item}";
 	}else{
 		$jsAdd=null;
 		$btn="{apply}";
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM deny_cache_domains WHERE items='$items'");
+		$row=acls_api_get("/proxy/deny-cache/".urlencode($items));
+		if(is_array($row)){$ligne=$row;}
 		$tpl->field_hidden("item", $items);
 	}
 	$form[]=$tpl->field_array_hash($GLOBALS["ztype"], "ztype", "{type}", intval($ligne["ztype"]));
 	echo $tpl->form_outside($title,@implode("\n", $form),"{squid_ask_domain}<br>{deny_from_cache_explain}",$btn,"LoadAjax('table-loader','$page?main=yes');$jsAdd","AsSquidAdministrator");
-	
-	
+
+
 }
 
 function pattern_import_save(){
@@ -91,34 +95,33 @@ function pattern_import_save(){
     $tpl->CLEAN_POST();
     $tb=explode("\n",$_POST["import"]);
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $acl=new squid_acls();
     $IP=new IP();
 
     foreach($tb as $item) {
         $www=trim(strtolower($item));
         if($www==null){continue;}
-        $q->QUERY_SQL("DELETE FROM deny_cache_domains WHERE items='{$www}'");
+        acls_api_send("DELETE","/proxy/deny-cache/".urlencode($www));
         $ztype=0;
         if($IP->isIPAddressOrRange($www)){
             $ztype=1;
-            $q->QUERY_SQL("INSERT OR IGNORE INTO deny_cache_domains (items,ztype) VALUES ('{$www}','$ztype')");
+            list($ok,$err)=acls_api_send("POST","/proxy/deny-cache",["items"=>$www,"ztype"=>$ztype]);
+            if(!$ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($err));return;}
             continue;
         }
         $www=$tpl->CleanWebSite($www);
         if(substr($www,0, 1)<>"^"){$www=$acl->dstdomain_parse($www);}
-        $q->QUERY_SQL("INSERT OR IGNORE INTO deny_cache_domains (items,ztype) VALUES ('{$www}','$ztype')");
-        if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+        list($ok,$err)=acls_api_send("POST","/proxy/deny-cache",["items"=>$www,"ztype"=>$ztype]);
+        if(!$ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($err));return;}
     }
 }
 
 function deny_cache_delete(){
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $item=$_GET["deny-cache-delete"];
-    $q->QUERY_SQL("DELETE FROM deny_cache_domains WHERE items='$item'");
-    if(!$q->ok){
+    list($ok,$err)=acls_api_send("DELETE","/proxy/deny-cache/".urlencode($item));
+    if(!$ok){
         $tp=new template_admin();
-        $tp->js_mysql_alert($q->mysql_error);
+        $tp->js_mysql_alert($err);
         return;
     }
     header("content-type: application/x-javascript");
@@ -144,41 +147,32 @@ function pattern_import_popup(){
 function main(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-
-
 
 	$TRCLASS=null;
-	
+
 	$t=time();
 
-	if(!$q->FIELD_EXISTS("deny_cache_domains","ztype")) {
-        $q->QUERY_SQL("ALTER TABLE deny_cache_domains ADD ztype INTEGER NOT NULL DEFAULT 0");
-    }
-
-	
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{items}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize center'>{delete}</th>";
+	$html[]="<th>{items}</th>";
+	$html[]="<th>{type}</th>";
+	$html[]="<th class='center'>{delete}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-	$q->QUERY_SQL("DELETE FROM deny_cache_domains WHERE items=''");
-	
-	$sql="SELECT * FROM deny_cache_domains ORDER BY items";
-	$results=$q->QUERY_SQL($sql);
-	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+	$html[]="<tbody id='denycache-rows'>";
+
+	$rows=acls_api_get("/proxy/deny-cache");
+	if(!is_array($rows)){$rows=[];}
+
+	foreach ($rows as $ligne){
+		$TRCLASS=null;
 		$md=md5(serialize($ligne));
-		
+
 		$itemenc=urlencode($ligne["items"]);
 		$item=$tpl->td_href($ligne["items"],null,"Loadjs('$page?deny-cache-js=$itemenc');");
-		
+
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td nowrap>$item</td>";
 		$html[]="<td style='width:1%' nowrap>".$GLOBALS["ztype"][intval($ligne["ztype"])]."</td>";
@@ -187,55 +181,48 @@ function main(){
 	}
 
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='3'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='denycache-pager'></span></div>";
+	$html[]="</div></div>";
 	$html[]="
 <script>
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-</script>";	
-	
-echo $tpl->_ENGINE_parse_body($html);
-	
-	
+</script>";
+
+echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"denycache-rows","denycache-pager");
+
+
 }
 
 function add_nocache_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 	$acl=new squid_acls();
 	$IP=new IP();
-	
+
 	$www=strtolower($_POST["item"]);
 	if($www==null){
 		echo $tpl->_ENGINE_parse_body("{DOMAIN_CANNOT_BE_NULL}");
 		return;
 	}
 	$ztype=intval($_POST["ztype"]);
-	
-	$q->QUERY_SQL("DELETE FROM deny_cache_domains WHERE items='{$_POST["item"]}'");
-	if(!$q->ok){echo $q->mysql_error;return;}
+
+	acls_api_send("DELETE","/proxy/deny-cache/".urlencode($_POST["item"]));
 	if($IP->isIPAddressOrRange($www)){if($ztype==0){$ztype=1;}}else{
 		$www=$tpl->CleanWebSite($www);
 		if(substr($www,0, 1)<>"^"){$www=$acl->dstdomain_parse($www);}
 	}
-	
+
 	if($www==null){
 		echo $tpl->_ENGINE_parse_body("{DOMAIN_CANNOT_BE_NULL}");
 		return;
 	}
-	
-	$q->QUERY_SQL("INSERT OR IGNORE INTO deny_cache_domains (items,ztype) VALUES ('{$www}','$ztype')");
-	if(!$q->ok){echo $q->mysql_error;return;}
-	
-	
+
+	list($ok,$err)=acls_api_send("POST","/proxy/deny-cache",["items"=>$www,"ztype"=>$ztype]);
+	if(!$ok){echo $err;return;}
+
+
 }

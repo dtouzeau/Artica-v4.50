@@ -210,9 +210,10 @@ class squidstat{
         }
         $table=array();
         foreach($users as $key=>$v){
+            // Pentest 2026-11-04 : utilisateur ou hote du proxy affiche sans encodage (XSS stockee).
             $ausers++;
             $table[]='<tr>';
-            $table[]='<td colspan="2" style=\'border-top:2px solid #CCCCCC\'><i class="fas fa-users"></i>&nbsp;<b>'.(is_int($key)?long2ip($key):$key).'</b></td>';
+            $table[]='<td colspan="2" style=\'border-top:2px solid #CCCCCC\'><i class="fas fa-users"></i>&nbsp;<b>'.req_html(is_int($key)?long2ip($key):$key).'</b></td>';
             $table[]='<td colspan="5" style=\'border-top:2px solid #CCCCCC\'>&nbsp;</td>';
             $table[]='</tr>';
 

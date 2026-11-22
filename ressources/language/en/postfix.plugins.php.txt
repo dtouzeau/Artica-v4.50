@@ -78,10 +78,9 @@ Because viewing HTML mail can enable a "Spammer" to validate an email address (v
 <APP_SPAMASS_MILTER_DEFS>spamass-milter allow to directly connect postfix to spamassassin anti-spam Open Source product.[br]
 SpamAssassin uses a wide variety of local and network tests to identify spam signatures.[br]
 This makes it harder for spammers to identify one aspect which they can craft their messages to work around.</APP_SPAMASS_MILTER_DEFS>
-<APP_SPFMILTER_DEFS>Spfmilter implements the Sender Policy Framework.[br]
+<APP_SPFMILTER_DEFS>Implements the Sender Policy Framework.[br]
 The Sender Policy Framework (SPF) is an open standard specifying a technical method to prevent sender address forgery.[br]
-More precisely, the current version of SPF — called SPFv1 or SPF Classic — protects the envelope sender address,
-which is used for the delivery of messages.</APP_SPFMILTER_DEFS>
+Protects the envelope sender address,which is used for the delivery of messages.</APP_SPFMILTER_DEFS>
 <ARTICA_POLICY_DEF>Artica-policy  is a Policy server hooking when HELO/EHLO start in sessions. It provide:
 [ul]
 [li]Blacklist features per users/domains[/li]

@@ -2,11 +2,15 @@
 $GLOBALS["PEITYCONF"]="{ width:150,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.hacluster-backends.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.haproxy.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.manager.inc");
 
+if(isset($_GET["smp-off-js"])){smp_off_js();exit;}
+if(isset($_GET["smp-off-popup"])){smp_off_popup();exit;}
+if(isset($_GET["smp-off-perform"])){smp_off_perform();exit;}
 if(isset($_GET["add-proxy"])){add_proxy_js();exit;}
 if(isset($_GET["switch-prod"])){switch_prod();exit;}
 if(isset($_POST["switch-prod"])){switch_prod_confirmed();exit;}
@@ -19,22 +23,47 @@ if(isset($_GET["btn"])){td_buttons();exit;}
 if(isset($_GET["apikey-js"])){apikey_js();exit;}
 if(isset($_GET["apikey-popup"])){apikey_popup();exit;}
 if(isset($_POST["apikey"])){apikey_save();exit;}
+
+function smp_off_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $ID=intval($_GET["smp-off-js"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
+    return $tpl->js_dialog10($title, "$page?smp-off-popup=$ID",650);
+}
+function smp_off_popup():bool{
+    $ID=intval($_GET["smp-off-popup"]);
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $btn=$tpl->button_autnonome("{SquidSMPDisabled_on}","Loadjs('$page?smp-off-perform=$ID')",ico_run);
+    echo $tpl->div_warning("{SquidSMPDisabled}||{SquidSMPDisabled_explain}<div style='text-align:right;margin-top:30px;margin-right:20px'>$btn</div>");
+    return true;
+}
+function smp_off_perform():bool{
+    $ID=intval($_GET["smp-off-perform"]);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/client/$ID/recover-smp-proxy");
+    admin_tracks("HaCluster: Recover multiple-cpu on node $ID");
+    $tpl=new template_admin();
+    echo $tpl->js_ok("{success}");
+    echo "dialogInstance10.close();";
+    return true;
+}
+
 function apikey_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["apikey-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_dialog3($title, "$page?apikey-popup=$ID");
 }
 function apikey_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["apikey-popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT apikey FROM hacluster_backends WHERE ID=$ID");
-    $APIKEY=$ligne["apikey"];
+    $ligne=hacluster_db_get_backend($ID);
+    $APIKEY=$ligne["apikey"] ?? "";
     $form[]=$tpl->field_hidden("apikey",$ID);
     $form[]=$tpl->field_password("key","{API_KEY}",$APIKEY);
     echo $tpl->form_outside("",$form,null,"{apply}",
@@ -55,9 +84,8 @@ function switch_prod():bool{
 
 }
 function switch_prod_confirmed():bool{
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ID=$_POST["switch-prod"];
-    $q->QUERY_SQL("UPDATE hacluster_backends SET status='100' WHERE ID=$ID");
+    $ID=intval($_POST["switch-prod"]);
+    hacluster_db_update_backend($ID, array("status"=>100));
 
     $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/nodes/add/$ID"));
     if(!$json->Status){
@@ -69,12 +97,10 @@ function switch_prod_confirmed():bool{
 function apikey_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["apikey"];
+    $ID=intval($_POST["apikey"]);
     $key=$_POST["key"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $q->QUERY_SQL("UPDATE hacluster_backends SET apikey='$key' WHERE ID=$ID");
-    if(!$q->ok){
-        echo $tpl->post_error($q->mysql_error);
+    if(!hacluster_db_update_backend($ID, array("apikey"=>$key))){
+        echo $tpl->post_error("update failed");
         return false;
     }
 
@@ -97,17 +123,15 @@ function backend_zoom_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["backend-zoom-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_dialog2($title, "$page?backend-tab=$ID&stats=$stats");
 }
 function backend_tab():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $ID=intval($_GET["backend-tab"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $ligne=hacluster_db_get_backend($ID);
     $stats=$_GET["stats"];
     $array["{status}"]="$page?backend-zoom-start=$ID&stats=$stats";
     if($ligne["microproxy"]==1) {
@@ -192,11 +216,11 @@ function backend_zoom():bool{
         $stats = $_GET["stats"];
     }
     $ID=intval($_GET["backend-zoom"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $ligne=hacluster_db_get_backend($ID);
 
-    $title="{$ligne["backendname"]}";
+    $title=$ligne["backendname"] ?? "";
     $application_state=$ligne["status"];
+    $HaClusterBackends=new HaClusterBackends($ID);
 
     $html[]="<H2>$title</H2><hr>";
     $html[]="<table style='width:100%'>";
@@ -257,6 +281,9 @@ function backend_zoom():bool{
 
     $Status_text=$Status[$MyStats["status"]]."<br><small>{$MyStats["check_desc"]}</small>";
     $tpl->table_form_field_text("{ID}", $ID, ico_params);
+    $tpl->table_form_field_text("{version}", $HaClusterBackends->ArticaVersion, ico_infoi);
+
+
 
     if($application_state==100){
         $tpl->table_form_field_text("{application_state}", "{installed}", ico_cd);
@@ -271,7 +298,19 @@ function backend_zoom():bool{
     list($IN,$OUT)=td_inout($MyStats);
     $tpl->table_form_field_text("{bandwidth}", "$IN/$OUT", ico_performance);
     $tpl->table_form_field_text("{chkdown}", $tpl->FormatNumber($MyStats["chkdown"]), ico_computer_down);
-     $tpl->table_form_field_text("{weight}",$MyStats["weight"],ico_weight);
+    // Poids CONFIGURE (bweight), plus la part reduite annoncee par l'agent ; pas le poids HAProxy (x10).
+    $tpl->table_form_field_text("{weight}",zoom_weight_text($ligne,$ID),ico_weight);
+    // Reponse de l'agent (rapport minute du noeud) : rien d'affiche si absente ou invalide.
+    $agent=zoom_agent_answer($ID);
+    if($agent!==null){
+        $tpl->table_form_field_text("{hacluster_agent_answer}",htmlspecialchars($agent["state"]),ico_performance);
+        if($agent["weight"]>=0){
+            $tpl->table_form_field_text("{hacluster_agent_share}",$agent["weight"]." %",ico_weight);
+        }
+        if($agent["reason"]<>""){
+            $tpl->table_form_field_text("{hacluster_agent_reason}",htmlspecialchars($agent["reason"]),ico_infoi);
+        }
+    }
     $tpl->table_form_field_text("{connections}",$tpl->FormatNumber($MyStats["connect"]),ico_nic);
     $html[]=$tpl->table_form_compile();
 
@@ -288,14 +327,44 @@ function backend_zoom():bool{
 }
 
 
+// Texte du poids : bweight (0 ou absent -> 1), plus " &middot; NN %" si weight_effective_pct est connu et < 100.
+// La part vient de /hacluster/clients ; inconnue (articarest ancien, erreur) -> bweight seul.
+function zoom_weight_text($ligne,$ID):string{
+    $bw=intval(is_array($ligne) && isset($ligne["bweight"])?$ligne["bweight"]:0);
+    if($bw<=0){$bw=1;}
+    $b=(isset($GLOBALS["backends"]) && is_object($GLOBALS["backends"]))?$GLOBALS["backends"]:null;
+    if($b===null){
+        $j=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/clients"));
+        if(is_object($j) && isset($j->backends) && is_object($j->backends)){$b=$j->backends;}
+    }
+    if($b!==null && isset($b->{"proxy$ID"}->weight_effective_pct)){
+        $pct=intval($b->{"proxy$ID"}->weight_effective_pct);
+        if($pct>=0 && $pct<100){return $bw." &middot; ".$pct." %";}
+    }
+    return strval($bw);
+}
+
+// Lit agent_state / agent_weight / agent_reason dans logs/hacluster/<ID>/node-metrics.json.
+// null si fichier absent, JSON invalide ou agent_state vide. Valeurs NON echappees.
+function zoom_agent_answer(int $ID){
+    $f=dirname(__FILE__)."/ressources/logs/hacluster/$ID/node-metrics.json";
+    if(!is_file($f)){return null;}
+    $j=json_decode((string)@file_get_contents($f),true);
+    if(!is_array($j) || !isset($j["agent_state"]) || !is_scalar($j["agent_state"])){return null;}
+    $state=trim((string)$j["agent_state"]);
+    if($state===""){return null;}
+    $w=(isset($j["agent_weight"]) && is_numeric($j["agent_weight"]))?max(0,min(100,intval($j["agent_weight"]))):-1;
+    $reason=(isset($j["agent_reason"]) && is_scalar($j["agent_reason"]))?trim((string)$j["agent_reason"]):"";
+    return array("state"=>$state,"weight"=>$w,"reason"=>mb_substr($reason,0,200));
+}
+
 function td_buttons(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["btn"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $microproxy=$ligne["microproxy"];
-    $apikey=$ligne["apikey"];
+    $ligne=hacluster_db_get_backend($ID);
+    $microproxy=$ligne["microproxy"] ?? 0;
+    $apikey=$ligne["apikey"] ?? "";
 
     $reconfigure_node=$tpl->framework_buildjs("/hacluster/server/notify/node/$ID",
         "hacluster.connect.$ID.progress",
@@ -349,10 +418,9 @@ function backend_zoom_hacluster_LBState():string{
     if(!$json->Status){
         return $tpl->widget_rouge("{APP_HACLUSTER}: {protocol_error}","{error}");
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $ligne=hacluster_db_get_backend($ID);
 
-    $title="{$ligne["backendname"]}";
+    $title=$ligne["backendname"] ?? "";
 
     $proxyName="proxy$ID";
     if(!property_exists($json->backends,$proxyName)){

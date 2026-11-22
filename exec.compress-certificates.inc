@@ -53,7 +53,7 @@ function xrun($path){
 	
 	if(!is_dir($path)){
 		echo "$path no such file or directory\n";
-		die("DIE " .__FILE__." Line: ".__LINE__);
+		die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 	}
 	
 	$MAIN=unserialize(@file_get_contents($finalp));

@@ -3,6 +3,10 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.templates.manager.inc");
 
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+// La page ajoute et supprime des fichiers des pages d'erreur du proxy.
+$users=new usersMenus(); if(!$users->AsSquidAdministrator){exit();}
 if(isset($_GET["new-file"])){new_file();exit;}
 if(isset($_GET["main"])){main();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -27,29 +31,30 @@ function new_file(){
 function delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	$sql="SELECT filename  FROM `templates_files` WHERE ID=".intval($_GET["delete-js"]);
-	$ligne = $q->mysqli_fetch_array($sql);
-	$js="$('#{$_GET["md"]}').remove();";
-	$tpl->js_confirm_delete("{filename} " .$ligne["filename"], "delete", $_GET["delete-js"],$js);
+	$ID=intval($_GET["delete-js"]);
+	list($found,$ligne)=templates_manager_api("GET","/proxy/templates-files/$ID");
+	$filename=($found && is_array($ligne)) ? htmlspecialchars(strval($ligne["filename"] ?? "")) : "#$ID";
+	$md=preg_replace('#[^a-f0-9]#',"",strval($_GET["md"]));
+	$js="$('#$md').remove();";
+	$tpl->js_confirm_delete("{filename} $filename", "delete", $ID,$js);
 	
 }
 
 function delete(){
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	$q->QUERY_SQL("DELETE FROM `templates_files` WHERE ID=".intval($_POST["delete"]));
+	list($ok,$data)=templates_manager_api("DELETE","/proxy/templates-files/".intval($_POST["delete"]));
+	if(!$ok){echo strval($data);}
 }
 
 function show_file(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	$sql="SELECT *  FROM `templates_files` WHERE ID=".intval($_GET["showpic-js"]);
-	$ligne = $q->mysqli_fetch_array($sql);
-	$filename=utf8_encode($ligne["filename"]);
-	$fdata=base64_decode($ligne["contentfile"]);
-	$filesize=FormatBytes($ligne["contentsize"]/1024);
+	list($found,$ligne)=templates_manager_api("GET","/proxy/templates-files/".intval($_GET["showpic-js"]));
+	if(!$found || !is_array($ligne)){echo "alert(".json_encode(strval($ligne)).");";return;}
+	// Le nom stocke devient un nom de fichier sous la racine web : jamais de chemin.
+	$filename=basename(strval($ligne["filename"] ?? ""));
+	if($filename=="" || $filename=="." || $filename==".." || $filename[0]=="."){return;}
+	$fdata=base64_decode(strval($ligne["contentFile"] ?? ""));
+	$filesize=FormatBytes(intval($ligne["contentSize"] ?? 0)/1024);
 	@file_put_contents(dirname(__FILE__)."/ressources/conf/$filename", $fdata);
 	
 	$tpl->js_show_pic($filename, $filesize, "/ressources/conf/$filename");
@@ -72,35 +77,25 @@ function upload_popup(){
 }
 function file_uploaded(){
 	$page=CurrentPageName();
-	$fileName=$_GET["file-uploaded"];
-	$filepath=dirname(__FILE__)."/ressources/conf/upload/{$_GET["file-uploaded"]}";
-	
-	if(!is_file($filepath)){
-		echo "alert('$filepath no such file')";
+	// Le nom arrivait avec ses ../ : reduit a basename() et verifie sous le dossier d'upload.
+	$fileName=basename(strval($_GET["file-uploaded"]));
+	$uploadDir=realpath(dirname(__FILE__)."/ressources/conf/upload");
+	$filepath=$uploadDir."/".$fileName;
+	$real=realpath($filepath);
+	if($uploadDir===false || $fileName=="" || $real===false || dirname($real)!==$uploadDir || is_link($filepath) || !is_file($real)){
+		echo "alert(".json_encode("$fileName: no such file").");";
 		return;
 	}
 	
-	$filesize=@filesize($filepath);
-	$keyfilename=str_replace(" ", "_", $fileName);
-	$keyfilename=str_replace("(", "", $fileName);
-	$keyfilename=str_replace(")", "", $fileName);
-	$keyfilename=str_replace("\"", "", $fileName);
-	$keyfilename=str_replace("'", "", $fileName);
-	$type=mime_content_type($filepath);
-	
-	if(preg_match("#\.css$#", $fileName)){$type="text/css";}
-	if(preg_match("#\.woff$#",$fileName)){$type="application/font-woff";}
-	
-	$content=@file_get_contents($filepath);
-	$content=base64_encode($content);
-	$content=mysql_escape_string2($content);
-	@unlink($filepath);
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-	
-	$sql="INSERT OR IGNORE INTO templates_files(filename,contentfile,contenttype,contentsize) VALUES ('$keyfilename','$content','$type','$filesize')";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){
-		echo "alert('$q->mysql_error')";
+	$type=strval(@mime_content_type($real));
+	$content=base64_encode(strval(@file_get_contents($real)));
+	@unlink($real);
+	// Le daemon nettoie le nom (espaces, guillemets, parentheses), impose le type des .css/.woff
+	// et refuse un nom deja present (l'ancien INSERT OR IGNORE l'ignorait sans rien dire).
+	list($ok,$data)=templates_manager_api("POST","/proxy/templates-files",array(
+		"filename"=>templates_manager_utf8($fileName),"contentType"=>$type,"contentFile"=>$content));
+	if(!$ok){
+		echo "alert(".json_encode(strval($data)).");";
 		return;
 	}
 	
@@ -113,40 +108,43 @@ function table(){
 	
 	$tpl=new template_admin();
 	$users=new usersMenus();
-	$q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
 	$page=CurrentPageName();
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:20px'>";
 	if($users->CORP_LICENSE){if($users->AsSquidAdministrator){	$html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?new-file=yes');\"><i class='fas fa-upload'></i> {new_file} </label>";}}
 	$html[]="</div>";
 	
 	
-	$html[]="<table id='table-template-manager-files' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{filename}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{token}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</th>";
+	$html[]="<th>ID</th>";
+	$html[]="<th class='awc-nowrap'>{filename}</th>";
+	$html[]="<th class='awc-nowrap'>{token}</th>";
+	$html[]="<th>{type}</th>";
+	$html[]="<th>{size}</th>";
+	$html[]="<th>{delete}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='templatesman-rows'>";
 	
 	$TRCLASS=null;
-	$sql="SELECT ID,filename,contenttype,contentsize  FROM `templates_files`";
-	$results = $q->QUERY_SQL($sql);
-	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+	list($listed,$results)=templates_manager_api("GET","/proxy/templates-files");
+	if(!$listed){
+		$html[]="<tr><td colspan='6'>".$tpl->div_error(strval($results))."</td></tr>";
+		$results=array();
+	}
+	foreach ((is_array($results)?$results:array()) as $ligne){
+		$TRCLASS=null;
 		$zmd5=md5(serialize($ligne));
-		$ID=$ligne["ID"];
+		$ID=intval($ligne["id"] ?? 0);
 		$delete=$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$zmd5')");
 		$template_logo="Loadjs('$page?showpic-js=$ID')";
 		
 		
-		$filename=utf8_encode($ligne["filename"]);
-		$filesize=FormatBytes($ligne["contentsize"]/1024);
-		$contenttype=$ligne["contenttype"];
+		$filename=htmlspecialchars(strval($ligne["filename"] ?? ""));
+		$filesize=FormatBytes(intval($ligne["contentSize"] ?? 0)/1024);
+		$contenttype=htmlspecialchars(strval($ligne["contentType"] ?? ""));
 		$token="[file=$filename]";
 		
 		$html[]="<tr class='$TRCLASS' id='$zmd5'>";
@@ -161,23 +159,18 @@ function table(){
 		
 	}
 	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='9'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='templatesman-pager'></span></div>";
+	$html[]="</div></div>";
 	$html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-template-manager-files').footable( {\"filtering\": {\"enabled\": true },\"sorting\": {\"enabled\": true } } ); });
 	</script>";
 	
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"templatesman-rows","templatesman-pager");
 	
 	
 }

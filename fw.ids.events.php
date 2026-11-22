@@ -1,17 +1,20 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["severity"])){severity_choose();exit;}
 if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["enable-signature"])){enable_signature();exit;}
 if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["delete"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["engine"])){engine();exit;}
 page();
@@ -25,13 +28,15 @@ function delete_js(){
 	header("content-type: application/x-javascript");
 	$tpl=new template_admin();
 	$page=CurrentPageName();
+	// Pentest 2026-11-04 : t (et le message d'erreur SQL) etait recopie sans encodage dans la page (XSS).
 	$uduniq=$_GET["delete"];
-	$t=$_GET["t"];
+	$t=intval($_GET["t"]);
 	
 	
 	$q=new postgres_sql();
-	$q->QUERY_SQL("DELETE FROM suricata_firewall WHERE uduniq='$uduniq'");
-	if(!$q->ok){echo "alert('$q->mysql_error')";return;}
+	// Pentest 2026-11-04 : delete (uduniq) etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM suricata_firewall WHERE uduniq=$1",array((string)$uduniq));
+	if(!$q->ok){echo "alert('".req_js($q->mysql_error)."')";return;}
 	
 	
 	
@@ -60,17 +65,18 @@ function engine():bool{
 
 function enable_signature(){
 	$t=time();
-	$id=$_GET["enable-signature"];
+	// Pentest 2026-11-04 : enable-signature etait recopie sans encodage dans la page (XSS).
+	$id=intval($_GET["enable-signature"]);
 	$rulefile=$_GET["cat"];
 	$page=CurrentPageName();
 	$q=new postgres_sql();
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM suricata_sig WHERE signature='$id'"));
-	if(!$q->ok){echo "alert('$q->mysql_error')";return;}
+	if(!$q->ok){echo "alert('".req_js($q->mysql_error)."')";return;}
 	$tpl=new template_admin();
 	
 	if($ligne["enabled"]==0){
 		$q->QUERY_SQL("UPDATE suricata_sig SET enabled=1 WHERE signature='$id'");
-		if(!$q->ok){echo "alert('$q->mysql_error')";return;}
+		if(!$q->ok){echo "alert('".req_js($q->mysql_error)."')";return;}
 		
 		echo "
 document.getElementById('id-$id').style.color = 'black';
@@ -82,7 +88,7 @@ return;
 	}
 	
 	$q->QUERY_SQL("UPDATE suricata_sig SET enabled=0 WHERE signature='$id'");
-	if(!$q->ok){echo "alert('$q->mysql_error')";return;}	
+	if(!$q->ok){echo "alert('".req_js($q->mysql_error)."')";return;}	
 	echo "
 	document.getElementById('id-$id').style.color = '#8a8a8a';
 	document.getElementById('cat-$id').style.color = '#8a8a8a';
@@ -92,15 +98,16 @@ return;
 }
 
 function enable_firewall(){
-	$id=$_GET["enable-firewall"];
+	// Pentest 2026-11-04 : enable-firewall etait recopie sans encodage dans la page (XSS).
+	$id=intval($_GET["enable-firewall"]);
 	$q=new postgres_sql();
 	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM suricata_sig WHERE signature='$id'"));
-	if(!$q->ok){echo "alert('$q->mysql_error')";return;}
+	if(!$q->ok){echo "alert('".req_js($q->mysql_error)."')";return;}
 	$tpl=new template_admin();
 	
 	if($ligne["firewall"]==0){
 		$q->QUERY_SQL("UPDATE suricata_sig SET firewall=1 WHERE signature='$id'");
-		if(!$q->ok){echo "alert('$q->mysql_error')";return;}
+		if(!$q->ok){echo "alert('".req_js($q->mysql_error)."')";return;}
 	
 		echo "
 		document.getElementById('firewall-$id').className= 'fas fa-check-square-o';
@@ -110,7 +117,7 @@ function enable_firewall(){
 	}
 	
 	$q->QUERY_SQL("UPDATE suricata_sig SET firewall=0 WHERE signature='$id'");
-			if(!$q->ok){echo "alert('$q->mysql_error')";return;}
+			if(!$q->ok){echo "alert('".req_js($q->mysql_error)."')";return;}
 			echo "
 			document.getElementById('firewall-$id').className= 'fa fa-square-o';
 	
@@ -210,15 +217,18 @@ function table(){
     }
     $IPClass=new IP();
 
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $esearch=pg_escape_string2($search);
     if(strlen($search)>1) {
         if ($IPClass->isIPAddress($search)) {
-            $QUERY = "WHERE (src_ip='$search' OR dst_ip='$search') AND severity=$sev";
+            $QUERY = "WHERE (src_ip='$esearch' OR dst_ip='$esearch') AND severity=$sev";
         }
         if ($IPClass->IsACDIR($search)) {
-            $QUERY = "WHERE (src_ip::inet << '$search'::inet OR dst_ip::inet << '$search'::inet) AND severity=$sev";
+            $QUERY = "WHERE (src_ip::inet << '$esearch'::inet OR dst_ip::inet << '$esearch'::inet) AND severity=$sev";
         }
         if(is_numeric($search)){
-            $QUERY = "WHERE (dst_port=$search OR signature=$search) AND severity=$sev";
+            $nsearch=intval($search);
+            $QUERY = "WHERE (dst_port=$nsearch OR signature=$nsearch) AND severity=$sev";
         }
     }
 
@@ -246,7 +256,8 @@ function table(){
 
 	
 	if(!$q->ok){
-		echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+		// Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+		echo "<div class='alert alert-danger'>".req_html($q->mysql_error)."<br><strong><code>".req_html($_GET["search"] ?? "")."</code></strong><br><strong><code>".req_html($sql)."</code></strong></div>";
 	}
 	
 	$severity_array[1]="<span class='label label-danger'>Critic.</span>";
@@ -278,7 +289,7 @@ function table(){
         $description=$Infos["description"];
 
 		$signature_js="<a href=\"javascript:blur();\"
-		OnClick=\"Loadjs('fw.ids.rules.php?rule-js=$signature');\"
+		OnClick=\"Loadjs('fw.ids.rules.php?rule-js=".req_url($signature)."');\"
 		style='color:$color;text-decoration:underline'>";
 
         if(preg_match("#^71([0-9]+)#",$signature,$matches)){
@@ -305,12 +316,16 @@ function table(){
 		
 		if($signature==0){$signature_js=null;}
 
+		// Pentest 2026-11-04 : champs d'alerte IDS (donnee externe) affiches sans encodage (XSS stockee).
+		$zDate=req_html($zDate);$src_ip=req_html($src_ip);$proto=req_html($proto);
+		$Address=array_map('req_html',$Address);$category=array_map('req_html',$category);
+		$description=req_html($description);$signature_h=req_html($signature);
 		$html[]="<tr class='$TRCLASS'>";
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>$icon</td>";
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>$zDate</a></td>";
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>$src_ip</td>";
 		$html[]="<td class='$text_class' style='vertical-align:middle;width:1%' nowrap>$proto ".implode(":",$Address)."</span></td>";
-		$html[]="<td>[$signature_js$signature</a>]: $description</td>";
+		$html[]="<td>[$signature_js$signature_h</a>]: $description</td>";
         $html[]="<td style='width:1%' nowrap>".implode("/",$category)."</td>";
 		$html[]="</tr>";
 		
@@ -352,7 +367,9 @@ function RuleDetails($ruleid){
         return $GLOBALS["SURIRULES"][$ruleid];
     }
     $q=new postgres_sql();
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_tmp WHERE signature='$ruleid'");
+    // Pentest 2026-11-04 : ruleid (signature issue des evenements IDS) etait concatene dans la requete.
+    $eruleid=pg_escape_string2($ruleid);
+    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_tmp WHERE signature='$eruleid'");
     $GLOBALS["SURIRULES"][$ruleid]=array(
         "description"=>$ligne["description"],
         "source_file"=>$ligne["source_file"],
@@ -365,9 +382,11 @@ function enable(){
 	
 	$filename=$_POST["filename"];
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM suricata_rules_packages WHERE rulefile='$filename'");
-	$enabled=intval($ligne["enabled"]);
+	// Pentest 2026-11-04 : filename etait concatene dans la requete.
+	$res=$q->QUERY_SQL_PARAMS("SELECT enabled FROM suricata_rules_packages WHERE rulefile=?",array((string)$filename));
+	$ligne=(is_array($res) && isset($res[0]))?$res[0]:array();
+	$enabled=intval($ligne["enabled"] ?? 0);
 	if($enabled==0){$enabled=1;}else{$enabled=0;}
-	$q->QUERY_SQL("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile='$filename'","artica_backup");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_rules_packages SET `enabled`=? WHERE rulefile=?",array($enabled,(string)$filename));
 	if(!$q->ok){echo $q->mysql_error;}
 }

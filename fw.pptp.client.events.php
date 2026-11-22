@@ -120,8 +120,9 @@ function table(){
         $date=strtotime($datestr);
         VERBOSE("DATE: $datestr ($date)",__LINE__);
 
-        $pid=$re[4];
-        $line=$re[5];
+        // Pentest 2026-11-04 : ligne de journal pptp (donnee externe) affiche sans encodage (XSS stockee).
+        $pid=req_html($re[4]);
+        $line=req_html($re[5]);
         $datetext=$tpl->time_to_date($date,true);
         if(preg_match("#(does not exist|Error while|Can not|terminated|Terminating|Closing connection|is not connected|Could not|exited with error|timed out)#i", $line)){
             $text_class="text-danger";
@@ -140,7 +141,7 @@ function table(){
         }
 
         if(preg_match("#CNX([0-9]+)#",$line,$re)){
-            $line=str_replace("CNX{$re[1]}","<strong>".$connexions_name[$re[1]]."</strong>",$line);
+            $line=str_replace("CNX{$re[1]}","<strong>".req_html($connexions_name[$re[1]] ?? "")."</strong>",$line);
         }
 
 

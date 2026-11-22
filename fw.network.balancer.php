@@ -1,304 +1,223 @@
 <?php
+// Link balancer : répartition et bascule entre plusieurs liens WAN.
+// Toutes les écritures passent par l'API du daemon (/firewall/config/linkbalance),
+// qui applique sans bouton (moteur afirewall/linkbalancer).
+// Migré sur le groupe de passerelles (GET /system/routing/api/lb, lot 5) : les liens se règlent dans l'onglet
+// Groupes de passerelles du routage, la page les montre en lecture seule ; link_balance n'est plus lu par le
+// répartiteur, ses modifications sont refusées. Revert / resume / migrate par POST /system/routing/api/lb/<action>.
+// Daemon sans la route lb (mode unknown) : page historique, sans boutons de migration.
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.firewall.api.inc");
+include_once(dirname(__FILE__)."/ressources/class.routing.api.inc");
+include_once(dirname(__FILE__)."/ressources/class.routing.lb.inc");
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
-if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-
-if(isset($_POST["nic-settings"])){nic_settings();exit;}
-if(isset($_POST["ID"])){edit_save();exit;}
+if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["edit"])){edit_js();exit;}
-if(isset($_GET["enable"])){balancer_enable();exit;}
 if(isset($_GET["popup"])){edit_popup();exit;}
-if(isset($_GET["tabs"])){tabs();exit;}
-if(isset($_GET["interfaces"])){interfaces();exit;}
-if(isset($_GET["params"])){parameters();exit;}
-if(isset($_POST["LinkBalancerSchedule"])){parameters_save();exit;}
+if(isset($_POST["ID"])){edit_save();exit;}
+if(isset($_GET["enable"])){link_enable();exit;}
+if(isset($_GET["switch"])){balancer_switch();exit;}
+if(isset($_GET["lb-switch"])){lb_switch_js();exit;}
+if(isset($_POST["lb-switch-confirm"])){lb_switch_confirm();exit;}
 page();
 
-
-function balancer_enable(){
+function page(){
+    $page=CurrentPageName();
     $tpl=new template_admin();
-    $ID=intval($_GET["enable"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM link_balance WHERE ID='$ID'");
-    if(intval($ligne["enabled"])==0){$enabled=1;}else{$enabled=0;}
-    $q->QUERY_SQL("UPDATE link_balance SET enabled='$enabled' WHERE ID='$ID'");
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}
+    $html=$tpl->page_header("{APP_LINK_BALANCER}","fas fa-bezier-curve","{APP_LINK_BALANCER_EXPLAIN}",
+        "$page?table=yes","link-balancer","progress-lb-restart",false,"table-loader");
+    if(isset($_GET["main-page"])){
+        $tpl=new template_admin("{APP_LINK_BALANCER}",$html);
+        echo $tpl->build_firewall();return;
+    }
+    echo $tpl->_ENGINE_parse_body($html);
 }
+
+function lb_status():array{
+    $st=fwapi_data(fwapi_get("linkbalance/status"));
+    $res=array("active"=>false,"balancing"=>false,"links"=>array());
+    if(!is_array($st)){return $res;}
+    $res["active"]=!empty($st["active"]);
+    $res["balancing"]=!empty($st["balancing"]);
+    if(isset($st["links"]) && is_array($st["links"])){
+        foreach($st["links"] as $l){$res["links"][intval($l["id"])]=$l;}
+    }
+    return $res;
+}
+
+function table(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $r=rtlb_get();
+    $mode=rtlb_mode($r);
+    $lb=($mode==="unknown")?array():$r["data"];
+    $st=lb_status();
+    $html=array();
+    if(!$st["active"]){
+        $html[]=$tpl->div_explain("{lb_switched_off}");
+    }elseif(!$st["balancing"] && $mode!=="group"){
+        $html[]=$tpl->div_warning("{lb_needs_two_links}");
+    }
+    $notices=rtlb_notices($lb);
+    foreach($notices["warning"] as $w){$html[]=$tpl->div_warning($w);}
+    foreach($notices["info"] as $i){$html[]=$tpl->div_explain($i);}
+    if($mode==="group"){
+        // liens réglés dans le groupe : lecture seule, aucune modification de link_balance
+        $html[]=rtlb_members_html($lb);
+    }else{
+        $html[]=legacy_links_html($tpl,$page,$st);
+    }
+
+    $topbuttons=rtlb_buttons($lb,$page,$st["active"]);
+    $TINY_ARRAY=array();
+    $TINY_ARRAY["TITLE"]="{APP_LINK_BALANCER}";
+    $TINY_ARRAY["ICO"]="fas fa-bezier-curve";
+    $TINY_ARRAY["EXPL"]="{APP_LINK_BALANCER_EXPLAIN}";
+    $TINY_ARRAY["URL"]="link-balancer";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $html[]="<script>Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');</script>";
+    echo $tpl->_ENGINE_parse_body($html);
+}
+
+/** Tableau historique des liens (link_balance), modifiable : modes legacy, reverted et unknown. */
+function legacy_links_html($tpl,string $page,array $st):string{
+    $list=fwapi_data(fwapi_get("linkbalance"));
+    if(!is_array($list)){
+        return $tpl->div_error(fwapi_error(fwapi_get("linkbalance")));
+    }
+    $html=array();
+    $html[]="<table class='table table-stripped'>";
+    $html[]="<thead><tr><th>{interface}</th><th>{status}</th><th>{weight}</th><th>{check}</th><th>{enabled}</th></tr></thead><tbody>";
+    foreach($list as $e){
+        $ID=intval($e["id"]);
+        $iface=htmlspecialchars((string)$e["interface"]);
+        $state="<span class='label'>-</span>";
+        if(isset($st["links"][$ID]) && intval($e["enabled"])==1){
+            $l=$st["links"][$ID];
+            $since=htmlspecialchars(substr((string)($l["since"] ?? ""),0,19));
+            $state=!empty($l["up"])
+                ? "<span class='label label-primary'>{lb_state_up}</span> <small>".intval($l["rtt_ms"])." ms</small>"
+                : "<span class='label label-danger'>{lb_state_down}</span> <small>{since} $since</small>";
+        }
+        $probs="";
+        if(isset($e["problems"]) && is_array($e["problems"])){
+            foreach($e["problems"] as $p){$probs.="<br><small class='text-danger'>{$p["error"]}</small>";}
+        }
+        $check=$e["checkytype"]=="alwayson"?"{lb_always_on}":"ping ".htmlspecialchars((string)$e["checkaddr"]);
+        $edit="Loadjs('$page?edit=$ID');";
+        $enable=$tpl->icon_check(intval($e["enabled"]),"Loadjs('$page?enable=$ID')",null,"AsFirewallManager");
+        $html[]="<tr><td><a href=\"javascript:blur();\" OnClick=\"$edit\"><strong>$iface</strong></a>$probs</td>";
+        $html[]="<td>$state</td><td>".intval($e["weight"])."</td><td>$check</td><td style='width:1%'>$enable</td></tr>";
+    }
+    $html[]="</tbody></table>";
+    return implode("\n",$html);
+}
+
 function edit_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["edit"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $ligne=$q->mysqli_fetch_array("SELECT Interface FROM link_balance WHERE ID='$ID'");
-    $Interface=$ligne["Interface"];
-    $nic=new system_nic($Interface);
-    $tpl->js_dialog1("$Interface: $nic->NICNAME","$page?popup=$ID",650);
-
-}
-
-function parameters(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $LinkBalancerSchedule=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LinkBalancerSchedule"));
-    if($LinkBalancerSchedule<1){$LinkBalancerSchedule=10;}
-    $schedule[2]="1 {minute}";
-    $schedule[2]="2 {minutes}";
-    $schedule[5]="5 {minutes}";
-    $schedule[10]="10 {minutes}";
-    $schedule[15]="15 {minutes}";
-    $schedule[20]="20 {minutes}";
-    $schedule[30]="30 {minutes}";
-
-    $form[]=$tpl->field_array_hash($schedule,"LinkBalancerSchedule","{check_interval}",$LinkBalancerSchedule);
-
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/LinkBalancer.progress.log";
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/LinkBalancer.progress";
-    $ARRAY["CMD"]="firehol.php?configure-link-balancer=yes";
-    $ARRAY["TITLE"]="{please_wait_building_network}";
-    $ARRAY["AFTER"]="";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-lb-restart')";
-
-    $html=$tpl->form_outside(null,$form,null,"{apply}",$jsrestart,"AsSystemAdministrator");
-    echo $tpl->_ENGINE_parse_body($html);
-}
-
-function parameters_save(){
-    $tpl=new template_admin();
-    $tpl->SAVE_POSTs();
-
-}
-
-function tabs(){
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $sock=new sockets();
-
-    $array["{interfaces}"]="$page?interfaces=yes";
-    $array["{options}"]="$page?params=yes";
-    echo $tpl->tabs_default($array);
-}
-
-
-function page(){
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$FireholVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireholVersion");
-
-	$html="
-	<div class=\"row border-bottom white-bg dashboard-header\">
-	<div class=\"col-sm-12\"><h1 class=ng-binding>{APP_LINK_BALANCER} v$FireholVersion</h1></div>
-	<p>{APP_LINK_BALANCER_EXPLAIN}</p>
-	</div>
-
-
-
-	<div class='row'><div id='progress-lb-restart'></div>
-	<div class='ibox-content'>
-
-	<div id='table-loader'></div>
-
-	</div>
-	</div>
-
-
-
-	<script>
-	$.address.state('/');
-	$.address.value('/link-balancer');	
-	LoadAjax('table-loader','$page?tabs=yes');
-
-	</script>";
-	
-	if(isset($_GET["main-page"])){
-		$tpl=new template_admin("{APP_LINK_BALANCER}",$html);
-		echo $tpl->build_firewall();
-		return;
-	}
-
-	$tpl=new templates();
-	echo $tpl->_ENGINE_parse_body($html);
-
+    $tpl->js_dialog2("{APP_LINK_BALANCER}","$page?popup=$ID");
 }
 
 function edit_popup(){
-	$tpl=new template_admin();
-	$page=CurrentPageName();
-	$ID=intval($_GET["popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM link_balance WHERE ID='$ID'");
-    $Interface=$ligne["Interface"];
-    $nic=new system_nic($Interface);
-
-    $array["ping"]="ping";
-    $array["traceroute"]="traceroute";
-    $array["alwayson"]="{alwayson}";
-
-	$form[]=$tpl->field_hidden("ID", $ID);
-    $form[]=$tpl->field_array_hash($array,"checkytype","{check_method}",$ligne["checkytype"]);
-    $form[]=$tpl->field_ipaddr("checkaddr","{check_addr}",$ligne["checkaddr"],false,"{link_balance_checkaddr}");
-    $form[]=$tpl->field_numeric("mark","{MARK}",$ligne["mark"]);
-    $form[]=$tpl->field_numeric("weight","{weight}",$ligne["weight"]);
-    $form[]=$tpl->field_numeric("probability","{probability} %",$ligne["probability"]);
-
-	$html[]=$tpl->form_outside("$Interface $nic->NICNAME $nic->IPADDR",
-        @implode("\n", $form),
-        "{balance_ip_explain_weight}",
-        "{apply}",
-        "dialogInstance1.close();LoadAjax('table-loader','$page?tabs=yes');",
-        "AsSystemAdministrator");
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $ID=intval($_GET["popup"]);
+    $e=fwapi_data(fwapi_get("linkbalance/$ID"));
+    if(!is_array($e)){echo $tpl->div_error("{fw_rule_not_found}");return;}
+    $types=array("ping"=>"Ping","alwayson"=>"{lb_always_on}");
+    $tpl->field_hidden("ID",$ID);
+    $form[]=$tpl->field_array_hash($types,"checkytype","{check}",$e["checkytype"]);
+    $form[]=$tpl->field_ipv4("checkaddr","{lb_check_address}",$e["checkaddr"]);
+    $form[]=$tpl->field_numeric("weight","{weight}",intval($e["weight"]));
+    echo $tpl->form_outside(htmlspecialchars((string)$e["interface"]),@implode("\n",$form),"{lb_weight_explain}","{apply}",
+        "dialogInstance2.close();LoadAjax('table-loader','$page?table=yes');","AsFirewallManager");
 }
 
 function edit_save(){
     $tpl=new template_admin();
+    if(rtlb_mode(rtlb_get())==="group"){echo $tpl->post_error("{lb_grp_edit_in_group}");return;}
     $tpl->CLEAN_POST();
-    $ID=$_POST["ID"];
-    if($_POST["weight"]==0){$_POST["weight"]=1;}
-    if($_POST["weight"]>254){$_POST["weight"]=254;}
-    if($_POST["mark"]>63){$_POST["mark"]=63;}
-
-
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $sql="UPDATE link_balance SET 
-    checkytype='{$_POST["checkytype"]}',
-    checkaddr='{$_POST["checkaddr"]}',
-    probability='{$_POST["probability"]}',
-    mark='{$_POST["mark"]}',
-    weight='{$_POST["weight"]}' WHERE ID=$ID";
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error."\n";}
+    $ID=intval($_POST["ID"]);
+    $data=array(
+        "checkytype"=>(string)($_POST["checkytype"] ?? "ping"),
+        "checkaddr"=>trim((string)($_POST["checkaddr"] ?? "")),
+        "weight"=>intval($_POST["weight"] ?? 1),
+    );
+    $e=fwapi_error(fwapi_send("PUT","linkbalance/$ID",$data));
+    if($e!=""){echo $tpl->post_error($e);return;}
+    admin_tracks("Link balancer: link #$ID saved (weight {$data["weight"]}, {$data["checkytype"]} {$data["checkaddr"]})");
 }
 
+function link_enable(){
+    $tpl=new template_admin();
+    if(rtlb_mode(rtlb_get())==="group"){$tpl->js_error("{lb_grp_edit_in_group}");return;}
+    $page=CurrentPageName();
+    $ID=intval($_GET["enable"]);
+    $cur=fwapi_data(fwapi_get("linkbalance/$ID"));
+    if(!is_array($cur)){$tpl->js_error("{fw_rule_not_found}");return;}
+    $new=intval($cur["enabled"])==1?0:1;
+    $e=fwapi_error(fwapi_send("POST","linkbalance/$ID/enable",array("enabled"=>$new)));
+    if($e!=""){$tpl->js_error($e);return;}
+    admin_tracks("Link balancer: link #$ID enabled=$new");
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('table-loader','$page?table=yes');\n";
+}
 
-
-
-
-function interfaces(){
+function balancer_switch(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $t=time();
+    $v=intval($_GET["switch"])==1?1:0;
+    $e=fwapi_error(fwapi_send("POST","linkbalance/enable",array("enabled"=>$v)));
+    if($e!=""){$tpl->js_error($e);return;}
+    admin_tracks("Link balancer: switched ".($v==1?"on":"off"));
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('table-loader','$page?table=yes');\n";
+}
 
-
-
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/exec.virtuals-ip.php.html";
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/reconfigure-newtork.progress";
-    $ARRAY["CMD"]="/system/network/reconfigure-restart";
-    $ARRAY["TITLE"]="{please_wait_building_network}";
-    $ARRAY["AFTER"]="LoadAjax('table-loader-interfaces','$page?tabs=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-lb-restart')";
-
-
-    $sql="CREATE TABLE IF NOT EXISTS `link_balance` (
-				`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-				`Interface` NOT NULL UNIQUE,
-				`checkaddr` TEXT,
-				`checkytype` TEXT,
-				`mark` INTEGER UNIQUE,
-				`weight` INTEGER,
-				`probability` INTEGER NOT NULL DEFAULT 50,
-				`enabled` INTEGER NOT NULL DEFAULT 1
-				)";
-
-
-
-    $q->QUERY_SQL($sql);
-    if(!$q->FIELD_EXISTS("link_balance","probability")){
-        $q->QUERY_SQL("ALTER TABLE link_balance ADD `probability` INTEGER NOT NULL DEFAULT 50");
+/** Revert (confirmé), resume, migrate du répartiteur sur le groupe : liste blanche, puis rechargement. */
+function lb_switch_js(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $action=(string)$_GET["lb-switch"];
+    if(!in_array($action,rtlb_actions(),true)){$tpl->js_error("{routing_err_invalid}");return;}
+    if($action==="revert"){
+        // l'ancien répartiteur relit link_balance tel que la migration l'a laissé
+        $tpl->js_confirm_execute("{lb_grp_revert_confirm}","lb-switch-confirm","revert","LoadAjax('table-loader','$page?table=yes');");
+        return;
     }
-
-
-    $html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:15px'>";
-    $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$jsrestart\">";
-    $html[]="<i class='fa fa-repeat'></i> {apply_network_configuration} </label>";
-    $html[]="</div>";
-
-
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{interface}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap >{enabled}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap>{weight}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap>%</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap>{gateway}</th>";
-
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-    $jsAfter="LoadAjax('table-loader','$page?table=yes&eth={$_GET["eth"]}');";
-    $GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-    $TRCLASS=null;
-    $datas=TCP_LIST_NICS_W();
-
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    foreach ($datas as $num=>$Interface){
-
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $Interface=trim($Interface);
-        if($Interface==null){continue;}
-        $nic=new system_nic($Interface);
-        if($nic->enabled==0 OR $nic->GATEWAY=="0.0.0.0"){
-            $html[]="<tr class='$TRCLASS'>";
-            $html[]="<td class='text-muted'><i class='fas fa-ethernet text-muted'></i>&nbsp;$Interface $nic->NICNAME $nic->IPADDR</td>";
-            $html[]="<td width=1% class='center text-muted' nowrap>".$tpl->icon_nothing()."</td>";
-            $html[]="<td width=1% class='center text-muted' nowrap>".$tpl->icon_nothing()."</td>";
-            $html[]="<td width=1% class='center text-muted' nowrap>".$tpl->icon_nothing()."</td>";
-            $html[]="<td width=1% class='center text-muted' nowrap>".$tpl->icon_nothing()."</td>";
-            $html[]="</tr>";
-            continue;
-        }
-
-
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM link_balance WHERE Interface='$Interface'");
-        $ID=intval($ligne["ID"]);
-        if($GLOBALS["VERBOSE"]){echo "Interface='$Interface' ID == $ID<br>";}
-         if($ID==0){
-            $ligne=$q->mysqli_fetch_array("SELECT mark FROM link_balance ORDER BY mark DESC LIMIT 1");
-            $mark=intval($ligne["mark"]);
-            if($mark==0){$mark=5;}else{$mark++;}
-            $q->QUERY_SQL("INSERT OR IGNORE INTO link_balance (Interface,checkaddr,checkytype,mark,weight,enabled) VALUES ('$Interface','8.8.8.8','ping','$mark','100',0)");
-             $ligne=$q->mysqli_fetch_array("SELECT * FROM link_balance WHERE Interface='$Interface'");
-             $ID=intval($ligne["ID"]);
-            }
-
-
-        $link=$tpl->td_href("$Interface $nic->NICNAME $nic->IPADDR",
-            "{click_to_edit}","Loadjs('$page?edit=$ID')");
-
-         $enable=$tpl->icon_check($ligne["enabled"],
-         "Loadjs('$page?enable=$ID')","AsSystemAdministrator");
-
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td class='text-muted'><i class='fas fa-ethernet'></i>&nbsp;$link (MARK: 0x{$ligne["mark"]})</td>";
-        $html[]="<td width=1% class='center' nowrap>$enable</td>";
-        $html[]="<td width=1% class='center' nowrap>{$ligne["weight"]}</td>";
-        $html[]="<td width=1% class='center' nowrap>{$ligne["probability"]}%</td>";
-        $html[]="<td width=1% class='center' nowrap>$nic->GATEWAY</td>";
-        $html[]="</tr>";
-
+    $data=array();
+    $err=lb_switch_apply($action,$data);
+    if($err!==""){$tpl->js_error($err);return;}
+    // migrate : le daemon arme la migration, faite au prochain passage du répartiteur (la page reste historique d'ici là)
+    if($action==="migrate" && ($data["migration_requested"] ?? false)===true){
+        $tpl->js_ok("{lb_grp_migration_requested}","LoadAjax('table-loader','$page?table=yes');");
+        return;
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('table-loader','$page?table=yes');\n";
+}
 
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
+/** POST de la confirmation du revert : rien en cas de succès, le texte de l'erreur sinon. */
+function lb_switch_confirm(){
+    $tpl=new template_admin();
+    if((string)$_POST["lb-switch-confirm"]!=="revert"){echo $tpl->_ENGINE_parse_body("{routing_err_invalid}");return;}
+    $err=lb_switch_apply("revert");
+    if($err!==""){echo $tpl->_ENGINE_parse_body($err);}
+}
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+/**
+ * Appel du daemon ; "" en cas de succès, sinon le texte de l'erreur (HTML-safe, jetons à traduire).
+ * $data reçoit les données de la réponse (GET lb, plus migration_requested pour migrate).
+ */
+function lb_switch_apply(string $action,array &$data=array()):string{
+    $data=array();
+    if(!in_array($action,rtlb_actions(),true)){return "{routing_err_invalid}";}
+    $r=rtapi_post("/system/routing/api/lb/$action",array());
+    if(empty($r["ok"])){return rtapi_h(rtapi_error_text($r));}
+    $data=is_array($r["data"] ?? null)?$r["data"]:array();
+    admin_tracks("Link balancer: $action");
+    return "";
 }

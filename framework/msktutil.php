@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 include_once(dirname(__FILE__)."/frame.class.inc"); 
 include_once(dirname(__FILE__)."/class.unix.inc");
 if(isset($_GET["install-tgz"])){install_tgz();exit;}

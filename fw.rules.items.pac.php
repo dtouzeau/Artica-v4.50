@@ -2,8 +2,20 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// Politique Meta : les proxys PAC d'un objet tenu (metaid) sont en lecture seule.
+include_once(dirname(__FILE__)."/ressources/class.proxypac.meta.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+if(isset($_POST["gpid"])){$m=proxyobject_meta_refuse_post(intval($_POST["gpid"]));if($m!==""){echo $m;exit;}}
+foreach(array("proxies-newjs","proxies-newjspop","rules-proxy-secure","rules-proxy-unlink") as $k){
+    if(!isset($_GET[$k])){continue;}
+    $g=isset($_GET["gpid"])?intval($_GET["gpid"]):($k=="proxies-newjspop"?intval($_GET[$k]):0);
+    if($g==0 && $k=="proxies-newjs"){$g=intval($_GET[$k]);}
+    if(proxyobject_meta_refuse_js($g)){exit;}
+}
 if(isset($_GET["proxies-table"])){proxies_table();exit;}
 if(isset($_GET["proxies-newjs"])){rule_proxies_new_js();exit;}
 if(isset($_GET["proxies-newjspop"])){rule_proxies_direct();exit;}
@@ -33,20 +45,20 @@ function rule_proxies_secure(){
     $tpl        = new template_admin();
     $gpid       = intval($_GET["gpid"]);
     $md=$_GET["rules-proxy-secure"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sligne=$q->mysqli_fetch_array("SELECT pacpxy FROM webfilters_sqgroups WHERE ID=$gpid");
-    $pacpxy=unserializeb64($sligne["pacpxy"]);
+
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+    if(!is_array($grp)){echo $tpl->js_error("Failed to load group $gpid");return false;}
+    $pacpxy=unserializeb64($grp["pacpxy"]);
     $ligne=$pacpxy[$md];
     $secure=intval($ligne["secure"]);
     if($secure==1){$secure=0;}else{$secure=1;}
     $pacpxy[$md]["secure"]=$secure;
 
-    $pacpxy_ser=serialize($pacpxy);
-    writelogs("UPDATE webfilters_sqgroups SET pacpxy='$pacpxy_ser' WHERE ID=$gpid",__FUNCTION__,__FILE__,__LINE__);
-    $pacpxy_ser=base64_encode($pacpxy_ser);
-    $q->QUERY_SQL("UPDATE webfilters_sqgroups SET pacpxy='$pacpxy_ser' WHERE ID=$gpid");
-    if(!$q->ok){
-        echo $tpl->js_error($q->mysql_error);
+    $pacpxy_ser=base64_encode(serialize($pacpxy));
+    writelogs("PUT pacpxy for group id $gpid secure=$secure",__FUNCTION__,__FILE__,__LINE__);
+    list($ok,$err)=acls_api_send("PUT","/proxy/acls/sqlite/group/$gpid",["pacpxy"=>$pacpxy_ser]);
+    if(!$ok){
+        echo $tpl->js_error($err);
         return false;
     }
     admin_tracks("Saving proxy.pac proxy secure=$secure for group id $gpid and proxy id $md");
@@ -57,24 +69,21 @@ function rule_proxies_unlink(){
     $zmd5           = $_GET["rules-proxy-unlink"];
     $zmd            = $_GET["zid"];
     $gpid           = intval($_GET["gpid"]);
-    $q              = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $jsafter        = base64_decode($_GET["js-after"]);
-    $RefreshTable   = base64_decode($_GET["RefreshTable"]);
+    $jsafter        = jsafter_sanitize(base64_decode($_GET["js-after"]));
+    $RefreshTable   = jsafter_sanitize(base64_decode($_GET["RefreshTable"]));
 
-
-    $sligne=$q->mysqli_fetch_array("SELECT pacpxy FROM webfilters_sqgroups WHERE ID=$gpid");
-    $pacpxy=unserializeb64($sligne["pacpxy"]);
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+    if(!is_array($grp)){echo $tpl->js_error("Failed to load group $gpid");return false;}
+    $pacpxy=unserializeb64($grp["pacpxy"]);
 
     unset($pacpxy[$zmd5]);
 
-    $pacpxy_ser=serialize($pacpxy);
-    $pacpxy_ser=base64_encode($pacpxy_ser);
-    $q->QUERY_SQL("UPDATE webfilters_sqgroups SET pacpxy='$pacpxy_ser' WHERE ID=$gpid");
-    if(!$q->ok){
-        echo $tpl->js_error($q->mysql_error);
+    $pacpxy_ser=base64_encode(serialize($pacpxy));
+    list($ok,$err)=acls_api_send("PUT","/proxy/acls/sqlite/group/$gpid",["pacpxy"=>$pacpxy_ser]);
+    if(!$ok){
+        echo $tpl->js_error($err);
         return false;
     }
-
 
     admin_tracks("Unlink proxy.pac proxy $zmd5");
 
@@ -95,13 +104,11 @@ function rule_proxies_new_popup(){
     $proxyport  = 8080;
     $bt         = "{add}";
     $title=     "{new_proxy}";
-    $jsafter        = base64_decode($_GET["js-after"]);
-    $RefreshTable   = base64_decode($_GET["RefreshTable"]);
+    $jsafter        = jsafter_sanitize(base64_decode($_GET["js-after"]));
+    $RefreshTable   = jsafter_sanitize(base64_decode($_GET["RefreshTable"]));
 
-
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sligne=$q->mysqli_fetch_array("SELECT pacpxy FROM webfilters_sqgroups WHERE ID=$gpid");
-    $pacpxy=unserializeb64($sligne["pacpxy"]);
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+    $pacpxy=unserializeb64(is_array($grp) ? $grp["pacpxy"] : "");
 
     if(isset($_GET["md"])){
         $ligne=$pacpxy[$_GET["md"]];
@@ -133,34 +140,33 @@ function rule_proxies_direct():bool{
     $hostname="0.0.0.0";
     $port=0;
     $secure=0;
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sligne=$q->mysqli_fetch_array("SELECT pacpxy FROM webfilters_sqgroups WHERE ID=$gpid");
-    $data=base64_decode($sligne["pacpxy"]);
+
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+    $data=base64_decode(is_array($grp) ? $grp["pacpxy"] : "");
     writelogs("$gpid - $data",__FUNCTION__,__FILE__,__LINE__);
     $pacpxy=unserialize($data);
     $md=time();
     $pacpxy[$md]["hostname"]=$hostname;
     $pacpxy[$md]["port"]=$port;
     $pacpxy[$md]["secure"]=$secure;
-    $pacpxy_ser=serialize($pacpxy);
-    writelogs("UPDATE webfilters_sqgroups SET pacpxy='$pacpxy_ser' WHERE ID=$gpid",__FUNCTION__,__FILE__,__LINE__);
-    $pacpxy_ser=base64_encode($pacpxy_ser);
-    $q->QUERY_SQL("UPDATE webfilters_sqgroups SET pacpxy='$pacpxy_ser' WHERE ID=$gpid");
-    if(!$q->ok){
-        echo "jserror:".$q->mysql_error;
+    $pacpxy_ser=base64_encode(serialize($pacpxy));
+    writelogs("PUT pacpxy for group id $gpid",__FUNCTION__,__FILE__,__LINE__);
+    list($ok,$err)=acls_api_send("PUT","/proxy/acls/sqlite/group/$gpid",["pacpxy"=>$pacpxy_ser]);
+    if(!$ok){
+        echo (new template_admin())->post_error("$err");
         return false;
     }
 
     $js1=null;
     $js2=null;
-    $jsafter=$_GET["js-after"];
-    $RefreshTable=$_GET["RefreshTable"];
+    $jsafter=jsafter_token($_GET["js-after"]);
+    $RefreshTable=jsafter_token($_GET["RefreshTable"]);
 
     if($jsafter<>null){
         $js1=base64_decode($jsafter);
     }
     if($RefreshTable<>null){
-        $js2=base64_decode($RefreshTable);
+        $js2=jsafter_sanitize(base64_decode($RefreshTable));
     }
 
     header("content-type: application/x-javascript");
@@ -184,9 +190,8 @@ function rule_proxies_new_save():bool{
     if($hostname==null){$hostname="1.2.3.4";}
     $secure=$_POST["secure"];
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sligne=$q->mysqli_fetch_array("SELECT pacpxy FROM webfilters_sqgroups WHERE ID=$gpid");
-    $data=base64_decode($sligne["pacpxy"]);
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+    $data=base64_decode(is_array($grp) ? $grp["pacpxy"] : "");
     writelogs("$gpid - $data",__FUNCTION__,__FILE__,__LINE__);
     $pacpxy=unserialize($data);
 
@@ -198,14 +203,12 @@ function rule_proxies_new_save():bool{
     $pacpxy[$md]["port"]=$port;
     $pacpxy[$md]["secure"]=$secure;
 
-    $pacpxy_ser=serialize($pacpxy);
-    writelogs("UPDATE webfilters_sqgroups SET pacpxy='$pacpxy_ser' WHERE ID=$gpid",__FUNCTION__,__FILE__,__LINE__);
-    $pacpxy_ser=base64_encode($pacpxy_ser);
-    $q->QUERY_SQL("UPDATE webfilters_sqgroups SET pacpxy='$pacpxy_ser' WHERE ID=$gpid");
+    $pacpxy_ser=base64_encode(serialize($pacpxy));
+    writelogs("PUT pacpxy for group id $gpid",__FUNCTION__,__FILE__,__LINE__);
+    list($ok,$err)=acls_api_send("PUT","/proxy/acls/sqlite/group/$gpid",["pacpxy"=>$pacpxy_ser]);
 
-
-    if(!$q->ok){
-        echo "jserror:".$q->mysql_error;
+    if(!$ok){
+        echo (new template_admin())->post_error("$err");
         return false;
     }
 
@@ -223,13 +226,12 @@ function xstart(){
 	    function RefreshProxiesInAclGroup(){
 	        LoadAjaxSilent('rule-proxies-$time','$page?proxies-table=yes&$zparms');
 	    }
-	    
+
 	    RefreshProxiesInAclGroup();
 	 </script>";
     echo $html;
 }
 function proxies_table() {
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $page=CurrentPageName();
     $tpl=new template_admin();
     $parms          = array();
@@ -241,27 +243,33 @@ function proxies_table() {
 
     $add="Loadjs('$page?proxies-newjs=$gpid&$zparms');";
     $nop="Loadjs('$page?proxies-newjspop=$gpid&$zparms');";
-    $html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-    $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_proxy} </label>";
-    $html[]="<label class=\"btn btn btn-warning\" OnClick=\"$nop\"><i class='fa-solid fa-ban'></i> {direct_to_internet} </label>";
-    $html[]="</div>";
-    $html[]="<table id='table-proxypac-proxies-$gpid' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $metaHeld=proxyobject_meta_held($gpid);
+    $psec=$metaHeld?"FalseLicense":null;
+    if($metaHeld){
+        $html[]=proxyobject_meta_banner($tpl,$gpid);
+    }else{
+        $html[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
+        $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_proxy} </label>";
+        $html[]="<label class=\"btn btn btn-warning\" OnClick=\"$nop\"><i class='fa-solid fa-ban'></i> {direct_to_internet} </label>";
+        $html[]="</div>";
+    }
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true data-type='text'>{proxy}</th>";
-    $html[]="<th data-sortable=false style='width:1%' nowrap>Secure Proxy</th>";
-    $html[]="<th data-sortable=false>{delete}</th>";
+    $html[]="<th>{proxy}</th>";
+    $html[]="<th class='awc-nowrap'>Secure Proxy</th>";
+    $html[]="<th>{delete}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='rulesitemspa-rows'>";
 
-    $ligne=$q->mysqli_fetch_array("SELECT pacpxy FROM webfilters_sqgroups WHERE ID=$gpid");
-    $pacpxy=unserializeb64($ligne["pacpxy"]);
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+    $pacpxy=unserializeb64(is_array($grp) ? $grp["pacpxy"] : "");
 
 
     $TRCLASS=null;
     foreach($pacpxy as $index=>$ligne) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $proxyserver=$ligne["hostname"];
         $proxyport=$ligne["port"];
         $mkey=$index;
@@ -269,8 +277,8 @@ function proxies_table() {
         $zmd5=md5(serialize($ligne));
 
         $proxyserver=$tpl->td_href($proxyserver,null,"Loadjs('$page?proxies-newjs=$mkey&md=$mkey&$zparms')");
-        $delete=$tpl->icon_delete("Loadjs('$page?rules-proxy-unlink=$mkey&zid=$zmd5&$zparms')");
-        $secure=$tpl->icon_check($ligne["secure"],"Loadjs('$page?rules-proxy-secure=$mkey&$zparms')");
+        $delete=$tpl->icon_delete("Loadjs('$page?rules-proxy-unlink=$mkey&zid=$zmd5&$zparms')",$psec);
+        $secure=$tpl->icon_check($ligne["secure"],"Loadjs('$page?rules-proxy-secure=$mkey&$zparms')",null,$psec);
         if(intval($ligne["secure"])==1){$secure_ico="&nbsp;<span class='label label-primary'>Secure Proxy</span>";}
 
         $html[]="<tr class='$TRCLASS' id='$zmd5'>";
@@ -283,20 +291,14 @@ function proxies_table() {
 
 
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='rulesitemspa-pager'></span></div></div></div>";
     $html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-proxypac-proxies-$gpid').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"rulesitemspa-rows","rulesitemspa-pager");
 }

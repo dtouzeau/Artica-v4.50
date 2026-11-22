@@ -11,7 +11,6 @@ if(isset($_GET["standard"])){popup();exit;}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_POST["passphrase"])){tests();exit;}
 if(isset($_GET["download"])){download();exit;}
-if(isset($_GET["results-popup"])){results_popup();exit;}
 js();
 
 

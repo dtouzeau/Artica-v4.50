@@ -4,9 +4,7 @@ $users=new usersMenus();if(!$users->AsVPNManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["download"])){download();exit;}
-if(isset($_GET["delete-js"])){delete_rule_js();exit;}
-if(isset($_GET["ruleid-js"])){rule_js();exit;}
-if(isset($_GET["rule-popup"])){rule_popup();exit;}
+if(isset($_GET["kill"])){kill_session();exit;}
 if(isset($_GET["main"])){main();exit;}
 if(isset($_GET["main-start"])){main_start();exit;}
 if(isset($_POST["connection_name"])){buildconfig();exit;}
@@ -71,6 +69,7 @@ function main(){
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$ipaddr}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$BytesReceived}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$BytesSent}</th>";
+	$html[]="<th data-sortable=false data-type='html'>&nbsp;</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
 	$html[]="<tbody>";
@@ -116,7 +115,9 @@ function main(){
 		$ConnectedSinceT=$tpl->_ENGINE_parse_body(distanceOfTimeInWords($ConnectedSince,time()));
         $publicip=$object->RealAddress;
 		$localip=findlocalIP($Routing,$CommonName);
-        $ligne=$q->mysqli_fetch_array("SELECT connection FROM memberlinks WHERE username='$CommonName'");
+        // Pentest 2026-11-04 : CommonName (certificat client, donnee externe) etait concatene dans la requete.
+        $res=$q->QUERY_SQL_PARAMS("SELECT connection FROM memberlinks WHERE username=?",array((string)$CommonName));
+        $ligne=(is_array($res) && isset($res[0]))?$res[0]:array("connection"=>"");
         $ConnectionName=$ligne["connection"];
         if(strlen($search)>0){
             if(!preg_match("#$search#","$publicip $CommonName $ConnectionName")){
@@ -128,13 +129,21 @@ function main(){
 
         $Sessions++;
 		$md=md5(serialize($object));
+		$cnenc=base64_encode($CommonName);
+		$killicon="<a href=\"javascript:blur();\" OnClick=\"OpenVPNKill('$cnenc')\" title='{disconnect}'><i class='fa fa-times-circle' style='color:#C0392B;font-size:16px'></i></a>";
+		// Pentest 2026-11-04 : CommonName/adresses/connexion (donnee externe) affiches sans encodage (XSS stockee).
+		$CommonName_h=req_html($CommonName);
+		$ConnectionName_h=req_html($ConnectionName);
+		$localip_h=req_html($localip);
+		$publicip_h=req_html($publicip);
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td><span class='fa fa-clock'></span>&nbsp;{$ConnectedSinceDate} ($ConnectedSinceT)</td>";
-		$html[]="<td><span class='fa fa-user'></span>&nbsp;{$CommonName} <strong>$ConnectionName</strong></td>";
-		$html[]="<td><span class='fa fa-desktop'></span>&nbsp;$localip</td>";
-		$html[]="<td><span class='fa fa-desktop'></span>&nbsp;{$publicip}</td>";
+		$html[]="<td><span class='fa fa-user'></span>&nbsp;{$CommonName_h} <strong>$ConnectionName_h</strong></td>";
+		$html[]="<td><span class='fa fa-desktop'></span>&nbsp;$localip_h</td>";
+		$html[]="<td><span class='fa fa-desktop'></span>&nbsp;{$publicip_h}</td>";
 		$html[]="<td><span class='fa fa-tachometer'></span>&nbsp;{$BytesReceived}</td>";
 		$html[]="<td><span class='fa fa-tachometer'></span>&nbsp;{$BytesSent}</td>";
+		$html[]="<td style='text-align:center'>$killicon</td>";
 
 		$html[]="</tr>";
 	}
@@ -143,7 +152,7 @@ function main(){
 	$html[]="<tfoot>";
 	
 	$html[]="<tr>";
-	$html[]="<td colspan='6'>";
+	$html[]="<td colspan='7'>";
 	$html[]="<ul class='pagination pull-right'></ul>";
 	$html[]="</td>";
 	$html[]="</tr>";
@@ -160,14 +169,36 @@ function main(){
 
 
 
+    $page=CurrentPageName();
+    $search_js=addslashes($search);
+    $confirm_disconnect=$tpl->javascript_parse_text("{disconnect} {this_member} ?");
+    $html[]="<div id='openvpn-kill-status' style='display:none'></div>";
     $html[]="
 	<script>
 	$jstiny
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('.footable').footable( { \"filtering\": {\"enabled\": false}, \"sorting\": {
 	\"enabled\": true } } ); });
+	function OpenVPNKill(cn){
+		if(!confirm('$confirm_disconnect')){return;}
+		LoadAjaxSilent('openvpn-kill-status','$page?kill='+encodeURIComponent(cn));
+		setTimeout(function(){LoadAjaxSilent('table-connections','$page?main=yes&search=$search_js');},1500);
+	}
+	if(typeof window.OpenVPNSessionsTimer!='undefined'){clearInterval(window.OpenVPNSessionsTimer);}
+	window.OpenVPNSessionsTimer=setInterval(function(){
+		if(document.getElementById('table-connections')){
+			LoadAjaxSilent('table-connections','$page?main=yes&search=$search_js');
+		}else{clearInterval(window.OpenVPNSessionsTimer);}
+	},15000);
 	</script>";
-	
-	echo @implode("\n", $html);	
+
+	echo @implode("\n", $html);
+}
+
+function kill_session(){
+	// $_GET["kill"] is the base64-encoded common-name; the daemon REST handler base64-decodes it.
+	$cnB64=$_GET["kill"];
+	$sock=new sockets();
+	$sock->REST_API("/openvpn/session/kill/".urlencode($cnB64));
 }
 

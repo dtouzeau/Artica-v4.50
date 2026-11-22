@@ -1,70 +1,63 @@
-<about> milter-greylist is a stand-alone milter written in C that implements the  greylist filtering method, as proposed by Evan Harris.[br]
-Grey listing works by assuming that, unlike legitimate MTA, spam engines will not retry sending their junk mail on a temporary error.[br]
-The filter will always reject mail temporarily on a first attempt, then accept it after some time has elapsed.</about>
-<acl>Access List</acl>
-<acl_text>
-The primary use of this feautre is to setup milter-greylist whitelist.[br] It also offers a handy blacklist feature.[br] 
-Access-lists (ACL) are used to do that.[br] ACL enable the administrator  to  specify  complex  conditions  on sender IP, sender DNS address,
-sender e-mail address, and recipient e-mail address.[br]
-If support for DNSRBL was built-in, it is even possible to use DNSRBL in ACL.</acl_text>
+<about>milter-greylist to samodzielny milter napisany w C, kt&#243;ry implementuje metod&#281; filtrowania greylist zaproponowan&#261; przez Evana Harrisa.[br]
+Greylisting dzia&#322;a przy za&#322;o&#380;eniu, &#380;e w przeciwie&#324;stwie do legalnych MTA, silniki spamu nie ponawiaj&#261; wysy&#322;ania swojej niechcianej poczty przy b&#322;&#281;dzie tymczasowym.[br]
+Filtr zawsze tymczasowo odrzuca poczt&#281; przy pierwszej pr&#243;bie, a nast&#281;pnie akceptuje j&#261; po up&#322;ywie pewnego czasu.</about>
+<acl>Lista dost&#281;pu</acl>
+<acl_text>G&#322;&#243;wnym zastosowaniem tej funkcji jest skonfigurowanie bia&#322;ej listy milter-greylist.[br] Oferuje r&#243;wnie&#380; wygodn&#261; funkcj&#281; czarnej listy.[br]
+Do tego s&#322;u&#380;&#261; listy dost&#281;pu (ACL).[br] ACL umo&#380;liwiaj&#261; administratorowi okre&#347;lenie z&#322;o&#380;onych warunk&#243;w dotycz&#261;cych IP nadawcy, adresu DNS nadawcy, adresu e-mail nadawcy i adresu e-mail odbiorcy.[br]
+Je&#347;li wbudowano obs&#322;ug&#281; DNSRBL, mo&#380;na nawet u&#380;ywa&#263; DNSRBL w ACL.</acl_text>
 <addr>Adres IP</addr>
-<addr_text>
-This clause is used to specify a netblock of source IP addresses.[br]
-The syntax is an IP address followed by a slash and a CIDR netmask.[br]
-Here is an example:
+<addr_text>Ta klauzula s&#322;u&#380;y do okre&#347;lenia bloku sieciowego &#378;r&#243;d&#322;owych adres&#243;w IP.[br]
+Sk&#322;adnia to adres IP, po kt&#243;rym nast&#281;puje uko&#347;nik i maska sieci CIDR.[br]
+Oto przyk&#322;ad:
 [ul]
 [li]127.0.0.0/8[/li]
 [li]192.168.3.0/24[/li]
 [li]::1[/li]
 [/ul]
-If the netmask is ommitted, /32 is assumed for an IPv4 address and /128 is assumed for an IPv6 address.[br]
-You  should  at  least  whitelist localhost (127.0.0.1/8), and if you have some user clients connecting to the machine,
-you should whitelist the addresses they connect from if you donâ€™t want them to get error messages when sending e-mail.
-</addr_text>
-<add_acl>Add new acl</add_acl>
-<add_dnsrbl>Add new DNSRBL Class</add_dnsrbl>
+Je&#347;li maska sieci zostanie pomini&#281;ta, przyjmuje si&#281; /32 dla adresu IPv4 i /128 dla adresu IPv6.[br]
+Powiniene&#347; przynajmniej doda&#263; localhost (127.0.0.1/8) do bia&#322;ej listy, a je&#347;li masz klient&#243;w &#322;&#261;cz&#261;cych si&#281; z maszyn&#261;, powiniene&#347; doda&#263; do bia&#322;ej listy adresy, z kt&#243;rych si&#281; &#322;&#261;cz&#261;, je&#347;li nie chcesz, aby otrzymywali komunikaty o b&#322;&#281;dach podczas wysy&#322;ania e-maili.</addr_text>
+<add_acl>Dodaj now&#261; acl</add_acl>
+<add_dnsrbl>Dodaj now&#261; klas&#281; DNSRBL</add_dnsrbl>
 <autowhite>auto-whitelisting</autowhite>
-<Autowhitelistedtuples>Auto-whitelisted tuples</Autowhitelistedtuples>
-<autowhite_text>How long does auto-whitelisting last (set it to 0 to disable auto-whitelisting).</autowhite_text>
-<back_to_default>Back to default DNSRBL Lists[br]This will delete all your settings !</back_to_default>
-<blacklist>Blacklist</blacklist>
+<Autowhitelistedtuples>krotki auto-whitelist</Autowhitelistedtuples>
+<autowhite_text>Jak d&#322;ugo trwa auto-whitelisting (ustaw na 0, aby wy&#322;&#261;czy&#263; auto-whitelisting).</autowhite_text>
+<back_to_default>Powr&#243;t do domy&#347;lnych list DNSRBL[br]Spowoduje to usuni&#281;cie wszystkich ustawie&#324;!</back_to_default>
+<blacklist>Czarna lista</blacklist>
 <body>Cia%C5%82o</body>
-<body_text>String or regular expression searched in message body
-Example of content filtering for fighting image SPAM
-src[:blank:]*=(3D)?[:blank:]*["']?[:blank:]*cid:
-</body_text>
-<class_name>Class name</class_name>
+<body_text>Ci&#261;g lub wyra&#380;enie regularne wyszukiwane w tre&#347;ci wiadomo&#347;ci
+Przyk&#322;ad filtrowania tre&#347;ci w walce ze SPAMEM obrazkowym
+src[:blank:]*=(3D)?[:blank:]*[&quot;']?[:blank:]*cid:</body_text>
+<class_name>Nazwa klasy</class_name>
 <config>Plik konfiguracyjny</config>
 <delay>Op%C3%B3%C5%BAnienie</delay>
-<dnsrbl>DNS Relay black list</dnsrbl>
-<dnsrbl_answer>Service answer</dnsrbl_answer>
-<dnsrbl_service>DNSRBL Service</dnsrbl_service>
-<dnsrbl_text>This is used to select a DNSRBL[br]
-DNS  Reverse  Black  List can be used to toggle an ACL.[br]
-They must be defined and named before they can be used. Here is an example which uses a bigger greylisting delay for hosts caught in the SORBS dynamic pool DNRSBL (this
-will include DSL and cable customers pools, which are well known to be massively infected by spamwares)[br]</dnsrbl_text>
-<domain_text> This clause selects source machines based on their DNS name, performing a suffix search</domain_text>
-<edit_acl>Edit ACL</edit_acl>
-<edit_dnsrbl>Edit DNSRBL Rule</edit_dnsrbl>
-<enable_milter>Enable Milter-greylist</enable_milter>
-<enable_milter_text>This option will allow hook Postfix with milter-greylist feature</enable_milter_text>
-<greylist>Greylisting time</greylist>
-<greylistedtuples>greylisted tuples</greylistedtuples>
-<greylist_text>How long a client has to wait before we accept[br]the messages it retries to send.[br]Here, x hour(s).</greylist_text>
-<header>SMTP Header</header>
-<header_text>String or regular expression searched in message headers</header_text>
+<dnsrbl>Czarna lista przeka&#378;nik&#243;w DNS</dnsrbl>
+<dnsrbl_answer>Odpowied&#378; us&#322;ugi</dnsrbl_answer>
+<dnsrbl_service>Us&#322;uga DNSRBL</dnsrbl_service>
+<dnsrbl_text>S&#322;u&#380;y do wyboru DNSRBL[br]
+DNS Reverse Black List mo&#380;e by&#263; u&#380;ywana do prze&#322;&#261;czania ACL.[br]
+Musz&#261; by&#263; zdefiniowane i nazwane przed u&#380;yciem. Oto przyk&#322;ad, kt&#243;ry u&#380;ywa wi&#281;kszego op&#243;&#378;nienia greylistingu dla host&#243;w wykrytych w dynamicznej puli SORBS DNRSBL (obejmie to pule klient&#243;w DSL i kablowych, dobrze znanych z masowego zainfekowania spamware)[br]</dnsrbl_text>
+<domain_text>Ta klauzula wybiera maszyny &#378;r&#243;d&#322;owe na podstawie ich nazwy DNS, wykonuj&#261;c wyszukiwanie sufiksu</domain_text>
+<edit_acl>Edytuj ACL</edit_acl>
+<edit_dnsrbl>Edytuj regu&#322;&#281; DNSRBL</edit_dnsrbl>
+<enable_milter>W&#322;&#261;cz Milter-greylist</enable_milter>
+<enable_milter_text>Ta opcja umo&#380;liwi pod&#322;&#261;czenie Postfix z funkcj&#261; milter-greylist</enable_milter_text>
+<greylist>Czas greylistingu</greylist>
+<greylistedtuples>krotki na greylist</greylistedtuples>
+<greylist_text>Jak d&#322;ugo klient musi czeka&#263;, zanim zaakceptujemy[br]wiadomo&#347;ci, kt&#243;re ponownie pr&#243;buje wys&#322;a&#263;.[br]Tutaj, x godzin(a).</greylist_text>
+<header>Nag&#322;&#243;wek SMTP</header>
+<header_text>Ci&#261;g lub wyra&#380;enie regularne wyszukiwane w nag&#322;&#243;wkach wiadomo&#347;ci</header_text>
 <infos>Informacje</infos>
-<mailfrom_text>This is used to select sender e-mail addresses. You should not use that feature, because sender e-mail addresses can be trivially forged.</mailfrom_text>
+<mailfrom_text>S&#322;u&#380;y do wyboru adres&#243;w e-mail nadawcy. Nie powiniene&#347; u&#380;ywa&#263; tej funkcji, poniewa&#380; adresy e-mail nadawcy mo&#380;na trywialnie sfa&#322;szowa&#263;.</mailfrom_text>
 <method>Metoda</method>
-<MILTERGREYLIST_STATUSDUMP>Current block/white status</MILTERGREYLIST_STATUSDUMP>
-<MILTERGREYLIST_STATUSDUMP_TEXT>Display the list of servers that are greylisted or whitelisted</MILTERGREYLIST_STATUSDUMP_TEXT>
-<new_class_name>Or add a new class</new_class_name>
-<rcpt>Recipient</rcpt>
-<rcpt_text>This is used to select recipient addresses</rcpt_text>
-<timeout>Database Timeout</timeout>
-<timeout_text>How long (days) will the greylist database retain tuples</timeout_text>
-<urlcheck>Url in body</urlcheck>
-<urlcheck_text> milter-greylist is able to query external sources of information through various URL[br]
-Example:http://www.example.net/mgl-config?rcpt=%r</urlcheck_text>
+<MILTERGREYLIST_STATUSDUMP>Bie&#380;&#261;cy status blokowania/bia&#322;ej listy</MILTERGREYLIST_STATUSDUMP>
+<MILTERGREYLIST_STATUSDUMP_TEXT>Wy&#347;wietl list&#281; serwer&#243;w, kt&#243;re s&#261; na greylist lub whitelist</MILTERGREYLIST_STATUSDUMP_TEXT>
+<new_class_name>Lub dodaj now&#261; klas&#281;</new_class_name>
+<rcpt>Odbiorca</rcpt>
+<rcpt_text>S&#322;u&#380;y do wyboru adres&#243;w odbiorc&#243;w</rcpt_text>
+<timeout>Limit czasu bazy danych</timeout>
+<timeout_text>Jak d&#322;ugo (dni) baza danych greylist b&#281;dzie przechowywa&#263; krotki</timeout_text>
+<urlcheck>URL w tre&#347;ci</urlcheck>
+<urlcheck_text>milter-greylist mo&#380;e odpytywa&#263; zewn&#281;trzne &#378;r&#243;d&#322;a informacji za pomoc&#261; r&#243;&#380;nych adres&#243;w URL[br]
+Przyk&#322;ad: http://www.example.net/mgl-config?rcpt=%r</urlcheck_text>
 <whitelist>Bia%C5%82a lista</whitelist>
-<_text>Please select value in list</_text>
+<_text>Wybierz warto&#347;&#263; z listy</_text>

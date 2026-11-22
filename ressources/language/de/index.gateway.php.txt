@@ -1,20 +1,20 @@
-<APP_DHCP_EVENTS>DHCPD server events</APP_DHCP_EVENTS>
-<APP_DHCP_EVENTS_TEXT>Display realtime events of your DHCP server</APP_DHCP_EVENTS_TEXT>
+<APP_DHCP_EVENTS>DHCPD-Serverereignisse</APP_DHCP_EVENTS>
+<APP_DHCP_EVENTS_TEXT>Echtzeitereignisse Ihres DHCP-Servers anzeigen</APP_DHCP_EVENTS_TEXT>
 <ARTICA_AS_GATEWAY>Artica hat ein Gateway</ARTICA_AS_GATEWAY>
-<ARTICA_AS_GATEWAY_EXPLAIN>If you set to green, Artica will server DHCP server, DNS, proxy,connections has a real gateway</ARTICA_AS_GATEWAY_EXPLAIN>
-<ARTICA_AS_GATEWAY_TEXT>Define if artica will be your gateway or not</ARTICA_AS_GATEWAY_TEXT>
-<conf>Main configuration File</conf>
+<ARTICA_AS_GATEWAY_EXPLAIN>Wenn Sie auf Gr&#252;n setzen, stellt Artica DHCP-Server, DNS, Proxy und Verbindungen als echtes Gateway bereit</ARTICA_AS_GATEWAY_EXPLAIN>
+<ARTICA_AS_GATEWAY_TEXT>Legen Sie fest, ob Artica Ihr Gateway sein wird oder nicht</ARTICA_AS_GATEWAY_TEXT>
+<conf>Hauptkonfigurationsdatei</conf>
 <ddns_domainname>Interner Bereich</ddns_domainname>
-<EnableArticaAsDNSFirst>Set Artica has First DNS</EnableArticaAsDNSFirst>
+<EnableArticaAsDNSFirst>Artica als ersten DNS festlegen</EnableArticaAsDNSFirst>
 <EnableArticaAsDNSFirst_explain>Wenn Sie diese Option aktivieren, wird Artica die Hostnamenaufl%C3%B6sung mit dem DHCP-Server durchf%C3%BChren. Dies ist n%C3%BCtzlich, um die vom DHCP-Server bereitgestellten Hostnamen einfach aufzul%C3%B6sen.</EnableArticaAsDNSFirst_explain>
-<EnableDHCPServer>Enable DHCP service</EnableDHCPServer>
-<EnablePXEDHCP>Enable DHCP Preboot Execution Environment</EnablePXEDHCP>
-<fixedHosts>Fixed hosts</fixedHosts>
+<EnableDHCPServer>DHCP-Dienst aktivieren</EnableDHCPServer>
+<EnablePXEDHCP>DHCP Preboot Execution Environment aktivieren</EnablePXEDHCP>
+<fixedHosts>Feste Hosts</fixedHosts>
 <max_lease_time>Maximale Lease-Zeit</max_lease_time>
-<max_lease_time_text>Time should be the maximum length in seconds that will be assigned to a lease.[br]
-The only exception to this is that Dynamic BOOTP lease lengths,  which  are not specified by the client, are not limited by this maximum.</max_lease_time_text>
+<max_lease_time_text>Die Zeit sollte die maximale Dauer in Sekunden sein, die einer Lease zugewiesen wird.[br]
+Die einzige Ausnahme bilden dynamische BOOTP-Lease-L&#228;ngen, die nicht vom Client angegeben werden und nicht durch dieses Maximum begrenzt sind.</max_lease_time_text>
 <PXE>Prebootâ%80%91Ausf%C3%BChrungsumgebung</PXE>
-<PXE_DHCP_MINI_TEXT>Serve IP addresses to your computers helping them running PXE from an another point</PXE_DHCP_MINI_TEXT>
-<pxe_file>PXE boot file name</pxe_file>
-<pxe_server>PXE server address</pxe_server>
-<range>IP Range</range>
+<PXE_DHCP_MINI_TEXT>Stellen Sie Ihren Computern IP-Adressen bereit, um ihnen das Ausf&#252;hren von PXE von einem anderen Punkt aus zu erm&#246;glichen</PXE_DHCP_MINI_TEXT>
+<pxe_file>Name der PXE-Boot-Datei</pxe_file>
+<pxe_server>PXE-Serveradresse</pxe_server>
+<range>IP-Bereich</range>

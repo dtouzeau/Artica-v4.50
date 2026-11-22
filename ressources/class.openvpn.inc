@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 
 include_once(dirname(__FILE__).'/class.ssl.certificate.inc');
 include_once(dirname(__FILE__) . '/class.system.network.inc');
@@ -17,7 +18,20 @@ class openvpn{
 		if(isset($GLOBALS["CLASS_SOCKETS"])){$sock=$GLOBALS["CLASS_SOCKETS"];}else{$GLOBALS["CLASS_SOCKETS"]=new sockets();$sock=$GLOBALS["CLASS_SOCKETS"];}
 		
 		$ini=new Bs_IniHandler();
-		$ini->loadString(@file_get_contents('/etc/artica-postfix/settings/Daemons/ArticaOpenVPNSettings'));
+		// Read through the central store, NOT the file: /etc/artica-postfix/settings
+		// is 0700 root, so www-data cannot traverse it and @file_get_contents
+		// returned false in every web page. The class then fell back to
+		// BuildDefault(), i.e. the HARDCODED defaults (port 1194, proto udp),
+		// and the settings modal displayed those instead of the real values --
+		// saving from that modal then wrote the defaults over the operator's
+		// configuration (assist.artica.center, 2026-09-08: a 443/tcp server came
+		// back as 1194/udp). The file stays as the fallback for the root-only
+		// exec.*.php, and for a boot where the store is not answering yet.
+		$RawSettings=$sock->GET_INFO("ArticaOpenVPNSettings");
+		if(strpos($RawSettings,"[GLOBAL]")===false){
+			$RawSettings=@file_get_contents('/etc/artica-postfix/settings/Daemons/ArticaOpenVPNSettings');
+		}
+		$ini->loadString($RawSettings);
 
 		if(property_exists($ini,"_params")) {
             $this->main_array = $ini->_params;
@@ -220,7 +234,7 @@ class openvpn{
 				if(isset($GLOBALS["CLASS_SOCKETS"])){$sock=$GLOBALS["CLASS_SOCKETS"];}else{$GLOBALS["CLASS_SOCKETS"]=new sockets();$sock=$GLOBALS["CLASS_SOCKETS"];}
 				$ini=new Bs_IniHandler();
 				$datas=$sock->GET_INFO("ArticaOpenVPNSettings");
-				if(!is_file("/etc/artica-postfix/settings/Daemons/OpenVPNUseLZO")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("OpenVPNUseLZO", 1);}
+				if(!artica_setting_exists("OpenVPNUseLZO")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("OpenVPNUseLZO", 1);}
 				writelogs("ArticaOpenVPNSettings= ". strlen($datas)." bytes",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
 				$ini->loadString($sock->GET_INFO("ArticaOpenVPNSettings",true));
 				$OpenVPNTUNMTU=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNTUNMTU"));
@@ -540,7 +554,7 @@ class openvpn{
 	@unlink($filepath);
 	
 	$sock=new sockets();
-	$sock->getFrameWork("openvpn.php?restart-clients=yes");
+	$sock->REST_API("/openvpn/clients/reconfigure");
 	$sock->getFrameWork("cmd.php?artica-meta-openvpn-sites=yes");
 	
 	return true;		

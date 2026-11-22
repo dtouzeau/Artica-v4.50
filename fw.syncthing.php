@@ -8,7 +8,6 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["parameters"])){parameters();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_GET["parameters-table"])){parameters_table();exit;}
 if(isset($_GET["parameters-flat"])){parameters_flat();exit;}
 if(isset($_POST["WCCP_HTTP_PORT"])){saveall();exit;}
 if(isset($_POST["WCCP_ASA_ADDR"])){saveall();exit;}
@@ -19,11 +18,7 @@ if(isset($_GET["section-nics-popup"])){section_nics_popup();exit;}
 if(isset($_POST["NICS"])){section_nics_save();exit;}
 
 
-if(isset($_GET["section-traffic-js"])){section_traffic_js();exit;}
-if(isset($_GET["section-traffic-popup"])){section_traffic_popup();exit;}
 
-if(isset($_GET["section-proto-js"])){section_proto_js();exit;}
-if(isset($_GET["section-proto-popup"])){section_proto_popup();exit;}
 
 page();
 
@@ -35,7 +30,7 @@ function saveall(){
         $WCCP_ASA_USE = intval($_POST["WCCP_ASA_USE"]);
         if ($WCCP_ASA_USE == 1) {
             if ($WCCP_ASA_ADDR == $WCCP_ASA_ROUTER) {
-                echo "jserror:" . $tpl->javascript_parse_text("{WCCP_ASA_ROUTER_ERR1}");
+                echo (new template_admin())->post_error("" . $tpl->javascript_parse_text("{WCCP_ASA_ROUTER_ERR1}"));
             }
         }
     }
@@ -270,18 +265,20 @@ function connected_port_save(){
 		$tpl=new template_admin();
 		$tpl->CLEAN_POST();
 		
-		$ID=$_POST["SaveConnectedPort"];
-		$ipaddr=$_POST["ipaddr"];
+		// Pentest 2026-11-04 : SaveConnectedPort, ipaddr, enabled, outgoing_addr, UseSSL, sslcertificate et nic etaient
+		// concatenes dans la requete ; xnote/PortName etaient echappes a la mode MySQL (\') ce qui ne protege rien en SQLite.
+		$ID=intval($_POST["SaveConnectedPort"]);
+		$ipaddr=sqlite_escape_string2((string)$_POST["ipaddr"]);
 		$port=intval($_POST["port"]);
-		$xnote=mysql_escape_string2($_POST["xnote"]);
-		$PortName=mysql_escape_string2($_POST["PortName"]);
-		$enabled=$_POST["enabled"];
+		$xnote=sqlite_escape_string2((string)$_POST["xnote"]);
+		$PortName=sqlite_escape_string2((string)$_POST["PortName"]);
+		$enabled=intval($_POST["enabled"]);
 		$transparent=intval($_POST["transparent"]);
 		$TProxy=intval($_POST["TProxy"]);
 		$Parent=intval($_POST["Parent"]);
-		$outgoing_addr=$_POST["outgoing_addr"];
-		$UseSSL=$_POST["UseSSL"];
-		$sslcertificate=$_POST["sslcertificate"];
+		$outgoing_addr=sqlite_escape_string2((string)$_POST["outgoing_addr"]);
+		$UseSSL=intval($_POST["UseSSL"]);
+		$sslcertificate=sqlite_escape_string2((string)$_POST["sslcertificate"]);
 		$WCCP=intval($_POST["WCCP"]);
 		$ICP=intval($_POST["ICP"]);
 		$FTP=intval($_POST["FTP"]);
@@ -298,7 +295,7 @@ function connected_port_save(){
 	
 	
 		$ProxyProtocol=intval($_POST["ProxyProtocol"]);
-		$nic=$_POST["nic"];
+		$nic=sqlite_escape_string2((string)$_POST["nic"]);
 
 		$SquidAllow80Port=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidAllow80Port"));
 		$tpl=new templates();
@@ -527,8 +524,6 @@ function connected_port_save(){
 		$sock=new sockets();
 		if($ligne["tcount"]>0){$sock->SET_INFO("ServiceFTPEnabled", 1);}else{$sock->SET_INFO("ServiceFTPEnabled", 0); }
 	
-		$sock=new sockets();
-		$sock->getFrameWork("ftp-proxy.php?reconfigure-silent=yes");
 	
 	}	
 

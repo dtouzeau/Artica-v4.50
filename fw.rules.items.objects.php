@@ -11,6 +11,9 @@ if(!$users->AsDansGuardianAdministrator){
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.hosts.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["js"])){js();exit;}
@@ -32,16 +35,16 @@ table_start();
 
 function js(){
     $page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $groupid=intval($_GET["groupid"]);
     unset($_GET["groupid"]);
 
     $URL_ADDONS=build_suffix();
     $qProxy=new mysql_squid_builder(true);
-    $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$groupid'");
-    $GroupType=$qProxy->acl_GroupType[$ligne["GroupType"]];
-    $tpl->js_dialog8("{group}: {$ligne["GroupName"]} $GroupType","$page?table-start=yes&gpid=$groupid&{$URL_ADDONS}",850);
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$groupid");
+    $GroupName=is_array($grp) ? $grp["groupName"] : "";
+    $GroupType=is_array($grp) ? ($qProxy->acl_GroupType[$grp["groupType"]] ?? $grp["groupType"]) : "";
+    $tpl->js_dialog8("{group}: $GroupName $GroupType","$page?table-start=yes&gpid=$groupid&{$URL_ADDONS}",850);
 }
 
 function build_suffix(){
@@ -66,31 +69,64 @@ function build_suffix(){
     return @implode("&",$cmds);
 
 }
+
+// Compteurs d'items de TOUS les groupes en UN appel: /items-count-all fait le
+// GROUP BY cote daemon, la page affiche donc un compteur par ligne sans le
+// N+1 qu'un GET /items?gpid= par ligne aurait coute.
+// Route absente d'un binaire ancien -> tableau vide: la ligne perd son
+// compteur mais garde son ID, aucune ligne ne disparait.
+function ritobj_items_count_all():array{
+    $out=array();
+    $counts=acls_api_get("/proxy/acls/sqlite/items-count-all");
+    if(!is_array($counts)){return $out;}
+    foreach($counts as $c){
+        if(!is_array($c)){continue;}
+        $out[intval($c["gpid"] ?? 0)]=intval($c["count"] ?? 0);
+    }
+    return $out;
+}
+
+// Les homonymes sont la regle des qu'une regle a ete importee plusieurs fois
+// (AclsParse/import_rule.go cree un NOUVEAU groupe a chaque import, sans
+// find-or-create): sept lignes portant le meme nom et le meme type se lisent
+// comme un doublon d'affichage alors que ce sont sept groupes distincts.
+// L'ID et le nombre d'items sont ce qui les separe -- et un groupe a 0 item
+// est justement celui qu'il ne faut pas lier.
+function ritobj_meta($gpid,$ITEMCOUNT):string{
+    $gpid=intval($gpid);
+    $meta="#$gpid";
+    if(!isset($ITEMCOUNT[$gpid])){return $meta;}
+    $n=intval($ITEMCOUNT[$gpid]);
+    if($n==0){
+        return "$meta &middot; <span style='color:#865300;font-weight:600'>"
+              ."<i class='fas fa-triangle-exclamation'></i> {empty}</span>";
+    }
+    return "$meta &middot; $n {items}";
+}
+
 function new_item_js(){
     $page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
     $tpl=new template_admin();
     $groupid=intval($_GET["new-item-js"]);
     $URL_ADDONS=build_suffix();
 
     $qProxy=new mysql_squid_builder(true);
-    $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$groupid'");
-    $GroupType=$qProxy->acl_GroupType[$ligne["GroupType"]];
-    $tpl->js_dialog7("{new_object} - {group}: {$ligne["GroupName"]} $GroupType","$page?item-popup=$groupid&{$URL_ADDONS}",850);
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$groupid");
+    $GroupName=is_array($grp) ? $grp["groupName"] : "";
+    $GroupType=is_array($grp) ? ($qProxy->acl_GroupType[$grp["groupType"]] ?? $grp["groupType"]) : "";
+    $tpl->js_dialog7("{new_object} - {group}: $GroupName $GroupType","$page?item-popup=$groupid&{$URL_ADDONS}",850);
 }
 function link_item_js(){
     $page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
     $tpl=new template_admin();
     $groupid=intval($_GET["link-item-js"]);
     $URL_ADDONS=build_suffix();
 
     $qProxy=new mysql_squid_builder(true);
-    $ligne=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$groupid'");
-    $GroupType=$qProxy->acl_GroupType[$ligne["GroupType"]];
-    $tpl->js_dialog7("{link} - {group}: {$ligne["GroupName"]} $GroupType","$page?link-item-popup=$groupid&{$URL_ADDONS}",850);
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$groupid");
+    $GroupName=is_array($grp) ? $grp["groupName"] : "";
+    $GroupType=is_array($grp) ? ($qProxy->acl_GroupType[$grp["groupType"]] ?? $grp["groupType"]) : "";
+    $tpl->js_dialog7("{link} - {group}: $GroupName $GroupType","$page?link-item-popup=$groupid&{$URL_ADDONS}",850);
 }
 function link_item_popup(){
     $page=CurrentPageName();
@@ -106,21 +142,19 @@ function link_perform(){
     $gpid=intval($_GET["gpid"]);
     $run=refresh_get();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $m5=md5("$gpid$MainGpid");
-    $q->QUERY_SQL("INSERT INTO webfilters_gpslink (zmd5,groupid,gpid,enabled) 
-        VALUES ('$m5','$MainGpid','$gpid',1)");
-    if(!$q->ok){
-        writelogs("ERROR $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);
-        echo $tpl->js_error("SQL Error\n".$q->mysql_error);
+
+    list($ok,$data)=acls_api_send("POST","/proxy/acls/sqlite/gpslink",["groupID"=>$MainGpid,"gpid"=>$gpid]);
+    if(!$ok){
+        writelogs("ERROR $data",__FUNCTION__,__FILE__,__LINE__);
+        echo $tpl->js_error("API Error\n".$data);
         return false;
     }
 
-    $ligne=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$MainGpid'");
-    $ManGropName=$ligne["GroupName"];
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName,GroupType FROM webfilters_sqgroups WHERE ID='$gpid'");
-    $GroupNameSlave=$ligne2["GroupName"];
-    $GroupType=$ligne2["GroupType"];
+    $grpMaster=acls_api_get("/proxy/acls/sqlite/group/$MainGpid");
+    $ManGropName=is_array($grpMaster) ? $grpMaster["groupName"] : $MainGpid;
+    $grpSlave=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+    $GroupNameSlave=is_array($grpSlave) ? $grpSlave["groupName"] : $gpid;
+    $GroupType=is_array($grpSlave) ? $grpSlave["groupType"] : "";
     admin_tracks("Link object $GroupNameSlave/$GroupType to $ManGropName");
 
     header("content-type: application/x-javascript");
@@ -135,96 +169,110 @@ function link_item_search(){
     $tpl=new template_admin();
     $maingroup_id=intval($_GET["search-link"]);
     $search=trim($_GET["search"]);
-    $search="*$search*";
-    $search=str_replace("**","*",$search);
-    $search=str_replace("*","%",$search);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $qProxy=new mysql_squid_builder(true);
 
+    // Build exclusion set: gpids already linked to this group
     $UNSET=array();
-    $sql="SELECT webfilters_gpslink.gpid,webfilters_sqgroups.ID
-       FROM webfilters_gpslink,webfilters_sqgroups
-       WHERE webfilters_gpslink.gpid=webfilters_sqgroups.ID
-       AND webfilters_gpslink.groupid=$maingroup_id";
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-
-    foreach ($results as $index=>$ligne) {
-        $UNSET[$ligne["gpid"]]=true;
+    $existing=acls_api_get("/proxy/acls/sqlite/gpslinks?groupid=$maingroup_id");
+    if(is_array($existing)){
+        foreach($existing as $lnk){
+            $UNSET[intval($lnk["gpid"])]=true;
+        }
     }
 
+    // Fetch all groups and filter client-side (no search endpoint on groups; reuse /groups/all pattern)
+    // out-of-scope: no dedicated search API for sqgroups by name/type — use GET /proxy/acls/sqlite/groups/all if available,
+    // otherwise fall back to listing children of the parent and doing a broader fetch.
+    // For now, fetch all groups via the existing list endpoint used elsewhere in WebConsole.
+    $allGroups=acls_api_get("/proxy/acls/sqlite/groups/all");
+    // Build search pattern (same logic as legacy SQL LIKE)
+    $searchPattern=null;
+    if($search!==""){
+        $searchPattern=strtolower("*$search*");
+        $searchPattern=str_replace("**","*",$searchPattern);
+    }
 
-    $sql="SELECT ID,GroupName,GroupType,enabled FROM webfilters_sqgroups 
-        WHERE (GroupName LIKE '$search') OR (GroupType LIKE '$search')";
+    $ITEMCOUNT=ritobj_items_count_all();
 
     $suffix=build_suffix();
-    VERBOSE($sql,__LINE__);
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
     $t=time();
-    $html[]="<table id='table-$t' style='margin-top: 15px' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
     $html[]="<thead>";
+    // Un <tr> etait ouvert DEUX FOIS: le navigateur refermait le premier de
+    // force et l'en-tete comptait une ligne vide.
     $html[]="<tr>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{objects}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{select}</th>";
+    $html[]="<th>{objects}</th>";
+    $html[]="<th>{type}</th>";
+    $html[]="<th>{select}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ritobj1-rows'>";
 
     $TRCLASS=null;
 
-    if(!$q->ok){echo $tpl->div_error("{mysql_error}:$q->mysql_error");}
+    if(!is_array($allGroups)){
+        $html[]="</tbody></table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='ritobj1-pager'></span></div></div></div>";
+        echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"ritobj1-rows","ritobj1-pager");
+        return;
+    }
 
-
-    foreach ($results as $index=>$ligne) {
+    foreach ($allGroups as $ligne) {
         $class = "font-bold";
-        $GroupName = $ligne["GroupName"];
-        $GroupType = $ligne["GroupType"];
-        $gpid=$ligne["ID"];
+        $GroupName = $ligne["groupName"];
+        $GroupType = $ligne["groupType"];
+        $gpid=intval($ligne["id"]);
         if($GroupType=="AclsGroup"){continue;}
         if(isset($UNSET[$gpid])){continue;}
-
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
+        // Apply search filter
+        if($searchPattern!==null){
+            $nameMatch=fnmatch($searchPattern,strtolower($GroupName));
+            $typeMatch=fnmatch($searchPattern,strtolower($GroupType));
+            if(!$nameMatch && !$typeMatch){continue;}
         }
+
+        $TRCLASS=null;
         $md=md5(serialize($ligne));
 
         $js="Loadjs('$page?link-perform=$maingroup_id&gpid=$gpid&md=$md&$suffix');";
-        $enabled = intval($ligne["enabled"]);
-        $GroupIcon = "<span class='".$qProxy->acl_GroupTypeIcon[$GroupType]."'></span>&nbsp;&nbsp;";
+        // /groups/all ne renvoie que {id,groupName,groupType} (struct Go
+        // AclsSqliteGroupListItem): sans ce defaut, intval(null) grisait
+        // TOUTES les lignes -- et emettait un undefined array key en PHP 8.
+        $enabled = isset($ligne["enabled"]) ? intval($ligne["enabled"]) : 1;
+        $GroupIcon = "<i class='".($qProxy->acl_GroupTypeIcon[$GroupType] ?? "fas fa-cube")."'></i>";
         $GrText = $qProxy->GroupTypeToString($GroupType);
-        $button = "<button class='btn btn-primary btn-xs' OnClick=\"$js\">{select}</button>";
+        $button = "<button class='awc-btn' OnClick=\"$js\">{select}</button>";
         if ($enabled == 0) {
             $class="text-muted";
         }
 
-        $html[] = "<tr class='$TRCLASS' id='$md'>";
-        $html[] = "<td class=\"$class\" width=50% nowrap>$GroupIcon$GroupName</td>";
-        $html[] = "<td class=\"$class\" width=50% nowrap>$GrText <small>($GroupType)</small></td>";
-        $html[] = "<td class=\"$class\" style='width:1%' nowrap>$button</td>";
+        // La ligne ne fermait PAS son <tr>: le navigateur les refermait de
+        // force, et un pager qui compte les <tr> ne voyait qu'une ligne sur deux.
+        $html[] = "<tr id='$md'>";
+        $html[] = "<td><div class='awc-ident'>"
+                 ."<span class='awc-ico".($enabled==0?" awc-ico-off":"")."'>$GroupIcon</span>"
+                 ."<span><span class='awc-name".($enabled==0?" awc-name-off":"")."'>".htmlspecialchars((string)$GroupName)."</span>"
+                 ."<div class='awc-meta'>".ritobj_meta($gpid,$ITEMCOUNT)."</div></span>"
+                 ."</div></td>";
+        $html[] = "<td class='awc-nowrap awc-mono'>$GrText <small>(".htmlspecialchars((string)$GroupType).")</small></td>";
+        $html[] = "<td><div class='awc-acts' style='opacity:1'>$button</div></td>";
+        $html[] = "</tr>";
 
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='ritobj1-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); }); 
-</script>";
+    // Le bloc <script> est concatene APRES l'analyse (accolades JavaScript).
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n</script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .$script
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"ritobj1-rows","ritobj1-pager");
 }
 
 
@@ -235,18 +283,19 @@ function refresh_get(){
     $js=array();
     if(isset($_GET["myRefresh"])){
         if (trim($_GET["myRefresh"]) <> null) {
-            $js[]=$_GET["myRefresh"]."()";
+            // Pentest 2026-11-04 : nom de fonction JS, rien d'autre.
+            $js[]=preg_replace('/[^A-Za-z0-9_.]/','',(string)$_GET["myRefresh"])."()";
         }
     }
 
     if(isset($_GET["RefreshFunction"])) {
         if (trim($_GET["RefreshFunction"]) <> null) {
-            $RefreshFunction = base64_decode($_GET["RefreshFunction"]);
+            $RefreshFunction = preg_replace('/[^A-Za-z0-9_.]/','',(string)base64_decode($_GET["RefreshFunction"]));
         }
     }
     if(isset($_GET["js-after"])){
         if (trim($_GET["js-after"]) <> null) {
-            $js_after=base64_decode($_GET["js-after"]);
+            $js_after=jsafter_sanitize(base64_decode($_GET["js-after"]));
         }
     }
 
@@ -264,14 +313,12 @@ function refresh_get(){
 function item_popup(){
 
     $groupid=intval($_GET["item-popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
-    $title="{new_object}";
     $btname="{add}";
 
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$groupid'");
-    $GroupNameMaster=$ligne2["GroupName"];
+    $grp=acls_api_get("/proxy/acls/sqlite/group/$groupid");
+    $GroupNameMaster=is_array($grp) ? $grp["groupName"] : $groupid;
     $title="{new_object} / $GroupNameMaster";
     $tpl->field_hidden("item-add", $groupid);
     $form[]=$tpl->field_text("GroupName","{object_name}","{new_group}");
@@ -283,19 +330,19 @@ function item_popup(){
 function  item_delete_perform(){
     $tpl=new template_admin();
     $zmd5=$_POST["item-delete"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM webfilters_gpslink WHERE zmd5='$zmd5'");
-    $groupid=$ligne["groupid"];
-    $gpid=$ligne["gpid"];
 
+    // Fetch link to get groupid/gpid for audit trail before deleting
+    $lnk=acls_api_get("/proxy/acls/sqlite/gpslink/$zmd5");
+    $groupid=is_array($lnk) ? intval($lnk["groupID"]) : 0;
+    $gpid=is_array($lnk) ? intval($lnk["gpid"]) : 0;
 
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$groupid'");
-    $GroupNameMaster=$ligne2["GroupName"];
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$gpid'");
-    $GroupNameSlave=$ligne2["GroupName"];
+    $grpMaster=($groupid>0) ? acls_api_get("/proxy/acls/sqlite/group/$groupid") : null;
+    $GroupNameMaster=is_array($grpMaster) ? $grpMaster["groupName"] : $groupid;
+    $grpSlave=($gpid>0) ? acls_api_get("/proxy/acls/sqlite/group/$gpid") : null;
+    $GroupNameSlave=is_array($grpSlave) ? $grpSlave["groupName"] : $gpid;
 
-    $q->QUERY_SQL("DELETE FROM webfilters_gpslink WHERE zmd5='$zmd5'");
-    if(!$q->ok){echo $q->mysql_error;return false; }
+    list($ok,$err)=acls_api_send("DELETE","/proxy/acls/sqlite/gpslink/$zmd5");
+    if(!$ok){echo $err;return false; }
     $text="Proxy: Unlink acl object $GroupNameSlave from $GroupNameMaster";
     admin_tracks($text);
     return true;
@@ -304,16 +351,15 @@ function  item_delete_perform(){
 function item_delete(){
     $tpl=new template_admin();
     $zmd5=$_GET["item-delete"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM webfilters_gpslink WHERE zmd5='$zmd5'");
-    $groupid=$ligne["groupid"];
-    $gpid=$ligne["gpid"];
 
+    $lnk=acls_api_get("/proxy/acls/sqlite/gpslink/$zmd5");
+    $groupid=is_array($lnk) ? intval($lnk["groupID"]) : 0;
+    $gpid=is_array($lnk) ? intval($lnk["gpid"]) : 0;
 
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$groupid'");
-    $GroupNameMaster=$ligne2["GroupName"];
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$gpid'");
-    $GroupNameSlave=$ligne2["GroupName"];
+    $grpMaster=($groupid>0) ? acls_api_get("/proxy/acls/sqlite/group/$groupid") : null;
+    $GroupNameMaster=is_array($grpMaster) ? $grpMaster["groupName"] : $groupid;
+    $grpSlave=($gpid>0) ? acls_api_get("/proxy/acls/sqlite/group/$gpid") : null;
+    $GroupNameSlave=is_array($grpSlave) ? $grpSlave["groupName"] : $gpid;
 
     echo $tpl->js_confirm_delete("{unlink} $GroupNameSlave {from} $GroupNameMaster","item-delete",$zmd5,
         "$('#$zmd5').remove();");
@@ -324,28 +370,27 @@ function item_delete(){
 function item_enable(){
     $tpl=new template_admin();
     $zmd5=$_GET["item-enable"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM webfilters_gpslink WHERE zmd5='$zmd5'");
-    $groupid=$ligne["groupid"];
-    $gpid=$ligne["gpid"];
-    $enabled=intval($ligne["enabled"]);
 
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$groupid'");
-    $GroupNameMaster=$ligne2["GroupName"];
-    $ligne2=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$gpid'");
-    $GroupNameSlave=$ligne2["GroupName"];
+    $lnk=acls_api_get("/proxy/acls/sqlite/gpslink/$zmd5");
+    if(!is_array($lnk)){echo $tpl->js_error_stop("gpslink not found: $zmd5");return false;}
+    $groupid=intval($lnk["groupID"]);
+    $gpid=intval($lnk["gpid"]);
+    $enabled=intval($lnk["enabled"]);
 
-    if($enabled==0){
+    $grpMaster=($groupid>0) ? acls_api_get("/proxy/acls/sqlite/group/$groupid") : null;
+    $GroupNameMaster=is_array($grpMaster) ? $grpMaster["groupName"] : $groupid;
+    $grpSlave=($gpid>0) ? acls_api_get("/proxy/acls/sqlite/group/$gpid") : null;
+    $GroupNameSlave=is_array($grpSlave) ? $grpSlave["groupName"] : $gpid;
+
+    $newEnabled=($enabled==0) ? 1 : 0;
+    list($ok,$err)=acls_api_send("PUT","/proxy/acls/sqlite/gpslink/$zmd5/enable",["enabled"=>$newEnabled]);
+    if(!$ok){echo $tpl->js_error_stop($err);return false;}
+
+    if($newEnabled==1){
         $text="Link acls object $GroupNameSlave to acl object group $GroupNameMaster";
-        $q->QUERY_SQL("UPDATE webfilters_gpslink SET enabled=1 WHERE zmd5='$zmd5'");
-        if(!$q->ok){echo $tpl->js_error_stop($q->mysql_error);return false; }
-        admin_tracks($text);
-        return true;
+    } else {
+        $text="unlink acls object $GroupNameSlave to acl object group $GroupNameMaster";
     }
-
-    $text="unlink acls object $GroupNameSlave to acl object group $GroupNameMaster";
-    $q->QUERY_SQL("UPDATE webfilters_gpslink SET enabled=0 WHERE zmd5='$zmd5'");
-    if(!$q->ok){echo $tpl->js_error_stop($q->mysql_error);return false; }
     admin_tracks($text);
     return true;
 
@@ -355,40 +400,39 @@ function item_add(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-    $GroupName=$q->sqlite_escape_string2($_POST["GroupName"]);
+    $GroupName=trim($_POST["GroupName"]);
     $GroupType=$_POST["GroupType"];
-    $MainGPID=$_POST["item-add"];
+    $MainGPID=intval($_POST["item-add"]);
 
-
-    $params=md5("$GroupName$GroupType$MainGPID");
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='$params'");
-
-    if(intval($ligne["ID"])==0) {
-        $sqladd = "INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,`acltpl`,`params`,`PortDirection`,`tplreset`) VALUES ('$GroupName','$GroupType','1','0','$params','0',0);";
-
-        $q->QUERY_SQL($sqladd);
-        if (!$q->ok) {
-            writelogs("ERROR $q->mysql_error $sqladd", __FUNCTION__, __FILE__, __LINE__);
-            echo $tpl->post_error($q->mysql_error);
-            return false;
-        }
+    // Create the new child group via API
+    list($okGrp,$grpData)=acls_api_send("POST","/proxy/acls/sqlite/group",[
+        "name"    => $GroupName,
+        "type"    => $GroupType,
+    ]);
+    if(!$okGrp){
+        writelogs("ERROR creating group: $grpData".__FUNCTION__,__FILE__,__LINE__);
+        echo $tpl->post_error("API Error\n".$grpData);
+        return false;
     }
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='$params'");
-    $newgpid = $ligne["ID"];
-    $m5=md5("$newgpid$MainGPID");
-    $q->QUERY_SQL("INSERT INTO webfilters_gpslink (zmd5,groupid,gpid,enabled) 
-        VALUES ('$m5','$MainGPID','$newgpid',1)");
-    if(!$q->ok){
-        writelogs("ERROR $q->mysql_error $sqladd",__FUNCTION__,__FILE__,__LINE__);
-        echo $tpl->post_error("SQL Error\n".$q->mysql_error);
+    $newgpid=is_array($grpData) ? intval($grpData["id"] ?? 0) : 0;
+    if($newgpid==0){
+        echo $tpl->post_error("API Error: no group ID returned");
         return false;
     }
 
-    $ligne=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$MainGPID'");
-    $ManGropName=$ligne["GroupName"];
+    // Link new child group to parent group
+    list($okLnk,$lnkErr)=acls_api_send("POST","/proxy/acls/sqlite/gpslink",[
+        "groupID" => $MainGPID,
+        "gpid"    => $newgpid,
+    ]);
+    if(!$okLnk){
+        writelogs("ERROR creating gpslink: $lnkErr",__FUNCTION__,__FILE__,__LINE__);
+        echo $tpl->post_error("API Error\n".$lnkErr);
+        return false;
+    }
+
+    $grpMaster=acls_api_get("/proxy/acls/sqlite/group/$MainGPID");
+    $ManGropName=is_array($grpMaster) ? $grpMaster["groupName"] : $MainGPID;
 
     admin_tracks("Insert a new object $GroupName/$GroupType to $ManGropName");
     return true;
@@ -410,94 +454,85 @@ function table_start(){
 function table(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $qProxy=new mysql_squid_builder(true);
     $groupid=intval($_GET["gpid"]);
     unset($_GET["gpid"]);
     $suffix=build_suffix();
     $t=time();
 
-    if(!$q->TABLE_EXISTS("webfilters_gpslink")){
-        $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `webfilters_gpslink` (
-		`zmd5` TEXT NOT NULL PRIMARY KEY ,
-		`groupid` INTEGER ,
-		`gpid` INTEGER,
-		`enabled` INTEGER
-		)");
-    }
-
-    $sql="SELECT webfilters_gpslink.*,webfilters_sqgroups.GroupType,
-       webfilters_sqgroups.GroupName
-       FROM webfilters_gpslink,webfilters_sqgroups
-       WHERE webfilters_gpslink.gpid=webfilters_sqgroups.ID
-       AND webfilters_gpslink.groupid=$groupid";
-    
-
+    // Fetch all gpslinks for this group via API (schema managed by Go daemon at startup)
+    $links=acls_api_get("/proxy/acls/sqlite/gpslinks?groupid=$groupid");
 
     $html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:10px'>";
     $html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?new-item-js=$groupid&$suffix');\">";
     $html[]="<i class='fa fa-plus'></i> {new_object} </label>";
     $html[]="<label class=\"btn btn btn-warning\" OnClick=\"Loadjs('$page?link-item-js=$groupid&$suffix');\"><i class='fa fa-link'></i> {link_object} </label>";
     $html[]="</div>";
-    $html[]="<table id='table-$t' style='margin-top: 15px' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'>";
     $html[]="<thead>";
+    // Un <tr> etait ouvert DEUX FOIS ici aussi.
     $html[]="<tr>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{objects}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{enable}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</th>";
+    $html[]="<th>{objects}</th>";
+    $html[]="<th class='awc-nowrap'>{type}</th>";
+    $html[]="<th class='awc-nowrap'>{enable}</th>";
+    $html[]="<th>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ritobj2-rows'>";
 
     $TRCLASS=null;
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->div_error("{mysql_error}:$q->mysql_error");}
     $addons=build_suffix();
 
-    foreach ($results as $index=>$ligne) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-        $md = $ligne["zmd5"];
-        $enabled = $ligne["enabled"];
-        $GroupType=$ligne["GroupType"];
-        $GroupName=$ligne["GroupName"];
-        $gpid=intval($ligne["gpid"]);
-        $enable=$tpl->icon_check($enabled,"Loadjs('$page?item-enable=$md')","AsDansGuardianAdministrator");
-        $GroupTypeText=$qProxy->GroupTypeToString($GroupType);
-        $delete=$tpl->icon_delete("Loadjs('$page?item-delete=$md')","AsDansGuardianAdministrator");
-        $GroupName=$tpl->td_href($GroupName,null,"Loadjs('fw.rules.items.php?groupid=$gpid&$addons')");
-        $ico2=$qProxy->acl_GroupTypeIcon[$GroupType];
-        if($ico2<>null){$ico2="<span class='$ico2'></span>&nbsp;&nbsp;";}
+    if(is_array($links)){
+        // Un seul appel pour toute la table, et aucun quand elle est vide.
+        $ITEMCOUNT=ritobj_items_count_all();
+        foreach ($links as $lnk) {
+            $TRCLASS=null;
+            $md = $lnk["zmd5"];
+            $enabled = intval($lnk["enabled"]);
+            $gpid=intval($lnk["gpid"]);
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%' nowrap>{$GroupName}</td>";
-        $html[]="<td nowrap>$ico2<strong>$GroupTypeText</strong></td>";
-        $html[]="<td style='width:1%;' nowrap class='center'>$enable</td>";
-        $html[]="<td style='width:1%;' nowrap class='center'>$delete</td>";
-        $html[]="</tr>";
+            // Fetch child group details
+            $grp=acls_api_get("/proxy/acls/sqlite/group/$gpid");
+            $GroupType=is_array($grp) ? $grp["groupType"] : "";
+            $GroupName=is_array($grp) ? $grp["groupName"] : $gpid;
+
+            $enable=$tpl->icon_check($enabled,"Loadjs('$page?item-enable=$md')",null,"AsDansGuardianAdministrator");
+            $GroupTypeText=$qProxy->GroupTypeToString($GroupType);
+            $delete=$tpl->icon_delete("Loadjs('$page?item-delete=$md')","AsDansGuardianAdministrator");
+            $GroupNameLink=$tpl->td_href($GroupName,null,"Loadjs('fw.rules.items.php?groupid=$gpid&$addons')");
+            // La cle peut manquer pour un type inconnu du referentiel.
+            $ico2=$qProxy->acl_GroupTypeIcon[$GroupType] ?? "fas fa-cube";
+
+            $html[]="<tr id='$md'>";
+            $html[]="<td><div class='awc-ident'>"
+                   ."<span class='awc-ico".($enabled==0?" awc-ico-off":"")."'><i class='$ico2'></i></span>"
+                   ."<span><span class='awc-name".($enabled==0?" awc-name-off":"")."'>{$GroupNameLink}</span>"
+                   ."<div class='awc-meta'>".ritobj_meta($gpid,$ITEMCOUNT)."</div></span>"
+                   ."</div></td>";
+            $html[]="<td class='awc-nowrap awc-mono'>$GroupTypeText</td>";
+            $html[]="<td class='awc-nowrap'>$enable</td>";
+            $html[]="<td><div class='awc-acts'>$delete</div></td>";
+            $html[]="</tr>";
+        }
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    if(!is_array($links) || count($links)==0){
+        $html[]="<tr><td colspan='4' class='awc-empty'>{no_data}</td></tr>";
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='ritobj2-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	</script>";
+    // Le bloc <script> est concatene APRES l'analyse (accolades JavaScript).
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n</script>";
 
-echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"ritobj2-rows","ritobj2-pager");
 }
 
 

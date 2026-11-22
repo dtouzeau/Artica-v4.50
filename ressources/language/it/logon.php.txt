@@ -1,9 +1,8 @@
 <error_no_ie>Informazionie: Il tuo Browser non risulta compatibile</error_no_ie>
-<error_no_ie_text>Currently it is not possible to provide good management Interface using Microsoft Internet Explorer or Opera.[br]
-I suggest you using [b]Mozilla Firefox[/b] instead.[br]
-Mozilla Firefox has successfully pass all ajax tests.[br]
-Please come back with an &quot;another navigator&quot;.
-[br]If you have installed webmail, you can give/get the direct link to the interface.[br]
-</error_no_ie_text>
+<error_no_ie_text>Attualmente non &#232; possibile fornire una buona interfaccia di gestione utilizzando Microsoft Internet Explorer o Opera.[br]
+Ti suggerisco di usare [b]Mozilla Firefox[/b] invece.[br]
+Mozilla Firefox ha superato con successo tutti i test ajax.[br]
+Torna con un &amp;quot;altro browser&amp;quot;.
+[br]Se hai installato la webmail, puoi fornire/ottenere il link diretto all'interfaccia.[br]</error_no_ie_text>
 <template>Template</template>
 <template_text>Scegli il tuo template preferito per lo skin della vostra sessione</template_text>

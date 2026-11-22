@@ -2,8 +2,15 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.smtpd.notifications.inc");
+// awc_table_style()/awc_pager_js(): kit des tableaux d'entites. Inclusion INCONDITIONNELLE.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+// Pentest 2026-11-04 : seuls gmail_json() et l'import verifiaient un droit. Les autres
+// handlers (regles, SMTP, Mattermost dont SAVE_POSTs() ecrit toute cle POST en reglage,
+// export avec le mot de passe SMTP) etaient ouverts a tout compte connecte.
+// Meme droit que le menu et que tous les formulaires de la page.
+$users=new usersMenus();if(!$users->AsSystemAdministrator){exit();}
 
 
 if(isset($_GET["mattermost-js"])){mattermost_js();exit;}
@@ -177,7 +184,7 @@ function gmail_step1():bool{
     $AUTHKEY=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("GMAIL_AUTH_KEY");
     if(strlen($AUTHKEY)<5){
         $html[]=$tpl->div_wizard("{GMAIL_AUTH_KEY}");
-        $html[]="<div><a href='$GMAIL_AUTH_URL'>$GMAIL_AUTH_URL</a></div>";
+        $html[]="<div><a href='".req_html($GMAIL_AUTH_URL)."'>".req_html($GMAIL_AUTH_URL)."</a></div>";
         echo $tpl->_ENGINE_parse_body($html);
         return true;
     }
@@ -186,8 +193,11 @@ function gmail_step1():bool{
 
 }
 function gmail_json():bool{
-    $FileName=$_GET["file-uploaded"];
+    $users=new usersMenus();if(!$users->AsSystemAdministrator){return false;}
     $tpl=new template_admin();
+    // Pentest 2026-11-04 : file-uploaded n'etait pas reduit a un nom : "../" faisait lire puis supprimer un fichier hors de conf/upload.
+    $FileName=fw_progress_upload_name($_GET["file-uploaded"] ?? "");
+    if($FileName===""){$tpl->js_error("Not a json file");return true;}
     $jsonfile="/usr/share/artica-postfix/ressources/conf/upload/$FileName";
     $jsonData=file_get_contents($jsonfile);
     $json=json_decode($jsonData);
@@ -239,7 +249,10 @@ function smtp_import_popup():bool{
 function smtp_import_file_uploaded():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $file=$_GET["file-uploaded"];
+    $users=new usersMenus();if(!$users->AsSystemAdministrator){return false;}
+    // Pentest 2026-11-04 : file-uploaded n'etait pas reduit a un nom (lecture + unlink hors de conf/upload).
+    $file=fw_progress_upload_name($_GET["file-uploaded"] ?? "");
+    if($file===""){$tpl->js_error("{corrupted}");return false;}
     $fullpath="/usr/share/artica-postfix/ressources/conf/upload/$file";
     $data=@file_get_contents($fullpath);
     @unlink($fullpath);
@@ -249,7 +262,7 @@ function smtp_import_file_uploaded():bool{
         return false;
     }
 
-    $UfdbguardSMTPNotifs=unserialize(base64_decode($data));
+    $UfdbguardSMTPNotifs=unserialize(base64_decode($data),array("allowed_classes"=>false));   // Pentest 2026-11-04 : fichier fourni par le client
     if(!is_array($UfdbguardSMTPNotifs)){
         $tpl->js_error("{corrupted}");
         return false;
@@ -305,7 +318,9 @@ function id_js(){
 function id_enable(){
     $tpl=new template_admin();
     $id=intval($_GET["enable"]);
-    $field=$_GET["f"];
+    // Nom de colonne interpole dans le SQL: liste blanche, jamais la valeur brute.
+    $field=(string)($_GET["f"] ?? "");
+    if(!in_array($field,array("critic","warning","enabled"),true)){return false;}
     $q=new lib_sqlite("/home/artica/SQLITE/webconsole.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM smtp_notifications WHERE ID=$id");
     if($ligne[$field]==1){
@@ -326,10 +341,10 @@ function id_popup(){
     $tpl=new template_admin();
     $id=intval($_GET["id-popup"]);
     $bt="{apply}";
+    $jsafter="dialogInstance1.close();LoadAjaxSilent('smt-rules-table','$page?rules=yes')";
     if($id==0){
         $title="{new_rule}";
         $bt="{add}";
-        $jsafter="dialogInstance1.close();LoadAjaxSilent('smt-rules-table','$page?rules=yes')";
     }else{
         $title="{rule} $id";
     }
@@ -357,34 +372,40 @@ function id_save(){
     $tpl->CLEAN_POST();
     $q=new lib_sqlite("/home/artica/SQLITE/webconsole.db");
     $id=intval($_POST["id-save"]);
-    $fields[]="sender";
-    $fields[]="recipients";
-    $fields[]="warning";
-    $fields[]="critic";
-    $fields[]="filters";
-    $atrck=null;
-    foreach ($fields as $key){
-        $datas[]="'".$q->sqlite_escape_string2($_POST[$key])."'";
-        $edit[]="$key='".$q->sqlite_escape_string2($_POST[$key])."'";
-        $atrck="$atrck $key={($_POST[$key]}";
-    }
+    // Pentest 2026-11-04 : requete parametree. Avant, le SQL etait assemble a la main
+    // et renvoye en entier au navigateur avec l'erreur.
+    $values=array(
+        "sender"=>trim((string)($_POST["sender"] ?? "")),
+        "recipients"=>trim((string)($_POST["recipients"] ?? "")),
+        "warning"=>intval($_POST["warning"] ?? 0)==1?1:0,
+        "critic"=>intval($_POST["critic"] ?? 0)==1?1:0,
+        "filters"=>(string)($_POST["filters"] ?? ""),
+    );
+    $atrck="";
+    foreach ($values as $key=>$value){$atrck="$atrck $key=$value";}
+    $fields=array_keys($values);
+    $params=array_values($values);
     if($id==0){
-        $admin="Creating new SMTP notifications rule for $atrck";
-        $sql="INSERT INTO smtp_notifications (".@implode(",",$fields).") VALUES (".@implode(",",$datas).")";
+        $admin="Creating new SMTP notifications rule for$atrck";
+        $sql="INSERT INTO smtp_notifications (".implode(",",$fields).") VALUES (".implode(",",array_fill(0,count($fields),"?")).")";
     }else{
-        $admin="Updating SMTP notifications with $atrck";
-        $sql="UPDATE smtp_notifications SET ".@implode(",",$edit)." WHERE ID=$id";
+        $admin="Updating SMTP notifications rule $id with$atrck";
+        $set=array();
+        foreach ($fields as $key){$set[]="$key=?";}
+        $sql="UPDATE smtp_notifications SET ".implode(",",$set)." WHERE ID=?";
+        $params[]=$id;
     }
 
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$q->mysql_error."$sql";return false;}
+    $q->QUERY_SQL_PARAMS($sql,$params);
+    if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
     admin_tracks($admin);
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/reset/cache");
     return true;
 }
 function id_delete(){
     $id=intval($_GET["id-delete"]);
-    $md=$_GET["md"];
+    // Pentest 2026-11-04 : md etait recopie tel quel dans le JavaScript.
+    $md=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["md"] ?? ""));
     $tpl=new template_admin();
     $tpl->js_confirm_delete("{rule} $id","id-delete","$id","$('#$md').remove();");
 }
@@ -400,100 +421,88 @@ function id_delete_perform(){
 function rules(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $t=time();
-
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/postfix.transport.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/postfix.transport.progress.txt";
-    $ARRAY["CMD"]="postfix2.php?transport=yes";
-    $ARRAY["TITLE"]="{reconfiguring}";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-postfix-routing')";
-
-
-    $btn[]="<div class=\"btn-group\" data-toggle=\"buttons\" style=''>";
-    $btn[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?id-js=0');\">";
-    $btn[]="<i class='fa fa-plus'></i> {new_rule} </label>";
-    $btn[]="</div>";
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{recipients}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{sender}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{filters}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{critical}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{warning}</center></th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{enabled}</center></th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{delete}</center></th>";
-
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-    $TRCLASS=null;
 
     $q=new lib_sqlite("/home/artica/SQLITE/webconsole.db");
     $results=$q->QUERY_SQL("SELECT * FROM smtp_notifications ORDER BY ID DESC");
-
-
-    foreach ($results as $num=>$ligne){
-        $ID=$ligne["ID"];
-        $md=md5(serialize($ligne));
-        $recipients=trim($ligne["recipients"]);
-        $sender=$ligne["sender"];
-        $critic=$ligne["critic"];
-        $warning=$ligne["warning"];
-        $filters=$ligne["filters"];
-        if($filters==null){$filters="{all}";}
-        $filters="{filters}: ".str_replace("\n",", ",$ligne["filters"]);
-        if(strlen($filters)>90){$filters=substr($filters,0,87)."...";}
-
-
-
-        $linkjs="Loadjs('$page?id-js=$ID')";
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:30%' nowrap><strong>".$tpl->td_href($recipients,null,$linkjs)."</strong></td>";
-        $html[]="<td nowrap><strong>".$tpl->td_href($sender,null,$linkjs)."</strong></td>";
-        $html[]="<td nowrap>$filters</td>";
-        $html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_check($critic,"Loadjs('$page?enable=$ID&f=critic')",null,"AsSystemAdministrator")."</center></td>";
-        $html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_check($warning,"Loadjs('$page?enable=$ID&f=warning')",null,"AsSystemAdministrator")."</center></td>";
-        $html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable=$ID&f=enabled')",null,"AsSystemAdministrator")."</center></td>";
-        $html[]="<td style='vertical-align:middle;width:1%' class='center'>".$tpl->icon_delete("Loadjs('$page?id-delete=$ID&md=$md')","AsSystemAdministrator")."</center></td>";
-        $html[]="</tr>";
-
-
+    $rows=array();
+    if(is_array($results)){
+        foreach ($results as $ligne){$rows[]=rules_row($ligne);}
     }
 
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{recipients}</th>";
+    $html[]="<th>{filters}</th>";
+    $html[]="<th class='center'>{critical}</th>";
+    $html[]="<th class='center'>{warning}</th>";
+    $html[]="<th class='center'>{enabled}</th>";
+    $html[]="<th style='text-align:right'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='awc-rows'>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='6'><div class='awc-empty'>{no_rule}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>".count($rows)." {rules}</span><span class='awc-pg' id='awc-pager'></span></div>";
+    $html[]="</div></div>";
+
+    $topbuttons=array();
+    $topbuttons[]=array("Loadjs('$page?id-js=0');",ico_plus,"{new_rule}");
+    $topbuttons[]=array("LoadAjaxSilent('smt-rules-table','$page?rules=yes');",ico_refresh,"{refresh}");
 
     $TINY_ARRAY["TITLE"]="{rules_message_notifs}";
     $TINY_ARRAY["ICO"]="fa fa-envelope";
     $TINY_ARRAY["EXPL"]="{rules_message_notifs_explain}";
     $TINY_ARRAY["URL"]="notifications";
-    $TINY_ARRAY["BUTTONS"]=@implode("",$btn);
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    // CSS et JS concatenes AUTOUR du parse: _ENGINE_parse_body lirait chaque bloc {..} comme un jeton.
+    $js="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$jstiny</script>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html)).$js.awc_pager_js(25);
+}
 
-    $html[]="<tr>";
-    $html[]="<td colspan='6'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	$jstiny
-	</script>";
+/** Une ligne de regle: identite (destinataires + expediteur), filtres, trois bascules, suppression. */
+function rules_row(array $ligne):string{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $ID=intval($ligne["ID"]);
+    $md=md5(serialize($ligne));
+    $enabled=intval($ligne["enabled"])==1;
+    $recipients=trim((string)$ligne["recipients"]);
+    $sender=trim((string)$ligne["sender"]);
+    if($recipients==""){$recipients="{recipients}";}else{$recipients=req_html($recipients);}
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $filters=trim(str_replace(array("\r","\n"),array("",", "),(string)$ligne["filters"]));
+    if($filters==""){
+        $filters="<span class='awc-none'>{all}</span>";
+    }else{
+        if(strlen($filters)>90){$filters=substr($filters,0,87)."...";}
+        $filters="<span class='awc-mono'>".req_html($filters)."</span>";
+    }
 
-    //
+    $linkjs="Loadjs('$page?id-js=$ID')";
+    $meta="{rule} $ID";
+    if($sender<>""){$meta.=" &middot; {sender}: ".req_html($sender);}
 
+    $h="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico".($enabled?"":" awc-ico-off")."'><i class='fas fa-envelope'></i></span>";
+    $h.="<span><span class='awc-name".($enabled?"":" awc-name-off")."'>";
+    $h.="<a href=\"javascript:blur();\" OnClick=\"$linkjs\">$recipients</a></span>";
+    $h.="<div class='awc-meta'>$meta</div></span>";
+    $h.="</div></td>";
+    $h.="<td>$filters</td>";
+    $h.="<td class='center' style='width:1%'>".$tpl->icon_check($ligne["critic"],"Loadjs('$page?enable=$ID&f=critic')",null,"AsSystemAdministrator")."</td>";
+    $h.="<td class='center' style='width:1%'>".$tpl->icon_check($ligne["warning"],"Loadjs('$page?enable=$ID&f=warning')",null,"AsSystemAdministrator")."</td>";
+    $h.="<td class='center' style='width:1%'>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable=$ID&f=enabled')",null,"AsSystemAdministrator")."</td>";
+    $h.="<td style='width:1%'><div class='awc-acts'>";
+    $h.="<a class='awc-act awc-act-danger' title='{delete}' href=\"javascript:blur();\" OnClick=\"Loadjs('$page?id-delete=$ID&md=$md')\"><i class='fas fa-trash-can'></i></a>";
+    $h.="</div></td>";
+    $h.="</tr>";
+    return $h;
 }
 function logfile_js(){
     $tpl=new template_admin();
@@ -665,6 +674,7 @@ function smtp_parameters_popup():bool{
     $form[]=$tpl->field_numeric("smtp_server_port","{smtp_server_port}",$UfdbguardSMTPNotifs["smtp_server_port"]);
     $form[]=$tpl->field_checkbox("tls_enabled","{tls_enabled}",$UfdbguardSMTPNotifs["tls_enabled"]);
     $form[]=$tpl->field_checkbox("ssl_enabled","{UseSSL}",$UfdbguardSMTPNotifs["ssl_enabled"]);
+    $form[]=$tpl->field_checkbox("proxy_protocol","{enable_smtp_haproxy}",$UfdbguardSMTPNotifs["proxy_protocol"]);
     $form[]=$tpl->field_text("smtp_auth_user", "{smtp_auth_user}", $UfdbguardSMTPNotifs["smtp_auth_user"]);
     $form[]=$tpl->field_password2("smtp_auth_passwd", "{smtp_auth_passwd}", $UfdbguardSMTPNotifs["smtp_auth_passwd"]);
     $form[]=$tpl->field_checkbox("use_login","{USE_LOGIN_AUTH}",$UfdbguardSMTPNotifs["use_login"]);
@@ -758,141 +768,93 @@ function smtp_save():bool{
 }
 
 function events(){
-    $page=CurrentPageName();
     $tpl=new template_admin();
-    $t=time();
-    if(!isset($_SESSION["SMTP_NOTIFS_SEARCH"])){$_SESSION["SMTP_NOTIFS_SEARCH"]="today this hour 50 events";}
-
-    $html[]="
-
-	<div class=\"row\"> 
-		<div class='ibox-content'>
-		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["SMTP_NOTIFS_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
-      		<span class=\"input-group-btn\">
-       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:ss$t();\">Go!</button>
-      	</span>
-     </div>
-    </div>
-</div>
-	<div class='row'><div id='progress-firehol-restart'></div>
-	<div class='ibox-content'>
-
-	<div id='table-loader'></div>
-
-	</div>
-	</div>
-	<script>";
-    $html[]="function Search$t(e){";
-    $html[]="\tif(!checkEnter(e) ){return;}";
-    $html[]="ss$t();";
-    $html[]="}";
-    $html[]="function ss$t(){
-			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
-			LoadAjax('table-loader','$page?search='+ss);
-		}
-		
-		function Start$t(){
-			var ss=document.getElementById('search-this-$t').value;
-			ss$t();
-		}
-		Start$t();
-	</script>";
-
-
+    $page=CurrentPageName();
+    $html=array();
+    $html[]="<div style='margin-top:10px'>";
+    $html[]=$tpl->search_block($page,"","","","");
+    $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);
-
 }
 
 function events_search(){
     $tpl=new template_admin();
-    $MAIN=$tpl->format_search_protocol($_GET["search"]);
+    $MAIN=$tpl->format_search_protocol($_GET["search"] ?? "");
     $rp=intval($MAIN["MAX"]);
-    $search=trim($MAIN["TERM"]);
+    if($rp<=0){$rp=50;}
+    $search=trim((string)$MAIN["TERM"]);
     if(strlen($search)<3){$search="NONE";}
 
-    $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/articanotifs/events/$rp/$search");
-
-    $json=json_decode($data);
-    if (json_last_error()> JSON_ERROR_NONE) {
+    $data=$GLOBALS["CLASS_SOCKETS"]->REST_API("/articanotifs/events/$rp/".rawurlencode($search));
+    $json=json_decode((string)$data);
+    if (json_last_error()> JSON_ERROR_NONE || !is_object($json)) {
         echo $tpl->div_error("{error}<hr>".json_last_error_msg());
+        return false;
     }
     if(!$json->Status){
-        echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
+        echo $tpl->div_error("{error}<hr>".req_html((string)($json->Error ?? "")));
+        return false;
     }
 
-    $date_text=$tpl->_ENGINE_parse_body("{date}");
-    $events=$tpl->_ENGINE_parse_body("{events}");
-    $html[]="
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>$date_text</th>
-        	<th>$events</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
-    foreach ($json->Logs as $line){
-        $MAIN=array();
-        $msg=array();
-        $text_class="text-success";
-
-        if(preg_match("#5\.7\.[0-9]+\s+#",$line)){
-            $text_class="text-danger";
-        }
-
-        if(!preg_match_all("#([a-z]+)=[\"|](.+?)[\"|]#",$line,$sarray)){continue;}
-        foreach ($sarray[1] as $index=>$line){
-            $MAIN[$line]=$sarray[2][$index];
-        }
-        if(preg_match("#from=(.+?)\s+#",$line,$re)){
-            $MAIN["from"]=$re[1];
-        }
-
-        $FTime=$tpl->time_to_date(strtotime($MAIN["time"]),true);
-        if(isset($MAIN["error"])){
-            $text_class="text-danger";
-            $msg[]="<strong>{error}: {$MAIN["error"]}</strong>";
-        }
-
-
-
-        if(isset($MAIN["msg"])){
-            $msg[]=$MAIN["msg"];
-        }
-        if(isset($MAIN["to"])){
-            $msg[]="<br>{recipient}: <strong>".$MAIN["to"]."</strong>";
-        }
-        if(isset($MAIN["host"])){
-            $msg[]="&nbsp;/&nbsp;{smtp_server_name}: <strong>".$MAIN["host"]."</strong>";
-        }
-        if(isset($MAIN["address"])){
-            $msg[]="{listen}: ".$MAIN["address"];
-        }
-        if(isset($MAIN["from"])){
-            $msg[]="&nbsp;/&nbsp;{smtp_sender}: ".$MAIN["from"];
-        }
-        if(isset($MAIN["func"])){
-            $msg[]="&nbsp;/&nbsp;{function}: ".$MAIN["func"];
-        }
-
-
-
-
-        $line="<span class='$text_class'>".@implode(" ",$msg)."</span>";
-
-
-        $html[]="<tr>
-				<td style='width:1%' nowrap>$FTime</td>
-				<td>$line</td>
-				</tr>";
-
+    $rows=array();
+    $logs=(isset($json->Logs) && is_array($json->Logs))?$json->Logs:array();
+    foreach ($logs as $line){
+        $row=events_row((string)$line);
+        if($row<>""){$rows[]=$row;}
     }
 
-    $html[]="</tbody></table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html=array();
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{date}</th><th class='center'>{status}</th><th>{events}</th>";
+    $html[]="</tr></thead><tbody id='awc-rows'>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>".count($rows)." {events}</span><span class='awc-pg' id='awc-pager'></span></div>";
+    $html[]="</div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html))."<script>NoSpinner();</script>".awc_pager_js(25);
+    return true;
+}
 
+/** Une ligne d'evenement: date, pastille OK / erreur, message et ses attributs (key="value"). */
+// Pentest 2026-11-04 : champs du journal SMTP (destinataire, serveur, message : donnee externe) encodes via req_html (htmlspecialchars UTF-8 rendait "" sur du Latin-1) (XSS stockee).
+function events_row(string $line):string{
+    $tpl=new template_admin();
+    $MAIN=array();
+    $msg=array();
+    $error=preg_match("#5\.7\.[0-9]+\s+#",$line)==1;
+    if(preg_match("#from=(.+?)\s+#",$line,$re)){$MAIN["from"]=$re[1];}
+    if(!preg_match_all("#([a-z]+)=[\"|](.+?)[\"|]#",$line,$sarray)){return "";}
+    foreach ($sarray[1] as $index=>$key){$MAIN[$key]=$sarray[2][$index];}
 
+    $FTime=$tpl->time_to_date(strtotime((string)($MAIN["time"] ?? "")),true);
+    if(isset($MAIN["error"])){
+        $error=true;
+        $msg[]="<strong>{error}: ".req_html($MAIN["error"])."</strong>";
+    }
+    if(isset($MAIN["msg"])){$msg[]=req_html($MAIN["msg"]);}
+    $details=array();
+    if(isset($MAIN["to"])){$details[]="{recipient}: <strong>".req_html($MAIN["to"])."</strong>";}
+    if(isset($MAIN["host"])){$details[]="{smtp_server_name}: <strong>".req_html($MAIN["host"])."</strong>";}
+    if(isset($MAIN["address"])){$details[]="{listen}: ".req_html($MAIN["address"]);}
+    if(isset($MAIN["from"])){$details[]="{smtp_sender}: ".req_html($MAIN["from"]);}
+    if(isset($MAIN["func"])){$details[]="{function}: ".req_html($MAIN["func"]);}
 
+    $badge="<span class='awc-badge awc-badge-on'>OK</span>";
+    $text=@implode(" ",$msg);
+    if($error){
+        $badge="<span class='awc-badge' style='background:#ba1a1a'>{error}</span>";
+        $text="<span class='awc-down'>$text</span>";
+    }
+    $h="<tr>";
+    $h.="<td style='width:1%' nowrap><span class='awc-mono'>".req_html($FTime)."</span></td>";
+    $h.="<td class='center' style='width:1%'>$badge</td>";
+    $h.="<td style='width:99%'>$text";
+    if(count($details)>0){$h.="<div class='awc-meta'>".@implode(" &middot; ",$details)."</div>";}
+    $h.="</td></tr>";
+    return $h;
 }

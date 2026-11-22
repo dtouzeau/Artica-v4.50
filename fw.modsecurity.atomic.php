@@ -12,7 +12,6 @@ if(isset($_GET["parameters"])){parameters();exit;}
 if(isset($_GET["statistics-parameters"])){statistics_engine();exit;}
 if(isset($_GET["protocols-js"])){protocols_js();exit;}
 if(isset($_GET["protocols-popup"])){protocols_popup();exit;}
-if(isset($_POST["PROTO_GET"])){protocols_save();exit;}
 
 page();
 
@@ -47,7 +46,7 @@ $ModSecurityPatternVersion=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ModSecurity
 function protocols_popup(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $available=explode(" ","GET HEAD POST OPTIONS PUT PATCH DELETE CHECKOUT COPY DELETE LOCK MERGE MKACTIVITY MKCOL MOVE PROPFIND PROPPATCH PUT UNLOCK TRACE CONNECT");
+    $available=explode(" ","GET HEAD POST OPTIONS PUT PATCH DELETE CHECKOUT COPY DELETE LOCK MERGE MKACTIVITY MKCOL MOVE PROPFIND PROPPATCH PUT UNLOCK TRACE CONNECT SEARCH");
 
     $ModSecurityProtocols=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ModSecurityProtocols"));
     if(!is_array($ModSecurityProtocols)){$ModSecurityProtocols=array();}

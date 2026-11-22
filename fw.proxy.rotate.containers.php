@@ -1,5 +1,13 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
@@ -33,23 +41,23 @@ function table(){
 $html[]="</div>";
   */
 
-$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
 $html[]="<thead>";
 $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{hostname}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{type}</center></th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{filename}</center></th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{size}</center></th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{delete}</center></th>";
+    $html[]="<th>{date}</th>";
+    $html[]="<th>{hostname}</th>";
+    $html[]="<th class='center'>{type}</center></th>";
+    $html[]="<th class='center'>{filename}</center></th>";
+    $html[]="<th class='center'>{size}</center></th>";
+    $html[]="<th class='center'>{delete}</center></th>";
     $html[]="</tr>";
 $html[]="</thead>";
-$html[]="<tbody>";
+$html[]="<tbody id='rotatecontai-rows'>";
 
     $results=$q->QUERY_SQL("SELECT * FROM store_files ORDER BY ID DESC");
 
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md         = md5(serialize($ligne));
         $date       = $tpl->time_to_date($ligne["filedate"],true);
         $hostname   = $ligne["hostname"];
@@ -70,28 +78,16 @@ $html[]="<tbody>";
     }
 
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='6'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='rotatecontai-pager'></span></div></div></div>";
     $html[]="";
     $html[]="<script>";
     $html[]="NoSpinner();";
     $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() {";
-    $html[]="\t$('#table-$t').footable( {";
-    $html[]="\t\t\"filtering\": { \"enabled\": true },";
-    $html[]="\t\t\"sorting\": { \"enabled\": true },";
-    $html[]="\t\t\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} }";
-    $html[]="\t\t} );";
-    $html[]="\t}";
-    $html[]=");";
     $html[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"rotatecontai-rows","rotatecontai-pager");
 
 }

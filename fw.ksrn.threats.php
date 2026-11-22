@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__).'/ressources/class.squid.familysites.inc');
 include_once(dirname(__FILE__).'/ressources/class.tcpip.inc');
@@ -31,10 +34,12 @@ function tmpwhite():bool{
 }
 function permwhite():bool{
     $sitename   = $_GET["permwhite"];
+    // Pentest 2026-11-04 : permwhite (GET) etait concatene dans la requete.
+    $sitenameSQL= pg_escape_string2($sitename);
     $tpl        = new template_admin();
     $whitelistP = 0;
     $q          = new postgres_sql();
-    $sql        = "SELECT zdate FROM ksrn_white WHERE sitename='$sitename'";
+    $sql        = "SELECT zdate FROM ksrn_white WHERE sitename='$sitenameSQL'";
 
     if(!$q->CREATE_KSRN()){
         $tpl->js_error($q->mysql_error);
@@ -45,7 +50,7 @@ function permwhite():bool{
     if(intval($lign2["zdate"])>0){$whitelistP=1;}
 
     if($whitelistP==1){
-        $q->QUERY_SQL("DELETE FROM ksrn_white WHERE sitename='$sitename'");
+        $q->QUERY_SQL("DELETE FROM ksrn_white WHERE sitename='$sitenameSQL'");
         if(!$q->ok){$tpl->js_error($q->mysql_error);return false;}
         admin_tracks("$sitename website removed from SRN permanent whitelist");
         $GLOBALS["CLASS_SOCKETS"]->getFrameWork("ksrn.php?whitelist=yes");
@@ -53,7 +58,7 @@ function permwhite():bool{
 
     }
     $time=time();
-    $q->QUERY_SQL("INSERT INTO ksrn_white (zdate,sitename) VALUES ('$time','$sitename')");
+    $q->QUERY_SQL("INSERT INTO ksrn_white (zdate,sitename) VALUES ('$time','$sitenameSQL')");
     if(!$q->ok){$tpl->js_error($q->mysql_error);return false;}
     admin_tracks("$sitename website added from SRN permanent whitelist");
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("ksrn.php?whitelist=yes");
@@ -75,8 +80,9 @@ function white_save():bool{
         $time++;
         $sitename=trim(strtolower($sitename));
         if($ip->isValid($sitename)){continue;}
-        $q->QUERY_SQL("INSERT INTO ksrn_white (zdate,sitename) VALUES ('$time','$sitename')");
-        if(!$q->ok){echo "jserror:$q->mysql_error";return false;}
+        // Pentest 2026-11-04 : whiteperms (POST) etait concatene dans la requete.
+        $q->QUERY_SQL_PARAMS("INSERT INTO ksrn_white (zdate,sitename) VALUES ($1,$2)",array($time,$sitename));
+        if(!$q->ok){echo (new template_admin())->post_error("$q->mysql_error");return false;}
     }
 
     admin_tracks("$c websites saved in SRN permanent whitelist");
@@ -170,7 +176,7 @@ function sync_js():string{
     $ARRAY["TITLE"]="{KSRN} {synchronize}";
     $ARRAY["AFTER"]="$function();";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-ksrnthreats-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ksrnthreats-restart')";
 }
 
 function search(){
@@ -210,6 +216,8 @@ function search(){
         $search = str_replace("**", "*", $search);
         $search = str_replace("**", "*", $search);
         $search = str_replace("*","%",$search);
+        // Pentest 2026-11-04 : search (GET) etait concatene dans la requete.
+        $search = pg_escape_string2($search);
         $sql = "SELECT ksrn.zdate, ksrn.username, ksrn.ipaddr, ksrn.mac, 
                  ksrn.category,ksrn.provider,statscom_websites.sitename
                  FROM  ksrn,statscom_websites
@@ -273,7 +281,8 @@ function search(){
 
         $whitelist=$tpl->icon_check($keymem,"Loadjs('$page?tmpwhite=".urlencode($sitename)."')");
 
-        $sql="SELECT zdate FROM ksrn_white WHERE sitename='$sitename'";
+        // Pentest 2026-11-04 : sitename/family (lus en base, issus du trafic) etaient concatenes dans la requete.
+        $sql="SELECT zdate FROM ksrn_white WHERE sitename='".pg_escape_string2($sitename)."'";
 
         $permw=$sitename;
         $lign2=$q->mysqli_fetch_array($sql);
@@ -281,7 +290,7 @@ function search(){
         if($whitelistP==0){
             $family=$fam->GetFamilySites($sitename);
             if($family<>$sitename){
-                $lign2=$q->mysqli_fetch_array("SELECT zdate FROM ksrn_white WHERE sitename='$family'");
+                $lign2=$q->mysqli_fetch_array("SELECT zdate FROM ksrn_white WHERE sitename='".pg_escape_string2($family)."'");
                 if(intval($lign2["zdate"])>0){$whitelistP=1;}
                 $permw=$family;
             }

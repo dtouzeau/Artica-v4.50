@@ -1,10 +1,12 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.routing.ui.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
-if(isset($_GET["popup"])){popup();exit;}
-if(isset($_GET["route-main"])){route_main();exit;}
-if(isset($_POST["RouteName"])){route_save();exit;}
+if(isset($_GET["popup"])){rtui_legacy_guard("html");popup();exit;}
+if(isset($_GET["route-main"])){rtui_legacy_guard("html");route_main();exit;}
+if(isset($_POST["RouteName"])){rtui_legacy_guard("post");route_save();exit;}
 if(isset($_POST["toto"])){exit();}
+rtui_legacy_guard("js");
 js();
 
 
@@ -32,8 +34,8 @@ function popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-	$ID=$_GET["popup"];
-	$ligne=$q->mysqli_fetch_array("SELECT `RouteName`,nic FROM routing_rules WHERE ID='$ID'");
+	$ID=intval($_GET["popup"]);
+	$ligne=$q->mysqli_fetch_array("SELECT `RouteName`,nic FROM routing_rules WHERE ID=$ID");
     $title="{routing_table} {$ligne["RouteName"]}";
 
     if($NetworkAdvancedRouting==0){$title="Table Main {for} {$ligne["nic"]}";}
@@ -82,7 +84,7 @@ function route_main(){
     }
 	
 
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM routing_rules WHERE ID='{$_GET["ID"]}'");
+	$ligne=$q->mysqli_fetch_array("SELECT * FROM routing_rules WHERE ID=".intval($_GET["ID"]));
 	if(!$q->ok){echo $q->mysql_error_html();}
 	$nic=new system_nic($ligne["nic"]);
 	if($_GET["lock"]=="yes"){$LOCK=1;}
@@ -103,7 +105,7 @@ function route_main(){
 	    $tpl->field_hidden("RouteName",$ligne["RouteName"]);
     }
 	
-	$html=$tpl->form_outside($ligne["pattern"], @implode("\n", $form),null,"{apply}","LoadAjax('table-loader-iprule','fw.network.routing.php?table=yes');","AsSystemAdministrator");
+	$html=$tpl->form_outside($ligne["pattern"], @implode("\n", $form),null,"{apply}","LoadAjax('table-loader-iprule','fw.network.routing.legacy.php?table=yes');","AsSystemAdministrator");
 
 	echo $html;
 }
@@ -114,8 +116,8 @@ function route_save():bool{
 	$tpl->CLEAN_POST();
 	$RouteName=$_POST["RouteName"];
 	$RouteName=str_replace("'", "`", $RouteName);
-	if($_POST["ID"]>0){
-		$q->QUERY_SQL("UPDATE routing_rules SET `enabled`='{$_POST["enabled"]}',`RouteName`='$RouteName' WHERE ID='{$_POST["ID"]}'");
+	if(intval($_POST["ID"])>0){
+		$q->QUERY_SQL_PARAMS("UPDATE routing_rules SET `enabled`=?,`RouteName`=? WHERE ID=?",array(intval($_POST["enabled"]),$RouteName,intval($_POST["ID"])));
 		if(!$q->ok){echo $q->mysql_error;return false;}
         return admin_tracks_post("Saving routing rule");
 	}
@@ -125,37 +127,5 @@ function route_save():bool{
 
 
 
-function route_dump(){
-	$page=CurrentPageName();
-	echo "<div id='route-dump-fields'></div>
-	<script>
-	function RouteDumpFields(){
-		LoadAjax('route-dump-fields','$page?route-dump2={$_GET["route-dump"]}');
-	}
-	RouteDumpFields();
-	</script>";
-}
-function route_dump2(){	
-	$q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-	$tpl=new template_admin();
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM routing_rules WHERE ID='{$_GET["route-dump2"]}'");
-	if(!$q->ok){echo $q->mysql_error_html();}
-	$title=$ligne["RouteName"];
-
-
-	exec("/sbin/ip rule show |grep $title 2>&1",$results1);
-
-	exec("/sbin/ip route show table $title 2>&1",$results2);
-
-	$route="# Rules *************************************************************************\n".@implode("\n", $results1)."\n\n\n# Table *************************************************************************\n\n".@implode("\n", $results2);
-
-	$html=$tpl->field_textareacode("toto", null, $route);
-
-	echo $tpl->form_outside("{configuration}", $html,null,"{apply_network_configuration}","Loadjs('fw.network.apply.php')","AsSystemAdministrator");
-
-	 
-
-
-}
 	
 	

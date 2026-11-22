@@ -3,6 +3,8 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
+// Pentest 2026-11-04 : container finit dans le JavaScript genere (getElementById, highcharts).
+if(isset($_GET["container"])){$_GET["container"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["container"]);}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["top-status"])){top_status();exit;}
 if(isset($_GET["hour-status"])){hour_status();exit;}

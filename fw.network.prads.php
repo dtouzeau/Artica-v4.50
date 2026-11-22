@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["table"])){table();exit;}
@@ -62,7 +63,7 @@ function table(){
     $ARRAY["TITLE"]="{restarting_service}";
     $ARRAY["AFTER"]="LoadAjaxSilent('prads-status','$page?prads-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-prads-restart')";
+    $jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-prads-restart')";
 
     $form[]=$tpl->field_interfaces("PRADSInterface", "nooloopNoDef:{listen_interface}", $PRADSInterface);
     $form[]=$tpl->field_numeric("PRADSRetention","{retention_days}",$PRADSRetention);
@@ -95,7 +96,7 @@ function status(){
     $ARRAY["TITLE"]="{restarting_service}";
     $ARRAY["AFTER"]="LoadAjaxSilent('prads-status','$page?prads-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-prads-restart')";
+    $jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-prads-restart')";
     echo $tpl->SERVICE_STATUS($bsini, "APP_PRADS",$jsRestart);
 }
 

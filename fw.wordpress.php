@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 $GLOBALS["VERBOSE"]=false;
 ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',"");ini_set('error_append_string',"<br>\n");
 if(isset($_GET["verbose"])){ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',"");ini_set('error_append_string',"<br>\n");$GLOBALS["VERBOSE"]=true;$GLOBALS["DEBUG_PROCESS"]=true;$GLOBALS["VERBOSE_SYSLOG"]=true;}
@@ -135,7 +137,7 @@ function replace_save(){
 
 
 function backup_restore_confirm(){
-    $data=unserialize(base64_decode($_POST["restore-backup"]));
+    $data=unserialize(base64_decode($_POST["restore-backup"]),array("allowed_classes"=>false));
     $ID=intval($data[0]);
     $siteid=intval($data[1]);
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
@@ -166,6 +168,7 @@ function wp_hostname_from_id($ID){
     return $ligne["hostname"];
 }
 function backup_import_file_uploaded(){
+    if(!fw_progress_page_priv("AsSystemWebMaster|AsWebMaster")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl = new template_admin();
     $page=CurrentPageName();
     $file = $_GET["file-uploaded"];
@@ -323,13 +326,13 @@ function ch_admin_save(){
         }
 
     }
-    $_POST["admin_password"]=$q->sqlite_escape_string2( $_POST["admin_password"]);
+    // Pentest 2026-11-04 : admin_user et admin_email etaient concatenes dans la requete.
     $sql="UPDATE wp_sites SET 
-    admin_user='{$_POST["admin_user"]}',
-    admin_password='{$_POST["admin_password"]}',
-    admin_email='{$_POST["admin_email"]}' WHERE ID=$ID";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);
+    admin_user=?,
+    admin_password=?,
+    admin_email=? WHERE ID=$ID";
+    $q->QUERY_SQL_PARAMS($sql,array((string)$_POST["admin_user"],(string)$_POST["admin_password"],(string)$_POST["admin_email"]));
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));
         return false;
     }
     admin_tracks("Wordpress: $hostname Change admin {$_POST["admin_user"]}/{$_POST["admin_email"]} username and password");
@@ -422,7 +425,7 @@ function backup_table(){
     $ARRAY["TITLE"] = "{reconfiguring}";
     $ARRAY["AFTER"] = "LoadAjax('wordpress-backups-$wpid','$page?backups-table=$wpid');";
     $prgress = base64_encode(serialize($ARRAY));
-    $backup_now = "Loadjs('fw.progress.php?content=$prgress&mainid=progress-backup-$wpid');";
+    $backup_now = "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-backup-$wpid');";
 
     $html[] = "<div id='backup-progress-$wpid'></div>";
     $html[] = "<div class=\"btn-group\" data-toggle=\"buttons\">";
@@ -529,7 +532,8 @@ function delete_js(){
 }
 
 function readonly_switch(){
-    $ID=$_GET["readonly"];
+    // Pentest 2026-11-04 : readonly etait concatene dans la requete.
+    $ID=intval($_GET["readonly"]);
     $sock=new sockets();
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
     $tpl=new template_admin();
@@ -579,7 +583,8 @@ function build_row_of():bool{
 }
 
 function enable_switch(){
-    $ID=$_GET["enable"];
+    // Pentest 2026-11-04 : enable etait concatene dans la requete.
+    $ID=intval($_GET["enable"]);
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
     $tpl=new template_admin();
@@ -744,6 +749,8 @@ function core_status(){
     $database_name=$ligne["database_name"];
 
     $q=new mysql();
+    // Pentest 2026-11-04 : database_name etait concatene dans la requete.
+    $database_name=mysql_escape_string2($database_name);
     $ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT TABLE_SCHEMA AS `Database`,ROUND(SUM(DATA_LENGTH + INDEX_LENGTH) / 1024 / 1024, 2) AS `MB` FROM information_schema.TABLES WHERE TABLE_SCHEMA='$database_name'"));
     $DB_SIZE=$ligne["MB"];
 
@@ -862,8 +869,9 @@ function ch_hostname_save(){
     $dbname=$ligne["database_name"];
     $hostname=$ligne["hostname"];
 
-    $sql="UPDATE wp_sites SET hostname='{$_POST["hostname"]}',aliases='$new_aliases' WHERE ID=$ID";
-    $q->QUERY_SQL($sql);
+    // Pentest 2026-11-04 : hostname etait concatene dans la requete.
+    $sql="UPDATE wp_sites SET hostname=?,aliases=? WHERE ID=$ID";
+    $q->QUERY_SQL_PARAMS($sql,array((string)$_POST["hostname"],$new_aliases));
 
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
@@ -883,6 +891,10 @@ function ch_hostname_save(){
     }
 
     $q=new mysql();
+    // Pentest 2026-11-04 : prfx_siteurl et prfx_home etaient concatenes dans la requete
+    // (classe mysql sans requete parametree : echappement MySQL mysql_escape_string2).
+    $siteurl=mysql_escape_string2($siteurl);
+    $home=mysql_escape_string2($home);
     $q->QUERY_SQL("UPDATE prfx_options SET option_value='$siteurl' WHERE option_name = 'siteurl'",$dbname);
     if(!$q->ok){echo $tpl->post_error($q->mysql_error."\nDatabase:$dbname");return false;}
 
@@ -897,13 +909,17 @@ function ch_hostname_save(){
 function edit_parameters_save(){
     $tpl = new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["edit"];
+    // Pentest 2026-11-04 : edit, pagespeed, yoast et readonly etaient concatenes dans la requete.
+    $ID=intval($_POST["edit"]);
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
+    $pagespeed=intval($_POST["pagespeed"]);
+    $yoast=intval($_POST["yoast"]);
+    $readonly=intval($_POST["readonly"]);
 
     $sql="UPDATE wp_sites SET 
-    pagespeed='{$_POST["pagespeed"]}',
-    yoast='{$_POST["yoast"]}',
-    readonly='{$_POST["readonly"]}' WHERE ID=$ID";
+    pagespeed='$pagespeed',
+    yoast='$yoast',
+    readonly='$readonly' WHERE ID=$ID";
     $q->QUERY_SQL($sql);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
@@ -955,7 +971,7 @@ function edit_ssl2(){
     $ARRAY["TITLE"] = "{reconfiguring}";
     $ARRAY["AFTER"] = "LoadAjax('table-wordpress-rules','$page?table=yes');";
     $prgress = base64_encode(serialize($ARRAY));
-    $service_reconfigure = "BootstrapDialog1.close();Loadjs('fw.progress.php?content=$prgress&mainid=letsencrypt-progress-$ID');";
+    $service_reconfigure = "BootstrapDialog1.close();Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=letsencrypt-progress-$ID');";
     echo $tpl->form_outside("{generate_ssl}", $form, null, "{apply}", $service_reconfigure, "AsSystemWebMaster");
 }
 function letsencrypt_wizard(){
@@ -1005,11 +1021,12 @@ function edit_ssl_save(){
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
     $_POST["ssl"]=intval($_POST["ssl"]);
     $_POST["letsencrypt"]=intval($_POST["letsencrypt"]);
-    $q->QUERY_SQL("UPDATE wp_sites set 
-        ssl={$_POST["ssl"]},ssl_certificate='{$_POST["ssl_certificate"]}',letsencrypt='{$_POST["letsencrypt"]}' WHERE ID=$ID");
+    // Pentest 2026-11-04 : ssl_certificate etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE wp_sites set 
+        ssl={$_POST["ssl"]},ssl_certificate=?,letsencrypt='{$_POST["letsencrypt"]}' WHERE ID=$ID",array((string)$_POST["ssl_certificate"]));
 
 
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);}
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));}
 }
 
 
@@ -1077,7 +1094,7 @@ function new_website_save(){
         $q->QUERY_SQL("ALTER TABLE wp_sites ADD zmd5 TEXT");
     }
 
-    $_POST["admin_password"]=$q->sqlite_escape_string2( $_POST["admin_password"]);
+    // Pentest 2026-11-04 : hostname, admin_user et admin_email etaient concatenes dans la requete.
     $vals[]=time();
     $vals[]=$_POST["hostname"];
     $vals[]=$_POST["admin_user"];
@@ -1087,16 +1104,15 @@ function new_website_save(){
     $vals[]=0;
     $vals[]=1;
     $vals[]=$md5;
-    $vals=$tpl->MYSQL_ENCOSE($vals);
 
     $WORDPRESS_TO_CREATE_UU=base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WORDPRESS_TO_CREATE"));
     $WORDPRESS_TO_CREATE=unserialize($WORDPRESS_TO_CREATE_UU);
     $WORDPRESS_TO_CREATE[$md5]=true;
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WORDPRESS_TO_CREATE",base64_encode(serialize($WORDPRESS_TO_CREATE)));
 
-    $sql="INSERT INTO wp_sites (date_created,hostname,admin_user,admin_email,admin_password,database_name,status,enabled,zmd5 ) VALUES (".@implode(",",$vals).")";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);}
+    $sql="INSERT INTO wp_sites (date_created,hostname,admin_user,admin_email,admin_password,database_name,status,enabled,zmd5 ) VALUES (?,?,?,?,?,?,?,?,?)";
+    $q->QUERY_SQL_PARAMS($sql,$vals);
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));}
 
 }
 
@@ -1474,16 +1490,17 @@ function cache_settings_popup(){
 function cache_settings_save(){
     $tpl = new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["cache"];
+    // Pentest 2026-11-04 : cache, cgicache, cacheid et proxy_cache_* etaient concatenes dans la requete.
+    $ID=intval($_POST["cache"]);
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
 
     $sql="UPDATE wp_sites SET 
-    cgicache='{$_POST["cgicache"]}',
-    cacheid='{$_POST["cacheid"]}',
-    proxy_cache_revalidate='{$_POST["proxy_cache_revalidate"]}',
-    proxy_cache_min_uses='{$_POST["proxy_cache_min_uses"]}'
+    cgicache=?,
+    cacheid=?,
+    proxy_cache_revalidate=?,
+    proxy_cache_min_uses=?
                 WHERE ID=$ID";
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,array((string)($_POST["cgicache"] ?? ""),(string)$_POST["cacheid"],(string)($_POST["proxy_cache_revalidate"] ?? ""),(string)($_POST["proxy_cache_min_uses"] ?? "")));
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;

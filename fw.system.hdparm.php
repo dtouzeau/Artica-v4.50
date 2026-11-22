@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.os.system.inc");
@@ -25,6 +26,7 @@ function perform_js(){
     $tpl->js_dialog2("{disk_performance} $dev","$page?perform-popup=$devenco",650);
 }
 function perform_popup(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $page=CurrentPageName();
     $tpl=new template_admin();
     $dev=$_GET["perform-popup"];
@@ -36,7 +38,7 @@ function perform_popup(){
     $ARRAY["TITLE"]="{disk_performance}";
     $ARRAY["AFTER"]="LoadAjax('$md5-results','$page?results=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $rescan_hd="Loadjs('fw.progress.php?content=$prgress&mainid=$md5')";
+    $rescan_hd="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=$md5')";
 
     $html[]="<div id='$md5'></div>";
     $html[]="<div id='$md5-results'></div>";

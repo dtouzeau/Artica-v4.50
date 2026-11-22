@@ -1,5 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/class.tcpip.inc");
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 class firehol_rules{
 	private $eth;
 	private $route=0;
@@ -309,19 +310,10 @@ class firehol_rules{
 	
 	public function iptables_outbound_objects($ID,$MASTER_RULE,$CONF=array()){
 		if($GLOBALS["VERBOSE"]){ echo "iptables_outbound_objects receive for $ID in line ".__LINE__."\n";}
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT firewallfilter_sqacllinks.gpid,firewallfilter_sqacllinks.negation,
-		firewallfilter_sqacllinks.zOrder,firewallfilter_sqacllinks.zmd5 as mkey,
-		webfilters_sqgroups.ID as gpid,
-		webfilters_sqgroups.GroupName as GroupName,
-		webfilters_sqgroups.GroupType FROM firewallfilter_sqacllinks,webfilters_sqgroups
-		WHERE firewallfilter_sqacllinks.gpid=webfilters_sqgroups.ID
-		AND firewallfilter_sqacllinks.aclid=$ID
-		AND firewallfilter_sqacllinks.direction='1'
-		AND webfilters_sqgroups.enabled='1'
-		ORDER BY firewallfilter_sqacllinks.zOrder";
+		// acls.db is API-only — enabled linked groups via the acls backend (direction 1 = outbound).
+		$links=acls_api_get("/proxy/acls/sqlite/links?table=firewallfilter_sqacllinks&aclid=".intval($ID)."&direction=1");
 		$array=array();
-		$results = $q->QUERY_SQL($sql);
+		$results=$this->links_to_objects($links);
 		$CountOfresults=count($results);
 		if($GLOBALS["VERBOSE"]){ echo "Objects of ID $ID == $CountOfresults in line ".__LINE__."\n";}
 	
@@ -352,19 +344,10 @@ class firehol_rules{
 	}
 	
 	public function iptables_inbound_objects($ID,$MASTER_RULE,$CONF=array()){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT firewallfilter_sqacllinks.gpid,firewallfilter_sqacllinks.negation,
-		firewallfilter_sqacllinks.zOrder,firewallfilter_sqacllinks.zmd5 as mkey,
-		webfilters_sqgroups.ID as gpid,
-		webfilters_sqgroups.GroupName as GroupName,
-		webfilters_sqgroups.GroupType FROM firewallfilter_sqacllinks,webfilters_sqgroups
-		WHERE firewallfilter_sqacllinks.gpid=webfilters_sqgroups.ID
-		AND firewallfilter_sqacllinks.aclid=$ID
-		AND firewallfilter_sqacllinks.direction='0'
-		AND webfilters_sqgroups.enabled='1'
-		ORDER BY firewallfilter_sqacllinks.zOrder";
+		// acls.db is API-only — enabled linked groups via the acls backend (direction 0 = inbound).
+		$links=acls_api_get("/proxy/acls/sqlite/links?table=firewallfilter_sqacllinks&aclid=".intval($ID)."&direction=0");
 		$array=array();
-		$results = $q->QUERY_SQL($sql);
+		$results=$this->links_to_objects($links);
 		
 		if(count($results)==0){
 			
@@ -394,19 +377,10 @@ class firehol_rules{
 	
 	
 	public function objects($ID,$direction){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT firewallfilter_sqacllinks.gpid,firewallfilter_sqacllinks.negation,
-		firewallfilter_sqacllinks.zOrder,firewallfilter_sqacllinks.zmd5 as mkey,
-		webfilters_sqgroups.ID as gpid,
-		webfilters_sqgroups.GroupName as GroupName,
-		webfilters_sqgroups.GroupType FROM firewallfilter_sqacllinks,webfilters_sqgroups
-		WHERE firewallfilter_sqacllinks.gpid=webfilters_sqgroups.ID
-		AND firewallfilter_sqacllinks.aclid=$ID
-		AND firewallfilter_sqacllinks.direction='$direction'
-		AND webfilters_sqgroups.enabled='1'
-		ORDER BY firewallfilter_sqacllinks.zOrder";
+		// acls.db is API-only — enabled linked groups via the acls backend (direction from caller).
+		$links=acls_api_get("/proxy/acls/sqlite/links?table=firewallfilter_sqacllinks&aclid=".intval($ID)."&direction=".intval($direction));
 		$array=array();
-		$results = $q->QUERY_SQL($sql);
+		$results=$this->links_to_objects($links);
 		
 		foreach ($results as $index=>$ligne){
 			$negation=intval($ligne["negation"]);$not="";if($negation==1){$not="!";}
@@ -428,7 +402,26 @@ class firehol_rules{
 		}
 		
 		if(count($FINAL_GROUPS)>0){return $FINAL_GROUPS;}
-		
+
+	}
+
+	// Normalizes /proxy/acls/sqlite/links rows to the legacy {gpid,negation,GroupName,GroupType,mkey}
+	// shape the rule builders expect, keeping only enabled groups (the old JOIN filtered enabled=1).
+	private function links_to_objects($links):array{
+		$out=array();
+		if(!is_array($links)){return $out;}
+		foreach($links as $lk){
+			if(!is_array($lk)){continue;}
+			if(intval($lk["enabled"] ?? 0)!=1){continue;}
+			$out[]=array(
+				"gpid"=>intval($lk["groupID"] ?? 0),
+				"negation"=>intval($lk["negation"] ?? 0),
+				"GroupName"=>(string)($lk["groupName"] ?? ""),
+				"GroupType"=>(string)($lk["groupType"] ?? ""),
+				"mkey"=>(string)($lk["mkey"] ?? ""),
+			);
+		}
+		return $out;
 	}
 	
 	

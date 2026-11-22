@@ -47,7 +47,8 @@ function delete(){
     $q->QUERY_SQL("DELETE FROM wp_infirewall WHERE ID=$ID");
     if(!$q->ok){echo $q->mysql_error;return;}
     header("content-type: application/x-javascript");
-    echo "$('#{$_GET["md"]}').remove();";
+    $md=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["md"] ?? ""));
+    echo "$('#$md').remove();";
 
 }
 
@@ -137,23 +138,25 @@ function autoadd(){
     $date=Date("Y-m-d H:i:s");
     $description=$tpl->_ENGINE_parse_body("{added}")." $user - $date";
 
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM wp_infirewall WHERE address='{$_GET['autoadd']}'");
+    $autoadd=(string)$_GET['autoadd'];
+    $rows=$q->QUERY_SQL_PARAMS("SELECT ID FROM wp_infirewall WHERE address=?",array($autoadd));
+    $ligne=isset($rows[0])?$rows[0]:array();
     $ID=intval($ligne["ID"]);
     if($ID>0){
         $tpl->js_error("{ERROR_OBJECT_ALREADY_EXISTS}");
         return true;
     }
 
-    $q->QUERY_SQL("INSERT INTO wp_infirewall (address,port,description) VALUES('{$_GET['autoadd']}','0','$description')");
+    $q->QUERY_SQL_PARAMS("INSERT INTO wp_infirewall (address,port,description) VALUES(?,'0',?)",array($autoadd,$description));
     if(!$q->ok){
         $q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);
         $tpl->js_error($q->mysql_error);
         return false;
     }
     admin_tracks("Add a new blacklisted source for Web Firewall {$_POST['address']}");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/reverse-proxy/firewall/build");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/firewall/build");
 
-    echo $tpl->js_display_results("{deny} {$_GET['autoadd']} {success}");
+    echo $tpl->js_display_results("{deny} ".htmlspecialchars($autoadd,ENT_QUOTES)." {success}");
     return true;
 }
 
@@ -168,14 +171,14 @@ function save(){
     $description=$q->sqlite_escape_string2($_POST["description"]);
 
     if($ID==0){
-        $q->QUERY_SQL("INSERT INTO wp_infirewall (address,port,description) VALUES('{$_POST['address']}','$port','$description')");
-        if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";return;}
+        $q->QUERY_SQL_PARAMS("INSERT INTO wp_infirewall (address,port,description) VALUES(?,?,?)",array((string)$_POST['address'],$port,(string)$_POST["description"]));
+        if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo (new template_admin())->post_error("$q->mysql_error");return;}
         admin_tracks("Add a new blacklisted source for Web Firewall {$_POST['address']}:$port");
         return;
     }
 
-    $q->QUERY_SQL("UPDATE wp_infirewall SET address='{$_POST['address']}',port=$port,description='$description' WHERE ID=$ID");
-    if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";return;}
+    $q->QUERY_SQL_PARAMS("UPDATE wp_infirewall SET address=?,port=?,description=? WHERE ID=?",array((string)$_POST['address'],$port,(string)$_POST["description"],$ID));
+    if(!$q->ok){$tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo (new template_admin())->post_error("$q->mysql_error");return;}
     admin_tracks("Update blacklisted source for Web Firewall {$_POST['address']}:$port");
 
 }
@@ -226,7 +229,7 @@ function search(){
     $q->QUERY_SQL($sql);
 
 
-    $service_reconfigure=$tpl->framework_buildjs("/reverse-proxy/firewall/build",
+    $service_reconfigure=$tpl->framework_buildjs("nginx:/reverse-proxy/firewall/build",
         "wordpress.firewall.progress",
         "wordpress.firewall.progress.txt","reconfigure-wordpress-firewall");
 
@@ -248,13 +251,13 @@ function search(){
     $html[] = "<tbody>";
 
 
-    $results=$q->QUERY_SQL("SELECT * FROM wp_infirewall 
-         WHERE (address LIKE '$search' OR description LIKE '$search')
+    $results=$q->QUERY_SQL_PARAMS("SELECT * FROM wp_infirewall 
+         WHERE (address LIKE ? OR description LIKE ?)
         order by cast ( case
     when substr(address,-2) like \"._\" then substr(address,-1)
     when substr(address,-3) like \".__\" then substr(address,-2)
     else substr(address,-3) end
-  as integer )");
+  as integer )",array($search,$search));
 
     if(!$q->ok){
         echo $tpl->div_error("SQL ERROR||$q->mysql_error");

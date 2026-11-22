@@ -1,4 +1,6 @@
 <?php
+// Service Pack 9 2026-10-10
+// Versionnée pour le SP9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -72,7 +74,7 @@ function table(){
 	$ARRAY["TITLE"]="{reconfigure}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-richfilemanager','$page?table=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-richfilemanager-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-richfilemanager-restart')";
 	
 	$html=$tpl->form_outside("{main_parameters}", @implode("\n", $form),null,"{apply}",$jsrestart,"AsSystemAdministrator");
 	echo $tpl->_ENGINE_parse_body($html);

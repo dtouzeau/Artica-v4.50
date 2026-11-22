@@ -626,8 +626,12 @@ class user{
 		if(isset($attrs["sambaProfilePath"][0])){$this->sambaProfilePath=$attrs["sambaProfilePath"][0];}
 		if(isset($attrs["sambaAcctFlags"][0])){$this->sambaAcctFlags=$attrs["sambaAcctFlags"][0];}
 	
-		
-		if(preg_match("#\\\(.+?)\\\#",$this->sambaProfilePath,$re)){ $re[1]=str_replace('\\','',$re[1]); $this->SambaAdminServerDefined=$re[1]; }
+		if(!is_null($this->sambaProfilePath)) {
+            if (preg_match("#\\\(.+?)\\\#", $this->sambaProfilePath, $re)) {
+                $re[1] = str_replace('\\', '', $re[1]);
+                $this->SambaAdminServerDefined = $re[1];
+            }
+        }
 		
 		if(isset($attrs["gecos"][0])){$this->gecos=$attrs["gecos"][0];}
 		if(isset($attrs["loginShell"][0])){$this->loginShell=$attrs["loginShell"][0];}
@@ -928,7 +932,7 @@ class user{
 		if(!$ldap->Ldap_add_mod($dn,$updatearray)){echo $ldap->ldap_last_error;return false;}
 		$users=new usersMenus();
 		$sock=new sockets();
-		if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$sock->getFrameWork("cmd.php?postfix-hash-aliases=yes");}
+		if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables/aliases/0");}
 		if($users->ARTICA_META_ENABLED){$sock->getFrameWork("cmd.php?artica-meta-user=$this->uid");}
 		return true;
 	}
@@ -1046,7 +1050,7 @@ class user{
 		if(!$ldap->Ldap_add_mod($dn,$updatearray)){echo $ldap->ldap_last_error;}
 		$users=new usersMenus();
 		$sock=new sockets();
-		if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$sock->getFrameWork("cmd.php?postfix-hash-aliases=yes");}
+		if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables/aliases/0");;}
 		if($users->ARTICA_META_ENABLED){$sock->getFrameWork("cmd.php?artica-meta-user=$this->uid");}
 		
 		
@@ -1094,7 +1098,7 @@ class user{
 		
 		$users=new usersMenus();
 		$sock=new sockets();
-		if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$sock->getFrameWork("cmd.php?postfix-hash-aliases=yes");}
+		if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables/aliases/0");;}
 		if($users->ARTICA_META_ENABLED){$sock->getFrameWork("cmd.php?artica-meta-user=$this->uid");}		
 		return true;
 		
@@ -1132,7 +1136,7 @@ class user{
 		$MailingListUseLdap=$sock->GET_INFO("MailingListUseLdap");
 		if(!is_numeric($MailingListUseLdap)){$MailingListUseLdap=0;}
 		if($MailingListUseLdap==0){
-			if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$sock->getFrameWork("cmd.php?postfix-hash-tables=yes");	}
+			if(!$GLOBALS["NO_COMPILE_POSTFIX"]){$GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables");	}
 			$users=new usersMenus();
 			if($users->ARTICA_META_ENABLED){$sock->getFrameWork("cmd.php?artica-meta-user=$this->uid");}	
 		}		
@@ -1166,7 +1170,7 @@ class user{
 		$MailingListUseLdap=$sock->GET_INFO("MailingListUseLdap");
 		if(!is_numeric($MailingListUseLdap)){$MailingListUseLdap=0;}
 		if($MailingListUseLdap==0){
-			$sock->getFrameWork("cmd.php?postfix-hash-tables=yes");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables");
 		}
 		$users=new usersMenus();
 		if($users->ARTICA_META_ENABLED){$sock->getFrameWork("cmd.php?artica-meta-user=$this->uid");}		
@@ -1817,9 +1821,6 @@ class user{
 		}
 	
 	if(!$q->ok){echo $q->mysql_error;return;}
-	$sock=new sockets();
-	$sock->getFrameWork("freeweb.php?users-webdav=yes");
-	
 	}
 	
 function FTPSettingsEdit(){
@@ -2043,7 +2044,7 @@ function FTPSettingsEdit(){
 	
 	
 	private function ArticaSettings(){
-		//AmavisFilterEnabled,ArticaAutoUpdateConfig,ArticaDansGuardianGroupRuleEnabled,ArticaDenyNoMXRecords,
+		//AmavisFilterEnabled,ArticaAutoUpdateConfig,ArticaDenyNoMXRecords,
 		//ArticaFakedMailFrom,ArticaFilterEnabled,ArticaFoldersSizeConfig,ArticaGlobalSettings,
 		//ArticaGroupPrivileges,ArticaMailAddonsLevel,ArticaMaxDayQuarantine,ArticaMaxTempLogFilesDay,
 		//ArticaUserFilterRule,ArticaWebRootURI,AutoDomainAliases,BogoFilterAction,CheckRecipientAccess,
@@ -2787,7 +2788,7 @@ function UsersInterfaceDatasDelete(){
 
 		
 		if(!isset($GLOBALS["CHECK_UID_NUMBER"])){
-			$sock->getFrameWork("system.php?uidNumber=yes");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/uidmember/run");
 			$sock->getFrameWork("cmd.php?rsync-reconfigure=yes");
 			$sock->getFrameWork("cmd.php?roundcube-sync=yes&ou=$this->ou");
 			$sock->getFrameWork("cmd.php?sarg-passwords=yes");
@@ -2799,7 +2800,7 @@ function UsersInterfaceDatasDelete(){
 		if(!$GLOBALS["NO_COMPILE_POSTFIX"]){
             $POSTFIX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"));
             if($POSTFIX_INSTALLED==1){
-				$sock->getFrameWork("cmd.php?postfix-hash-aliases=yes");
+                $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/hashtables/aliases/0");
 				
 			}
 			

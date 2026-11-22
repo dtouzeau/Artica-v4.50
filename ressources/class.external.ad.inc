@@ -1,5 +1,6 @@
 <?php
 include_once(dirname(__FILE__).'/class.mysql.inc');
+include_once(dirname(__FILE__).'/class.acls.backend.inc');
 include_once(dirname(__FILE__).'/logs.inc');
 include_once(dirname(__FILE__).'/class.ad-agent.inc');
 include_once(dirname(__FILE__).'/class.reverse-proxy.privs.inc');
@@ -23,6 +24,10 @@ class external_ad_search{
     private $SquidAddkerAlernates=array();
     public $KerbAuthInfos=array();
     public $ACTIVE_DIRECTORY_INFO=null;
+    // Motif du dernier refus de SamlMemberLookup(): notfound, disabled,
+    // ambiguous, connect ou empty. Permet a l'appelant de distinguer "compte
+    // absent" de "compte desactive" dans le message rendu a l'administrateur.
+    public $SamlLastError="";
     public $TESTED_SERVERS=array();
     public $userDN=null;
     function __construct($connectionEncoded=null,$ActiveDirectoryIndex="Null"){
@@ -140,12 +145,18 @@ class external_ad_search{
                     $ARRAY["LDAP_SUFFIX"]=$this->KerbAuthInfos["LDAP_SUFFIX"];
                     $ARRAY["LDAP_DN"]=$this->BuildAdUser();
                     $ARRAY["LDAP_PASSWORD"]=$this->KerbAuthInfos["WINDOWS_SERVER_PASS"];
+                    if(isset($this->KerbAuthInfos["LDAP_SSL"])){             $ARRAY["LDAP_SSL"]=$this->KerbAuthInfos["LDAP_SSL"]; }
+                    if(isset($this->KerbAuthInfos["LDAP_SERVER2"])){         $ARRAY["LDAP_SERVER2"]=$this->KerbAuthInfos["LDAP_SERVER2"]; }
+                    if(isset($this->KerbAuthInfos["ADNETIPADDR"])){          $ARRAY["ADNETIPADDR"]=$this->KerbAuthInfos["ADNETIPADDR"]; }
+                    if(isset($this->KerbAuthInfos["WINDOWS_SERVER_ADMIN"])){ $ARRAY["WINDOWS_SERVER_ADMIN"]=$this->KerbAuthInfos["WINDOWS_SERVER_ADMIN"]; }
+                    if(isset($this->KerbAuthInfos["WINDOWS_SERVER_PASS"])){  $ARRAY["WINDOWS_SERVER_PASS"]=$this->KerbAuthInfos["WINDOWS_SERVER_PASS"]; }
                     return $ARRAY;
                 }
             }
         }
 
         $ActiveDirectoryConnections=unserialize($sock->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($sock->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(count($ActiveDirectoryConnections)==0){VERBOSE("ActiveDirectoryConnections === 0",__LINE__);return array();}
         foreach ($ActiveDirectoryConnections as $index=>$ligne){
             if(!is_numeric($index)){continue;}
@@ -253,6 +264,7 @@ class external_ad_search{
         }
 
         $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(count($ActiveDirectoryConnections)==0){
             $this->VERBOSE("No ActiveDirectoryConnections return none",__LINE__);
             return array();
@@ -286,12 +298,17 @@ class external_ad_search{
             $this->Debuglogs("Failed to connect to DC Could not obtain `LDAP_SERVER`",__FUNCTION__,__LINE__);
             $this->error="Failed to connect to DC Could not obtain `LDAP_SERVER`";
             $this->VERBOSE("$this->error",__LINE__);
-            return;
+            return false;
         }
 
         if(intval($this->KerbAuthInfos["LDAP_PORT"])==636){
             $this->KerbAuthInfos["LDAP_SSL"]=1;
         }
+        $this->VERBOSE("ADNETIPADDR: {$this->KerbAuthInfos["ADNETIPADDR"]}",__LINE__);
+        if(strlen($this->KerbAuthInfos["ADNETIPADDR"])>3){
+            $this->KerbAuthInfos["LDAP_SERVER"]=$this->KerbAuthInfos["ADNETIPADDR"];
+        }
+
 
         $ServerDN="ldap://{$this->KerbAuthInfos["LDAP_SERVER"]}:{$this->KerbAuthInfos["LDAP_PORT"]}";
         if(isset($this->KerbAuthInfos["LDAP_SSL"])){
@@ -308,7 +325,7 @@ class external_ad_search{
         if(!$this->ldap_connection){
             $this->error="Failed to connect to DC $ServerDN";
             $GLOBALS["CLASS_ACTV"][]=__FUNCTION__.": LINE:".__LINE__.":$this->error";
-            $this->VERBOSE("$this->error",__LINE__);
+            $this->VERBOSE("$ServerDN: $this->error",__LINE__);
             $this->CloseConnection();
             return false;
         }
@@ -326,7 +343,7 @@ class external_ad_search{
             $username="$username@{$this->KerbAuthInfos["WINDOWS_DNS_SUFFIX"]}";
         }
 
-        $this->VERBOSE("ldap_bind as <strong>$username</strong>",__LINE__);
+        $this->VERBOSE("ldap_bind as <strong>$username</strong> to $ServerDN",__LINE__);
         $bind=ldap_bind($this->ldap_connection, $username, $password);
 
         if(!$bind){
@@ -347,11 +364,11 @@ class external_ad_search{
             }
             $textAddon=implode("| ", $ff);
 
-            $this->SyslogAd("{$this->KerbAuthInfos["LDAP_SERVER"]}:{$this->KerbAuthInfos["LDAP_PORT"]} from $IPADDR/$username bind failed $textAddon");
+            $this->SyslogAd("$ServerDN from $IPADDR/$username bind failed $textAddon");
             $error=ldap_err2str(ldap_errno($this->ldap_connection));
             $GLOBALS["CLASS_ACTV"][]=__FUNCTION__.": LINE:".__LINE__.":$error";
             $this->Debuglogs("Failed to login to DC {$this->KerbAuthInfos["LDAP_SERVER"]} - $username `$error`",__FUNCTION__,__LINE__);
-            $this->error="Failed to login to DC {$this->KerbAuthInfos["LDAP_SERVER"]} - $username `$error`";
+            $this->error="Failed to login to DC $ServerDN: - $username `$error`";
             $this->VERBOSE($this->error,__LINE__);
             return false;
         }
@@ -644,10 +661,13 @@ class external_ad_search{
             $ActiveDirectoryConnections["LDAP_DN"]=$re[1];
             $ActiveDirectoryConnections["LDAP_DOMAIN"]=$re[2];
         }
+        if(!isset($ActiveDirectoryConnections["ADNETIPADDR"])){
+            $ActiveDirectoryConnections["ADNETIPADDR"]="";
+        }
 
         $this->KerbAuthInfos["LDAP_SERVER"]=$ActiveDirectoryConnections["LDAP_SERVER"];
         $this->KerbAuthInfos["LDAP_SUFFIX"]=$ActiveDirectoryConnections["LDAP_SUFFIX"];
-        $this->KerbAuthInfos["ADNETIPADDR"]=$ActiveDirectoryConnections["LDAP_SERVER"];
+        $this->KerbAuthInfos["ADNETIPADDR"]=$ActiveDirectoryConnections["ADNETIPADDR"];
         $this->KerbAuthInfos["LDAP_PORT"]=$ActiveDirectoryConnections["LDAP_PORT"];
         $this->KerbAuthInfos["WINDOWS_SERVER_PASS"]=$ActiveDirectoryConnections["LDAP_PASSWORD"];
         $this->KerbAuthInfos["LDAP_PASSWORD"]=$ActiveDirectoryConnections["LDAP_PASSWORD"];
@@ -655,7 +675,7 @@ class external_ad_search{
         $this->KerbAuthInfos["LDAP_DN"]="{$ActiveDirectoryConnections["LDAP_DN"]}@{$ActiveDirectoryConnections["LDAP_DOMAIN"]}";
         $this->KerbAuthInfos["WINDOWS_SERVER_ADMIN"]="{$ActiveDirectoryConnections["LDAP_DN"]}";
         $this->KerbAuthInfos["WINDOWS_DNS_SUFFIX"]=$ActiveDirectoryConnections["LDAP_DOMAIN"];
-        $this->VERBOSE("BuildExternalAD: {$this->KerbAuthInfos["LDAP_SERVER"]}:{$this->KerbAuthInfos["LDAP_PORT"]} / {$this->KerbAuthInfos["LDAP_SUFFIX"]}",__LINE__);
+        $this->VERBOSE("BuildExternalAD: {$this->KerbAuthInfos["LDAP_SERVER"]}/{$this->KerbAuthInfos["ADNETIPADDR"]}:{$this->KerbAuthInfos["LDAP_PORT"]} / {$this->KerbAuthInfos["LDAP_SUFFIX"]}",__LINE__);
         return true;
     }
 
@@ -761,6 +781,7 @@ class external_ad_search{
         if($this->ActiveDirectoryIndexOnly){return $res;}
 
         $ActiveDirectoryConnections=unserialize($sock->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($sock->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(count($ActiveDirectoryConnections)==0){
             VERBOSE("ActiveDirectoryConnections === 0",__LINE__);
             return $res;
@@ -806,6 +827,148 @@ class external_ad_search{
         return $res;
     }
 
+
+    /**
+     * Recherche l'utilisateur designe par une assertion SAML, SANS mot de passe.
+     *
+     * L'identite a deja ete prouvee par le fournisseur d'identite: il ne reste
+     * qu'a verifier que le compte existe dans cet annuaire, qu'il n'y est pas
+     * desactive, et a relever son DN pour en deduire les privileges. La liaison
+     * se fait donc avec le compte de service de la connexion, jamais avec
+     * l'utilisateur -- c'est toute la difference avec CheckUserAuth().
+     *
+     * Deux recherches, dans cet ordre:
+     *   1. userPrincipalName exact: une assertion porte un UPN dans la quasi
+     *      totalite des cas (Entra ID), et c'est le seul critere qui ne risque
+     *      pas de designer un homonyme;
+     *   2. sAMAccountName, convention historique du produit (LoadMember).
+     *
+     * Rend null si le compte est introuvable, desactive, ou si la recherche
+     * ramene PLUSIEURS entrees: mieux vaut n'ouvrir aucune session que d'en
+     * ouvrir une sur le mauvais compte.
+     */
+    public function SamlMemberLookup($identifier){
+        $this->SamlLastError="";
+        $identifier=trim(strval($identifier));
+        if($identifier==""){
+            $this->SamlLastError="empty";
+            return null;
+        }
+        if(strpos($identifier,"@")>0){
+            $filter="(&(objectClass=user)(userPrincipalName=".ldap_escape($identifier,"",LDAP_ESCAPE_FILTER)."))";
+            $this->VERBOSE("SamlMemberLookup:: recherche par userPrincipalName [$identifier]",__LINE__);
+            $attrs=$this->SamlSearchUnique($filter);
+            if($attrs<>null){return $this->SamlCheckEnabled($attrs);}
+            if($this->SamlLastError=="ambiguous"){return null;}
+            $EXPLODED=explode("@",$identifier);
+            $identifier=$EXPLODED[0];
+            $this->VERBOSE("SamlMemberLookup:: repli sur sAMAccountName [$identifier]",__LINE__);
+        }
+        $attrs=$this->LoadMember($identifier);
+        if($attrs==null){
+            $this->SamlLastError="notfound";
+            return null;
+        }
+        return $this->SamlCheckEnabled($attrs);
+    }
+
+    /**
+     * Equivalent de SamlMemberLookup() lorsque l'annuaire est interroge par
+     * l'agent Active Directory: la consultation y est deja sans mot de passe.
+     */
+    public function SamlMemberFromAgent($username){
+        $this->SamlLastError="";
+        $username=trim(strval($username));
+        if($username==""){
+            $this->SamlLastError="empty";
+            return null;
+        }
+        $Hash=$this->getMemberInfoADAgent($username);
+        if(!is_array($Hash)){
+            $this->VERBOSE("SamlMemberFromAgent:: [$username] introuvable via l'agent",__LINE__);
+            $this->SamlLastError="notfound";
+            return null;
+        }
+        return $this->SamlCheckEnabled($Hash);
+    }
+
+    /**
+     * Execute une recherche qui doit ramener une entree et une seule, et
+     * complete l'entree des champs ARTICA_DN / ARTICA_OU attendus par l'appelant.
+     */
+    private function SamlSearchUnique($searchFilter){
+        if(!$this->connect()){
+            $this->VERBOSE("SamlSearchUnique:: connexion a l'annuaire impossible",__LINE__);
+            $this->SamlLastError="connect";
+            return null;
+        }
+        $DN=$this->KerbAuthInfos["LDAP_SUFFIX"];
+        $sr=@ldap_search($this->ldap_connection,$DN,$searchFilter,array(),null,null,10);
+        if(!$sr){
+            $this->VERBOSE("SamlSearchUnique:: recherche invalide dans [$DN]",__LINE__);
+            $this->SamlLastError="notfound";
+            return null;
+        }
+        $count=intval(@ldap_count_entries($this->ldap_connection,$sr));
+        if($count<1){
+            $this->VERBOSE("SamlSearchUnique:: aucune entree dans [$DN]",__LINE__);
+            $this->SamlLastError="notfound";
+            return null;
+        }
+        if($count>1){
+            $this->VERBOSE("SamlSearchUnique:: $count entrees correspondent, refus (ambigu)",__LINE__);
+            $this->SamlLastError="ambiguous";
+            return null;
+        }
+        $entry_id=@ldap_first_entry($this->ldap_connection,$sr);
+        if(!$entry_id){
+            $this->SamlLastError="notfound";
+            return null;
+        }
+        $attrs=@ldap_get_attributes($this->ldap_connection,$entry_id);
+        if(!is_array($attrs) || !isset($attrs["distinguishedName"][0])){
+            $this->VERBOSE("SamlSearchUnique:: entree sans distinguishedName",__LINE__);
+            $this->SamlLastError="notfound";
+            return null;
+        }
+        $DNUSER=$attrs["distinguishedName"][0];
+        $attrs["ARTICA_DN"]=$DNUSER;
+        if(!isset($this->KerbAuthInfos["ADNETBIOSDOMAIN"])){$this->KerbAuthInfos["ADNETBIOSDOMAIN"]=null;}
+        $EXPLODED=explode(",",$DNUSER);
+        $prefix=$EXPLODED[0].",";
+        $DN_PREFIXED=str_replace($prefix,"",$DNUSER);
+        if(strtolower(trim($DN_PREFIXED))==strtolower(trim("CN=Users,{$this->KerbAuthInfos["LDAP_SUFFIX"]}"))){
+            $this->ou=$this->KerbAuthInfos["ADNETBIOSDOMAIN"];
+            $attrs["ARTICA_OU"]=$this->KerbAuthInfos["ADNETBIOSDOMAIN"];
+        }else{
+            foreach($EXPLODED as $a=>$b){
+                if(preg_match("#OU=(.+)#i",$b,$re)){$attrs["ARTICA_OU"]=$re[1];$this->ou=$re[1];}
+            }
+        }
+        $this->VERBOSE("SamlSearchUnique:: trouve [$DNUSER]",__LINE__);
+        return $attrs;
+    }
+
+    /**
+     * Refuse un compte desactive dans l'annuaire. Le fournisseur d'identite a
+     * pu emettre une assertion valide pour un compte que l'administrateur a
+     * depuis desactive cote Active Directory: c'est l'annuaire qui fait foi.
+     */
+    private function SamlCheckEnabled($attrs){
+        if(!is_array($attrs)){
+            $this->SamlLastError="notfound";
+            return null;
+        }
+        $uac=0;
+        if(isset($attrs["userAccountControl"][0])){$uac=intval($attrs["userAccountControl"][0]);}
+        // 0x0002 = ACCOUNTDISABLE
+        if($uac>0 && ($uac & 2)==2){
+            $this->VERBOSE("SamlCheckEnabled:: compte desactive (userAccountControl=$uac)",__LINE__);
+            $this->SamlLastError="disabled";
+            return null;
+        }
+        return $attrs;
+    }
 
     public function LoadMember($uid,$username=null,$password=null){
         $KeySession=md5(__CLASS__.__FUNCTION__.$uid);
@@ -1579,12 +1742,6 @@ class external_ad_search{
         }
 
 
-        $nginx=new NginxPrivs($dn);
-        $NginxPrivs=$nginx->NginxPrivs($dn);
-         if(strlen($NginxPrivs)>2){
-           $hash["ArticaGroupPrivileges"]="{$hash["ArticaGroupPrivileges"]}\n[NginxPrivs]=\"$NginxPrivs\"";
-         }
-
         $SimpleAclsPrivsText=$this->SimpleAclsPrivs($dn);
          if($DebugWebConsoleAuth==1){
              writelogs("SimpleAclsPrivsText=[$SimpleAclsPrivsText]", __FUNCTION__, __FILE__, __LINE__);
@@ -1595,50 +1752,12 @@ class external_ad_search{
          return $hash;
     }
     function SimpleAclsPrivs($dn):string{
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-        $results = $q->QUERY_SQL("SELECT aclid FROM webfilters_simpleacls_privs WHERE dngroup='$dn'");
+        // acls.db is API-only — resolve aclids granted to this DN group via the acls backend.
+        $aclids=acls_api_get("/proxy/simple-acls/privs/by-group?dn=".urlencode($dn));
         $f=array();
-        foreach ($results as $index => $ligne) {
-            $f[]=$ligne["aclid"];
-        }
+        if(is_array($aclids)){foreach($aclids as $aid){$aid=intval($aid); if($aid>0){$f[]=$aid;}}}
         return @implode(",", $f);
     }
-
-    private function NginxPrivs($dn):string{
-        $EnableNginx=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNginx"));
-        if($EnableNginx==0){
-            return "";
-        }
-        $AP=array();
-        $q=new lib_sqlite(NginxGetDB());
-        if(!$q->TABLE_EXISTS("adminprivs")){
-            return "";
-        }
-        $results=$q->QUERY_SQL("SELECT * FROM adminprivs WHERE item='$dn'");
-        if(!is_array($results)){return "";}
-
-        foreach ($results as $index=>$ligne){
-            $AP[]=intval($ligne["serviceid"]);
-        }
-        if(count($AP)>0){
-            return @implode(",",$AP);
-        }
-        return "";
-    }
-
-
-    private function isHarmpID():bool{
-        if(!isset($_SESSION["HARMPID"])){
-            return false;
-        }
-        if(intval($_SESSION["HARMPID"])==0){
-            return false;
-        }
-
-        return true;
-    }
-
 
     function SaveGroupPrivileges($content,$dn){
         $q=new lib_sqlite("/home/artica/SQLITE/privileges.db");
@@ -2141,6 +2260,7 @@ class external_ad_search{
         $array=$this->flexRTGroups_local($pattern,$maxitems,$objectClass,array());
 
         $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(count($ActiveDirectoryConnections)==0){return $array;}
 
         foreach ($ActiveDirectoryConnections as $index=>$ligne){
@@ -2159,15 +2279,18 @@ class external_ad_search{
     }
 
 
-    private function flexRTGroups_local($pattern,$maxitems=0,$objectClass="group",$ldap_config=array()){
+    private function flexRTGroups_local($pattern,$maxitems=0,$objectClass="group",$ldap_config=array()):array{
         $remote_config=false;
+        $LDAP_SUFFIX="";
         if( !isset($ldap_config["LDAP_SERVER"]) && isset($this->KerbAuthInfos["LDAP_SUFFIX"])){
             $LDAP_SUFFIX=$this->KerbAuthInfos["LDAP_SUFFIX"];
-            if(!$this->connect()){return false;}
+            if(!$this->connect()){return array();}
         }else{
+            if(isset($ldap_config["LDAP_SUFFIX"])){
+                $LDAP_SUFFIX=$ldap_config["LDAP_SUFFIX"];
+            }
             $remote_config=true;
-            $LDAP_SUFFIX=$ldap_config["LDAP_SUFFIX"];
-            if(!$this->connect($ldap_config)){return false;}
+            if(!$this->connect($ldap_config)){return array();}
 
         }
         if($pattern==null){$pattern="*";}
@@ -2222,15 +2345,16 @@ class external_ad_search{
 
         if($GLOBALS["VERBOSE"]){echo "<span style='color:red'>{$hash["count"]} items in {$LDAP_SUFFIX} $searchFilter</span>\n<br>";}
         $this->CloseConnection();
+        $array=array();
 
         for($i=0;$i<$hash["count"];$i++){
             $groupid=$hash[$i][$Attribute][0];
+            $dn="";
             if(is_array($hash[$i]["dn"])){$dn=$hash[$i]["dn"][0];}
             if(!is_array($hash[$i]["dn"])){$dn=$hash[$i]["dn"];}
-
-
             if(substr($groupid,strlen($groupid)-1,1)=='$'){continue;}
-            $array[$dn]="$groupid";
+            if($dn==""){continue;}
+            $array[$dn]=$groupid;
 
         }
 
@@ -2238,58 +2362,7 @@ class external_ad_search{
 
     }
 
-    public function flexRTUsers($pattern,$maxitems=0){
 
-        if(!$this->connect()){return false;}
-        if($pattern==null){$pattern="*";}
-        $searchFilter="(&(objectClass=user)(sAMAccountName=$pattern))";
-        $filter=array("samaccountname","dn");
-
-
-        if(isset($this->KerbAuthInfos["LDAP_FILTER"])){
-            $searchFilter=str_replace("%s", $pattern, $this->KerbAuthInfos["LDAP_FILTER"]);
-            $filter=array($this->KerbAuthInfos["LDAP_ATTR"],"dn");
-        }
-
-
-        if($maxitems==0){$maxitems=null;}
-        $sr =@ldap_search($this->ldap_connection,$this->KerbAuthInfos["LDAP_SUFFIX"],"$searchFilter",$filter,null, $maxitems, 20);
-        if (!$sr) {
-            if(is_numeric(ldap_errno($this->ldap_connection))){
-                $error=ldap_errno($this->ldap_connection);
-                $errstr=@ldap_err2str($error);
-                $this->error="flexRTGroups:`$error` ($errstr) suffix:{$this->KerbAuthInfos["LDAP_SUFFIX"]} $searchFilter in ".__CLASS__."/".__FUNCTION__." line:".__LINE__;
-                return array();
-            }
-        }
-
-        $hash=@ldap_get_entries($this->ldap_connection,$sr);
-        if(!is_array($hash)){
-            $error=ldap_errno($this->ldap_connection);
-            if($error>1){
-                $errstr=@ldap_err2str($error);
-                $this->error="flexRTUsers:`$error` ($errstr) suffix:{$this->KerbAuthInfos["LDAP_SUFFIX"]} $searchFilter in ".__CLASS__."/".__FUNCTION__." line:".__LINE__;
-            }
-            return array();
-        }
-
-        $this->VERBOSE("{$hash["count"]} in {$this->KerbAuthInfos["LDAP_SUFFIX"]} $searchFilter",__LINE__);
-
-        for($i=0;$i<$hash["count"];$i++){
-            $groupid=$hash[$i][strtolower($this->KerbAuthInfos["LDAP_ATTR"])][0];
-            if(is_array($hash[$i]["dn"])){$dn=$hash[$i]["dn"][0];}
-            if(!is_array($hash[$i]["dn"])){$dn=$hash[$i]["dn"];}
-
-
-            if(substr($groupid,strlen($groupid)-1,1)=='$'){continue;}
-            $array[$dn]="$groupid";
-
-        }
-
-        return $array;
-
-
-    }
 
 
 
@@ -2428,6 +2501,7 @@ class external_ad_search{
         }
 
         $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(!is_array($ActiveDirectoryConnections)){$ActiveDirectoryConnections=array();}
         if(count($ActiveDirectoryConnections)==0){return $hash;}
         if(!is_array($ActiveDirectoryConnections)){return $hash;}
@@ -2471,6 +2545,7 @@ class external_ad_search{
             if($this->ActiveDirectoryIndexOnly){return array();}
         }
         $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(!is_array($ActiveDirectoryConnections)){return $hash;}
         if(count($ActiveDirectoryConnections)==0){return $hash;}
 
@@ -2514,6 +2589,7 @@ class external_ad_search{
         }
 
         $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
         if(count($ActiveDirectoryConnections)==0){return $hash;}
         if(!is_array($ActiveDirectoryConnections)){return $hash;}
         foreach ($ActiveDirectoryConnections as $index=>$ligne){

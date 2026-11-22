@@ -1,24 +1,21 @@
-<bind9_with_postfix>bind9 & Postfix</bind9_with_postfix>
-<disable_dns_lookups>Disables Postfix DNS client</disable_dns_lookups>
-<disable_dns_lookups_text>
-To force postfix to read /etc/hosts file for example, enable this option.[br]
-In that case, you can't use MX record and you may want to specify relayhost to send outgoing mails.[br]
-Note: Enable this  option just disables Postfix DNS client and makes Postfix use [b]libc resolver[/b], does not disable any DNS lookups of both Postfix and operating system.
-</disable_dns_lookups_text>
-<DNS_SETTINGS>DNS Query settings</DNS_SETTINGS>
+<bind9_with_postfix>bind9 e Postfix</bind9_with_postfix>
+<disable_dns_lookups>Disabilita il client DNS di Postfix</disable_dns_lookups>
+<disable_dns_lookups_text>Per forzare postfix a leggere il file /etc/hosts ad esempio, abilita questa opzione.[br]
+In tal caso, non puoi usare il record MX e potresti voler specificare un relayhost per inviare la posta in uscita.[br]
+Nota: abilitare questa opzione disabilita solo il client DNS di Postfix e fa usare a Postfix il [b]resolver libc[/b], non disabilita alcun lookup DNS n&#233; di Postfix n&#233; del sistema operativo.</disable_dns_lookups_text>
+<DNS_SETTINGS>Impostazioni delle query DNS</DNS_SETTINGS>
 <hostname>Nome dell'host</hostname>
-<ignore_mx_lookup_error>Ignore MX Lookup error</ignore_mx_lookup_error>
-<ignore_mx_lookup_error_text>
-This parameter controls what happens when a name server fails to respond to an MX lookup request.[br]
-By default,Postfix defers delivery and tries again after some delay.[br]
-Set enable to force an A record lookup.[br]
-This refers to the fact that some DNS servers return SERVFAIL instead of "does not exist" when asked for a MX record.[br]
-When disabled,  Postfix NEVER tries the A record,[br]
-When enabled it looks for the A record</ignore_mx_lookup_error_text>
+<ignore_mx_lookup_error>Ignora l'errore di lookup MX</ignore_mx_lookup_error>
+<ignore_mx_lookup_error_text>Questo parametro controlla cosa succede quando un server dei nomi non risponde a una richiesta di lookup MX.[br]
+Per impostazione predefinita, Postfix posticipa la consegna e riprova dopo un certo ritardo.[br]
+Abilita per forzare un lookup del record A.[br]
+Questo si riferisce al fatto che alcuni server DNS restituiscono SERVFAIL invece di &quot;non esiste&quot; quando viene richiesto un record MX.[br]
+Quando disabilitato, Postfix NON prova MAI il record A,[br]
+Quando abilitato cerca il record A</ignore_mx_lookup_error_text>
 <myhostname>Nome del server</myhostname>
-<myorigin>Original domain</myorigin>
-<postfix_better_with_bind9>Bind9 not installed</postfix_better_with_bind9>
-<postfix_better_with_bind9_explain>Speedup Postfix resolution using[br]a local DNS sever with cache</postfix_better_with_bind9_explain>
-<postfix_bind_activated>Postfix & bind9</postfix_bind_activated>
-<postfix_bind_activated_text>Postfix using bind9 for DNS queries and speed up</postfix_bind_activated_text>
-<postfix_not_bind_activated>Have more performances</postfix_not_bind_activated>
+<myorigin>Dominio originale</myorigin>
+<postfix_better_with_bind9>Bind9 non installato</postfix_better_with_bind9>
+<postfix_better_with_bind9_explain>Velocizza la risoluzione di Postfix usando[br]un server DNS locale con cache</postfix_better_with_bind9_explain>
+<postfix_bind_activated>Postfix e bind9</postfix_bind_activated>
+<postfix_bind_activated_text>Postfix usa bind9 per le query DNS e per velocizzare</postfix_bind_activated_text>
+<postfix_not_bind_activated>Ottieni pi&#249; prestazioni</postfix_not_bind_activated>

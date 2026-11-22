@@ -853,8 +853,6 @@ function import3x($filename){
     }
     build_progress("{search} {categories} ....", 90);
     search_categories();
-    $php=$unix->LOCATE_PHP5_BIN();
-    shell_exec("$php /usr/share/artica-postfix/exec.proxy.acls.explains.php >/dev/null 2>&1 &");
     build_progress("{importing} {success}", 100);
 }
 
@@ -1137,21 +1135,30 @@ function import_reverse_proxy():bool{
 }
 
 function merge_reverse_proxy_ports($interface,$port,$nginx_services_id,$ssl):bool{
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $md5=md5($interface.$port.$nginx_services_id);
 
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM stream_ports WHERE zmd5='$md5'");
-    if(intval($ligne["ID"])>0){return true;}
+    // Daemon API: check existence then INSERT (no direct nginx.db access).
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/stream_ports/zmd5/$md5");
+    $data=json_decode($resp,true);
+    if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"]) && count($data["rows"])>0){return true;}
 
+    $OPTS=array();
     $OPTS["ssl"]=$ssl;
     $options=base64_encode(serialize($OPTS));
 
-    $sql="INSERT INTO stream_ports(serviceid,interface,port,zmd5,options) 
-            VALUES ($nginx_services_id,'$interface',$port,'$md5','$options')";
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $q->mysql_error."\n";
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+        "action"=>"insert","table"=>"stream_ports",
+        "values"=>[
+            "serviceid"=>$nginx_services_id,
+            "interface"=>$interface,
+            "port"=>$port,
+            "zmd5"=>$md5,
+            "options"=>$options,
+        ],
+    ]);
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        echo (is_array($data) && isset($data["error"]) ? $data["error"] : "stream_ports insert failed")."\n";
         return false;
     }
     return true;
@@ -1160,8 +1167,6 @@ function merge_reverse_proxy_ports($interface,$port,$nginx_services_id,$ssl):boo
 function merge_reverse_proxy_sources($cache_peer_id,$nginx_services_id):array{
     $tmpdb      =   "/home/artica/import3x/squidlogs/reverse.db";
     $qSrc       = new lib_sqlite($tmpdb);
-    $q          = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-
 
     $results=$qSrc->QUERY_SQL("SELECT *  FROM reverse_sources WHERE ID='{$cache_peer_id}'");
     $RETURNED=array();
@@ -1183,40 +1188,69 @@ function merge_reverse_proxy_sources($cache_peer_id,$nginx_services_id):array{
         }
 
         $options=base64_encode(serialize($options));
-        $LastID=$q->mysqli_fetch_array("SELECT ID FROM backends 
-            where serviceid=$nginx_services_id AND hostname='$ipaddr' AND port='$port'");
-        if($LastID>0){
+        // Daemon API: list backends for the service and PHP-side check
+        // (hostname,port) match to skip duplicates (the column-equals query
+        // can only filter on one column).
+        $exists=false;
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/backends/serviceid/$nginx_services_id");
+        $data=json_decode($resp,true);
+        if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])){
+            foreach($data["rows"] as $b){
+                if(isset($b["hostname"]) && $b["hostname"]==$ipaddr && intval(isset($b["port"])?$b["port"]:0)===$port){
+                    $exists=true;break;
+                }
+            }
+        }
+        if($exists){
             echo "$ipaddr:$port Already added from service ID: $nginx_services_id\n";
             continue;
         }
-            $q->QUERY_SQL("INSERT OR IGNORE INTO backends(serviceid,hostname,port,options) 
-				VALUES ($nginx_services_id,'$ipaddr',$port,'$options')");
-            if(!$q->ok){echo $q->mysql_error;}
-
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+            "action"=>"insert","table"=>"backends",
+            "values"=>[
+                "serviceid"=>$nginx_services_id,
+                "hostname"=>$ipaddr,
+                "port"=>$port,
+                "options"=>$options,
+            ],
+        ]);
+        $data=json_decode($resp,true);
+        if(!is_array($data) || empty($data["Status"])){
+            echo (is_array($data) && isset($data["error"]) ? $data["error"] : "backends insert failed")."\n";
+        }
     }
     return $RETURNED;
 
 }
 
 function merge_reverse_proxy_clean():bool{
-    $q          = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $tables[]="nginx_services";
-    $tables[]="service_parameters";
-    $tables[]="stream_ports";
-    $tables[]="backends";
-
+    // Daemon API: list rows, delete by ID one at a time. The exec endpoint
+    // requires a non-empty WHERE clause so a TRUNCATE-style operation must
+    // iterate. Acceptable for the legacy 3.x import (small tables, one-shot).
+    $tables=array("nginx_services","service_parameters","stream_ports","backends");
     foreach ($tables as $tablename){
         echo "Clean table $tablename From nginx.db\n";
-        $q->QUERY_SQL("DELETE FROM $tablename");
-        if(!$q->ok){
-            echo $q->mysql_error."\n\n";
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/$tablename");
+        $data=json_decode($resp,true);
+        if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){
+            echo (is_array($data) && isset($data["error"]) ? $data["error"] : "list failed")."\n\n";
             return false;
         }
-
+        foreach($data["rows"] as $r){
+            if(!isset($r["ID"])){continue;}
+            $rid=intval($r["ID"]);
+            $resp2=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+                "action"=>"delete","table"=>$tablename,"where"=>["ID"=>$rid],
+            ]);
+            $data2=json_decode($resp2,true);
+            if(!is_array($data2) || empty($data2["Status"])){
+                echo (is_array($data2) && isset($data2["error"]) ? $data2["error"] : "delete failed")."\n\n";
+                return false;
+            }
+        }
     }
     return true;
 }
-
 function merge_reverse_proxy_data(){
     include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
     $tmpdb      =   "/home/artica/import3x/squidlogs/reverse.db";
@@ -1284,21 +1318,38 @@ return true;
 }
 
 function nginx_services_id($servername,$enabled):int{
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
+    // Daemon API: lookup by servicename, INSERT if missing (no direct nginx.db access).
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/servicename/".urlencode($servername));
+    $data=json_decode($resp,true);
+    if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"]) && count($data["rows"])>0){
+        $ID=intval($data["rows"][0]["ID"]);
+        if($ID>0){
+            echo "$servername have ID $ID, SKIP\n";
+            return $ID;
+        }
+    }
 
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE servicename='$servername'");
-    $ID=intval($ligne["ID"]);
-    if($ID>0){
-        echo "$servername have ID $ID, SKIP\n";
-        return $ID;}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", [
+        "action"=>"insert","table"=>"nginx_services",
+        "values"=>[
+            "type"=>2,
+            "servicename"=>$servername,
+            "enabled"=>$enabled,
+            "goodconftime"=>0,
+            "hosts"=>$servername,
+        ],
+    ]);
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        echo (is_array($data) && isset($data["error"]) ? $data["error"] : "nginx_services insert failed")."\n";
+    }
 
-    $q->QUERY_SQL("INSERT INTO nginx_services (`type`,`servicename`,`enabled`,goodconftime,hosts)  VALUES ('2','$servername',$enabled,0,'$servername')");
-    if(!$q->ok){echo $q->mysql_error."\n";}
-
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE servicename='$servername'");
-    $ID=intval($ligne["ID"]);
-    if(!$q->ok){echo $q->mysql_error."\n";}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/servicename/".urlencode($servername));
+    $data=json_decode($resp,true);
+    $ID=0;
+    if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"]) && count($data["rows"])>0){
+        $ID=intval($data["rows"][0]["ID"]);
+    }
     echo "$servername created new service id number $ID\n";
     return $ID;
 

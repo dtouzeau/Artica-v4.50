@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 /**
  * Artica InstantServicePack console
  * Create a temporary ServicePacks storage for updating quickly a bunch of Artica servers
@@ -19,7 +21,7 @@ function js():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_is_provider($users)){   // televersement de Service Pack : gestion du depot, infogerant
         return $tpl->js_error("{no_privileges}");
     }
     return $tpl->js_dialog6("InstantServicePack", "$page?tabs=yes", 600);
@@ -50,6 +52,8 @@ function upload_popup():bool{
     return true;
 }
 function upload_uploaded_js():bool{
+    if(!artrepo_can_write()){$tpl=new template_admin();$tpl->js_error("{ERROR_NO_PRIVS}");return false;}
+    if(!fw_progress_page_priv("AsArticaMetaAdmin")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $filename=$_GET["file-uploaded"];
     $fileencode=urlencode($filename);
@@ -74,12 +78,14 @@ function servicepacks_start():bool{
     return true;
 }
 function servicepacks_delete_js():bool{
+    if(!artrepo_can_write()){$tpl=new template_admin();$tpl->js_error("{ERROR_NO_PRIVS}");return false;}
     $tpl=new template_admin();
     $md=$_GET["servicepacks-delete"];
     $filename=$_GET["f"];
     return $tpl->js_confirm_delete($filename,"servicepacks-delete",$md,"$('#$md').remove()");
 }
 function servicepacks_delete_confirm():bool{
+    if(!artrepo_can_write()){$tpl=new template_admin();echo $tpl->post_error("{ERROR_NO_PRIVS}");return false;}
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $md=$_POST["servicepacks-delete"];

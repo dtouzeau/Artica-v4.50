@@ -1,1 +1,1 @@
-<postfix_inrules_regex>Number of regex rules saved</postfix_inrules_regex>
+<postfix_inrules_regex>N&#250;mero de reglas regex guardadas</postfix_inrules_regex>

@@ -11,41 +11,25 @@ class NginxPrivs{
         if($EnableNginx==0){
             return "";
         }
-
-        $q=new lib_sqlite($this->NginxGetDB());
-
-        if(!$q->TABLE_EXISTS("adminprivs")){
+        // The daemon's /nginx-db/query/{table}/{column}/{value} route does not
+        // URL-decode the value segment, so items containing ':' (e.g. "sqlite:1")
+        // never match. Fetch the whole table and filter PHP-side instead.
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/adminprivs");
+        $data=json_decode($resp,true);
+        if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){
             return "";
         }
 
-        $results=$q->QUERY_SQL("SELECT * FROM adminprivs WHERE item='$this->GroupDN'");
-        if(!$q->ok){
-            return "";
+        $ids=array();
+        foreach ($data["rows"] as $ligne){
+            if(!isset($ligne["item"]) || strval($ligne["item"])!==strval($this->GroupDN)){continue;}
+            if(isset($ligne["serviceid"])){
+                $ids[]=$ligne["serviceid"];
+            }
         }
-
-        foreach ($results as $index=>$ligne){
-            $results[]=$ligne["serviceid"];
-        }
-        if(count($results)>0){
-            return @implode(",",$results);
+        if(count($ids)>0){
+            return @implode(",",$ids);
         }
         return "";
-    }
-    private function NginxGetDB():string{
-        if(!$this->isHarmpID()){
-            return "/home/artica/SQLITE/nginx.db";
-        }
-        $Gpid=$_SESSION["HARMPID"];
-        return "/home/artica/SQLITE/nginx.$Gpid.db";
-    }
-    private function isHarmpID():bool{
-        if(!isset($_SESSION["HARMPID"])){
-            return false;
-        }
-        if(intval($_SESSION["HARMPID"])==0){
-            return false;
-        }
-
-        return true;
     }
 }

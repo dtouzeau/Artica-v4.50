@@ -1,18 +1,25 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+// Les repartiteurs ?enable-signature= et ?enable-firewall= appelaient
+// enable_signature() et enable_firewall(), qui ne sont definies NI dans ce
+// fichier NI ailleurs: les deux URL repondaient un fatal « Call to undefined
+// function ». La paire appartient a la famille Suricata (elle bascule une
+// signature dans suricata-rules.db et un drapeau dans suricata_sig) et n'a
+// rien a faire ici; seul fw.ids.rules.php produit reellement
+// « ?enable-signature= ».
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["enable-signature"])){enable_signature();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 page();
 
 
@@ -135,7 +142,8 @@ function table(){
         if($line==null){continue;}
 
 	    if(!preg_match("#$pregm#",$line,$re)){
-	        echo "<H1>$line <code>$pregm</code></H1>\n";
+	        // Pentest 2026-11-04 : ligne du journal ICAP (donnee externe) affiche sans encodage (XSS stockee).
+	        echo "<H1>".req_html($line)." <code>".req_html($pregm)."</code></H1>\n";
 	        continue;
         }
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
@@ -165,13 +173,14 @@ function table(){
 
 		$html[]="<tr class='$TRCLASS'>";
 		$html[]="<td class=\"$text_class\">$date</td>";
-        $html[]="<td class=\"$text_class\">".@implode("&nbsp;/&nbsp;",$suers)."</td>";
-        $html[]="<td class=\"$text_class\">$domain</td>";
-		$html[]="<td class=\"$text_class\">$ip&nbsp;-&nbsp;$service</td>";
-		$html[]="<td class=\"$text_class\">$server</td>";
-        $html[]="<td class=\"$text_class\">$mode / $icap_command</td>";
-        $html[]="<td class=\"$text_class\">$icap_code</td>";
-        $html[]="<td class=\"$text_class\">{$icap_time}ms</td>";
+        // Pentest 2026-11-04 : client/utilisateur/domaine/serveur du journal ICAP (donnee externe) affiche sans encodage (XSS stockee).
+        $html[]="<td class=\"$text_class\">".@implode("&nbsp;/&nbsp;",array_map("req_html",$suers))."</td>";
+        $html[]="<td class=\"$text_class\">".req_html($domain)."</td>";
+		$html[]="<td class=\"$text_class\">".req_html($ip)."&nbsp;-&nbsp;".req_html($service)."</td>";
+		$html[]="<td class=\"$text_class\">".req_html($server)."</td>";
+        $html[]="<td class=\"$text_class\">".req_html($mode)." / ".req_html($icap_command)."</td>";
+        $html[]="<td class=\"$text_class\">".req_html($icap_code)."</td>";
+        $html[]="<td class=\"$text_class\">".req_html($icap_time)."ms</td>";
 		$html[]="</tr>";
 		
 

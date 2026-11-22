@@ -12,6 +12,8 @@ if(isset($_GET["engine"])){engine();exit;}
 page();
 
 
+
+
 function serviceid_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -21,9 +23,8 @@ function serviceid_js(){
     if($ID==0){
         $servicename="{new_mirror_site}";
     }else{
-        $q      = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID=$ID");
-        $servicename=trim($ligne["enforceuri"]);
+        $ligne=fetch_httrack_site($ID);
+        $servicename=trim(isset($ligne["enforceuri"])?$ligne["enforceuri"]:"");
     }
 
     $tpl->js_dialog1("modal:#$ID - $servicename", "$page?tabs=$ID&function=$function",900);
@@ -44,9 +45,8 @@ function tabs(){
 }
 function page():bool{
     $tpl    = new template_admin();
-    $q      = new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $id=intval($_GET["main"]);
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM httrack_sites WHERE ID=$id");
+    $ligne=fetch_httrack_site($id);
     $function=$_GET["function"];
     $HostHeader=null;
     $btn="{add}";
@@ -87,17 +87,16 @@ function page():bool{
 function engine(){
     $function=$_GET["function"];
     $tpl    = new template_admin();
-    $q      = new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $id=intval($_GET["engine"]);
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM httrack_sites WHERE ID=$id");
+    $ligne=fetch_httrack_site($id);
     $btn="{apply}";
-    $AddHeader=trim($ligne["AddHeader"]);
-    $useproxy=intval($ligne["useproxy"]);
-    $maxfilesize=$ligne["maxfilesize"];
-    $maxworkingdir=$ligne["maxworkingdir"];
-    $maxextern=intval($ligne["maxextern"]);
-    $UserAgent = trim($ligne["UserAgent"]);
-    $exclude = trim($ligne["exclude"]);
+    $AddHeader=trim(isset($ligne["AddHeader"])?$ligne["AddHeader"]:"");
+    $useproxy=intval(isset($ligne["useproxy"])?$ligne["useproxy"]:0);
+    $maxfilesize=isset($ligne["maxfilesize"])?$ligne["maxfilesize"]:0;
+    $maxworkingdir=isset($ligne["maxworkingdir"])?$ligne["maxworkingdir"]:0;
+    $maxextern=intval(isset($ligne["maxextern"])?$ligne["maxextern"]:0);
+    $UserAgent = trim(isset($ligne["UserAgent"])?$ligne["UserAgent"]:"");
+    $exclude = trim(isset($ligne["exclude"])?$ligne["exclude"]:"");
 
     if($UserAgent==null){$UserAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.45 Safari/537.36";}
 
@@ -123,48 +122,12 @@ function engine(){
 }
 
 function Save(){
+    // Daemon owns httrack_sites schema and migrations (nginxsites/DBConf.go
+    // FixTables); all the previous PHP-side ALTER TABLE / CREATE TABLE checks
+    // are now redundant.
 
-    $q      = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $sql="CREATE TABLE IF NOT EXISTS `httrack_sites` ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, `enabled` INTEGER NOT NULL DEFAULT 0 , `serviceid` INTEGER NOT NULL DEFAULT 0 , `size` INTEGER DEFAULT '0', `minrate` INTEGER NOT NULL DEFAULT '512', `maxfilesize` INTEGER NOT NULL DEFAULT '512', `maxsitesize` INTEGER NOT NULL DEFAULT '5000', `maxworkingdir` INTEGER NOT NULL DEFAULT '20',`UserAgent` TEXT NULL )";
-
-    if(!$q->FIELD_EXISTS("httrack_sites","schedule")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD schedule INTEGER NOT NULL DEFAULT 6");
-    }
-
-    if(!$q->FIELD_EXISTS("httrack_sites","UserAgent")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD UserAgent TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","HostHeader")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD HostHeader TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","AddHeader")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD AddHeader TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","exclude")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD exclude TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","enforceuri")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD enforceuri TEXT NULL");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","useproxy")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD useproxy INTEGER NOT NULL DEFAULT 0");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","maxextern")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD maxextern INTEGER NOT NULL DEFAULT 0");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","actiondel")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD actiondel INTEGER NOT NULL DEFAULT 0");
-    }
-    if(!$q->FIELD_EXISTS("httrack_sites","notfound")){
-        $q->QUERY_SQL("ALTER TABLE httrack_sites ADD notfound TEXT NULL");
-    }
-
-    $q->QUERY_SQL($sql);
-
-    $edit=array();
     $log=array();
-    $insert_value=array();
-    $insert_key=array();
+    $values=array();
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["ID"]);
@@ -182,22 +145,25 @@ function Save(){
 
     foreach ($_POST as $key=>$value){
         if($key=="ID"){continue;}
-        $insert_value[]="'$value'";
-        $insert_key[]="`$key`";
-        $edit[]="`$key`='$value'";
+        $values[$key]=$value;
         $log[]="$key:$value";
 
     }
 
     if($ID==0){
-        $sql="INSERT INTO httrack_sites (".@implode(",",$insert_key).") VALUES (".@implode(",",$insert_value).")";
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array(
+            "action"=>"insert","table"=>"httrack_sites","values"=>$values,
+        ));
     }else{
-        $sql="UPDATE httrack_sites SET ".@implode(",",$edit)." WHERE ID=$ID";
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array(
+            "action"=>"update","table"=>"httrack_sites","set"=>$values,"where"=>array("ID"=>$ID),
+        ));
     }
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->post_error($q->mysql_error);return false;}
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        $err=is_array($data) && isset($data["error"]) ? strval($data["error"]) : "save failed";
+        $tpl->post_error($err);return false;
+    }
     admin_tracks("Editing WebCopy Service for {$_POST["enforceuri"]} with ".@implode(" ",$log));
-    //$GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?webcopy-sync=$serviceid");
     return true;
 }

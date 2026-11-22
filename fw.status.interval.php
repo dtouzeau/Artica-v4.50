@@ -8,9 +8,7 @@ function Loadjs(){
     $Main = CurUnserializeb64($_GET["Loadjs"]);
     $div = $Main["DIV"];
     $page = $Main["PAGE"];
-    echo "// page = $page\n";
     $Query = $Main["QUERY"];
-    echo "// QUERY = $Query\n";
     $Interval = intval($Main["INTERVAL"]);
     if($Interval<3){
         $Interval=3;
@@ -22,7 +20,6 @@ function Loadjs(){
         $Query=$re[1];
     }
 
-    echo "// QUERY = $Query\n";
     $Interval=$Interval*1000;
     $MemoryVal = "Mem" . md5("$page?$Query");
     $MemoryFunc = "Func" . md5("$page?$Query");
@@ -113,9 +110,18 @@ function CurUnserializeb64($data):array{
     if(!$Decoded){
         return array();
     }
-    $Unser=unserialize($Decoded);
+    $Unser=unserialize($Decoded,array("allowed_classes"=>false));
     if(!$Unser){
         return array();
     }
+    if(!is_array($Unser)){
+        return array();
+    }
+    // Pentest 2026-11-04 : DIV/PAGE/QUERY etaient recopies sans encodage dans le JavaScript (XSS).
+    // On ne garde que les caracteres d'un identifiant, d'un nom de page et d'une query string.
+    $Unser["DIV"]=preg_replace('#[^A-Za-z0-9_-]#','',(string)($Unser["DIV"] ?? ""));
+    $Unser["PAGE"]=preg_replace('#[^A-Za-z0-9._/-]#','',(string)($Unser["PAGE"] ?? ""));
+    $Unser["QUERY"]=preg_replace('#[^A-Za-z0-9_.,:@/+=&%?;~*!()\[\]-]#','',(string)($Unser["QUERY"] ?? ""));
+    $Unser["INTERVAL"]=intval($Unser["INTERVAL"] ?? 0);
     return $Unser;
 }

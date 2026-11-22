@@ -34,11 +34,11 @@ class dhcp_socks{
         $ID=intval($ligne["ID"]);
         if($ID>0){
             $q->QUERY_SQL("UPDATE `dhcpd` SET `val`='$val' WHERE ID=$ID");
-            if(!$q->ok){$tpl=new template_admin();echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);}
+            if(!$q->ok){$tpl=new template_admin();echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));}
             return;
         }
         $q->QUERY_SQL("INSERT INTO `dhcpd` (`key`,`val`,`interface`) VALUES ('$key','$val','$this->Interface')");
-        if(!$q->ok){$tpl=new template_admin();echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);}
+        if(!$q->ok){$tpl=new template_admin();echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));}
 
     }
 

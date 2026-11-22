@@ -304,3 +304,20 @@ class ArticaNetAgents{
 
 
 }
+
+// Bandeau "dernier etat connu" des pages d'un agent (interfaces, DNS, nom
+// d'hote, routage). netagents garde la derniere copie recue de chaque agent :
+// quand l'agent ne repond plus, la page montre ces valeurs et ce bandeau dit
+// de quand elles datent.
+// $cachedAt : horodatage ISO 8601 (champ cached_at du statut) ou epoch.
+// $stale    : la reponse est marquee ancienne par netagents (meta_stale) ; sans
+//             ce marqueur, une copie de plus de 3 min (sondage : 1 min) suffit.
+function netagent_stale_banner($cachedAt,$stale=false){
+    $ts=is_numeric($cachedAt)?intval($cachedAt):intval(@strtotime((string)$cachedAt));
+    if($ts<86400){ return ""; }
+    if(!$stale && (time()-$ts)<180){ return ""; }
+    $when=date("Y-m-d H:i",$ts);
+    return "<div class='alert alert-warning' role='status' style='margin:10px 0'>"
+        ."<i class='fas fa-plug-circle-xmark' aria-hidden='true'></i>&nbsp;&nbsp;"
+        ."<strong>{netagent_stale_title}</strong> {netagent_stale_text} <strong>$when</strong></div>";
+}

@@ -91,7 +91,7 @@ if($argv[1]=="--postmaster"){
 $php=$GLOBALS["CLASS_UNIX"]->LOCATE_PHP5_BIN();
 if($argv[1]=="--virtuals"){cmdline_virtuals();exit;}
 if($argv[1]=="--mailbox-transport-maps"){
-	system("{$GLOBALS["PHP5_BIN"]} /usr/share/artica-postfix/exec.postfix.transport.php --mailbox-transport-maps");
+	die();
 }
 
 if($argv[1]=="--mailman"){

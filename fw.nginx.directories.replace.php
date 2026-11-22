@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
 if(isset($_GET["service-js"])){service_js();exit;}
@@ -19,9 +21,10 @@ function suffix_RQ():string{
     $md5=$_GET["md5"];
     $f[]="directory_id=$directory_id";
     $f[]="serviceid=$serviceid";
-    $f[]="md5=$md5";
+    // Pentest 2026-11-04 : md5 et refreshjs etaient recopies bruts dans des chaines JavaScript (XSS).
+    $f[]="md5=".req_url($md5);
     if(isset($_GET["refreshjs"])){
-          $f[]="refreshjs=".$_GET["refreshjs"];
+          $f[]="refreshjs=".req_url($_GET["refreshjs"]);
     }
 
     return @implode("&",$f);
@@ -32,28 +35,24 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
+
+
 function get_directoryname($ID):string{
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT directory FROM ngx_directories WHERE ID=$ID");
-    return $ligne["directory"];
+    $ligne=fetch_ngx_directory_row($ID);
+    return isset($ligne["directory"]) ? strval($ligne["directory"]) : "";
 }
 function get_data($ID):array{
     $ID=intval($ID);
     if($ID==0){return array();}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT replace FROM ngx_directories WHERE ID=$ID");
-    $array=unserialize(base64_decode($ligne["replace"]));
+    $ligne=fetch_ngx_directory_row($ID);
+    $array=unserialize(base64_decode(isset($ligne["replace"])?$ligne["replace"]:""));
     if(!is_array($array)){return array();}
     return $array;
 }
 function set_data($array=array(),$ID){
     $NEWDATA=base64_encode(serialize($array));
-    $q                          = new lib_sqlite(NginxGetDB());
-
-    if(!$q->FIELD_EXISTS("ngx_directories","replace")){
-        $q->QUERY_SQL("ALTER TABLE ngx_directories ADD replace TEXT");
-    }
-
+    // Daemon owns the ngx_directories.replace column (FieldExistCreateTEXT in
+    // nginxsites/DBConf.go); the PHP ALTER TABLE is redundant.
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"update","table"=>"ngx_directories","set"=>array("replace"=>"$NEWDATA"),"where"=>array("ID"=>"$ID")));
 
 }
@@ -127,7 +126,10 @@ function rule_popup(){
     $page       = CurrentPageName();
     $directory_id=intval($_GET["directory_id"]);
     $data       = get_data($directory_id);
-    $refreshjs=base64_decode($_GET["refreshjs"]);
+    $refreshjs=base64_decode((string)($_GET["refreshjs"] ?? ""));
+    // Pentest 2026-11-04 : refreshjs (base64) etait execute tel quel apres l'enregistrement :
+    // seul le LoadAjax construit par popup_main() est accepte.
+    if(!preg_match("#^LoadAjax\('main-popup-[0-9]+-[0-9]+','fw\.nginx\.directories\.replace\.php\?[A-Za-z0-9=&_.%-]*'\)$#",$refreshjs)){$refreshjs="";}
     $ligne["enable"] = 1;
     $bt="{add}";
     if($ruleid>0){ $ligne=$data[$ruleid];$bt="{apply}"; }
@@ -195,13 +197,14 @@ function popup_table():bool{
     $html[]="</div>";
     $html[]="<div id='$forcediv'></div>";
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{search}</th>
         	<th nowrap>{replace}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
@@ -227,47 +230,18 @@ function popup_table():bool{
     $pattern=$tpl->td_href($pattern,"","Loadjs('$page?rule-js=$num&$suffix');");
 
     $html[]="<tr id='$num'>
-				<td width=50%>$pattern{$description}</td>
-				<td width=50% >$replace</td>
+				<td>$pattern{$description}</td>
+				<td>$replace</td>
 				<td style='width:1%' nowrap>$enable</td>
 				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }
 
-        $html[]="</tbody>";
-        $html[]="<tfoot>";
-
-        $html[]="<tr>";
-        $html[]="<td colspan='4'>";
-        $html[]="<ul class='pagination pull-right'></ul>";
-        $html[]="</td>";
-        $html[]="</tr>";
-        $html[]="</tfoot>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-        $html[]="$(document).ready(function() { $('#$tableid').footable( { \"filtering\": { \"enabled\": false";
-        $html[]="},\"sorting\": { \"enabled\": true },";
-        $html[]="\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
 }
 
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}

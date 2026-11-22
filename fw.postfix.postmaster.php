@@ -1,5 +1,10 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.maincf.multi.inc");
 include_once(dirname(__FILE__)."/ressources/class.main_cf.inc");
@@ -15,7 +20,9 @@ page();
 function template_js(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $tplkey=$_GET["template-edit"];
+    // Pentest 2026-11-04 : template-edit etait recopie sans encodage dans la page (XSS).
+    $tplkey=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["template-edit"]);
+    if(!isset($_GET["instance-id"])){$_GET["instance-id"]=0;}
     $instance_id=intval($_GET["instance-id"]);
     $tpl->js_dialog1("{template} {{$tplkey}}","$page?template-popup=$tplkey&instance-id=$instance_id");
 }
@@ -34,7 +41,7 @@ function save(){
     $not[]="software";
     $FNOT=array();
     foreach ($not as $class){
-        if($_POST[$class]==1){$FNOT[]=$class;}
+        if(isset($_POST[$class]) && $_POST[$class]==1){$FNOT[]=$class;}
         unset($_POST[$class]);
     }
 
@@ -43,8 +50,11 @@ function save(){
 
     }
 
-    if(count($FNOT)==0){$FNOT[]="resource";}
-
+    // Une liste VIDE est un reglage legitime : "ne rien signaler au postmaster". Le code forcait
+    // ici $FNOT[]="resource", si bien que decocher la derniere classe active la remettait en
+    // silence -- l'operateur voyait le bouton revenir sur ON sans le moindre message. La valeur
+    // vide est ecrite telle quelle ; c'est sa PRESENCE en base qui distingue "choisi vide" de
+    // "jamais configure" (cf. TokenExists a l'affichage et getInfoExists cote demon).
     $main->SET("notify_classes",@implode(",",$FNOT));
 
 }
@@ -52,10 +62,11 @@ function save(){
 function page(){
     $page=CurrentPageName();
     $tpl=new template_admin();
+    if(!isset($_GET["instance-id"])){$_GET["instance-id"]=0;}
     $instance_id=intval($_GET["instance-id"]);
     $main=new maincf_multi($instance_id);
 
-
+    $notify_classes_main=array();
     $PostfixPostmaster=trim($main->GET("PostfixPostmaster"));
     if($PostfixPostmaster==null){$PostfixPostmaster="MAILER-DAEMON";}
     $luser_relay=trim($main->GET("luser_relay"));
@@ -73,8 +84,12 @@ function page(){
     if($delay_notice_recipient==null){$delay_notice_recipient=$PostfixPostmaster;}
     if($empty_address_recipient==null){$empty_address_recipient=$PostfixPostmaster;}
 
+    // Le defaut d'affichage ne vaut que si le parametre n'a JAMAIS ete configure. GET() rend ""
+    // aussi bien pour "absent" que pour "vide choisi", donc tester la valeur seule rallumait
+    // resource+software des que l'operateur decochait tout : la page contredisait ce qui venait
+    // d'etre enregistre. TokenExists() lit la presence de la ligne, pas son contenu.
     $notify_classes=$main->GET("notify_classes");
-    if($notify_classes==null){$notify_classes="resource,software";}
+    if(!$main->TokenExists("notify_classes")){$notify_classes="resource,software";}
 
     $notify_classes_td=explode(",",$notify_classes);
     foreach ($notify_classes_td as $class){
@@ -111,38 +126,28 @@ function page(){
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/build_progress_postmaster";
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/build_progress_postmaster.txt";
-	$ARRAY["CMD"]="postfix.php?postmaster=yes";
+	$ARRAY["CMD"]="/postfix/hashtables/postmaster/$instance_id";
 	$ARRAY["TITLE"]="{reconfigure}";
 	$ARRAY["AFTER"]="";
 	$prgress=base64_encode(serialize($ARRAY));
-	$reconfigure="Loadjs('fw.progress.php?content=$prgress&mainid=progress-postfix-mainconf')";
+	$reconfigure="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-postfix-mainconf')";
+    $form_final=$tpl->form_outside("", $form,"{POSTFIX_SMTP_NOTIFICATIONS_TEXT}","{apply}",$reconfigure,"AsPostfixAdministrator");
 
 
-
-	$form_final=$tpl->form_outside("{postmaster}", $form,"{POSTFIX_SMTP_NOTIFICATIONS_TEXT}","{apply}",$reconfigure,"AsPostfixAdministrator");
-
-
-	$html[]="<table style='width:100%;margin-top:15px'>";
-
-	$html[]="<tr>";
-    $html[]="<td valign='top' style='width:2%;vertical-align:top'>";
-    $html[]="<table style='width:100%;margin-top:0px'>";
-
+	// Mise en page en flex. La cellule de gauche etait declaree a 2% alors qu'elle
+	// contenait la liste des modeles: sa largeur reelle dependait du navigateur.
+	$html[]="<div style='display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;margin-top:15px'>";
+	$html[]="<div style='flex:0 1 auto;min-width:350px'>";
+	$html[]="<div class='awc-wrap' style='margin-top:0'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><tbody>";
     $main=new bounces_templates();
 	foreach ($main->templates_array as $key_template=>$none){
-
-
-        $tplts=$tpl->td_href("{template}:&nbsp;{{$key_template}}",null,"Loadjs('$page?template-edit=$key_template&instance-id=$instance_id')");
-        $html[]="<tr>";
-        $html[]="<td style='width:1%' nowrap><i class=\"fas fa-envelope-open-text\"></i>&nbsp;&nbsp;</td>";
-        $html[]="<td style='width:99%' nowrap>$tplts</td>";
-        $html[]="</tr>";
+        $html[]=pfxpm_template_row($key_template,"Loadjs('$page?template-edit=$key_template&instance-id=$instance_id')");
     }
-    $html[]="</table>";
-    $html[]="</td>";
-    $html[]="<td valign='top' style='padding-left:20px'>$form_final</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div></div></div>";
+    $html[]="</div>";
+    $html[]="<div style='flex:1 1 420px;min-width:0'>$form_final</div>";
+    $html[]="</div>";
 
     if($instance_id>0){
         $q=new lib_sqlite("/home/artica/SQLITE/postfix.db");
@@ -151,22 +156,25 @@ function page(){
     }
 
     //$POSTFIX_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_VERSION");
-    $TINY_ARRAY["TITLE"]="{postmaster}/{templates} <small>$instancename</small>";
+    // Pentest 2026-11-04 : instancename (base postfix.db) affiche sans encodage (XSS stockee).
+    $instancename_html=req_html((string)$instancename);
+    $TINY_ARRAY["TITLE"]="{postmaster}/{templates} <small>$instancename_html</small>";
     $TINY_ARRAY["ICO"]="fa-solid fa-file-code";
     $TINY_ARRAY["EXPL"]="{APP_POSTFIX_TEXT}";
-    $TINY_ARRAY["URL"]="instance-postffix-settings-$instance_id";
+    $TINY_ARRAY["URL"]="postmaster-$instance_id";
     $TINY_ARRAY["BUTTONS"]=null;
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
     echo "<script>$jstiny</script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }
 
 function template_popup(){
     $tpl=new template_admin();
     $instance_id=intval($_GET["instance-id"]);
-    $template=$_GET["template-popup"];
+    // Pentest 2026-11-04 : template-popup etait recopie sans encodage dans la page (XSS).
+    $template=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["template-popup"]);
     $mainTPL=new bounces_templates();
     $main=new maincf_multi($instance_id);
     $array=unserializeb64($main->GET_BIGDATA($template));
@@ -184,11 +192,11 @@ function template_popup(){
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/build_progress_postmaster";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/build_progress_postmaster.txt";
-    $ARRAY["CMD"]="postfix.php?postmaster=yes&instance-id=$instance_id";
+    $ARRAY["CMD"]="/postfix/hashtables/postmaster/$instance_id";
     $ARRAY["TITLE"]="{reconfigure}";
     $ARRAY["AFTER"]="";
     $prgress=base64_encode(serialize($ARRAY));
-    $reconfigure="Loadjs('fw.progress.php?content=$prgress&mainid=progress-postfix-mainconf')";
+    $reconfigure="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-postfix-mainconf')";
 
     $form_final=$tpl->form_outside("{template}: {{$template}}", $form,null,"{apply}","dialogInstance1.close();$reconfigure","AsPostfixAdministrator");
 
@@ -206,3 +214,17 @@ function save_template(){
     $main->SET_BIGDATA($template,base64_encode(serialize($_POST)));
 
 }
+
+/** Un modele de message de service (bounce, notification). */
+function pfxpm_template_row($key_template,$js):string{
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-envelope-open-text'></i></span>";
+    $h.="<span><span class='awc-name'>";
+    $h.="<a href=\"javascript:blur();\" OnClick=\"$js\">{".$key_template."}</a></span>";
+    $h.="<div class='awc-meta'>{template}</div></span>";
+    $h.="</div></td>";
+    $h.="</tr>";
+    return $h;
+}
+

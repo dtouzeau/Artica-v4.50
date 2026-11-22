@@ -2,6 +2,17 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// SÉCURITÉ (audit du 2026-11-03, E-01 et M-01) : table/serviceid/ID sont des
+// entiers et md5 un identifiant de ligne. Concaténés tels quels, ?table= ouvrait
+// une injection SQL et un XSS réfléchi (attribut HTML et sélecteur jQuery).
+// Normalisés ici, avant tout aiguillage.
+foreach(array("table","serviceid","id-js","id-popup","delete","container-move") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}
+}
+foreach(array("ID","delete","serviceid") as $k){
+    if(isset($_POST[$k])){$_POST[$k]=intval($_POST[$k]);}
+}
+if(isset($_GET["md5"])){$_GET["md5"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["md5"]);}
 if(isset($_GET["container-move"])){container_move();exit;}
 if(isset($_GET["table-start"])){table_start();exit;}
 if(isset($_GET["table"])){table();exit;}
@@ -37,7 +48,8 @@ function CountOfStreamAccessModule(){
 function container_move(){
 	$q          = new lib_sqlite("/home/artica/SQLITE/webconsole.db"); // sqlite_num_rows
 	$tpl        = new template_admin();
-	$ID         = $_GET["container-move"];
+	// Pentest 2026-11-04 : container-move etait concatene dans la requete.
+	$ID         = intval($_GET["container-move"]);
 	$dir        = $_GET["dir"];
 	$table      = "ngx_stream_access_module";
 	$sql        = "SELECT zorder FROM `$table` WHERE ID='$ID'";
@@ -85,7 +97,8 @@ function table_start(){
 function delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["delete"];
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$ID=intval($_GET["delete"]);
 	$md5=$_GET["md5"];
 	$q=new lib_sqlite("/home/artica/SQLITE/webconsole.db");
 	$ligne=$q->mysqli_fetch_array("SELECT `item` FROM ngx_stream_access_module WHERE ID=$ID");
@@ -94,7 +107,8 @@ function delete_js(){
 function  delete(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_POST["delete"];
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$ID=intval($_POST["delete"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/webconsole.db");
 	$q->QUERY_SQL("DELETE FROM `ngx_stream_access_module` WHERE ID=$ID");
 	if(!$q->ok){echo $q->mysql_error;return;}
@@ -115,7 +129,8 @@ function id_js(){
 function id_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["id-popup"];
+	// Pentest 2026-11-04 : id-popup etait concatene dans la requete.
+	$ID=intval($_GET["id-popup"]);
 	$serviceid=$_GET["serviceid"];
 	$md5=$_GET["md5"];
 	$title="{new_item}";
@@ -150,7 +165,8 @@ function id_save(){
 	$tpl        = new template_admin();
 	$tpl->CLEAN_POST();
 	$md5        = $_POST["md5"];
-	$ID         = $_POST["ID"];
+	// Pentest 2026-11-04 : ID et ipaddr etaient concatenes dans la requete.
+	$ID         = intval($_POST["ID"]);
 	$serviceid  = intval($_POST['serviceid']);
 	$q          = new lib_sqlite("/home/artica/SQLITE/webconsole.db");
 	
@@ -160,7 +176,7 @@ function id_save(){
 	if($item<>"*"){
 		$ipclass=new IP();
 		if(!$ipclass->isIPAddressOrRange($item)){
-			echo "Wrong item $item";return;
+			echo (new template_admin())->post_error("Wrong item ".htmlspecialchars($item,ENT_QUOTES));return;
 		}
 	}
 
@@ -169,13 +185,13 @@ function id_save(){
 	
 	
 	if($ID==0){
-		$q->QUERY_SQL("INSERT OR IGNORE INTO ngx_stream_access_module(serviceid,item,allow) VALUES ($serviceid,'$item',$allow)");
+		$q->QUERY_SQL_PARAMS("INSERT OR IGNORE INTO ngx_stream_access_module(serviceid,item,allow) VALUES ($serviceid,?,$allow)",array($item));
 		if(!$q->ok){echo $q->mysql_error;return;}
         $GLOBALS["CLASS_SOCKETS"]->REST_API("/webconsole/reload");
 		return;
 	}
 	
-	$q->QUERY_SQL("UPDATE ngx_stream_access_module SET item='$item',allow='$allow' WHERE ID=$ID");
+	$q->QUERY_SQL_PARAMS("UPDATE ngx_stream_access_module SET item=?,allow='$allow' WHERE ID=$ID",array($item));
 	if(!$q->ok){echo $q->mysql_error;return;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/webconsole/reload");
 
@@ -219,7 +235,8 @@ function table(){
 	
 	
 	
-	$results=$q->QUERY_SQL("SELECT * FROM ngx_stream_access_module WHERE serviceid='{$_GET["table"]}' ORDER BY zorder");
+	// Pentest 2026-11-04 : table etait concatene dans la requete.
+	$results=$q->QUERY_SQL_PARAMS("SELECT * FROM ngx_stream_access_module WHERE serviceid=? ORDER BY zorder",array((string)$_GET["table"]));
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
 
 	$STATUS[0]="<span class='label label-danger'>{deny}</span>";

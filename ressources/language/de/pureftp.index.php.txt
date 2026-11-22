@@ -1,50 +1,44 @@
-<AnonymousBandwidth>Anonymous Bandwidth</AnonymousBandwidth>
-<AnonymousBandwidth_text>Maximum bandwidth for anonymous users in KB/s</AnonymousBandwidth_text>
-<AnonymousCanCreateDirs>Anonymous Can Create Dirs</AnonymousCanCreateDirs>
-<AnonymousCanCreateDirs_text>Are anonymous users allowed to create new directories ?</AnonymousCanCreateDirs_text>
-<AnonymousCantUpload>Anonymous Can't Upload</AnonymousCantUpload>
-<AnonymousCantUpload_text>Disallow anonymous users to upload new files (unchecked = upload is allowed)</AnonymousCantUpload_text>
-<AntiWarez>Anti Warez</AntiWarez>
-<AntiWarez_text>Disallow downloading of files owned by "ftp", ie. files that were uploaded but not validated by a local admin.</AntiWarez_text>
-<AutoRename>Auto-rename</AutoRename>
-<AutoRename_text>Never overwrite files. When a file whoose name already exist is uploaded, it get automatically renamed to file.1, file.2, file.3, ...</AutoRename_text>
-<BrokenClientsCompatibility>Compatibility hacks for broken clients</BrokenClientsCompatibility>
-<BrokenClientsCompatibility_text>
-Users might have trouble connecting through Internet Explorer.[br]
-This is because IE, among others, tries to connect anonymously and may not give pure-ftpd the proper chance to request a username and password.
-[br]One can, change from no to yes.[br]
-This might or might not work, it seems to depend upon what version of IE that someone is using.</BrokenClientsCompatibility_text>
-<DisplayDotFiles>Display Dot Files</DisplayDotFiles>
-<DisplayDotFiles_text>List dot-files even when the client doesn't send "-a".</DisplayDotFiles_text>
-<DontResolve>Don't Resolve</DontResolve>
-<DontResolve_text>
-Don't resolve host names in log files.[br]
-Logs are less verbose, but it uses less bandwidth.
-[br]Set this to enabled on very busy servers or if you don't have a working DNS.
-</DontResolve_text>
-<enable_pureftpd>Enable FTP on this server</enable_pureftpd>
-<enable_pureftpd_text>If you uncheck this, the serivce will be turned off and there is no FTP service running</enable_pureftpd_text>
-<LimitRecursion>Limit Recursion</LimitRecursion>
-<LimitRecursion_text> 'ls' recursion limits. The [b]first argument[/b] is the maximum number of files to be displayed.[br]
-The [b]second one[/b] is the max subdirectories depth
-</LimitRecursion_text>
-<MaxClientsNumber>Max Clients Number</MaxClientsNumber>
-<MaxClientsNumber_text>Maximum number of simultaneous users</MaxClientsNumber_text>
-<MaxClientsPerIP>Max Clients Per IP</MaxClientsPerIP>
-<MaxClientsPerIP_text>Maximum number of sim clients with the same IP address</MaxClientsPerIP_text>
+<AnonymousBandwidth>Anonyme Bandbreite</AnonymousBandwidth>
+<AnonymousBandwidth_text>Maximale Bandbreite f&#252;r anonyme Benutzer in KB/s</AnonymousBandwidth_text>
+<AnonymousCanCreateDirs>Anonyme k&#246;nnen Verzeichnisse erstellen</AnonymousCanCreateDirs>
+<AnonymousCanCreateDirs_text>D&#252;rfen anonyme Benutzer neue Verzeichnisse erstellen?</AnonymousCanCreateDirs_text>
+<AnonymousCantUpload>Anonyme k&#246;nnen nicht hochladen</AnonymousCantUpload>
+<AnonymousCantUpload_text>Anonymen Benutzern das Hochladen neuer Dateien verbieten (deaktiviert = Upload ist erlaubt)</AnonymousCantUpload_text>
+<AntiWarez>Anti-Warez</AntiWarez>
+<AntiWarez_text>Das Herunterladen von Dateien verbieten, die &quot;ftp&quot; geh&#246;ren, d. h. Dateien, die hochgeladen, aber nicht von einem lokalen Administrator validiert wurden.</AntiWarez_text>
+<AutoRename>Automatisch umbenennen</AutoRename>
+<AutoRename_text>Dateien niemals &#252;berschreiben. Wenn eine Datei mit bereits existierendem Namen hochgeladen wird, wird sie automatisch in file.1, file.2, file.3, ... umbenannt</AutoRename_text>
+<BrokenClientsCompatibility>Kompatibilit&#228;ts-Hacks f&#252;r fehlerhafte Clients</BrokenClientsCompatibility>
+<BrokenClientsCompatibility_text>Benutzer haben m&#246;glicherweise Probleme bei der Verbindung &#252;ber Internet Explorer.[br]
+Dies liegt daran, dass IE unter anderem versucht, sich anonym zu verbinden, und pure-ftpd m&#246;glicherweise nicht die richtige Gelegenheit gibt, einen Benutzernamen und ein Passwort anzufordern.
+[br]Man kann von Nein auf Ja umstellen.[br]
+Dies funktioniert m&#246;glicherweise oder nicht; es scheint von der IE-Version abzuh&#228;ngen, die jemand verwendet.</BrokenClientsCompatibility_text>
+<DisplayDotFiles>Punkt-Dateien anzeigen</DisplayDotFiles>
+<DisplayDotFiles_text>Punkt-Dateien auflisten, auch wenn der Client kein &quot;-a&quot; sendet.</DisplayDotFiles_text>
+<DontResolve>Nicht aufl&#246;sen</DontResolve>
+<DontResolve_text>Hostnamen in Protokolldateien nicht aufl&#246;sen.[br]
+Die Protokolle sind weniger ausf&#252;hrlich, verbrauchen aber weniger Bandbreite.
+[br]Aktivieren Sie dies auf sehr ausgelasteten Servern oder wenn Sie kein funktionierendes DNS haben.</DontResolve_text>
+<enable_pureftpd>FTP auf diesem Server aktivieren</enable_pureftpd>
+<enable_pureftpd_text>Wenn Sie dies deaktivieren, wird der Dienst abgeschaltet und es l&#228;uft kein FTP-Dienst</enable_pureftpd_text>
+<LimitRecursion>Rekursion begrenzen</LimitRecursion>
+<LimitRecursion_text>'ls'-Rekursionsgrenzen. Das [b]erste Argument[/b] ist die maximale Anzahl der anzuzeigenden Dateien.[br]
+Das [b]zweite[/b] ist die maximale Unterverzeichnistiefe</LimitRecursion_text>
+<MaxClientsNumber>Maximale Client-Anzahl</MaxClientsNumber>
+<MaxClientsNumber_text>Maximale Anzahl gleichzeitiger Benutzer</MaxClientsNumber_text>
+<MaxClientsPerIP>Max. Clients pro IP</MaxClientsPerIP>
+<MaxClientsPerIP_text>Maximale Anzahl gleichzeitiger Clients mit derselben IP-Adresse</MaxClientsPerIP_text>
 <MaxDiskUsage>Maximale Festplattenauslastung %</MaxDiskUsage>
-<MaxDiskUsage_text>This option is useful with servers where anonymous upload is allowed. [br]
-As /var/ftp is in /var, it save some space and protect the log files.[br]
-When the partition is more that X percent full,new uploads are disallowed.</MaxDiskUsage_text>
-<MaxIdleTime>Max Idle Time</MaxIdleTime>
-<MaxIdleTime_text>Maximum idle time in minutes (default = 15 minutes)</MaxIdleTime_text>
-<MaxLoad_text>If the system is more loaded than the following value,anonymous users aren't allowed to download.</MaxLoad_text>
+<MaxDiskUsage_text>Diese Option ist n&#252;tzlich bei Servern, auf denen anonymer Upload erlaubt ist. [br]
+Da /var/ftp in /var liegt, spart es etwas Platz und sch&#252;tzt die Protokolldateien.[br]
+Wenn die Partition zu mehr als X Prozent voll ist, werden neue Uploads verboten.</MaxDiskUsage_text>
+<MaxIdleTime>Maximale Leerlaufzeit</MaxIdleTime>
+<MaxIdleTime_text>Maximale Leerlaufzeit in Minuten (Standard = 15 Minuten)</MaxIdleTime_text>
+<MaxLoad_text>Wenn das System st&#228;rker ausgelastet ist als der folgende Wert, d&#252;rfen anonyme Benutzer nicht herunterladen.</MaxLoad_text>
 <Max_Load>Maximale Belastung</Max_Load>
-<NoAnonymous>No Anonymous</NoAnonymous>
-<NoAnonymous_text>Disallow anonymous connections. Only allow authenticated users.</NoAnonymous_text>
-<ProhibitDotFilesRead>Prohibit Dot Files Read</ProhibitDotFilesRead>
-<ProhibitDotFilesRead_text>Prohibit *reading* of files beginning with a dot (.history, .ssh...)</ProhibitDotFilesRead_text>
-<ProhibitDotFilesWrite>Prohibit Dot Files Write</ProhibitDotFilesWrite>
-<ProhibitDotFilesWrite_text>
-Users can't delete/write files beginning with a dot ('.') even if they own them.
-</ProhibitDotFilesWrite_text>
+<NoAnonymous>Kein Anonym</NoAnonymous>
+<NoAnonymous_text>Anonyme Verbindungen verbieten. Nur authentifizierte Benutzer zulassen.</NoAnonymous_text>
+<ProhibitDotFilesRead>Lesen von Punkt-Dateien verbieten</ProhibitDotFilesRead>
+<ProhibitDotFilesRead_text>Das *Lesen* von Dateien verbieten, die mit einem Punkt beginnen (.history, .ssh...)</ProhibitDotFilesRead_text>
+<ProhibitDotFilesWrite>Schreiben von Punkt-Dateien verbieten</ProhibitDotFilesWrite>
+<ProhibitDotFilesWrite_text>Benutzer k&#246;nnen Dateien, die mit einem Punkt ('.') beginnen, nicht l&#246;schen/schreiben, selbst wenn sie ihnen geh&#246;ren.</ProhibitDotFilesWrite_text>

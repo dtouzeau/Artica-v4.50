@@ -7,8 +7,6 @@ include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 if(!ifisright()){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
-if(isset($_GET["button"])){button_white();exit;}
-if(isset($_GET["whitelist-js"])){whitelist_js();exit;}
 
 
 page();
@@ -100,7 +98,10 @@ function search(){
         $md=md5($line);
         $date=$re[1];
         $type=$re[2];
-        $event=$re[3];
+        // Pentest 2026-11-04 : evenement unbound (donnee externe, noms de requetes) affiche sans encodage (XSS stockee).
+        $event=req_html($re[3]);
+        $date=req_html($date);
+
         if(strpos(" $line","rpz: applied [")>0){
             $type="rpz";
         }

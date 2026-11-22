@@ -1,9 +1,8 @@
-<error_no_ie>Information: Your Navigator have some incompatibilities...</error_no_ie>
-<error_no_ie_text>Currently it is not possible to provide good management Interface using Microsoft Internet Explorer or Opera.[br]
-I suggest you using [b]Mozilla Firefox[/b] instead.[br]
-Mozilla Firefox has successfully pass all ajax tests.[br]
-Please come back with an &quot;another navigator&quot;.
-[br]If you have installed webmail, you can give/get the direct link to the interface.[br]
-</error_no_ie_text>
+<error_no_ie>Informa&#231;&#227;o: O seu navegador tem algumas incompatibilidades...</error_no_ie>
+<error_no_ie_text>Atualmente n&#227;o &#233; poss&#237;vel fornecer uma boa interface de gerenciamento usando o Microsoft Internet Explorer ou o Opera.[br]
+Sugiro que voc&#234; use o [b]Mozilla Firefox[/b] em vez disso.[br]
+O Mozilla Firefox passou com sucesso em todos os testes ajax.[br]
+Volte com &amp;quot;outro navegador&amp;quot;.
+[br]Se voc&#234; instalou o webmail, pode fornecer/obter o link direto para a interface.[br]</error_no_ie_text>
 <template>Modelo</template>
-<template_text>Choose your favourite template in order to skin your session</template_text>
+<template_text>Escolha o seu modelo favorito para personalizar a sua sess&#227;o</template_text>

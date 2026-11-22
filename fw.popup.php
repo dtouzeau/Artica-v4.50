@@ -3,7 +3,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 
 if(isset($_GET["verbose"])){
     echo "<HR>";
-    print_r($_GET);
+    echo req_html(print_r($_GET,true));
 }
 $tpl=new template_admin();
 $text=null;
@@ -14,10 +14,11 @@ $icon_div=null;$URL=null;$F=null;
 $SAMBA_ERROR_CLICK=$tpl->_ENGINE_parse_body("{SAMBA_ERROR_CLICK}");
 if(isset($_GET["subtitle"])) {
     $error = url_decode_special_tool($_GET["subtitle"]);
-    $text = $tpl->_ENGINE_parse_body($error);
+    // Pentest 2026-11-04 : titre, sous-titre et contenu arrivent de l'URL.
+    $text = html_safe_fragment($tpl->_ENGINE_parse_body($error));
 }
 if(isset($_GET["title"])){
-    $title=$tpl->_ENGINE_parse_body($_GET["title"]);
+    $title=html_safe_fragment($tpl->_ENGINE_parse_body($_GET["title"]));
 }
 $textcss=null;
 
@@ -25,29 +26,37 @@ $textcss=null;
 
 if(isset($_GET["array"])){
     $xcontent=$_GET["array"];
-    if($GLOBALS["VERBOSE"]){echo "<hr>BASE64: $xcontent<hr>\n";}
+    if($GLOBALS["VERBOSE"]){echo "<hr>BASE64: ".req_html($xcontent)."<hr>\n";}
     $scontent=base64_decode($xcontent);
-    if($GLOBALS["VERBOSE"]){echo "<hr>DECODED: [$scontent]<hr>\n";}
-    $array_help=unserialize($scontent);
+    if($GLOBALS["VERBOSE"]){echo "<hr>DECODED: [".req_html($scontent)."]<hr>\n";}
+    $array_help=@unserialize($scontent,array("allowed_classes"=>false));
+    if(!is_array($array_help)){$array_help=array();}
+    foreach(array("TITLE","content","ico","textcss","URL") as $k){
+        if(!isset($array_help[$k]) || !is_string($array_help[$k])){$array_help[$k]="";}
+    }
     if(isset($_GET["verbose"])){
-        print_r($array_help);
+        echo req_html(print_r($array_help,true));
     }
     if(isset($array_help["textcss"])){
-        $textcss=" ".$array_help["textcss"];
+        $textcss=" ".preg_replace('/[^A-Za-z0-9_ -]/','',$array_help["textcss"]);
     }
 
-    $title=$tpl->_ENGINE_parse_body($array_help["TITLE"]);
+    $title=html_safe_fragment($tpl->_ENGINE_parse_body($array_help["TITLE"]));
     if(preg_match("#file:(.+)#",$array_help["content"],$re)){
-        $array_help["content"]=@file_get_contents(PROGRESS_DIR."/".$re[1]);
+        $array_help["content"]=@file_get_contents(PROGRESS_DIR."/".basename($re[1]));
     }
     $BodyDecoded=$array_help["content"];
     if(preg_match("#^B64:(.+)#",$BodyDecoded,$re)){
         $BodyDecoded=base64_decode($re[1]);
     }
-    $body = $tpl->_ENGINE_parse_body($BodyDecoded);
+    $body = html_safe_fragment($tpl->_ENGINE_parse_body($BodyDecoded));
     $strlen=strlen($body);
-    $ico=$array_help["ico"];
-    if(isset($array_help["URL"])){$URL=$array_help["URL"];}
+    $ico=preg_replace('/[^A-Za-z0-9_ -]/','',$array_help["ico"]);
+    // URL = JavaScript execute au clic : seul le lien wiki construit par
+    // template_admin::js_help() (s_PopUpFull('https://...')) est accepte.
+    if(preg_match("#^s_PopUpFull\\('(https?://[^'\"\\\\<>\\s]+)','1024','900'\\)$#",$array_help["URL"],$re)){
+        $URL="s_PopUpFull('".req_html($re[1])."','1024','900')";
+    }
     $color_class=null;
     if($ico<>null){
         $icon_div="<i class='$ico modal-icon$textcss'></i>";

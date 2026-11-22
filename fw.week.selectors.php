@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__).'/ressources/class.templates.inc'); 
 
 
+// Pentest 2026-11-04 : CallBack etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["CallBack"])){$_GET["CallBack"]=preg_replace('#[^A-Za-z0-9_]#','',(string)$_GET["CallBack"]);}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_POST["save"])){save();exit;}
 js();

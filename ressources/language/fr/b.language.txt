@@ -1,22 +1,4 @@
 <*>Certificat auto-sign&eacute;</*>
-</activedirectory_emergency_mode_explain>
-<repair_table>Repair MySQL Table<//activedirectory_emergency_mode_explain>
-</bandwidth_alert_explain>
-<UserAgentsStatistics_disabled_error>Adding UserAgents in statistics feature is disabled, this option cannot be displayed<//bandwidth_alert_explain>
-</check_success>
-<check_failed>Check failed<//check_success>
-</enable_http_service_zarafa_explain>
-<enable_phpfpm_service>Activate the PHP-FPM service<//enable_http_service_zarafa_explain>
-</GLANCES_EXPLAIN>
-<messaging_features>Messaging features<//GLANCES_EXPLAIN>
-</openvpn_authgroups_explain>
-<using_global_settings>Using global parameters<//openvpn_authgroups_explain>
-</securiteinfo_code_explain>
-<also_see_update_databases>Also see ClamAV Databases update<//securiteinfo_code_explain>
-</SHOWREWALL_PORT_EXPLAIN>Limiter le taux de connexion<//SHOWREWALL_PORT_EXPLAIN>
-</wizard_transparent_button1>Si vert, alors le Proxy sera en mesure de rediriger les requ&ecirc;tes en partance sur Internet sur le port 443 vers son port SSL afin de d&eacute;chiffrer le protocole.[br]
-Dans ce cas, le proxy sera en mesure de [b]voir[/b] le contenu et les requ&ecirc;tes HTTPS.[br]
-[b]Attention &agrave; ce mode[/b]. En effet, le proxy devra remplacer le certificat d\\\'origine su site Internet par son certificat.[br]Ceci va engendrer des notes d\\\'information de la part des naviagteurs sur la non-confiance du certificat lors des acc&egrave;s aux sites Internet SSL.<//wizard_transparent_button1>
 <3proxy_parent_explain>Les proxys peuvent &ecirc;tre group&eacute;s.[br
 Un proxy &agrave; l'int&eacute;rieur d'un group est s&eacute;lectionn&eacute; de fa&ccedil;on al&eacute;atoire.[br]
 Si peu de groupes sont sp&eacute;cifi&eacute;s, un proxy est alors choisi depuis chaque groupe et une cha&icirc;ne de proxy est alors cr&eacute;&eacute;e.[br]Le poids est un nombre compris entre 1 et 1000 et utiliser pour grouper les proxys.[br]les poids sont ajout&eacute;s et les proxys sont group&eacute;s ensemble afin d'&eacute;tablir une somme de 1000.</3proxy_parent_explain>
@@ -87,30 +69,30 @@ Une fois cette requ&ecirc;te ex&eacute;cut&eacute;e sur le serveur Web, vous ser
 C'est un objet qui sera vrai si l'utilisateur cr&eacute;&eacute; plus de connexions que la valeur indiqu&eacute;e.</acl_maxconn_explain>
 <acl_myportname_text>Correspond au port du proxy indiqu&eacute; dans la section Mon proxy/Ports d'&eacute;coute</acl_myportname_text>
 <acl_no_license_explain>Erreur de licence: Cet objet ne peut &ecirc;tre utilis&eacute;</acl_no_license_explain>
-<acl_quota_size_text>Cr&eacute;ez un &eacute;l&eacute;ment avec ces valeurs.[br]
+<acl_quota_size_text>Cr&#233;ez un &#233;l&#233;ment avec ces valeurs.[br]
 Les valeurs sont en MB.[br][br]
 [b]Par utilisateur et site Internet[/b][br]
 max_hour:xxx; max_day:xxx; max_week:xxx[br]
 Exemple:[br]
 max_hour:10; max_day:120;[br]
-Veut dire que au bout de 10MB de bande passante utilis&eacute; dans l`heure courante, le site Internet est bloqu&eacute; pour l`utilisateur et il devra attendre la prochaine heure pour revisiter le site Internet.
-[br]Au bout de 120MB de consommation de bande passante par jour le site Internet est bloqu&eacute; pour l`utilisateur et il devra attendre le lendemain pour visiter &agrave; nouveau le site Web.
+Veut dire que au bout de 10MB de bande passante utilis&#233; dans l'heure courante, le site Internet est bloqu&#233; pour l'utilisateur et il devra attendre la prochaine heure pour revisiter le site Internet.
+[br]Au bout de 120MB de consommation de bande passante par jour le site Internet est bloqu&#233; pour l'utilisateur et il devra attendre le lendemain pour visiter &#224; nouveau le site Web.
 [br]
 [br]
 [b]Par utilisateur:[/b]
 member_hour:xxx; member_day:xxx; member_week:xxx[br]
 Exemple: member_hour:100; member_day:500;[br]
-Pour l'utilisateur concern&eacute;, 100MB par heure ou 500MB par jour.[br]
+Pour l'utilisateur concern&#233;, 100MB par heure ou 500MB par jour.[br]
 [br]
 [b]Par site Internet:[/b]
 website_hour:xxx; website_day:xxx; website_week:xxx[br]
 Exemple: website_hour:100; website_day:500;[br]
-100MB par site ou 500MB par jour ( bloque tous les utilisateurs si le site exc&egrave;de la valeur)[br]
+100MB par site ou 500MB par jour ( bloque tous les utilisateurs si le site exc&#232;de la valeur)[br]
 [br]
-[b]Par Cat&eacute;gorie ( Requi&egrave;re le service de cat&eacute;gories ):[/b]
+[b]Par Cat&#233;gorie ( Requi&#232;re le service de cat&#233;gories ):[/b]
 category_hour:categoryName:xxx; category_hour:categoryName:xxx; category_week:categoryName:xxx[br]
 Exemple:category_hour:games:100; category_week:downloads:500;[br]
-100MB pour tous les utilisateurs et la cat&eacute;gorie [b]games[/b] ou 500MB pour tous les utilisateurs et la cat&eacute;gorie [b]downloads[/b]
+100MB pour tous les utilisateurs et la cat&#233;gorie [b]games[/b] ou 500MB pour tous les utilisateurs et la cat&#233;gorie [b]downloads[/b]
 [br]</acl_quota_size_text>
 <acl_quota_time_text>Seulement une entr&eacute;e est autoris&eacute;e pour cet objet proxy.[br]
 Cr&eacute;ez un mod&egrave;le avec ces &eacute;l&eacute;ments:[br]
@@ -157,7 +139,7 @@ exemple: .exe$ ou http*://*.exe$ devrait &quot;bloquer&quot; les requetes de typ
 Cet objet force le proxy &agrave; r&eacute;soudre l'ordinateur de l'utilisateur.[br]
 Indique le domaine comme domain.local pour *.domain.local ou juste local pour *.local</acl_srcdomain_explain>
 <acl_ssl_sni>Domaines dans les certificat SSL</acl_ssl_sni>
-<acl_ssl_sni_regex>SSL SNI domains (regex)</acl_ssl_sni_regex>
+<acl_ssl_sni_regex>Domaines SSL SNI (regex)</acl_ssl_sni_regex>
 <acl_ssl_sni_text>V&eacute;rifie les domaines inscrits dans les certificats SSL afin de d&eacute;cider de passer en mode MAN-IN-THE-MIDDLE.[br]
 Doit &ecirc;tre utilis&eacute; dans les r&egrave;gles SSL uniquement.[br]
 Ajoutez ici des domaines comme youtube.com ou ibm.com.[br]
@@ -213,7 +195,7 @@ Vous serez en mesure d'ajouter vous m&ecirc;me vos propres sites internet &agrav
 <activate_icap_content_filter_explain>Cette fonctionnalit&eacute; active le filtrage Internet en utilisant le protocole ICAP.[br]
 Avec ce service vous &ecirc;tes en mesure d'interconnecter tout autre proxy compatible ICAP afin de fournir un service de filtrage Web.[br]
 Si vous utilisez dans Artica le moteur de filtrage par d&eacute;faut, pensez &agrave; le d&eacute;sactiver afin de ne pas avoir 2 syst&egrave;mes de filtrage qui sont ex&eacute;cut&eacute;s en m&ecirc;me temps.</activate_icap_content_filter_explain>
-<activate_identd_lookup>Activer la recherche des d&eacute;mons d`identification</activate_identd_lookup>
+<activate_identd_lookup>Activer la recherche des d&#233;mons d'identification</activate_identd_lookup>
 <activate_instant_messaging>Activer la messagerie instantan&eacute;e</activate_instant_messaging>
 <activate_instant_messaging_Zarafa>Messagerie Instantan&eacute;e dans Zarafa WebAPP</activate_instant_messaging_Zarafa>
 <activate_instant_messaging_Zarafa_explain>Le WebMail Zarafa &quot;WebAPP&quot; int&egrave;gre un plugin permet de communiquer avec la messagerie instant&eacute;e &agrave; travers ce WebMail.[br]
@@ -288,9 +270,9 @@ Dans ce cas, vous allez &ecirc;tre en mesure d'identifier de mani&egrave;re sile
 <active_directory>Active Directory</active_directory>
 <active_directory_authentication>Authentification Active Directory</active_directory_authentication>
 <active_directory_connection>Connexion Active Directory</active_directory_connection>
-<active_directory_connection_nginx>Si activ&eacute;, les Internautes devront d'abord s'identifier avec leur compte Active Directory afin d'acc&egrave;der au site Web prot&eacute;g&eacute; par le service de reverse-proxy.[br]
-Un formulaire Web sera affich&eacute; afin d'authentifier les utilisateurs.[br]
-Utilisez le bouton [b]Mod&egrave;le[/b] afin de personnaliser la page d`identification.</active_directory_connection_nginx>
+<active_directory_connection_nginx>Si activ&#233;, les Internautes devront d'abord s'identifier avec leur compte Active Directory afin d'acc&#232;der au site Web prot&#233;g&#233; par le service de reverse-proxy.[br]
+Un formulaire Web sera affich&#233; afin d'authentifier les utilisateurs.[br]
+Utilisez le bouton [b]Mod&#232;le[/b] afin de personnaliser la page d'identification.</active_directory_connection_nginx>
 <active_directory_connection_parameters>Modifier les param&egrave;tres de connexion au serveur Active Directory</active_directory_connection_parameters>
 <active_directory_group>Groupe Active Directory</active_directory_group>
 <active_directory_importation>Importation Active Directory</active_directory_importation>
@@ -447,7 +429,7 @@ Veuillez changer votre nom de machine proxy avec le domaine %dom</ad_quick_error
 <after_login_redirect_user_to>Apr&egrave;s l'&eacute;tablissement de la session, rediriger l'invit&eacute; sur</after_login_redirect_user_to>
 <after_webserver_reply>Apr&egrave;s la r&eacute;ponse du serveur Web</after_webserver_reply>
 <against>contre</against>
-<agent_address>Adresse de l`agent</agent_address>
+<agent_address>Adresse de l'agent</agent_address>
 <aiguil_max_msg_rate>Temps MAX d'ex&eacute;cution</aiguil_max_msg_rate>
 <aiguil_max_msg_rate_explain>Le processus ma&icirc;tre (l'aiguilleur) est en charge de placer les messages dans chaque file d'attente des processus.[br]Cette valeur limite sa dur&eacute;e d'ex&eacute;cution.[br]Par d&eacute;faut, l'aiguilleur est autoriser &agrave; &quot;dispatcher&quot; les messages pendant 10mn.[br]Apr&egrave;s ces 10mn, il devra attendre la valeur &quot;Attendre X secondes...&quot; (5 minutes) avant de recommencer son traitement.</aiguil_max_msg_rate_explain>
 <alerts>Alertes</alerts>
@@ -637,7 +619,7 @@ Notez que cette t&acirc;che peut consommer des ressources machine et devra &ecir
 <antispam_settings>Param&egrave;tres anti-spam</antispam_settings>
 <antispam_settings_endusers_text>Personnalisez le comportement de l'anti-spam pour votre compte</antispam_settings_endusers_text>
 <antivirus_daemon_stopped>Le d&eacute;mon antivirus ne fonctionne pas</antivirus_daemon_stopped>
-<antivirus_eat_memory>L`antivirus consomme trop de m&eacute;moire</antivirus_eat_memory>
+<antivirus_eat_memory>L'antivirus consomme trop de m&#233;moire</antivirus_eat_memory>
 <antivirus_eat_memory_text>Il semblerait que le service antivirus consomme trop de m&eacute;moire sur votre serveur.[br]
 Augmentez la m&eacute;moire de votre serveur ou cliquez sur le bouton suivant afin de d&eacute;sactiver le service.</antivirus_eat_memory_text>
 <antivirus_for_messaging>Antivirus pour messagerie</antivirus_for_messaging>
@@ -831,8 +813,8 @@ Il utilise un moteur sp&eacute;cifique afin de pouvoir mettre en cache les flux 
 Ce service est particulièrement utile lorsqu'il faut répartir la charge des services SMTP/HTTP/WEB qui ont besoin de connexions persistantes sur la couche TCP de niveau 7.[br]
 Il supporte des millier de connexions sur des serveurs de dernière génération.[br]
 Son mode d'implémentation est très simple et lui permet de s'intégrer dans des architectures existantes sans risque.[br]</APP_HAPROXY_ABOUT>
-<APP_HAPROXY_ACLS>Les listes de Contrôle d`accès vous autorise à modifier le comportement du service d`équilibreur de charge  en fonction de différents objets tels que des sources, des destinations des adresses IP ou Web...</APP_HAPROXY_ACLS>
-<APP_HAPROXY_ACLS_OBJECTS>Cette section vous affiche tous les objets utilisés dans les listes de contrôle d`accès du service Équilibreur de charge.</APP_HAPROXY_ACLS_OBJECTS>
+<APP_HAPROXY_ACLS>Les listes de Contr&#244;le d'acc&#232;s vous autorise &#224; modifier le comportement du service d'&#233;quilibreur de charge  en fonction de diff&#233;rents objets tels que des sources, des destinations des adresses IP ou Web...</APP_HAPROXY_ACLS>
+<APP_HAPROXY_ACLS_OBJECTS>Cette section vous affiche tous les objets utilis&#233;s dans les listes de contr&#244;le d'acc&#232;s du service &#201;quilibreur de charge.</APP_HAPROXY_ACLS_OBJECTS>
 <APP_HAPROXY_BCKSTATS>Cette section vous permet de surveiller les services TCP.[br]
 Vous pouvez ainsi mettre en pause la redirection vers un serveur client .</APP_HAPROXY_BCKSTATS>
 <APP_HAPROXY_CLUSTER>Équilibreur de charge pour Artica Proxy mis en cluster</APP_HAPROXY_CLUSTER>
@@ -878,9 +860,9 @@ Il est con&ccedil;u pour agir en tant que passerelle pour un ordinateur &agrave;
 <APP_LDAP_DB>Serveur de bases de donn&eacute;es LDAP</APP_LDAP_DB>
 <APP_LDAP_DB_EXPLAIN>Artica utilise une base de donn&eacute;es LDAP afin de vous permettre d\'administrer vos utilisateurs et vos ordinateurs.[br]
 Cette section vous permet d\'administrer le service LDAP g&eacute;r&eacute; par Artica et vous permet aussi d\'utiliser un serveur LDAP externe.</APP_LDAP_DB_EXPLAIN>
-<APP_LETSENCRYPT>Let`s Encrypt Automation</APP_LETSENCRYPT>
-<APP_LINK_BALANCER>Équilibreur de charge d`accès Internet</APP_LINK_BALANCER>
-<APP_LINK_BALANCER_EXPLAIN>L`Équilibreur de charge d`accès Internet est une fonctionnalités qui vous aide à administrer plusieurs connexions à Internet à partir de votre serveur Artica ( par exemple 2 lignes ADSL, ou une ligne 4G et une ligne ADSL..)</APP_LINK_BALANCER_EXPLAIN>
+<APP_LETSENCRYPT>Let's Encrypt Automation</APP_LETSENCRYPT>
+<APP_LINK_BALANCER>&#201;quilibreur de charge d'acc&#232;s Internet</APP_LINK_BALANCER>
+<APP_LINK_BALANCER_EXPLAIN>L`&#201;quilibreur de charge d'acc&#232;s Internet est une fonctionnalit&#233;s qui vous aide &#224; administrer plusieurs connexions &#224; Internet &#224; partir de votre serveur Artica ( par exemple 2 lignes ADSL, ou une ligne 4G et une ligne ADSL..)</APP_LINK_BALANCER_EXPLAIN>
 <APP_LOGGERS>Services loggeurs</APP_LOGGERS>
 <APP_LOGGERS_SQUID_EXPLAIN>Les extensions loggers Artica assurent l'enregistrement en temps r&eacute;el des &eacute;v&egrave;nements de connexion du proxy.[br]
 Ils sont une part importante du bon fonctionnement de la plateforme.[br]
@@ -924,7 +906,7 @@ Il consomme des ressources syst&egrave;me.[br]
 <APP_NGINX2>Serveur Web et reverse proxy (NgInx)</APP_NGINX2>
 <APP_NGINXDB>Base statistiques Nginx</APP_NGINXDB>
 <APP_NGINX_AUTHFORM>Service de formulaire</APP_NGINX_AUTHFORM>
-<APP_NGINX_AUTHLDAP>Service d`authentification</APP_NGINX_AUTHLDAP>
+<APP_NGINX_AUTHLDAP>Service d'authentification</APP_NGINX_AUTHLDAP>
 <APP_NTLM_MONITOR>Moniteur NTLM</APP_NTLM_MONITOR>
 <APP_NTOPNG>D&eacute;mon d\'analyse du trafic</APP_NTOPNG>
 <APP_NTOPNG_WARN>Moniteur de flux r&eacute;seau activ&eacute;</APP_NTOPNG_WARN>
@@ -947,7 +929,7 @@ Il est destin&eacute; &agrave; r&eacute;pondre aux demandes de r&eacute;solution
 <APP_PHP5>Moteur de script PHP5</APP_PHP5>
 <APP_PHPFPM>D&eacute;mon PHP5 FastCGI</APP_PHPFPM>
 <APP_PHP_GEOIP2>Le module PHP GeoIP V2</APP_PHP_GEOIP2>
-<APP_PHP_GEOIP2_MISSING>Le module PHP GeoIP v2 n`est pas installé et/ou chargé, veuillez aller dans le centre des fonctionnalités pour le mettre en place</APP_PHP_GEOIP2_MISSING>
+<APP_PHP_GEOIP2_MISSING>Le module PHP GeoIP v2 n'est pas install&#233; et/ou charg&#233;, veuillez aller dans le centre des fonctionnalit&#233;s pour le mettre en place</APP_PHP_GEOIP2_MISSING>
 <APP_POSTFIX_BACKWHITE_EXPLAIN>Cette section vous permet d&eacute;finir quel serveur SMTP peut se [b]Connecter[/b] &agrave; votre service SMTP ou pas.[br]
 Cette section s'adresse seulement aux connections SMTP et ne s'adresse pas pour mettre en liste blanche ou noire les messages en fonction de leur contenue (brique anti-spam).[br]
 Si vous d&eacute;sirez mettre en liste blanche des adresses par rapport &agrave; l'Anti-Spam, veuillez vous r&eacute;f&eacute;rer &agrave; la section d&eacute;di&eacute;e au filtrage de contenu.</APP_POSTFIX_BACKWHITE_EXPLAIN>
@@ -959,12 +941,12 @@ Les courriels peuvent &ecirc;tre transf&eacute;r&eacute;s vers un serveur distan
 <APP_POSTGRES>PostgreSQL</APP_POSTGRES>
 <APP_POWERDNS_RESTFUL>API RESTFul pour PowerDNS</APP_POWERDNS_RESTFUL>
 <APP_POWERDNS_RESTFUL_EXPLAIN>La fonctionnalit&eacute; du serveur DNS PowerDNS permet de communiquer avec l'API JSON/REST.[br]Cette API assure le contr&ocirc;le, la lecture des statistiques, la modifications des zones DNS, les donn&eacute;es M&eacute;ta et les outils pour assurer le mode DNSSEC</APP_POWERDNS_RESTFUL_EXPLAIN>
-<APP_PRADS>Syst&egrave;me passif de d&eacute;tection d`actif en temps r&eacute;el (PRADS)</APP_PRADS>
-<APP_PRADS_EXPLAIN>PRADS est un syst&egrave;me passif de d&eacute;tection d`actif en temps r&eacute;el (Passive Real-time Asset Detection System).[br]
-PRADS utilise l`empreinte num&eacute;rique pour reconna&icirc;tre des services sur le r&eacute;seau, et peut &ecirc;tre utilis&eacute; pour mapper le r&eacute;seau et suivre les modifications en temps r&eacute;el.[br]
-L`analyse passive du trafic en temps r&eacute;el permet aussi de d&eacute;tecter les &eacute;l&eacute;ments actifs connect&eacute;s au r&eacute;seau pour un court instant, puisque PRADS peut glaner l`information utile de chaque paquet.[br]
-PRADS vise &agrave; &ecirc;tre un guichet unique pour la d&eacute;tection passive d`actif, et actuellement r&eacute;alise les recherches de MAC, le pistage par empreinte num&eacute;rique TCP et UDP, ainsi que les correspondances de client et service et une table d`&eacute;tats de connexions. [br]Les divers greffons de sortie comprennent les journaux et FIFO, et font de PRADS un rempla&ccedil;ant utile pour p0f, pads et sancp.[br]
-PRADS a &eacute;t&eacute; construit depuis le d&eacute;but pour une faible empreinte et les r&eacute;seaux modernes avec IPv6 et des gigaoctets de trafic.</APP_PRADS_EXPLAIN>
+<APP_PRADS>Syst&#232;me passif de d&#233;tection d'actif en temps r&#233;el (PRADS)</APP_PRADS>
+<APP_PRADS_EXPLAIN>PRADS est un syst&#232;me passif de d&#233;tection d'actif en temps r&#233;el (Passive Real-time Asset Detection System).[br]
+PRADS utilise l'empreinte num&#233;rique pour reconna&#238;tre des services sur le r&#233;seau, et peut &#234;tre utilis&#233; pour mapper le r&#233;seau et suivre les modifications en temps r&#233;el.[br]
+L'analyse passive du trafic en temps r&#233;el permet aussi de d&#233;tecter les &#233;l&#233;ments actifs connect&#233;s au r&#233;seau pour un court instant, puisque PRADS peut glaner l'information utile de chaque paquet.[br]
+PRADS vise &#224; &#234;tre un guichet unique pour la d&#233;tection passive d'actif, et actuellement r&#233;alise les recherches de MAC, le pistage par empreinte num&#233;rique TCP et UDP, ainsi que les correspondances de client et service et une table d`&#233;tats de connexions. [br]Les divers greffons de sortie comprennent les journaux et FIFO, et font de PRADS un rempla&#231;ant utile pour p0f, pads et sancp.[br]
+PRADS a &#233;t&#233; construit depuis le d&#233;but pour une faible empreinte et les r&#233;seaux modernes avec IPv6 et des gigaoctets de trafic.</APP_PRADS_EXPLAIN>
 <APP_PRIVOXY>Service Privoxy</APP_PRIVOXY>
 <APP_PROFTPD>Service ProFTPD</APP_PROFTPD>
 <APP_PROFTPD_EXPLAIN>ProFTPD est un service TCP vous permettant d'effectuer des transferts de fichiers via le protocole FTP en mode natif ( c'est &agrave; dire &agrave; travers un client lourd FTP ).[br]C'est un service tr&egrave;s populaire dans les environnements Unix.</APP_PROFTPD_EXPLAIN>
@@ -1030,9 +1012,9 @@ Si le score d&eacute;passe un certain seuil, le courriel est alors consid&eacute
 <APP_SQUID31>Squid Cache 3.1x</APP_SQUID31>
 <APP_SQUID32_REPOS>D&eacute;p&ocirc;t Squid 3.2x</APP_SQUID32_REPOS>
 <APP_SQUIDANALYZER>G&eacute;n&eacute;rateur de statistiques Proxy</APP_SQUIDANALYZER>
-<APP_SQUIDANALYZER_EXPLAIN>Cette fonctionnalit&eacute; dispose comme objectif d`analyser les fichiers de traces natifs du proxy et de g&eacute;n&eacute;rer des statistiques sur les objets cach&eacute;s, taille des objets, utilisateurs, r&eacute;seaux, top des liens, domaines et liens interdits.[br]
-Elle orient&eacute;e pour la visualisation de l'usage de la bande passante et ne permet pas de remplacer la fonctionnalit&eacute; Entreprise de statistiques bas&eacute;e sur un moteur Elasticsearch.[br]Elle stocke ses donn&eacute;es dans des fichiers plats.[br]Ses performances sont limit&eacute;es et elle peut prendre plusieurs heures pour analyser un fichier de traces de plus de 1GB.</APP_SQUIDANALYZER_EXPLAIN>
-<APP_SQUIDANALYZER_SCHEDULE_EXPLAIN>La g&eacute;n&eacute;ration des statistiques s`effectue tous les jours &agrave; minuit.[br]Vous pouvez toutefois lancer l'analyse maintenant en cliquant sur le bouton  {build_statistics}.</APP_SQUIDANALYZER_SCHEDULE_EXPLAIN>
+<APP_SQUIDANALYZER_EXPLAIN>Cette fonctionnalit&#233; dispose comme objectif d'analyser les fichiers de traces natifs du proxy et de g&#233;n&#233;rer des statistiques sur les objets cach&#233;s, taille des objets, utilisateurs, r&#233;seaux, top des liens, domaines et liens interdits.[br]
+Elle orient&#233;e pour la visualisation de l'usage de la bande passante et ne permet pas de remplacer la fonctionnalit&#233; Entreprise de statistiques bas&#233;e sur un moteur Elasticsearch.[br]Elle stocke ses donn&#233;es dans des fichiers plats.[br]Ses performances sont limit&#233;es et elle peut prendre plusieurs heures pour analyser un fichier de traces de plus de 1GB.</APP_SQUIDANALYZER_EXPLAIN>
+<APP_SQUIDANALYZER_SCHEDULE_EXPLAIN>La g&#233;n&#233;ration des statistiques s'effectue tous les jours &#224; minuit.[br]Vous pouvez toutefois lancer l'analyse maintenant en cliquant sur le bouton  {build_statistics}.</APP_SQUIDANALYZER_SCHEDULE_EXPLAIN>
 <APP_SQUID_CACHE_TAIL>Démon de surveillance Proxy</APP_SQUID_CACHE_TAIL>
 <APP_SQUID_DB>Moteur MySQL Stats.</APP_SQUID_DB>
 <APP_SQUID_NAT>Comp. Proxy NAT</APP_SQUID_NAT>
@@ -1076,7 +1058,7 @@ Ceci assure le stockage et la r&eacute;tention des &eacute;v&egrave;nements d'ac
 <APP_UNBOUND>Service de cache DNS</APP_UNBOUND>
 <APP_UPDATEUTILITYHTTP>Update Utility Web</APP_UPDATEUTILITYHTTP>
 <APP_UPDATEUTILITYRUN>Update Utility (en ex&eacute;cution)</APP_UPDATEUTILITYRUN>
-<APP_URLSNARF>Sniffer d`URLs</APP_URLSNARF>
+<APP_URLSNARF>Sniffer d'URLs</APP_URLSNARF>
 <APP_URLSNARF_TEXT>Attrape les requ&ecirc;tes HTTP dans votre r&eacute;seau afin de fournir des statistiques</APP_URLSNARF_TEXT>
 <APP_VALVUAD>Service de strat&eacute;gies</APP_VALVUAD>
 <APP_VALVUAD_TEXT>Le service de strat&eacute;gies vous permet d'autoriser les utilisateurs &agrave; enrichir le service SMTP avec leur propres listes blanches et noires ainsi que la possibilit&eacute; d'activer un syst&egrave;me de quotas.</APP_VALVUAD_TEXT>
@@ -1203,7 +1185,7 @@ V&eacute;rifiez ci-dessous l\'adresse de messagerie &eacute;lectronique et le no
 <artica_manager>SuperAdmin Artica</artica_manager>
 <artica_manager_password>Mode de passe du SuperAdmin Artica</artica_manager_password>
 <artica_manual_update_text>Chargez le paquetage Artica sur ce serveur afin de mettre &agrave; jour la version d'Artica.</artica_manual_update_text>
-<artica_master>Adresse de l`Artica ma&icirc;tre</artica_master>
+<artica_master>Adresse de l'Artica ma&#238;tre</artica_master>
 <artica_meta>Artica Meta</artica_meta>
 <artica_meta_client_howto>Si vert, ce serveur va &eacute;mettre ses &eacute;tats et accepter les ordres provenant d\'un Artica serveur qui agit en tant que Artica Meta.[br]Veuillez v&eacute;rifier que vous avez d&eacute;j&agrave; un serveur Artica Meta.</artica_meta_client_howto>
 <artica_meta_cloning_explain>la fonctionnalit&eacute; de clonage autorise ce n?ud &agrave; r&eacute;cup&eacute;rer et d'importer le dernier instantan&eacute; du serveur que vous d&eacute;finissez dans la liste d&eacute;roulante de fa&ccedil;on automatique.</artica_meta_cloning_explain>
@@ -1216,7 +1198,7 @@ Ce serveur ne fera pas office de Proxy mais sera capable de g&eacute;rer plusieu
 <artica_mobile_app_manage_your_artica_server_with_your_smartphone>Mobile APP pour Artica, administrer votre serveur au travers de votre ordiphone</artica_mobile_app_manage_your_artica_server_with_your_smartphone>
 <ARTICA_MYSQMAIL>Moniteur du service SMTP</ARTICA_MYSQMAIL>
 <artica_password>Mot de passe SuperAdmin Artica</artica_password>
-<artica_patch_explain>Charger un patch (tar.gz) afin d`effectuer la mise  &agrave; jour du logiciel Artica</artica_patch_explain>
+<artica_patch_explain>Charger un patch (tar.gz) afin d'effectuer la mise  &#224; jour du logiciel Artica</artica_patch_explain>
 <ARTICA_PHPFPM>Service PHP</ARTICA_PHPFPM>
 <artica_processes>Processus Artica</artica_processes>
 <artica_protocol_error>Le serveur ne r&eacute;pond pas avec les donn&eacute;es attendues.</artica_protocol_error>
@@ -1272,8 +1254,8 @@ Voulez-vous effectuer cette op&eacute;ration ?</ask_squid_reload>
 Cette t&acirc;che risque de charger le serveur.
 Voulez-vous effectuer cette op&eacute;ration ?
 Fichier:</ask_squid_restore_log_from_source>
-<ask_to_restore_a_snapshot_from_meta>Restaurer l`'instantan&eacute; sur ce serveur ?
-Tous les param&egrave;tres seront restaur&eacute;s &agrave; l`exception des param&egrave;tres r&eacute;seaux/Active Directory.</ask_to_restore_a_snapshot_from_meta>
+<ask_to_restore_a_snapshot_from_meta>Restaurer l`'instantan&#233; sur ce serveur ?
+Tous les param&#232;tres seront restaur&#233;s &#224; l'exception des param&#232;tres r&#233;seaux/Active Directory.</ask_to_restore_a_snapshot_from_meta>
 <ask_to_send_a_snapshot_to_meta>Demander d\'envoyer l\'instantan&eacute; &agrave; Artica Meta</ask_to_send_a_snapshot_to_meta>
 <AsOrgDNSAdmin>Peut administrer des objets DNS</AsOrgDNSAdmin>
 <AsOwnMailBoxBackup>Peut sauvegarder ses bo&icirc;tes aux lettres</AsOwnMailBoxBackup>
@@ -1315,8 +1297,8 @@ Utilisez une faible valeur ( ex: 60 secondes) si vous utilisateurs changent leur
 <authenticate_users_remote_db>Authentifier les utilisateurs via une base distante</authenticate_users_remote_db>
 <authenticate_users_with_sms>Authentifier les utilisateurs &agrave; travers la proc&eacute;dure d'&eacute;mission SMS</authenticate_users_with_sms>
 <authentication_emergency_mode>Mode urgence Authentification basique</authentication_emergency_mode>
-<authentication_emergency_mode_explain>Artica &agrave; d&eacute;tect&eacute; une erreur dans le processus d`authentification et &agrave; retir&eacute; ce processus temporairement.[br]
-Votre serveur est pass&eacute; en mode urgence pour ce processus.[br]</authentication_emergency_mode_explain>
+<authentication_emergency_mode_explain>Artica &#224; d&#233;tect&#233; une erreur dans le processus d'authentification et &#224; retir&#233; ce processus temporairement.[br]
+Votre serveur est pass&#233; en mode urgence pour ce processus.[br]</authentication_emergency_mode_explain>
 <authentication_failed>&Eacute;chec d'authentification</authentication_failed>
 <authentication_failed_cyrus>&Eacute;chec d\'Authentification sur le service IMAP</authentication_failed_cyrus>
 <authentication_method>M&eacute;thode d'authentif.</authentication_method>
@@ -1360,8 +1342,8 @@ Indiquez ici votre r&eacute;seau local afin d\'interdire les navigateurs d\'util
 192.168.1.0/24, 10.10.1.0/24...[br]
 Apr&egrave;s l\'assistant, vous serez en mesure de modifier cette liste, voir d\'ajouter des &eacute;l&eacute;ments.</autoconfiguration_wizard2>
 <autoconfiguration_wizard3>Le site web [b]wpad[/b] or [b]wpad.%a[/b] sera construit afin de fournir le script de configuration[br]
-Les navigateurs n`utiliseront pas de proxy pour [b]%b][br]
-Indiquez ici l`adresse du proxy et son port d`'&eacute;coute qui sera utilis&eacute; par vos navigateurs.</autoconfiguration_wizard3>
+Les navigateurs n'utiliseront pas de proxy pour [b]%b][br]
+Indiquez ici l'adresse du proxy et son port d`'&#233;coute qui sera utilis&#233; par vos navigateurs.</autoconfiguration_wizard3>
 <autoconfiguration_wizard4>Le site web [b]wpad[/b] or [b]wpad.%a[/b] sera construit afin de fournir le script de configuration pour utiliser le proxy %c sur le port %d[br]
 Les navigateurs n\'utiliseront pas de proxy pour [b]%b][br]
 Si vous &ecirc;tes d\'accord, cliquez sur le bouton ci-dessous afin de construire la configuration, les r&egrave;gles et le service Web.</autoconfiguration_wizard4>
@@ -1412,8 +1394,8 @@ Cette t&acirc;che va exporter vers des fichiers compresser l'ensemble des param&
 <backuped_logs>&Eacute;v&egrave;nements sauvegard&eacute;s</backuped_logs>
 <backupemail_behavior_explain>Cette fonctionnalit&eacute; vous permet de sauvegarder chaque message transmis &agrave; travers la passerelle Artica.[br]
 Dans ce cas, vous serez en mesure de restaurer un message qui a &eacute;t&eacute; perdu sur le serveur de bo&icirc;tes aux lettres.</backupemail_behavior_explain>
-<BackupLogsMaxStoragePercent_explain>C`est l`espace disque maximale, calcul&eacute; en pourcentage conc&eacute;d&eacute; au stockage des fichiers de logs &agrave; long terme.[br]
-Si le r&eacute;pertoire de stockage exc&egrave;de cette valeur alors les fichiers les plus anciens seront supprim&eacute;s pour ne pas la d&eacute;passer.</BackupLogsMaxStoragePercent_explain>
+<BackupLogsMaxStoragePercent_explain>C'est l'espace disque maximale, calcul&#233; en pourcentage conc&#233;d&#233; au stockage des fichiers de logs &#224; long terme.[br]
+Si le r&#233;pertoire de stockage exc&#232;de cette valeur alors les fichiers les plus anciens seront supprim&#233;s pour ne pas la d&#233;passer.</BackupLogsMaxStoragePercent_explain>
 <BackupMaxDaysDir_explain>O&ugrave; placer les fichiers de sauvegarde ind&eacute;finiment ?[br]Ce r&eacute;pertoire par d&eacute;faut est utilis&eacute; si vous n'utilisez pas d'autres param&egrave;tres de stockage.</BackupMaxDaysDir_explain>
 <backups>Sauvegardes</backups>
 <BackupSquidLogsNASRetry_explain>Certains syst&egrave;mes NAS s'endorment apr&egrave;s un certain temps apr&egrave;s une p&eacute;riode d'inactivit&eacute;.[br]Dans ce cas, l'op&eacute;ration de connexion sera mis en &eacute;chec.[br]
@@ -1480,8 +1462,8 @@ Voulez-vous effectuer cette op&eacute;ration ?</back_to_single_proc_explain>
 <bad_file_extension>Mauvaise extension de fichier</bad_file_extension>
 <bad_headers>Mauvaises ent&ecirc;tes</bad_headers>
 <balance>Équilibreur de charge</balance>
-<balance_ip_explain_weight>Le balancer utiliser un syst&egrave;me de poids, donc chaque fournisseur d`acc&egrave;s se verra attribuer un pourcentage des connexions.[br]
-Les liens n`ont pas besoin d'&ecirc;tre identiques ( m&ecirc;me vitesse )</balance_ip_explain_weight>
+<balance_ip_explain_weight>Le balancer utiliser un syst&#232;me de poids, donc chaque fournisseur d'acc&#232;s se verra attribuer un pourcentage des connexions.[br]
+Les liens n'ont pas besoin d'&#234;tre identiques ( m&#234;me vitesse )</balance_ip_explain_weight>
 <balance_on_multiple_ip>Rotation des DNS</balance_on_multiple_ip>
 <balance_on_multiple_ip_text>La s&eacute;lection des DNS inscrits dans la liste s'effectue en utilisant le pr&eacute;f&eacute;r&eacute;.[br]
 Par d&eacute;faut les serveurs DNS sont utilis&eacute;s dans l'ordre de la liste et le basculement vers le DNS suivant ne s'effectue que en cas d'indisponibilit&eacute; du pr&eacute;c&eacute;dent.[br]
@@ -1499,8 +1481,8 @@ Artica sera en mesure de g&eacute;n&eacute;rer un rapport de consommation afin d
 La volum&eacute;trie calcul&eacute;e est chaque 10mn, heure, jour ou mois.[br]
 Cet objet peut &ecirc;tre utilis&eacute; dans les ACLs afin de bloquer les acc&egrave;s ou de r&eacute;duire la bande passante utilis&eacute;e.</bandwidth_quota_objects_explain>
 <bandwidth_rules_mini>R&egrave;gles de bande passante</bandwidth_rules_mini>
-<bandwidth_rules_mini_explain>L`objecif de cette fonctionnalit&eacute; est de r&eacute;duire la vitesse de t&eacute;l&eacute;chargement.[br]Ceci afin de pr&eacute;venir d`une sur-consommation de ligne Internet.[br]
-Tr&egrave;s utile lorsque votre bande passante est satur&eacute;e par le t&eacute;l&eacute;chargement de gros fichiers.</bandwidth_rules_mini_explain>
+<bandwidth_rules_mini_explain>L'objecif de cette fonctionnalit&#233; est de r&#233;duire la vitesse de t&#233;l&#233;chargement.[br]Ceci afin de pr&#233;venir d'une sur-consommation de ligne Internet.[br]
+Tr&#232;s utile lorsque votre bande passante est satur&#233;e par le t&#233;l&#233;chargement de gros fichiers.</bandwidth_rules_mini_explain>
 <bandwidth_this_month>Votre bande passante ce mois</bandwidth_this_month>
 <bandwidth_wizard>Assistant de bande passante</bandwidth_wizard>
 <bandwitdh>Bande passante</bandwitdh>
@@ -1585,7 +1567,7 @@ Tous les utilisateurs seront impact&eacute;s par le blocage de ce site Internet.
 <botcc.rules>Ces r&egrave;gles sont g&eacute;n&eacute;r&eacute;es depuis plusieurs sources connues comme prenant le contr&ocirc;le via des botnets ou toute autre commandes de prise de contr&ocirc;le.[br]Mises &agrave; jour de fa%C3&sect;on journali&egrave;re, la ressource primaire &eacute;tant Shadowserver.org.</botcc.rules>
 <bottom_position>Position basse</bottom_position>
 <bounce_from>&Eacute;metteur du message d'erreur</bounce_from>
-<bounce_from_explain>Lorsque le message d'erreur est &eacute;mis, quelle sera l'adresse email d`exp&eacute;dition</bounce_from_explain>
+<bounce_from_explain>Lorsque le message d'erreur est &#233;mis, quelle sera l'adresse email d'exp&#233;dition</bounce_from_explain>
 <bounce_if_already_authenticated>Rebondir si d&eacute;j&agrave; identifi&eacute;</bounce_if_already_authenticated>
 <bounce_if_already_authenticated_hotspot>Si l'utilisateur n'a pas chang&eacute; d'adresse MAC et si le compte est toujours pr&eacute;sent dans la base de donn&eacute;es, Alors le HotSpot sera en mesure de ne pas demander de syst&egrave;me d'authentification et va automatiquement r&eacute;attribuer une session &agrave; l'utilisateur.[br]
 Celui-ci rebondira simplement sur le HotSpot pour surfer &agrave; nouveau.</bounce_if_already_authenticated_hotspot>
@@ -1738,9 +1720,9 @@ Classiquement, il va aider notre &eacute;quipe de support &agrave; r&eacute;soud
 <bypass_spam_checks>D&eacute;sactive le moteur anti-spam</bypass_spam_checks>
 <bypass_virus_checks>D&eacute;sactive le moteur antivirus</bypass_virus_checks>
 <bypass_webfilter>Passe outre le filtrage</bypass_webfilter>
-<byproxy_explain_alias>L`[b]Alias Proxy[/b] vous permet d`ajouter une &eacute;tiquette pour une adresse MAC.[br]
-Si vous entrez un nom d'utilisateur, celui-ci sera affich&eacute; en tant qu`utilisateur dans les &eacute;v&egrave;nements et statistiques.[br]
-Il sera aussi disponible pour faire correspondre &agrave; des ACLs proxy d'identification.</byproxy_explain_alias>
+<byproxy_explain_alias>L`[b]Alias Proxy[/b] vous permet d'ajouter une &#233;tiquette pour une adresse MAC.[br]
+Si vous entrez un nom d'utilisateur, celui-ci sera affich&#233; en tant qu'utilisateur dans les &#233;v&#232;nements et statistiques.[br]
+Il sera aussi disponible pour faire correspondre &#224; des ACLs proxy d'identification.</byproxy_explain_alias>
 <by_categories>Par cat&eacute;gories</by_categories>
 <by_category>Par cat&eacute;gorie</by_category>
 <by_day>Par jour</by_day>
@@ -1879,7 +1861,7 @@ Si vous voulez changer la nature du cache, vous devez le supprimer et en reconst
 <cannot_use_ssl_no_networking_set>Impossible d'utiliser SSL tant que le r&eacute;seau ne soit pas activ&eacute; dans cette configuration.</cannot_use_ssl_no_networking_set>
 <can_be_analyzed>Peut &ecirc;tre analys&eacute;</can_be_analyzed>
 <can_be_updated>Peut &ecirc;tre mise &agrave; jour</can_be_updated>
-<can_receive_data>Permet l`injection de donn&eacute;es</can_receive_data>
+<can_receive_data>Permet l'injection de donn&#233;es</can_receive_data>
 <can_use_ping>Peut utiliser le ping</can_use_ping>
 <can_use_ping_explain>Si actif, Artica sera en mesure d'envoyer des requ&ecirc;tes ping sur ce r&eacute;seau et d'afficher les statistiques des adresses disponibles/indisponibles.</can_use_ping_explain>
 <capacity>Capacit&eacute;</capacity>
@@ -2010,7 +1992,7 @@ Aucun message de ce type ne pourra &ecirc;tre mis en quarantaine.</checking_forg
 <check_account>V&eacute;rifier le compte</check_account>
 <check_acls>V&eacute;rifie les ACLS sur les dossiers.</check_acls>
 <check_acls_explain>R&eacute;-applique les ACLs sauvegard&eacute;s afin de s'assurer qu'ils n'ont pas &eacute;t&eacute;s modifi&eacute;s par des administrateurs sur le syst&egrave;me ou via les dossiers partag&eacute;s.</check_acls_explain>
-<check_addr>V&eacute;rifier l`addresse</check_addr>
+<check_addr>V&#233;rifier l'addresse</check_addr>
 <check_all_services_status>V&eacute;rifie tous les services</check_all_services_status>
 <check_all_services_status_explain>Cette t&acirc;che parcours l'ensemble des services install&eacute;s et actifs et s'assure qu'ils sont bien d&eacute;marr&eacute;s.</check_all_services_status_explain>
 <check_anti_exploit_with>Analyser l'anti-exploits avec</check_anti_exploit_with>
@@ -2029,7 +2011,7 @@ Voulez-vous effectuer cette op&eacute;ration ?</check_caches_warning2>
 <check_headers_access>V&eacute;rifie les ent&ecirc;tes des messages</check_headers_access>
 <check_headers_access_text>Recherche une entr&eacute;e sp&eacute;cifique ( expression r&eacute;guli&egrave;re ) dans les ent&ecirc;tes des messages et ex&eacute;cute l'action correspondante.</check_headers_access_text>
 <check_interval>intervalle de v&eacute;rification</check_interval>
-<check_ip_before_sender_email>L`adresse IP &eacute;mettrice est v&eacute;rifi&eacute;e avant l`eMail</check_ip_before_sender_email>
+<check_ip_before_sender_email>L'adresse IP &#233;mettrice est v&#233;rifi&#233;e avant l'eMail</check_ip_before_sender_email>
 <check_memory_use>V&eacute;rifier l\'utilisation de la m&eacute;moire</check_memory_use>
 <check_message_content>Analyse d'un message</check_message_content>
 <check_message_content_explain>Cette section vous aide &agrave; cr&eacute;er des r&egrave;gles de filtrage ant-spam gr&agrave;ce &agrave; l'analyse de son contenu.[br]Cliquez sur ajouter un contenu afin d'analyser le message.</check_message_content_explain>
@@ -2043,7 +2025,7 @@ Aucun message n'est envoy&eacute; dans le test.</check_recipient_explain>
 <check_resolution>V&eacute;rifier la r&eacute;solution</check_resolution>
 <check_resolution_dns_engine>V&eacute;rifier la r&eacute;solution du service DNS</check_resolution_dns_engine>
 <check_same_version_artica>Veuillez v&eacute;rifier que les deux serveurs dispose de la m&ecirc;me version Artica.</check_same_version_artica>
-<check_sender_email_before_ip>L`adresse eMail est v&eacute;rifi&eacute;e avant l`IP</check_sender_email_before_ip>
+<check_sender_email_before_ip>L'adresse eMail est v&#233;rifi&#233;e avant l'IP</check_sender_email_before_ip>
 <check_sendmsg_explain>Ce formulaire vous permet d'envoyer un message complet vers le destinataire.[br]Le message sera envoy&eacute; &agrave; travers le service SMTP local afin d'&ecirc;tre normalement achemin&eacute; vers son destinataire.[br]Le processus va construire un vrai messages comme un client MS Outlook.</check_sendmsg_explain>
 <check_SSL_protocol>V&eacute;rifier le protocole SSL</check_SSL_protocol>
 <check_status>V&eacute;rifier l\'&eacute;tat</check_status>
@@ -2123,7 +2105,7 @@ Les diff&eacute;rentes cat&eacute;gories sont:[br]
 Ceci permet de faire gagner en performance du fait que le serveur MySQL local ne doit plus se pr&eacute;occuper des bases de statistiques Artica.</CleanArticaSquidDatabases_explain>
 <cleaning_backup>Nettoyage des sauvegardes</cleaning_backup>
 <cleaning_data>Nettoyage des donn&eacute;es</cleaning_data>
-<cleaning_memory>Cleaning memory</cleaning_memory>
+<cleaning_memory>Nettoyage de la m&#233;moire</cleaning_memory>
 <cleaning_old_configs>Nettoyage des vieux param&egrave;tres</cleaning_old_configs>
 <CleanMySQLLogs>Cette op&eacute;ration va nettoyer les &eacute;v&egrave;nements dans la base MySQL.
 Voulez-vous effectuer cette op&eacute;ration ?</CleanMySQLLogs>
@@ -2165,7 +2147,7 @@ Voulez-vous effectuer cette op&eacute;ration ?</clean_proxy_cache_explain>
 <click_here_comparative>Comparatif, cliquez ici:</click_here_comparative>
 <click_here_price_quote>Cliquez ici pour une demande d'offre de prix</click_here_price_quote>
 <click_on_plus_to_link_interface>Cliquez sur le signe plus afin de lier une interface</click_on_plus_to_link_interface>
-<click_on_run_to_build_report>Cliquez sur l`ic&ocirc;ne d`ex&eacute;cution pour construire le rapport</click_on_run_to_build_report>
+<click_on_run_to_build_report>Cliquez sur l'ic&#244;ne d'ex&#233;cution pour construire le rapport</click_on_run_to_build_report>
 <click_to>Cliquez pour</click_to>
 <click_to_download>Cliquer pour t&eacute;l&eacute;charger</click_to_download>
 <click_to_fix>Cliquez pour corriger</click_to_fix>
@@ -2189,7 +2171,7 @@ La valeur par d&eacute;faut est plain si qui permet de s'abroger des d&eacute;ca
 C'est une option qui assure que les connexions soient ferm&eacute;es lorsqu'un navigateur &agrave; termin&eacute; son processus sans avoir &eacute;t&eacute; correctement ferm&eacute; et pr&eacute;vient d'un nombre de socket ouvertes en &eacute;tat CLOSE_WAIT</client_lifetime_text>
 <client_packages>Logiciels clients</client_packages>
 <client_parameters>Param&egrave;tres du client</client_parameters>
-<client_persistent_connections>Connexions persistantes c&ocirc;t&eacute; client</client_persistent_connections>
+<client_persistent_connections>Connexions persistantes côté client</client_persistent_connections>
 <client_persistent_connections_explain>Si vert la connexion persistante depuis un navigateur sera activ&eacute;e.[br]
 Si rouge, alors le proxy va envoyer [b]Connection: close[/b]  dans l\'ent&ecirc;te HTTP afin que les navigateurs ferment leur connexion.</client_persistent_connections_explain>
 <client_ports>Ports client</client_ports>
@@ -2476,7 +2458,7 @@ Cr&eacute;er un site web qui permet de transf&eacute;rer les requ&ecirc;tes DNS 
 <create_mailbox2>Cr&eacute;er la bo&icirc;te</create_mailbox2>
 <create_new_computer>Cr&eacute;er une nouvelle entr&eacute;e ordinateur</create_new_computer>
 <create_new_object_based_on>Cr&eacute;er un nouvel objet proxy bas&eacute; sur</create_new_object_based_on>
-<CREATE_PROXY_PAC_SERVICE>[b]Créer un service Proxy.PAC[/b][br] Un service Proxy.PAC permet de publier le fichier d'Auto-configuration du proxy aux navigateurs afin de leur forcer l`utilisation d'un proxy.</CREATE_PROXY_PAC_SERVICE>
+<CREATE_PROXY_PAC_SERVICE>[b]Cr&#233;er un service Proxy.PAC[/b][br] Un service Proxy.PAC permet de publier le fichier d'Auto-configuration du proxy aux navigateurs afin de leur forcer l'utilisation d'un proxy.</CREATE_PROXY_PAC_SERVICE>
 <create_repository>Cr&eacute;er un d&eacute;p&ocirc;t</create_repository>
 <create_role_explain>Bienvenue dans l'assistant d'affectation de r&ocirc;le pour cette interface, s&eacute;lectionnez le service que vous d&eacute;sirez mettre en place pour cette interface r&eacute;seau</create_role_explain>
 <create_rule>Cr&eacute;er la r&egrave;gle</create_rule>
@@ -2515,7 +2497,7 @@ Il permet d'afficher une page Web fournissant des informations aux utilisateurs 
 <CSR>Certificat CSR</CSR>
 <csr_godaddy_explain>Ouvrez le fichier compress&eacute; envoy&eacute; par Godaddy et placez le contenu qui devrait &ecirc;tre nomm&eacute; CSRXX.XX.XX.txt</csr_godaddy_explain>
 <CSR_MULTIPLE_EXPLAIN>Si vous avez besoin d'un certificat multiple comprenant les sous-domaines, indiquez *.domaine.fr</CSR_MULTIPLE_EXPLAIN>
-<csr_ssl_explain>La demande de signature de certificat (CSR) est un bloc de texte chiffr&eacute; g&eacute;n&eacute;r&eacute; sur le serveur.[br]Il contient les informations ins&eacute;r&eacute;es dans le certificat telles que le nom commun,nom d'organisation,Nom de l'unit&eacute; d`organisation...[br]Ce certificat permet de g&eacute;n&eacute;rer la demande de construction d'une clef publique.</csr_ssl_explain>
+<csr_ssl_explain>La demande de signature de certificat (CSR) est un bloc de texte chiffr&#233; g&#233;n&#233;r&#233; sur le serveur.[br]Il contient les informations ins&#233;r&#233;es dans le certificat telles que le nom commun,nom d'organisation,Nom de l'unit&#233; d'organisation...[br]Ce certificat permet de g&#233;n&#233;rer la demande de construction d'une clef publique.</csr_ssl_explain>
 <csv_to_ldap_howto>Cette fonction va vous permettre de programmer &agrave; fr&eacute;quence r&eacute;guli&egrave;re l'analyse d'un fichier CSV afin d'importer des membres dans le serveur LDAP local.[br]
 Vous devez pr&eacute;parer un r&eacute;pertoire partag&eacute; sur votre NAS et y placer un fichier pr&eacute;-format&eacute; ( dont le template est disponible ci-bas).[br]
 Une fois ces op&eacute;rations effectu&eacute;e, programmez la fr&eacute;quence d'ex&eacute;cution afin qu'Artica d&eacute;tecte les changements du fichier et importe les nouvelles donn&eacute;es.</csv_to_ldap_howto>
@@ -2537,8 +2519,8 @@ Ceci intervient bien souvent lorsque le serveur [br]distant indique une taille d
 <current_versions>Versions actuelles</current_versions>
 <cvs_export>Export au format CSV</cvs_export>
 <CybercrimeIPFeeds>Cybercrime IP Feeds</CybercrimeIPFeeds>
-<CybercrimeIPFeeds_explain>Cybercrime IP Feeds est une fonctionnalit&eacute; permettant de t&eacute;l&eacute;charger r&eacute;guli&egrave;rement la liste des adresses IP publiques compromises.[br]
-Cette liste pr&eacute;vient des attaques Internet par l`interdiction d'un grand nombre d'attaquants pr&eacute;pos&eacute;s.</CybercrimeIPFeeds_explain>
+<CybercrimeIPFeeds_explain>Cybercrime IP Feeds est une fonctionnalit&#233; permettant de t&#233;l&#233;charger r&#233;guli&#232;rement la liste des adresses IP publiques compromises.[br]
+Cette liste pr&#233;vient des attaques Internet par l'interdiction d'un grand nombre d'attaquants pr&#233;pos&#233;s.</CybercrimeIPFeeds_explain>
 <cyrquota_table_explain>Cette section n\'affiche que les bo&icirc;tes aux lettres soumises &agrave; un quota.[br]
 Les bo&icirc;tes aux lettres illimit&eacute;es ne sont pas affich&eacute;es.</cyrquota_table_explain>
 <CYRUS_CLUSTER_TEXT>Construire un cluster Cyrus-IMAPD afin de ne pas perdre les donn&eacute;es de vos bo&icirc;tes aux lettres</CYRUS_CLUSTER_TEXT>
@@ -2676,7 +2658,7 @@ Cette op&eacute;ration va recharger le service Proxy.
 Des connexions vont &ecirc;tre coup&eacute;es pendant ce rechargement.
 Voulez-vous effectuer cette op&eacute;ration ?</delete_cache32_ask>
 <delete_certificate_ask>Le certificat sera supprim&eacute; de la base mais restera pr&eacute;sent sur le disque tant que le service qui l'utilise sera en activit&eacute;.</delete_certificate_ask>
-<delete_client_header>Supprimer l`ent&ecirc;te du client</delete_client_header>
+<delete_client_header>Supprimer l'ent&#234;te du client</delete_client_header>
 <delete_container_ask>Cette op&eacute;ration va supprimer ce conteneur.
 Elle sera irr&eacute;versible et vous perdrez les donn&eacute;es stock&eacute;e dans ce conteneur.
 Voulez-vous effectuer cette op&eacute;ration ?</delete_container_ask>
@@ -2710,7 +2692,7 @@ Effectuer cette op&eacute;ration</delete_nic_bridge>
 <delete_role>Supprimer le r&ocirc;le</delete_role>
 <delete_route>Supprimer le routage</delete_route>
 <delete_rule_ask>Supprimer cette r&egrave;gle ?</delete_rule_ask>
-<delete_server_header>Supprimer l`ent&ecirc;te du serveur</delete_server_header>
+<delete_server_header>Supprimer l'ent&#234;te du serveur</delete_server_header>
 <delete_store_receiver>R&eacute;cepteur des banques supprim&eacute;es</delete_store_receiver>
 <delete_the_account_after>Supprime le compte utilisateur apr&egrave;s</delete_the_account_after>
 <delete_this_category>Supprimer cette cat&eacute;gorie</delete_this_category>
@@ -2727,10 +2709,10 @@ Effectuer cette op&eacute;ration</delete_nic_bridge>
 <delete_this_task>Supprimer cette t&acirc;che</delete_this_task>
 <delete_this_virtual_address>Supprimer cette adresse virtuelle</delete_this_virtual_address>
 <delete_user>Supprimer ce membre</delete_user>
-<DELETE_WORDPRESS_WARN>Voulez-vous supprimer le site %s ( avec l`ID %id) ?[br]
-Toutes les donn&eacute;es seront supprim&eacute;es d&eacute;finitivement.[br]
-Apr&egrave;s l'ex&eacute;cution de cette t&acirc;che il ne sera plus possible de le restaurer.[br]
-Nous vous sugg&eacute;rons d'effectuer et de t&eacute;l&eacute;charger une sauvegarde.</DELETE_WORDPRESS_WARN>
+<DELETE_WORDPRESS_WARN>Voulez-vous supprimer le site %s ( avec l'ID %id) ?[br]
+Toutes les donn&#233;es seront supprim&#233;es d&#233;finitivement.[br]
+Apr&#232;s l'ex&#233;cution de cette t&#226;che il ne sera plus possible de le restaurer.[br]
+Nous vous sugg&#233;rons d'effectuer et de t&#233;l&#233;charger une sauvegarde.</DELETE_WORDPRESS_WARN>
 <deleting_user>Suppression de l'utilisateur</deleting_user>
 <delivered>D&eacute;livr&eacute;(s)</delivered>
 <delivery_agent>Agent de d&eacute;livrance</delivery_agent>
@@ -2916,8 +2898,8 @@ Voulez-vous effectuer cette op&eacute;ration ?</disable_amavisdeamon_ask>
 <disable_antivirus>D&eacute;sactiver la v&eacute;rification antivirus</disable_antivirus>
 <disable_antivirus_protection>D&eacute;sactiver la protection</disable_antivirus_protection>
 <DISABLE_APP_EACCELERATOR>D&eacute;sactiver l'acc&eacute;l&eacute;rateur PHP</DISABLE_APP_EACCELERATOR>
-<disable_articadb_explain>Cette fonction va d&eacute;sactiver l`utilisation des bases de filtrage Web Artica.
-Voulez-vous effectuer cette op&eacute;ration ?</disable_articadb_explain>
+<disable_articadb_explain>Cette fonction va d&#233;sactiver l'utilisation des bases de filtrage Web Artica.
+Voulez-vous effectuer cette op&#233;ration ?</disable_articadb_explain>
 <disable_authentication>Authentification d&eacute;sactiv&eacute;e</disable_authentication>
 <disable_auto_index_page>D&eacute;sactiver la g&eacute;n&eacute;ration auto de &quot;index.php&quot;</disable_auto_index_page>
 <disable_cache>D&eacute;sactiver le cache</disable_cache>
@@ -2941,7 +2923,7 @@ Voulez-vous effectuer cette op&eacute;ration ?</disable_articadb_explain>
 <disable_Limit_Bandwidth>D&eacute;sactive la limitation de bande passante</disable_Limit_Bandwidth>
 <disable_limit_connections>D&eacute;sactiver les limites de connexions</disable_limit_connections>
 <disable_logs_emergency>D&eacute;sactiver l\'urgence des &eacute;v&egrave;nements</disable_logs_emergency>
-<DISABLE_MEMCACHE_SETTINGS>Désactiver la mise en cache des paramètres en mémoire</DISABLE_MEMCACHE_SETTINGS>
+<DISABLE_MEMCACHE_SETTINGS>D&#233;sactiver la mise en cache des param&#232;tres en m&#233;moire</DISABLE_MEMCACHE_SETTINGS>
 <DISABLE_MEMCACHE_SETTINGS_EXPLAIN>Par défaut, Les paramètres d'Artica sont stockés temporairement en mémoire en utilisant le moteur memcached [br].
 Si vous activez cette fonctionnalité, Artica récupérera les paramètres directement depuis le disque du système de fichiers.</DISABLE_MEMCACHE_SETTINGS_EXPLAIN>
 <disable_messaging>D&eacute;sactiver la messagerie</disable_messaging>
@@ -2968,13 +2950,13 @@ Voulez-vous effectuer cette op&eacute;ration ?</disable_ntopng_ask>
 <disable_this_rule_no_access_set>D&eacute;sactiver cette r&egrave;gle car aucun acc&egrave;s principal n'a &eacute;t&eacute; d&eacute;fini.</disable_this_rule_no_access_set>
 <disable_this_rule_no_target_defined>D&eacute;sactivation de la r&egrave;gle car aucune cible n'a &eacute;t&eacute; d&eacute;finie.</disable_this_rule_no_target_defined>
 <disable_TimeCapsule_toolbox>D&eacute;sactiver l'ic&ocirc;ne &quot;Time Capsule&quot; dans la barre d'outils</disable_TimeCapsule_toolbox>
-<disable_tlse_explain>Cette fonction va d&eacute;sactiver l`utilisation des bases de filtrage Web de l`Universit&eacute; de Toulouse.
-Voulez-vous effectuer cette op&eacute;ration ?</disable_tlse_explain>
+<disable_tlse_explain>Cette fonction va d&#233;sactiver l'utilisation des bases de filtrage Web de l'Universit&#233; de Toulouse.
+Voulez-vous effectuer cette op&#233;ration ?</disable_tlse_explain>
 <disable_udpates>D&eacute;sactiver les mises &agrave; jour</disable_udpates>
 <disable_udpates_explain>Si vert, la t&acirc;che de mises &agrave; jour sera alors d&eacute;sactiv&eacute;e et aucun t&eacute;l&eacute;chargement ne sera effectu&eacute; dans n\'importe quel cas.</disable_udpates_explain>
 <disable_udpsockets>D&eacute;sactiver les sockets UDP</disable_udpsockets>
 <disable_uid_length_protection>D&eacute;sactiver la protection sur la longueur des comptes</disable_uid_length_protection>
-<disable_watchdog_eth>Désinstaller la surveillance</disable_watchdog_eth>
+<disable_watchdog_eth>D&#233;sinstaller la surveillance</disable_watchdog_eth>
 <disable_webfiltering>D&eacute;sactiver le filtrage Web</disable_webfiltering>
 <disable_zarafa_web_service>D&eacute;sactiver le service Web Zarafa</disable_zarafa_web_service>
 <disabling>D&eacute;sactivation du service</disabling>
@@ -3001,7 +2983,7 @@ Voulez-vous effectuer cette op&eacute;ration ?</disconnect_from_activedirectory_
 <disk_usage>Utilisation disque</disk_usage>
 <dispatch_interval>P&eacute;riodicit&eacute;</dispatch_interval>
 <dispatch_interval_about>Temps en minutes de diffusion des nouvelles donn&eacute;es &agrave; l'application cliente</dispatch_interval_about>
-<dispatch_method2>M&eacute;thode d`aiguillage</dispatch_method2>
+<dispatch_method2>M&#233;thode d'aiguillage</dispatch_method2>
 <display_access_by_members>Afficher les acc&egrave;s par utilisateur</display_access_by_members>
 <display_blocked_events>Affiche les &eacute;v&egrave;nements bloqu&eacute;s</display_blocked_events>
 <display_calendar>Afficher le calendrier</display_calendar>
@@ -3041,8 +3023,8 @@ Si activ&eacute;, le navigateur qui se connecte sur une machine sans son domaine
 <dns-forward-max_text>Fixe le nombre maximal de requ&ecirc;tes qui peuvent &ecirc;tre &eacute;mises aux serveurs DNS de destination en m&ecirc;me temps</dns-forward-max_text>
 <DNSAmplificationProtection>Protection DDOS Amplification DNS</DNSAmplificationProtection>
 <dnsbl_service>Service DNSBL</dnsbl_service>
-<DnsCryptEnableUniqueProvider>Par d&eacute;faut, the client DNSCrypt utilise un fournisseur DNS de fa&ccedil;on al&eacute;atoire.[br]
-Si vous d&eacute;sirez n'en n'utiliser qu'un seul, activez cette fonction qui n`activera que celui s&eacute;lectionn&eacute;</DnsCryptEnableUniqueProvider>
+<DnsCryptEnableUniqueProvider>Par d&#233;faut, the client DNSCrypt utilise un fournisseur DNS de fa&#231;on al&#233;atoire.[br]
+Si vous d&#233;sirez n'en n'utiliser qu'un seul, activez cette fonction qui n'activera que celui s&#233;lectionn&#233;</DnsCryptEnableUniqueProvider>
 <DnscryptProxyMissing>Proxy DNSCrypt manquant</DnscryptProxyMissing>
 <dnsfilterd_black_explain>Vous pouvez, de fa&ccedil;on globale, interdire les acc&egrave;s depuis une {client_source_ip_address} 192.168.1.1 ou une notation CDIR 192.168.1.0/24.[br]
 Ou bien un domaine de destination. Le moteur va correspondre chaque partie du domaine dans la requ&ecirc;te; ainsi si www.domain.com est demand&eacute;, le moteur va v&eacute;rifier si www.domain.com, domain.com ou .com est enregistr&eacute; dans cette liste</dnsfilterd_black_explain>
@@ -3135,7 +3117,7 @@ Si vous indiquez ce SOA pour un domaine d&eacute;j&agrave; cr&eacute;&eacute;, l
 <DoNotutf8EncodeJS>Ne pas encoder en utf8 le code javascript</DoNotutf8EncodeJS>
 <download2>T&eacute;l&eacute;chargement</download2>
 <downloadb>T&eacute;l&eacute;chargement</downloadb>
-<downloaded_flow_this_day>Bande passante Web utilis&eacute;e aujourd`hui</downloaded_flow_this_day>
+<downloaded_flow_this_day>Bande passante Web utilis&#233;e aujourd'hui</downloaded_flow_this_day>
 <downloaded_flow_this_hour>Flux t&eacute;l&eacute;charg&eacute; par heure</downloaded_flow_this_hour>
 <downloaded_flow_this_month>Donn&eacute;es t&eacute;l&eacute;charg&eacute;es ce mois</downloaded_flow_this_month>
 <downloaded_size>Taille t&eacute;l&eacute;charg&eacute;e</downloaded_size>
@@ -3178,7 +3160,7 @@ Parfois certains serveurs mettent du temps &agrave; &ecirc;tre r&eacute;solus.[b
 Si vous activez cette option, les navigateurs ne tenteront plus de r&eacute;soudre les nom d'h&ocirc;tes mais certaines r&egrave;gles bas&eacute;es sur les adresses IP de destination risquent de renvoyer un r&eacute;sultat faux.</do_not_resolv_ipaddr_wpad_ex>
 <do_not_use_parent_proxy>Ne pas utiliser de proxy parent</do_not_use_parent_proxy>
 <do_not_use_the_service>N'utilise pas le service</do_not_use_the_service>
-<do_no_verify_range>Ne pas v&eacute;rifier la tranche d`adresse</do_no_verify_range>
+<do_no_verify_range>Ne pas v&#233;rifier la tranche d'adresse</do_no_verify_range>
 <do_want_to_perform_connection_to_ad>Voulez-vous joindre le domaine Active Directory ?
 V&eacute;rifiez que vous avez correctement indiqu&eacute; que le serveur Active Directory est un serveur Windows 2003 ou 2008/2012. 
 Vous avez actuellement s&eacute;lectionn&eacute; de se connecter &agrave; un serveur de type %s.
@@ -3227,7 +3209,7 @@ Address IP: re:192\.168\.[0-5]\.*[br]</dynaacl_howto>
 <dynamically_created>Cr&eacute;&eacute; de fa&ccedil;on dynamique</dynamically_created>
 <DynamicCert_ssl_explain>Cette section est utilis&eacute;e dans le cas de l'activation de la g&eacute;n&eacute;ration dynamique des certificats dans le proxy.[br]Cette section n&eacute;cessite l'utilisation des deux &eacute;l&eacute;ments: Clef RSA priv&eacute;e et certificat dans le champs suivant.</DynamicCert_ssl_explain>
 <dynamicgroupsAcls_events>&Eacute;v&egrave;nements des Groupes dynamiques</dynamicgroupsAcls_events>
-<dynamic_acls>D&eacute;l&eacute;gation d`ACLS</dynamic_acls>
+<dynamic_acls>D&#233;l&#233;gation d'ACLS</dynamic_acls>
 <dynamic_acls_group>Groupes d'ACLs dynamiques</dynamic_acls_group>
 <dynamic_acls_newbee>R&egrave;gles de proxy</dynamic_acls_newbee>
 <dynamic_acls_newbee_explain>Administrer les %s r&egrave;gles de proxy autoris&eacute;es par l'administrateur.</dynamic_acls_newbee_explain>
@@ -3257,9 +3239,9 @@ Le proxy &agrave; &eacute;t&eacute; temporairement mis en mode urgence et foncti
 <elasticsearch_remote_port>Port d'&eacute;coute du serveur Elasticsearch</elasticsearch_remote_port>
 <elastic_cluster_explain>Afin de joindre un cluster, un noeud doit prendre connaissance des h&ocirc;tes et adresses des autres noeuds faisant parti du m&ecirc;me groupe de clusters.[br]Ce param&egrave;tre fournit la liste initiale des adresses des noeuds que ce serveur est autoris&eacute; &agrave; contacter et &agrave; recevoir des informations.[br]Vous pouvez indiquer des adresses et ports (192.168.1.1:9300, artica-elastic:9300,192.168.1.1,artica-elastic)</elastic_cluster_explain>
 <elements>&Eacute;l&eacute;ments</elements>
-<Elements_hiding_rules>Elements hiding rules</Elements_hiding_rules>
-<ELK_join_a_cluster_explain1>Votre serveur va utiliser l'interface Web d`Artica afin d'autoriser le service ElasticSearch d`accepter votre nouveau noeud.[br]
-Indiquez l`adresse HTTP(s) de votre serveur Artica qui h&eacute;berge le serveur Elasticsearch ma&icirc;tre.[br]Indiquez aussi l`interface et le port local qui seront utilis&eacute;s afin de communiquer avec les noeuds.</ELK_join_a_cluster_explain1>
+<Elements_hiding_rules>R&#232;gles de masquage d'&#233;l&#233;ments</Elements_hiding_rules>
+<ELK_join_a_cluster_explain1>Votre serveur va utiliser l'interface Web d'Artica afin d'autoriser le service ElasticSearch d'accepter votre nouveau noeud.[br]
+Indiquez l'adresse HTTP(s) de votre serveur Artica qui h&#233;berge le serveur Elasticsearch ma&#238;tre.[br]Indiquez aussi l'interface et le port local qui seront utilis&#233;s afin de communiquer avec les noeuds.</ELK_join_a_cluster_explain1>
 <elk_transport_interface_explain>Interface r&eacute;seau utilis&eacute;e pour communiquer entre les diff&eacute;rents noeuds.</elk_transport_interface_explain>
 <elk_transport_port_explain>Port utilis&eacute; pour communications entre les noeuds</elk_transport_port_explain>
 <emergency2>Urgence</emergency2>
@@ -3268,11 +3250,9 @@ Indiquez l`adresse HTTP(s) de votre serveur Artica qui h&eacute;berge le serveur
 <emergency_modes_explain>Arr&ecirc;ter rapidement des fonctionnalit&eacute;s en cas de probl&egrave;mes afin de laisser vos utilisateurs surfer sur Internet.</emergency_modes_explain>
 <emergency_status>&Eacute;tats des urgences</emergency_status>
 <emerging-activex.rules>R&egrave;gles permettant d'identifier des incoh&eacute;rences dans le t&eacute;l&eacute;chargement des ActiveX</emerging-activex.rules>
-<emerging-attack_response.rules>
-These are designed to catch the results of a successful attack.[br]
-Things like "id=root", or error messages that indicate a compromise may have happened.[br]
-Note: Trojan and virus post-infection activity is included generally in the VIRUS ruleset, not here. 
-</emerging-attack_response.rules>
+<emerging-attack_response.rules>Elles sont con&#231;ues pour d&#233;tecter les r&#233;sultats d'une attaque r&#233;ussie.[br]
+Des &#233;l&#233;ments comme &quot;id=root&quot; ou des messages d'erreur indiquant qu'une compromission a pu se produire.[br]
+Remarque : l'activit&#233; post-infection des chevaux de Troie et des virus est g&#233;n&#233;ralement incluse dans le jeu de r&#232;gles VIRUS, pas ici.</emerging-attack_response.rules>
 <emerging-chat.rules>R&egrave;gles permettant d'identifier des probl&egrave;mes et des applications de CHAT telles que facebook, Skype, IRC..</emerging-chat.rules>
 <emerging-current_events.rules>Ce sont des r&egrave;gles temporaires qui doivent &ecirc;tre test&eacute;es avant qu'elles soient consid&eacute;r&eacute;es comme officielles.</emerging-current_events.rules>
 <emerging-dns.rules>R&egrave;gles permettant d'identifier des attaques dans le protocole DNS</emerging-dns.rules>
@@ -3294,8 +3274,8 @@ Ces r&egrave;gles ont plus g&eacute;n&eacute;ralement comme but de d&eacute;tect
 <emerging-pop3.rules>R&egrave;gles permettant d'identifier des attaques dans le protocole POP3</emerging-pop3.rules>
 <emerging-rpc.rules>R&egrave;gles permettant d'identifier des attaques dans le protocole RPC</emerging-rpc.rules>
 <emerging-scada.rules>R&egrave;gles permettant d'identifier des attaques/incoh&eacute;rences dans le protocole utilis&eacute; par SCADA</emerging-scada.rules>
-<emerging-scan.rules>Things to detect reconnaissance and probing. Nessus, Nikto, portscanning, etc. Early warning stuff. </emerging-scan.rules>
-<emerging-shellcode.rules>Attaques dédiés via l`envoi de commandes à distance à travers le shell</emerging-shellcode.rules>
+<emerging-scan.rules>&#201;l&#233;ments pour d&#233;tecter la reconnaissance et le sondage. Nessus, Nikto, scan de ports, etc. &#201;l&#233;ments d'alerte pr&#233;coce.</emerging-scan.rules>
+<emerging-shellcode.rules>Attaques d&#233;di&#233;s via l'envoi de commandes &#224; distance &#224; travers le shell</emerging-shellcode.rules>
 <emerging-smtp.rules>R&egrave;gles permettant d'identifier des attaques dans le protocole SMTP</emerging-smtp.rules>
 <emerging-snmp.rules>R&egrave;gles permettant d'identifier des attaques dans le protocole SNMP</emerging-snmp.rules>
 <emerging-sql.rules>R&egrave;gles permettant d'identifier des attaques d'injections SQL</emerging-sql.rules>
@@ -3360,11 +3340,11 @@ Apache consomme quand m&ecirc;me des ressources serveur m&ecirc;me si aucun serv
 Si vous le d&eacute;sactiver, vous ne serez plus en mesure de cr&eacute;er des services Web tels que des WebMail, CRM ou des consoles d'administration d&eacute;di&eacute;es.</EnableFreeWeb_disable_explain>
 <EnableGlusterConfigText>Activer la fonctionnalit&eacute; de mise en cluster afin de pouvoir cr&eacute;er des fermes de serveurs et des volumes de r&eacute;plication.</EnableGlusterConfigText>
 <EnableGoogleSafeBrowsing>Activer Google Safe Browsing</EnableGoogleSafeBrowsing>
-<EnableGoogleSafeBrowsing_explain>Google Safe Browsing est un service fournit par Google qui offre une liste de liens Internet contenants des codes malicieux ou des sites d`\'hame&ccedil;onnage.[br]
-Chrome, Safari, et FireFox utilisent par d&eacute;faut cette liste et r&eacute;agissent en cons&eacute;quence.[br]
-Si ce service est activ&eacute; alors vous autorisez Internet Explorer &agrave; utiliser cette liste mais aussi, vous centralisez la protection.[br]
+<EnableGoogleSafeBrowsing_explain>Google Safe Browsing est un service fournit par Google qui offre une liste de liens Internet contenants des codes malicieux ou des sites d`\'hame&#231;onnage.[br]
+Chrome, Safari, et FireFox utilisent par d&#233;faut cette liste et r&#233;agissent en cons&#233;quence.[br]
+Si ce service est activ&#233; alors vous autorisez Internet Explorer &#224; utiliser cette liste mais aussi, vous centralisez la protection.[br]
 Ainsi seul le proxy est en charge de consulter Google et non pas tous les navigateurs.[br]
-Avant de l`activer, assurez-vous de r&eacute;cup&eacute;rer gratuitement votre Clef API via ce lien:[br]
+Avant de l'activer, assurez-vous de r&#233;cup&#233;rer gratuitement votre Clef API via ce lien:[br]
 https://developers.google.com/safe-browsing/key_signup et enregistrez la clef dans Artica via le lien ci-dessous.</EnableGoogleSafeBrowsing_explain>
 <EnableGoogleSafeBrowsing_popupoff>Ceci va retirer la protection SafeBrowsing centralis&eacute;e.
 Continuer ?</EnableGoogleSafeBrowsing_popupoff>
@@ -3424,9 +3404,9 @@ Nous pouvons vous sugg&eacute;rer d'utiliser le service de Cache Proxy DNS afin 
 Si vous d&eacute;sirez effectuer de la r&eacute;cursivit&eacute; dans les groupe, mettez en vert cette option.</EnableRecursiveGroups_text>
 <EnableRRDGraphFunction>Utiliser le moteur RRD PHP</EnableRRDGraphFunction>
 <EnableSargGenerator>Activer la g&eacute;n&eacute;ration de rapports SARG</EnableSargGenerator>
-<EnableSargGenerator_explain>If you using Tiny Proxy, this is only way to get statistics for your proxy.[br]
-If you using the Artica Proxy Appliance, you can activate this feature with the Artica statistics generator.[br]
-Both systems will be used</EnableSargGenerator_explain>
+<EnableSargGenerator_explain>Si vous utilisez Tiny Proxy, c'est le seul moyen d'obtenir des statistiques pour votre proxy.[br]
+Si vous utilisez l'appliance Artica Proxy, vous pouvez activer cette fonctionnalit&#233; avec le g&#233;n&#233;rateur de statistiques Artica.[br]
+Les deux syst&#232;mes seront utilis&#233;s</EnableSargGenerator_explain>
 <EnableSpamhausDROPList>Activer la liste d'interdiction SpamHaus</EnableSpamhausDROPList>
 <EnableSPAWNFCGI>Active le service PHP FCGI</EnableSPAWNFCGI>
 <EnableSplashScreenAsObject>Activer le HotSpot en tant qu'objet proxy</EnableSplashScreenAsObject>
@@ -3460,7 +3440,7 @@ Le fait de d&eacute;sactiver ce service n\'entraine pas une perte de production.
 <EnableWatchdog>Activer le service de surveillance</EnableWatchdog>
 <EnableWatchMemoryUsage>Activer la surveillance de la m&eacute;moire</EnableWatchMemoryUsage>
 <EnableWebPageDebugging>Pages d'administration en mode verbeux</EnableWebPageDebugging>
-<EnableWindowsAuthentication_text>Si vert, alors vous autorisez ce serveur &agrave; rejoindre un domaine Active Directory.[br]Ceci afin d`assurer une authentification silencieuse de vos utilisateurs gr&acirc;ce &agrave; leur session Windows.</EnableWindowsAuthentication_text>
+<EnableWindowsAuthentication_text>Si vert, alors vous autorisez ce serveur &#224; rejoindre un domaine Active Directory.[br]Ceci afin d'assurer une authentification silencieuse de vos utilisateurs gr&#226;ce &#224; leur session Windows.</EnableWindowsAuthentication_text>
 <EnableYoutubeForSchools>Activer la restriction Youtube For schools</EnableYoutubeForSchools>
 <EnableYoutubeForSchoolsExplain>Youtube For Schools permet aux &eacute;coles de l'imiter l'acc&egrave;s uniquement aux vid&eacute;os Youtube &agrave; caract&egrave;re scolaire.[br]
 Les &eacute;coliers/&Eacute;tudiants peuvent visualiser plus de 400.000 vid&eacute;os d&eacute;di&eacute;es au contexte scolaire.[br]
@@ -3478,7 +3458,7 @@ Voulez-vous effectuer cette op&eacute;ration ?</enable_amavisdeamon_ask>
 <enable_antivirus_checking_stats>Si vert, le noeud distant va envoyer les fichiers t&eacute;l&eacute;charg&eacute;s &agrave; l'antivirus local de ce serveur (C-ICAP ClamAV ou Kaspersky For Proxy server) afin de v&eacute;rifier si le contenu n'inclut pas du code malicieux.[br]</enable_antivirus_checking_stats>
 <enable_antivirus_protection>Activer la protection</enable_antivirus_protection>
 <enable_append_domain>Ajouter le domaine local</enable_append_domain>
-<ENABLE_APP_EACCELERATOR2>Utiliser l`extension de mise en cache OPcode ( OPcache )</ENABLE_APP_EACCELERATOR2>
+<ENABLE_APP_EACCELERATOR2>Utiliser l'extension de mise en cache OPcode ( OPcache )</ENABLE_APP_EACCELERATOR2>
 <enable_APP_MAILARCHIVER_disable_text>Le module d'archivage est d&eacute;sactiv&eacute;, par cons&eacute;quence, aucun message ne pourra &ecirc;tre dupliqu&eacute; ou archiv&eacute;.</enable_APP_MAILARCHIVER_disable_text>
 <ENABLE_APP_NTPDCLI>Client NTP</ENABLE_APP_NTPDCLI>
 <ENABLE_APP_NTPDCLI_TEXT>Si vert, ce serveur Artica va questionner les serveurs NTP indiqu&eacute;s dans la partie serveur afin de synchroniser l\'heure du serveur &agrave; travers le protocole NTP.[br]
@@ -3488,8 +3468,8 @@ Voulez-vous effectuer cette op&eacute;ration ?</enable_amavisdeamon_ask>
 <enable_arpspoofing>Activer la m&eacute;thode ARP poisoning.</enable_arpspoofing>
 <enable_arpspoofing_explain>Si vert, vous aurez la possibilit&eacute; de modifier dynamiquement l'adresse de la passerelle principale des n%u0153uds sur le r&eacute;seau afin de les forcer &agrave; communiquer &agrave; travers ce serveur.[br]
 Cette m&eacute;thode fonctionne uniquement pour les n%u0153uds appartenant uniquement au m&ecirc;me r&eacute;seau.</enable_arpspoofing_explain>
-<enable_articadb_explain>Cette fonction va activer l`utilisation des bases de filtrage Web Artica
-Voulez-vous effectuer cette op&eacute;ration ?</enable_articadb_explain>
+<enable_articadb_explain>Cette fonction va activer l'utilisation des bases de filtrage Web Artica
+Voulez-vous effectuer cette op&#233;ration ?</enable_articadb_explain>
 <enable_artica_meta>Activation de Artica Meta</enable_artica_meta>
 <enable_ask_firewall>Voulez-vous activer le service pare-feu ?</enable_ask_firewall>
 <enable_as_master_proxy>Activer ce proxy en tant que Ma&icirc;tre/P&egrave;re</enable_as_master_proxy>
@@ -3549,9 +3529,9 @@ Ceci permet de r&eacute;duire de fa&ccedil;on cons&eacute;quente la taille des d
 Les navigateurs sont en charge de d&eacute;compresser eux m&ecirc;me le flux compress&eacute;.</enable_gzip_compression_explain>
 <enable_helo_randomize>Activer l'envoi HELO al&eacute;atoire</enable_helo_randomize>
 <enable_hotspot_autologin>Activer le formulaire d\'enregistrement</enable_hotspot_autologin>
-<enable_hotspot_autologin_explain>Si vert, le syst&egrave;me de HotSpot autorise les utilisateurs &agrave; s`enregistrer eux-m&ecirc;mes.[br]
-Le syst&egrave;me de HotSpot leur enverra un message &eacute;lectronique de confirmation.[br]
-Les utilisateurs fra&icirc;chement ajout&eacute;s seront alors autoris&eacute;s &agrave; parcourir Internet pour r&eacute;cup&eacute;rer leur message de confirmation.</enable_hotspot_autologin_explain>
+<enable_hotspot_autologin_explain>Si vert, le syst&#232;me de HotSpot autorise les utilisateurs &#224; s'enregistrer eux-m&#234;mes.[br]
+Le syst&#232;me de HotSpot leur enverra un message &#233;lectronique de confirmation.[br]
+Les utilisateurs fra&#238;chement ajout&#233;s seront alors autoris&#233;s &#224; parcourir Internet pour r&#233;cup&#233;rer leur message de confirmation.</enable_hotspot_autologin_explain>
 <enable_hotspot_sms>Utiliser l'authentification SMS</enable_hotspot_sms>
 <enable_hotspot_sms_explain>Si actif, le formulaire d'identification demandera uniquement le num&eacute;ro de t&eacute;l&eacute;phone GSM.[br]
 Apr&egrave;s avoir ajout&eacute; le num&eacute;ro de t&eacute;l&eacute;phone, Artica enverra un message &eacute;lectronique vers une passerelle/service Afin d'envoyer le code de d&eacute;verrouillage &agrave; l'ordiphone de l'utilisateur.</enable_hotspot_sms_explain>
@@ -3615,8 +3595,8 @@ Si vous d&eacute;sirez utiliser Lets Encrypt avec la console Web Artica, vous de
 <enable_phpfpm_service>Activer le service PHP-FPM</enable_phpfpm_service>
 <enable_phpfpm_service_explain>Le gestionnaire de processus FastCGI (FPM)  est con&ccedil;u pour pr&eacute;charger les libraires PHP et doit &ecirc;tre plus rapide que le syst&egrave;me PHP standard</enable_phpfpm_service_explain>
 <enable_pinger_process>Active le processus Pinger</enable_pinger_process>
-<enable_pinger_process_text>Le proxy utilise ce processus pour effectuer des requêtes ICMP afin de mesurer la distance des serveurs de destination pour une requête.[br]Il optimise la sélection du serveur backend afin de prendre celui le plus rapide.[br]
-Ce n`est pas obligatoire, surtout si vous n`utilisez pas le principe des proxy parents ou bien le système d` Équilibreur de charge</enable_pinger_process_text>
+<enable_pinger_process_text>Le proxy utilise ce processus pour effectuer des requ&#234;tes ICMP afin de mesurer la distance des serveurs de destination pour une requ&#234;te.[br]Il optimise la s&#233;lection du serveur backend afin de prendre celui le plus rapide.[br]
+Ce n'est pas obligatoire, surtout si vous n'utilisez pas le principe des proxy parents ou bien le syst&#232;me d` &#201;quilibreur de charge</enable_pinger_process_text>
 <ENABLE_PING_GATEWAY>Ping sur une adresse</ENABLE_PING_GATEWAY>
 <ENABLE_PING_GATEWAY_EXPLAIN>si activ&eacute;, le proxy va essayer d'effecuter un ping &agrave; l'adresse sp&eacute;cifi&eacute;e afin de voir si elle est disponible</ENABLE_PING_GATEWAY_EXPLAIN>
 <enable_pop3_text>Activer le protocole POP3 afin d'autoriser vos utilisateurs &agrave; utiliser leur client de messagerie pour r&eacute;cup&eacute;rer les messages sur le serveur. via POP3</enable_pop3_text>
@@ -3672,7 +3652,7 @@ Il vous permet de connecter des applications qui ne supporte pas le SSL &agrave;
 <enable_syncthing_text>Syncthing remplace les services Internet de synchronisation et \&quot;cloud\&quot; propri&eacute;taires (dropbox, box, OneDrive...) avec une version libre et d&eacute;centralis&eacute;e.[br]
 Vos donn&eacute;es sont personnelles et critiques et vous avez le droit d\'indiquer o&ugrave; vous souhaitez les stocker.[br] Vous d&eacute;cidez si elle doivent &ecirc;tre partag&eacute;es et si elles doivent &ecirc;tre transmises sur Internet.[br]
 Si vous activez ce service, vous serez en mesure de faire de ce serveur un client de synchronisation ou un serveur de synchronisation Intranet ou Internet</enable_syncthing_text>
-<enable_system_optimization>Activer l`optimisation syst&egrave;me</enable_system_optimization>
+<enable_system_optimization>Activer l'optimisation syst&#232;me</enable_system_optimization>
 <enable_system_optimization_text>Si vert, Artica sera en mesure d\'effectuer des optimisations syst&egrave;mes d&eacute;di&eacute;es aux syst&egrave;mes de virtualisation tels que VMWare, HyperV ou XenServer ou pour des disques durs SSD.[br]
 Si vous n\'avez pas ce type de syst&egrave;me, veuillez contacter notre support technique avant d\'activer cette fonctionnalit&eacute;</enable_system_optimization_text>
 <enable_tcpsockets>Activer les sockets TPC/IP</enable_tcpsockets>
@@ -3831,7 +3811,7 @@ Si cette erreur persiste, veuillez contacter l'&eacute;quipe de support Artica.<
 <ERROR_SERVICE_NOT_INSTALLED>Erreur, le service n\'est pas install&eacute;</ERROR_SERVICE_NOT_INSTALLED>
 <error_smp_disabled>Erreur: le mode SMP est d&eacute;sactiv&eacute;</error_smp_disabled>
 <error_squiddb_not_installed>Le service MySQL d&eacute;die au stockage des statistiques proxy n'est pas install&eacute;.[br]Veuillez le cr&eacute;er en premier lieu.</error_squiddb_not_installed>
-<error_squid_ident_not_compiled>Erreur, votre service Proxy ne supporte pas le service d`identification.[br]Veuillez le mettre &agrave; jour.</error_squid_ident_not_compiled>
+<error_squid_ident_not_compiled>Erreur, votre service Proxy ne supporte pas le service d'identification.[br]Veuillez le mettre &#224; jour.</error_squid_ident_not_compiled>
 <ERROR_SQUID_MUST_35>Cette fonction est d&eacute;sactiv&eacute;e car elle requi&egrave;re le moteur proxy 3.5x ou sup&eacute;rieur.</ERROR_SQUID_MUST_35>
 <error_squid_snmp_not_compiled>La fonctionnalit&eacute; SNMP n'est pas activ&eacute;e/compil&eacute;e dans votre proxy.[br]Nous vous sugg&eacute;rons de mettre &agrave; jour le logiciel Proxy.</error_squid_snmp_not_compiled>
 <error_squid_snmp_not_enabled>Erreur, la fonction multiprocesseurs n'est pas activ&eacute;e</error_squid_snmp_not_enabled>
@@ -3906,7 +3886,7 @@ Voulez-vous effectuer cette op&eacute;ration ?.</execute_now_stats_js>
 Les anciennes donn&eacute;es seront supprim&eacute;es et reconstruites pour ce rapport.</execute_report_compilation_ask>
 <execute_this_task>Ex&eacute;cuter cette t&acirc;che</execute_this_task>
 <execution>Ex&eacute;cution</execution>
-<execution_time>Temps d`ex&eacute;cution</execution_time>
+<execution_time>Temps d'ex&#233;cution</execution_time>
 <exec_squid_rebuild_cache_mem>Un processus Artica travail toujours en t&acirc;che de fond sur le cache de votre proxy.[br]
 Durant l'ex&eacute;cution de cette t&acirc;che, le proxy peut &ecirc;tre instable.</exec_squid_rebuild_cache_mem>
 <exec_time>Temps d\'ex&eacute;cution</exec_time>
@@ -3927,10 +3907,10 @@ Ces &eacute;l&eacute;ments ne seront pas par contre exclus du filtrage d'URLs</e
 Le mode `connect&eacute;` veut dire que vous devez sp&eacute;cifier l\'adresse et le port du proxy dans les param&egrave;tres r&eacute;seaux des navigateurs.[br]
 Utilisez cette option si vous souhaitez effectuer un syst&egrave;me d\'authentification &agrave; travers le proxy ( ex: Active Directory)</explain_http_proxy_connected>
 <explain_http_proxy_router_mode>Le mode routeur transforme le service proxy &agrave; un simple service de routage TCP de niveau 7 des protocoles HTTPS et HTTP avec des fonctionnalit&eacute;s tr&egrave;s limit&eacute;es afin de conserver les performances disques et processeurs ( par de syst&egrave;me de log pas d'extensions de filtrage web, pas de cache sur disque....).[br]C'est une fonctionnalit&eacute; tr&egrave;s efficace sur vous destinez votre serveur Artica &agrave; un simple routeur/pare-feu</explain_http_proxy_router_mode>
-<explain_http_proxy_transparent>Le Proxy en mode `Transparent` permet de filtrer et de mettre en cache les acc&egrave;s depuis les navigateurs vers Internet.[br]
-Le mode `Transparent`veut dire que les connexions au proxy s\'effectuent par l%u2019interm&eacute;diaire des param&egrave;tres r&eacute;seaux.[br]
-Vous n\'avez pas &agrave; modifier les param&egrave;tres de connexion des navigateurs mais vous devez changer les param&egrave;tres r&eacute;seaux en mettant le proxy comme passerelle par d&eacute;faut ou bien par r&egrave;gle NAT.[br]
-Dans ce mode vous ne pouvez pas utiliser de syst&egrave;me d\'authentification Proxy.</explain_http_proxy_transparent>
+<explain_http_proxy_transparent>Le Proxy en mode `Transparent` permet de filtrer et de mettre en cache les acc&#232;s depuis les navigateurs vers Internet.[br]
+Le mode `Transparent'veut dire que les connexions au proxy s\'effectuent par l%u2019interm&#233;diaire des param&#232;tres r&#233;seaux.[br]
+Vous n\'avez pas &#224; modifier les param&#232;tres de connexion des navigateurs mais vous devez changer les param&#232;tres r&#233;seaux en mettant le proxy comme passerelle par d&#233;faut ou bien par r&#232;gle NAT.[br]
+Dans ce mode vous ne pouvez pas utiliser de syst&#232;me d\'authentification Proxy.</explain_http_proxy_transparent>
 <explain_license_free>Votre serveur est en mode &quot;communaut&eacute;&quot;.[br]
 Le mode communaut&eacute; vous permet d'utiliser ce serveur autant de temps que vous le souhaitez mais avec des fonctionnalit&eacute;s restreintes.[br]
 Pour utiliser ce serveur avec toutes les fonctionnalit&eacute;s, cliquez ici afin de faire une demande de cotation.</explain_license_free>
@@ -4369,7 +4349,7 @@ Indiquez ici votre compte qui dispose des privil&egrave;ges n&eacute;c&eacute;ss
 <generic>G&eacute;n&eacute;rique</generic>
 <generic_http_error>Erreur HTTP g&eacute;n&eacute;rique</generic_http_error>
 <geoip>G&eacute;olocalisation</geoip>
-<GeoIPUpdate_not_installed>La fonctionnalité GeoIPUpdate n`est pas installée.[br]Veuillez l`activer dans le centre des fonctionnalités</GeoIPUpdate_not_installed>
+<GeoIPUpdate_not_installed>La fonctionnalit&#233; GeoIPUpdate n'est pas install&#233;e.[br]Veuillez l'activer dans le centre des fonctionnalit&#233;s</GeoIPUpdate_not_installed>
 <geoip_text>Trouve les pays d'h&eacute;bergement avec l'adresse IP Publique.</geoip_text>
 <geoip_update_databases>Mise &agrave; jour des Bases GeoIP</geoip_update_databases>
 <geoip_update_databases_explain>V&eacute;rifie les bases GeoIP sur le site de MaxMind et les t&eacute;l&eacute;charge si une nouvelle version est disponible.[br]
@@ -4443,7 +4423,7 @@ Pour ce faire et par d&eacute;faut, Artica utilise le premier groupe trouv&eacut
 Vous pouvez piloter la recherche des groupes en utilisant une expression r&eacute;guli&egrave;re.[br]
 Par exemple, [b]^INTERNET_[/b] vous permettra d'indiquer de trouver uniquement un groupe qui commence par INTERNET_ comme INTERNET_FULL, INTERNET_MEDIUM...[br]
 Vous pouvez aussi utiliser des attributs Active Directory sp&eacute;cifiques qui seront compris en tant que groupe.</groups_retreiver_explain>
-<groups_retriever>Groups retriever</groups_retriever>
+<groups_retriever>R&#233;cup&#233;rateur de groupes</groups_retriever>
 <groups_retriever_explain>Pour des raisons statistiques et pour des ACLs spécifiques, Artica a besoin de récupérer un seul groupe pour un utilisateur.
 Active Directory permet de lier plusieurs groupes pour un utilisateur mais Artica n'a besoin d'en récupérer qu'un seul[br].
 Par défaut, Artica utilise le premier groupe trouvé dans la liste des groupes.[br]
@@ -4468,10 +4448,10 @@ Si plusierus organisations correspondent &agrave; l'entr&eacute;e indiqu&eacute;
 <guaranteed_rate>D&eacute;bit garanti</guaranteed_rate>
 <Guaranteed_Rate_explain>Lorsque vous d&eacute;finissez une valeur, cela veut dire que la quantit&eacute; bande passante sera affect&eacute;e au conteneur en cas de besoin.[br]Si le conteneur ne souhaite pas utiliser la bande passante, elle sera affect&eacute;e aux autres conteneurs.</Guaranteed_Rate_explain>
 <haarp_rule_explain>Vous pouvez d&eacute;finir ici des expressions r&eacute;guli&egrave;res qui forcent les objets &agrave; passer &agrave; travers le cache intelligent.</haarp_rule_explain>
-<hacluster_kerberos_explain>Ces paramètres sont destinés aux serveurs distants, pas sur ce serveur.[br]Le service d`Équilibreur de charge n`a pas besoin de se lier à votre Active Directory</hacluster_kerberos_explain>
+<hacluster_kerberos_explain>Ces param&#232;tres sont destin&#233;s aux serveurs distants, pas sur ce serveur.[br]Le service d`&#201;quilibreur de charge n'a pas besoin de se lier &#224; votre Active Directory</hacluster_kerberos_explain>
 <hacluster_Tproxy_certificate>Ce certificat est nécessaire car il permet de vérifier les certificats des sites Internet en mode transparent.[br]Par contre, le protocole SSL n'est pas déchiffré.</hacluster_Tproxy_certificate>
-<hacluster_user_account>Ajoutez un compte utilisateur dédié pour la connexion Active Directory et assurez-vous que les propriétés du compte, l`option La préauthentification Kerberos n`est pas nécéssaire soit [b]activée[/b].[br]
-[b]Assurez-vous aussi que vous avez créer un enregistrement A  pour %HOSTNAME% dans le service DNS lié à votre Active Directory[/b]</hacluster_user_account>
+<hacluster_user_account>Ajoutez un compte utilisateur d&#233;di&#233; pour la connexion Active Directory et assurez-vous que les propri&#233;t&#233;s du compte, l'option La pr&#233;authentification Kerberos n'est pas n&#233;c&#233;ssaire soit [b]activ&#233;e[/b].[br]
+[b]Assurez-vous aussi que vous avez cr&#233;er un enregistrement A  pour %HOSTNAME% dans le service DNS li&#233; &#224; votre Active Directory[/b]</hacluster_user_account>
 <halfaminute>une demi-minute</halfaminute>
 <handles>Trait&eacute;es</handles>
 <haproxy_choose_service>Indiquez le comportement principal du service TCP:[br]
@@ -4480,9 +4460,9 @@ Si plusierus organisations correspondent &agrave; l'entr&eacute;e indiqu&eacute;
 [b]TCP redirect[/b]: Redirige des connexions TCP vers d'autres services.[br]
 [b]SMTP redirect[/b]: Redirige et r&eacute;parti les connexions SMTP vers d'autres serveurs.[br]</haproxy_choose_service>
 <haproxy_local_interface_help>Indique l'adresse IP locale et source pour les connexions sortantes</haproxy_local_interface_help>
-<HAPROXY_NOBACKENDS_DEFINED>Le service principal d`équilibreur de charge est activé mais aucun service d`Équilibreur de charge n'a été ajouté.[br]
-Peut être que c'est la première fois que vous utilisez ce service.[br]
-Le service principal ne pourra pas démarrer dans cette circonstance.</HAPROXY_NOBACKENDS_DEFINED>
+<HAPROXY_NOBACKENDS_DEFINED>Le service principal d'&#233;quilibreur de charge est activ&#233; mais aucun service d`&#201;quilibreur de charge n'a &#233;t&#233; ajout&#233;.[br]
+Peut &#234;tre que c'est la premi&#232;re fois que vous utilisez ce service.[br]
+Le service principal ne pourra pas d&#233;marrer dans cette circonstance.</HAPROXY_NOBACKENDS_DEFINED>
 <haproxy_website_explain>Indiquez ici le domaine.[br]
 Exemple: [b]www.company.com[/b] va strictement correspondre &agrave;  www.company.com.[br]
 Si vous d&eacute;sirez prendre en compte l'ensemble du domaine, indiquez un point devant.[br]
@@ -4503,7 +4483,7 @@ Il est recommandé de commencer avec des valeurs qui peuvent à la fois augmente
 <hdparmT>Tests des disques durs</hdparmT>
 <hdparm_explain>Cette t&acirc;che lance les tests de performances des disques durs.</hdparm_explain>
 <headers_rules_http>R&egrave;gles sur les ent&ecirc;tes HTTP</headers_rules_http>
-<headers_rules_mini>R&egrave;gles d`ent&ecirc;tes</headers_rules_mini>
+<headers_rules_mini>R&#232;gles d'ent&#234;tes</headers_rules_mini>
 <headers_rules_mini_explain>Cette fonctionnalit&eacute; permet de supprimer/remplacer/ajouter des ent&ecirc;tes HTTP en fonction de r&egrave;gles avanc&eacute;es nomm&eacute;es ACLs</headers_rules_mini_explain>
 <header_checks_help>Indiquez ici les expressions r&eacute;guli&egrave;res ( insensible &agrave; la casse ) &agrave; d&eacute;tecter dans les ent&ecirc;tes des messages re&ccedil;us et &eacute;mis.[br]
 Par exemple:[br]
@@ -4619,8 +4599,8 @@ Cette option est utile lorsque vous d&eacute;sirez indentifier les utilisateurs 
 <hotspot_use_local_database>Si Actif, alors le moteur HotSpot va v&eacute;rifier les identifiants &agrave; travers la base locale d'utilisateurs.[br]Notez que si aucun syst&egrave;me d'identification est indiqu&eacute; alors m&ecirc;me si cette option est inactive, le moteur consultera quand m&ecirc;me la base locale.</hotspot_use_local_database>
 <hotspot_wan_network>R&eacute;seau Internet</hotspot_wan_network>
 <hotspot_wan_network_explain>S&eacute;lectionnez dans la liste ci-dessous l'interface r&eacute;seau qui sera utilis&eacute;e pour effectuer la communication vers Internet.</hotspot_wan_network_explain>
-<hotspot_website_explain>[b]Cr&eacute;er un portail Web d`authentification[/b][br]
-Un un portail Web d`authentification (ou HotSpot ) est un compagnon du service de proxy Web.[br]Il permet d'obtenir un syst&egrave;me d`authentification  par page Web afin d'autoriser vos utilisateurs &agrave; naviguer sur Internet.</hotspot_website_explain>
+<hotspot_website_explain>[b]Cr&#233;er un portail Web d'authentification[/b][br]
+Un un portail Web d'authentification (ou HotSpot ) est un compagnon du service de proxy Web.[br]Il permet d'obtenir un syst&#232;me d'authentification  par page Web afin d'autoriser vos utilisateurs &#224; naviguer sur Internet.</hotspot_website_explain>
 <hotspot_whitelist_www_explain>cette section liste tous les sites autoris&eacute;es &agrave; &ecirc;tre consult&eacute;s sans passer par la barri&egrave;re HotSpot</hotspot_whitelist_www_explain>
 <hotspot_wizard_final>Artica est maintenant pr&ecirc;t pour construire le service de HotSpot avec les param&egrave;tres par d&eacute;faut.[br]
 Le serveur en entier sera transform&eacute; pour le service HotSpot.[br]
@@ -4728,7 +4708,7 @@ Voulez-vous effectuer cette op&eacute;ration ?</hyper_cache_default_rules_ask>
 <icp_port>Port ICP</icp_port>
 <icp_port_explain>Le port d'&eacute;coute afin de communiquer par requ&ecirc;tes ICP avec les autres Proxy.[br]
 Le port standard UDP pour les requ&ecirc;tes iCP est 3130.[br]Par d&eacute;faut, ce port est d&eacute;sactiv&eacute; ( 0 )</icp_port_explain>
-<identd_server>Serveur d`identification</identd_server>
+<identd_server>Serveur d'identification</identd_server>
 <identical_domains>Domaines identiques</identical_domains>
 <identical_domains_explain>Domaines qui utilisent les m&ecirc;mes param&egrave;tres d&eacute;finis pour ce dernier</identical_domains_explain>
 <identification>Identification</identification>
@@ -4970,7 +4950,7 @@ Les statistiques et les &eacute;v&egrave;nements Antivirus sont alors masqu&eacu
 <interfaces>Interfaces</interfaces>
 <interfaces_bridges>Ponts d'interfaces</interfaces_bridges>
 <interfaces_cards_cannot_be_the_same>Les interfaces r&eacute;seau ne peuvent &ecirc;tre les m&ecirc;mes.</interfaces_cards_cannot_be_the_same>
-<interfaces_connectors>Connecteurs d`interfaces</interfaces_connectors>
+<interfaces_connectors>Connecteurs d'interfaces</interfaces_connectors>
 <interface_bridges_explain>Les ponts vous permet de &quot;fusionner&quot; les Interfaces r&eacute;seaux en une seule interface qui s'assure des liaisons.[br]
 Faites tr&egrave;s attention &agrave; cette fonctionnalit&eacute; afin de ne pars joindre des interfaces du m&ecirc;me segment r&eacute;seau.</interface_bridges_explain>
 <interface_monitor>Surveillance de l'interface</interface_monitor>
@@ -5113,7 +5093,7 @@ Si vous &ecirc;tes d'accord, cliquez sur le bouton &quot;Installer&quot;</KAV4PR
 <KAV4PROXYINST_UNINST_EXPLAIN>Bienvenue dans l'assistant d'installation de Kaspersky For Proxy server.[br]
 Cet assistant va [b]d&eacute;sinstaller[/b] le produit Kaspersky dans votre serveur.[br][br]
 Si vous &ecirc;tes d'accord, cliquez sur le bouton &quot;D&eacute;sinstaller&quot;</KAV4PROXYINST_UNINST_EXPLAIN>
-<KAV4PROXY_ADD_SWP>Nous vous suggérons d`ajouter une partition de SWAP ou d'augmenter la mémoire de 8 à 10GB afin de ne pas rencontrer des problèmes de mémoire vive.</KAV4PROXY_ADD_SWP>
+<KAV4PROXY_ADD_SWP>Nous vous sugg&#233;rons d'ajouter une partition de SWAP ou d'augmenter la m&#233;moire de 8 &#224; 10GB afin de ne pas rencontrer des probl&#232;mes de m&#233;moire vive.</KAV4PROXY_ADD_SWP>
 <kav4proxy_license>Licence Kaspersky For Proxy server</kav4proxy_license>
 <KAV4PROXY_STEP1_EXPLAIN>Bienvenue dans la gestion de Licence.[br]
 Cet assistant va vous aider &agrave; obtenir une licence pour le produit Kaspersky For Proxy server.[br]
@@ -5122,9 +5102,9 @@ La proc&eacute;dure s'effectue en 3 &eacute;tapes.:[br]
 2) Vous recevez de la part de nos &eacute;quipes une proposition commerciale et vous &eacute;mettez une commande.[br]
 3) Nos &eacute;quipent activent &agrave; distance et le filtrage antivirus est alors pr&ecirc;te &agrave; &ecirc;tre utilis&eacute;.[br]
 Afin d'&eacute;mettre une requ&ecirc;te de licence, confirmez les donn&eacute;es du formulaire.</KAV4PROXY_STEP1_EXPLAIN>
-<KAV4PROXY_STEP2_EXPLAIN>Veuillez charger le fichier de licence ( avec l`extension *.key).[br]
-Si vous désirez évaluer ce produit, allez sur %KAV4PROXYTRIAL% et remplissez le formulaire pour disposer d`une version d`essai.[br]Une fois après avoir disposé du code d`activation, utilisez cette page %KAVACTTOKEY% afin de transformer votre code d`activation en fichier de clé.[br]
-L`etat de la licence risque de passer en [b]Blacklist invalid or not found[/b] durant quelques temps car le produit ne dispose pas de toutes les mises à jour nécéssaires, simplement... patientez</KAV4PROXY_STEP2_EXPLAIN>
+<KAV4PROXY_STEP2_EXPLAIN>Veuillez charger le fichier de licence ( avec l'extension *.key).[br]
+Si vous d&#233;sirez &#233;valuer ce produit, allez sur %KAV4PROXYTRIAL% et remplissez le formulaire pour disposer d'une version d'essai.[br]Une fois apr&#232;s avoir dispos&#233; du code d'activation, utilisez cette page %KAVACTTOKEY% afin de transformer votre code d'activation en fichier de cl&#233;.[br]
+L'etat de la licence risque de passer en [b]Blacklist invalid or not found[/b] durant quelques temps car le produit ne dispose pas de toutes les mises &#224; jour n&#233;c&#233;ssaires, simplement... patientez</KAV4PROXY_STEP2_EXPLAIN>
 <KAV_LICENSE_ERROR_EXPLAIN>Kaspersky Anti-Virus provoque une erreur %s, cliquez ici afin de corriger cette erreur.</KAV_LICENSE_ERROR_EXPLAIN>
 <keepalive>keep-alive</keepalive>
 <KeepAlive_tlm_notset>Si vous d&eacute;sire utiliser l'authentification NTLM, vous devez activer le &quot;KeepAlive&quot; (Rester connect&eacute;) dans les param&egrave;tres globaux de FreeWebs</KeepAlive_tlm_notset>
@@ -5136,19 +5116,19 @@ L`etat de la licence risque de passer en [b]Blacklist invalid or not found[/b] d
 <KerbAuthTrusted>Parcours des domaines de confiance</KerbAuthTrusted>
 <kerberaus_authentication>Authentification Kerberos.</kerberaus_authentication>
 <kerberos_authentication>Authentification Kerberos</kerberos_authentication>
-<kerberos_authentication_explain2>L`Authentification Kerberos est une méthode que vous permet de lier votre serveur Artica en utilisant la méthode d'identification Kerberos.[br]Cette méthode est spécifique à l'utilisation de serveurs Artica en mode de [b]répartition de charge[/b] par [b]clusters[/b] Artica.[br]Si vous désirez uniquement connecter ce serveur sans &quot;Équilibreur de charge&quot;, vous pouvez utiliser la méthode Kerberos prévue dans la section [b]{join_domain}[/b].</kerberos_authentication_explain2>
+<kerberos_authentication_explain2>L'Authentification Kerberos est une m&#233;thode que vous permet de lier votre serveur Artica en utilisant la m&#233;thode d'identification Kerberos.[br]Cette m&#233;thode est sp&#233;cifique &#224; l'utilisation de serveurs Artica en mode de [b]r&#233;partition de charge[/b] par [b]clusters[/b] Artica.[br]Si vous d&#233;sirez uniquement connecter ce serveur sans &quot;&#201;quilibreur de charge&quot;, vous pouvez utiliser la m&#233;thode Kerberos pr&#233;vue dans la section [b]{join_domain}[/b].</kerberos_authentication_explain2>
 <kerberos_authentication_ktpass>Veuillez vous rendre sur votre serveur Active Directory, ouvrez une console MS-DOS et copiez-collez la ligne de commande ci-dessous.[br]
 R&eacute;cup&eacute;rez le fichier krb5.tab ( par d&eacute;faut dans le r&eacute;pertoire T&eacute;l&eacute;chargements) et chargez le &agrave; l'aide du champs suivant.</kerberos_authentication_ktpass>
 <kerberos_authentication_support>Support de l'authentification Kerberos</kerberos_authentication_support>
 <kerberos_proxy_hostname_explain>C'est le nom d'h&ocirc;te utilis&eacute; pour l'&eacute;change du ticket kerberos avec l'Active Directory.[br]
 Par d&eacute;faut, Artica utilise le nom d'h&ocirc;te syst&egrave;me.[br]
 Vous pouvez le modifier notamment lors de l'utilisation d'un syst&egrave;me de load-balancing.</kerberos_proxy_hostname_explain>
-<kerberos_realm>Kerberos Realm</kerberos_realm>
+<kerberos_realm>Domaine Kerberos</kerberos_realm>
 <KERBSPN>Nom de service principal (SPN)</KERBSPN>
 <kernel.panic_on_oops>Active la d&eacute;tection des crash processus qui font appel au noyau.[br]
 1 active la d&eacute;tection des kernels panic...</kernel.panic_on_oops>
 <kernel.sem>La taille maximale et le nombre max de s&eacute;maphores qui peuvent &ecirc;tre allou&eacute;s.</kernel.sem>
-<kernel.shmall>La taille maximale en octets d`un segment de mémoire partagée.</kernel.shmall>
+<kernel.shmall>La taille maximale en octets d'un segment de m&#233;moire partag&#233;e.</kernel.shmall>
 <kernel.shmmni>La taille maximal du nombre de segments m&eacute;moires.</kernel.shmmni>
 <kernelnetworkoptimization>Optimisation du noyau syst&egrave;me</kernelnetworkoptimization>
 <KernelSendRedirects>Renvoyer les redirections ICMP aux autres h&ocirc;tes</KernelSendRedirects>
@@ -5330,7 +5310,7 @@ Ceci permet de pouvoir &ecirc;tre inform&eacute; d'une indisponibilit&eacute; et
 <link_all_hosts>Lier tous les h&ocirc;tes</link_all_hosts>
 <link_all_hosts_ask>Cette op&eacute;ration via lier tous les h&ocirc;tes disponibles &agrave; cet objet.
 Voulez-vous effectuer cette op&eacute;ration ?</link_all_hosts_ask>
-<link_balance_checkaddr>Est l'adresse IP &agrave; v&eacute;rifier ( m&eacute;thode PING) afin de s`assurer de la viabilit&eacute; de la ligne Internet ou de la passerelle.[br]Pour &ecirc;tre certain de l`acc&egrave;s Internet, il est conseill&eacute; de v&eacute;rifier une adresse ext&eacute;rieure en lieu et place de v&eacute;rifier l`adresse de la passerelle</link_balance_checkaddr>
+<link_balance_checkaddr>Est l'adresse IP &#224; v&#233;rifier ( m&#233;thode PING) afin de s'assurer de la viabilit&#233; de la ligne Internet ou de la passerelle.[br]Pour &#234;tre certain de l'acc&#232;s Internet, il est conseill&#233; de v&#233;rifier une adresse ext&#233;rieure en lieu et place de v&#233;rifier l'adresse de la passerelle</link_balance_checkaddr>
 <link_computer>Lier un ordinateur</link_computer>
 <link_database>Lier une base de donn&eacute;es</link_database>
 <link_expression>Lier une expression</link_expression>
@@ -5406,14 +5386,14 @@ Notez que cette fonctionnalit&eacute; n\'a pas d\'int&eacute;r&ecirc;t lors de l
 <localdomains_to_remote_server>Domaines locaux vers un serveur</localdomains_to_remote_server>
 <locale>Param&egrave;tre r&eacute;gional</locale>
 <locales>Param&egrave;tres r&eacute;gionaux</locales>
-<LOCALES_EXPLAIN>Les param&egrave;tres r&eacute;gionaux, aussi appel&eacute;s param&egrave;tres de lieu, environnement linguistique, options r&eacute;gionales et linguistiques, ou m&ecirc;me culture ou locales (terme anglais), sont un ensemble de d&eacute;finitions de textes et de formats utiles &agrave; la r&eacute;gionalisation de logiciel.[br]
-Ceux-ci permettent au logiciel d`afficher les donn&eacute;es selon les attentes culturelles et linguistiques propres &agrave; la langue et au pays de l`utilisateur :[br]
-le type de s&eacute;parateur d&eacute;cimal ;[br]
-la repr&eacute;sentation des chiffres ;[br]
+<LOCALES_EXPLAIN>Les param&#232;tres r&#233;gionaux, aussi appel&#233;s param&#232;tres de lieu, environnement linguistique, options r&#233;gionales et linguistiques, ou m&#234;me culture ou locales (terme anglais), sont un ensemble de d&#233;finitions de textes et de formats utiles &#224; la r&#233;gionalisation de logiciel.[br]
+Ceux-ci permettent au logiciel d'afficher les donn&#233;es selon les attentes culturelles et linguistiques propres &#224; la langue et au pays de l'utilisateur :[br]
+le type de s&#233;parateur d&#233;cimal ;[br]
+la repr&#233;sentation des chiffres ;[br]
 le format de la date et de l'heure ;[br]
-les unit&eacute;s mon&eacute;taires ;[br]
-le codage par d&eacute;faut des caract&egrave;res ;[br]
-l'ordre alphab&eacute;tique des lettres (qui peut diff&eacute;rer selon les r&eacute;gions) ;[br]
+les unit&#233;s mon&#233;taires ;[br]
+le codage par d&#233;faut des caract&#232;res ;[br]
+l'ordre alphab&#233;tique des lettres (qui peut diff&#233;rer selon les r&#233;gions) ;[br]
 etc.[br]</LOCALES_EXPLAIN>
 <LOCALES_NOT_COMPILED>Param&egrave;tres r&eacute;gionaux non compil&eacute;s</LOCALES_NOT_COMPILED>
 <LOCALES_NOT_DEFINED>Param&egrave;tres r&eacute;gionaux non d&eacute;finis</LOCALES_NOT_DEFINED>
@@ -5646,8 +5626,8 @@ param&egrave;tre peut &ecirc;tre [b] coch&eacute; [/b] pour renverser le comport
 l'IPMASQ agit en tant que passerelle et tous les autres noeuds sont invisibles derri&egrave;re Artica.[br]
 Ainsi le flux sortant sera alors masqu&eacute; par la carte de sortie d'Artica.</masquerade_whatis>
 <masquerading>Masquerading</masquerading>
-<masquerading_explain>L`IP Masquerading est une forme de Traduction d%u2019Adresse Reseau (Network Address Translation ou NAT en anglais) qui permet &agrave; un ou plusieurs ordinateurs, 
-qui ne poss&egrave;dent pas d%u2019adresses IP, de communiquer sur le r&eacute;seau de destination gr&acirc;ce &agrave; l%u2019unique adresse IP du routeur.</masquerading_explain>
+<masquerading_explain>L'IP Masquerading est une forme de Traduction d%u2019Adresse Reseau (Network Address Translation ou NAT en anglais) qui permet &#224; un ou plusieurs ordinateurs, 
+qui ne poss&#232;dent pas d%u2019adresses IP, de communiquer sur le r&#233;seau de destination gr&#226;ce &#224; l%u2019unique adresse IP du routeur.</masquerading_explain>
 <masquerading_invert>Masquerading oppos&eacute;</masquerading_invert>
 <master2>Ma&icirc;tre</master2>
 <master_address>Nom d'h&ocirc;te du ma&icirc;tre</master_address>
@@ -5753,7 +5733,7 @@ La lecture dans le cache ne sera pas limit&eacute;e mais elle contribuera au cal
 <members_stats>Statistiques des members</members_stats>
 <members_stats_explain>Calcul l'utilisation de la navigation et statistiques des membres par jour.</members_stats_explain>
 <members_table>Table des membres</members_table>
-<members_this_day>Membres aujourd`hui</members_this_day>
+<members_this_day>Membres aujourd'hui</members_this_day>
 <members_this_month>Membres ce mois</members_this_month>
 <member_wwwtrack>Retracer les membres</member_wwwtrack>
 <member_wwwtrack_text>Cr&eacute;er des rapports sp&eacute;cifiques vous permettant de rechercher les statistiques sur des membres/sites web en particulier.</member_wwwtrack_text>
@@ -5835,8 +5815,8 @@ Par exemple, si vous poss&eacute;dez les r&eacute;seaux 192.168.1.0/24, 10.10.1.
 <mikrotik_error_interface>Vous devez indiquer l'interface d'&eacute;coute, c'est obligatoire</mikrotik_error_interface>
 <mikrotik_ping>Ping du MikroTik</mikrotik_ping>
 <mikrotik_ssl_compliance>Interception SSL du MikroTik</mikrotik_ssl_compliance>
-<mikrotik_ssl_compliance_explain>Si vert, le proxy sera alors capable d`intercepter les requ&ecirc;tes SSL envoy&eacute;es par le routeur MikroTik et de d&eacute;chiffrer le protocole.[br]
-Attention &agrave; cette m&eacute;thode, les certificats SSL des sites distants seront remplac&eacute;s par celui du proxy.</mikrotik_ssl_compliance_explain>
+<mikrotik_ssl_compliance_explain>Si vert, le proxy sera alors capable d'intercepter les requ&#234;tes SSL envoy&#233;es par le routeur MikroTik et de d&#233;chiffrer le protocole.[br]
+Attention &#224; cette m&#233;thode, les certificats SSL des sites distants seront remplac&#233;s par celui du proxy.</mikrotik_ssl_compliance_explain>
 <milliseconds>millisecondes</milliseconds>
 <MILTER_GREYLIST>Liste Grise Milter</MILTER_GREYLIST>
 <milter_greylist_domain>Domaine du MX</milter_greylist_domain>
@@ -6121,7 +6101,7 @@ Cette fonctionnalit&eacute; est inutile si vous utilisez une m&eacute;thode d'id
 <NAT_LABEL_EXPL>Re&ccedil;oit les paquets TCP utilisant des r&egrave;gles de NAT</NAT_LABEL_EXPL>
 <nat_method>M&eacute;thode NAT</nat_method>
 <nat_title>Network Address Translation</nat_title>
-<NAT_TYPE_0_EXP>Lorsque les n%u0153uds %c demandent l`acc&egrave;s au port %P (%T) &agrave; travers l`interface %i, alors transf&eacute;rer les paquets vers %s sur le port %p.</NAT_TYPE_0_EXP>
+<NAT_TYPE_0_EXP>Lorsque les n%u0153uds %c demandent l'acc&#232;s au port %P (%T) &#224; travers l'interface %i, alors transf&#233;rer les paquets vers %s sur le port %p.</NAT_TYPE_0_EXP>
 <nbs_of_rbls>Nombre de listes de r&eacute;putations publiques utilis&eacute;es</nbs_of_rbls>
 <nb_employees>Nombre d'employ&eacute;s</nb_employees>
 <NB_SYNC>Nombre de synchronisations</NB_SYNC>
@@ -6137,8 +6117,8 @@ Voulez-vous effectuer cette op&eacute;ration maintenant ?</need_to_proxy_reload_
 <need_to_reboot_ask>Pour appliquer correctement la configuration, il faudra red&eacute;marrer la machine.
 Voulez-vous red&eacute;marrer la machine apr&egrave;s l'ex&eacute;cution de la t&acirc;che ?</need_to_reboot_ask>
 <need_to_reboot_webconsole>Vous devez red&eacute;marrer le service de la console web</need_to_reboot_webconsole>
-<need_to_reload_proxy>Afin d`appliquer les param&egrave;tres au service proxy, Artica a besoin de le recharger/[br]
-Voulez-vous appliquer les param&egrave;tres et recharger le service proxy ?</need_to_reload_proxy>
+<need_to_reload_proxy>Afin d'appliquer les param&#232;tres au service proxy, Artica a besoin de le recharger/[br]
+Voulez-vous appliquer les param&#232;tres et recharger le service proxy ?</need_to_reload_proxy>
 <need_to_restart_webconsole>Red&eacute;marrage de la console Web requis</need_to_restart_webconsole>
 <need_to_restart_webconsole_snmp>Afin de faire fonctionner le support SNMP , vous devez red&eacute;marrer le service de la console Web Artica.</need_to_restart_webconsole_snmp>
 <need_to_upgrade_to_v10>F&eacute;licitations! Votre serveur Artica &agrave; &eacute;t&eacute; mis &agrave; jour en version 2.x.[br]
@@ -6151,7 +6131,7 @@ Afin de finaliser votre mise &agrave; jour, vous devez cliquer sur le bouton ci-
 <NetIpv4TcpMemLow_explain>Indique au noyau le seuil le plus faible. [br] En dessous de ce point, la pile TCP n'influence pas le noyau sur l'utilisation de la m&eacute;moire par les diff&eacute;rentes sockets TCP</NetIpv4TcpMemLow_explain>
 <NetIpv4TcpMemPages>Indique au noyau combien de pages m&eacute;moire il peut utiliser au maximum. [br] Si cette valeur est atteinte, les flux TCP et les paquets seront [b]rejet&eacute;s[/b] jusqu'&agrave; ce que l'utilisation de la m&eacute;moire revienne &agrave; un niveau inf&eacute;rieur. [br] Cette valeur comprend toutes les sockets TCP actuellement utilis&eacute;es.</NetIpv4TcpMemPages>
 <NetIpv4TcpMemPress>Indique au noyau &agrave; partir de quelle utilisation il faut commencer &agrave; faire baisser l'utilisation de la m&eacute;moire</NetIpv4TcpMemPress>
-<NetIpv4TcpRmemDef>Default receive buffer</NetIpv4TcpRmemDef>
+<NetIpv4TcpRmemDef>Tampon de r&#233;ception par d&#233;faut</NetIpv4TcpRmemDef>
 <NetIpv4TcpRmemDef_explain>Indique au noyau la taille du tampon allou&eacute; par d&eacute;faut pour chaque connexion TCP</NetIpv4TcpRmemDef_explain>
 <NetIpv4TcpRmemMax>Tampon de r&eacute;ception maximal</NetIpv4TcpRmemMax>
 <NetIpv4TcpRmemMax_explain>Indique la taille maximale du tampon allou&eacute; pour chaque connexion TCP</NetIpv4TcpRmemMax_explain>
@@ -6203,7 +6183,7 @@ Si Internet n'est pas disponible, une erreur sera affich&eacute;e dans le pannea
 <net_ipv4_tcp_wmem_explain>Contient des informations sur la quantit&eacute; de m&eacute;moire tampon &agrave; utilis&eacute; pour chaque connexion TCP sortante.[br]
 Chaque connexion TCP aura autant d'espace m&eacute;moire &agrave; utiliser avant que le tampon ne soit rempli.[br]
 Chacune de ces trois valeurs est utilis&eacute;e dans des conditions diff&eacute;rentes.</net_ipv4_tcp_wmem_explain>
-<net_isp_balance>Internet Load-balance</net_isp_balance>
+<net_isp_balance>R&#233;partition de charge Internet</net_isp_balance>
 <net_mii_title>Vitesse et param&egrave;tres duplex de la carte</net_mii_title>
 <net_read_timeout>D&eacute;lai MAX lecture r&eacute;seau</net_read_timeout>
 <net_write_timeout>D&eacute;lai d'&eacute;criture r&eacute;seau</net_write_timeout>
@@ -6216,11 +6196,10 @@ Si cette option est activ&eacute;e, alors il lui sera interdit d'aller recherche
 <never_direct_label>Et force l'utilisation d'un proxy parent pour toutes les requ&ecirc;tes ( incluant le SSL )</never_direct_label>
 <never_disable_the_account>Ne jamais d&eacute;sactiver le compte</never_disable_the_account>
 <new_account>Nouveau compte</new_account>
-<new_acls_rule_explain>Set the type of rule you want to apply.[b]Allow access[/b] means that the request is allowed to be processed from the proxy service (except from the URLs filtering, Antivirus service ) and it bypass any authentication method.[br]
-[b]Deny Access[/b] means that the request is denied directly from the proxy service and cannot be bypassed.[br]
-After creating this rule, you will be able to add [b]Proxy objects[/b].[br]
-Proxy objects will define how this rule will matches requests.
-</new_acls_rule_explain>
+<new_acls_rule_explain>D&#233;finissez le type de r&#232;gle que vous souhaitez appliquer.[b]Autoriser l'acc&#232;s[/b] signifie que la requ&#234;te est autoris&#233;e &#224; &#234;tre trait&#233;e par le service proxy (sauf le filtrage d'URL, le service antivirus) et qu'elle contourne toute m&#233;thode d'authentification.[br]
+[b]Refuser l'acc&#232;s[/b] signifie que la requ&#234;te est refus&#233;e directement par le service proxy et ne peut pas &#234;tre contourn&#233;e.[br]
+Apr&#232;s avoir cr&#233;&#233; cette r&#232;gle, vous pourrez ajouter des [b]objets Proxy[/b].[br]
+Les objets Proxy d&#233;finiront comment cette r&#232;gle correspondra aux requ&#234;tes.</new_acls_rule_explain>
 <new_acls_rule_header_explain>Cette r&egrave;gle vous permet de jouer avec les ent&ecirc;tes HTTP envoy&eacute;es par les navigateurs ( client ) et celles utilis&eacute;es lors de la r&eacute;ponse des serveurs Web ( serveur ).[br]
 Vous devez comprendre qu'il n'est pas possible de modifier les ent&ecirc;tes dans le protocole [b]HTTPS[/b].[br]
 Si toutefois vous d&eacute;sirez effectuer des modifications des ent&ecirc;tes dans le flux SSL, vous devrez utiliser la fonctionnalit&eacute; de MAN-IN-THE-MIDDLE afin d'autoriser le d&eacute;chiffrement du protocole HTTPs.</new_acls_rule_header_explain>
@@ -6309,7 +6288,7 @@ Si vous d&eacute;sirez acc&eacute;der &agrave; ce conteneur &agrave; travers le 
 <new_proxy_object>Nouvel objet proxy</new_proxy_object>
 <new_query>Nouvelle requ&ecirc;te</new_query>
 <new_quota_object>Nouvel objet quota</new_quota_object>
-<new_radius_client>New radius client</new_radius_client>
+<new_radius_client>Nouveau client radius</new_radius_client>
 <new_range>Nouvelle tranche</new_range>
 <new_record>Nouvel enregistrement</new_record>
 <NEW_RELEASE>Nouvelle version</NEW_RELEASE>
@@ -6369,10 +6348,8 @@ Exemple:[br]
 newdomain.tld;mydomain.tld[br]
 Va remplacer mydomain.tld par newdomain.tld</nginx_bulk_import_replace_explain>
 <NGINX_DEFAULT_SERVER>Si activ&eacute;, cette configuration sera indiqu&eacute;e comme une site par d&eacute;faut ou &quot;attrape tout&quot;, si les requ&ecirc;tes ne peuvent &ecirc;tre servies par d'autres sites Web alors ce site web sera pris en charge.</NGINX_DEFAULT_SERVER>
-<nginx_default_server_explain>
-If the Host header field does not match a server name, the Web server routes the request to the default server for the port on which the request arrived.[br]
-The default server is the first one listed in the configuration, unless you enable this parameter
-</nginx_default_server_explain>
+<nginx_default_server_explain>Si le champ d'en-t&#234;te Host ne correspond &#224; aucun nom de serveur, le serveur web achemine la requ&#234;te vers le serveur par d&#233;faut du port sur lequel elle est arriv&#233;e.[br]
+Le serveur par d&#233;faut est le premier r&#233;pertori&#233; dans la configuration, sauf si vous activez ce param&#232;tre</nginx_default_server_explain>
 <nginx_default_server_text>Si vert, ce serveur sera utilise en priorit&eacute;.[br]Par d&eacute;faut, le reverse proxy utilise l\'ordre de la configuration pour choisir le bon serveur.[br]Vous pouvez indiquer plusieurs serveurs par d&eacute;faut.[br]
 Dans ce cas, l\'ordre ajustera quels serveurs par d&eacute;faut faut-il utiliser en priorit&eacute;.</nginx_default_server_text>
 <nginx_destination>O&ugrave; les requ&ecirc;tes doivent &ecirc;tre transf&eacute;r&eacute;es ?.[br]Vous pouvez d&eacute;finir une adresse IP (172.16.2.3);[br]
@@ -6413,8 +6390,7 @@ On suppose que le serveur de destination retourne \&quot;Set-Cookie\&quot; avec 
 Elle d&eacute;termine non pas toute la r&eacute;ponse mais seulement entre deux op&eacute;rations de lecture sur le port distant.</nginx_proxy_read_timeout>
 <nginx_replace_explain>Les r&egrave;gles de remplacement vous permet de remplacer du texte &agrave; la vol&eacute;e dans les pages HTML</nginx_replace_explain>
 <nginx_servername2>Ce nom de serveur est pour votre source, c'est une valeur ergonomique vous permettant de retrouver facilement cette source dans la liste.</nginx_servername2>
-<nginx_servername_explains>
-<servernames>Server names</nginx_servername_explains>
+<nginx_servername_explains>Noms de serveur</nginx_servername_explains>
 <nginx_service_explain>Un service est un service HTTP/HTTPS permettant de fournir des applications Web.[br]Ce service peut prendre une charge de multiples noms d'h&ocirc;tes ou domaines.[br]
 Apr&egrave;s la cr&eacute;ation de ce service, vous serez en mesure de pr&eacute;ciser les domaines Internet qu'il devra produire.</nginx_service_explain>
 <nginx_stream_explain>[b]Cr&eacute;er un transmetteur de port[/b][br]
@@ -6538,8 +6514,8 @@ Afficher la section et essayez de les classer vous-m&ecirc;me afin d'enrichir vo
 <now_you_can_monitorize_your_server_through_your_smartphone>D&eacute;sormais, vous pouvez surveiller votre serveur au travers de votre ordiphone</now_you_can_monitorize_your_server_through_your_smartphone>
 <no_activated_rule>Aucune r&egrave;gle d\'activ&eacute;e</no_activated_rule>
 <no_active_directory_connection>Pas de connexion Active Directory, utiliez [br]Group Active Directory distant[/b]</no_active_directory_connection>
-<no_backend_port_defined>No port has been defined</no_backend_port_defined>
-<no_backend_server_defined>No backend has been defined</no_backend_server_defined>
+<no_backend_port_defined>Aucun port n'a &#233;t&#233; d&#233;fini</no_backend_port_defined>
+<no_backend_server_defined>Aucun backend n'a &#233;t&#233; d&#233;fini</no_backend_server_defined>
 <no_cache>Pas de mis en cache</no_cache>
 <no_cached_sites_warn>Aucun site web ne peut &ecirc;tre mis en cache</no_cached_sites_warn>
 <no_cache_as_been_detected>Aucun cache n'a &eacute;t&eacute; d&eacute;couvert/[br]Cette erreur provient du fait que:[br]
@@ -6556,9 +6532,9 @@ Si vous en avez besoin &agrave; des fins d'utilisation de cat&eacute;gories dans
 Cliquez sur le bouton ci-dessous pour acc&eacute;der &agrave; ce param&egrave;tre.</no_category_service_performance>
 <no_certificate>Pas de certificat ( aucune donn&eacute;e )</no_certificate>
 <no_change>Pas de changement</no_change>
-<no_credentials>Pas d`identifiants</no_credentials>
-<no_credentials_explain>Si vert, la page ne demandera pas d`identification et automatiquement autorisera le site web bloqu&eacute;.[br]
-Au contraire, si rouge un compte utilisateur et mot de passe sera demand&eacute;.</no_credentials_explain>
+<no_credentials>Pas d'identifiants</no_credentials>
+<no_credentials_explain>Si vert, la page ne demandera pas d'identification et automatiquement autorisera le site web bloqu&#233;.[br]
+Au contraire, si rouge un compte utilisateur et mot de passe sera demand&#233;.</no_credentials_explain>
 <no_data>Pas de donn&eacute;e</no_data>
 <no_default_server_defined>Aucun serveur par défaut n'a été défini dans votre configuration</no_default_server_defined>
 <no_defined_parent>Aucun p&egrave;re &agrave; &eacute;t&eacute; d&eacute;fini</no_defined_parent>
@@ -6655,7 +6631,7 @@ Actuellement, seulement la m&eacute;thode kerberos est utilis&eacute;e.</ntlm_mo
 <ntlm_processes>Processus NTLM</ntlm_processes>
 <ntp-servers>Serveurs NTP</ntp-servers>
 <NTPD>Serveur NTP</NTPD>
-<NTPDRestrictToLocalNetwork>Restreint l`usage au r&eacute;seau local</NTPDRestrictToLocalNetwork>
+<NTPDRestrictToLocalNetwork>Restreint l'usage au r&#233;seau local</NTPDRestrictToLocalNetwork>
 <NTPDRestrictToLocalNetwork_explain>Si actif, alors seulement les r&eacute;seaux sp&eacute;cifi&eacute;s dans la section r&eacute;seau seront autoris&eacute;s &agrave; question le serveur de temps.[br]La case contraire, il n'y aura pas de restriction</NTPDRestrictToLocalNetwork_explain>
 <ntpd_server_not_installed_only_client_mode>Le service NTP n\'est pas install&eacute; dans votre serveur.[br]Il ne peut pas fournir une synchronisation du temps dans votre r&eacute;seau.[br]
 Toutefois vous pouvez utiliser la partie cliente afin de synchroniser l\'heure syst&egrave;me de votre serveur sur un serveur de temps dans la section param&egrave;tres du serveur.</ntpd_server_not_installed_only_client_mode>
@@ -6724,10 +6700,10 @@ Si vous &ecirc;tes soucieux de la stabilit&eacute; du service Proxy, mettez vert
 <on_interface>Sur l'interface r&eacute;seau</on_interface>
 <on_port>sur le port</on_port>
 <oom_kill_allocating_task>Laisser le noyau tuer les t&acirc;ches</oom_kill_allocating_task>
-<opcache_explain>Normallement les scripts PHP sont compilés à la volée.[br]Une partie de la ressource machine est de convertir le code en un code exécutable.[br]
+<opcache_explain>Normalement, les scripts PHP sont compil&#233;s &#224; la vol&#233;e.[br]Une partie des ressources de la machine sert &#224; convertir le code en code ex&#233;cutable.[br]
 OPcache permet d'effectuer cette compilation une seule fois via la mise en cache des conversions.[br]
-Le script peut être alors chargé directement depuis le cache aussi rapidement que désiré.[br]Dans bien des cas, ceci assure une amélioration notable des performances.</opcache_explain>
-<opcache_memory_consumption>Taille de la mémoire partagée utilisée par le cache OPcache.</opcache_memory_consumption>
+Le script peut alors &#234;tre charg&#233; directement depuis le cache, aussi rapidement que souhait&#233;.[br]Dans bien des cas, cela assure une am&#233;lioration notable des performances.</opcache_explain>
+<opcache_memory_consumption>Taille de la m&#233;moire partag&#233;e utilis&#233;e par le cache OPcache.</opcache_memory_consumption>
 <opempty_database>Vider la base ?</opempty_database>
 <opened_ports>Ports ouverts</opened_ports>
 <openldap_server>Serveur OpenLDAP</openldap_server>
@@ -6853,8 +6829,8 @@ Comme  l'ent&ecirc;te Expires est ignor&eacute;, les valeurs des param&egrave;tr
 <override-lastmod>Force le proxy &agrave; ignorer l'ent&ecirc;te [b]Last-Modified[/b], qui finira par imposer l'utilisation d'une valeur minime pour d&eacute;terminer le niveau de stockage d'un objet.[br] Cette option n'est d'aucune utilit&eacute;, si vous avez r&eacute;gl&eacute; la valeur minimum &agrave; z&eacute;ro.</override-lastmod>
 <override_relay>Surcharge le relais</override_relay>
 <override_transport>Surcharge le routage</override_transport>
-<ovh_specific_config_explain>Si activ&eacute;, alors l`adresse de broadcast sera l`adresse IP de l`interface r&eacute;seau.[br]
-Veuillez v&eacute;rifier que vous avez besoin de ce type de comportement avant d`appliquer les r&eacute;seaux.[br]Certains fournisseurs d`acc&egrave;s ne supportent pas cette fonction.</ovh_specific_config_explain>
+<ovh_specific_config_explain>Si activ&#233;, alors l'adresse de broadcast sera l'adresse IP de l'interface r&#233;seau.[br]
+Veuillez v&#233;rifier que vous avez besoin de ce type de comportement avant d'appliquer les r&#233;seaux.[br]Certains fournisseurs d'acc&#232;s ne supportent pas cette fonction.</ovh_specific_config_explain>
 <packets_cache_entries>Entr&eacute;es de cache de paquets</packets_cache_entries>
 <packets_from>Les paquets provenant de</packets_from>
 <pagename>Nom de la page</pagename>
@@ -7041,7 +7017,7 @@ Si le ping est un succ&egrave;s apr&egrave;s la reconfiguration du r&eacute;seau
 <please_fill_all_form_values>Veuillez saisir toutes les donn&eacute;es requises par le formulaire</please_fill_all_form_values>
 <please_fill_subdomain_correctly>Veuillez remplir le sous-domaine correctement.</please_fill_subdomain_correctly>
 <please_give_your_phone_number>Veuillez indiquer votre num&eacute;ro de t&eacute;l&eacute;phone</please_give_your_phone_number>
-<PLEASE_REMOVE_CMP_AD>Veuillez supprimer l`ordinateur %cmp de votre Active Directory</PLEASE_REMOVE_CMP_AD>
+<PLEASE_REMOVE_CMP_AD>Veuillez supprimer l'ordinateur %cmp de votre Active Directory</PLEASE_REMOVE_CMP_AD>
 <please_restart_later>Veuillez r&eacute;essayer plus tard</please_restart_later>
 <please_select_an_user>Veuillez s&eacute;lectionner un utilisateur</please_select_an_user>
 <please_sign_in>Identification</please_sign_in>
@@ -7282,8 +7258,8 @@ Les en-têtes HTTP correspondent généralement à une toute petite partie de la
 <proxy_cache_min_uses>NB minimal de requ&ecirc;tes mises en cache</proxy_cache_min_uses>
 <proxy_cache_min_uses_text>Nombre de requêtes, après lequel la réponse sera mise en cache.[br]
 Cette option est utile si le cache se remplit constamment, car elle garantit que seuls les éléments les plus fréquemment consultés sont ajoutés au cache.</proxy_cache_min_uses_text>
-<PROXY_CACHE_STORED_OBJECTS_EXPLAIN>Cette fonctionnalit&eacute; vous permet de visualiser les objets qui sont stock&eacute;s sur le disque dur du proxy.[br]Ce n'est pas une fonctionnalit&eacute; en temps r&eacute;elle car l'extraction consomme de la performance serveur.[br]
-Vous devrez lancer l`analyse manuellement.</PROXY_CACHE_STORED_OBJECTS_EXPLAIN>
+<PROXY_CACHE_STORED_OBJECTS_EXPLAIN>Cette fonctionnalit&#233; vous permet de visualiser les objets qui sont stock&#233;s sur le disque dur du proxy.[br]Ce n'est pas une fonctionnalit&#233; en temps r&#233;elle car l'extraction consomme de la performance serveur.[br]
+Vous devrez lancer l'analyse manuellement.</PROXY_CACHE_STORED_OBJECTS_EXPLAIN>
 <proxy_cache_valid>Temps de cache</proxy_cache_valid>
 <proxy_cache_valid_text>Indique combien de temps ( en minutes) la requ&ecirc;te va &ecirc;tre mise en cache</proxy_cache_valid_text>
 <proxy_certificate>Certificat Proxy</proxy_certificate>
@@ -7370,7 +7346,7 @@ La taille des donn&eacute;es &eacute;crites dans le fichier temporaire en une se
 <proxy_read_timeout>Temps limite en lecture</proxy_read_timeout>
 <proxy_read_timeout_text>Temps max de lecture sur le serveur Web de destination.[br]
 Il d&eacute;termine combien de temps en seconde le reverse proxy va attendre afin de recevoir la r&eacute;ponse demand&eacute;e</proxy_read_timeout_text>
-<proxy_refresh_rate>Proxy aggregation time</proxy_refresh_rate>
+<proxy_refresh_rate>Temps d'agr&#233;gation du proxy</proxy_refresh_rate>
 <proxy_refresh_rate_about>Temps en minutes de diffusion des nouveaux m&eacute;triques &agrave; l'application cliente</proxy_refresh_rate_about>
 <proxy_requests>Proxy (requ&ecirc;tes)</proxy_requests>
 <PROXY_RESTFULL>API RESTful pour le service Proxy</PROXY_RESTFULL>
@@ -7655,7 +7631,7 @@ La m&ecirc;me chose avec les cookies comme %_COOKIE_KEY%.[br]
 Par exemple,[br] http://some/logon.php?query=%QUERY_STRING%&amp;lang=%LANGUAGE%&amp;result=%_GET_session%&amp;session-id=%_COOKIE_JSESSIONID%</redirect_uri_explain>
 <redirect_uri_text>Redirection de votre requ&ecirc;te</redirect_uri_text>
 <redirect_url>URL de redirection</redirect_url>
-<REDIS_PHP_EXTENSION_NOT_LOADED>L'extension PHP Redis n'est pas charg&eacute;e, des fonctionnalit&eacute;s ne seront pas disponibles.</REDIS_PHP_EXTENSION_NOT_LOADED>
+<REDIS_PHP_EXTENSION_NOT_LOADED>L'extension PHP Redis n'est pas charg&#233;e, certaines fonctions seront indisponibles</REDIS_PHP_EXTENSION_NOT_LOADED>
 <referer_regex>Lien Web r&eacute;f&eacute;rant</referer_regex>
 <refresh-ims>Force le proxy &agrave; v&eacute;rifier/valider l'objet mis en cache avec le serveur web original via l'ent&ecirc;te [b]If-Modified-Since[/b].[br]L'utilisation de cette option augmente le nombre de requ&ecirc;tes vers Internet[br]mais elle assure que la donn&eacute;e renvoy&eacute;e par le proxy sera toujours d'actualit&eacute;.</refresh-ims>
 <refreshdomainlist>Temps de cache des domaines</refreshdomainlist>
@@ -7680,7 +7656,7 @@ Par exemple,[br] http://some/logon.php?query=%QUERY_STRING%&amp;lang=%LANGUAGE%&
 <refresh_website_each>Rafra&icirc;chit le site chaque</refresh_website_each>
 <refused>Refus&eacute;(s)</refused>
 <refusedSMTP>Messages refus&eacute;s dans le flux SMTP</refusedSMTP>
-<refusedSMTP_explain>Display refused messages by SMTP senders in SMTP connections</refusedSMTP_explain>
+<refusedSMTP_explain>Afficher les messages refus&#233;s par les exp&#233;diteurs SMTP dans les connexions SMTP</refusedSMTP_explain>
 <refused_from_everyone>Refus&eacute; pour tout le monde</refused_from_everyone>
 <regenerate_thumbnail>Rafra&icirc;chir la miniature</regenerate_thumbnail>
 <regex>Expression r&eacute;guli&egrave;re</regex>
@@ -7719,9 +7695,9 @@ L'utilisation de cette option est utile  uniquement si lent&ecirc;te [b]Last-Mod
 <reloading_web_service>Rechargement du service Web</reloading_web_service>
 <reload_byschedule>Recharger uniquement par programmation</reload_byschedule>
 <reload_into_ims>Rechargement redirig&eacute; sur le cache</reload_into_ims>
-<reload_into_ims_explain>Si vert, les ent&ecirc;tes `no-cache` ou `reload` n`auront plus d`effets et seront modifi&eacute;es par `If-Modified-Since`.[br]
+<reload_into_ims_explain>Si vert, les ent&#234;tes `no-cache` ou `reload` n'auront plus d'effets et seront modifi&#233;es par `If-Modified-Since`.[br]
 Activer cette fonction vous met hors norme HTTP.[br]
-Ceci va augmenter le taux de cache mais peut avoir des effets n&eacute;gatifs.[br]Il ne sera plus possible d`utiliser la combinaison de CTRL F5 afin de forcer le rafra&icirc;chissement.</reload_into_ims_explain>
+Ceci va augmenter le taux de cache mais peut avoir des effets n&#233;gatifs.[br]Il ne sera plus possible d'utiliser la combinaison de CTRL F5 afin de forcer le rafra&#238;chissement.</reload_into_ims_explain>
 <reload_in_public_mode>Rechargement des services Proxy en mode publique</reload_in_public_mode>
 <reload_network>Recharger le r&eacute;seau</reload_network>
 <reload_proxy>Recharge le service Proxy</reload_proxy>
@@ -7812,7 +7788,7 @@ Si vous désirez forcer la catégorisation vers vos catégories, vous devrez act
 <remove_postfix_section_explain>Si vert, Artica va cacher tout forme de section li&eacute;e &agrave; la messagerie et comprendre que ce serveur ne propose pas de services de messagerie ( comme la pr&eacute;sence de Postfix).[br]
 Les logiciels de messagerie ne seront pas d&eacute;sinstall&eacute;s et resteront avec le dernier &eacute;tat actuel.[br]Vous serez capable de revenir en arri&egrave;re en cas de contre-ordre.</remove_postfix_section_explain>
 <remove_postfix_section_text>D&eacute;connecter le service de messagerie d'Artica</remove_postfix_section_text>
-<remove_proxy_hostname>N`affiche pas le nom de la machine</remove_proxy_hostname>
+<remove_proxy_hostname>N'affiche pas le nom de la machine</remove_proxy_hostname>
 <remove_proxy_version>Supprimer la version du proxy</remove_proxy_version>
 <remove_rules_after>Supprimer les r&egrave;gles au bout de</remove_rules_after>
 <remove_service>Suppression du service</remove_service>
@@ -7852,14 +7828,14 @@ Les logiciels de messagerie ne seront pas d&eacute;sinstall&eacute;s et resteron
 <REPLACE>remplacer</REPLACE>
 <replaceby>Remplac&eacute; par</replaceby>
 <replacewith>Remplacer par</replacewith>
-<replace_client_header>Remplacer l`ent&ecirc;te du client</replace_client_header>
+<replace_client_header>Remplacer l'ent&#234;te du client</replace_client_header>
 <replace_regex_explain>Par d&eacute;faut, Artica va transformer votre recherche vers une expression r&eacute;guli&egrave;re.[br]
 L'activation de cette option interdira &agrave; transformer votre recherche.[br]
 Cela veut dire que votre recherche est une expression r&eacute;guli&egrave;re.</replace_regex_explain>
 <replace_rule>R&egrave;gle de remplacement</replace_rule>
 <replace_rules>R&egrave;gles de remplacement</replace_rules>
 <replace_server_directive>Remplacer la directive serveur</replace_server_directive>
-<replace_server_header>Remplacer l`ent&ecirc;te du serveur</replace_server_header>
+<replace_server_header>Remplacer l'ent&#234;te du serveur</replace_server_header>
 <replicate>R&eacute;pliquer</replicate>
 <replicate_dns_master>La commande &agrave; &eacute;t&eacute; envoy&eacute;e au service d'arri&egrave;re plan afin de construire le paquetage de r&eacute;plication</replicate_dns_master>
 <replic_executed_in_background_mode>La t&acirc;che de r&eacute;plication &agrave; &eacute;t&eacute; ex&eacute;cut&eacute;e en t&acirc;che de fond.
@@ -7907,10 +7883,10 @@ video/quicktime[br]
 video/x-msvideo[br]
 video/mpeg[br]
 video/mp4v-es[br]</rep_mime_type_explain>
-<Requestblockrulesforexception>Request block rules for exception</Requestblockrulesforexception>
-<Requestblockrulestotal>Request block rules total</Requestblockrulestotal>
-<Requestblockruleswithdomainoption>Request block rules with domain option</Requestblockruleswithdomainoption>
-<Requestblockruleswithrequesttypeoptions>Request block rules with request type options</Requestblockruleswithrequesttypeoptions>
+<Requestblockrulesforexception>R&#232;gles de blocage de requ&#234;tes pour exception</Requestblockrulesforexception>
+<Requestblockrulestotal>Total des r&#232;gles de blocage de requ&#234;tes</Requestblockrulestotal>
+<Requestblockruleswithdomainoption>R&#232;gles de blocage de requ&#234;tes avec option de domaine</Requestblockruleswithdomainoption>
+<Requestblockruleswithrequesttypeoptions>R&#232;gles de blocage de requ&#234;tes avec options de type de requ&#234;te</Requestblockruleswithrequesttypeoptions>
 <requested>Requis</requested>
 <requested_addr>Adresse demand&eacute;e</requested_addr>
 <requested_port>Port demand&eacute;</requested_port>
@@ -8035,8 +8011,8 @@ Toutes les connexions actives seront perdues.</restart_squid_explain>
 <restart_webconsole>Red&eacute;marrage de la console Web</restart_webconsole>
 <restart_webconsole_service>Red&eacute;marre le moteur Web de la console Artica</restart_webconsole_service>
 <restart_webconsole_service_explain>Arr&ecirc;te le service lighttpd et le red&eacute;marre afin de rafra&icirc;chir les param&egrave;tres de la console</restart_webconsole_service_explain>
-<restart_webfiltering_http_service>Red&eacute;marre le service de la page d`erreur</restart_webfiltering_http_service>
-<restart_webfiltering_http_service_explain>Rafra&icirc;chit le service de la page d`erreur du filtrage Web afin de lib&eacute;rer de la m&eacute;moire et des processus</restart_webfiltering_http_service_explain>
+<restart_webfiltering_http_service>Red&#233;marre le service de la page d'erreur</restart_webfiltering_http_service>
+<restart_webfiltering_http_service_explain>Rafra&#238;chit le service de la page d'erreur du filtrage Web afin de lib&#233;rer de la m&#233;moire et des processus</restart_webfiltering_http_service_explain>
 <restart_webfiltering_service>Red&eacute;marrer le service de filtrage Web</restart_webfiltering_service>
 <restart_web_console>Red&eacute;marrer la console web</restart_web_console>
 <restart_web_service>Red&eacute;marrage du service Web</restart_web_service>
@@ -8080,7 +8056,7 @@ Indiquez dans ce formulaire les acc&egrave;s &agrave; votre syst&egrave;me de pa
 <retreival_mailrules_text>Cr&eacute;ation et &eacute;dition des r&egrave;gles permettant de r&eacute;cup&eacute;rer des messages stock&eacute;es dans des boites aux lettres non g&eacute;r&eacute;es par votre compte local.</retreival_mailrules_text>
 <retreiver_events>&Eacute;v&eacute;nements du r&eacute;cup&eacute;rateur</retreiver_events>
 <retreive_informations>R&eacute;cup&eacute;ration des informations.</retreive_informations>
-<retriever_events>retriever events</retriever_events>
+<retriever_events>&#201;v&#233;nements du r&#233;cup&#233;rateur</retriever_events>
 <retrieve_informations>R&eacute;cup&eacute;ration des informations</retrieve_informations>
 <retry>Recommencer</retry>
 <retry_authentication>Recommencer l'authentification</retry_authentication>
@@ -8160,7 +8136,7 @@ Un [b]nom d'h&ocirc;te plein[/b] trouv&eacute; par la r&eacute;solution invers&e
 [/ul]</rsync_host_allow_explain>
 <rsync_out_port_explain>V&eacute;rifiez que le port 873 TCP soit ouvert en sortie sur votre pare-feu afin d'autoriser les rapatriements des paquetages de mise &agrave; jour.</rsync_out_port_explain>
 <rsyslogd>D&eacute;mon syslog</rsyslogd>
-<Ruleswiththirdpartyoption>Rules with third party option</Ruleswiththirdpartyoption>
+<Ruleswiththirdpartyoption>R&#232;gles avec option tierce partie</Ruleswiththirdpartyoption>
 <rules_and_services>R&egrave;gles et services</rules_and_services>
 <rules_on_urls>R&egrave;gles sur les liens</rules_on_urls>
 <rules_retention>R&eacute;tention des r&egrave;gles</rules_retention>
@@ -8173,7 +8149,7 @@ Un [b]nom d'h&ocirc;te plein[/b] trouv&eacute; par la r&eacute;solution invers&e
 Voulez-vous effectuer cette op&eacute;ration ?</run_backup_confirm>
 <run_hotspot>D&eacute;marrer le syst&egrave;me de HotSpot</run_hotspot>
 <run_search>D&eacute;marrer la recherche</run_search>
-<run_the_wizard>Lancer l`assistant</run_the_wizard>
+<run_the_wizard>Lancer l'assistant</run_the_wizard>
 <run_this_task_now>D&eacute;marrer cette t&acirc;che maintenant</run_this_task_now>
 <run_update_task_now>Lancer la t&acirc;che maintenant</run_update_task_now>
 <run_wizard_install>Lancer l'assistant d'installation</run_wizard_install>
@@ -8398,7 +8374,7 @@ Veuillez faire attention aux sites SSL bloqu&eacute;s o&ugrave; une erreur de ce
 <server_address>Adresse du serveur</server_address>
 <server_aliases_title>Domaines alias du site</server_aliases_title>
 <server_all_kbytes_in>Montant du trafic r&eacute;ceptionn&eacute; par le proxy</server_all_kbytes_in>
-<server_all_kbytes_out>Amount of traffic sended by the proxy</server_all_kbytes_out>
+<server_all_kbytes_out>Volume de trafic envoy&#233; par le proxy</server_all_kbytes_out>
 <server_buffers>Tampons du serveur</server_buffers>
 <server_cert_fingerprint>Empreinte numérique SSL</server_cert_fingerprint>
 <server_cert_fingerprint_explain>Afin de récupérer l'empreinte numérique SSL, indiquez ici le nom d'hôte et le port du serveur distant.[br]
@@ -8491,7 +8467,7 @@ Faites-vous plaisir !!</settings_final_show>
 <setup>Installation</setup>
 <setup_center_install>Ordres du Centre d'installation</setup_center_install>
 <setup_center_install_explain>Cette t&acirc;che va v&eacute;rifier les ordres cr&eacute;&eacute;s dans le centre d'installation et les ex&eacute;cuter afin d'installer ou de mettre &agrave; jour les logiciels demand&eacute;s.</setup_center_install_explain>
-<setup_error>Erreur d`installation</setup_error>
+<setup_error>Erreur d'installation</setup_error>
 <set_address_generic>Indiquez ici une adresse r&eacute;seau.[br]
 Les valeurs possibles sont:[br]
 Une adresse IP: 192.168.1.1[br]
@@ -8536,11 +8512,11 @@ Voulez-vous effectuer cette op&eacute;ration ?</shorewall_ask_compile>
 <shorewall_ipsec>zone chiffr&eacute;e</shorewall_ipsec>
 <shorewall_ipv4>zone standard</shorewall_ipv4>
 <shorewall_masq>NAT dynamique (Masquage)</shorewall_masq>
-<shorewall_masq_explain>Le trafic sortant depuis une interface sp&eacute;cifique vers une autre interface peut &ecirc;tre translat&eacute;e.
+<shorewall_masq_explain>Le trafic sortant depuis une interface sp&#233;cifique vers une autre interface peut &#234;tre translat&#233;e.
 [br]Par exemple:[br]
-10.0.0.0/8 comme r&eacute;seau source et eth0 comme interface de destination veut dire que tout le trafique provenant de  10.0.0.0/8 voulant sortir va passer &agrave; travers la carte eth0 et utilisera l`adresse IP d&eacute;sign&eacute;e pour la eth0.[br]
-Si vous d&eacute;sirez que le trafic sortant soit assign&eacute; &agrave; une adresse sp&eacute;cifique, ceci peut &ecirc;tre indiqu&eacute; dans le champs [b]Adresse translat&eacute;e[/b].[br]
-[b]A noter:[/b] Afin d`indiquer [b]tous[/b] les r&eacute;seaux, indiquez 0.0.0.0/0  comme source r&eacute;seau.</shorewall_masq_explain>
+10.0.0.0/8 comme r&#233;seau source et eth0 comme interface de destination veut dire que tout le trafique provenant de  10.0.0.0/8 voulant sortir va passer &#224; travers la carte eth0 et utilisera l'adresse IP d&#233;sign&#233;e pour la eth0.[br]
+Si vous d&#233;sirez que le trafic sortant soit assign&#233; &#224; une adresse sp&#233;cifique, ceci peut &#234;tre indiqu&#233; dans le champs [b]Adresse translat&#233;e[/b].[br]
+[b]A noter:[/b] Afin d'indiquer [b]tous[/b] les r&#233;seaux, indiquez 0.0.0.0/0  comme source r&#233;seau.</shorewall_masq_explain>
 <shortener>Sites qui raccourcissent les URLs</shortener>
 <shorwallnic_arp_filter>filtre ARP</shorwallnic_arp_filter>
 <shorwallnic_blacklist>Active les listes noires sur cette interface</shorwallnic_blacklist>
@@ -8700,7 +8676,7 @@ Gr&acirc;ce aux instantan&eacute;s, vous serez en mesure de restaurer vos param&
 <SOA_EMAIL_EXPLAIN>Mail de la responsable de cette zone. (Le @ est remplac&eacute; par un .. Les points avant les @ sont remplac&eacute;s par .;[br] par exemple john.doe.example.com pour l'adresse mail john.doe@example.com)[br]</SOA_EMAIL_EXPLAIN>
 <SOA_EXPIRE_EXPLAIN>Nombre de secondes apr&egrave;s lequel les serveurs de noms secondaires doivent r&eacute;essayer de demander le num&eacute;ro de s&eacute;rie du ma&icirc;tre si le ma&icirc;tre ne r&eacute;pond pas.[br] Il doit &ecirc;tre inf&eacute;rieur &agrave; [b]Refresh[/b]. [br]Recommandation de RIPE NCC pour les zones petites et stables.[br]
 La valeur recommand&eacute;e devrait &ecirc;tre &agrave; 2419200 (672 Heures)</SOA_EXPIRE_EXPLAIN>
-<SOA_NAME_EXPLAIN>This is the name that this record will have in the DNS Made Easy system, you will use this name to identify your record</SOA_NAME_EXPLAIN>
+<SOA_NAME_EXPLAIN>C'est le nom que ce relev&#233; aura dans le syst&#232;me DNS Made Easy ; vous utiliserez ce nom pour identifier votre relev&#233;</SOA_NAME_EXPLAIN>
 <SOA_NEG_EXPLAIN>Nombre de secondes apr&egrave;s lequel les serveurs de noms secondaires devraient arr&ecirc;ter de r&eacute;pondre &agrave; une demande pour cette zone si le ma&icirc;tre ne r&eacute;pond pas.[br]
 Cette valeur doit &ecirc;tre sup&eacute;rieure &agrave; la somme de [b]Refresh[/b] et de [/b]Retry[/b].[br]
 Valeur recommand&eacute;e entre 180 &agrave; 172800 ( de 3 minutes &agrave; 2 jours ).</SOA_NEG_EXPLAIN>
@@ -8886,12 +8862,12 @@ Le proxy requ&ecirc;te les nouvelles pages internet rarement et stocke les objet
 Les r&egrave;gles dynamiques de renforcement de cache sont activ&eacute;es par d&eacute;faut.</SquidCacheLevel4>
 <SquidCacheReloadTTL_explain>Interdit Artica de reconstruire ou red&eacute;marrer le service proxy pendant une dur&eacute;e minimale de x minutes.</SquidCacheReloadTTL_explain>
 <SquidClientDSTPassThru>V&eacute;rification des discordances DNS</SquidClientDSTPassThru>
-<SquidClientDSTPassThru_explain>En mode NAT ou Tproxy, le proxy transmet la demande directement &agrave; l`adresse IP de destination d`origine ou recherche une source plus rapide en utilisant l`en-t&ecirc;te HTTP Host. [br]
-Cette ent&ecirc;te est comprise et utilis&eacute;e pour localiser les serveurs alternatifs afin de fournir une connectivit&eacute; plus rapide avec des d\'options de r&eacute;cup&eacute;ration en cas d`&eacute;checd. [br]
-Mais peut aussi conduire &agrave; des probl&egrave;mes de connexion quand le client et le serveur tentent de communiquer en ignorant le proxy. [br]
-Cette option (si elle est coch&eacute;e) emp&ecirc;che les entr&eacute;es DNS discordantes entre la requ&ecirc;tes du client et la vrai adresse IP qui doit &ecirc;tre utilis&eacute;e.[br]
-Pour r&eacute;sumer, Si il s`agit de d`intercepter le Le trafic, le proxy v&eacute;rifie toujours l`ent&ecirc;te Host:. 
-Si elle ne concorde pas alors le proxy va modifier cette ent&ecirc;te afin de s`assurer que la requ&ecirc;te est envoy&eacute;e vers la bonne destination.</SquidClientDSTPassThru_explain>
+<SquidClientDSTPassThru_explain>En mode NAT ou Tproxy, le proxy transmet la demande directement &#224; l'adresse IP de destination d'origine ou recherche une source plus rapide en utilisant l'en-t&#234;te HTTP Host. [br]
+Cette ent&#234;te est comprise et utilis&#233;e pour localiser les serveurs alternatifs afin de fournir une connectivit&#233; plus rapide avec des d\'options de r&#233;cup&#233;ration en cas d`&#233;checd. [br]
+Mais peut aussi conduire &#224; des probl&#232;mes de connexion quand le client et le serveur tentent de communiquer en ignorant le proxy. [br]
+Cette option (si elle est coch&#233;e) emp&#234;che les entr&#233;es DNS discordantes entre la requ&#234;tes du client et la vrai adresse IP qui doit &#234;tre utilis&#233;e.[br]
+Pour r&#233;sumer, Si il s'agit de d'intercepter le Le trafic, le proxy v&#233;rifie toujours l'ent&#234;te Host:. 
+Si elle ne concorde pas alors le proxy va modifier cette ent&#234;te afin de s'assurer que la requ&#234;te est envoy&#233;e vers la bonne destination.</SquidClientDSTPassThru_explain>
 <SquidClientParams_text>Cette section vous permet de personnaliser le nombre d'extensions charg&eacute;es par le service Proxy.[br]
 Les extensions peuvent &ecirc;tre le nombre de processus d'authentification, les processus de filtrage Web...[br]
 Plus vous ajoutez de processus, plus votre proxy pourra traiter les demandes rapidement mais vous augmentez la charge du syst&egrave;me.[br]
@@ -8937,32 +8913,32 @@ Cela aura pour but de forcer le proxy &agrave; terminer la connexion initiale lo
 <SquidNudityScanExplain>Nudity Scanner est un scanner qui analyse les images &agrave; la vol&eacute;e et essaye de d&eacute;terminer le taux de &quot;nudit&eacute;&quot; d'une image.[br]
 Il analyse les couleurs utilis&eacute;es dans les diff&eacute;rentes sections d'une image afin de savoir si elles correspondent &agrave; la tonalit&eacute; de la couleur de la peau humaine.[br]
 Apr&egrave;s cette analyse, il ressort un taux de probabilit&eacute; que l'image correspond &agrave; une certaine nudit&eacute;.</SquidNudityScanExplain>
-<SquidPerformance_0>[b]Toutes les fonctionnalit&eacute;s[/b][br][br]
-Cette option requi&egrave;re au minimum plus de [b]5.9GB[/b] de m&eacute;moire.[br]
+<SquidPerformance_0>[b]Toutes les fonctionnalit&#233;s[/b][br][br]
+Cette option requi&#232;re au minimum plus de [b]5.9GB[/b] de m&#233;moire.[br]
 Elle assure:
-[br][b]Le service de cat&eacute;gories[/b]: Permet de cr&eacute;er des r&egrave;gles ACL afin de limiter les utilisateurs en temps r&eacute;el via des quotas, bande passante en fonction des cat&eacute;gories de site Web visit&eacute;s.[br]
-Il assure aussi les statistiques par cat&eacute;gories de sites Internet.[br]
-Ce service &agrave; lui tout seul requi&egrave;re au moins 2.5GB de m&eacute;moire.[br][br]
-[b]Service de statistiques[/b]: Vous permet de disposer de statistiques et graphiques par utilisateur, sites Internet, cat&eacute;gories.[br]
-Ce service n&eacute;cessite au moins 1.5GB de m&eacute;moire vive.[br][br]
-[b]Moniteur en temps r&eacute;el:[/b] Vous permet de visualiser les requ&ecirc;tes et l`utilisation de la bande passante en temps r&eacute;el.[br]
-Ce service consomme environ 128MB de m&eacute;moire.[br]</SquidPerformance_0>
-<SquidPerformance_1>[b]Fonctionnalit&eacute;s moyennes[/b][br][br]
-Cette option requi&egrave;re au minimum plus de [b]3GB[/b] de m&eacute;moire.[br]
-Elle d&eacute;sactive:
-[br][b]Le service de cat&eacute;gories[/b]: Vous ne serez [b]pas en mesure[/b] de cr&eacute;er des r&egrave;gles en fonction des cat&eacute;gories, ni disposer de statistiques par cat&eacute;gories de site Internet.[br][br]
-Elle active les fonctionnalit&eacute;s suivantes:
+[br][b]Le service de cat&#233;gories[/b]: Permet de cr&#233;er des r&#232;gles ACL afin de limiter les utilisateurs en temps r&#233;el via des quotas, bande passante en fonction des cat&#233;gories de site Web visit&#233;s.[br]
+Il assure aussi les statistiques par cat&#233;gories de sites Internet.[br]
+Ce service &#224; lui tout seul requi&#232;re au moins 2.5GB de m&#233;moire.[br][br]
+[b]Service de statistiques[/b]: Vous permet de disposer de statistiques et graphiques par utilisateur, sites Internet, cat&#233;gories.[br]
+Ce service n&#233;cessite au moins 1.5GB de m&#233;moire vive.[br][br]
+[b]Moniteur en temps r&#233;el:[/b] Vous permet de visualiser les requ&#234;tes et l'utilisation de la bande passante en temps r&#233;el.[br]
+Ce service consomme environ 128MB de m&#233;moire.[br]</SquidPerformance_0>
+<SquidPerformance_1>[b]Fonctionnalit&#233;s moyennes[/b][br][br]
+Cette option requi&#232;re au minimum plus de [b]3GB[/b] de m&#233;moire.[br]
+Elle d&#233;sactive:
+[br][b]Le service de cat&#233;gories[/b]: Vous ne serez [b]pas en mesure[/b] de cr&#233;er des r&#232;gles en fonction des cat&#233;gories, ni disposer de statistiques par cat&#233;gories de site Internet.[br][br]
+Elle active les fonctionnalit&#233;s suivantes:
 [br][br]
-[b]Service de statistiques[/b]: Vous permet de disposer de statistiques et graphiques par utilisateur, sites Internet, cat&eacute;gories.[br]
-Ce service n&eacute;cessite au moins 1.5GB de m&eacute;moire vive.[br][br]
-[b]Moniteur en temps r&eacute;el:[/b] Vous permet de visualiser les requ&ecirc;tes et l`utilisation de la bande passante en temps r&eacute;el.[br]
-Ce service consomme environ 128MB de m&eacute;moire.[br]</SquidPerformance_1>
-<SquidPerformance_2>[b]Fonctionnalit&eacute;s minimales, meilleurs performances[/b][br][br]
-Cette option requi&egrave;re au minimum plus de [b]1.5GB[/b] de m&eacute;moire.[br]
-Elle d&eacute;sactive les services suivants:
-[br][b]Service de cat&eacute;gories[/b][br]
-[b]Service de statistiques[/b]: (Vous pourrez utiliser le G&eacute;n&eacute;rateur d`analyses statistiques, qui assure le minimum de statistiques)[br][br]
-[b]Moniteur en temps r&eacute;el:[/b]</SquidPerformance_2>
+[b]Service de statistiques[/b]: Vous permet de disposer de statistiques et graphiques par utilisateur, sites Internet, cat&#233;gories.[br]
+Ce service n&#233;cessite au moins 1.5GB de m&#233;moire vive.[br][br]
+[b]Moniteur en temps r&#233;el:[/b] Vous permet de visualiser les requ&#234;tes et l'utilisation de la bande passante en temps r&#233;el.[br]
+Ce service consomme environ 128MB de m&#233;moire.[br]</SquidPerformance_1>
+<SquidPerformance_2>[b]Fonctionnalit&#233;s minimales, meilleurs performances[/b][br][br]
+Cette option requi&#232;re au minimum plus de [b]1.5GB[/b] de m&#233;moire.[br]
+Elle d&#233;sactive les services suivants:
+[br][b]Service de cat&#233;gories[/b][br]
+[b]Service de statistiques[/b]: (Vous pourrez utiliser le G&#233;n&#233;rateur d'analyses statistiques, qui assure le minimum de statistiques)[br][br]
+[b]Moniteur en temps r&#233;el:[/b]</SquidPerformance_2>
 <SquidPerformance_3>Cette option va supprimer tous les services [ dits cosm&eacute;tiques ] qui peuvent consommer de la ressource machine telles que la surveillance r&eacute;seau, le service Web, certains moniteurs...[br]
 Ceci afin de pouvoir faire tourner Artica et son service principal sur une machine de faible capacit&eacute;.</SquidPerformance_3>
 <SquidPrivacyRestrictionsExplain>Si actif, cette fonctionnalit&eacute; va supprimer la g&eacute;n&eacute;ration des logs sur les requ&ecirc;tes en temps r&eacute;el du proxy et du filtrage Web.[br]
@@ -9045,12 +9021,12 @@ La compatibilit&eacute; NAT ne requi&egrave;re pas l'obligation de mettre le pro
 Votre pare-feu sera en charge de transf&eacute;rer les requ&ecirc;tes vers les ports du proxy indiqu&eacute;s.[br]
 [b]Note:[/b] Dans ce mode, les adresses MAC sont perdues et ne peuvent &ecirc;tre enregistr&eacute;es ni test&eacute;es.[br]</squid_enable_nat_compatibility_text>
 <squid_ext_session_acl_not_found_explain>Le binaire de gestion de session n'a pas &eacute;t&eacute; trouv&eacute; sur votre serveur.Cette fonctionnalit&eacute; ne fonctionnera pas.</squid_ext_session_acl_not_found_explain>
-<squid_identd_daemon_explain>Le protocole Ident ( Identification Protocol) est sp&eacute;cifi&eacute; dans la RFC 1413. Il permet d`identifier un utilisateur via une session TCP.[br]
-Le service d`\'identification vous permet d`identifier les comptes utilisateurs bas&eacute;s sur leur nom de session.[br]
-Il simplifie l`administration car via cette architecture, vous n`avez pas &agrave; identifier les ordinateurs &agrave; travers  de leur adresse IP.[br]
-Bien s&ucirc;r vous pouvez cr&eacute;er des groupes &agrave; travers une liste de comptes utilisateurs.[br]En utilisant cette m&eacute;thode les authentification sont alors possible pour du SSL et une authentification transparente.[br]
-En effet, l`utilisateur n`a pas &agrave; entrer ses identifiants pour acc&eacute;der au service Web.[br]Toutefois vous devez installer un programme sur chaque client et autoriser le proxy &agrave; se connecter sur le port 113 des machines clientes.[br]
-Ci-dessous nous vous proposons d`une liste de clients Windows disponibles.</squid_identd_daemon_explain>
+<squid_identd_daemon_explain>Le protocole Ident ( Identification Protocol) est sp&#233;cifi&#233; dans la RFC 1413. Il permet d'identifier un utilisateur via une session TCP.[br]
+Le service d`\'identification vous permet d'identifier les comptes utilisateurs bas&#233;s sur leur nom de session.[br]
+Il simplifie l'administration car via cette architecture, vous n'avez pas &#224; identifier les ordinateurs &#224; travers  de leur adresse IP.[br]
+Bien s&#251;r vous pouvez cr&#233;er des groupes &#224; travers une liste de comptes utilisateurs.[br]En utilisant cette m&#233;thode les authentification sont alors possible pour du SSL et une authentification transparente.[br]
+En effet, l'utilisateur n'a pas &#224; entrer ses identifiants pour acc&#233;der au service Web.[br]Toutefois vous devez installer un programme sur chaque client et autoriser le proxy &#224; se connecter sur le port 113 des machines clientes.[br]
+Ci-dessous nous vous proposons d'une liste de clients Windows disponibles.</squid_identd_daemon_explain>
 <squid_import_old_logs_warn>Cette op&eacute;ration va injecter les anciens fichiers de traces dans l'utilitaire d'importation.
 Voulez-vous effectuer cette op&eacute;ration ?</squid_import_old_logs_warn>
 <squid_ipv4_dns_prio>Priorit&eacute; IpV4 dans les requ&ecirc;tes DNS</squid_ipv4_dns_prio>
@@ -9221,7 +9197,7 @@ Vous pouvez donner uniquement l\'acc&egrave;s au compte root avec aucune limitat
 Vous pouvez d&eacute;finir 192.168.1.* pour limiter les acc&egrave;s seulement au r&eacute;seau 192.168.1.1.-255.[br]Vous pouvez aussi limiter &agrave; root et un domaine comme domain.tld ou domain.* afin de limiter seulement au domaine de r&eacute;solution du poste qui se connecte.</sshd_AllowUsers_explain>
 <SSHOnlyShellInaBox>Autoriser l'acc&egrave;s uniquement depuis la console Web</SSHOnlyShellInaBox>
 <SSHOnlyShellInaBox_explain>Si Activ&eacute;, l'acc&egrave;s au protocole SSH se fera uniquement depuis la console Web Artica avec le menu [b]Console Syst&egrave;me[/b]</SSHOnlyShellInaBox_explain>
-<SSHPORTAL>SSH Bastion</SSHPORTAL>
+<SSHPORTAL>Bastion SSH</SSHPORTAL>
 <ssh_logons>Tentatives de connexions SSH</ssh_logons>
 <ssl-options>Options SSL</ssl-options>
 <sslbump_whitelist_all_domains_explain>Si vert, le proxy ne d&eacute;chiffrera pas [b]tous[/b] les sites SSL, vous devrez sp&eacute;cifier quels sont les sites qui devront &ecirc;tre d&eacute;chiffr&eacute;s par la section [b]Sites SSL d&eacute;chiffr&eacute;s[/b].</sslbump_whitelist_all_domains_explain>
@@ -9309,7 +9285,7 @@ Exemple: porn,mixed_adult,dating va produire/extraire les information uniquement
 <statistics_database_clients>Clients de la base de statistiques</statistics_database_clients>
 <statistics_engine>Moteur de statistiques</statistics_engine>
 <statistics_extractor>Extracteur de statistiques</statistics_extractor>
-<statistics_extractor_explain>L`extracteur de statistiques permet d'exporter un fichier CSV depuis la base de donn&eacute;es afin que vous puissiez produire vos propres graphiques et statistiques</statistics_extractor_explain>
+<statistics_extractor_explain>L'extracteur de statistiques permet d'exporter un fichier CSV depuis la base de donn&#233;es afin que vous puissiez produire vos propres graphiques et statistiques</statistics_extractor_explain>
 <statistics_nowebfiltering_data>Ce rapport ne contient aucune donn&eacute;e concernant le filtrage Web.[br]
 Il se peut que vous avez besoin de reconstruire ce rapport ou bien que le filtrage Web ne soit pas activ&eacute; ou tout simplement que cet utilisateur n\'a pas &eacute;t&eacute; bloqu&eacute; par le filtrage Web.</statistics_nowebfiltering_data>
 <statistics_options>Options des statistiques</statistics_options>
@@ -9336,9 +9312,9 @@ Cette op&eacute;ration risque de charger votre serveur.
 D&eacute;sirez-vous quand m&ecirc;me effectuer cette op&eacute;ration ?</stats_repair_day_warn>
 <status_label>&Eacute;tat</status_label>
 <stemming>Racinisation</stemming>
-<stemming_explain>La racine d`un mot correspond &agrave; la partie du mot restante une fois que l`on a supprim&eacute; son (ses) pr&eacute;fixe(s) et suffixe(s), &agrave; savoir son radical.[br]Contrairement au lemme qui correspond &agrave; un terme issu de l`usage ordinaire des locuteurs de la langue, la racine ne correspond g&eacute;n&eacute;ralement qu`&agrave; un terme r&eacute;sultant de ce type d`analyse.[br] Par exemple, le mot chercher pour radical cherch qui ne correspond pas &agrave; un terme employ&eacute; en dehors d`une r&eacute;f&eacute;rence &agrave; ce radical m&ecirc;me.[br] Dans des cas particuliers, le radical peut co&iuml;ncider avec un terme de vocabulaire ordinaire. [br]C`est par exemple le cas de comme frontal qui donne la racine front.
+<stemming_explain>La racine d'un mot correspond &#224; la partie du mot restante une fois que l'on a supprim&#233; son (ses) pr&#233;fixe(s) et suffixe(s), &#224; savoir son radical.[br]Contrairement au lemme qui correspond &#224; un terme issu de l'usage ordinaire des locuteurs de la langue, la racine ne correspond g&#233;n&#233;ralement qu`&#224; un terme r&#233;sultant de ce type d'analyse.[br] Par exemple, le mot chercher pour radical cherch qui ne correspond pas &#224; un terme employ&#233; en dehors d'une r&#233;f&#233;rence &#224; ce radical m&#234;me.[br] Dans des cas particuliers, le radical peut co&#239;ncider avec un terme de vocabulaire ordinaire. [br]C'est par exemple le cas de comme frontal qui donne la racine front.
 [br]
-Les techniques utilis&eacute;es pour ce faire reposent g&eacute;n&eacute;ralement sur une liste d`affixes (suffixes, pr&eacute;fixes, postfixes, ant&eacute;fixes) de la langue consid&eacute;r&eacute;e et sur un ensemble de r&egrave;gles de racinisation/d&eacute;suffixation construites a priori qui permettent, &eacute;tant donn&eacute; un mot de trouver sa racine.</stemming_explain>
+Les techniques utilis&#233;es pour ce faire reposent g&#233;n&#233;ralement sur une liste d'affixes (suffixes, pr&#233;fixes, postfixes, ant&#233;fixes) de la langue consid&#233;r&#233;e et sur un ensemble de r&#232;gles de racinisation/d&#233;suffixation construites a priori qui permettent, &#233;tant donn&#233; un mot de trouver sa racine.</stemming_explain>
 <step>&Eacute;tape</step>
 <stop>Stopper</stop>
 <StopMaxTTL>Temps d\'attente pour l\'arr&ecirc;t</StopMaxTTL>
@@ -9386,8 +9362,8 @@ Si vous activez cette fonctionnalit&eacute;, alors le proxy principal effectuera
 <subfolder>Sous-r&eacute;pertoire</subfolder>
 <subjects_tags>&Eacute;tiquettes des sujets</subjects_tags>
 <subject_rewrite>R&eacute;&eacute;criture du sujet</subject_rewrite>
-<subject_rewrite_explain_spamass>Lorsqu`un message &agrave; &eacute;t&eacute; identifi&eacute; comme SPAM, le filtre peut ajouter un texte au sujet.[br]
-Indiquez ici le texte ou ne mettez rien si vous ne d&eacute;sirez pas modifier le sujet</subject_rewrite_explain_spamass>
+<subject_rewrite_explain_spamass>Lorsqu'un message &#224; &#233;t&#233; identifi&#233; comme SPAM, le filtre peut ajouter un texte au sujet.[br]
+Indiquez ici le texte ou ne mettez rien si vous ne d&#233;sirez pas modifier le sujet</subject_rewrite_explain_spamass>
 <subject_rules>R&egrave;gles sur le sujet</subject_rules>
 <submit_a_ticket>Soumettre un ticket</submit_a_ticket>
 <submit_ticket>Soumettre un ticket</submit_ticket>
@@ -9489,7 +9465,7 @@ Elle a du sens que si vous avez ajout&eacute; des serveurs Artica &agrave; r&eac
 <syslog_store>Stockage des &eacute;v&egrave;nements syst&egrave;me</syslog_store>
 <SYSLOG_TYPE_EXPLAIN>Veuillez choisir o&ugrave; vous d&eacute;sirez stocker les anciens fichiers de logs</SYSLOG_TYPE_EXPLAIN>
 <syslog_used_nas_storage>Le stockage via N.A.S &agrave; &eacute;t&eacute; s&eacute;lectionn&eacute;, tous les logs sont directement d&eacute;plac&eacute;s vers votre syst&egrave;me de stockage.</syslog_used_nas_storage>
-<SystemEventsRetentionTime>Retention days for system events</SystemEventsRetentionTime>
+<SystemEventsRetentionTime>Jours de r&#233;tention des &#233;v&#233;nements syst&#232;me</SystemEventsRetentionTime>
 <SystemLoadNotif>Envoyer un rapport lorsque la charge exc&egrave;de</SystemLoadNotif>
 <system_and_network>Syst&egrave;me et r&eacute;seaux</system_and_network>
 <system_console>Console Syst&egrave;me</system_console>
@@ -9504,15 +9480,15 @@ Elle a du sens que si vous avez ajout&eacute; des serveurs Artica &agrave; r&eac
 Cette t&acirc;che est en charge d'analyser la file d'attente et d'importer les donnes dans la base MySQL.</system_load_task_explain>
 <system_logs>Logs syst&egrave;me</system_logs>
 <system_logs_path>R&eacute;pertoire de stockage des logs</system_logs_path>
-<system_logs_path_explain>Ici le r&eacute;pertoire de travail utilis&eacute;s par les services afin d`&eacute;crire leurs &eacute;v&egrave;nements.[br]
-Par d&eacute;faut, il s`agit de [b]/var/log[/b] mais si vous avez chang&eacute; ce r&eacute;pertoire, indiquez-le ici.</system_logs_path_explain>
+<system_logs_path_explain>Ici le r&#233;pertoire de travail utilis&#233;s par les services afin d`&#233;crire leurs &#233;v&#232;nements.[br]
+Par d&#233;faut, il s'agit de [b]/var/log[/b] mais si vous avez chang&#233; ce r&#233;pertoire, indiquez-le ici.</system_logs_path_explain>
 <system_mirrors>Miroirs syst&egrave;mes</system_mirrors>
 <system_monitoring>Surveillance syst&egrave;me</system_monitoring>
 <system_optimization>Optimisation syst&egrave;me</system_optimization>
 <SYSTEM_OPTIMIZATION_NOT_EXECUTED>Votre syst&egrave;me n'est pas optimis&eacute; pour votre mat&eacute;riel</SYSTEM_OPTIMIZATION_NOT_EXECUTED>
 <system_pcaches>Caches Proxy</system_pcaches>
 <system_protection_only>Stations de travail seulement</system_protection_only>
-<system_refresh_rate>Temps d`agr&eacute;gation syst&egrave;me.</system_refresh_rate>
+<system_refresh_rate>Temps d'agr&#233;gation syst&#232;me.</system_refresh_rate>
 <system_refresh_rate_about>Temps en minutes de diffusion des nouveaux m&eacute;triques syst&egrave;mes  &agrave; l'application cliente</system_refresh_rate_about>
 <SYSTEM_RESTFULL>API RESTFul afin de piloter le syst&egrave;me</SYSTEM_RESTFULL>
 <SYSTEM_RESTFULL_EXPLAIN>Vous permet de piloter le syst&egrave;me en utilisant l'API RESTFul.</SYSTEM_RESTFULL_EXPLAIN>
@@ -9541,7 +9517,7 @@ Le nom d'h&ocirc;te n'est v&eacute;rifi&eacute; que si il existe dans la requ&ec
 <targetportlist_explain>Contient des ports (X) ou une tranche de port (X-Y)</targetportlist_explain>
 <targets>Cibles</targets>
 <target_folder>R&eacute;pertoire cible</target_folder>
-<task>Task</task>
+<task>T&#226;che</task>
 <tasks_klms8_text>Affiche les t&acirc;ches en cours et leur identifiant unique afin de les stopper/arr&ecirc;ter/&eacute;diter.</tasks_klms8_text>
 <task_events>&Eacute;v&egrave;nements de la t&acirc;che</task_events>
 <task_executed>La t&acirc;che &agrave; &eacute;t&eacute; ex&eacute;cut&eacute;e</task_executed>
@@ -9642,7 +9618,7 @@ Chargez votre fichier de traces Squid-Cache ( fichier access.log ) &agrave; trav
 <then_use_default_gateway>Alors, utiliser la passerelle par d&eacute;faut</then_use_default_gateway>
 <then_use_parent_proxies>Alors utiliser le ou les proxy(s) suivant(s)</then_use_parent_proxies>
 <thewebproxy_appliance>La passerelle de Statistiques Proxy</thewebproxy_appliance>
-<the_message_doent_exists>Le message n`existe plus</the_message_doent_exists>
+<the_message_doent_exists>Le message n'existe plus</the_message_doent_exists>
 <the_specified_module_is_not_installed>Le module sp&eacute;cifi&eacute; n\'est pas install&eacute;</the_specified_module_is_not_installed>
 <the_transarent_mode_is_disabled_acl>Cette r&egrave;gle ne sera pas utilis&eacute;e, le mode transparent est actuellement d&eacute;sactiv&eacute;</the_transarent_mode_is_disabled_acl>
 <thishour>cette heure</thishour>
@@ -9758,8 +9734,8 @@ Si vous d&eacute;sirez combiner un routeur MikroTiK, cette m&eacute;thode est ob
 <traffic_report>Rapport du trafic</traffic_report>
 <traffic_sent>Trafic envoy&eacute;</traffic_sent>
 <traffic_shapping>Limitation du trafic</traffic_shapping>
-<traffic_shapping_explain>Le Traffic shaping ou r&eacute;gulation de flux est le contr&ocirc;le du volume des &eacute;changes sur un r&eacute;seau informatique dans le but d`optimiser ou de garantir les performances, une latence plus basse ou d`augmenter la bande passante utilisable en retardant les paquets qui correspondent &agrave; certains crit&egrave;res.[br] Plus particuli&egrave;rement, le trafic shaping d&eacute;signe toute action sur un groupe de paquets (un flux r&eacute;seau) qui impose un d&eacute;lai suppl&eacute;mentaire &agrave; ces paquets pour qu`ils se conforment &agrave; une contrainte pr&eacute;d&eacute;termin&eacute;e (contractuelle ou li&eacute;e &agrave; un certain type de trafic).[br]
-Le traffic shaping offre un moyen de contr&ocirc;ler le volume des &eacute;changes en train d`&ecirc;tre envoy&eacute;s &agrave; un r&eacute;seau pendant une p&eacute;riode donn&eacute;e (bandwith throttling), le d&eacute;bit maximum auquel le trafic peut &ecirc;tre envoy&eacute; (rate limiting)</traffic_shapping_explain>
+<traffic_shapping_explain>Le Traffic shaping ou r&#233;gulation de flux est le contr&#244;le du volume des &#233;changes sur un r&#233;seau informatique dans le but d'optimiser ou de garantir les performances, une latence plus basse ou d'augmenter la bande passante utilisable en retardant les paquets qui correspondent &#224; certains crit&#232;res.[br] Plus particuli&#232;rement, le trafic shaping d&#233;signe toute action sur un groupe de paquets (un flux r&#233;seau) qui impose un d&#233;lai suppl&#233;mentaire &#224; ces paquets pour qu'ils se conforment &#224; une contrainte pr&#233;d&#233;termin&#233;e (contractuelle ou li&#233;e &#224; un certain type de trafic).[br]
+Le traffic shaping offre un moyen de contr&#244;ler le volume des &#233;changes en train d`&#234;tre envoy&#233;s &#224; un r&#233;seau pendant une p&#233;riode donn&#233;e (bandwith throttling), le d&#233;bit maximum auquel le trafic peut &#234;tre envoy&#233; (rate limiting)</traffic_shapping_explain>
 <transaction>Transaction</transaction>
 <transactions>Transactions</transactions>
 <transfered>Transf&eacute;r&eacute;</transfered>
@@ -9860,11 +9836,11 @@ Cette adresse doit &ecirc;tre alors la m&ecirc;me  sur le serveur de secours et 
 <UDEV_LOG>Priorit&eacute; du log</UDEV_LOG>
 <udppm>Mappage de port UDP</udppm>
 <udppm_explain>Transfert les flux datagrammes vers un port distant</udppm_explain>
-<udp_incoming_outgoing_address>Ces options sont utilis&eacute;es par les modules b]ICP[/b], [b]HTCP[/b], and [b]DNS[/b] ( si actifs).[br]
-Les modifier vous tous les affecter de la m&ecirc;me mani&egrave;re.[br]
-L'interface d'&eacute;coute est utilis&eacute;e pour recevoir les paquets UDP depuis d'autre proxys.[br]
-L'interface sortante est utilis&eacute;e pour envoyer les paquets UDP &agrave; la destination.[br]
-L'interface d'&eacute;coute et sortante ne peuvent avoir les m&ecirc;mes param&egrave;tres du fait que les deux utiliseront le m&ecirc;me port.</udp_incoming_outgoing_address>
+<udp_incoming_outgoing_address>Ces options sont utilis&#233;es par les modules [b]ICP[/b], [b]HTCP[/b] et [b]DNS[/b] (s'ils sont actifs).[br]
+Les modifier les affecte tous de la m&#234;me mani&#232;re.[br]
+L'interface d'&#233;coute est utilis&#233;e pour recevoir les paquets UDP depuis d'autres proxys.[br]
+L'interface sortante est utilis&#233;e pour envoyer les paquets UDP &#224; la destination.[br]
+[b]L'interface d'&#233;coute et l'interface sortante ne peuvent pas avoir la m&#234;me valeur, car elles utilisent le m&#234;me port.[/b]</udp_incoming_outgoing_address>
 <udp_port>Port UDP</udp_port>
 <UDP_PROTOCOL>Protocole UDP</UDP_PROTOCOL>
 <UfdbCatsUpload_explain>Cette option vous permet de cr&eacute;er un d&eacute;p&ocirc;t de mise &agrave; jour de vos cat&eacute;gories de filtrage Web.[br]Ce serveur sera en charge de placer les cat&eacute;gories sur une source FTP afin de permettre &agrave; d'autres serveurs Artica de r&eacute;cup&eacute;rer les mises &agrave; jour.</UfdbCatsUpload_explain>
@@ -9933,7 +9909,7 @@ Cette m&eacute;thode ralenti le processus de filtrage et peut &ecirc;tre utilis&
 <ufdb_explain_none>Les sites inconnus des cat&eacute;gories autoris&eacute;es sont interdits</ufdb_explain_none>
 <ufdb_localldap_0>S&eacute;lectionnez le groupe LDAP local stock&eacute; dans la base LDAP install&eacute;e dans votre serveur Artica</ufdb_localldap_0>
 <ufdb_localldap_2>Cliquez sur le bouton parcourir afin de trouver le groupe Active Directory recherch&eacute; qui sera importer dans votre collection.</ufdb_localldap_2>
-<ufdb_none>Nada mais (nada mais)</ufdb_none>
+<ufdb_none>Rien d'autre</ufdb_none>
 <ufdb_notif_categories_explain>Cette section vous permet d'&ecirc;tre notifi&eacute; par eMail lorsque des utilisateurs sont bloqu&eacute;s par des cat&eacute;gories.[br]
 Indiquez ici les cat&eacute;gories qui b&eacute;n&eacute;ficieront de notifications par messagerie.</ufdb_notif_categories_explain>
 <ufdb_no_dynamic_group>Un groupe virtuel n'est pas compatible avec les groupes Active Directory et les groupes LDAP</ufdb_no_dynamic_group>
@@ -9975,7 +9951,7 @@ Cette op&eacute;ration va recharger le service du proxy.
 Voulez-vous proc&eacute;der au d&eacute;blocage du site</UnBlockWebSiteExplain>
 <unblock_list>Liste des d&eacute;blocages</unblock_list>
 <unblock_parameters>Param&egrave;tres de d&eacute;blocage</unblock_parameters>
-<unblock_queue>File d`attente de d&eacute;blocage</unblock_queue>
+<unblock_queue>File d'attente de d&#233;blocage</unblock_queue>
 <unchecked_lover>Re&ccedil;oit des messages non trait&eacute;s</unchecked_lover>
 <uncompressing>Extraction</uncompressing>
 <unconfigured_network>R&eacute;seau non configur&eacute;</unconfigured_network>
@@ -9998,7 +9974,7 @@ Afin d'acc&eacute;l&eacute;rer les acc&egrave;s &agrave; Internet nous conseillo
 <UNIFI_CONTROLLER_EXPLAIN>Le contr&ocirc;leur uniFi est une console d'administration Web pour les r&eacute;seaux Wifi Ubiquiti.[br]
 Il vous permet de piloter plusieurs r&eacute;seaux wifi &agrave; travers un navigateur Web.[br]
 Vous pouvez t&eacute;l&eacute;charger la documentation ici:[url]http://dl.ubnt.com/guides/UniFi/UniFi_Controller_UG.pdf[/url].</UNIFI_CONTROLLER_EXPLAIN>
-<UNIFI_MONGODB>UniFi Database Engine</UNIFI_MONGODB>
+<UNIFI_MONGODB>Moteur de base de donn&#233;es UniFi</UNIFI_MONGODB>
 <uninstalling>D&eacute;sinstallation</uninstalling>
 <uninstalling_service>D&eacute;sinstallation du service</uninstalling_service>
 <uninstall_local_dns_cache>D&eacute;sinstaller le service de cache DNS local</uninstall_local_dns_cache>
@@ -10059,7 +10035,7 @@ Il est &agrave; noter que ce nom de serveur devra &ecirc;tre r&eacute;solu par l
 <update_artica_nightly>Mettre &agrave; jour les versions interm&eacute;diaires</update_artica_nightly>
 <update_artica_nightly_explain>Une version interm&eacute;diaire ou [b]Nightly[/b] peut &ecirc;tre rendue disponible afin de corriger ponctuellement des probl&egrave;mes sur la version officielle.[br]Voir aussi disposer de nouvelles fonctionnalit&eacute;s.[br]Toutefois les ajouts ne sont pas toujours test&eacute;s.[br]Faites alors attention &agrave; ces versions.</update_artica_nightly_explain>
 <update_artica_official>Mettre &agrave; jour les versions officielles</update_artica_official>
-<update_artica_official_explain>Si vert, votre serveur sera autoris&eacute; &agrave; mettre &agrave; jour Artica avec les versions officielles lorsqu`elles sont rendues disponibles.</update_artica_official_explain>
+<update_artica_official_explain>Si vert, votre serveur sera autoris&#233; &#224; mettre &#224; jour Artica avec les versions officielles lorsqu'elles sont rendues disponibles.</update_artica_official_explain>
 <update_artica_software>Mise &agrave; jour Artica</update_artica_software>
 <update_auth_link>Mettre &agrave; jour le lien d'authentification</update_auth_link>
 <update_counters>Mise &agrave; jour des compteurs</update_counters>
@@ -10157,7 +10133,7 @@ Cette option peut consommer du CPU, assurez-vous de disposer d'un processeur Cor
 <urlrewriteaccessdeny_explain>C'est une r&egrave;gle par d&eacute;faut permettant de mettre en liste blanches des sites Web pour le service de filtrage Web.</urlrewriteaccessdeny_explain>
 <urls_max_size>Taille maximale d'une requ&ecirc;te ( bytes )</urls_max_size>
 <url_filtering>Filtrage des URLs</url_filtering>
-<url_filtering_smtp_explain>Cette fonctionnalit&eacute; permet de modifier les liens dans les messages [b]entrants[/b] afin de les analyser avant l'utilisateur afin de d&eacute;tecter d'&eacute;ventuels sites d`hame&ccedil;onnages ou malicieux.</url_filtering_smtp_explain>
+<url_filtering_smtp_explain>Cette fonctionnalit&#233; permet de modifier les liens dans les messages [b]entrants[/b] afin de les analyser avant l'utilisateur afin de d&#233;tecter d'&#233;ventuels sites d'hame&#231;onnages ou malicieux.</url_filtering_smtp_explain>
 <url_regex_acl>Une expression qui correspond &agrave; une URL</url_regex_acl>
 <url_regex_acl2>Cha&icirc;ne sur une URL</url_regex_acl2>
 <url_regex_acl3>Expr. r&eacute;guli&egrave;re sur le chemin d'une URL</url_regex_acl3>
@@ -10173,7 +10149,7 @@ Vous devriez uniquement activer cette option que si le filtrage Web n'est pas cr
 <UseALink>Utiliser un lien</UseALink>
 <UseBanner>Utiliser une banni&egrave;re</UseBanner>
 <UseCloudArticaCategories>Service de Catégories Cloud</UseCloudArticaCategories>
-<UseCloudArticaCategories_explain>Artica sera en mesure d`interroger le datacenter sur Internet afin de récupérer la catégorie liée à un domaine Internet ( un cache d'une heure est actif par défaut ). Cette méthode vous permet de bénéficier d`une base de plus de 50 millions de domaines référencés.</UseCloudArticaCategories_explain>
+<UseCloudArticaCategories_explain>Artica sera en mesure d'interroger le datacenter sur Internet afin de r&#233;cup&#233;rer la cat&#233;gorie li&#233;e &#224; un domaine Internet ( un cache d'une heure est actif par d&#233;faut ). Cette m&#233;thode vous permet de b&#233;n&#233;ficier d'une base de plus de 50 millions de domaines r&#233;f&#233;renc&#233;s.</UseCloudArticaCategories_explain>
 <UseContainer>Si activ&eacute;, Artica va cr&eacute;er un conteneur avec un taille limit&eacute;e.</UseContainer>
 <UseCookies>Utiliser les cookies</UseCookies>
 <UseDefaultSMTP>Utiliser les param&egrave;tres SMTP par d&eacute;faut</UseDefaultSMTP>
@@ -10243,7 +10219,7 @@ Vous pouvez utiliser les serveurs Artica cloud  et/ou bien utiliser un serveur A
 <use_dedicated_database>Utiliser la base d&eacute;di&eacute;</use_dedicated_database>
 <use_default>Par d&eacute;faut</use_default>
 <use_default_settings>Utiliser les valeurs par d&eacute;faut</use_default_settings>
-<use_dns>Use DNS</use_dns>
+<use_dns>Utiliser le DNS</use_dns>
 <use_dynamic_groups_acls>Utiliser les ACLs dynamiques pour les groupes</use_dynamic_groups_acls>
 <use_enterprise_edition>Utiliser la version Entreprise</use_enterprise_edition>
 <use_external_link>Utiliser un lien externe</use_external_link>
@@ -10260,14 +10236,14 @@ Il est &agrave; noter que tous les ports seront interdits pendant le blocage.[br
 <use_Junk_items>Utiliser les Ind&eacute;sirables</use_Junk_items>
 <use_ldap_database>Utiliser la base LDAP</use_ldap_database>
 <use_lemnia_cloud_service>Utiliser le service Cloud CGuard</use_lemnia_cloud_service>
-<use_lemnia_cloud_service_explain>Le service Cloud CGuard est une solution de catégories pour ARTICA, géré par la société LEMNIA (partenaire d`ARTICA).[br]
- Ce service propose des catégories complémentaires à celles d`ARTICA, en particulier pour les utilisateurs francophones et européens.
+<use_lemnia_cloud_service_explain>Le service Cloud CGuard est une solution de cat&#233;gories pour ARTICA, g&#233;r&#233; par la soci&#233;t&#233; LEMNIA (partenaire d'ARTICA).[br]
+ Ce service propose des cat&#233;gories compl&#233;mentaires &#224; celles d'ARTICA, en particulier pour les utilisateurs francophones et europ&#233;ens.
 [br]
-Pour activer votre accès CGuard :[br]
-1) Consultez la page suivante pour créer votre clé CGuard
+Pour activer votre acc&#232;s CGuard :[br]
+1) Consultez la page suivante pour cr&#233;er votre cl&#233; CGuard
 [br][br]%uricguard%[br]
-2) Après confirmation de votre adresse e-mail, le site affiche votre clé CGuard pour ce serveur.[br]
-3) Copiez/Collez la clé dans le champs ci-dessous et cliquez sur « appliquer ».[br]</use_lemnia_cloud_service_explain>
+2) Apr&#232;s confirmation de votre adresse e-mail, le site affiche votre cl&#233; CGuard pour ce serveur.[br]
+3) Copiez/Collez la cl&#233; dans le champs ci-dessous et cliquez sur &#171; appliquer &#187;.[br]</use_lemnia_cloud_service_explain>
 <use_licensed_plugin>Utiliser le mode sous licence</use_licensed_plugin>
 <use_local_categories_services>Activer le service des cat&eacute;gories local</use_local_categories_services>
 <use_local_categories_services_explain_warn>Assurez-vous que votre serveur dispose de la m&eacute;moire requise ( environ 1.7GB de m&eacute;moire pour ce service )</use_local_categories_services_explain_warn>
@@ -10326,8 +10302,8 @@ Dans ce cas, le service distant sera en mesure de stocker les requ&ecirc;tes en 
 <use_the_tools_section>Utilisez la section outils afin de r&eacute;parer les donn&eacute;es ou les tables manquantes</use_the_tools_section>
 <use_this_table>Utiliser cette table</use_this_table>
 <use_tproxy_mode>Utiliser le mode TProxy</use_tproxy_mode>
-<use_tproxy_mode_text>La m&eacute;thode Tproxy est une fonctionnalit&eacute; permettant d`am&eacute;liorer le syst&egrave;me de crochetage o&ugrave; l`adresse source est transmise dans les paquets renvoy&eacute;s par le Proxy.[br]
-Cette fonctionnalit&eacute; peut rendre incompatible l`acheminement des requ&ecirc;tes si vos r&egrave;gles de pare-feu se focalisent sur l`adresse du Proxy.</use_tproxy_mode_text>
+<use_tproxy_mode_text>La m&#233;thode Tproxy est une fonctionnalit&#233; permettant d'am&#233;liorer le syst&#232;me de crochetage o&#249; l'adresse source est transmise dans les paquets renvoy&#233;s par le Proxy.[br]
+Cette fonctionnalit&#233; peut rendre incompatible l'acheminement des requ&#234;tes si vos r&#232;gles de pare-feu se focalisent sur l'adresse du Proxy.</use_tproxy_mode_text>
 <use_tproxy_mode_text_disabled>Votre noyau ne supporte pas le mode TProxy</use_tproxy_mode_text_disabled>
 <use_web_proxy_in_transparent>Utiliser le proxy Web en mode transparent</use_web_proxy_in_transparent>
 <use_web_proxy_in_transparent_explain>Si activ&eacute; alors les requ&ecirc;tes Web Internet depuis le r&eacute;seau VPN seront transf&eacute;r&eacute;es vers le proxy local en mode transparent.[br]
@@ -10403,20 +10379,16 @@ Vous pouvez changer le nom d'h&ocirc;te du service Web ma&icirc;tre dans la conf
 <visited_subsites_during_this_week>Sous-sites visit&eacute;s pendant la semaine</visited_subsites_during_this_week>
 <visit_links>Visualiser les liens</visit_links>
 <vlan_id>ID VLAN</vlan_id>
-<vm.lower_zone_protection>
-If running the 32-bit hugemem kernel isn't an option either, you can try
-setting to a value of 250 or more.[br]
-This will cause the kernel to try to be more aggressive in defending the
-low zone from allocating memory that could potentially be allocated in
-the high memory zone.[br]Some experimentation to find the best setting
-for your environment will probably be necessary.
-</vm.lower_zone_protection>
-<vm.min_free_kbytes>
-Sets the value of each pageâ€™s zone to min, low, or high, depending on themachine.[br]
-Default is 724.[br]
-For a small machine use 128 KB; for largemachines, use the maximum 4096 KB.[br]
-Example: For a machine with more than 8GByte RAM you can easily spare 128MByte (which would translate into a sysctl value of 131072, as it has to be given in kByte).
-</vm.min_free_kbytes>
+<vm.lower_zone_protection>Si ex&#233;cuter le noyau hugemem 32 bits n'est pas non plus une option, vous pouvez essayer
+de d&#233;finir une valeur de 250 ou plus.[br]
+Cela am&#232;nera le noyau &#224; &#234;tre plus agressif dans la d&#233;fense de la
+zone basse contre l'allocation de m&#233;moire qui pourrait potentiellement &#234;tre allou&#233;e dans
+la zone de m&#233;moire haute.[br]Quelques exp&#233;rimentations pour trouver le meilleur r&#233;glage
+pour votre environnement seront probablement n&#233;cessaires.</vm.lower_zone_protection>
+<vm.min_free_kbytes>D&#233;finit la valeur de la zone de chaque page &#224; min, low ou high, selon la machine.[br]
+La valeur par d&#233;faut est 724.[br]
+Pour une petite machine, utilisez 128 Ko ; pour les grandes machines, utilisez le maximum de 4096 Ko.[br]
+Exemple : Pour une machine avec plus de 8 Go de RAM, vous pouvez facilement r&#233;server 128 Mo (ce qui se traduirait par une valeur sysctl de 131072, car elle doit &#234;tre donn&#233;e en ko).</vm.min_free_kbytes>
 <vm.nr_hugepages>Les HugePages permettent de d&eacute;finir une zone RAM dans laquelle les pages ne sont pas g&eacute;r&eacute;es avec une taille classique, g&eacute;n&eacute;ralement 4 Ko mais d'une taille bien sup&eacute;rieure, 4 ou 2Mo [br]
 Il y a plusieurs int&eacute;r&ecirc;ts &agrave; l'utilisation des HugePages:
 [br]Cette zone m&eacute;moire est bloqu&eacute;e en RAM et ne peut pas aller en SWAP et a ainsi un impact significatif sur l'utilisation de la CPU lors des acc&egrave;s m&eacute;moire.[br]
@@ -10503,10 +10475,10 @@ Tr&egrave;s utile afin d'am&eacute;liorer la bande passante &agrave; travers des
 <WarninEnableVirtualDomainsInMailBoxes>Le [b]Multi-domaines[/b] est activ&eacute; dans votre service LDAP.[br]
 Cela veut dire que le nom de session utilisateur sera son adresse eMail.</WarninEnableVirtualDomainsInMailBoxes>
 <warning>Avertissement</warning>
-<WarningPythonCollection>Attention, la liste des paquetages Python install&eacute;s n`a pas &eacute;t&eacute; g&eacute;n&eacute;r&eacute;e</WarningPythonCollection>
-<WarningPythonElasticSearch>Attention, la librairie ElasticSearch pour python n`est pas install&eacute;e</WarningPythonElasticSearch>
+<WarningPythonCollection>Attention, la liste des paquetages Python install&#233;s n'a pas &#233;t&#233; g&#233;n&#233;r&#233;e</WarningPythonCollection>
+<WarningPythonElasticSearch>Attention, la librairie ElasticSearch pour python n'est pas install&#233;e</WarningPythonElasticSearch>
 <WarningPythonMemCached>Attention, le paquetage python-memcached n'est pas install&eacute; sur votre syst&egrave;me.</WarningPythonMemCached>
-<WarningPythonPip>Attention, l`installateur de paquetages Python n`est pas install&eacute;</WarningPythonPip>
+<WarningPythonPip>Attention, l'installateur de paquetages Python n'est pas install&#233;</WarningPythonPip>
 <warning_all_tables_will_be_removed_and_restored>[b]Attention[/b] Tous les enregistrements seront &eacute;cras&eacute;s par la t&acirc;che de restauration</warning_all_tables_will_be_removed_and_restored>
 <warning_bigdata_v3>Attention aux version BigData sup&eacute;rieures &agrave; 0.9.2!</warning_bigdata_v3>
 <warning_bigdata_v3_explain>Si vous lisez cette information, cela veut dire que votre service BigData est en version 0.9.1 ou 0.9.2.[br]
@@ -10520,7 +10492,7 @@ Si vous souhaitez augmenter les performances et partir sur une base de donn&eacu
 <warning_change_interface_squid>L'interface va &ecirc;tre modifi&eacute;e afin de correspondre aux changements appliqu&eacute;s.</warning_change_interface_squid>
 <warning_deny_for_all_users>Information: Tous les sites list&eacute;s seront interdits pour tous les utilisateurs</warning_deny_for_all_users>
 <warning_dns_statistics_are_not_enabled>Attention, les statistiques DNS ne sont pas install&eacute;s.</warning_dns_statistics_are_not_enabled>
-<warning_events>Événements d`avertissement</warning_events>
+<warning_events>&#201;v&#233;nements d'avertissement</warning_events>
 <warning_lb_icp>Si vous d&eacute;finissez un port ICP, assurez-vous qu'il soit bien disponible sur les serveurs distants.[br]Le cas &eacute;ch&eacute;ant le serveur sera consid&eacute;r&eacute; comme indisponible.[br]Pour d&eacute;sactiver ICP, indiquez 0 comme valeur.</warning_lb_icp>
 <WARNING_LOOSE_DATA>Attention, cette op&eacute;ration va d&eacute;truire les donn&eacute;es existantes.
 Voulez-vous effectuer cette op&eacute;ration ?</WARNING_LOOSE_DATA>
@@ -10786,7 +10758,7 @@ Cliquez sur le bouton ci-dessous afin d'activer le service.</web_engine_not_acti
 <web_interface_service>Service de l'interface Web</web_interface_service>
 <web_page>Page Web</web_page>
 <web_page_service_is_disabled>Le service de la page d\'erreur est d&eacute;sactiv&eacute;</web_page_service_is_disabled>
-<web_portal_authentication>Portail Web d`authentification</web_portal_authentication>
+<web_portal_authentication>Portail Web d'authentification</web_portal_authentication>
 <web_proxy_service_for_the_hotspot>Service de Proxy web transparent utilis&eacute; pour l'acc&egrave;s &agrave; Internet</web_proxy_service_for_the_hotspot>
 <web_servers>Serveurs Web</web_servers>
 <web_service>Service Web</web_service>
@@ -11023,12 +10995,12 @@ Si le serveur disant est indisponible, vous perdrez les &eacute;v&egrave;nements
 La deuxi&egrave;me permet au proxy de se connecter directement &agrave; la base de donn&eacute;es de votre serveur distant en pr&eacute;-m&acirc;chant les &eacute;v&egrave;nements.[br]
 Si le serveur distant est indisponible, les &eacute;v&egrave;nements pr&eacute;-m&acirc;ch&eacute;s sont mis en attente pendant 4 heures.[br]
 Cette m&eacute;thode quand &agrave; elle consomme plus de m&eacute;moire et CPU.</wizard_stats_apps_step1>
-<wizard_transparent_button>Assistant d`activation du mode transparent</wizard_transparent_button>
-<wizard_transparent_button1>Bienvenue dans l`assistant d`activation du mode transparent.[br]
-Cet assistant va vous aider &agrave; transformer ce proxy en mode &quot;mixte&quot; qui va accepter les deux m&eacute;thodes:[br]
-La premi&egrave;re, [b]Le mode transparent[/b] o&ugrave; vous aurez besoin de changer l`adresse de la passerelle principale sur vos postes de travail afin de passer &agrave; travers ce proxy.[br]
-La deuxi&egrave;me:[b]Le mode connect&eacute;[/b] qui permet de sp&eacute;cifier le proxy et son port dans les options de connexion des navigateurs.[br]
-Afin de mettre en place ces m&eacute;thodes, indiquez ici les ports d`&eacute;coutes n&eacute;cessaires pour le mode connect&eacute; et le mode transparent et cliquez sur le bouton &quot;Suivant&quot;.</wizard_transparent_button1>
+<wizard_transparent_button>Assistant d'activation du mode transparent</wizard_transparent_button>
+<wizard_transparent_button1>Bienvenue dans l'assistant d'activation du mode transparent.[br]
+Cet assistant va vous aider &#224; transformer ce proxy en mode &quot;mixte&quot; qui va accepter les deux m&#233;thodes:[br]
+La premi&#232;re, [b]Le mode transparent[/b] o&#249; vous aurez besoin de changer l'adresse de la passerelle principale sur vos postes de travail afin de passer &#224; travers ce proxy.[br]
+La deuxi&#232;me:[b]Le mode connect&#233;[/b] qui permet de sp&#233;cifier le proxy et son port dans les options de connexion des navigateurs.[br]
+Afin de mettre en place ces m&#233;thodes, indiquez ici les ports d`&#233;coutes n&#233;cessaires pour le mode connect&#233; et le mode transparent et cliquez sur le bouton &quot;Suivant&quot;.</wizard_transparent_button1>
 <wizard_transparent_buttonC>C\'est le port en mode connect&eacute;, le non-transparent qui sera utilis&eacute; dans les param&egrave;tres des navigateurs.</wizard_transparent_buttonC>
 <wizard_transparent_buttonD>C\'est le port transparent qui permettra la redirection des paquets r&eacute;seau. Ce port est uniquement disponible localement au serveur.</wizard_transparent_buttonD>
 <wizard_transparent_buttonE>C\'est le port d\'&eacute;coute SSL en mode transparent utilis&eacute; pour rediriger les paquets r&eacute;seau en direction du port 443 vers le port interne du proxy</wizard_transparent_buttonE>
@@ -11209,7 +11181,7 @@ Notez que cette fonctionnalit&eacute; est compatible Artica 3.06x.[br]Vous pouve
 <your_proxy_caches_explain>Cr&eacute;ez des nouveaux caches disques afin d\'acc&eacute;l&eacute;rer l\'acc&egrave;s &agrave; Internet et affichez l\'&eacute;tat de vos caches disques.</your_proxy_caches_explain>
 <your_proxy_general_settings_text>Configuration g&eacute;n&eacute;rale de votre service de proxy Internet</your_proxy_general_settings_text>
 <your_proxy_is_in_caches_emergency>Votre proxy est mode Urgence des caches</your_proxy_is_in_caches_emergency>
-<your_proxy_is_in_hotspot_emergency>Votre proxy est en mode d`urgence HotSpot</your_proxy_is_in_hotspot_emergency>
+<your_proxy_is_in_hotspot_emergency>Votre proxy est en mode d'urgence HotSpot</your_proxy_is_in_hotspot_emergency>
 <your_proxy_is_in_mime_emergency>Votre proxy est en mode d'urgence des mod&egrave;les d'erreur</your_proxy_is_in_mime_emergency>
 <your_proxy_is_nat>Votre pare-feu est en charge de transmettre les requ&ecirc;tes Web via une r&egrave;gle de NAT qui pointe sur le port  [b]%port[/b]  de ce serveur.</your_proxy_is_nat>
 <your_proxy_normal>Les navigateurs doivent &ecirc;tre param&eacute;tr&eacute;s afin d'utiliser le port [b]%port[/b] de ce serveur comme proxy.</your_proxy_normal>
@@ -11238,7 +11210,7 @@ Afin de tester cette option et de vider le cache du lecteur,  faites deux fois u
 <you_need_to_define_sources_first>Il n'y a pas de source enregistr&eacute;e, vous avez besoin d'ajouter au moins une source avant d'appliquer ces param&egrave;tres</you_need_to_define_sources_first>
 <you_need_to_define_the_hostpot_webservice>Vous devez choisir le service Web HotSpot construite &agrave; travers FreeWeb.</you_need_to_define_the_hostpot_webservice>
 <you_need_to_define_the_second_network_card>Vous devez indiquer l'interface r&eacute;seau secondaire</you_need_to_define_the_second_network_card>
-<you_need_to_reboot_before_continue_the_installation>Please reboot your server before continue with the installation</you_need_to_reboot_before_continue_the_installation>
+<you_need_to_reboot_before_continue_the_installation>Veuillez red&#233;marrer votre serveur avant de continuer l'installation</you_need_to_reboot_before_continue_the_installation>
 <you_need_to_reboot_in_order_to_finish>Vous devez red&eacute;marrer le serveur afin de terminer la t&acirc;che et d\'appliquer les changements en production.</you_need_to_reboot_in_order_to_finish>
 <you_need_to_reconfigre_proxy>Vous avez besoin de reconfigurer le service proxy ou de le r&eacute;-d&eacute;marrer afin de prendre en compte les nouveaux &eacute;l&eacute;ments.</you_need_to_reconfigre_proxy>
 <you_need_to_restart_proxy_service>Vous devriez red&eacute;marrer le service Proxy</you_need_to_restart_proxy_service>
@@ -11274,7 +11246,7 @@ Pendant cette t&acirc;che le service MySQL ne sera pas disponible et les utilisa
 <zarafadb_restore_explain>Cette t&acirc;che &agrave; pour but de restaurer un export de la base MySQL vers l'instance MySQL d&eacute;di&eacute;e &agrave; Zarafa.[br]
 Indiquez votre fichier de sauvegarde et cliquez sur le bouton restaurer afin de lancer l'op&eacute;ration.[br]
 En fonction de la taille &agrave; restaurer, l'op&eacute;ration peut prendre beaucoup de temps.</zarafadb_restore_explain>
-<ZarafaEnablePluginPassword>Enable password plugin</ZarafaEnablePluginPassword>
+<ZarafaEnablePluginPassword>Activer le plugin de mot de passe</ZarafaEnablePluginPassword>
 <ZarafaEnableServer>Activer le moteur Zarafa</ZarafaEnableServer>
 <zarafaHidden>Invisible des carnets d'adresses</zarafaHidden>
 <zarafaSendAsPrivilege>Privil&egrave;ges Envoyer en tant que</zarafaSendAsPrivilege>

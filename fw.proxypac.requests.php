@@ -1,6 +1,8 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["search"])){search();exit;}
 page();
@@ -32,9 +34,11 @@ function page(){
 }
 
 function search(){
-	$time=null;
-	$sock=new sockets();
 	$tpl=new template_admin();
+    $users=new usersMenus();
+    if(!isReader($users)){
+        return "";
+    }
     $search=$tpl->query_pattern(trim(strtolower($_GET["search"])));
     if(strlen($search["S"])<2){$search["S"]="*";}
     $search["S"]=str_replace("%",".*",$search["S"]);
@@ -43,14 +47,16 @@ function search(){
     if($MAX==0){$MAX=250;}
     $EndPoint="/proxypac/queries/$ss/$MAX";
     $data=$GLOBALS["CLASS_SOCKETS"]->REST_API($EndPoint);
-    $json=json_decode($data);
+
 
     $json=json_decode($data);
     if (json_last_error()> JSON_ERROR_NONE) {
         echo $tpl->div_error("Decoding: ".strlen($data)." bytes<hr>$data".json_last_error_msg());
         return false;
     }
-    if(!$json->Status){
+    // json_decode() rend NULL quand le daemon ne repond pas: lire ->Status
+    // dessus est une erreur fatale en PHP 8.
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
         echo $tpl->div_error($json->Error);
         return false;
     }
@@ -60,36 +66,38 @@ function search(){
     $data=$GLOBALS["CLASS_SOCKETS"]->REST_API($EndPoint);
     $json=json_decode($data);
 	$html[]="
-<table class=\"table table-hover\">
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
-        	<th>{date}</th>
-        	<th>PID</th>
-        	<th nowrap>{src}</th>
-        	<th nowrap>{rule}</th>
-        	<th nowrap>User-Agent</th>
-        	<th>{size}</th>
+        	<th class='center'>{date}</th>
+        	<th class='center'>PID</th>
+        	<th>{src}</th>
+        	<th>{rule}</th>
+        	<th>User-Agent</th>
+        	<th class='center'>{size}</th>
         </tr>
   	</thead>
-	<tbody>
+	<tbody id='pacr-rows'>
 ";
 	
 
     $RULES=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $results=$q->QUERY_SQL("SELECT ID,rulename FROM wpad_rules ORDER BY zorder");
-    foreach ($results as $index=>$ligne){
-        $RULES[$ligne["ID"]]=$ligne["rulename"];
+    $rows = acls_api_get("/proxypac/wpad-rules") ?? [];
+    foreach ($rows as $ligne){
+        $RULES[intval($ligne["id"] ?? 0)]=$ligne["ruleName"] ?? "";
     }
 
 
 
-    foreach ($json->Logs as $line){
+    foreach ((isset($json->Logs) && is_array($json->Logs))?$json->Logs:array() as $line){
 
 		$line=trim($line);
         if($line==null){continue;}
+		// Un echo "<H2>$line</H2>" se trouvait ici: chaque ligne de journal non
+		// reconnue emettait un TITRE DE NIVEAU 2 au milieu du corps du tableau,
+		// avec le contenu brut du journal. Reste de mise au point.
 		if(!preg_match("#^([A-Za-z]+)\s+([0-9]+)\s+([0-9:]+).*?\[([0-9]+)\]:\s+(.+)#", $line,$re)) {
-            echo "<H2>$line</H2>";
             continue;}
         $zdate = $re[1]." " .$re[2]. " ".$re[3];
         $pid = $re[4];
@@ -105,16 +113,17 @@ function search(){
 
 
         $sr=explode("||",$line);
-        $ipaddr=$sr[0];
+        // Pentest 2026-11-04 : adresse, regle, User-Agent (donnee externe) affiche sans encodage (XSS stockee).
+        $ipaddr=req_html($sr[0] ?? "");
         $RuleID=$sr[1];
-        $RuleName=$sr[2];
-        $Size=$sr[3];
+        $RuleName=req_html($sr[2] ?? "");
+        $Size=intval($sr[3] ?? 0);
         $unit="bytes";
         if($Size>1024){
             $unit="KB";
             $Size=round($Size/1024);
         }
-        $UserAgent=$sr[4];
+        $UserAgent=req_html($sr[4] ?? "");
         if(trim($RuleName)==null){$RuleName="{failed} {unknown}";}
 
 		$html[]="<tr>
@@ -128,10 +137,20 @@ function search(){
 		
 	}
 	
-	$html[]="</tbody></table>";
+	$html[]="</tbody></table></div></div></div>";
 	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/proxypac.syslog.query")."</i></div>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js(100,"pacr-rows","pacr-pager");
 	
 	
 	
+}
+function isReader($users){
+    if($users->AsDansGuardianAdministrator){
+        return true;
+    }
+    if($users->AsProxyMonitor){
+        return true;
+    }
+    return false;
 }

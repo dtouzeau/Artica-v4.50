@@ -1,21 +1,19 @@
-<artica_console_port>Artica web console port</artica_console_port>
-<connect_and_next>Connect and next step</connect_and_next>
-<CYRUS_MURDER_CONNECT_BACKEND>Connect this server to the backend</CYRUS_MURDER_CONNECT_BACKEND>
-<CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>In the following form, give the backend server address and credentials to connect to the remote Artica SSL web console</CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>
-<CYRUS_MURDER_CONNECT_BACKEND_TEXT>Make this server has a frontend and notify the backend to add a new frontend server</CYRUS_MURDER_CONNECT_BACKEND_TEXT>
-<IS_DIFFERENT_THAN>is different than</IS_DIFFERENT_THAN>
-<MURDER_BACKEND_SERVER>Backend server name</MURDER_BACKEND_SERVER>
-<MURDER_HAS_FRONTEND>This server is a frontend server</MURDER_HAS_FRONTEND>
-<MURDER_HAS_FRONTEND_TEXT>This server is linked to a backend server for clustering mailboxes, if you want to disonnect it, turn to red this circle</MURDER_HAS_FRONTEND_TEXT>
-<murder_link_now>Link this server to backend server now</murder_link_now>
-<MURDER_VERIFY_DONE>The backend server has successfully authenticate your request, you can now proceed linking the 2 servers</MURDER_VERIFY_DONE>
-<MURDER_VERIFY_GO>
-[b]Be carrefull this server will use the backend server for users database, organizations and so on.[/b][br] 
-verify that 389,3905 ports are open in your firewall from this server to the backend server
-[br]If it is the first time you link a backend, the backend server will 
-turn off the Postfix MTA mail server (if it is installed).[br]
-The remote backend server will be switch to be only a Mailboxes/Databases server only...
-</MURDER_VERIFY_GO>
-<MURDER_VERIFY_GO_SUCCESS>This frontend server has been successfully added to the target backend server, all messaging services will be restarted to apply new parameters</MURDER_VERIFY_GO_SUCCESS>
-<REQUIRE_FULL_HOSTNAME>A full hostname is required</REQUIRE_FULL_HOSTNAME>
-<SERVER_REQUESTED>The backed server you set:</SERVER_REQUESTED>
+<artica_console_port>Port konsoli web Artica</artica_console_port>
+<connect_and_next>Po&#322;&#261;cz i nast&#281;pny krok</connect_and_next>
+<CYRUS_MURDER_CONNECT_BACKEND>Po&#322;&#261;cz ten serwer z backendem</CYRUS_MURDER_CONNECT_BACKEND>
+<CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>W poni&#380;szym formularzu podaj adres i po&#347;wiadczenia serwera backend, aby po&#322;&#261;czy&#263; si&#281; ze zdaln&#261; konsol&#261; web SSL Artica</CYRUS_MURDER_CONNECT_BACKEND_EXPLAIN>
+<CYRUS_MURDER_CONNECT_BACKEND_TEXT>Uczy&#324; ten serwer frontendem i powiadom backend o dodaniu nowego serwera frontend</CYRUS_MURDER_CONNECT_BACKEND_TEXT>
+<IS_DIFFERENT_THAN>r&#243;&#380;ni si&#281; od</IS_DIFFERENT_THAN>
+<MURDER_BACKEND_SERVER>Nazwa serwera backend</MURDER_BACKEND_SERVER>
+<MURDER_HAS_FRONTEND>Ten serwer jest serwerem frontend</MURDER_HAS_FRONTEND>
+<MURDER_HAS_FRONTEND_TEXT>Ten serwer jest po&#322;&#261;czony z serwerem backend w celu grupowania skrzynek pocztowych; je&#347;li chcesz go od&#322;&#261;czy&#263;, ustaw to k&#243;&#322;ko na czerwono</MURDER_HAS_FRONTEND_TEXT>
+<murder_link_now>Po&#322;&#261;cz teraz ten serwer z serwerem backend</murder_link_now>
+<MURDER_VERIFY_DONE>Serwer backend pomy&#347;lnie uwierzytelni&#322; Twoje &#380;&#261;danie, mo&#380;esz teraz przyst&#261;pi&#263; do po&#322;&#261;czenia 2 serwer&#243;w</MURDER_VERIFY_DONE>
+<MURDER_VERIFY_GO>[b]Uwaga, ten serwer b&#281;dzie u&#380;ywa&#322; serwera backend dla bazy danych u&#380;ytkownik&#243;w, organizacji itd.[/b][br] 
+sprawd&#378;, czy porty 389, 3905 s&#261; otwarte w zaporze od tego serwera do serwera backend
+[br]Je&#347;li to pierwszy raz, gdy &#322;&#261;czysz backend, serwer backend
+wy&#322;&#261;czy serwer pocztowy Postfix MTA (je&#347;li jest zainstalowany).[br]
+Zdalny serwer backend zostanie prze&#322;&#261;czony, aby by&#322; tylko serwerem skrzynek pocztowych/baz danych...</MURDER_VERIFY_GO>
+<MURDER_VERIFY_GO_SUCCESS>Ten serwer frontend zosta&#322; pomy&#347;lnie dodany do docelowego serwera backend, wszystkie us&#322;ugi przesy&#322;ania wiadomo&#347;ci zostan&#261; ponownie uruchomione w celu zastosowania nowych parametr&#243;w</MURDER_VERIFY_GO_SUCCESS>
+<REQUIRE_FULL_HOSTNAME>Wymagana jest pe&#322;na nazwa hosta</REQUIRE_FULL_HOSTNAME>
+<SERVER_REQUESTED>Ustawiony przez Ciebie serwer backend:</SERVER_REQUESTED>

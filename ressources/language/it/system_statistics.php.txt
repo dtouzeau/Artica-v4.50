@@ -1,6 +1,6 @@
-<detected_this_month>Detected This Month</detected_this_month>
+<detected_this_month>Rilevato questo mese</detected_this_month>
 <hour>Ora</hour>
-<messages_by_hour>number of Messages by hour</messages_by_hour>
-<messages_by_minutes>Messages receive by minutes</messages_by_minutes>
-<trend_day>Hours trend of</trend_day>
-<trend_month>Monthly Trend of</trend_month>
+<messages_by_hour>Numero di messaggi per ora</messages_by_hour>
+<messages_by_minutes>Messaggi ricevuti per minuti</messages_by_minutes>
+<trend_day>Andamento orario di</trend_day>
+<trend_month>Andamento mensile di</trend_month>

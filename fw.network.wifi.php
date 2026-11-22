@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -12,17 +13,20 @@ if(isset($_GET["connect-popup"])){connect_popup();exit;}
 if(isset($_POST["MACADDR"])){connect_save();exit;}
 page();
 function page(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$users=new usersMenus();
-	$nic=$_GET["nic"];
+	// Interface name (wlan0, wlp2s0…): it reaches a root shell through framework/iwconfig.php.
+	$nic=(string)($_GET["nic"] ?? "");
+	if(!preg_match('/^[A-Za-z0-9._:-]{1,32}$/',$nic)){return fw_progress_bad_value("nic");}
 	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/iwlist.progress";
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/iwlist.log";
 	$ARRAY["CMD"]="iwconfig.php?iwlist=$nic";
 	$ARRAY["TITLE"]="{scanning} $nic";
 	$ARRAY["AFTER"]="LoadAjaxTiny('$nic-main-table','$page?table=yes&nic=$nic');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsCompile="Loadjs('fw.progress.php?content=$prgress&mainid=$nic-iwscan')";
+	$jsCompile="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=$nic-iwscan')";
 	
 	
 	$html[]="<div id='$nic-iwscan' style='margin-top:10px'></div>";
@@ -41,8 +45,12 @@ function connect_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$users=new usersMenus();
-	$nic=$_GET["nic"];
-	$MACADDR=$_GET["connect-js"];
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}
+	// Interface name: it reaches a root shell through framework/iwconfig.php.
+	$nic=(string)($_GET["nic"] ?? "");
+	if(!preg_match('/^[A-Za-z0-9._:-]{1,32}$/',$nic)){return fw_progress_bad_value("nic");}
+	$MACADDR=(string)($_GET["connect-js"] ?? "");
+	if(!preg_match('/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/',$MACADDR)){return fw_progress_bad_value("connect-js");}
 	$MACADDR_enc=urlencode($MACADDR);
 	$array=unserialize(@file_get_contents("ressources/logs/iwlist.scan"));
 	$ESSID=$array[$MACADDR]["ESSID"];
@@ -50,7 +58,10 @@ function connect_js(){
 }
 function disconnect_js(){
 	header("content-type: application/x-javascript");
-	$nic=$_GET["nic"];
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}
+	// Interface name: it reaches a root shell through framework/iwconfig.php.
+	$nic=(string)($_GET["nic"] ?? "");
+	if(!preg_match('/^[A-Za-z0-9._:-]{1,32}$/',$nic)){return fw_progress_bad_value("nic");}
 	$page=CurrentPageName();
 	$sock=new sockets();
 	$sock->getFrameWork("iwconfig.php?disconnect=$nic");
@@ -58,7 +69,10 @@ function disconnect_js(){
 }
 function reconnect_js(){
 	header("content-type: application/x-javascript");
-	$nic=$_GET["nic"];
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}
+	// Interface name: it reaches a root shell through framework/iwconfig.php.
+	$nic=(string)($_GET["nic"] ?? "");
+	if(!preg_match('/^[A-Za-z0-9._:-]{1,32}$/',$nic)){return fw_progress_bad_value("nic");}
 	$page=CurrentPageName();
 	$sock=new sockets();
 	$sock->getFrameWork("iwconfig.php?reconnect=$nic");
@@ -66,9 +80,11 @@ function reconnect_js(){
 }
 
 function connect_popup(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$MACADDR=$_GET["connect-popup"];
+	$MACADDR=(string)($_GET["connect-popup"] ?? "");
+	if(!preg_match('/^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$/',$MACADDR)){return fw_progress_bad_value("connect-popup");}
 	$array=unserialize(@file_get_contents("ressources/logs/iwlist.scan"));
 	$ESSID=$array[$MACADDR]["ESSID"];
 	$KEY=$array[$MACADDR]["KEY"];
@@ -76,7 +92,9 @@ function connect_popup(){
 	$MACADDR_enc=urlencode($MACADDR);
 	$WifiAccessPoint=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WifiAccessPoint"));
 	$CONFIG=$WifiAccessPoint[$MACADDR];
-	$nic=$_GET["nic"];
+	// Interface name (wlan0, wlp2s0…): it reaches a root shell through framework/iwconfig.php.
+	$nic=(string)($_GET["nic"] ?? "");
+	if(!preg_match('/^[A-Za-z0-9._:-]{1,32}$/',$nic)){return fw_progress_bad_value("nic");}
 	$html[]="<div id='access-to-$md'></div>";
 	
 	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/iwconf-ap.progress";
@@ -85,7 +103,7 @@ function connect_popup(){
 	$ARRAY["TITLE"]="{connect} $ESSID ($nic)";
 	$ARRAY["AFTER"]="LoadAjaxTiny('$nic-main-table','$page?table=yes&nic=$nic');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsCompile="Loadjs('fw.progress.php?content=$prgress&mainid=access-to-$md')";
+	$jsCompile="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=access-to-$md')";
     $COUNTRIES=Countries_wpa();
 	if($KEY){
 		$form[]=$tpl->field_hidden("MACADDR", $MACADDR);
@@ -122,7 +140,10 @@ function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$users=new usersMenus();
-	$nic=$_GET["nic"];
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}
+	// Interface name: it reaches a root shell through framework/iwconfig.php.
+	$nic=(string)($_GET["nic"] ?? "");
+	if(!preg_match('/^[A-Za-z0-9._:-]{1,32}$/',$nic)){return fw_progress_bad_value("nic");}
 	$sock=new sockets();
 
     $html=array();

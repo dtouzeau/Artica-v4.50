@@ -65,7 +65,7 @@ function table():bool{
     $serviceid=intval($_GET["table"]);
     $sock               = new socksngix($serviceid);
     $form[]=$tpl->field_hidden("serviceid",$serviceid);
-    $allprotos="GET, HEAD, POST, OPTIONS, PUT, PATCH, DELETE, CHECKOUT, COPY, DELETE, LOCK, MERGE, MKACTIVITY, MKCOL, MOVE, PROPFIND, PROPPATCH, PUT, UNLOCK, TRACE, CONNECT, REPORT";
+    $allprotos="GET, HEAD, POST, OPTIONS, PUT, PATCH, DELETE, CHECKOUT, COPY, DELETE, LOCK, MERGE, MKACTIVITY, MKCOL, MOVE, PROPFIND, PROPPATCH, PUT, UNLOCK, TRACE, CONNECT, REPORT, SEARCH";
     $ModSecurityProtocols              = $sock->GET_INFO("ModSecurityProtocols");
     VERBOSE("ModSecurityProtocols: $ModSecurityProtocols",__LINE__);
 

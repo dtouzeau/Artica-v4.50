@@ -1,34 +1,32 @@
-<add_new_poll>And new fetch rule</add_new_poll>
-<aka>Alternate DNS names of mailserver</aka>
+<add_new_poll>Adicionar uma nova regra de recolha</add_new_poll>
+<aka>Nomes DNS alternativos do servidor de correio</aka>
 <ChangeFetchMailUserText>Indique o endereço de e-mail do destinat%C3¡rio</ChangeFetchMailUserText>
 <cliktochange>Clique para alterar o destinat&aacute;rio</cliktochange>
 <doesntexists>N&atilde;o existe</doesntexists>
 <edit_rules>Editar as regras dos utilizadores</edit_rules>
-<fetchall>Fetch all mess</fetchall>
-<fetchmail_explain>This section allows you to add rules in order to retrieve messages stored on your ISP mail server</fetchmail_explain>
-<get_mails_isp>Fetch mails from your ISP</get_mails_isp>
-<hotmail_text>You have choose "hotmail", the GotMail tool will be used for this rule, please give the full eMail address you used eg (username@hotmail.com,username@hotmail.fr...)</hotmail_text>
-<hotwayd_text>You have choose "HTTP", fetchmail will use local pop3 hotwayd proxy to get messages, Use your full username (e.g. hotmailuser@hotmail.com or
-      msnuser@msn.com) and password that you normally use when
-      accessing hotmail/msn/lycos/spray (eg username@lycos.fr...)</hotwayd_text>
-<import1>You find here rules found in your server, select one and import it to Artica database</import1>
-<import_local_rules>Import local fetchmail rules</import_local_rules>
-<install_fetchmail>Install Fetchmail Daemon</install_fetchmail>
-<interval>interval</interval>
+<fetchall>Obter todas as mensagens</fetchall>
+<fetchmail_explain>Esta sec&#231;&#227;o permite-lhe adicionar regras para recuperar as mensagens armazenadas no servidor de correio do seu ISP</fetchmail_explain>
+<get_mails_isp>Obter mensagens do seu ISP</get_mails_isp>
+<hotmail_text>Escolheu &quot;hotmail&quot;; a ferramenta GotMail ser&#225; usada para esta regra, indique o endere&#231;o de e-mail completo que usou, ex. (username@hotmail.com, username@hotmail.fr...)</hotmail_text>
+<hotwayd_text>Escolheu &quot;HTTP&quot;; o fetchmail usar&#225; o proxy local pop3 hotwayd para obter as mensagens. Use o seu nome de utilizador completo (ex. hotmailuser@hotmail.com ou msnuser@msn.com) e a palavra-passe que usa normalmente ao aceder a hotmail/msn/lycos/spray (ex. username@lycos.fr...)</hotwayd_text>
+<import1>Aqui encontra as regras encontradas no seu servidor, selecione uma e importe-a para a base de dados do Artica</import1>
+<import_local_rules>Importar regras fetchmail locais</import_local_rules>
+<install_fetchmail>Instalar o daemon Fetchmail</install_fetchmail>
+<interval>intervalo</interval>
 <keepmess>Guardar mensagens</keepmess>
-<load_user_rules>Find users rules</load_user_rules>
-<load_user_rules_text>Give the email address of the user you want to find
-* caracter is supported</load_user_rules_text>
-<localuser>Local account</localuser>
+<load_user_rules>Encontrar regras de utilizadores</load_user_rules>
+<load_user_rules_text>Indique o endere&#231;o de e-mail do utilizador que pretende encontrar
+O caractere * &#233; suportado</load_user_rules_text>
+<localuser>Conta local</localuser>
 <multidrop>Multidrop</multidrop>
-<no_users_in_database>No users found in database</no_users_in_database>
+<no_users_in_database>Nenhum utilizador encontrado na base de dados</no_users_in_database>
 <remoteuser>Nome de utilizador remoto</remoteuser>
 <rules>Regras</rules>
-<select_user>Change the target user email</select_user>
-<server>Mailbox server</server>
-<server_options>Server Options</server_options>
+<select_user>Alterar o e-mail do utilizador de destino</select_user>
+<server>Servidor de caixa de correio</server>
+<server_options>Op&#231;&#245;es do servidor</server_options>
 <ssl>Usar SSL</ssl>
 <timeout>Tempo limite</timeout>
-<timeout_text>Configures Fetchmail to give up after a certain interval of server inactivity.[br] If this value is not set, a default of 300 seconds is assumed</timeout_text>
-<tracepolls>Trace all polls</tracepolls>
+<timeout_text>Configura o Fetchmail para desistir ap&#243;s um certo intervalo de inatividade do servidor.[br] Se este valor n&#227;o for definido, assume-se um valor predefinido de 300 segundos</timeout_text>
+<tracepolls>Rastrear todas as sondagens</tracepolls>
 <user_option>Opç%C3µes de utilizador</user_option>

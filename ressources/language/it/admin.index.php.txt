@@ -10,20 +10,20 @@
 <error_milter_grey_list_stopped>Il servizio Milter-greylist &egrave; stato fermato o ha smesso di funzionare, verificare la configurazione e lo stato.</error_milter_grey_list_stopped>
 <error_must_create_mailbox>[br][b][i]La casella mail non &egrave; stata creata, e la mail viene rifiutata dal server imap.
 [br]Devi prima creare un account utente o un alias[/b][/i]</error_must_create_mailbox>
-<error_relayhost>The master relay you have set for postfix is not available, change it or check your &quot;internet server relay&quot;</error_relayhost>
-<error_routing_postfix>Postifx was denied routing, please check your transports tables...</error_routing_postfix>
-<error_routing_to>Postfix is unable to route this email to the next destination server, please check your routing tables</error_routing_to>
+<error_relayhost>Il relay master impostato per postfix non &#232; disponibile, cambialo o controlla il tuo &amp;quot;internet server relay&amp;quot;</error_relayhost>
+<error_routing_postfix>A Postfix &#232; stato negato l'instradamento, controlla le tue tabelle transport...</error_routing_postfix>
+<error_routing_to>Postfix non &#232; in grado di instradare questa email al server di destinazione successivo, controlla le tue tabelle di routing</error_routing_to>
 <graphs>Grafici e statistiche</graphs>
 <lines_number>Max Linee</lines_number>
 <monitorix>Monitorix</monitorix>
 <mysql_not_root_configured>Impossibile accedere a Mysql</mysql_not_root_configured>
-<mysql_not_root_configured_text>Artica report Access denied, you need to set the right account for mysql in order to get full artica features
-Go to Global settings/Mysql database to set this account</mysql_not_root_configured_text>
-<mysql_too_any_connections>MySQL server reports that there  are too many connections on Mysql server[br]you have to restart Mysql or to reboot your server</mysql_too_any_connections>
+<mysql_not_root_configured_text>Artica segnala Accesso negato, devi impostare l'account corretto per mysql per ottenere tutte le funzionalit&#224; di artica
+Vai in Impostazioni globali/Database Mysql per impostare questo account</mysql_not_root_configured_text>
+<mysql_too_any_connections>Il server MySQL segnala che ci sono troppe connessioni sul server Mysql[br]devi riavviare Mysql o riavviare il server</mysql_too_any_connections>
 <notification>Errore riscontrato</notification>
 <postfix_mynet_not_conf>Postfix Networks</postfix_mynet_not_conf>
-<postfix_mynet_not_conf_text>You need to set your networks in order to place Postfix in production mode.[br]
-Select Postfix/Postfix Network settings in the left panel</postfix_mynet_not_conf_text>
+<postfix_mynet_not_conf_text>Devi impostare le tue reti per mettere Postfix in modalit&#224; produzione.[br]
+Seleziona Postfix/Impostazioni di rete Postfix nel pannello a sinistra</postfix_mynet_not_conf_text>
 <service>Nome Applicazione</service>
 <smtp_notification_not_saved>Notificazioni della posta non sono configurati</smtp_notification_not_saved>
 <smtp_notification_not_saved_text>Se '&egrave; necessario di essere informato se il server artica fallisce o compie sui compiti con successo,[br]Entrare i parametri di notificazione al fine di ricevere tutti gli informazioni via posta</smtp_notification_not_saved_text>

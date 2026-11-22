@@ -58,7 +58,8 @@ function search()
 
     if (!$q->ok) {
 
-        echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+        // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS) (aussi via l'erreur SQL et la requete).
+        echo "<div class='alert alert-danger'>".req_html($q->mysql_error)."<br><strong><code>".req_html($_GET["search"])."</code></strong><br><strong><code>".req_html($sql)."</code></strong></div>";
     }
 
     $severityCL[0] = "label-danger";
@@ -81,7 +82,8 @@ function search()
         $id = md5(serialize($ligne));
         $zdate = $tpl->time_to_date($ligne["zdate"], true);
         $severity_class = $severityCL[$ligne["level"]];
-        $subject=$ligne["subject"];
+        // Pentest 2026-11-04 : sujet de l'evenement (donnee externe) affiche sans encodage (XSS stockee).
+        $subject=req_html($ligne["subject"]);
 
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td class=\"$text_class\" style='width:1%' nowrap><div class='label $severity_class' style='font-size:13px;padding:10px;width:100%' $curs OnClick=\"blur()\" >$zdate</a></div></td>";

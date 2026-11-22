@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.maincf.multi.inc");
@@ -94,7 +97,7 @@ function parameters(){
 	$ARRAY["REFRESH-MENU"]="yes";
 	$ARRAY["AFTER"]="LoadAjax('table-mimedefang','$page?tabs=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$mimedefang_restart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedefang-restart');";	
+	$mimedefang_restart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedefang-restart');";	
 	
 	$t=time();
 	if(!is_numeric($Param["DEBUG"])){$Param["DEBUG"]=0;}
@@ -180,7 +183,7 @@ function table(){
 	$ARRAY["TITLE"]="{restarting_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-mimedefang','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$mimedefang_restart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mimedefang-restart');";
+	$mimedefang_restart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mimedefang-restart');";
 
     $lib_mem=new lib_memcached();
 	$MIMEDEFANG_WORKERS=explode("\n",$GLOBALS["CLASS_SOCKETS"]->GET_INFO("MIMEDEFANG_WORKERS"));
@@ -274,17 +277,17 @@ function table(){
 			$RulesNumber=$RulesNumber+intval($MAIN["RULES"]);
 		}
 		if($time==0){
-			$spamDB=$tpl->widget_h("gray","fas fa-database","{not_updated}","{artica_antispam_rules}");
+			$spamDB=$tpl->widget_h("gray",ico_database,"{not_updated}","{artica_antispam_rules}");
 		}else{
 			$RulesNumber=FormatNumber($RulesNumber);
 			$date=$tpl->time_to_date($time,true);
-			$spamDB=$tpl->widget_h("green","fas fa-database",$RulesNumber."<br><small style='color:white;font-size:10px'>{updated}: $date</small>","{artica_antispam_rules}");
+			$spamDB=$tpl->widget_h("green",ico_database,$RulesNumber."<br><small style='color:white;font-size:10px'>{updated}: $date</small>","{artica_antispam_rules}");
 		}
 
 		if($MimeDefangAutoWhiteList==1){
-            $AutoWhiteList=$tpl->widget_h("green","fas fa-database",$SMTP_SUM_AUTOWHITE,"{smtp_AutoWhiteList}");
+            $AutoWhiteList=$tpl->widget_h("green",ico_database,$SMTP_SUM_AUTOWHITE,"{smtp_AutoWhiteList}");
         }else{
-            $AutoWhiteList=$tpl->widget_h("gray","fas fa-database",$SMTP_SUM_AUTOWHITE,"{smtp_AutoWhiteList} ({disabled})");
+            $AutoWhiteList=$tpl->widget_h("gray",ico_database,$SMTP_SUM_AUTOWHITE,"{smtp_AutoWhiteList} ({disabled})");
         }
 
 		

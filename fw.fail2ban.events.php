@@ -1,17 +1,26 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.rtmm.tools.inc");
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
+// Pentest 2026-11-04 : t/eth/delete/enable-signature/enable-firewall etaient recopies sans encodage dans la page (XSS).
+foreach(array("t","enable-signature","enable-firewall") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}
+}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
+if(isset($_GET["delete"])){$_GET["delete"]=preg_replace('/[^A-Za-z0-9_.-]/','',(string)$_GET["delete"]);}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["enable-signature"])){enable_signature();exit;}
 if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["delete"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 page();
 
 function delete_js(){
@@ -24,7 +33,8 @@ function delete_js(){
 	
 	
 	$q=new postgres_sql();
-	$q->QUERY_SQL("DELETE FROM suricata_firewall WHERE uduniq='$uduniq'");
+	// Pentest 2026-11-04 : delete (uduniq) etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM suricata_firewall WHERE uduniq=$1",array((string)$uduniq));
 	if(!$q->ok){echo "alert('$q->mysql_error')";return;}
 	
 	
@@ -41,12 +51,13 @@ function enable_signature(){
 	$rulefile=$_GET["cat"];
 	$page=CurrentPageName();
 	$q=new postgres_sql();
-	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM suricata_sig WHERE signature='$id'"));
+	// Pentest 2026-11-04 : la signature (URL) etait concatenee dans la requete.
+	$ligne=pg_fetch_array($q->QUERY_SQL_PARAMS("SELECT * FROM suricata_sig WHERE signature=$1",array((string)$id)));
 	if(!$q->ok){echo "alert('$q->mysql_error')";return;}
 	$tpl=new template_admin();
 	
 	if($ligne["enabled"]==0){
-		$q->QUERY_SQL("UPDATE suricata_sig SET enabled=1 WHERE signature='$id'");
+		$q->QUERY_SQL_PARAMS("UPDATE suricata_sig SET enabled=1 WHERE signature=$1",array((string)$id));
 		if(!$q->ok){echo "alert('$q->mysql_error')";return;}
 		
 		echo "
@@ -58,7 +69,7 @@ document.getElementById('signature-$id').className= 'fas fa-check-square-o';
 return;		
 	}
 	
-	$q->QUERY_SQL("UPDATE suricata_sig SET enabled=0 WHERE signature='$id'");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_sig SET enabled=0 WHERE signature=$1",array((string)$id));
 	if(!$q->ok){echo "alert('$q->mysql_error')";return;}	
 	echo "
 	document.getElementById('id-$id').style.color = '#8a8a8a';
@@ -74,12 +85,13 @@ function enable_firewall(){
 	$rulefile=$_GET["cat"];
 	$page=CurrentPageName();
 	$q=new postgres_sql();
-	$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM suricata_sig WHERE signature='$id'"));
+	// Pentest 2026-11-04 : la signature (URL) etait concatenee dans la requete.
+	$ligne=pg_fetch_array($q->QUERY_SQL_PARAMS("SELECT * FROM suricata_sig WHERE signature=$1",array((string)$id)));
 	if(!$q->ok){echo "alert('$q->mysql_error')";return;}
 	$tpl=new template_admin();
 	
 	if($ligne["firewall"]==0){
-		$q->QUERY_SQL("UPDATE suricata_sig SET firewall=1 WHERE signature='$id'");
+		$q->QUERY_SQL_PARAMS("UPDATE suricata_sig SET firewall=1 WHERE signature=$1",array((string)$id));
 		if(!$q->ok){echo "alert('$q->mysql_error')";return;}
 	
 		echo "
@@ -89,7 +101,7 @@ function enable_firewall(){
 		return;
 	}
 	
-	$q->QUERY_SQL("UPDATE suricata_sig SET firewall=0 WHERE signature='$id'");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_sig SET firewall=0 WHERE signature=$1",array((string)$id));
 			if(!$q->ok){echo "alert('$q->mysql_error')";return;}
 			echo "
 			document.getElementById('firewall-$id').className= 'fa fa-square-o';
@@ -107,6 +119,7 @@ function page(){
 	if(!isset($_GET["t"])){$t=time();}else{$t=$_GET["t"];}
 	if($_SESSION["FAIL2BAN_SEARCH"]==null){$_SESSION["FAIL2BAN_SEARCH"]="today src * limit 200";}
 	
+	// Pentest 2026-11-04 : search (garde en session) etait recopie sans encodage dans la page (XSS).
 	$html="
 	<div class=\"row border-bottom white-bg dashboard-header\">
 		<div class=\"col-sm-12\"><h1 class=ng-binding>{ids_events}</h1></div>
@@ -115,7 +128,7 @@ function page(){
 	<div class=\"row\"> 
 		<div class='ibox-content'>
 		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["FAIL2BAN_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
+      		<input type=\"text\" class=\"form-control\" value=\"".req_html($_SESSION["FAIL2BAN_SEARCH"] ?? "")."\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
       		<span class=\"input-group-btn\">
        		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:ss$t();\">Go!</button>
       	</span>
@@ -269,7 +282,8 @@ function table(){
 	
 	if(!$q->ok){
 		
-		echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+		// Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS) (aussi via l'erreur SQL et la requete).
+		echo "<div class='alert alert-danger'>".req_html($q->mysql_error)."<br><strong><code>".req_html($_GET["search"])."</code></strong><br><strong><code>".req_html($sql)."</code></strong></div>";
 		return;
 	}
     $services["smtp"]="<span class='label label-warning'>SMTP</span>";
@@ -287,19 +301,21 @@ function table(){
 		
 		$color="black";
 	
-		$src_ip=$ligne["src_ip"];
-		$zDate=$ligne["zdate"];
+		// Pentest 2026-11-04 : src_ip/hostname (PTR)/country/city/service (donnee externe) affiches sans encodage (XSS stockee).
+		$src_ip=req_html($ligne["src_ip"]);
+		$zDate=req_html($ligne["zdate"]);
 		$country=$ligne["country"];
-		$cirty=$ligne["city"];
-		$hostname=$ligne["hostname"];
+		$cirty=req_html($ligne["city"]);
+		$hostname=req_html($ligne["hostname"]);
 		$service=$ligne["service"];
 		
-		$flaf=GetFlags($country);
+		$flaf=req_html(GetFlags($country));
+		$country=req_html($country);
 		
 		$html[]="<tr class='$TRCLASS'>";
 		$html[]="<td class=\"$text_class\">$zDate</a></td>";
 		$html[]="<td class=\"$text_class\">$src_ip</td>";
-		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$services[$service]}</td>";
+		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>".(isset($services[$service])?$services[$service]:req_html($service))."</td>";
 		$html[]="<td class=\"$text_class\">$hostname</td>";
 		$html[]="<td class=\"$text_class\" style='width:1%' nowrap><img src='img/$flaf'></td>";
 		$html[]="<td class=\"$text_class\">$country</td>";
@@ -318,7 +334,7 @@ function table(){
 	$html[]="</td>";
 	$html[]="</tr>";
 	$html[]="</tfoot>";
-	$html[]="</table><div><i>{$search["Q"]}</i><br><small>$sql</small></div>";
+	$html[]="</table><div><i>".req_html($search["Q"])."</i><br><small>".req_html($sql)."</small></div>";
 	$html[]="
 	<script>
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
@@ -346,9 +362,11 @@ function enable(){
 	
 	$filename=$_POST["filename"];
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM suricata_rules_packages WHERE rulefile='$filename'");
-	$enabled=intval($ligne["enabled"]);
+	// Pentest 2026-11-04 : filename etait concatene dans la requete.
+	$results=$q->QUERY_SQL_PARAMS("SELECT enabled FROM suricata_rules_packages WHERE rulefile=?",array((string)$filename));
+	$ligne=isset($results[0])?$results[0]:array();
+	$enabled=intval($ligne["enabled"] ?? 0);
 	if($enabled==0){$enabled=1;}else{$enabled=0;}
-	$q->QUERY_SQL("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile='$filename'","artica_backup");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile=?",array((string)$filename));
 	if(!$q->ok){echo $q->mysql_error;}
 }

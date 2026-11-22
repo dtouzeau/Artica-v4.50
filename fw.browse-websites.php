@@ -1,10 +1,15 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+// Kit de tables awc_*. Inclusion INCONDITIONNELLE : dans le bootstrap
+// if(!class_exists("sockets")) elle ne s'executerait jamais, et la page mourrait
+// sur "Call to undefined function awc_table_style()" -- un spinner infini.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["popup"])){popup();exit;}
-if(isset($_GET["operation"])){operation();exit;}
 if(isset($_GET["search"])){search();exit;}
 js();
 
@@ -15,14 +20,11 @@ function js(){
 	$tpl=new template_admin();
 	$title=$tpl->javascript_parse_text("$title");
 	$tpl->js_dialog9($title, "$page?popup=yes&field-id=$field_id",750);
-	
-	
 }
 
 function popup(){
     $tpl = new template_admin();
     $page = CurrentPageName();
-    $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
     $field_id = $_GET["field-id"];
     $t = time();
     echo $tpl->search_block($page, null, null, null, "&field-id=$field_id");
@@ -34,25 +36,28 @@ function search(){
 
 
     $TRCLASS=null;
-    $q = new lib_sqlite("/home/artica/SQLITE/nginx.db");
     $field_id = $_GET["field-id"];
     $t = time();
     $fid=$_GET["field-id"];
     $id_string="$fid-string";
 
-    $sql = "SELECT ID,hosts,servicename FROM nginx_services ORDER BY zorder";
-    $results=$q->QUERY_SQL($sql);
+    // Daemon API: list nginx_services rows ordered by zorder.
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/nginx_services?order=zorder");
+    $data=json_decode($resp,true);
+    $results=(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])) ? $data["rows"] : [];
     $all_websites=$tpl->_ENGINE_parse_body("{all_websites}");
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{websites}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' width=1%>{select}</th>";
+	$html[]="<th>{websites}</th>";
+    $html[]="<th>{select}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS' id='md0'>";
+	// L'id du <tbody> ancre awc_pager_js() : sans lui le pager rend vide et
+	// toutes les lignes s'affichent d'un bloc, sans que rien ne le signale.
+	$html[]="<tbody id='bweb-rows'>";
+    $html[]="<tr id='md0'>";
     $html[]="<td width=99% nowrap><strong>$all_websites</strong></td>";
 
     $js="document.getElementById('$fid').value='0';document.getElementById('$id_string').value='$all_websites';  dialogInstance9.close();";
@@ -89,8 +94,7 @@ function search(){
                         VERBOSE("$search ->NOT FOUND IN $www",__LINE__);
                         continue;}
                 }
-                if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-                $html[]="<tr class='$TRCLASS' id='$md'>";
+                $html[]="<tr id='$md'>";
                 $html[]="<td width=99% nowrap><strong>$www{$WAF}</strong></td>";
                 $html[]="<td width=1% class='center' nowrap>". $tpl->icon_select($js,"AsProxyMonitor")."</center></td>";
                 $html[]="</tr>";
@@ -102,28 +106,23 @@ function search(){
             if(!preg_match("#$search#",$Hosts)){continue;}
         }
 
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$html[]="<tr class='$TRCLASS' id='$md'>";
+		$html[]="<tr id='$md'>";
         $html[]="<td width=99% nowrap><strong>$Hosts</strong></td>";
 		$html[]="<td width=1% class='center' nowrap>". $tpl->icon_select($js,"AsWebMaster")."</center></td>";
 		$html[]="</tr>";
 	}
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='2'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>$c {items}</span>";
+	$html[]="<span class='awc-pg' id='bweb-pager'></span></div>";
+	$html[]="</div></div>";
 	$html[]="
 	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": false },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+	NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."
 	</script>";
 	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	// Feuille et pager concatenes AUTOUR du parsing : la regex de
+	// _ENGINE_parse_body lit chaque regle CSS et chaque bloc JS comme un jeton.
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html)).awc_pager_js(25,"bweb-rows","bweb-pager");
 	
 	
 }

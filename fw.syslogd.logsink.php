@@ -1,6 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.syslog.tls.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_POST["remove"])){remove_host_confirm();exit;}
@@ -77,24 +78,7 @@ function page():bool{
     return true;
 }
 function client_package_download():bool{
-    $CONFIG=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LOGSINKWIZARD"));
-    $FINAL_CONF=$CONFIG["FINAL_CONF"];
-
-    $client_hostname=$CONFIG["client_hostname"];
-    $fsize=strlen($FINAL_CONF);
-    $hostname=php_uname('n');
-    header('Content-type:multipart/encrypted');
-    header('Content-Transfer-Encoding: binary');
-    header("Content-Disposition: attachment; filename=\"$client_hostname.$hostname.conf\"");
-    header("Pragma: public");
-    header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
-    header("Content-Length: ".$fsize);
-    ob_clean();
-    flush();
-    echo $FINAL_CONF;
-    return true;
-
+    return syslogtls_client_package_download();
 }
 function download_ca():bool{
     $RsyslogCertificates=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RsyslogCertificates")));
@@ -120,9 +104,12 @@ function log_sink_install():bool{
     $page=CurrentPageName();
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSyslogLogSink",1);
     header("content-type: application/x-javascript");
+
     $rebuild=$tpl->framework_buildjs(
-        "syslog.php?rebuild-all=yes","syslog.daemons.progress","syslog.daemons.progress.progress.log","progress-syslod-restart",
+        "/syslog/reconfigure","syslog.restart.progress",
+        "syslog.restart.progress.log","syslog-restart-status",
         "LoadAjax('table-loader-syslod-service','$page?tabs=yes')");
+
     echo $rebuild;
     admin_tracks("Activate Logs Sink feature in syslog");
     return true;
@@ -132,9 +119,13 @@ function log_sink_uninstall():bool{
     $page=CurrentPageName();
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSyslogLogSink",0);
     header("content-type: application/x-javascript");
+
     $rebuild=$tpl->framework_buildjs(
-        "syslog.php?rebuild-all=yes","syslog.daemons.progress","syslog.daemons.progress.progress.log","progress-syslod-restart",
+        "/syslog/reconfigure","syslog.restart.progress",
+        "syslog.restart.progress.log","syslog-restart-status",
         "document.location.href='/syslogd'");
+
+
     echo $rebuild;
     admin_tracks("Disable Logs Sink feature in syslog");
     return true;
@@ -148,26 +139,9 @@ function client_package_js():bool{
 function client_package_popup(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-
-    $CONFIG=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LOGSINKWIZARD"));
-
-    if(!isset($CONFIG["server_hostname"])){$CONFIG["server_hostname"]=null;}
-    
-    if($CONFIG["server_hostname"]==null){$CONFIG["server_hostname"]=php_uname('n');}
-    $form[]=$tpl->field_text("client_hostname","{acl_srcdomain}",$CONFIG["client_hostname"],true);
-    $form[]=$tpl->field_text("server_hostname","{server_name}",$CONFIG["server_hostname"],true);
-    $form[]=$tpl->field_password("client_password","{passphrase} (32 {characters})",$CONFIG["client_password"],true);
-
-    $jsrestart=$tpl->framework_buildjs("syslog.php?create-client-ssl=yes",
-        "syslog.ssl.progress",
-        "syslog.ssl.log",
-        "client-ssl-create",
-        "dialogInstance2.close();document.location.href='/$page?client-package-download=yes';"
-    );
-
-
+    $jsafter="dialogInstance2.close();document.location.href='/$page?client-package-download=yes';";
     $html[]="<div id='client-ssl-create'></div>";
-    $html[]=$tpl->form_outside(null, @implode("\n", $form),null,"{create}",$jsrestart,"AsSystemAdministrator");
+    $html[]=syslogtls_client_package_form($tpl,$jsafter);
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 
@@ -175,20 +149,13 @@ function client_package_popup(){
 function client_package_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    if(strlen($_POST["client_password"])<32){
-        echo $tpl->post_error("{passphrase} (32 {characters})!");
+    $error=syslogtls_client_package_build($_POST["client_hostname"],$_POST["server_hostname"],$_POST["client_password"]);
+    if($error<>""){
+        echo $tpl->post_error($error);
         return false;
     }
-    if(strlen($_POST["client_password"])>32){
-        echo $tpl->post_error("{passphrase} (32 {characters})!");
-        return false;
-    }
-
-
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LOGSINKWIZARD",serialize($_POST));
-    admin_tracks("Creating Log sink client template for ".$_POST["client_hostname"]);
+    admin_tracks("Creating Log sink client package for ".$_POST["client_hostname"]);
     return true;
-    //QwIfX6NVtfdZyjm0XWHZpwIz1Mfrvcw5WAjNI
 }
 function ServiceStatus():string{
     $tpl        = new template_admin();
@@ -207,17 +174,8 @@ function ServiceStatus():string{
     $ini=new Bs_IniHandler();
     $ini->loadString($json->Info);
 
-
-
-    $json=json_decode($sock->REST_API("/dns/collector/status"));
-    $bsiniCollector=new Bs_IniHandler();
-    $bsiniCollector->loadString($json->Info);
-    $jsRestartCollector=$tpl->framework_buildjs("/dns/collector/restart","dns-collector.progress",
-        "dns-collector.log",
-        "progress-syslod-restart","LoadAjaxSilent('syslog-status','$page?syslogd-status=yes');");
-
     $final[]=$tpl->SERVICE_STATUS($ini, "APP_RSYSLOG",$jsrestart);
-    $final[]=$tpl->SERVICE_STATUS($bsiniCollector, "APP_DNS_COLLECTOR",$jsRestartCollector);
+
     return @implode("\n",$final);
 }
 function service_status():bool{
@@ -367,12 +325,6 @@ function top_status_ssl():string{
     $ico=ico_certificate;
     $warn=ico_emergency;
 
-    if(!is_file("/usr/bin/certtool")){
-        return $tpl->widget_h("grey",$warn, "{missing} CertTool", "{UseSSL}",
-            null,top_status_css());
-
-    }
-
     if(!is_file("/usr/lib/x86_64-linux-gnu/rsyslog/lmnsd_ossl.so")) {
         return $tpl->widget_h("grey", $warn, "{missing} lmnsd_ossl.so", "{UseSSL}",
             null, top_status_css());
@@ -380,7 +332,7 @@ function top_status_ssl():string{
 
     $RsyslogTCPUseSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RsyslogTCPUseSSL"));
 
-    $js=$tpl->framework_buildjs("syslog.php?enable-ssl=yes",
+    $js=$tpl->framework_buildjs("/syslog/tls/enable",
         "syslog.ssl.progress","syslog.ssl.log","progress-syslod-restart",
         "LoadAjax('top-status-syslog','$page?top-status=yes');");
 
@@ -430,7 +382,7 @@ function disable_ssl_ask():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
 
-    $js=$tpl->framework_buildjs("syslog.php?disable-ssl=yes",
+    $js=$tpl->framework_buildjs("/syslog/tls/disable",
         "syslog.ssl.progress","syslog.ssl.log","progress-syslod-restart",
         "LoadAjax('top-status-syslog','$page?top-status=yes');");
 
@@ -438,7 +390,7 @@ function disable_ssl_ask():bool{
     return true;
 }
 function disable_ssl_confirm():bool{
-    admin_tracks("Disable SSL protocol oon the syslog service");
+    admin_tracks("Disable SSL protocol on the syslog service");
     return true;
 }
 

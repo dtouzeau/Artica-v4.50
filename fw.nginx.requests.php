@@ -4,6 +4,9 @@ include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.ip2host.inc");
 include_once(dirname(__FILE__)."/ressources/class.logfile_daemon.inc");
 include_once(dirname(__FILE__).'/ressources/class.modsectools.inc');
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["search-file-js"])){search_file_js();exit;}
 if(isset($_GET["proxy_upstream_name-search"])){proxy_upstream_name_search();exit;}
@@ -11,9 +14,6 @@ if(isset($_GET["form"])){search_form();exit;}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["zoom-js"])){zoom_js();exit;}
 if(isset($_GET["zoom-popup"])){zoom_popup();exit;}
-if(isset($_GET["search-opts-js"])){search_opts_js();exit;}
-if(isset($_GET["search-opts-popup"])){search_opts_popup();exit;}
-if(isset($_POST["proxy_upstream_name"])){search_opts_save();exit;}
 if(isset($_GET["filter-bysite"])){filter_bysite();exit;}
 if(isset($_GET["harmptabs"])){harmptabs();exit;}
 if(isset($_GET["proxy_upstream_name-js"])){proxy_upstream_name_js();exit;}
@@ -44,79 +44,116 @@ function zoom_js():bool{
     $page=CurrentPageName();
     $encoded=$_GET["zoom-js"];
     $decoded=json_decode(base64_decode($encoded));
-    return $tpl->js_dialog4($decoded->host,"$page?zoom-popup=$encoded",1050);
-}
-function search_opts_js():bool{
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $function=$_GET["function"];
-    return $tpl->js_dialog4("{options}","$page?search-opts-popup=yes&function=$function");
+    // Pentest 2026-11-04 : zoom-js etait recopie sans encodage dans la page (XSS).
+    $host=is_object($decoded)&&isset($decoded->host)?(string)$decoded->host:"";
+    return $tpl->js_dialog4(req_html(req_html($host)),"$page?zoom-popup=".req_url($encoded),1050);
 }
 function proxy_upstream_name_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $id=$_GET["id"];
-    $suffix_form=$_GET["suffix-form"];
+    // Pentest 2026-11-04 : id/suffix-form etaient recopies sans encodage dans la page (XSS).
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
+    $suffix_form=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["suffix-form"] ?? ""));
     return $tpl->js_dialog10("{servicename}","$page?proxy_upstream_name-popup=yes&id=$id&suffix-form=$suffix_form");
 }
 function proxy_upstream_name_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $id=$_GET["id"];
-    $suffix_form=$_GET["suffix-form"];
+    // Pentest 2026-11-04 : id/suffix-form etaient recopies sans encodage dans la page (XSS).
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
+    $suffix_form=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["suffix-form"] ?? ""));
     echo $tpl->search_block($page, null, null, null, "&proxy_upstream_name-search=yes&id=$id&suffix-form=$suffix_form");
     return true;
 }
+
+
 function proxy_upstream_name_search():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $id=$_GET["id"];
-    $search=$_GET["search"];
-    $search="*".$search."*";
-    $search=str_replace("**","*",$search);
-    $search=str_replace("**","*",$search);
-    $search=str_replace("*","%",$search);
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT ID,servicename,hosts FROM nginx_services WHERE enabled=1 AND (servicename LIKE '$search' OR hosts LIKE '$search' ) ORDER BY zorder";
-    $results=$q->QUERY_SQL($sql);
-    $html[]="<table style='width:100%' class='table'>";
-    foreach ($results as $ligne) {
-        $ID=$ligne["ID"];
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $servicename=$ligne["servicename"];
-        $key=base64_encode("$servicename-$ID");
-        $prc1="style='width:1%;text-align:right;padding-right:10px;padding-left:10px;vertical-align:top' nowrap";
+    // $id designe un element du DOM et repartait BRUT dans
+    // document.getElementById('...') -- donc dans du JavaScript.
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
+    $search=(string)($_GET["search"] ?? "");
+    $needle=strtolower(trim(str_replace("*","",$search)));
+    // Daemon API gives all enabled rows ordered by zorder; the LIKE on
+    // (servicename, hosts) is applied PHP-side because /nginx-db/list only
+    // supports ORDER BY, not multi-column WHERE.
+    $rows=fetch_enabled_nginx_services("zorder");
+    $results=array();
+    foreach($rows as $r){
+        if($needle===""){
+            $results[]=$r;continue;
+        }
+        $hayName=strtolower(isset($r["servicename"])?$r["servicename"]:"");
+        $hayHosts=strtolower(isset($r["hosts"])?$r["hosts"]:"");
+        if(strpos($hayName,$needle)!==false || strpos($hayHosts,$needle)!==false){
+            $results[]=$r;
+        }
+    }
+    $html=array();
+    $js=array();
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    // Ce tableau n'avait AUCUN <thead>: trois colonnes sans intitule, dont la
+    // premiere ne contenait que le libelle repete "{sitename}:".
+    $html[]="<th>{sitename}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
+    $html[]="</tr></thead><tbody>";
 
-        $Zhosts=str_replace("||",", ",$ligne["hosts"]);
+    $n=0;
+    foreach ($results as $ligne) {
+        if(!is_array($ligne)){continue;}
+        $n++;
         $idF=md5(serialize($ligne));
+        $key=base64_encode(((string)($ligne["servicename"] ?? ""))."-".intval($ligne["ID"] ?? 0));
         $js[]="function Main$idF(){";
         $js[]="document.getElementById('$id').value=base64_decode('$key');";
         $js[]="dialogInstance10.close();";
         $js[]="}";
-
-        $button="<button class='btn btn-primary btn-xs' OnClick=\"Main$idF()\">{select}</button>";
-
-
-        $html[]="<tr style='height: 43px'>";
-        $html[]="<td $prc1>{sitename}:</td>";
-        $html[]="<td ><strong>$servicename</strong><br><i>$Zhosts</i></strong></td>";
-        $html[]="<td $prc1>$button</td>";
-        $html[]="</tr>";
+        $html[]=upstream_service_row($ligne,$idF);
     }
-    $html[]="</table>";
-    $html[]="<script>";
-    $html[]=@implode("\n",$js);
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-return true;
+    if($n==0){
+        $html[]="<tr><td colspan='2' class='awc-empty'>{no_data}</td></tr>";
+    }
+    $html[]="</tbody></table></div></div></div>";
 
+    // $TRCLASS etait calcule a chaque tour puis jamais applique: la ligne portait
+    // un style inline et aucune classe.
+    $script="<script>\n".@implode("\n",$js)."\n</script>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
+    return true;
+
+}
+
+/**
+ * Un service reverse selectionnable.
+ * Le nom du service et la liste des hotes venaient de la base et partaient
+ * BRUTS dans le HTML, et la cellule du nom se fermait sur DEUX </strong> pour
+ * un seul <strong> ouvrant.
+ */
+function upstream_service_row(array $ligne,$idF):string{
+    $servicename=(string)($ligne["servicename"] ?? "");
+    $hosts=str_replace("||",", ",(string)($ligne["hosts"] ?? ""));
+
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-globe'></i></span>";
+    $h.="<span><div class='awc-name'>".htmlspecialchars($servicename)."</div>";
+    $h.="<div class='awc-meta'>".htmlspecialchars($hosts)."</div></span>";
+    $h.="</div></td>";
+    $h.="<td class='center awc-nowrap'>"
+       ."<a href=\"javascript:blur();\" class='awc-btn' style='padding:4px 10px;font-size:11px' "
+       ."OnClick=\"Main$idF()\">{select}</a></td>";
+    $h.="</tr>";
+    return $h;
 }
 
 function harmptabs():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $q = new lib_sqlite("/home/artica/SQLITE/hamrp.db");
-    $sql="SELECT * FROM hamrp WHERE groupid={$_SESSION["HARMPID"]} ORDER BY zOrder";
+    // Pentest 2026-11-04 : HARMPID (session alimentee par le GET harmpid) etait concatene dans la requete.
+    $sql="SELECT * FROM hamrp WHERE groupid=".intval($_SESSION["HARMPID"] ?? 0)." ORDER BY zOrder";
     $results=$q->QUERY_SQL($sql);
 
     $array=array();
@@ -137,7 +174,12 @@ function zoom_popup():bool{
     $Unencoded=base64_decode($_GET["zoom-popup"]);
 
     $decoded=json_decode($Unencoded);
-    $src=$decoded->src_ip;
+    // Pentest 2026-11-04 : zoom-popup (JSON de la requete) etait recopie sans encodage dans la page (XSS).
+    if(!is_object($decoded)){$decoded=new stdClass();}
+    foreach (get_object_vars($decoded) as $zk=>$zv){
+        if(is_scalar($zv)){$decoded->$zk=req_html($zv);}
+    }
+    $src=isset($decoded->src_ip)?$decoded->src_ip:"";
 
     $modsectool=new modesctools();
     $modsectool->hostinfo($src);
@@ -292,74 +334,6 @@ function zoom_popup():bool{
     echo $tpl->_ENGINE_parse_body($html);
 return true;
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
-
-function search_opts_popup(){
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $function=$_GET["function"];
-    $logfile_daemon=new logfile_daemon();
-    $CODES=$logfile_daemon->codeToString(null,true);
-    $zCODES=array();
-    $zCODES[""]="{all}";
-    $zCODES["3[0-9][0-9]"]="[3xx]: {all}";
-    $zCODES["4[0-9][0-9]"]="[4xx]: {all}";
-    $zCODES["496"]="[496]: {certificate}";
-    $zCODES["50[0-9]"]="[50x]: {all}";
-    foreach ($CODES as $Code=>$Name){
-        $zCODES[$Code]="[$Code]: $Name";
-    }
-
-    $PROTOS["GET"]="GET";
-    $PROTOS["PUT"]="PUT";
-    $PROTOS["POST"]="POST";
-    $PROTOS["DELETE"]="DELETE";
-    $PROTOS["PATCH"]="PATCH";
-    $PROTOS["HEAD"]="HEAD";
-    $PROTOS["OPTIONS"]="OPTIONS";
-    $PROTOS["TRACE"]="TRACE";
-    $PROTOS["CONNECT"]="CONNECT";
-
-
-
-    if(!isset($_SESSION["NGINXSEARCH"]["status"])){
-        $_SESSION["NGINXSEARCH"]["status"]="";
-    }
-
-    $form[]=$tpl->field_text_button("proxy_upstream_name","{server_name}",$_SESSION["NGINXSEARCH"]["proxy_upstream_name"],null,"{edit}");
-    $form[]=$tpl->field_array_hash($zCODES,"status","{http_status_code}",$_SESSION["NGINXSEARCH"]["status"]);
-    $form[]=$tpl->field_array_hash($PROTOS,"http_method","{method}",$_SESSION["NGINXSEARCH"]["http_method"]);
-    $form[]=$tpl->field_ipaddr("remote_addr","{src}",$_SESSION["NGINXSEARCH"]["remote_addr"]);
-    $form[]=$tpl->field_text("user_agent","{http_user_agent}",$_SESSION["NGINXSEARCH"]["user_agent"]);
-    $form[]=$tpl->field_text("request","{request}",$_SESSION["NGINXSEARCH"]["request"]);
-
-    $js="dialogInstance4.close();$function()";
-    echo $tpl->form_outside("{search}",$form,null,"{save}",$js);
-
-}
-function search_opts_save():bool{
-    $tpl=new template_admin();
-    $tpl->CLEAN_POST();
-    $_SESSION["NGINXSEARCH"]=$_POST;
-    return true;
-}
-
 function page(){
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -384,6 +358,138 @@ function page(){
     $tpl=new templates();
     echo $tpl->_ENGINE_parse_body($html);
 }
+function nginxsearch_get($key):string{
+    if(!isset($_SESSION["NGINXSEARCH"][$key])){return "";}
+    $v=trim(strval($_SESSION["NGINXSEARCH"][$key]));
+    // jQuery < 3 encode un DropDown/DropDownMultiple totalement desamorce en la
+    // chaine litterale "null" (encodeURIComponent(null)) : sans cette garde le
+    // demon recoit "status=null" en permanence et le filtre ne peut plus etre efface.
+    if($v==="null"){return "";}
+    return $v;
+}
+
+// Ancien format : codes « 3[0-9][0-9] » url-encodés, méthodes mêlées au statut,
+// time_local = liste d'heures. Traduit une fois, puis sauvegardé.
+function nginxsearch_migrate_session(){
+    if(!isset($_SESSION["NGINXSEARCH"]) || !is_array($_SESSION["NGINXSEARCH"])){return;}
+    $S=$_SESSION["NGINXSEARCH"];
+    $changed=false;
+    if(isset($S["time_local"])){
+        $hours=array();
+        foreach(explode(",",strval($S["time_local"])) as $h){
+            $h=trim($h);
+            if($h==="" || !is_numeric($h)){continue;}
+            $h=intval($h);
+            if($h<0 || $h>23){continue;}
+            $hours[]=$h;
+        }
+        if(count($hours)>0){
+            $S["time_from"]=sprintf("%02d:00",min($hours));
+            $S["time_to"]=sprintf("%02d:59",max($hours));
+        }
+        unset($S["time_local"]);
+        $changed=true;
+    }
+    $statusLooksOld=false;
+    if(isset($S["status"]) && $S["status"]!==""){
+        if(strpos($S["status"],"[")!==false || strpos($S["status"],"%")!==false){
+            $statusLooksOld=true;
+        }else{
+            foreach(explode(",",$S["status"]) as $tok){
+                $tok=trim($tok);
+                if($tok!=="" && preg_match("#^[A-Za-z]+$#",$tok)){$statusLooksOld=true;break;}
+            }
+        }
+    }
+    if($statusLooksOld){
+        $codes=array();
+        $methods=array();
+        if(isset($S["http_method"]) && strlen($S["http_method"])>0){$methods[]=strtoupper($S["http_method"]);}
+        foreach(explode(",",urldecode(strval($S["status"]))) as $tok){
+            $tok=trim(str_replace("\\","",$tok));
+            if($tok===""){continue;}
+            if(preg_match("#^[A-Za-z]+$#",$tok)){$methods[]=strtoupper($tok);continue;}
+            if(strpos($tok,"[0-9]")!==false){$tok=substr($tok,0,1)."xx";}
+            $codes[]=$tok;
+        }
+        $S["status"]=implode(",",array_unique($codes));
+        $S["http_method"]=implode(",",array_unique($methods));
+        $changed=true;
+    }
+    if(isset($S["request"])){
+        if(!isset($S["uri_path"]) || strlen($S["uri_path"])==0){$S["uri_path"]=$S["request"];}
+        unset($S["request"]);
+        $changed=true;
+    }
+    if($changed){
+        $_SESSION["NGINXSEARCH"]=$S;
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SearchNginx{$_SESSION["uid"]}",serialize($S));
+    }
+}
+
+// Liste blanche des jetons de statut et de méthode. DropDownMultiple() (partagé,
+// non modifiable ici) réinjecte la valeur courante telle quelle dans un bloc
+// <script> : une valeur de session arbitraire casserait le script. On ne garde
+// donc que les jetons valides ; les autres sont ignorés (jamais enregistrés,
+// jamais rendus, jamais envoyés au démon).
+function nginxsearch_clean_tokens($value,$pattern):string{
+    $out=array();
+    foreach(explode(",",strval($value)) as $tok){
+        $tok=trim($tok);
+        if($tok===""){continue;}
+        if(!preg_match($pattern,$tok)){continue;}
+        if(in_array($tok,$out,true)){continue;}
+        $out[]=$tok;
+    }
+    return implode(",",$out);
+}
+function nginxsearch_clean_status($value):string{
+    return nginxsearch_clean_tokens($value,'#^[1-5]([0-9]{2}|xx)$#');
+}
+function nginxsearch_clean_methods($value):string{
+    return nginxsearch_clean_tokens($value,'#^[A-Z]+$#');
+}
+
+// Nombres saisis dans la console : un texte non numérique est refusé ici, sans
+// appeler le démon (sinon intval/floatval le changeaient silencieusement en 0).
+function nginxsearch_numeric_error():string{
+    $md=str_replace(",",".",nginxsearch_get("min_duration"));
+    if($md!=="" && !is_numeric($md)){
+        return "min_duration: ".htmlspecialchars(nginxsearch_get("min_duration"),ENT_QUOTES)." is not a number";
+    }
+    $mx=nginxsearch_get("max_records");
+    if($mx!=="" && !is_numeric($mx)){
+        return "max: ".htmlspecialchars($mx,ENT_QUOTES)." is not a number";
+    }
+    return "";
+}
+
+function nginxsearch_filters($source,$id,$text):array{
+    // max 1..1500 côté démon : les anciennes sessions gardaient 5000.
+    $max=intval(nginxsearch_get("max_records"));
+    if($max>1500){$max=1500;}
+
+    return array(
+        "source"=>$source,
+        "id"=>intval($id),
+        "max"=>$max,
+        "time_from"=>nginxsearch_get("time_from"),
+        "time_to"=>nginxsearch_get("time_to"),
+        "status"=>nginxsearch_clean_status(nginxsearch_get("status")),
+        "method"=>nginxsearch_clean_methods(nginxsearch_get("http_method")),
+        "src_ip"=>nginxsearch_get("remote_addr"),
+        "uri"=>nginxsearch_get("uri_path"),
+        "user_agent"=>nginxsearch_get("user_agent"),
+        "server_name"=>nginxsearch_get("server_name"),
+        "upstream_addr"=>nginxsearch_get("upstream_addr"),
+        "upstream_status"=>nginxsearch_get("upstream_status"),
+        "cache_status"=>nginxsearch_get("cache_status"),
+        "min_duration"=>floatval(str_replace(",",".",nginxsearch_get("min_duration"))),
+        "text"=>trim(strval($text)),
+        "use_regex"=>(nginxsearch_get("use_regex")=="1"),
+    );
+}
+
 function search_form():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -392,18 +498,16 @@ function search_form():bool{
     $latencyID=0;
     $Latencies=array();
     if(isset($_GET["fileid"])){
-        $fileid=intval($_GET["fileid"]);-
-        $urltoadd="&fileid=$fileid";
+        $fileid=intval($_GET["fileid"]);
+        $urltoadd="&fileid=".$fileid;
 
     }
     if(isset($_GET["latencyID"])){
-        $latencyID=intval($_GET["latencyID"]);-
-        $urltoadd="&latencyID=$latencyID";
+        $latencyID=intval($_GET["latencyID"]);
+        $urltoadd="&latencyID=".$latencyID;
 
     }
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT ID,servicename FROM nginx_services WHERE enabled=1 ORDER BY servicename";
-    $results=$q->QUERY_SQL($sql);
+    $results=fetch_enabled_nginx_services("servicename");
 
     if(!isset($_SESSION["NGINXSEARCH"])){
         $Key="SearchNginx{$_SESSION["uid"]}";
@@ -420,13 +524,11 @@ function search_form():bool{
 
 
 
+    nginxsearch_migrate_session();
+
     $proxy_upstream_name="";
-    $status_code_saved="";
     $proxy_latency_name="";
 
-    if(isset($_SESSION["NGINXSEARCH"]["status"])){
-        $status_code_saved=urlencode($_SESSION["NGINXSEARCH"]["status"]);
-    }
     if(isset($_SESSION["NGINXSEARCH"]["proxy_upstream_name"])){
         $proxy_upstream_name=$_SESSION["NGINXSEARCH"]["proxy_upstream_name"];
     }
@@ -436,25 +538,6 @@ function search_form():bool{
 
 
     $logfile_daemon=new logfile_daemon();
-    $CODES=$logfile_daemon->codeToString(null,true);
-    $zCODES=array();
-    $zCODES["3[0-9][0-9]"]="[3xx]: {all}";
-    $zCODES["4[0-9][0-9]"]="[4xx]: {all}";
-    $zCODES["496"]="[496]: {certificate}";
-    $zCODES["50[0-9]"]="[50x]: {all}";
-    foreach ($zCODES as $Code=>$Name){
-        $CodeVal=urlencode($Code);
-        $Name=$tpl->_ENGINE_parse_body($Name);
-        $AzCODES["$CodeVal"]=$Name;
-    }
-    foreach ($CODES as $num=>$text){
-        $AzCODES[$num]="$num $text";
-    }
-    $available=explode(",","GET,HEAD,POST,OPTIONS,PUT,PATCH,DELETE,CHECKOUT,COPY,DELETE,LOCK,MERGE,MKACTIVITY,MKCOL,MOVE,PROPFIND,PROPPATCH,PUT,UNLOCK,TRACE,CONNECT");
-
-    foreach ($available as $text){
-        $AzCODES[$text]=$text;
-    }
     $AArry=array();
 
     foreach ($results as $index=>$ligne){
@@ -477,45 +560,58 @@ function search_form():bool{
 
 
 
-    if($fileid==0) {
-        $ttlocal="";
-        if(isset($_SESSION["NGINXSEARCH"]["time_local"])){
-            $ttlocal=$_SESSION["NGINXSEARCH"]["time_local"];
-        }
-        $LINES[] = $tpl->field_text_online("time_local", "{time}",$ttlocal, 150, "$page?save-field=time_local&value=%s$urltoadd");
+    $CODES=array("2xx"=>"2xx","3xx"=>"3xx","4xx"=>"4xx","5xx"=>"5xx");
+    foreach ($logfile_daemon->codeToString(null,true) as $num=>$text){
+        if(preg_match("#^[1-5][0-9][0-9]$#",$num)){$CODES[$num]="$num $text";}
     }
-    $LINES[]=$tpl->DropDownMultiple($AzCODES,$status_code_saved,"{http_status_code}","$page?save-field=status&value=%s$urltoadd",380);
-
-    $LINES[]=$tpl->field_text_online("remote_addr","0.0.0.0",$_SESSION["NGINXSEARCH"]["remote_addr"],150,"$page?save-field=remote_addr&value=%s");
-
-    if($fileid==0) {
-       $LINES[] = $tpl->DropDown($AArry, $proxy_upstream_name, "{sitename}", "$page?save-field=proxy_upstream_name&value=%s$urltoadd");
+    $METHODS=array();
+    foreach (explode(",","GET,HEAD,POST,OPTIONS,PUT,PATCH,DELETE,PROPFIND,PROPPATCH,MKCOL,COPY,MOVE,LOCK,UNLOCK,TRACE,CONNECT") as $m){
+        $METHODS[$m]=$m;
     }
-    if(count($Latencies)>0){
-        $LINES[] = $tpl->DropDown($Latencies, $proxy_latency_name, "{latency}", "$page?save-field=proxy_latency_name&value=%s$urltoadd");
-    }
-
-
-
-    if(!isset($_SESSION["NGINXSEARCH"]["max_records"])){
-    $_SESSION["NGINXSEARCH"]["max_records"]=300;
-}
+    $CACHES=array(""=>"{all}","HIT"=>"HIT","MISS"=>"MISS","BYPASS"=>"BYPASS","EXPIRED"=>"EXPIRED","STALE"=>"STALE","UPDATING"=>"UPDATING","REVALIDATED"=>"REVALIDATED");
+    $MODES=array("0"=>"{access_search_literal}","1"=>"{access_search_regex}");
+    $v=function($k){return htmlspecialchars(nginxsearch_get($k),ENT_QUOTES);};
+    $save="$page?save-field=%s&value=%%s$urltoadd";
     $ico_help=ico_support;
     $js_help="s_PopUpFull('https://wiki.articatech.com/reverse-proxy/realtime-events','1024','900');";
 
-    $LINES[]=$tpl->field_text_online("uri_path","{request}",$_SESSION["NGINXSEARCH"]["uri_path"],200,"$page?save-field=uri_path&value=%s$urltoadd");
-    $LINES[]=$tpl->field_text_online("user_agent","{http_user_agent}",$_SESSION["NGINXSEARCH"]["user_agent"],250,"$page?save-field=user_agent&value=%s$urltoadd");
-    $LINES[]=$tpl->field_text_online("max_records","{records}",$_SESSION["NGINXSEARCH"]["max_records"],120,"$page?save-field=max_records&value=%s$urltoadd");
-
+    $L1=array();
     if($fileid==0) {
-        $LINES[] = "<button class='btn btn-primary btn-xs' type='button' OnClick=\"LoadAjax('nginx-search-results','$page?search=')\" style='height:34px'>Go</button>";
-        $LINES[] = "<button class='btn btn-default btn-circle' type='button' OnClick=\"$js_help\"><i class='$ico_help'></i></button>";
+        $L1[] = $tpl->DropDown($AArry, $proxy_upstream_name, "{sitename}", sprintf($save,"proxy_upstream_name"));
+    }
+    if(count($Latencies)>0){
+        $L1[] = $tpl->DropDown($Latencies, $proxy_latency_name, "{latency}", sprintf($save,"proxy_latency_name"));
+    }
+    $L1[]=$tpl->field_text_online("time_from","{access_search_from}",$v("time_from"),110,sprintf($save,"time_from"));
+    $L1[]=$tpl->field_text_online("time_to","{access_search_to}",$v("time_to"),110,sprintf($save,"time_to"));
+    $L1[]=$tpl->DropDownMultiple($CODES,nginxsearch_clean_status(nginxsearch_get("status")),"{http_status_code}",sprintf($save,"status"),260);
+    $L1[]=$tpl->DropDownMultiple($METHODS,nginxsearch_clean_methods(nginxsearch_get("http_method")),"{method}",sprintf($save,"http_method"),200);
+    if(nginxsearch_get("max_records")==""){$_SESSION["NGINXSEARCH"]["max_records"]=300;}
+    $L1[]=$tpl->field_text_online("max_records","{records}",$v("max_records"),90,sprintf($save,"max_records"));
+    if($fileid==0) {
+        $L1[] = "<button class='btn btn-primary btn-xs' type='button' OnClick=\"LoadAjax('nginx-search-results','$page?search=')\" style='height:34px'>Go</button>";
+        $L1[] = "<button class='btn btn-default btn-circle' type='button' OnClick=\"$js_help\"><i class='$ico_help'></i></button>";
     }
 
-    echo "<div style='margin-top:5px;margin-bottom:5px'>&nbsp;</div>";
-    echo @implode("&nbsp;&nbsp;",$LINES);
-    echo "</div>";
-    echo "<div id='nginx-search-results' style='margin-top:25px'></div>;";
+    $L2=array();
+    $L2[]=$tpl->field_text_online("remote_addr","{src} (IP, CIDR)",$v("remote_addr"),170,sprintf($save,"remote_addr"));
+    $L2[]=$tpl->field_text_online("uri_path","{request}",$v("uri_path"),200,sprintf($save,"uri_path"));
+    $L2[]=$tpl->field_text_online("user_agent","{http_user_agent}",$v("user_agent"),200,sprintf($save,"user_agent"));
+    $L2[]=$tpl->field_text_online("server_name","{server_name}",$v("server_name"),170,sprintf($save,"server_name"));
+    $L2[]=$tpl->field_text_online("upstream_addr","{upstream_addr}",$v("upstream_addr"),170,sprintf($save,"upstream_addr"));
+    $L2[]=$tpl->field_text_online("upstream_status","{upstream_status}",$v("upstream_status"),120,sprintf($save,"upstream_status"));
+    $L2[]=$tpl->DropDown($CACHES,nginxsearch_get("cache_status"),"{cache}",sprintf($save,"cache_status"));
+    $L2[]=$tpl->field_text_online("min_duration","{access_search_min_duration}",$v("min_duration"),120,sprintf($save,"min_duration"));
+    $L2[]=$tpl->DropDown($MODES,nginxsearch_get("use_regex"),"{access_search_literal}",sprintf($save,"use_regex"));
+
+    // Les options des DropDown ({select}, {all}, {access_search_*}) ne sont
+    // traduites que par ce passage : DropDown() ne traduit que le placeholder.
+    $form=array();
+    $form[]="<div style='margin-top:5px;margin-bottom:5px'>&nbsp;</div>";
+    $form[]="<div>".@implode("&nbsp;&nbsp;",$L1)."</div>";
+    $form[]="<div style='margin-top:8px'>".@implode("&nbsp;&nbsp;",$L2)."</div>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$form));
+    echo "<div id='nginx-search-results' style='margin-top:25px'></div>";
     echo "<script>LoadAjax('nginx-search-results','$page?search=$urltoadd');</script>";
     return true;
 }
@@ -525,18 +621,24 @@ function saveField(){
     $field=$_GET["save-field"];
     $fileid=0;
     $latencyID=0;
+    // Pentest 2026-11-04 : fileid/latencyID etaient recopies sans encodage dans la page (XSS).
     if(isset($_GET["fileid"])){
-        $fileid=$_GET["fileid"];
+        $fileid=intval($_GET["fileid"]);
     }
 
     if(isset($_GET["latencyID"])){
-        $latencyID=$_GET["latencyID"];
+        $latencyID=intval($_GET["latencyID"]);
     }
 
 
 
-    $value=urldecode($_GET["value"]);
+    // $_GET est deja decode par PHP : un urldecode() supplementaire cassait les
+    // valeurs contenant "+" (converti en espace) ou "%xx" (decode deux fois) --
+    // regex, user-agent "+http://...", URI avec "+"/"%".
+    $value=isset($_GET["value"])?$_GET["value"]:"";
     if(is_null($value)){$value="";}
+    if($field=="status"){$value=nginxsearch_clean_status($value);}
+    if($field=="http_method"){$value=nginxsearch_clean_methods($value);}
     unset( $_SESSION["NGINXSEARCH"]["request"]);
 //fileid
     if(strlen($value)==0 OR is_null($value)){
@@ -584,24 +686,20 @@ function search():bool{
     }
 
     $MAIN=$tpl->format_search_protocol($_GET["search"]);
-    $line=base64_encode(serialize($MAIN));
     $proxy_upstream_name=null;
     if(!isset($_SESSION["NGINXSEARCH"])){$_SESSION["NGINXSEARCH"]=array();}
-    $SearchArray=$_SESSION["NGINXSEARCH"];
     if(isset($_SESSION["NGINXSEARCH"]["proxy_upstream_name"])){
         $proxy_upstream_name=$_SESSION["NGINXSEARCH"]["proxy_upstream_name"];
     }else{
         VERBOSE("SESSSION[NGINXSEARCH][proxy_upstream_name]=UNKNOWN",__LINE__);
     }
 
-
-    if(is_null($proxy_upstream_name)){
-       echo $tpl->div_warning("{select_www_requests_search}");
-        return true;
+    if($fileid==0) {
+        if (is_null($proxy_upstream_name)) {
+            echo $tpl->div_warning("{select_www_requests_search}");
+            return true;
+        }
     }
-
-    unset($SearchArray["proxy_upstream_name"]);
-    $opts=urlencode(base64_encode(serialize($SearchArray)));
 
     if(preg_match("#-([0-9]+)$#",$proxy_upstream_name,$re)){
         $index=$re[1];
@@ -611,20 +709,71 @@ function search():bool{
         return true;
     }
 
-    $PFile=PROGRESS_DIR."/nginx-search.pattern";
+    $source="realtime";
+    $id=$index;
+    if($fileid>0){$source="fileid";$id=$fileid;}
+    if($proxy_latency_name>0){$AddTitle="{latency}";$source="latency";$id=$proxy_latency_name;}
+
+    $numErr=nginxsearch_numeric_error();
+    if($numErr!==""){
+        echo $tpl->div_error($numErr);
+        return true;
+    }
     $sock=new sockets();
-    $sock->REST_API_TIMEOUT=30;
-    $EnPoint="/reverse-proxy/access/$line/$opts/$index/$fileid";
-    if($proxy_latency_name>0){
-        $AddTitle="{latency}";
-        $EnPoint="/reverse-proxy/latencyaccess/$line/$opts/$index/$proxy_latency_name";
+    $term="";
+    if(isset($MAIN["TERM"])){$term=$MAIN["TERM"];}
+    $raw=$sock->REST_API_NGINX_POST_JSON("/reverse-proxy/access/search",nginxsearch_filters($source,$id,$term),30);
+    $json=json_decode($raw,true);
+    if(!is_array($json) || !isset($json["Status"])){
+        if(is_array($json) && isset($json["error"])){
+            echo $tpl->div_error("{access_search_daemon_unavailable}<br>".htmlspecialchars(strval($json["error"])));
+            return true;
+        }
+        echo $tpl->div_error("{access_search_daemon_unavailable}");
+        return true;
     }
-
-    $json=json_decode($sock->REST_API_NGINX($EnPoint));
-    if(!$json->Status && strlen($json->Error)>1){
-        echo $tpl->div_warning($json->Error);
+    if(!$json["Status"]){
+        echo $tpl->div_error(htmlspecialchars(strval($json["Error"])));
+        return true;
     }
+    $R=$json["result"];
+    if(intval($R["file_size"])<0){
+        echo $tpl->div_warning("{no_recent_access_log}");
+        return true;
+    }
+    $period="-";
+    if(floatval($R["oldest_ts"])>0){
+        $period=date("H:i:s",intval($R["oldest_ts"]))." &rarr; ".date("H:i:s",intval($R["newest_ts"]));
+    }
+    $summary=sprintf("%d {access_search_results} &middot; {access_search_period} %s &middot; %.1f MB {access_search_read_in} %.2f s",
+        intval($R["matched"]),$period,floatval($R["scanned_bytes"])/1048576,floatval($R["duration_ms"])/1000);
+    $banner="<div style='margin-bottom:8px'><i>$summary</i></div>";
+    if($R["truncated"]=="budget"){$banner.=$tpl->div_warning("{access_search_truncated_budget}");}
+    if($R["truncated"]=="max"){$banner.=$tpl->div_warning("{access_search_truncated_max}");}
 
+    $GLOBALS["logfile_daemon"]=new logfile_daemon();
+    $tb=array();
+    if(isset($R["lines"]) && is_array($R["lines"])){$tb=$R["lines"];}
+    $html=array();
+    foreach ($tb as $line){
+        $html[]=ProcessLine($line);
+    }
+    writelogs("Processing : ".count($html)." lines",__FUNCTION__,__FILE__,__LINE__);
+
+    $TINY_ARRAY["TITLE"]="{APP_NGINX}: $AddTitle
+    {requests} &laquo;".req_html($_GET["search"])."&raquo;";
+    // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+    $TINY_ARRAY["ICO"]=ico_eye;
+    $TINY_ARRAY["EXPL"]="{APP_NGINX_REQUESTS_EXPLAIN}";
+    $TINY_ARRAY["URL"]="nginx-requests";
+    $TINY_ARRAY["BUTTONS"]=null;
+    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+
+    $page=CurrentPageName();
+    $rows=$html;
+    $html=array();
+    $html[]=$banner;
     $html[]="
 <table class=\"table table-hover\">
 	<thead>
@@ -635,7 +784,7 @@ function search():bool{
         	<th nowrap>{src}</th>
         	<th>{sitename}</th>
         	<th>&nbsp;</th>
-        	
+
         	<th>{total}</th>
         	<th>&nbsp;</th>
         	<th>{path}</th>
@@ -645,38 +794,10 @@ function search():bool{
         </tr>
   	</thead>
 	<tbody>
-	
+
 ";
-    $GLOBALS["logfile_daemon"]=new logfile_daemon();
-    $start = microtime(true);
-    $tb=array();
-
-
-    $logpath=$json->logpath;
-
-    if(!is_null($logpath)) {
-        $tb = explode("\n", file_get_contents($logpath));
-    }
-    foreach ($tb as $line){
-        $html[]=ProcessLine($line);
-    }
-    $end = microtime(true);
-    $duration=$end - $start;
-    $took=sprintf("Took %.6f seconds", $duration);
-    writelogs("Processing : ".count($html)." lines $took",__FUNCTION__,__FILE__,__LINE__);
-
-    $TINY_ARRAY["TITLE"]="{APP_NGINX}: $AddTitle 
-    {requests} &laquo;{$_GET["search"]}&raquo;";
-    $TINY_ARRAY["ICO"]=ico_eye;
-    $TINY_ARRAY["EXPL"]="{APP_NGINX_REQUESTS_EXPLAIN}";
-    $TINY_ARRAY["URL"]="nginx-requests";
-    $TINY_ARRAY["BUTTONS"]=null;
-    $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-
-
-    $page=CurrentPageName();
+    foreach ($rows as $rowhtml){$html[]=$rowhtml;}
     $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents($PFile)."</i></div>";
     $html[]="<script>";
     $html[]=$jstiny;
     $html[]="Loadjs('$page?jsScanIPInfos=yes');";
@@ -729,6 +850,8 @@ function jsFillIPInfos(){
         return;
     }
     $srcip=RealIP($json);
+    // Pentest 2026-11-04 : jsFillIPInfos (adresse source) et id etaient recopies sans encodage dans la page (XSS).
+    $srcip=preg_replace('/[^A-Za-z0-9.:%_, -]/','',(string)$srcip);
     $page=CurrentPageName();
     $ip2Host=new ip2host();
     $ipinfos[]="<h3>$srcip</h3>";
@@ -761,7 +884,7 @@ function jsFillIPInfos(){
     $ZOOM_TEXT=base64_encode(json_encode($json));
 
     $flag=base64_encode($tpl->td_href($flag,@implode("<br>",$ipinfos),"Loadjs('$page?zoom-js=$ZOOM_TEXT')"));
-    $BigMd5=$_GET["id"];
+    $BigMd5=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
     $loup=base64_encode($tpl->icon_loupe(1,"Loadjs('$page?zoom-js=$ZOOM_TEXT')"));
     $srcipData =base64_encode($tpl->td_href($srcip,$ipinfoApi["countryName"],"Loadjs('fw.modsecurity.threats.php?zoom-ip-js=$srcip')"));
     $f[]="if (document.getElementById('$BigMd5-flag') ){";
@@ -827,7 +950,7 @@ function ProcessLine($line):string{
     $apache_time=intval($json->timestamp);
     $upstream_status=$json->upstream_status;
     if(property_exists($json,"request_time")) {
-        $request_time = $json->request_time;
+        $request_time = req_html($json->request_time);
     }
     $request_time_class="";
     $proto="";
@@ -880,13 +1003,14 @@ function ProcessLine($line):string{
     if(property_exists($json,"ClientCert")) {
         $ClientCert = $json->ClientCert;
     }
+    // Pentest 2026-11-04 : champs du journal d'acces (donnee externe : X-Forwarded-For, Host, URI, certificat client, erreur) affiches sans encodage (XSS stockee).
     if(property_exists($json,"error")) {
-        $error = "<br><i>$json->error</i>";
+        $error = "<br><i>".req_html($json->error)."</i>";
     }
 
     $date=$tpl->time_to_date($apache_time,true);
     if(property_exists($json,"upstream_response_time")) {
-        $upstream_response_time = $json->upstream_response_time;
+        $upstream_response_time = req_html($json->upstream_response_time);
         $upstream_response_org=floatval($upstream_response_time);
     }
 
@@ -900,7 +1024,7 @@ function ProcessLine($line):string{
         if(preg_match("#CN=(.+)#",$ClientCert,$re)){
             $ClientCert=$re[1];
         }
-        $ClientCert="&nbsp<i class='".ico_user."'></i>&nbsp;$ClientCert";
+        $ClientCert="&nbsp<i class='".ico_user."'></i>&nbsp;".req_html($ClientCert);
     }
 
     if($sitename==null){
@@ -922,7 +1046,6 @@ function ProcessLine($line):string{
 
 
     $json->src=$srcip;
-    $hton=ip2long($srcip);
 
     $flag="<img src='/img/flags/info.png'>";
 
@@ -1028,22 +1151,23 @@ function ProcessLine($line):string{
     $html[]="<td $tdhead1><span class='ipinfo' id='$BigMd5-flag' basedata='$data'>$flag</td>";
     $html[]="<td $tdhead1>$date</td>";
     $html[]="<td $tdhead1><span id='$BigMd5-errcode'>$error_code_label$error_code_str</span></td>";
-    $html[]="<td $tdhead1><span id='$BigMd5-src'>$srcip</span>$ClientCert</td>";
-    $html[]="<td $tdhead1>$sitename</td>";
+    $html[]="<td $tdhead1><span id='$BigMd5-src'>".req_html($srcip)."</span>$ClientCert</td>";
+    $html[]="<td $tdhead1>".req_html($sitename)."</td>";
     $html[]="<td $tdhead1>$cache_icon</td>";
 
     $len=strlen($path);
     if($len>75){
         $path=substr($path,0,72)."...";
     }
-    $path=htmlspecialchars($path);
+    $path=req_html($path);
+    $proto=req_html($proto);
     $html[]="<td $tdhead1><span class='$request_time_class'>$request_time_time</span></td>";
     $html[]="<td $tdhead1><span id='$BigMd5-loupe'></span></td>";
     $html[]="<td $tdhead2>$turtle&nbsp;$proto&nbsp;$path$error</td>";
     $html[]="<td $tdhead1>$size</td>";
     $html[]="<td $tdhead1><span class='$upstream_response_class'>$upstream_response_time</span></td>";
     $html[]="<td $tdhead1>$BackendStatus</td>";
-    $html[]="<td $tdhead1><span style='$colordest'>$destip</span></td>";
+    $html[]="<td $tdhead1><span style='$colordest'>".req_html($destip)."</span></td>";
     $html[]="</tr>";
     return @implode("\n",$html);
 }

@@ -101,31 +101,28 @@ class squid_familysite{
 			$sitename = @idn_to_ascii($sitename, "UTF-8");
 		}
 	
-		$tmp=trim($this->getRegisteredDomain($sitename));
+		$tmp=$this->getRegisteredDomain($sitename);
 		if($GLOBALS["DEBUG_FAMILIY"]){echo "getRegisteredDomain($sitename) -> $tmp\n";}
-	
-		$tt=$this->GetFamilySitestt("",true);
-		if($tmp<>null){
-			if(isset($tt[$tmp])){
-				if($GLOBALS["DEBUG_FAMILIY"]){echo "{$tt[$tmp]} tt[$tmp] -> $sitename\n";}
-				$GLOBALS["GetFamilySites"][$sitename]=$sitename;
-				return $sitename;
-			}
-				
-			$exp=explode(".",$tmp);
-			if(count($exp)>1){
-				$tmp=null;
-			}else{
-				$GLOBALS["GetFamilySites"][$sitename]=$tmp;
-				return $tmp;
-			}
-	
-				
-				
+
+		// La liste des suffixes publics (tldree.db) FAIT AUTORITE: elle seule sait
+		// que le suffixe de perkeso.gov.my est "gov.my" et non "my", donc que ce
+		// nom est un domaine MAITRE et non un sous-domaine.
+		//
+		// Son resultat etait auparavant jete des qu'il contenait un point -- ce qui
+		// est le cas de TOUT domaine enregistrable -- et la fonction retombait sur
+		// la table statique GetFamilySitestt(), qui ignore quantite de suffixes a
+		// deux niveaux (gov.my, gouv.fr, gov.au, gov.sg...). Les domaines maitres
+		// concernes etaient alors pris pour des sous-domaines: fw.rules.items.php
+		// leur ajoutait un "^", qui vaut correspondance EXACTE cote squidacls, et
+		// la regle ratait silencieusement tous les sous-domaines du site.
+		if($tmp<>null && $tmp<>""){
+			$GLOBALS["GetFamilySites"][$sitename]=$tmp;
+			return $tmp;
 		}
-	
-		
-	
+
+		// Repli: suffixe absent de la liste publique, ou nom qui EST lui-meme un
+		// suffixe (co.uk, gov.my saisis tels quels). La table statique puis
+		// l'heuristique positionnelle restent seules juges dans ce cas.
 		$tmp=$this->GetFamilySitestt($sitename);
 		if(strpos($tmp, ".")>0){
 			$GLOBALS["GetFamilySites"][$sitename]=$tmp;
@@ -156,17 +153,26 @@ class squid_familysite{
 	}
 	
 	private function getRegisteredDomain($signingDomain) {
-		if(!isset($GLOBALS["tldTree"])){
-			$GLOBALS["tldTree"]=file_get_contents(dirname(__FILE__)."/tldree.db");
+		// L'arbre des suffixes pese 118 Ko: il etait deserialise A CHAQUE APPEL,
+		// ce qui reste anecdotique tant qu'on l'appelle une fois, mais plus du tout
+		// depuis qu'il decide seul (voir GetFamilySites) et qu'un import en masse
+		// l'appelle pour chaque ligne. On garde l'arbre deja deserialise.
+		if(!isset($GLOBALS["tldTreeArray"])){
+			$raw=@file_get_contents(dirname(__FILE__)."/tldree.db");
+			$tree=($raw===false)?false:@unserialize($raw);
+			// unserialize() rend false sur fichier absent ou corrompu: sans ce
+			// garde-fou, findRegisteredDomain() recevrait un booleen.
+			$GLOBALS["tldTreeArray"]=is_array($tree)?$tree:array();
 		}
-	
+		if(count($GLOBALS["tldTreeArray"])==0){return "";}
+
 		$signingDomainParts = explode('.', $signingDomain);
-		$tldTree=unserialize($GLOBALS["tldTree"]);
+		$tldTree=$GLOBALS["tldTreeArray"];
 		$result = $this->findRegisteredDomain($signingDomainParts, $tldTree);
 	
 		if ($result===NULL || $result=="") {
 			// this is an invalid domain name
-			return NULL;
+			return "";
 		}
 	
 		// assure there is at least 1 TLD in the stripped signing domain
@@ -850,7 +856,9 @@ class squid_familysite{
 				'mobi'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true),
 				'gbl'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true),
 				'mx'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true,"tv"=>true,"gob"=>true),
-				'my'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true,'mil'=>true),
+				// "gov" etait ecrit sans "=>true": PHP en faisait une VALEUR d'index 0,
+				// pas une cle, donc gov.my restait inconnu de la table.
+				'my'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true,'mil'=>true,"gov"=>true,"edu"=>true,"name"=>true),
 
 				'om'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true),
 				'pe'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true,"gob"=>true),
@@ -878,7 +886,8 @@ class squid_familysite{
 				
 				'sa'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true),
                 'sb'=>true,
-                'sc'=>array('com','net','edu','gov','org'),
+                // Meme defaut que 'my': les cinq elements etaient des valeurs, pas des cles.
+                'sc'=>array('com'=>true,'net'=>true,'edu'=>true,'gov'=>true,'org'=>true),
                 'sd'=>array('com'=>true,'net'=>true,'org'=>true,'edu'=>true,'med'=>true,'tv'=>true,'gov'=>true,'info'=>true),
 				'se'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true),
 				'sg'=>array('co'=>true,'com'=>true,"org"=>true,"net"=>true,"biz"=>true),

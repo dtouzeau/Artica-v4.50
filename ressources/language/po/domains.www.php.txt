@@ -1,10 +1,10 @@
-<APP_JOOMLA_TEXT>Joomla is an award-winning content management system (CMS), 
-which enables you to build Web sites and powerful online applications.[br]
- Many aspects, including its ease-of-use and extensibility, have made Joomla the most popular Web site software available.[br]
-  Best of all, Joomla is an open source solution that is freely available to everyone.</APP_JOOMLA_TEXT>
-<service_type>Service type</service_type>
-<WWWAppliPassword>Application Manager password</WWWAppliPassword>
-<WWWAppliUser>Application Manager username</WWWAppliUser>
+<APP_JOOMLA_TEXT>O Joomla &#233; um sistema de gest&#227;o de conte&#250;dos (CMS) premiado,
+que lhe permite construir sites e poderosas aplica&#231;&#245;es online.[br]
+ Muitos aspetos, incluindo a sua facilidade de utiliza&#231;&#227;o e extensibilidade, tornaram o Joomla o software de sites mais popular dispon&#237;vel.[br]
+  E o melhor de tudo, o Joomla &#233; uma solu&#231;&#227;o de c&#243;digo aberto dispon&#237;vel gratuitamente para todos.</APP_JOOMLA_TEXT>
+<service_type>Tipo de servi&#231;o</service_type>
+<WWWAppliPassword>Palavra-passe do gestor de aplica&#231;&#245;es</WWWAppliPassword>
+<WWWAppliUser>Nome de utilizador do gestor de aplica&#231;&#245;es</WWWAppliUser>
 <WWWMysqlPassword>Palavra-passe da base de dados MySQL</WWWMysqlPassword>
-<WWWMysqlUser>Mysql Database Admin</WWWMysqlUser>
+<WWWMysqlUser>Administrador da base de dados Mysql</WWWMysqlUser>
 <www_delete_web_service_confirm>Esta operaç%C3£o ir%C3¡ desinstalar este serviço web, Tem a certeza de que ir%C3¡ realizar esta operaç%C3£o</www_delete_web_service_confirm>

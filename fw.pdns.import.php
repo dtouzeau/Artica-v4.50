@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
 
@@ -32,6 +33,7 @@ function popup(){
 
 
 function file_uploaded(){
+    if(!fw_progress_page_priv("AsDnsAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	
 	$tpl=new template_admin();
 	header("content-type: application/x-javascript");

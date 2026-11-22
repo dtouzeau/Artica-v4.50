@@ -92,27 +92,6 @@ public static function IsvalidMAC($MAC){
 	 * @param $ip quad-dotted IP address.
 	 * @return string 
 	 */
-	public static function IPv4toIPv6( $ip ) {
-		if ( !$ip ) return null;
-		// Convert only if needed
-		if ( self::isIPv6( $ip ) ) return $ip;
-		// IPv4 CIDRs
-		if ( strpos( $ip, '/' ) !== false ) {
-			$parts = explode( '/', $ip, 2 );
-			if ( count( $parts ) != 2 ) {
-				return false;
-			}
-			$network = self::toUnsigned( $parts[0] );
-			if ( $network !== false && is_numeric( $parts[1] ) && $parts[1] >= 0 && $parts[1] <= 32 ) {
-				$bits = $parts[1] + 96;
-				return self::toOctet( $network ) . "/$bits";
-			} else {
-				return false;
-			}
-		}
-		return self::toOctet( self::toUnsigned( $ip ) );
-	}
-	
 	/**
 	 * A second way to transform v4 to 6.
 	 * @param $ip octet ipv4 IP address.
@@ -281,25 +260,6 @@ public static function IPv4To6($ip) {
 		}
     }
     
-public static function ipv4ToIpv6Cdir( $original_ip_str ) {  
-	# Converto to binary form (suppress errors, we handle them)
-	$original_ip_bin = @inet_pton($original_ip_str);
-	if ($original_ip_bin === FALSE) {
-	  $subnet_str = FALSE;
-	  $subnet_bin = FALSE;
-	} else {
-	  if (strlen($original_ip_bin) == 16) {
-	    # IPv6: Replace the last 64 bits with zeroes
-	    $subnet_bin = substr_replace($original_ip_bin, str_repeat("\000", 8), -8);
-	  }
-	
-	  # Convert the result back to readable form (optional)
-	  $subnet_str = inet_ntop($subnet_bin);
-	}
-	return 	$original_ip_str."/$subnet_str";
-}
-   
-	
 	/**
 	 * Validate an IP address.
 	 * @return boolean True if it is valid.
@@ -312,10 +272,6 @@ public static function ipv4ToIpv6Cdir( $original_ip_str ) {
 	 * Validate an IP Block.
 	 * @return boolean True if it is valid.
 	 */
-	public static function isValidBlock( $ipblock ) {
-		return ( count(self::toArray($ipblock)) == 1 + 5 );
-	}
-
 	/**
 	 * Determine if an IP address really is an IP address, and if it is public,
 	 * i.e. not RFC 1918 or similar
@@ -558,14 +514,6 @@ function ip2cidr($ip_start,$ip_end) {
 	if(substr_count($netmask,"0")!=$mask) return NULL;
 	return "$ip_start/$mask";
 }
-
-function HostsNumber($ip_addr,$subnet_mask = "255.255.255.0"){
-   $ip = ip2long($ip_addr);
-   $nm = ip2long($subnet_mask);
-   $nw = ($ip & $nm);
-   $bc = $nw | (~$nm);
-   return ($bc - $nw - 1);
-  }
 
 }
 

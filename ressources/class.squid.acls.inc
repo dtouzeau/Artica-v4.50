@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 
 include_once(dirname(__FILE__)."/class.ActiveDirectory.inc");
 include_once(dirname(__FILE__)."/class.tcpip.inc");
@@ -117,89 +118,57 @@ class squid_acls{
         return intval(@file_get_contents('/etc/artica-postfix/settings/Daemons/SquidExternLDAPAUTH'));
     }
 
+    /**
+     * search_inacls returns a map of {gpid => index} of webfilters_sqgroups
+     * whose GroupName or description matches `$search`, plus groups owning
+     * any webfilters_sqitems whose pattern or description matches.
+     *
+     * Previously: two LIKE queries against acls.db via lib_sqlite. Now uses
+     * the /proxy/acls/sqlite/groups/all?search=X endpoint (matches GroupName
+     * + description on the Go side) and /proxy/acls/sqlite/items?search=X
+     * (matches pattern). Returns the union, keyed by gpid.
+     */
     public function search_inacls($search):array{
-        $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $tpl        = new template_admin();
-        $search     = $q->SearchAntiXSS($search);
-        $main       = array();
-        $search2    = null;
-        $COM        = "LIKE";
-
-        if ($search == null) {
-            return array();
+        $main = [];
+        if (!is_string($search) || trim($search) === "") {
+            return $main;
         }
-
-        if (strpos($search, "*") > 0) {
-            $search = str_replace("*", "%", $search);
-            $search2 = str_replace(".", "%", $search2);
-        } else {
-            $search = "*$search*";
-            $search = str_replace("*", "%", $search);
-            $search2 = str_replace(".", "%", $search2);
+        // Strip wildcards: Go-side endpoints wrap with their own % so a
+        // user-typed "*foo*" would become "%%foo%%" and match nothing.
+        $clean = str_replace(["*", "%"], "", trim($search));
+        if ($clean === "") {
+            return $main;
         }
-
-        $ANDS1[] = "( GroupName $COM '$search' )";
-        if ($search2 <> null) {
-            $ANDS1[] = "( GroupName LIKE '$search2' )";
+        if (!function_exists("acls_api_get")) {
+            include_once(dirname(__FILE__)."/class.acls.backend.inc");
         }
-        $ANDS1[] = "( description $COM '$search' )";
-        if ($search2 <> null) {
-            $ANDS1[] = "( description LIKE '$search2' )";
-        }
-
-        $ANDS[] = "( description $COM '$search' )";
-        if ($search2 <> null) {
-            $ANDS[] = "( description $COM '$search2' )";
-        }
-        $ANDS[] = "(pattern $COM '$search' )";
-        if ($search2 <> null) {
-            $ANDS[] = "( pattern $COM '$search2' )";
-        }
-
-
-        $suffix = " (" . @implode(" OR ", $ANDS1) . ") LIMIT 20";
-        $sql = "SELECT ID,GroupName,description FROM webfilters_sqgroups WHERE $suffix";
-
-        //webfilters_sqitems.pattern,webfilters_sqitems.description as itemdesc
-        //FROM webfilters_sqgroups,webfilters_sqitems
-        //WHERE webfilters_sqitems.gpid=webfilters_sqgroups.ID";
-        $results = $q->QUERY_SQL($sql);
-        VERBOSE($sql." ==== ".count($results), __LINE__);
-
-        if (!$q->ok) {
-            echo $tpl->div_error($q->mysql_error . "<br>$sql");
-        }
-        if (count($results) > 0) {
-            foreach ($results as $index => $ligne) {
-                $main[$ligne["ID"]] = $index;
-
+        $i = 0;
+        // Groups search (GroupName / description) — capped at 20 like before.
+        $groups = acls_api_get("/proxy/acls/sqlite/groups/all?search=".rawurlencode($clean));
+        if (is_array($groups)) {
+            foreach ($groups as $g) {
+                if (!is_array($g) || !isset($g["id"])) { continue; }
+                $main[intval($g["id"])] = $i++;
+                if ($i >= 20) { break; }
             }
         }
-
-        $suffix=" (". @implode(" OR ",$ANDS).") LIMIT 20";
-        $sql="SELECT gpid FROM webfilters_sqitems WHERE $suffix";
-        $results = $q->QUERY_SQL($sql);
-
-        if (!$q->ok) {
-            echo $tpl->div_error($q->mysql_error . "<br>$sql");
-        }
-
-        VERBOSE($sql." ==== ".count($results), __LINE__);
-
-        if (count($results) > 0) {
-            foreach ($results as $index => $ligne) {
-                $main[$ligne["gpid"]] = $index;
+        // Items search (pattern/description across all groups) — collect
+        // parent gpid for each hit. Endpoint caps at 20 rows server-side.
+        if ($i < 20) {
+            $items = acls_api_get("/proxy/acls/sqlite/items/search?search=".rawurlencode($clean));
+            if (is_array($items)) {
+                foreach ($items as $it) {
+                    if (!is_array($it) || !isset($it["gpid"])) { continue; }
+                    $gpid = intval($it["gpid"]);
+                    if ($gpid > 0 && !isset($main[$gpid])) {
+                        $main[$gpid] = $i++;
+                        if ($i >= 20) { break; }
+                    }
+                }
             }
         }
-
-        //webfilters_sqitems.pattern,webfilters_sqitems.description as itemdesc
-        //FROM webfilters_sqgroups,webfilters_sqitems
-        //WHERE webfilters_sqitems.gpid=webfilters_sqgroups.ID";
-        //
-        if(!is_array($main)){return array();}
-        VERBOSE("RETURN ==== ".count($main), __LINE__);
+        VERBOSE("search_inacls('$clean') ==== ".count($main), __LINE__);
         return $main;
-
     }
 
 
@@ -249,9 +218,7 @@ class squid_acls{
                 @touch($tpath);
             }
         }
-        $this->acls_array[] ="# ".date("Y-m-d H:i:s");
         $this->acls_array[] ="include /etc/squid3/protocols.conf";
-
         $this->Build_Acls_Groups($force, $AsMeta);
         // GO convert here.
         $this->Build_Acls_time();
@@ -314,9 +281,10 @@ class squid_acls{
         }
 
         $this->acls_array[] = "acl identhosts ident REQUIRED";
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $sql = "SELECT * FROM ident_networks";
-        $results = $q->QUERY_SQL($sql);
+        // acls.db is API-only — ident networks via the acls backend.
+        $results = acls_api_get("/proxy/acls/sqlite/ident-networks");
+        if(!is_array($results)){$results=array();}
+        $results = array_map(function($v){return array("network_item"=>$v);}, $results);
         $network_items = array();
         $ip = new IP();
         foreach ($results as $index => $ligne) {
@@ -349,6 +317,38 @@ class squid_acls{
 
     }
 
+    /**
+     * activeAuthTypes returns the set of auth-related GroupTypes that
+     * currently have at least one active linked ACL rule, fetched once per
+     * request via the articarest /proxy/acls/sqlite/auth-types/active
+     * endpoint. Result is cached on $GLOBALS so the four isXAuth predicates
+     * + isDynamicAcls all hit one HTTP call per build.
+     *
+     * The four COUNT(*) joins this replaces were identical in shape, varying
+     * only by GroupType; folding them into one trip removes three round-trips
+     * and one duplicated join plan.
+     *
+     * @return array<string,bool> e.g. ["radius_auth"=>true, "ad_auth"=>false]
+     */
+    private function activeAuthTypes():array
+    {
+        if (isset($GLOBALS["squid_acl_activeAuthTypes"])) {
+            return $GLOBALS["squid_acl_activeAuthTypes"];
+        }
+        if (!function_exists("acls_api_get")) {
+            include_once(dirname(__FILE__)."/class.acls.backend.inc");
+        }
+        $data = acls_api_get("/proxy/acls/sqlite/auth-types/active");
+        $types = [];
+        if (is_array($data) && isset($data["types"]) && is_array($data["types"])) {
+            foreach ($data["types"] as $t) {
+                $types[strval($t)] = true;
+            }
+        }
+        $GLOBALS["squid_acl_activeAuthTypes"] = $types;
+        return $types;
+    }
+
     private function isDynamicAcls()
     {
         if ($this->DynamicACLUrgency == 1) {
@@ -357,28 +357,11 @@ class squid_acls{
         if ($this->SquidUrgency == 1) {
             return false;
         }
-
         if (!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()) {
             return false;
         }
-
-
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $sql = "SELECT COUNT( * ) AS TCOUNT FROM (
-				SELECT webfilters_sqaclaccess.aclid, webfilters_sqacllinks.gpid, webfilters_sqgroups.ID
-				FROM webfilters_sqaclaccess, webfilters_sqacllinks, webfilters_sqgroups
-				WHERE webfilters_sqaclaccess.aclid = webfilters_sqacllinks.aclid
-				AND webfilters_sqacllinks.gpid = webfilters_sqgroups.ID
-				AND webfilters_sqgroups.GroupType = 'dynamic_acls'
-				AND webfilters_sqgroups.enabled = 1
-		) AS t";
-        $ligne = $q->mysqli_fetch_array($sql);
-
-        if ($ligne["TCOUNT"] == 0) {
-            return false;
-        }
-        return true;
-
+        $types = $this->activeAuthTypes();
+        return !empty($types["dynamic_acls"]);
     }
 
     public function IsObjectAuth()
@@ -399,27 +382,8 @@ class squid_acls{
 
     public function isRADIUSAuth()
     {
-        if (isset($GLOBALS["squid_acl_isRADIUSAuth"])) {
-            return $GLOBALS["squid_acl_isRADIUSAuth"];
-        }
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $sql = "SELECT COUNT( * ) AS TCOUNT FROM (
-				SELECT webfilters_sqaclaccess.aclid, webfilters_sqacllinks.gpid, webfilters_sqgroups.ID,webfilters_sqgroups.params
-				FROM webfilters_sqaclaccess, webfilters_sqacllinks, webfilters_sqgroups
-				WHERE webfilters_sqaclaccess.aclid = webfilters_sqacllinks.aclid
-				AND webfilters_sqacllinks.gpid = webfilters_sqgroups.ID
-				AND webfilters_sqgroups.GroupType = 'radius_auth'
-				AND webfilters_sqgroups.enabled = 1
-		) AS t";
-        $ligne = $q->mysqli_fetch_array($sql);
-
-        if ($ligne["TCOUNT"] == 0) {
-            $GLOBALS["squid_acl_isRADIUSAuth"] = false;
-            return $GLOBALS["squid_acl_isRADIUSAuth"];
-        }
-        $GLOBALS["squid_acl_isRADIUSAuth"] = true;
-        return true;
-
+        $types = $this->activeAuthTypes();
+        return !empty($types["radius_auth"]);
     }
 
     public function IsAuthenticationEnabled():bool{
@@ -451,104 +415,31 @@ class squid_acls{
 
     public function isADAuth()
     {
-        if (isset($GLOBALS["squid_acl_" . __FUNCTION__])) {
-            return $GLOBALS["squid_acl_" . __FUNCTION__];
-        }
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $sql = "SELECT COUNT( * ) AS TCOUNT FROM (
-				SELECT webfilters_sqaclaccess.aclid, webfilters_sqacllinks.gpid, webfilters_sqgroups.ID,webfilters_sqgroups.params
-				FROM webfilters_sqaclaccess, webfilters_sqacllinks, webfilters_sqgroups
-				WHERE webfilters_sqaclaccess.aclid = webfilters_sqacllinks.aclid
-				AND webfilters_sqacllinks.gpid = webfilters_sqgroups.ID
-				AND (webfilters_sqgroups.GroupType = 'ad_auth' OR  webfilters_sqgroups.GroupType = 'proxy_auth')
-				AND webfilters_sqgroups.enabled = 1
-		) AS t";
-        $ligne = $q->mysqli_fetch_array($sql);
-
-        if ($ligne["TCOUNT"] == 0) {
-            $GLOBALS["squid_acl_" . __FUNCTION__] = false;
-            return $GLOBALS["squid_acl_" . __FUNCTION__];
-        }
-        $GLOBALS["squid_acl_" . __FUNCTION__] = true;
-        return true;
-
+        // The legacy query OR'd 'ad_auth' and 'proxy_auth'; preserving that
+        // semantics here. The auth-types/active endpoint surfaces both
+        // GroupTypes individually so we test each.
+        $types = $this->activeAuthTypes();
+        return !empty($types["ad_auth"]) || !empty($types["proxy_auth"]);
     }
 
     public function isOpenLDAPAuth()
     {
-        if (isset($GLOBALS["squid_acl_" . __FUNCTION__])) {
-            return $GLOBALS["squid_acl_" . __FUNCTION__];
-        }
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $sql = "SELECT COUNT( * ) AS TCOUNT FROM (
-				SELECT webfilters_sqaclaccess.aclid, webfilters_sqacllinks.gpid, webfilters_sqgroups.ID,webfilters_sqgroups.params
-				FROM webfilters_sqaclaccess, webfilters_sqacllinks, webfilters_sqgroups
-				WHERE webfilters_sqaclaccess.aclid = webfilters_sqacllinks.aclid
-				AND webfilters_sqacllinks.gpid = webfilters_sqgroups.ID
-				AND webfilters_sqgroups.GroupType = 'ldap_auth'
-				AND webfilters_sqgroups.enabled = 1
-		) AS t";
-        $ligne = $q->mysqli_fetch_array($sql);
-
-        if ($ligne["TCOUNT"] == 0) {
-            $GLOBALS["squid_acl_" . __FUNCTION__] = false;
-            return $GLOBALS["squid_acl_" . __FUNCTION__];
-        }
-        $GLOBALS["squid_acl_" . __FUNCTION__] = true;
-        return true;
-
+        $types = $this->activeAuthTypes();
+        return !empty($types["ldap_auth"]);
     }
 
 
 
     public function GetRulesFromADGroup($GroupName)
     {
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
+        // acls.db is API-only — collapse the multi-step AD-group rule lookup into one backend call.
         $RULES = array();
-        $GroupName = mysql_escape_string2($GroupName);
-        $sql = "SELECT ID FROM webfilters_sqgroups WHERE (GroupType='proxy_auth_ads' OR GroupType='proxy_auth_statad') AND (GroupName='$GroupName') AND enabled=1";
-
-
-        $results = $q->QUERY_SQL($sql);
-        if ($GLOBALS["VERBOSE"]) {
-            echo "<span style='color:blue'>GetRulesFromADGroup(" . count($results) . "):: $sql</span><br>\n";
-        }
-
-
-        foreach ($results as $index => $ligne) {
-            $sql = "SELECT webfilters_sqacls.aclname,webfilters_sqacls.ID FROM webfilters_sqacls,webfilters_sqacllinks WHERE webfilters_sqacllinks.aclid = webfilters_sqacls.ID AND webfilters_sqacls.enabled =1 AND webfilters_sqacllinks.gpid ={$ligne["ID"]}";
-
-            $results2 = $q->QUERY_SQL($sql);
-            if ($GLOBALS["VERBOSE"]) {
-                echo "<span style='color:blue'>GetRulesFromADGroup(" . mysqli_num_rows($results2) . "):: $sql</span><br>\n";
-            }
-            while ($ligne2 = mysqli_fetch_assoc($results2)) {
-                if ($GLOBALS["VERBOSE"]) {
-                    echo "<span style='color:blue;font-size:22px'>GetRulesFromADGroup:: {$ligne2["aclname"]}!</span><br>\n";
-                }
-                $RULES[$ligne2["ID"]] = $ligne2["aclname"];
-
-            }
-        }
-
-
-        $sql = "SELECT webfilters_sqgroups.ID FROM webfilters_sqitems,webfilters_sqgroups WHERE webfilters_sqitems.pattern='$GroupName' AND webfilters_sqitems.gpid=webfilters_sqgroups.ID AND webfilters_sqgroups.GroupType='proxy_auth_multiad'";
-        $results = $q->QUERY_SQL($sql);
-        if ($GLOBALS["VERBOSE"]) {
-            echo "<span style='color:blue'>GetRulesFromADGroup(" . mysqli_num_rows($results) . "):: $sql</span><br>\n";
-        }
-        foreach ($results as $index => $ligne) {
-            $sql = "SELECT webfilters_sqacls.aclname,webfilters_sqacls.ID FROM webfilters_sqacls,webfilters_sqacllinks WHERE webfilters_sqacllinks.aclid = webfilters_sqacls.ID AND webfilters_sqacls.enabled =1 AND webfilters_sqacllinks.gpid ={$ligne["ID"]}";
-            $results2 = $q->QUERY_SQL($sql);
-            if ($GLOBALS["VERBOSE"]) {
-                echo "<span style='color:blue'>GetRulesFromADGroup(" . mysqli_num_rows($results2) . "):: $sql</span><br>\n";
-            }
-            while ($ligne2 = mysqli_fetch_assoc($results2)) {
-                if ($GLOBALS["VERBOSE"]) {
-                    echo "<span style='color:blue;font-size:22px'>GetRulesFromADGroup:: {$ligne2["aclname"]}!</span><br>\n";
-                }
-                $RULES[$ligne2["ID"]] = $ligne2["aclname"];
-
+        if (!is_string($GroupName) || $GroupName === "") { return $RULES; }
+        $data = acls_api_get("/proxy/acls/sqlite/rules-from-ad-group?name=".rawurlencode($GroupName));
+        if (is_array($data)) {
+            foreach ($data as $row) {
+                if (!is_array($row) || !isset($row["id"])) { continue; }
+                $RULES[intval($row["id"])] = strval($row["aclname"] ?? "");
             }
         }
         if ($GLOBALS["VERBOSE"]) {
@@ -561,149 +452,78 @@ class squid_acls{
 
     public function GetWebfilteringRulesFromADGroup($GroupName)
     {
-        $RULES=array();
-        $q = new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-        $sql = "SELECT webfilter_group.ID FROM webfilter_group WHERE localldap=2 AND groupname='$GroupName'";
-        $results = $q->QUERY_SQL($sql);
-        if ($GLOBALS["VERBOSE"]) {
-            echo "<span style='color:blue'>GetWebfilteringRulesFromADGroup(" . mysqli_num_rows($results) . "):: $sql</span><br>\n";
+        $RULES = array();
+        if (!is_string($GroupName) || $GroupName === "") {
+            return $RULES;
         }
-        foreach ($results as $index => $ligne) {
-
-            $id = $ligne["ID"];
-            $sql = "SELECT webfilter_rules.groupname,webfilter_rules.ID
-					FROM webfilter_assoc_groups,webfilter_rules
-					WHERE webfilter_assoc_groups.group_id=$id
-					AND webfilter_assoc_groups.webfilter_id=webfilter_rules.ID";
-
-            $results2 = $q->QUERY_SQL($sql);
-            if ($GLOBALS["VERBOSE"]) {
-                echo "<span style='color:blue'>GetWebfilteringRulesFromADGroup(" . mysqli_num_rows($results2) . "):: $sql</span><br>\n";
-            }
-            foreach ($results2 as $index2 => $ligne2) {
-                if ($GLOBALS["VERBOSE"]) {
-                    echo "<span style='color:blue;font-size:22px'>GetWebfilteringRulesFromADGroup:: {$ligne2["aclname"]}!</span><br>\n";
-                }
-                $RULES[$ligne2["ID"]] = $ligne2["groupname"];
-
+        if (!function_exists("acls_api_get")) {
+            include_once(dirname(__FILE__)."/class.acls.backend.inc");
+        }
+        // /webfilter/rules-by-ad-group?name=X collapses the legacy two-step
+        // (find webfilter_group.ID by localldap=2 + groupname, then look up
+        // its rules) into one JOIN on the Go side. Returns at most one row
+        // per webfilter rule even when several webfilter_group rows share
+        // the same AD-group name.
+        $data = acls_api_get("/webfilter/rules-by-ad-group?name=".rawurlencode($GroupName));
+        if (is_array($data)) {
+            foreach ($data as $row) {
+                if (!is_array($row) || !isset($row["id"])) { continue; }
+                $RULES[intval($row["id"])] = strval($row["groupName"] ?? "");
             }
         }
-
         if ($GLOBALS["VERBOSE"]) {
-            echo "<span style='color:red;font-size:22px'>GetWebfilteringRulesFromADGroup:: " . count($RULES) . " RULES</span><br>\n";
+            echo "<span style='color:red;font-size:22px'>GetWebfilteringRulesFromADGroup('".htmlspecialchars($GroupName)."'):: ".count($RULES)." RULES</span><br>\n";
         }
         return $RULES;
-
     }
 
 
     private function IsAclsSSL()
     {
-        $q = new lib_sqlite("/home/artica/SQLITE/proxy.db");
         if (isset($GLOBALS["IsAclsSSL"])) {
             return $GLOBALS["IsAclsSSL"];
         }
-        $sql = "SELECT COUNT(*) as tcount FROM proxy_ports WHERE UseSSL=1 AND enabled=1";
-        $ligne = $q->mysqli_fetch_array($sql);
-        if (!$q->ok) {
-            echo $q->mysql_error . "\n";
-            return false;
+        if (!function_exists("acls_api_get")) {
+            include_once(dirname(__FILE__)."/class.acls.backend.inc");
         }
-        if (intval($ligne["tcount"]) > 0) {
-            $GLOBALS["IsAclsSSL"] = true;
-            return true;
-        }
-        $GLOBALS["IsAclsSSL"] = false;
-        return false;
-
-
+        // /proxy/squid/ports/ssl-active-count is a cross-DB shim that runs
+        // SELECT COUNT(*) FROM proxy.db.proxy_ports WHERE UseSSL=1 AND enabled=1
+        // — the same predicate this method used to compute via lib_sqlite.
+        $data = acls_api_get("/proxy/squid/ports/ssl-active-count");
+        $count = (is_array($data) && isset($data["count"])) ? intval($data["count"]) : 0;
+        $GLOBALS["IsAclsSSL"] = ($count > 0);
+        return $GLOBALS["IsAclsSSL"];
     }
 
     public function delete_group($gpid)
     {
-
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT GroupName FROM webfilters_sqgroups WHERE ID='$gpid'");
-        $GroupName=$ligne["GroupName"];
-
-        $f[] = "webfilters_sqacllinks";
-        $f[] = "parents_sqacllinks";
-        $f[] = "logs_sqacllinks";
-        $f[] = "outgoingaddr_sqacllinks";
-        $f[] = "privoxy_sqacllinks";
-        $f[] = "squid_http_headers_link";
-        $f[] = "tcp_outgoing_mark_links";
-        $f[] = "squid_http_bandwidth_link";
-        $f[] = "squid_url_rewrite_link";
-        $f[] = "sslrules_sqacllinks";
-        $f[] = "sslproxy_cert_error_sqacllinks";
-        $f[] = "dnsdist_sqacllinks";
-        $f[] = "dnsfw_acls_link";
-        $f[] = "squid_http_headers_link";
-        $f[] = "squid_auth_schemes_link";
-        $f[] = "wpad_sources_link";
-        $f[] = "wpad_white_link";
-
-        foreach ($f as $linktable) {
-            $q->QUERY_SQL("DELETE FROM $linktable WHERE gpid=$gpid");
-
+        if(!function_exists('acls_api_send')){
+            include_once(dirname(__FILE__)."/class.acls.backend.inc");
         }
-
-        if (!$q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid='$gpid'")) {
-            echo $q->mysql_error;
+        $gpid = intval($gpid);
+        list($ok,$data) = acls_api_send("DELETE","/proxy/acls/sqlite/group/$gpid");
+        if(!$ok){
+            if(function_exists("writelogs")){ writelogs("delete_group($gpid) failed: $data",__FUNCTION__,__FILE__,__LINE__); }
             return false;
         }
-        if (!$q->QUERY_SQL("DELETE FROM webfilters_sqgroups WHERE ID='$gpid'")) {
-            echo $q->mysql_error;
-            return false;
-        }
-
-        if($q->TABLE_EXISTS("webfilters_gpslink")){
-            $q->QUERY_SQL("DELETE FROM webfilters_gpslink WHERE groupid='$gpid'");
-            $q->QUERY_SQL("DELETE FROM webfilters_gpslink WHERE gpid='$gpid'");
-        }
-
+        $GroupName = $data["groupName"] ?? "";
         if(function_exists("admin_tracks")){admin_tracks("Remove ACL Group $GroupName");}
         $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
         $lib=new lib_memcached();
         $lib->Delkey("DNSFWOBJS");
         return true;
-
     }
 
 
     private function LoadGroupsInMemoryResults($acl_table,$link_table){
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-        $sqlarr[]="SELECT ";
-        if($q->FIELD_EXISTS($acl_table,"rulename")) {
-            $sqlarr[] = " $acl_table.rulename,";
-        }
-        $sqlarr[] = "$acl_table.enabled,";
-        $sqlarr[] = "$acl_table.ID,";
-        $sqlarr[] = "$link_table.gpid
-				FROM $link_table,$acl_table
-				WHERE $link_table.aclid=$acl_table.ID
-        AND $acl_table.enabled=1";
-        $sql=@implode("",$sqlarr);
-        $results = $q->QUERY_SQL($sql);
-
-        if (!$q->ok) {
-            writelogs("Fatal $q->mysql_error [$sql]",__FUNCTION__,__FILE__,__LINE__);
-            return false;
-        }
+        // acls.db is API-only — generic rule-link join via the acls backend.
+        $results = acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=".urlencode($acl_table)."&linkTable=".urlencode($link_table)."&nameCol=rulename&idCol=ID&enabled=1");
         if(!is_array($results)){
             $results=array();
         }
         foreach ($results as $index => $ligne) {
-            $aclname="";
-            $aclid=0;
-            if(isset($ligne["rulename"])){
-                $aclname = $ligne["rulename"];
-            }
-            if(isset($ligne["ID"])){
-                $aclid = $ligne["ID"];
-            }
+            $aclname=(string)($ligne["name"] ?? "");
+            $aclid=intval($ligne["id"] ?? 0);
             $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,$acl_table);
             $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
         }
@@ -720,229 +540,58 @@ class squid_acls{
         $squid_logs_acls_enabled="AND squid_logs_acls.enabled=1";
         $squid_outgoingaddr_acls_enabled="AND squid_outgoingaddr_acls.enabled=1";
 
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
+        // acls.db is API-only — the used-groups map is built via acls backend joins.
         $GLOBALS["LoadGroupsInMemory"] = array();
         $GLOBALS["LoadRulesInMemory"] = array();
         $SQUIDACLsEnabled = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDACLsEnabled"));
         $EnableParentProxy = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableParentProxy"));
-        if($AlsoDisabled){
-            $webfilters_sqacls_enabled=null;
-            $squid_parents_acls_enabled=null;
-            $squid_logs_acls_enabled=null;
-            $squid_outgoingaddr_acls_enabled=null;
-        }
-
+        $en = $AlsoDisabled ? "0" : "1";
+        $addRules = function($rows,$table){
+            if(!is_array($rows)){return;}
+            foreach($rows as $r){
+                if(!is_array($r)){continue;}
+                $gpid=intval($r["gpid"] ?? 0);
+                $GLOBALS["LoadRulesInMemory"][$gpid][] = array((string)($r["name"] ?? ""), intval($r["id"] ?? 0), $table);
+                $GLOBALS["LoadGroupsInMemory"][$gpid] = true;
+            }
+        };
         if ($SQUIDACLsEnabled == 1) {
-            $results = $q->QUERY_SQL("SELECT 
-                webfilters_sqacls.aclname,
-				webfilters_sqacls.enabled,
-				webfilters_sqacls.ID as aclid,
-				webfilters_sqacllinks.gpid 
-				FROM webfilters_sqacllinks,webfilters_sqacls 
-				WHERE webfilters_sqacllinks.aclid=webfilters_sqacls.ID 
-				$webfilters_sqacls_enabled");
-            if (!$q->ok) {
-                $this->acls_array[] = "# !!!!! Line:" . __LINE__ . " $q->mysql_error";
-                return false;
-            }
-            foreach ($results as $index => $ligne) {
-                $aclname = $ligne["aclname"];
-                $aclid = $ligne["aclid"];
-                $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"webfilters_sqacls");
-                $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-            }
-
-
+            $addRules(acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=webfilters_sqacls&linkTable=webfilters_sqacllinks&nameCol=aclname&idCol=ID&enabled=$en"),"webfilters_sqacls");
         } else {
             $this->acls_array[] = "# SQUIDACLsEnabled == 0, aborting webfilters_sqacls";
         }
-
-
         if ($EnableParentProxy == 1) {
-            $results = $q->QUERY_SQL("SELECT
-            squid_parents_acls.rulename,
-			squid_parents_acls.enabled,
-			squid_parents_acls.aclid,
-			parents_sqacllinks.gpid
-			FROM parents_sqacllinks,squid_parents_acls
-			WHERE parents_sqacllinks.aclid=squid_parents_acls.aclid
-			$squid_parents_acls_enabled");
-            foreach ($results as $index => $ligne) {
-                $aclname = $ligne["rulename"];
-                $aclid = $ligne["aclid"];
-                $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"squid_parents_acls");
-                $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-            }
-
-            $results = $q->QUERY_SQL("SELECT
-            squid_parents_acls.rulename,
-			squid_parents_acls.enabled,
-			squid_parents_acls.aclid,
-			parents_white_sqacllinks.gpid
-			FROM parents_white_sqacllinks,squid_parents_acls
-			WHERE parents_white_sqacllinks.aclid=squid_parents_acls.aclid
-			$squid_parents_acls_enabled");
-            foreach ($results as $index => $ligne) {
-                $aclname = $ligne["rulename"];
-                $aclid = $ligne["aclid"];
-                $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"squid_parents_acls");
-                $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-            }
+            $addRules(acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=squid_parents_acls&linkTable=parents_sqacllinks&nameCol=rulename&idCol=aclid&enabled=$en"),"squid_parents_acls");
+            $addRules(acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=squid_parents_acls&linkTable=parents_white_sqacllinks&nameCol=rulename&idCol=aclid&enabled=$en"),"squid_parents_acls");
         }
-
-        $results = $q->QUERY_SQL("SELECT
-                squid_logs_acls.rulename,
-				squid_logs_acls.enabled,
-				squid_logs_acls.aclid,
-				logs_sqacllinks.gpid
-				FROM logs_sqacllinks,squid_logs_acls
-				WHERE logs_sqacllinks.aclid=squid_logs_acls.aclid
-				$squid_logs_acls_enabled");
-
-        if (!$q->ok) {
-            echo "# # # # $q->mysql_error # # #\n";
-        }
-
-        foreach ($results as $index => $ligne) {
-            $aclname = $ligne["rulename"];
-            $aclid = $ligne["aclid"];
-            $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"squid_logs_acls");
-
-            $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-        }
-
-        $sql="SELECT *  FROM `global_whitelist` WHERE enabled=1 and deny_ufdb=1";
-        $results = $q->QUERY_SQL($sql);
-        if(!$q->ok){echo $q->mysql_error."\n";}
-
-
-        foreach ($results as $index=>$ligne){
-            $GLOBALS["LoadGroupsInMemory"][$ligne["groupid"]] = true;
-        }
-
-        $results = $q->QUERY_SQL("SELECT
-                squid_outgoingaddr_acls.rulename,
-				squid_outgoingaddr_acls.enabled,
-				squid_outgoingaddr_acls.aclid,
-				outgoingaddr_sqacllinks.gpid
-				FROM outgoingaddr_sqacllinks,squid_outgoingaddr_acls
-				WHERE outgoingaddr_sqacllinks.aclid=squid_outgoingaddr_acls.aclid
-				$squid_outgoingaddr_acls_enabled");
-
-        if (!$q->ok) {
-            echo "# # # # $q->mysql_error # # #\n";
-        }
-
-        foreach ($results as $index => $ligne) {
-            $aclname = $ligne["rulename"];
-            $aclid = $ligne["aclid"];
-            $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"squid_outgoingaddr_acls");
-            $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-        }
-
-        $results = $q->QUERY_SQL("SELECT
-                squid_privoxy_acls.rulename,
-				squid_privoxy_acls.enabled,
-				squid_privoxy_acls.aclid,
-				privoxy_sqacllinks.gpid
-				FROM privoxy_sqacllinks,squid_privoxy_acls
-				WHERE privoxy_sqacllinks.aclid=squid_privoxy_acls.aclid
-				AND squid_privoxy_acls.enabled=1");
-
-        if (!$q->ok) {echo "# # # # $q->mysql_error # # #\n";}
-
-        foreach ($results as $index => $ligne) {
-            $aclname = $ligne["rulename"];
-            $aclid = $ligne["aclid"];
-            $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"squid_privoxy_acls");
-            $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-        }
-
-
-
-        $sql="SELECT webfilters_gpslink.*,webfilters_sqgroups.GroupType,
-       webfilters_sqgroups.GroupName
-       FROM webfilters_gpslink,webfilters_sqgroups
-       WHERE webfilters_gpslink.gpid=webfilters_sqgroups.ID
-       AND webfilters_gpslink.enabled=1
-       AND webfilters_sqgroups.enabled=1";
-
-        $results = $q->QUERY_SQL($sql);
-        if (!$q->ok) {echo "# # # # $q->mysql_error # # #\n";}
-
-        foreach ($results as $index => $ligne) {
-            $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-        }
-//--------------------------------------------------------------------------------------------------
-
-        if(!$q->TABLE_EXISTS("squid_icap_acls")){
-            $GLOBALS["CLASS_SOCKETS"]->getFrameWork("system.php?force-databases=yes");
-        }
-
-
+        $addRules(acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=squid_logs_acls&linkTable=logs_sqacllinks&nameCol=rulename&idCol=aclid&enabled=$en"),"squid_logs_acls");
+        $gw = acls_api_get("/proxy/acls/sqlite/global-whitelist");
+        if(is_array($gw)){foreach($gw as $r){if(is_array($r) && intval($r["denyUfdb"] ?? 0)==1){$GLOBALS["LoadGroupsInMemory"][intval($r["groupid"] ?? 0)] = true;}}}
+        $addRules(acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=squid_outgoingaddr_acls&linkTable=outgoingaddr_sqacllinks&nameCol=rulename&idCol=aclid&enabled=$en"),"squid_outgoingaddr_acls");
+        $addRules(acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=squid_privoxy_acls&linkTable=privoxy_sqacllinks&nameCol=rulename&idCol=aclid&enabled=1"),"squid_privoxy_acls");
+        $gps = acls_api_get("/proxy/acls/sqlite/gpslink-enabled");
+        if(is_array($gps)){foreach($gps as $g){$GLOBALS["LoadGroupsInMemory"][intval($g)] = true;}}
         $this->LoadGroupsInMemoryResults("ssl_rules","sslrules_sqacllinks");
         $this->LoadGroupsInMemoryResults("sslproxy_cert_error","sslproxy_cert_error_sqacllinks");
-
-
         $this->LoadGroupsInMemoryResults("tcp_outgoing_mark","tcp_outgoing_mark_links");
         $this->LoadGroupsInMemoryResults("squid_http_headers_acls","squid_http_headers_link");
         $this->LoadGroupsInMemoryResults("http_reply_access","http_reply_access_links");
         $this->LoadGroupsInMemoryResults("squid_http_bandwidth_acls","squid_http_bandwidth_link");
         $this->LoadGroupsInMemoryResults("squid_auth_schemes_acls","squid_auth_schemes_link");
         $this->LoadGroupsInMemoryResults("squid_icap_acls","squid_icap_acls_link");
-
-
-
-
-        $results = $q->QUERY_SQL("SELECT
-                squid_url_rewrite_acls.rulename,
-				squid_url_rewrite_acls.enabled,
-				squid_url_rewrite_acls.ID,
-				squid_url_rewrite_link.gpid
-				FROM squid_url_rewrite_link,squid_url_rewrite_acls
-				WHERE squid_url_rewrite_link.aclid=squid_url_rewrite_acls.ID
-				AND squid_url_rewrite_acls.enabled=1");
-
-        if (!$q->ok) {
-            echo "# # # # $q->mysql_error # # #\n";
-        }
-
-        foreach ($results as $index => $ligne) {
-            $aclname = $ligne["rulename"];
-            $aclid = $ligne["ID"];
-            $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"squid_url_rewrite_acls");
-            $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-        }
-
-
+        $addRules(acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=squid_url_rewrite_acls&linkTable=squid_url_rewrite_link&nameCol=rulename&idCol=ID&enabled=1"),"squid_url_rewrite_acls");
         if ($this->IsAclsSSL()) {
-            $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-            $results = $q->QUERY_SQL("SELECT ssl_rules.description,ssl_rules.ID, sslrules_sqacllinks.gpid FROM sslrules_sqacllinks,ssl_rules WHERE sslrules_sqacllinks.aclid=ssl_rules.ID AND ssl_rules.enabled=1");
-            foreach ($results as $index => $ligne) {
-                $aclname = "{ssl_rules}:" . $ligne["description"];
-                $aclid = $ligne["ID"];
-                $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"ssl_rules");
-                $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-            }
-            $results = $q->QUERY_SQL("SELECT sslproxy_cert_error.description,sslproxy_cert_error.ID, sslproxy_cert_error_sqacllinks.gpid FROM sslproxy_cert_error_sqacllinks,sslproxy_cert_error WHERE sslproxy_cert_error_sqacllinks.aclid=sslproxy_cert_error.ID AND sslproxy_cert_error.enabled=1");
-            foreach ($results as $index => $ligne) {
-                $aclname = "{ssl_rules}:" . $ligne["description"];
-                $aclid = $ligne["ID"];
-                $GLOBALS["LoadRulesInMemory"][$ligne["gpid"]][] = array($aclname, $aclid,"ssl_rules");
-                $GLOBALS["LoadGroupsInMemory"][$ligne["gpid"]] = true;
-            }
-
-
-
-
+            $sslrows = acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=ssl_rules&linkTable=sslrules_sqacllinks&nameCol=description&idCol=ID&enabled=1");
+            if(is_array($sslrows)){foreach($sslrows as $r){ if(!is_array($r)){continue;} $gpid=intval($r["gpid"] ?? 0);
+                $GLOBALS["LoadRulesInMemory"][$gpid][] = array("{ssl_rules}:".($r["name"] ?? ""), intval($r["id"] ?? 0), "ssl_rules");
+                $GLOBALS["LoadGroupsInMemory"][$gpid] = true; }}
+            $cerows = acls_api_get("/proxy/acls/sqlite/rules-with-gpid?aclTable=sslproxy_cert_error&linkTable=sslproxy_cert_error_sqacllinks&nameCol=description&idCol=ID&enabled=1");
+            if(is_array($cerows)){foreach($cerows as $r){ if(!is_array($r)){continue;} $gpid=intval($r["gpid"] ?? 0);
+                $GLOBALS["LoadRulesInMemory"][$gpid][] = array("{ssl_rules}:".($r["name"] ?? ""), intval($r["id"] ?? 0), "ssl_rules");
+                $GLOBALS["LoadGroupsInMemory"][$gpid] = true; }}
         }
-
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $results = $q->QUERY_SQL("SELECT ID FROM global_whitelist WHERE enabled=1");
-
-        foreach ($results as $index => $ligne) {
-            $GLOBALS["LoadGroupsInMemory"][$ligne["ID"]] = true;
-        }
+        $gw2 = acls_api_get("/proxy/acls/sqlite/global-whitelist");
+        if(is_array($gw2)){foreach($gw2 as $r){if(is_array($r)){$GLOBALS["LoadGroupsInMemory"][intval($r["id"] ?? 0)] = true;}}}
 
         $this->acls_array[] = "# LoadGroupsInMemory = " . count($GLOBALS["LoadGroupsInMemory"]);
         foreach ($GLOBALS["LoadGroupsInMemory"] as $a=>$b){
@@ -1018,10 +667,10 @@ class squid_acls{
             }
         }
 
-        if (!is_file("/etc/artica-postfix/settings/Daemons/EnableQuotaSize")) {
+        if (!artica_setting_exists("EnableQuotaSize")) {
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableQuotaSize", 0);
         }
-        if (!is_file("/etc/artica-postfix/settings/Daemons/SizeQuotasCheckerEmergency")) {
+        if (!artica_setting_exists("SizeQuotasCheckerEmergency")) {
             $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SizeQuotasCheckerEmergency", 0);
         }
 
@@ -1041,7 +690,6 @@ class squid_acls{
         $ARRAY_AUTH["ad_auth"] = true;
         $ARRAY_AUTH["ldap_auth"] = true;
 
-        $q = new lib_sqlite("/home/artica/SQLITE/acls.db");
         $database = "squidlogs";
         $DirectorySuffix = "acls";
         $PrefixGroup = "Group";
@@ -1057,11 +705,17 @@ class squid_acls{
             $database = "artica_backup";
         }
         @mkdir("/etc/squid3/$DirectorySuffix", 0755, true);
-        if (!$q->FIELD_EXISTS("webfilters_sqgroups", "PortDirection", $database)) {
-            $q->QUERY_SQL("ALTER TABLE `webfilters_sqgroups` ADD `PortDirection` smallint(1) NOT NULL DEFAULT '0',ADD INDEX(`PortDirection`)");
+        // PortDirection column add removed: articarest's EnsureAclsSqliteSchema()
+        // owns the schema migration now and runs it at daemon boot.
+        if($asMeta){
+            $sql = "SELECT ID,GroupName,GroupType,PortDirection,params FROM webfilters_sqgroups WHERE enabled=1";
+            $results = $q->QUERY_SQL($sql, "metaclient");
+        }else{
+            // acls.db is API-only — enabled groups via the acls backend.
+            $api = acls_api_get("/proxy/acls/sqlite/groups/enabled");
+            $results = array();
+            if(is_array($api)){foreach($api as $r){if(!is_array($r)){continue;}$results[]=array("ID"=>intval($r["id"]??0),"GroupName"=>(string)($r["groupName"]??""),"GroupType"=>(string)($r["groupType"]??""),"PortDirection"=>intval($r["portDirection"]??0),"params"=>(string)($r["params"]??""));}}
         }
-        $sql = "SELECT ID,GroupName,GroupType,PortDirection,params FROM webfilters_sqgroups WHERE enabled=1";
-        $results = $q->QUERY_SQL($sql, "metaclient");
         $ReturnFirstValue = false;
         $MAIN_ACLS_GROUPSOFGROUPS=array();
         foreach ($results as $index => $ligne) {
@@ -1774,6 +1428,20 @@ class squid_acls{
                 if($this->isRADIUSAuth()){
                     $AUTH=true;
                 }
+                // isADAuth/isOpenLDAPAuth/isRADIUSAuth report a proxy_auth group
+                // as "active" only when it is linked to an *http_access* rule
+                // (the /proxy/acls/sqlite/auth-types/active query scans only
+                // webfilters_sqacllinks). But squid_acls_groups::buildacls_bytype_items()
+                // references a proxy_auth group in ANY rule type (url_rewrite,
+                // parents, ssl...) as soon as authentication is globally enabled
+                // ($this->AUTH). A proxy_auth group used only in a URL-rewrite
+                // rule was therefore emitted into url_rewrite_access_admin.conf
+                // ("url_rewrite_access deny GroupNN ...") yet never defined here
+                // -> Squid "FATAL: Bungled ... ACL not found: GroupNN". Mirror the
+                // reference-phase gate: if authentication is enabled, define it.
+                if($this->IsAuthenticationEnabled()){
+                    $AUTH=true;
+                }
 
                 if (!$AUTH) {
                     $this->acls_array[] = "";
@@ -1858,7 +1526,13 @@ class squid_acls{
                 WHERE webfilters_gpslink.gpid=webfilters_sqgroups.ID
                 AND webfilters_gpslink.groupid=$GroupID";
 
-            $results=$q->QUERY_SQL($sql);
+            if($asMeta){
+                $results=$q->QUERY_SQL($sql);
+            }else{
+                $api=acls_api_get("/proxy/acls/sqlite/gpslink-children?groupid=".intval($GroupID));
+                $results=array();
+                if(is_array($api) && isset($api["gpids"]) && is_array($api["gpids"])){foreach($api["gpids"] as $g){$results[]=array("gpid"=>intval($g));}}
+            }
             $ListOfGroups=array();
             foreach ($results as $index => $ligne) {
                 $gpid=intval($ligne["gpid"]);
@@ -1882,17 +1556,12 @@ class squid_acls{
         return true;
     }
     private function acl_tpl($aclid){
-
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        if(!$q->FIELD_EXISTS("webfilters_sqgroups", "tplreset")){
-            $q->QUERY_SQL("ALTER TABLE `webfilters_sqgroups` ADD `tplreset` smallint(1) ,ADD INDEX ( `tplreset` ) ");
-        }
-
-
-
+        // tplreset column add removed: articarest's EnsureAclsSqliteSchema()
+        // owns the schema migration now and runs it at daemon boot.
+        // acls.db is API-only — group template fields via the acls backend.
         if($GLOBALS["VERBOSE"]){echo "Group {$aclid} Checks acltpl...\n";}
-        $sql="SELECT acltpl,tplreset FROM webfilters_sqgroups WHERE ID='$aclid'";
-        $ligne=$q->mysqli_fetch_array($sql);
+        $grp=acls_api_get("/proxy/acls/sqlite/group/".intval($aclid));
+        $ligne=is_array($grp)?array("acltpl"=>($grp["acltpl"]??null),"tplreset"=>intval($grp["tplreset"]??0)):array();
 
         if(intval($ligne["tplreset"])==1){return "TCP_RESET";}
         if($ligne["acltpl"]==null){if($GLOBALS["VERBOSE"]){echo "Group {$aclid} Checks acltpl == NULL...\n";}return null;}
@@ -1915,18 +1584,31 @@ class squid_acls{
 
 
         $acltpl=$ligne["acltpl"];
-        $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-        $sql="SELECT template_name,lang,template_link,template_uri,emptytpl FROM squidtpls WHERE `zmd5`='$acltpl'";
-        $ligne=$q->mysqli_fetch_array($sql);
-        if(!is_array($ligne)){
-            $ligne=array();
+        if (!function_exists("acls_api_get")) {
+            include_once(dirname(__FILE__)."/class.acls.backend.inc");
         }
-        if(!isset($ligne["template_name"])){
-            $ligne["template_name"]="";
+        // /proxy/squid/template/{zmd5} replaces the legacy proxy.db.squidtpls
+        // single-row read. Field names on the wire are camelCase
+        // (templateName/templateLink/...); we adapt to the snake_case shape
+        // the rest of this function still expects.
+        $api = acls_api_get("/proxy/squid/template/".rawurlencode($acltpl));
+        $ligne = array(
+            "template_name" => "",
+            "lang"          => null,
+            "template_link" => 0,
+            "template_uri"  => "",
+            "emptytpl"      => 0,
+        );
+        if (is_array($api)) {
+            $ligne["template_name"] = strval($api["templateName"] ?? "");
+            $ligne["lang"]          = isset($api["lang"]) ? $api["lang"] : null;
+            $ligne["template_link"] = intval($api["templateLink"] ?? 0);
+            $ligne["template_uri"]  = strval($api["templateUri"] ?? "");
+            $ligne["emptytpl"]      = intval($api["emptyTpl"] ?? 0);
         }
         $tplname=$ligne["template_name"];
         if($GLOBALS["VERBOSE"]){echo "Group {$aclid} Checks acltpl == $tplname...\n";}
-        if(isset($ligne["lang"])) {
+        if(isset($ligne["lang"]) && $ligne["lang"] !== null && $ligne["lang"] !== "") {
             if (is_numeric($ligne["lang"])) {
                 $ligne["lang"] = "en";
             }
@@ -1963,11 +1645,12 @@ class squid_acls{
 
     private function ParseTimeAclsGroup($ID){
 
-        $sql="SELECT pattern,other FROM webfilters_sqitems WHERE gpid='$ID' ORDER BY other DESC";
-        $this->acls_array[]="#$sql";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-        $ligne=$q->mysqli_fetch_array($sql);
+        // acls.db is API-only — group items via the acls backend (ORDER BY other DESC, first row).
+        $this->acls_array[]="# ParseTimeAclsGroup gpid=$ID (acls backend)";
+        $itemsApi=acls_api_get("/proxy/acls/sqlite/items?gpid=".intval($ID));
+        $itemsApi=is_array($itemsApi)?$itemsApi:array();
+        usort($itemsApi,function($a,$b){return strcmp((string)($b["other"]??""),(string)($a["other"]??""));});
+        $ligne=isset($itemsApi[0])?$itemsApi[0]:array();
         $pattern_data=trim($ligne["pattern"]);
         $pattern=trim(base64_decode($ligne["other"]));
         if($GLOBALS["VERBOSE"]){echo "ParseTimeAclsGroup(): Group{$ID} Time: pattern = $pattern Alternate: $pattern_data\n";}
@@ -2009,17 +1692,14 @@ class squid_acls{
     private function buildItems_time_quota($gpid,$timeid){
         $filename2="/etc/squid3/acls/container_$gpid.txt";
         $filename="/etc/squid3/acls/time_{$timeid}.txt";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $sql="SELECT * FROM webfilters_sqitems WHERE enabled=1 AND gpid=$gpid";
-        $results = $q->QUERY_SQL($sql);
+        // acls.db is API-only — enabled group items via the acls backend.
+        $itemsApi=acls_api_get("/proxy/acls/sqlite/items?gpid=".intval($gpid));
+        $results=array();
+        if(is_array($itemsApi)){foreach($itemsApi as $it){if(is_array($it)&&intval($it["enabled"]??0)==1){$results[]=$it;}}}
         $DATA2=array();
         @unlink($filename2);
 
         $suffix="TIME:$gpid:$timeid ";
-
-        if(!$q->ok){
-            return 0;
-        }
 
         foreach ($results as $index=>$ligne) {
             $ligne["pattern"]=trim($ligne["pattern"]);
@@ -2083,8 +1763,9 @@ class squid_acls{
 
     private function buildItems($gpid,$returnFirstValue=false,$asMeta=false,$ItemsPrefix=null,$ItemsSuffix=null){
         $filename="/etc/squid3/acls/container_$gpid.txt";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT bulkimport FROM webfilters_sqgroups WHERE ID='$gpid'");
+        // acls.db is API-only — group bulkimport via the acls backend.
+        $grp=acls_api_get("/proxy/acls/sqlite/group/".intval($gpid));
+        $ligne=is_array($grp)?array("bulkimport"=>($grp["bulkImport"]??null)):array();
         if(!isset($ligne["bulkimport"])){$ligne["bulkimport"]=null;}
         $strlen=0;
         if(!is_null($ligne["bulkimport"])) {
@@ -2111,9 +1792,10 @@ class squid_acls{
 
     private function Build_Acls_time(){
         $days=array("0"=>"M","1"=>"T","2"=>"W","3"=>"H","4"=>"F","5"=>"A","6"=>"S");
-        $sql="SELECT * FROM webfilters_sqtimes_rules WHERE enabled=1";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $results = $q->QUERY_SQL($sql);
+        // acls.db is API-only — enabled time rules via the acls backend.
+        $results = acls_api_get("/proxy/acls/sqlite/times-rules");
+        if(!is_array($results)){$results=array();}
+        foreach($results as $ri=>$rr){$results[$ri]["ID"]=intval($rr["id"]??0);$results[$ri]["TimeName"]=$rr["timeName"]??"";$results[$ri]["TimeCode"]=$rr["timeCode"]??"";$results[$ri]["TemplateError"]=$rr["templateError"]??"";$results[$ri]["Allow"]=intval($rr["allow"]??0);}
         foreach ($results as $index=>$ligne) {
             $TimeSpace=unserialize($ligne["TimeCode"]);
             if(strlen($TimeSpace["BEGINH"])==1){$TimeSpace["BEGINH"]="0{$TimeSpace["BEGINH"]}";}
@@ -2272,104 +1954,97 @@ class squid_acls{
     }
 
 
+    /**
+     * Traduit les items d'un groupe `dstdomain` vers ce que Squid doit recevoir.
+     *
+     *   "^site"  ->  "site"   : hôte STRICT, Squid ne matche que cet hôte
+     *   "site"   ->  ".site"  : le site ET tous ses sous-domaines
+     *   un site déjà couvert par un domaine maître présent dans la liste est
+     *   supprimé en silence (".exemple.com" rend "a.exemple.com" redondant).
+     *
+     * Squid n'interprète AUCUN métacaractère dans un dstdomain : un "^" laissé
+     * en place produit une entrée d'hôte que rien ne peut satisfaire, et la
+     * liste entière meurt sans le moindre avertissement (`squid -k parse`
+     * passe, cache.log est muet). Incident ArcBest du 2026-09-20 : 480 entrées
+     * inertes d'un côté, les sous-domaines perdus de l'autre — 40 des 46 hôtes
+     * refusés s'expliquaient par cette seule traduction manquante.
+     *
+     * Miroir exact de squidacls/GlobalAccess.go::normalizeDstdomainItems() :
+     * les deux générateurs écrivent le même /etc/squid3/acls/container_N.txt
+     * et ne doivent jamais diverger. Ordre d'entrée préservé, doublons
+     * collapsés (la première occurrence gagne).
+     */
     public function clean_dstdomains($array=array()){
         if(!is_array($array)){return array();}
         if(count($array)==0){return array();}
-        $q=new mysql_squid_builder();
+
+        $parsed=array();
+        $seen=array();
+        $dottedParents=array();
+
+        foreach($array as $raw){
+            $pattern=trim(strtolower((string)$raw));
+            if(strlen($pattern)==0){continue;}
+
+            $strict=false;
+            if(substr($pattern,0,1)=="^"){
+                $strict=true;
+                $pattern=substr($pattern,1);
+            }
+
+            // dstdomain_parse() retire schéma, port, chemin, point de tête et
+            // métacaractères ; il rend null sur un littéral IP (un dstdomain
+            // matche des NOMS) et sur un libellé sans point.
+            $host=$this->dstdomain_parse($pattern);
+            if($host==null){continue;}
+
+            $display=$strict?$host:".".$host;
+            if(isset($seen[$display])){continue;}
+            $seen[$display]=true;
+
+            $parsed[]=array("host"=>$host,"display"=>$display,"strict"=>$strict);
+            if(!$strict){$dottedParents[$host]=true;}
+        }
+
         $f=array();
-        $MAIN_MASTER=array();
-
-        foreach ($array as $index=>$domain){
-            $domain=strtolower($domain);
-            $CLEANEDDOMS[$domain]=$domain;
-        }
-        ksort($CLEANEDDOMS);
-
-        //search family
-        foreach ($CLEANEDDOMS as $domain=>$nothing){
-            $chapeau=0;
-            $DOMAIN_SRC=$domain;
-            $domain=trim(strtolower($domain));
-            if(substr($domain, 0,1)=="^"){$domain=substr($domain,1,strlen($domain));$chapeau=1;}
-            $domain=$this->dstdomain_parse($domain);
-            if($domain==null){continue;}
-            $MASTERDOMAIN=$q->GetFamilySites($domain);
-            if($domain<>$MASTERDOMAIN){continue;}
-            if(isset($MAIN_MASTER[".$MASTERDOMAIN"])){continue;}
-            unset($CLEANEDDOMS[$DOMAIN_SRC]);
-            if($chapeau){$MAIN_MASTER["$MASTERDOMAIN"]=true;}
-            else{$MAIN_MASTER["$MASTERDOMAIN"]=false;}
-        }
-
-        reset($CLEANEDDOMS);
-        //searchSubFamily
-        foreach ($CLEANEDDOMS as $domain=>$nothing){
-            $chapeau=0;
-            $DOMAIN_SRC=$domain;
-            $domain=trim(strtolower($domain));
-            if(substr($domain, 0,1)=="^"){$domain=substr($domain,1,strlen($domain));$chapeau=1;}
-            $domain=$this->dstdomain_parse($domain);
-            $MASTERDOMAIN=$q->GetFamilySites($domain);
-            if($domain==null){continue;}
-            if(isset($MAIN_MASTER["$domain"])){continue;}
-            $replaced=str_ireplace(".$MASTERDOMAIN", "", $domain);
-            if(stripos("   $replaced", ".")>0){continue;}
-            unset($CLEANEDDOMS[$DOMAIN_SRC]);
-            if($chapeau){$MAIN_MASTER["$domain"]=true;}
-            else{$MAIN_MASTER["$domain"]=false;}
-        }
-
-        reset($CLEANEDDOMS);
-        krsort($CLEANEDDOMS);
-        foreach ($CLEANEDDOMS as $domain=>$nothing){
-            $chapeau=0;
-            $domain=trim(strtolower($domain));
-            if(substr($domain, 0,1)=="^"){$domain=substr($domain,1,strlen($domain));$chapeau=1;}
-
-            $domain=$this->dstdomain_parse($domain);
-            if($domain==null){continue;}
-
-
-            $MASTERDOMAIN=$q->GetFamilySites($domain);
-            if(isset($MAIN_MASTER["$MASTERDOMAIN"])){continue;}
-
-
-
-            if($domain==$MASTERDOMAIN){
-                if($chapeau){$MAIN_MASTER["$MASTERDOMAIN"]=true;}else{$MAIN_MASTER["$MASTERDOMAIN"]=false;}
-                continue;
-            }
-
-            $MASTERDOMAINX=str_replace(".", "\.", $MASTERDOMAIN);
-
-            if(preg_match("#^(.+?)\.(.+?)\.$MASTERDOMAINX$#", $domain,$re)){
-                if(isset($MAIN_MASTER["{$re[2]}.$MASTERDOMAIN"])){continue;}
-                if($chapeau){$MAIN_MASTER["$domain"]=true;}else{$MAIN_MASTER["$domain"]=false;}
-            }
-
-            if(preg_match("#^(.+?)\.$MASTERDOMAINX$#", $domain)){
-                if($chapeau){$MAIN_MASTER["$domain"]=true;}else{$MAIN_MASTER["$domain"]=false;}
-            }
-
-
-        }
-
-        foreach ($MAIN_MASTER as $domain=>$none){
-            if($none){$f[]=$domain;}else{$f[]=".$domain";}
-
+        foreach($parsed as $entry){
+            if($this->dstdomain_covered_by_master($entry["host"],$entry["strict"],$dottedParents)){continue;}
+            $f[]=$entry["display"];
         }
 
         return $f;
     }
 
+    /**
+     * Vrai si $host est déjà couvert par un domaine maître PRÉSENT dans la
+     * liste. Seul un parent réellement listé compte : déduire le parent d'une
+     * base de familles ferait disparaître des entrées qu'aucune règle ne
+     * couvre — c'est-à-dire ouvrirait un trou dans la politique. C'est aussi
+     * ce qui retire un aller-retour SQL par item du chemin de compilation
+     * (480 requêtes pour un seul groupe sur l'appliance ArcBest).
+     */
+    private function dstdomain_covered_by_master($host,$strict,$dottedParents){
+        $labels=explode(".",$host);
+        $count=count($labels);
+        // Suffixes stricts uniquement : on saute l'hôte lui-même, sinon une
+        // entrée dottée se couvrirait toute seule.
+        for($i=1;$i<$count;$i++){
+            $suffix=implode(".",array_slice($labels,$i));
+            if(isset($dottedParents[$suffix])){return true;}
+        }
+        // "exemple.com" STRICT est redondant quand ".exemple.com" est listé.
+        if($strict && isset($dottedParents[$host])){return true;}
+        return false;
+    }
+
 
     private function GetItems_dstdomain($gpid){
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+        // acls.db is API-only — enabled group items via the acls backend (sorted by pattern length).
         $array=array();
-        $sql="SELECT *,length(pattern) FROM webfilters_sqitems WHERE enabled=1 AND gpid=$gpid ORDER BY length(pattern)";
-        $results = $q->QUERY_SQL($sql);
-
-        if(!$q->ok){$this->buildacls_bytype_logs[]="# Group $gpid, SQLite Error L.".__LINE__;}
+        $itemsApi=acls_api_get("/proxy/acls/sqlite/items?gpid=".intval($gpid));
+        $results=array();
+        if(is_array($itemsApi)){foreach($itemsApi as $it){if(is_array($it)&&intval($it["enabled"]??0)==1){$results[]=$it;}}}
+        usort($results,function($a,$b){return strlen((string)($a["pattern"]??""))-strlen((string)($b["pattern"]??""));});
         foreach ($results as $index=>$ligne) {
             $ligne["pattern"]=trim(strtolower($ligne["pattern"]));
             $array[]=$ligne["pattern"];
@@ -2381,18 +2056,17 @@ class squid_acls{
 
 
     public function GetItems($gpid,$required=null,$asMeta=false,$ItemsPrefix=null,$ItemsSuffix=null){
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
         $Ipclass=new IP();
         if($asMeta){
             $this->buildacls_bytype_logs[]="# As meta = Yes L.".__LINE__;
             $q=new mysql();
+            $sql="SELECT GroupName,GroupType,enabled FROM webfilters_sqgroups WHERE ID='$gpid'";
+            $ligne=$q->mysqli_fetch_array($sql);
+        }else{
+            $grp=acls_api_get("/proxy/acls/sqlite/group/".intval($gpid));
+            $ligne=is_array($grp)?array("GroupName"=>(string)($grp["groupName"]??""),"GroupType"=>(string)($grp["groupType"]??""),"enabled"=>intval($grp["enabled"]??0)):array();
         }
-        $sql="SELECT GroupName,GroupType,enabled FROM webfilters_sqgroups WHERE ID='$gpid'";
-        $ligne=$q->mysqli_fetch_array($sql);
 
-        if(!$q->ok){
-            $this->buildacls_bytype_logs[]="# SQlite Error L.".__LINE__;
-        }
         $GroupeType=$ligne["GroupType"];
 
 
@@ -2419,7 +2093,13 @@ class squid_acls{
         }
 
         $already=array();
-        $results = $q->QUERY_SQL($sql);
+        if($asMeta){
+            $results = $q->QUERY_SQL($sql);
+        }else{
+            $itemsApi=acls_api_get("/proxy/acls/sqlite/items?gpid=".intval($gpid));
+            $results=array();
+            if(is_array($itemsApi)){foreach($itemsApi as $it){if(is_array($it)&&intval($it["enabled"]??0)==1){$results[]=$it;}}}
+        }
         foreach ($results as $index=>$ligne) {
             $ligne["pattern"]=trim($ligne["pattern"]);
             if($ligne["pattern"]==null){continue;}
@@ -2671,20 +2351,11 @@ class squid_acls{
 
 
     private function build_http_access_time(){
-        $sql="SELECT webfilters_sqtimes_assoc . * , `webfilters_sqtimes_rules`.`Allow`
-		FROM `webfilters_sqtimes_assoc` , `webfilters_sqgroups` , `webfilters_sqtimes_rules`
-		WHERE 
-			webfilters_sqtimes_assoc.gpid = webfilters_sqgroups.ID
-			AND webfilters_sqtimes_rules.ID = webfilters_sqtimes_assoc.TimeRuleID
-			AND webfilters_sqgroups.enabled =1
-			AND webfilters_sqtimes_rules.enabled =1
-			
-		ORDER BY webfilters_sqtimes_rules.`Allow` DESC";
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-        $results = $q->QUERY_SQL($sql);
+        // acls.db is API-only — enabled time associations via the acls backend.
+        $results = acls_api_get("/proxy/acls/sqlite/times-assoc");
+        if(!is_array($results)){$results=array();}
+        foreach($results as $ri=>$rr){$results[$ri]["Allow"]=intval($rr["allow"]??0);$results[$ri]["TimeRuleID"]=intval($rr["timeRuleID"]??0);$results[$ri]["gpid"]=intval($rr["gpid"]??0);}
         $alreadyTpl=array();
-        if(!$q->ok){echo "\n---------------------\n$q->mysql_error\n$sql\n\nLine: ".__LINE__."\nClass:".__CLASS__."\nFunction: ".__FUNCTION__."\nFile:".__FILE__."\n---------------------\n";}
         foreach ($results as $index=>$ligne) {
             $Access="deny";
             if($ligne["Allow"]==1){$Access="allow";}
@@ -2704,8 +2375,9 @@ class squid_acls{
     }
 
     private function deny_info_time($ID){
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $ligne=$q->mysqli_fetch_array("SELECT TemplateError,`Allow` FROM webfilters_sqtimes_rules WHERE ID='$ID'");
+        // acls.db is API-only — time rule via the acls backend.
+        $rr=acls_api_get("/proxy/acls/sqlite/times-rules/".intval($ID));
+        $ligne=is_array($rr)?array("TemplateError"=>(string)($rr["templateError"]??""),"Allow"=>intval($rr["allow"]??0)):array();
         $filename="/usr/share/squid-langpack/en/ERROR_TIMERULE_$ID";
         $filename2="/usr/share/squid-langpack/templates/ERROR_TIMERULE_$ID";
         @unlink($filename);

@@ -706,7 +706,7 @@ function update_patchs($manualfile=null):bool{
     if($DOROLLBACK){
         echo "Restore old backup....\n";
         squid_admin_mysql(0,"Failed to update $CURVER Service Pack $PVER");
-        shell_exec("$tar xf $PATCH_BACKUPDIR/package.tgz -C /");
+        shell_exec("$tar xf $PATCH_BACKUPDIR/package.tgz --keep-directory-symlink --no-overwrite-dir -C /");
         echo "Patching [FAILED]\n";
         build_progress_patch("{installing} {failed}",110);
         return false;
@@ -723,7 +723,6 @@ function update_patchs($manualfile=null):bool{
     build_progress_patch("{installing} $CURPATCH {to} $PVER ",100);
     if($patched>0){
 
-        shell_exec("/usr/bin/php $ARTICA_BASE/exec.framework.php --migration");
         build_progress_patch("{installing} $CURPATCH {to} $PVER ",100);
         shell_exec("/etc/init.d/artica-status restart --force");
         build_progress_patch("{installing} $CURPATCH {to} $PVER ",100);
@@ -745,7 +744,8 @@ function update_patchs($manualfile=null):bool{
     $line=__LINE__;
     $q->QUERY_SQL("INSERT OR IGNORE INTO history (version,updated,asseen,xline) VALUES ('$CURVER Service Pack $PVER','$time',0,$line)");
     build_progress_patch("{installing} $CURPATCH {to} $PVER ",25);
-    shell_exec("$php $ARTICA_BASE/aptget.php --grubpc >/dev/null 2>&1");
+    // Former exec.apt-get.php --grubpc; this line used to call aptget.php, a file that does not exist.
+    shell_exec("/usr/sbin/artica-phpfpm-service -system-boot-checks >/dev/null 2>&1");
     return true;
 }
 
@@ -1141,16 +1141,14 @@ function RestartDedicatedServices($aspid=false){
     shell_exec("/usr/sbin/artica-phpfpm-service -reconfigure-syslog");
     $unix->RESTART_SYSLOG(true);
     shell_exec("$php $Aroot/exec.virtuals-ip.php --watchdog");
-    shell_exec("$php $Aroot/exec.clean.logs.php --patchs-backup");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/logrotate/patchs-backup?force=1"); // ex exec.clean.logs.php --patchs-backup
     build_progress_manu("{starting} (Line:".__LINE__.")",100);
 
     if(is_file("/etc/init.d/squid")){
-        shell_exec("$php $Aroot/exec.squid.php --service-pack");
-        shell_exec("$php $Aroot/exec.squid.disable.php --squid-service");
-        shell_exec("$php $Aroot/exec.squid.disable.php --syslog");
-        shell_exec("$php $Aroot/exec.squid.disable.php --monit");
+        // ex exec.squid.disable.php --squid-service/--syslog/--monit : monit and the
+        // watchdog crons by articarest; its syslog files are written by the daemon.
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/watchdog/monit");
         shell_exec("$php $Aroot/exec.ksrn.php --check-updates");
-        shell_exec("$php $Aroot/exec.ksrn.php --restart");
         shell_exec("$php $Aroot/exec.squid.global.access.php --logging");
         squid_admin_mysql(1,"{reloading_proxy_service} after Artica update",null,__FILE__,__LINE__);
         system("/usr/sbin/artica-phpfpm-service -reload-proxy");
@@ -1162,15 +1160,9 @@ function RestartDedicatedServices($aspid=false){
 	}
 
     if(is_file("/etc/init.d/unbound")) {
-        shell_exec("$php $Aroot/exec.unbound.php --restart >/dev/null 2>&1 &");
+        shell_exec("/usr/sbin/artica-phpfpm-service -restart-unbound >/dev/null 2>&1 &");
     }
      shell_exec("$php $Aroot/exec.squid.global.access.php --auth >/dev/null 2>&1 &");
-    if(is_file("/etc/init.d/nginx")){
-        $NGINX_SP663=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NGINX_SP663"));
-        if($NGINX_SP663==0){
-            shell_exec("$php $Aroot/exec.nginx.php --restart-build  >/dev/null 2>&1 &");
-        }
-    }
 
     $articaver=GetCurrentVersionString();
     build_progress_manu("{success} v$articaver",100);
@@ -1185,7 +1177,7 @@ function RestartDedicatedServices($aspid=false){
 	build_progress_manu("{starting} (Line:".__LINE__.")",100);
 
     build_progress_manu("{starting} (Line:".__LINE__.")",100);
-	shell_exec("$nohup $php /usr/share/artica-postfix/exec.verif.packages.php >/dev/null 2>&1 &");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/aptget/verif-packages/run");
 
     if(is_file("/etc/init.d/go-shield-server")){
         shell_exec("$nohup /etc/init.d/go-shield-server restart >/dev/null 2>&1 &");

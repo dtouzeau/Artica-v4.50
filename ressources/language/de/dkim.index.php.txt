@@ -1,11 +1,8 @@
-<dkim_about>DKIM is an email authentication framework that addresses the widespread issue of email forgery,
-using cryptography to verify the domain of the sender.[br]
-It allows email providers to validate an emailâ€™s originating domain, making use of blacklists and whitelists more effective.
-[br]It also makes phishing attacks easier to detect by helping to identify abusive domains.</dkim_about>
-<On-BadSignature>Signature fails to validate</On-BadSignature>
-<On-DNSError>Transient DNS error is encountered</On-DNSError>
-<On-InternalError>Internal error of some kind is encountered</On-InternalError>
-<On-NoSignature>Message arrives unsigned</On-NoSignature>
-<On-Security>Message arrives containing properties that may be a security concern</On-Security>
-<On-SignatureMissing>Message is unsigned from a domain which advertises a "we sign everything" policy</On-SignatureMissing>
-<select_action>Selects the action to be taken when</select_action>
+<dkim_about>DKIM ist ein Mechanismus zur E-Mail-Authentifizierung, der dem weit verbreiteten Problem der Nachrichtenf%C3%A4lschung entgegenwirkt, indem Kryptografie zur %C3%9Cberpr%C3%BCfung der Absenderdomain verwendet wird.[br] Er erm%C3%B6glicht E-Mail-Anbietern, die Ursprungsdomain einer E-Mail zu validieren, wodurch der Einsatz von Blacklists und Whitelists effektiver wird.[br]Au%C3%9Ferdem erleichtert er die Erkennung von Phishing-Angriffen, indem er hilft, missbr%C3%A4uchliche Domains zu identifizieren.</dkim_about>
+<On-BadSignature>Signatur kann nicht validiert werden</On-BadSignature>
+<On-DNSError>Ein vor&#252;bergehender DNS-Fehler tritt auf</On-DNSError>
+<On-InternalError>Ein interner Fehler irgendeiner Art tritt auf</On-InternalError>
+<On-NoSignature>Nachricht kommt unsigniert an</On-NoSignature>
+<On-Security>Nachricht enth&#228;lt Eigenschaften, die ein Sicherheitsproblem darstellen k&#246;nnten</On-Security>
+<On-SignatureMissing>Nachricht ist unsigniert von einer Dom&#228;ne, die eine &quot;Wir signieren alles&quot;-Richtlinie ank&#252;ndigt</On-SignatureMissing>
+<select_action>W&#228;hlt die Aktion aus, die durchgef&#252;hrt werden soll, wenn</select_action>

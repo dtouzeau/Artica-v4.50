@@ -1,16 +1,16 @@
-<BAD_SCORE>Bad Score</BAD_SCORE>
-<DNSBL_settings>DNSBL RHSBL settings</DNSBL_settings>
-<DNSBL_settings_text>Set the list and score of DNS Black list servers</DNSBL_settings_text>
-<DNSERRMSG>DNS Error Message text</DNSERRMSG>
-<GOOD_SCORE>Good score</GOOD_SCORE>
-<MAINTENANCE_LEVEL>After that many policy requests the cache checks for configuration file changes</MAINTENANCE_LEVEL>
-<MAXDNSBLHITS>RBLs servers match Number to reject</MAXDNSBLHITS>
-<MAXDNSBLMSG>Max DNSBL Error text</MAXDNSBLMSG>
-<MAXDNSBLSCORE>DNSBLs score is ABOVE this value will reject immediately</MAXDNSBLSCORE>
-<MAXDNSERRMSG>Max DNS Error text</MAXDNSERRMSG>
-<MAXIDLECACHE>After that many seconds of being idle the cache checks for configuration file changes</MAXIDLECACHE>
-<MAX_PROC>Process limit on how many processes policyd-weight will spawn</MAX_PROC>
-<MIN_PROC>Minimum childs which are kept alive in idle times</MIN_PROC>
-<PolicydDaemonNotifs>Set Errors text to SMTP Sender server  when Policy Server reject messages</PolicydDaemonNotifs>
-<REJECTMSG>Reject Message text</REJECTMSG>
-<SOMAXCONN>Maximum connections which policyd-weight accepts</SOMAXCONN>
+<BAD_SCORE>Z&#322;y wynik</BAD_SCORE>
+<DNSBL_settings>Ustawienia DNSBL RHSBL</DNSBL_settings>
+<DNSBL_settings_text>Ustaw list&#281; i wynik serwer&#243;w czarnej listy DNS</DNSBL_settings_text>
+<DNSERRMSG>Tekst komunikatu o b&#322;&#281;dzie DNS</DNSERRMSG>
+<GOOD_SCORE>Dobry wynik</GOOD_SCORE>
+<MAINTENANCE_LEVEL>Po tylu &#380;&#261;daniach polityki pami&#281;&#263; podr&#281;czna sprawdza zmiany w pliku konfiguracyjnym</MAINTENANCE_LEVEL>
+<MAXDNSBLHITS>Liczba dopasowa&#324; serwer&#243;w RBL do odrzucenia</MAXDNSBLHITS>
+<MAXDNSBLMSG>Tekst maksymalnego b&#322;&#281;du DNSBL</MAXDNSBLMSG>
+<MAXDNSBLSCORE>Je&#347;li wynik DNSBL jest POWY&#379;EJ tej warto&#347;ci, nast&#261;pi natychmiastowe odrzucenie</MAXDNSBLSCORE>
+<MAXDNSERRMSG>Tekst maksymalnego b&#322;&#281;du DNS</MAXDNSERRMSG>
+<MAXIDLECACHE>Po tylu sekundach bezczynno&#347;ci pami&#281;&#263; podr&#281;czna sprawdza zmiany w pliku konfiguracyjnym</MAXIDLECACHE>
+<MAX_PROC>Limit proces&#243;w okre&#347;laj&#261;cy, ile proces&#243;w uruchomi policyd-weight</MAX_PROC>
+<MIN_PROC>Minimalna liczba proces&#243;w potomnych utrzymywanych przy &#380;yciu w czasie bezczynno&#347;ci</MIN_PROC>
+<PolicydDaemonNotifs>Ustaw tekst b&#322;&#281;d&#243;w dla serwera nadawcy SMTP, gdy Policy Server odrzuca wiadomo&#347;ci</PolicydDaemonNotifs>
+<REJECTMSG>Tekst komunikatu odrzucenia</REJECTMSG>
+<SOMAXCONN>Maksymalna liczba po&#322;&#261;cze&#324; akceptowanych przez policyd-weight</SOMAXCONN>

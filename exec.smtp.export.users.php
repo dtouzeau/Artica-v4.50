@@ -46,7 +46,7 @@ function Connect($server,$port,$user,$pass){
 		$array=unserialize(base64_decode($re[1]));
 		$sync->import($array,"$server:$port");
 		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?postfix-transport-maps=yes");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport");
 	}
 	
 	
@@ -72,7 +72,7 @@ function receive_synchro(){
 	$sync->Add($servername,$port,$itscred[0],$itscred[1]);
 	$sync->import($users,"$servername:$port");
 	$sock=new sockets();
-	$sock->getFrameWork("cmd.php?postfix-transport-maps=yes");	
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport");
 	echo "<datas>". base64_encode(serialize($array))."</datas>";
 	}
 

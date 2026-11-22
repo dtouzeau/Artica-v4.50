@@ -23,53 +23,16 @@ class SocketsAsRoot{
 		$unix=new unix();
 // *************************************************************************************************************************		
 		
-		if($uri=="cmd.php?ldap-restart=yes"){
-			$this->Runned=true;
-			if($this->SquidPerformance>2){return "";}
-			if($this->EnableIntelCeleron==1){return "";}
-			
-			$EnableOpenLDAP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAP"));
-			if($EnableOpenLDAP==1){
-				shell_exec("/etc/init.d/slapd restart --framework=". basename(__FILE__)." &");
-			}
-			$this->Runned=true;return true;
-		}
 		
 // *************************************************************************************************************************
 
 		
 		
 		
-		if($uri=="squid.php?IsIcapClient=yes"){
-			if($unix->SQUID_ICAP_ENABLED()){ return "TRUE"; }
-			$this->Runned=true;
-			return true;
-		}
 		
 		
-		if($uri=="postfix.php?islocked=yes"){
-			$this->Runned=true;
-			if(is_file("/etc/artica-postfix/DO_NOT_DETECT_POSTFIX")){ return base64_encode("TRUE"); }
-			return true;
-		}
 // *************************************************************************************************************************		
-		if($uri=="cmd.php?status-forced=yes"){
-			return true;
-		}
 // *************************************************************************************************************************		
-		if($uri=="squid.php?isInjectrunning=yes"){
-			$this->Runned=true;
-			$pgrep=$unix->find_program("pgrep");
-			exec("$pgrep -l -f \"exec.squid.blacklists.php --v2\" 2>&1",$results);
-			foreach ($results as $num=>$ligne){	
-				if(preg_match("#pgrep#", $ligne)){continue;}
-				if(preg_match("#^([0-9]+).*?blacklists\.php#", $ligne,$re)){
-					return strval($unix->PROCCESS_TIME_MIN($re[1]));
-				}
-			}
-			
-			return true;
-		}
 // *************************************************************************************************************************		
 		if($uri=="services.php?ARTICA-MAKE=yes"){
 
@@ -89,29 +52,6 @@ class SocketsAsRoot{
 			return base64_encode(serialize($array));
 		}
 //*************************************************************************************************************************		
-		if($uri=="squid.php?schedule-import-exec=yes"){
-			$this->Runned=true;
-			$pgrep=$unix->find_program("pgrep");
-			exec("$pgrep -l -f \"exec.squid.blacklists.php --inject\" 2>&1",$results);
-			foreach ($results as $num=>$ligne){
-				if(!preg_match("#^([0-9]+).+?blacklists\.php#", $ligne,$re)){continue;}
-				if(preg_match("#pgrep -l#", $ligne)){continue;}
-				$time=$unix->PROCCESS_TIME_MIN($re[1]);
-				$array["RUNNING"]=true;
-				$array["TIME"]=$time;
-				return base64_encode(serialize($array));
-			}			
-			
-		}
-// *************************************************************************************************************************		
-		if($uri=="status.php?cpu-check-nx=yes"){
-			$this->Runned=true;
-			$check=$unix->find_program("check-bios-nx");
-			if(strlen($check)<5){return "";}
-			exec("$check --verbose 2>&1",$results);
-			return base64_encode(@implode("\n",$results));
-		}
-// *************************************************************************************************************************
 		if($uri=="cmd.php?MalwarePatrolDatabasesCount=yes"){
 			$datas=explode("\n",@file_get_contents("/etc/squid3/malwares.acl"));
 			$count=0;
@@ -145,30 +85,11 @@ class SocketsAsRoot{
 			return "";
 		}	
 // *************************************************************************************************************************
-		if($uri=="cmd.php?squid-ini-status=yes"){
-			exec("/usr/bin/php /usr/share/artica-postfix/exec.status.php --all-squid --nowachdog 2>&1",$results);
-			$this->Runned=true;
-			return base64_encode(@implode("\n", $results));
-		}		
-// *************************************************************************************************************************				
 		if($uri=="services.php?GetMyHostId=yes"){
 			$this->Runned=true;
 			return $unix->GetMyHostId();
 		}	
 // *************************************************************************************************************************
-		if($uri=="squid.php?full-version=yes"){
-			$squidbin=$unix->find_program("squid");
-			if($squidbin==null){$squidbin=$unix->find_program("squid3");}
-			exec("$squidbin -v 2>&1",$results);
-			foreach ($results as $num=>$val){
-				if(preg_match("#Squid Cache: Version.*?([0-9\.\-a-z]+)#", $val,$re)){
-					$this->Runned=true;
-					return trim($re[1]);}
-			}
-			$this->Runned=true;
-			return "";
-				
-		}
 		if($uri=="cmd.php?ifconfig-all-ips=yes"){
 			if(!isset($GLOBALS["ifconfig_all_ips"])){
 			$GLOBALS["ifconfig_all_ips"]=base64_encode(serialize($unix->ifconfig_all_ips()));

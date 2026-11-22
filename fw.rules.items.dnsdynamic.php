@@ -1,5 +1,8 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.firewall.api.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();
 if(!$users->AsFirewallManager){
@@ -23,15 +26,6 @@ build_page();
 
 function _ensure_table(){
     $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS cognixsys_rules (
-        ID INTEGER PRIMARY KEY AUTOINCREMENT,
-        gpid INTEGER NOT NULL DEFAULT 0,
-        rulename TEXT NOT NULL DEFAULT 'New Rule',
-        enabled INTEGER NOT NULL DEFAULT 1,
-        params TEXT NOT NULL DEFAULT '{}',
-        created TEXT,
-        modified TEXT
-    )");
     return $q;
 }
 
@@ -58,7 +52,7 @@ function build_page(){
     $tpl=new template_admin();
     $f=array();
     $groupid=$_GET["gpid"];
-    $jsafter=$_GET["js-after"];
+    $jsafter=jsafter_token($_GET["js-after"]);
     $function=$_GET["function"];
     $RefreshFunction=$_GET["RefreshFunction"];
     $f[]="<div id='buttons-cognixsys-$groupid' style='margin-top:10px;margin-bottom: 10px'></div>";
@@ -70,7 +64,7 @@ function table_buttons(){
     $tpl=new template_admin();
     $page=CurrentPageName();
     $function=$_GET["function"];
-    $jsafter=$_GET["js-after"];
+    $jsafter=jsafter_token($_GET["js-after"]);
     $function1=$_GET["function1"];
     $RefreshFunction=$_GET["RefreshFunction"];
     $gpid=$_GET["buttons"];
@@ -83,7 +77,7 @@ function search(){
     $page=CurrentPageName();
     $q=_ensure_table();
     $groupid=intval($_GET["gpid"]);
-    $jsafter=$_GET["js-after"];
+    $jsafter=jsafter_token($_GET["js-after"]);
     $function1=$_GET["function1"];
     $function=$_GET["function"];
 
@@ -97,14 +91,14 @@ function search(){
     $t=time();
     $html=array();
     $html[]="<div id='fetchrules-list'></div>";
-    $html[]="<table id='table-$t' class='table table-stripped' data-page-size='100'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
     $html[]="<thead><tr>";
-    $html[]="<th data-sortable=true data-type='text'>ID</th>";
-    $html[]="<th data-sortable=true data-type='text'>{rule_name}</th>";
-    $html[]="<th data-sortable=false>{status}</th>";
-    $html[]="<th data-sortable=false>{edit}</th>";
-    $html[]="<th data-sortable=false>{delete}</th>";
-    $html[]="</tr></thead><tbody>";
+    $html[]="<th>ID</th>";
+    $html[]="<th>{rule_name}</th>";
+    $html[]="<th>{status}</th>";
+    $html[]="<th>{edit}</th>";
+    $html[]="<th>{delete}</th>";
+    $html[]="</tr></thead><tbody id='rulesitemsdn-rows'>";
 
     $TRCLASS=null;
     $count=0;
@@ -113,7 +107,7 @@ function search(){
         $ID=intval($ligne["ID"]);
         if($ID==0){continue;}
         $count++;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $rulename=htmlspecialchars($ligne["rulename"]);
         $enabled=intval($ligne["enabled"]);
 
@@ -152,12 +146,14 @@ function search(){
         $html[]="<tr><td colspan='6' class='text-center text-muted'><em>{no_data}</em></td></tr>";
     }
 
-    $html[]="</tbody><tfoot><tr><td colspan='6'><ul class='pagination pull-right'></ul></td></tr></tfoot></table>";
+    $html[]="</tbody></table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='rulesitemsdn-pager'></span></div></div></div>";
     $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
     $html[]="LoadAjaxSilent('buttons-cognixsys-$groupid','$page?buttons=$groupid&js-after=$jsafter&function1=$function1&RefreshFunction=$RefreshFunction&function=$function');";
     $html[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(implode("\n",$html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"rulesitemsdn-rows","rulesitemsdn-pager");
 }
 
 function add_js(){
@@ -165,7 +161,7 @@ function add_js(){
     $page=CurrentPageName();
     $gpid=$_GET["add-js"];
     $function=$_GET["function"];
-    $jsafter=$_GET["js-after"];
+    $jsafter=jsafter_token($_GET["js-after"]);
     $function1=$_GET["function1"];
     $RefreshFunction=$_GET["RefreshFunction"];
     $tpl->js_dialog5("{new_rule}","$page?add-popup=$gpid&function=$function&js-after=$jsafter&function1=$function1&RefreshFunction=$RefreshFunction&function=$function",750);
@@ -177,7 +173,7 @@ function edit_js(){
     $ID=intval($_GET["edit-js"]);
     $groupid=$_GET["groupid"];
     $function=$_GET["function"];
-    $jsafter=$_GET["js-after"];
+    $jsafter=jsafter_token($_GET["js-after"]);
     $function1=$_GET["function1"];
     $RefreshFunction=$_GET["RefreshFunction"];
     $tpl->js_dialog5("{edit} {rule} #$ID","$page?edit-popup=$ID&groupid=$groupid&js-after=$jsafter&function1=$function1&RefreshFunction=$RefreshFunction&function=$function",750);
@@ -195,7 +191,7 @@ function _build_form(string $rulename, int $enabled, array $params, int $ID=0):s
 
 
     $function=$_GET["function"];
-    $jsafter=$_GET["js-after"];
+    $jsafter=jsafter_token($_GET["js-after"]);
     $function1=$_GET["function1"];
     $RefreshFunction=$_GET["RefreshFunction"];
     $zname="Group$gpid";
@@ -420,52 +416,33 @@ function edit_popup():bool{
 
 function save_rule(){
     header("Content-Type: application/json");
-    $q=_ensure_table();
     $ID=intval($_POST["id"] ?? 0);
-    $rulename=trim($_POST["rulename"] ?? "");
-    $enabled=intval($_POST["enabled"] ?? 1);
-    $params_raw=$_POST["params"] ?? "{}";
-    $gpid=intval($_POST["gpid"] ?? 0);
-    if(strlen($gpid)==0){
-        echo json_encode(array("success"=>false,"error"=>"Group ID is required"));
-        return;
-    }
-    if(strlen($rulename)==0){
-        echo json_encode(array("success"=>false,"error"=>"Rule name is required"));
-        return;
-    }
-
-    $params=json_decode($params_raw,true);
-    if(!is_array($params)){
-        echo json_encode(array("success"=>false,"error"=>"Invalid JSON in params"));
-        return;
-    }
-    $params_json=json_encode($params,JSON_UNESCAPED_SLASHES);
-    $now=date("Y-m-d H:i:s");
-    $rulename_esc=SQLite3::escapeString($rulename);
-    $params_esc=SQLite3::escapeString($params_json);
-
+    $params=json_decode((string)($_POST["params"] ?? "{}"),true);
+    $data=array(
+        "rulename"=>trim((string)($_POST["rulename"] ?? "")),
+        "enabled"=>intval($_POST["enabled"] ?? 1),
+        "params"=>is_array($params)?$params:null,
+    );
     if($ID>0){
-        $q->QUERY_SQL("UPDATE cognixsys_rules SET rulename='$rulename_esc', enabled=$enabled, params='$params_esc', modified='$now' WHERE ID=$ID");
+        $resp=fwapi_send("PUT","cognix/$ID",$data);
     }else{
-        $q->QUERY_SQL("INSERT INTO cognixsys_rules (gpid,rulename,enabled,params,created,modified) VALUES ($gpid,'$rulename_esc',$enabled,'$params_esc','$now','$now')");
+        $data["gpid"]=intval($_POST["gpid"] ?? 0);
+        $resp=fwapi_send("POST","cognix",$data);
     }
-
-    if(!$q->ok){
-        echo json_encode(array("success"=>false,"error"=>$q->mysql_error));
+    $e=fwapi_error($resp);
+    if($e!=""){
+        $tpl=new template_admin();
+        echo json_encode(array("success"=>false,"error"=>$tpl->javascript_parse_text($e)));
         return;
     }
-
-    $action=$ID>0 ? "Edit" : "Create";
-    admin_tracks("$action CognixSys fetch rule: $rulename for group #$gpid");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/cognixsys/build");
+    admin_tracks(($ID>0?"Edit":"Create")." CognixSys fetch rule: {$data["rulename"]}");
     echo json_encode(array("success"=>true));
 }
 
 function delete_js():bool{
     $tpl=new template_admin();
     $ID=intval($_GET["delete-js"]);
-    $md=$_GET["md"];
+    $md=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["md"] ?? ""));
     $q=_ensure_table();
     $ligne=$q->mysqli_fetch_array("SELECT rulename FROM cognixsys_rules WHERE ID=$ID");
     $name=htmlspecialchars($ligne["rulename"] ?? "#$ID");
@@ -480,36 +457,27 @@ function delete_perform():bool{
         echo $tpl->_ENGINE_parse_body($tpl->div_error("ID == 0"));
         return false;
     }
-    $q=_ensure_table();
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM cognixsys_rules WHERE ID=$ID");
-    $q->QUERY_SQL("DELETE FROM cognixsys_rules WHERE ID=$ID");
-    if(!$q->ok){
-        echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($q->mysql_error)));
+    $e=fwapi_error(fwapi_send("DELETE","cognix/$ID"));
+    if($e!=""){
+        echo $tpl->post_error($e);
         return false;
     }
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/cognixsys/build");
-    return admin_tracks("Delete CognixSys fetch rule: ".($ligne["rulename"] ?? "#$ID"));
+    return admin_tracks("Delete CognixSys fetch rule #$ID");
 }
 
 function enable_toggle():bool{
     $tpl=new template_admin();
     $ID=intval($_GET["enable-toggle"]);
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     if($ID==0){
         return $tpl->js_error("ID == 0");
     }
-    $q=_ensure_table();
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM cognixsys_rules WHERE ID=$ID");
-    $current=intval($ligne["enabled"]);
-    $new=$current==1 ? 0 : 1;
-    $q->QUERY_SQL("UPDATE cognixsys_rules SET enabled=$new, modified='".date("Y-m-d H:i:s")."' WHERE ID=$ID");
-    if(!$q->ok){
-        return $tpl->js_error($q->mysql_error);
-    }
-    $state=$new==1 ? "enabled" : "disabled";
-
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/cognixsys/build");
+    $cur=fwapi_data(fwapi_get("cognix/$ID"));
+    if(!is_array($cur)){return $tpl->js_error("{fw_rule_not_found}");}
+    $new=intval($cur["enabled"])==1?0:1;
+    $e=fwapi_error(fwapi_send("POST","cognix/$ID/enable",array("enabled"=>$new)));
+    if($e!=""){return $tpl->js_error($e);}
     header("content-type: application/x-javascript");
     echo "$function();\n";
-    return admin_tracks("CognixSys fetch rule #$ID $state");
+    return admin_tracks("CognixSys fetch rule #$ID ".($new==1?"enabled":"disabled"));
 }

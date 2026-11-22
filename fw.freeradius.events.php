@@ -91,10 +91,11 @@ function search(){
 	$labels["Warn"]="label-warning";
 	$labels["Error"]="label-danger";
 	
+	// Pentest 2026-11-04 : ligne de journal FreeRADIUS (donnee externe) affichee sans encodage (XSS stockee).
 	foreach ($data as $line){
 		$line=trim($line);
 		if(!preg_match("#^(.*?)\s+([0-9]+)\s+([0-9:]+)\s+.*?\[([0-9]+)\]:\s+(.+)#", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
+			echo "<strong style='color:red'>".req_html($line)."</strong><br>"; 
 			continue;
 		}
 		$inf=null;
@@ -111,6 +112,8 @@ function search(){
         if(preg_match("#Ready to process requests#", $line)){$inf="Info";}
         if(preg_match("#Success#i", $line)){$inf="Info";}
 
+		// Pentest 2026-11-04 : ligne de journal FreeRADIUS (donnee externe) affichee sans encodage (XSS stockee).
+		$date=req_html($date);$line=req_html($line);
 		$html[]="<tr>
 				<td style='width:1%' nowrap><span class='label {$labels[$inf]}'>$date</span></td>
 				<td style='width:1%' nowrap>$pid</td>

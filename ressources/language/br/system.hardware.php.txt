@@ -1,11 +1,11 @@
-<changeClock>To Change the clock, set the time the time exactly as shown below</changeClock>
-<change_clock_tooltip>If you want to change the system clock[br]Click on this Link..</change_clock_tooltip>
-<clocks>Clocks</clocks>
-<clocks_text>Your computer has two timepieces; a battery-backed one that is always running as the ``hardware'', ``BIOS'', or ``CMOS'' clock,
-and another that is maintained by the operating system currently running on your computer as the ``system'' clock.[br]
-The hardware clock is generally only used to set the system clock when your operating system boots,
-and then from that point until you reboot or turn off your system, the system clock is the one used to keep track of time.</clocks_text>
-<convert_clock_tooltip>Set the hardware clock from the system clock</convert_clock_tooltip>
-<hardware_clock>Hardware clock</hardware_clock>
-<system_clock>System clock</system_clock>
-<wrong_date>The date given didn't match the requested format</wrong_date>
+<changeClock>Para alterar o rel&#243;gio, acerte a hora exatamente como mostrado abaixo</changeClock>
+<change_clock_tooltip>Se voc&#234; quiser alterar o rel&#243;gio do sistema[br]Clique neste link..</change_clock_tooltip>
+<clocks>Rel&#243;gios</clocks>
+<clocks_text>O seu computador tem dois rel&#243;gios; um com bateria que est&#225; sempre a funcionar, designado por rel&#243;gio de ``hardware'', ``BIOS'' ou ``CMOS'',
+e outro mantido pelo sistema operacional em execu&#231;&#227;o no seu computador, designado por rel&#243;gio do ``sistema''.[br]
+O rel&#243;gio de hardware &#233; geralmente usado apenas para acertar o rel&#243;gio do sistema quando o sistema operacional arranca,
+e a partir desse ponto, at&#233; reiniciar ou desligar o sistema, o rel&#243;gio do sistema &#233; o usado para controlar o tempo.</clocks_text>
+<convert_clock_tooltip>Acertar o rel&#243;gio de hardware a partir do rel&#243;gio do sistema</convert_clock_tooltip>
+<hardware_clock>Rel&#243;gio de hardware</hardware_clock>
+<system_clock>Rel&#243;gio do sistema</system_clock>
+<wrong_date>A data fornecida n&#227;o corresponde ao formato solicitado</wrong_date>

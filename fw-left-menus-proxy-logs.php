@@ -1,6 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
-$tpl=new template_admin();if(!$tpl->xPrivs()){die("DIE " .__FILE__." Line: ".__LINE__);}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+$tpl=new template_admin();if(!$tpl->xPrivs()){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 clean_xss_deep();
@@ -13,17 +14,21 @@ function xgen(){
 	$pagename=CurrentPageName();
 	$tpl=new template_admin();
 	$f[]="                	<ul class='nav nav-third-level'>";
-
-	
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$results=$q->QUERY_SQL("SELECT aclid,rulename,logconfig FROM squid_logs_acls WHERE enabled=1 AND logtype=0 ORDER BY rulename");
-	foreach ($results as $index=>$ligne){
-		$logtype=$ligne["logtype"];
-		if($logtype<>0){continue;}
-		$aclid=$ligne["aclid"];
-		$rulename=$ligne["rulename"];
-		$logconfig=unserialize(base64_decode($ligne["logconfig"]));
-		$LOGFILENAME=$logconfig["LOGFILENAME"];
+	$results=acls_api_get("/proxy/logs/acls");
+	if(!is_array($results)){$results=array();}
+	$logacls=array();
+	foreach($results as $ligne){
+		if(!is_array($ligne)){continue;}
+		if(intval($ligne["enabled"]??0)<>1){continue;}
+		if(intval($ligne["logType"]??0)<>0){continue;}
+		$logacls[]=$ligne;
+	}
+	usort($logacls,function($a,$b){return strcasecmp((string)($a["ruleName"]??""),(string)($b["ruleName"]??""));});
+	foreach ($logacls as $ligne){
+		$aclid=intval($ligne["id"]??0);
+		$rulename=(string)($ligne["ruleName"]??"");
+		$logconfig=@unserialize(base64_decode((string)($ligne["logConfig"]??"")));
+		$LOGFILENAME=is_array($logconfig)?($logconfig["LOGFILENAME"]??null):null;
 		if($LOGFILENAME==null){$LOGFILENAME="access{$aclid}.log";}
 		$LOGFILENAME=urlencode($LOGFILENAME);
 		$len=strlen($rulename);

@@ -62,7 +62,8 @@ function params():bool{
 	if($MaxItemSize==0){$MaxItemSize=2;}
 	if($MaxItemSize>128){$MaxItemSize=128;}
 	if($MemCachedConnections==0){$MemCachedConnections=2048;}
-	if($MaxItemSize>$MemCachedMem){$MaxItemSize=$MemCachedMem;}
+	// memcached refuses to start when the item size exceeds half of the memory
+	if($MaxItemSize>intval($MemCachedMem/2)){$MaxItemSize=max(1,intval($MemCachedMem/2));}
 	
 	$form[]=$tpl->field_numeric("MemCachedThreads","{threads}",$MemCachedThreads);
 	$form[]=$tpl->field_numeric("MemCachedMem","{cache_memory} (MB)",$MemCachedMem);
@@ -76,6 +77,14 @@ function params():bool{
 }
 function save():bool{
 	$tpl=new template_admin();
+	if(isset($_POST["MaxItemSize"]) && isset($_POST["MemCachedMem"])){
+		$Mem=intval($_POST["MemCachedMem"]);
+		if($Mem==0){$Mem=196;}
+		$Max=intval($_POST["MaxItemSize"]);
+		if($Max>128){$Max=128;}
+		if($Max>intval($Mem/2)){$Max=max(1,intval($Mem/2));}
+		$_POST["MaxItemSize"]=$Max;
+	}
 	$tpl->SAVE_POSTs();
     return true;
 }
@@ -202,15 +211,7 @@ function top_status():bool{
 
     if($timeTemp2<>$timeTemp){
         $html[]="
-		<div class=\"widget style1 red-bg\">
-		    <div class=\"row\">
-		        <div class=\"col-xs-4\"><i class=\"fad fa-memory fa-5x\"></i></div>
-		        <div class=\"col-xs-8 text-right\">
-		            <span> {error} ($timeTemp2)</span>
-		            <h2 class=\"font-bold\">Save Cache!</h2>
-		        </div>
-		    </div>
-		</div>";
+		".$tpl->widget_style1("red-bg","fad fa-memory","{error} ($timeTemp2)","Save Cache!");
 
     }
 
@@ -247,74 +248,24 @@ function top_status():bool{
     if($listen_disabled_num>0){
         $listen_disabled_num=FormatNumber($listen_disabled_num);
         $html[]="
-		<div class=\"widget style1 red-bg\">
-		<div class=\"row\">
-		<div class=\"col-xs-4\">
-		<i class=\"fad fa-memory fa-5x\"></i>
-		</div>
-		<div class=\"col-xs-8 text-right\">
-		<span> {errors}</span>
-		<h2 class=\"font-bold\">$listen_disabled_num</h2>
-		</div>
-		</div>
-		</div>";
+		".$tpl->widget_style1("red-bg","fad fa-memory","{errors}","$listen_disabled_num");
 
     }
 
     $html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fad fa-memory fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {memory_used} (cache)</span>
-	<h2 class=\"font-bold\">$memused ($limit_maxbytes_prc%)</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("lazur-bg","fad fa-memory","{memory_used} (cache)","$memused ($limit_maxbytes_prc%)");
 
 
     $html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 navy-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fas fa-list-ul fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {items}</span>
-	<h2 class=\"font-bold\">$curr_items</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("navy-bg","fas fa-list-ul","{items}","$curr_items");
 
 
     $html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 lazur-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fas fa-percent fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {cache_rate}</span>
-	<h2 class=\"font-bold\">{$rate}%</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("lazur-bg","fas fa-percent","{cache_rate}","{$rate}%");
 
 
     $html[]="<!-- -------------------------------------------------------------------------------------------------- -->
-	<div class=\"widget style1 navy-bg\">
-	<div class=\"row\">
-	<div class=\"col-xs-4\">
-	<i class=\"fas fa-microchip fa-5x\"></i>
-	</div>
-	<div class=\"col-xs-8 text-right\">
-	<span> {connections} ({$threads} threads)</span>
-	<h2 class=\"font-bold\">$total_connections</h2>
-	</div>
-	</div>
-	</div>";
+	".$tpl->widget_style1("navy-bg","fas fa-microchip","{connections} ({$threads} threads)","$total_connections");
 
     $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);

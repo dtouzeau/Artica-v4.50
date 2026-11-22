@@ -195,7 +195,9 @@ class logfile_daemon{
 				$category=$catz->GET_CATEGORIES($hostname);
 			}
 			$tpl=new template_admin();
-			$link=$tpl->icon_link(1,"s_PopUpFull('$GET_URL','1024','900');");
+			// Pentest 2026-11-04 : URL du journal (choisie par le client du proxy) dans
+			// une chaine JavaScript d'un OnClick (XSS stockee).
+			$link=$tpl->icon_link(1,"s_PopUpFull('".req_js($GET_URL)."','1024','900');");
 			
 
 			
@@ -267,6 +269,9 @@ class logfile_daemon{
 		$squid_error["600"]="Squid header parsing error";
         $squid_error["499"]="Client closed request";
         if($return_array){return $squid_error;}
+        if(!isset($squid_error[$code])){
+            return "";
+        }
 		return $squid_error[$code];
 	}
 	
@@ -285,7 +290,6 @@ class logfile_daemon{
 		$HITS["TCP_HIT"]=true;
 		$HITS["TCP_IMS_HIT"]=true;
 		$HITS["TCP_MEM_HIT"]=true;
-		$HITS["TCP_OFFLINE_HIT"]=true;
 		$HITS["TCP_MISS_ABORTED"]=true;
 		$HITS["TCP_OFFLINE_HIT"]=true;
 		$HITS["TCP_REDIRECT"]=true;

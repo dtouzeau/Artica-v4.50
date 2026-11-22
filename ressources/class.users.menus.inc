@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!defined("alse")){define("alse", "alse");}
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $GLOBALS["AS_ROOT"]=false;
@@ -30,10 +31,22 @@ class usersMenus {
 	public $AllowChangeDomains=false;
 	public $AsSystemAdministrator=false;
 	public $AsArticaMetaAdmin=false;
+    // Administrateur Artica Meta de tenants (clients) : perimetre resolu a la connexion
+    // (META_TENANTS ci-dessous, $_SESSION["META_SCOPE"]). AsArticaMetaAdmin (global) prime.
+    public $AsMetaAdmin=false;
+    // Tenants Artica Meta du compte (ids, ensemble indexe par l'id texte) : comme SIEM_TENANTS,
+    // un PERIMETRE et non un droit oui/non.
+    public $META_TENANTS=array();
 	public $AsDansGuardianAdministrator=false;
     public $AsDatabaseAdministrator=false;
     public $NGINX_SERVICES=array();
     public $SIMPLE_ACLS=array();
+    // Tenants SIEM attribues aux groupes de l'utilisateur (feature 021). Comme NGINX_SERVICES et
+    // SIMPLE_ACLS, ce n'est pas un droit « oui/non » mais un PERIMETRE: la cle porte une liste
+    // d'identifiants separes par des virgules, et sa simple presence suffit a justifier une
+    // session -- sans quoi un compte a qui l'on vient d'accorder un tenant est authentifie puis
+    // deconnecte pour « privileges insuffisants ».
+    public $SIEM_TENANTS=array();
 	public $AsSquidPersonalCategories=false;
 	public $AsWebFilterRepository=false;
 	public $AsOrgStorageAdministrator=false;
@@ -51,6 +64,50 @@ class usersMenus {
 	public $AsPostfixAdministrator=false;
 	public $AsSquidAdministrator=false;
     public $AsDockerAdmin=false;
+    public $AsDockerAny=false;
+    // Spec 005: Docker sub-privileges (GetPrivsArray() keys). Declared because
+    // _TranslateRights() assigns every GetPrivsArray() key on $this: undeclared,
+    // PHP 8.2+ logs "Creation of dynamic property … is deprecated" for each one.
+    public $AsDockerView=false;
+    public $AsDockerContainerView=false;
+    public $AsDockerContainerCreate=false;
+    public $AsDockerContainerStart=false;
+    public $AsDockerContainerStop=false;
+    public $AsDockerContainerRestart=false;
+    public $AsDockerContainerKill=false;
+    public $AsDockerContainerEdit=false;
+    public $AsDockerContainerRemove=false;
+    public $AsDockerContainerConsole=false;
+    public $AsDockerContainerLogs=false;
+    public $AsDockerContainerPrivileged=false;
+    public $AsDockerContainerHostMount=false;
+    public $AsDockerMetricsView=false;
+    public $AsDockerImageView=false;
+    public $AsDockerImageSearch=false;
+    public $AsDockerImagePull=false;
+    public $AsDockerImageBuild=false;
+    public $AsDockerImageTag=false;
+    public $AsDockerImageRemove=false;
+    public $AsDockerImageForceRemove=false;
+    public $AsDockerImagePrune=false;
+    public $AsDockerImageScan=false;
+    public $AsDockerRuntimeView=false;
+    public $AsDockerVolumeView=false;
+    public $AsDockerVolumeRemove=false;
+    public $AsDockerNetworkView=false;
+    public $AsDockerNetworkEdit=false;
+    public $AsDockerEventsView=false;
+    public $AsDockerStackView=false;
+    public $AsDockerStackDeploy=false;
+    public $AsDockerStackEdit=false;
+    public $AsDockerStackControl=false;
+    public $AsDockerStackRemove=false;
+    public $AsDockerStackSecrets=false;
+    public $AsDockerDiskQuotaRead=false;
+    public $AsDockerDiskQuotaCreate=false;
+    public $AsDockerDiskQuotaResize=false;
+    public $AsDockerDiskQuotaDelete=false;
+    public $AsDockerDiskQuotaAdmin=false;
     public $AsHamrpAdmin=false;
     public $AsCategories=false;
 	public $APP_NETDATA_INSTALLED=false;
@@ -60,6 +117,7 @@ class usersMenus {
 	public $AsWebMaster=false;
 	public $AsSystemWebMaster=false;
 	public $AsDnsAdministrator=false;
+    public $AsDnsMonitor=false;
     public $AsDockerReverse=false;
 	public $AsQuarantineAdministrator=false;
 	public $AllowFetchMails=false;
@@ -280,9 +338,6 @@ class usersMenus {
 	public $SQUID_LDAP_AUTH;
 	public $SQUID_NTLM_AUTH;
 	public $stunnel4_installed=false;
-	public $DkimFilterEnabled=0;
-	public $DKIMFILTER_INSTALLED=false;
-	public $DKIMFILTER_SOCKET="";
 
 	public $nmap_installed=false;
 	public $usb_list=array();
@@ -306,7 +361,6 @@ class usersMenus {
 	public $EnableMilterBogom=0;
 	public $openldap_installed=false;
 	public $EnableMysqlFeatures=1;
-	public $MILTER_SPY_INSTALLED=false;
 	public $EnableAmavisDaemon=0;
 	public $imapsync_installed=false;
 	public $mailsync_installed=false;
@@ -382,8 +436,6 @@ class usersMenus {
 	public $RSYNC_INSTALLED=false;
 	public $ZARAFA_APPLIANCE=false;
 	public $mysqld_datadir;
-
-	public $MAIL_DKIM_VERSION=null;
 	public $HDPARM_INSTALLED=false;
 	public $APACHE_MODE_WEBDAV=false;
 
@@ -392,14 +444,11 @@ class usersMenus {
 	public $POSTFIX_PCRE_COMPLIANCE=false;
 	public $APP_AUDITD_INSTALLED=false;
 	public $DKFILTER_INSTALLED=false;
-	public $OPENDKIM_INSTALLED=false;
 	public $DB_RECOVER_INSTALLED=false;
 	public $APP_UFDBGUARD_INSTALLED=false;
 	public $ufdbgclient_path=null;
 	public $roundcube_subscriptions_option=false;
 	public $KINIT_INSTALLED=false;
-	public $DKIMPROXY_INSTALLED=false;
-	public $MILTER_DKIM_INSTALLED=false;
 	public $DROPBOX_INSTALLED=false;
 	public $VIRTUALBOX_INSTALLED=false;
 	public $AsVirtualBoxManager=false;
@@ -420,7 +469,6 @@ class usersMenus {
 	public $LDAP_SYNCPROV=false;
 	public $ARTICA_META_ENABLED=false;
 	public $PIWIGO_INSTALLED=false;
-	public $POSTSCREEN_INSTALLED=false;
 	public $deduplication_installed=false;
 
 	public $IPSET_INSTALLED=false;
@@ -451,7 +499,7 @@ class usersMenus {
 
 	public $IPTABLES_ACCOUNTING_EXISTS=false;
 
-	public $POWERADMIN_INSTALLED=false;
+
 	public $SYNCTHING_INSTALLED=false;
 	public $NicRoleArray=array();
 	public $PDNSSEC_INSTALLED=false;
@@ -470,7 +518,6 @@ class usersMenus {
 	public $APACHE_MOD_STATUS=false;
 	public $MYCOSI_APPLIANCE=false;
 	public $LOAD_BALANCE_APPLIANCE=false;
-	public $ARPD_INSTALLED=false;
 	public $SQUID_APPLIANCE=false;
 	public $PROXYTINY_APPLIANCE=false;
 	public $APP_KHSE_INSTALLED=false;
@@ -536,7 +583,6 @@ class usersMenus {
 	public $WEBSECURIZE=false;
 	public $BAMSIGHT=false;
 	public $LANWANSAT=false;
-	public $SENSORS_INSTALLED=false;
 	public $SS5_INSTALLED=false;
 	public $FIREHOL=false;
 	public $XEN_HOST=false;
@@ -561,6 +607,28 @@ class usersMenus {
 		if(!isset($GLOBALS["posix_getuid"])){$GLOBALS["posix_getuid"]=1000;if(function_exists("posix_getuid")){$GLOBALS["posix_getuid"]=posix_getuid();}}
 
 		include_once(dirname(__FILE__)."/class.sockets.inc");
+		// Ce constructeur lit ~119 reglages UN PAR UN. Mesure sur ws3, requete
+		// authentifiee reelle : 119 allers-retours /getinfo/ pour un seul rendu
+		// main-page -- identiques sur fw.system.cve.php et fw.system.aide.php,
+		// parce que le cout appartient a l'habillage, pas a la page.
+		//
+		// __prefetchCommonSettings() existait deja et couvrait 112 de ces 119
+		// cles, mais en OPT-IN : une ligne include_once par page, presente sur 9
+		// pages sur ~1250. Toute page ecrite depuis naissait donc lente.
+		//
+		// Le seam est ICI et pas dans build_firewall() : usersMenus est instancie
+		// depuis une dizaine d'endroits de class.template-admin.inc ET directement
+		// en tete de nombreuses pages (fw.system.aide.php ligne 10). Brancher le
+		// prefetch sur un seul appelant laisse tous les autres lire cle par cle --
+		// verifie : place dans build_firewall(), fw.system.cve.php tombait a 10
+		// appels pendant que fw.system.aide.php en gardait 117. La garantie doit
+		// vivre la ou les lectures se font, pas chez l'un des appelants.
+		if(!function_exists("__prefetchCommonSettings")){
+			include_once(dirname(__FILE__)."/prefetch-info.inc");
+		}
+		if(isset($GLOBALS["CLASS_SOCKETS"]) && function_exists("__prefetchCommonSettings")){
+			__prefetchCommonSettings($GLOBALS["CLASS_SOCKETS"]);
+		}
 		$settings=dirname(__FILE__).'/settings.inc';
 		if(is_file($settings)){@include($settings);$this->GLOBAL_CONFIG=$_GLOBAL;}
 
@@ -615,7 +683,7 @@ class usersMenus {
 
 		$this->ARTICA_ROOT_PATH="/usr/share/artica-postfix";
 
-		if(is_file("/etc/artica-postfix/settings/Daemons/NGINX_INSTALLED")){
+		if(artica_setting_exists("NGINX_INSTALLED")){
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NGINX_INSTALLED"))==1){
 				$this->NGINX_INSTALLED=true;
 			}
@@ -623,40 +691,40 @@ class usersMenus {
 
 
 
-		if(is_file("/etc/artica-postfix/settings/Daemons/SyncThingInstalled")){
+		if(artica_setting_exists("SyncThingInstalled")){
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SyncThingInstalled"))==1){
 				$this->SYNCTHING_INSTALLED=true;
 			}
 		}
-		if(is_file("/etc/artica-postfix/settings/Daemons/DropBoxInstalled")){
+		if(artica_setting_exists("DropBoxInstalled")){
 			if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DropBoxInstalled"))==1){
 				$this->DROPBOX_INSTALLED=true;
 			}
 		}
-		if(is_file("/etc/artica-postfix/settings/Daemons/CNTLMInstalled")){
+		if(artica_setting_exists("CNTLMInstalled")){
 			$CNTLMInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CNTLMInstalled"));
 			if($CNTLMInstalled==1){$this->CNTLM_INSTALLED=true;}
 		}
-		if(is_file("/etc/artica-postfix/settings/Daemons/SQUID_INSTALLED")){
+		if(artica_setting_exists("SQUID_INSTALLED")){
 			$SQUID_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUID_INSTALLED"));
 			if($SQUID_INSTALLED==1){
 				$this->SQUID_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidVersion");
 				$this->SQUID_INSTALLED=true;
-				if(is_file("/etc/artica-postfix/settings/Daemons/SQUID_LDAP_AUTH")){$this->SQUID_LDAP_AUTH=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUID_LDAP_AUTH");}
+				if(artica_setting_exists("SQUID_LDAP_AUTH")){$this->SQUID_LDAP_AUTH=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUID_LDAP_AUTH");}
 			}
 		}
-		if(is_file("/etc/artica-postfix/settings/Daemons/C_ICAP_INSTALLED")){
+		if(artica_setting_exists("C_ICAP_INSTALLED")){
 			$C_ICAP_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_INSTALLED"));
 			if($C_ICAP_INSTALLED==1){
 				$this->C_ICAP_INSTALLED=true;
-				if(is_file("/etc/artica-postfix/settings/Daemons/C_ICAP_DNSBL")){
+				if(artica_setting_exists("C_ICAP_DNSBL")){
 					$C_ICAP_DNSBL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("C_ICAP_DNSBL"));
 					if($C_ICAP_DNSBL==1){$this->C_ICAP_DNSBL=true;}
 				}
 			}
 		}
 
-		if(is_file("/etc/artica-postfix/settings/Daemons/RoundCubeInstalled")){
+		if(artica_setting_exists("RoundCubeInstalled")){
 			$RoundCubeInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RoundCubeInstalled"));
 			if($RoundCubeInstalled==1){
 				$this->roundcube_installed=True;
@@ -666,12 +734,12 @@ class usersMenus {
 			}
 		}
 
-		if(is_file("/etc/artica-postfix/settings/Daemons/AsHaProxyAppliance")){
+		if(artica_setting_exists("AsHaProxyAppliance")){
 			$AsHaProxyAppliance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AsHaProxyAppliance"));
 			if($AsHaProxyAppliance==1){$this->HAPRROXY_APPLIANCE=true;}
 
 		}
-		if(is_file("/etc/artica-postfix/settings/Daemons/FromSetup")){
+		if(artica_setting_exists("FromSetup")){
 			$FromSetup=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FromSetup"));
 			if($FromSetup==1){$this->FROM_SETUP=true;}
 
@@ -776,11 +844,10 @@ class usersMenus {
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PUREFTP_INSTALLED"))==1){$this->PUREFTP_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MILTERGREYLIST_INSTALLED"))==1){$this->MILTERGREYLIST_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClamScanInstalled"))==1){$this->CLAMSCAN_INSTALLED=true;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SENSORS_INSTALLED"))==1){$this->SENSORS_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SS5Installed"))==1){$this->SS5_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SAMBA_INSTALLED"))==1){$this->SAMBA_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPTABLES_INSTALLED"))==1){$this->IPTABLES_INSTALLED=true;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SENSORS_INSTALLED"))==1){$this->SENSORS_INSTALLED=true;}
+
 
 
 		if(isset($_GLOBAL["ARTICA_FILTER_QUEUE_PATH"])){$this->ARTICA_FILTER_QUEUE_PATH=$_GLOBAL["ARTICA_FILTER_QUEUE_PATH"];}
@@ -798,8 +865,8 @@ class usersMenus {
 
 
 
-		if(is_file("/etc/artica-postfix/settings/Daemons/LIGHTTPD_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LIGHTTPD_INSTALLED"))==1){$this->lighttpd_installed=true;}}
-		if(is_file("/etc/artica-postfix/settings/Daemons/NTPDInstalled")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDInstalled"))==1){$this->NTPD_INSTALLED=true;}}
+		if(artica_setting_exists("LIGHTTPD_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LIGHTTPD_INSTALLED"))==1){$this->lighttpd_installed=true;}}
+		if(artica_setting_exists("NTPDInstalled")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDInstalled"))==1){$this->NTPD_INSTALLED=true;}}
 
 
 
@@ -820,8 +887,6 @@ class usersMenus {
 
 
 		if(isset($_GLOBAL["stunnel4_installed"])){$this->stunnel4_installed=$_GLOBAL["stunnel4_installed"];}
-		if(isset($_GLOBAL["DKIMFILTER_INSTALLED"])){$this->DKIMFILTER_INSTALLED=$_GLOBAL["DKIMFILTER_INSTALLED"];}
-		if(isset($_GLOBAL["DKIMFILTER_SOCKET"])){$this->DKIMFILTER_SOCKET=$_GLOBAL["DKIMFILTER_SOCKET"];}
 
 
 		if(isset($_GLOBAL["usb_list"])){$this->usb_list=$_GLOBAL["usb_list"];}
@@ -912,7 +977,7 @@ class usersMenus {
 		if(isset($_GLOBAL["collectd_installed"])){$this->collectd_installed=$_GLOBAL["collectd_installed"];}
 		if(isset($_GLOBAL["COLLECTD_RRD"])){$this->COLLECTD_RRD=$_GLOBAL["COLLECTD_RRD"];}
 
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MILTER_SPY_INSTALLED"))==1){$this->MILTER_SPY_INSTALLED=true;}
+
 		if(isset($_GLOBAL["mailsync_installed"])){$this->mailsync_installed=$_GLOBAL["mailsync_installed"];}
 		if(isset($_GLOBAL["ISOQLOG_INSTALLED"])){$this->ISOQLOG_INSTALLED=$_GLOBAL["ISOQLOG_INSTALLED"];}
 		if(isset($_GLOBAL["zip_installed"])){$this->zip_installed=$_GLOBAL["zip_installed"];}
@@ -936,7 +1001,7 @@ class usersMenus {
 
 
 		$this->SMARTMONTOOLS_INSTALLED=false;
-		if(is_file("/etc/artica-postfix/settings/Daemons/SMARTDiskInstalled")){
+		if(artica_setting_exists("SMARTDiskInstalled")){
 			$SMARTMONTOOLS_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SMARTDiskInstalled"));
 			if($SMARTMONTOOLS_INSTALLED==1){$this->SMARTMONTOOLS_INSTALLED=true;}
 		}
@@ -944,7 +1009,7 @@ class usersMenus {
 
 
 		if(isset($_GLOBAL["SARG_INSTALLED"])){$this->SARG_INSTALLED=$_GLOBAL["SARG_INSTALLED"];}
-		if(is_file("/etc/artica-postfix/settings/Daemons/XAPIAN_PHP_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("XAPIAN_PHP_INSTALLED"))==1){$this->XAPIAN_PHP_INSTALLED=True;}}
+		if(artica_setting_exists("XAPIAN_PHP_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("XAPIAN_PHP_INSTALLED"))==1){$this->XAPIAN_PHP_INSTALLED=True;}}
 
 
 		if(isset($_GLOBAL["APACHE_GROUPWARE_INSTALLED"])){$this->APACHE_GROUPWARE_INSTALLED=$_GLOBAL["APACHE_GROUPWARE_INSTALLED"];}
@@ -998,7 +1063,6 @@ class usersMenus {
 		if(isset($_GLOBAL["ASSP_INSTALLED"])){$this->ASSP_INSTALLED=$_GLOBAL["ASSP_INSTALLED"];}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MEM_HIGER_1G"))==1){$this->MEM_HIGER_1G=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PDNSInstalled"))==1){$this->POWER_DNS_INSTALLED=true;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerAdminInstalled"))==1){$this->POWERADMIN_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSSecInstalled"))==1){$this->PDNSSEC_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClamAVDaemonInstalled"))==1){$this->CLAMD_INSTALLED=true;}
 
@@ -1023,8 +1087,7 @@ class usersMenus {
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FREERADIUS_INSTALLED"))==1){$this->FREERADIUS_INSTALLED=true;}
 		$this->SQUID_BIN_PATH=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUID_BIN_PATH");
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HOSTAPD_INSTALLED"))==1){$this->HOSTAPD_INSTALLED=true;}
-		if(is_file("/etc/artica-postfix/settings/Daemons/WPA_SUPPLIANT_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WPA_SUPPLIANT_INSTALLED"))==1){$this->WPA_SUPPLIANT_INSTALLED=true;}}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARPD_INSTALLED"))==1){$this->ARPD_INSTALLED=true;}
+		if(artica_setting_exists("WPA_SUPPLIANT_INSTALLED")){if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WPA_SUPPLIANT_INSTALLED"))==1){$this->WPA_SUPPLIANT_INSTALLED=true;}}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MEMCACHED_INSTALLED"))==1){$this->MEMCACHED_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HAMACHI_INSTALLED"))==1){$this->HAMACHI_INSTALLED=true;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_ULOGD_INSTALLED"))==1){$this->APP_ULOGD_INSTALLED=true;}
@@ -1038,7 +1101,7 @@ class usersMenus {
 		if(is_file("/etc/artica-postfix/ZARAFA_APPLIANCE")){$this->ZARAFA_APPLIANCE=True;}
 		if(isset($_GLOBAL["mysqld_datadir"])){$this->mysqld_datadir=$_GLOBAL["mysqld_datadir"];}
 
-		if(isset($_GLOBAL["MAIL_DKIM_VERSION"])){$this->MAIL_DKIM_VERSION=trim($_GLOBAL["MAIL_DKIM_VERSION"]);}
+
 		if(isset($_GLOBAL["HDPARM_INSTALLED"])){$this->HDPARM_INSTALLED=trim($_GLOBAL["HDPARM_INSTALLED"]);}
 
 
@@ -1049,8 +1112,6 @@ class usersMenus {
 		if(isset($_GLOBAL["OCS_LNX_AGENT_INSTALLED"])){$this->OCS_LNX_AGENT_INSTALLED=$_GLOBAL["OCS_LNX_AGENT_INSTALLED"];}
 		if(isset($_GLOBAL["POSTFIX_PCRE_COMPLIANCE"])){$this->POSTFIX_PCRE_COMPLIANCE=$_GLOBAL["POSTFIX_PCRE_COMPLIANCE"];};
 		if(isset($_GLOBAL["APP_AUDITD_INSTALLED"])){$this->APP_AUDITD_INSTALLED=$_GLOBAL["APP_AUDITD_INSTALLED"];}
-		if(isset($_GLOBAL["DKFILTER_INSTALLED"])){$this->DKFILTER_INSTALLED=$_GLOBAL["DKFILTER_INSTALLED"];}
-		if(isset($_GLOBAL["OPENDKIM_INSTALLED"])){$this->OPENDKIM_INSTALLED=$_GLOBAL["OPENDKIM_INSTALLED"];}
 		if(isset($_GLOBAL["DB_RECOVER_INSTALLED"])){$this->DB_RECOVER_INSTALLED=$_GLOBAL["DB_RECOVER_INSTALLED"];}
 
 
@@ -1063,7 +1124,7 @@ class usersMenus {
 			$this->ufdbgclient_path=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ufdbgclient_path");
 		}
 
-		if(is_file("/etc/artica-postfix/settings/Daemons/DHCPDInstalled")){
+		if(artica_setting_exists("DHCPDInstalled")){
 			$DHCPDInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DHCPDInstalled"));
 			if($DHCPDInstalled==1){$this->dhcp_installed=true;}
 		}
@@ -1073,8 +1134,7 @@ class usersMenus {
 
 
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KINIT_INSTALLED"))==1){$this->KINIT_INSTALLED=True;}
-		if(isset($_GLOBAL["DKIMPROXY_INSTALLED"])){$this->DKIMPROXY_INSTALLED=$_GLOBAL["DKIMPROXY_INSTALLED"];}
-		if(isset($_GLOBAL["MILTER_DKIM_INSTALLED"])){$this->MILTER_DKIM_INSTALLED=$_GLOBAL["MILTER_DKIM_INSTALLED"];}
+
 		if(isset($_GLOBAL["VIRTUALBOX_INSTALLED"])){$this->VIRTUALBOX_INSTALLED=$_GLOBAL["VIRTUALBOX_INSTALLED"];}
 
 		if(isset($_GLOBAL["THINSTATION_INSTALLED"])){$this->THINSTATION_INSTALLED=$_GLOBAL["THINSTATION_INSTALLED"];}
@@ -1094,7 +1154,6 @@ class usersMenus {
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TFTPD_INSTALLED"))==1){$this->TFTPD_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_VBOXADDINTION_INSTALLED"))==1){$this->APP_VBOXADDINTION_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("VIRTUALBOX_HOST"))==1){$this->VIRTUALBOX_HOST=True;}
-		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTSCREEN_INSTALLED"))==1){$this->POSTSCREEN_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IPSET_INSTALLED"))==1){$this->IPSET_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ASPELL_INSTALLED"))==1){$this->ASPELL_INSTALLED=True;}
 		if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AS_VPS_CLIENT"))==1){$this->AS_VPS_CLIENT=True;}
@@ -1139,9 +1198,14 @@ class usersMenus {
 				$GLOBALS["SQUID_ICAP_ENABLED"]=false;
 				$IsIcapClient=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("IsIcapClient");
 				if($IsIcapClient==null){
-					$IsIcapClient=trim($sock->getFrameWork("squid.php?IsIcapClient=yes"));
-					if($IsIcapClient==null){$IsIcapClient="FALSE";}
-					$GLOBALS["CLASS_SOCKETS"]->SET_INFO("IsIcapClient", $IsIcapClient);
+					// Squid compile avec le client ICAP : articarest /proxy/build/features.
+					$IsIcapClient="FALSE";
+					$features=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/build/features"));
+					if(is_object($features) && isset($features->Info->icap_client) && $features->Info->icap_client){$IsIcapClient="TRUE";}
+					// Daemon injoignable : ne pas graver « FALSE » dans les reglages.
+					if(is_object($features) && isset($features->Status) && $features->Status){
+						$GLOBALS["CLASS_SOCKETS"]->SET_INFO("IsIcapClient", $IsIcapClient);
+					}
 				}
 				if($IsIcapClient=='TRUE'){$GLOBALS["SQUID_ICAP_ENABLED"]=true; }
 			}
@@ -1238,7 +1302,10 @@ class usersMenus {
 		if($AsArticaAdministrator){$this->AllRights();}
 		if($this->AsSystemAdministrator){$this->SystemAdmin();}
 		if($this->AsSquidAdministrator){$this->ProxyAdmin();}
-		if($this->AsDnsAdministrator){$this->AsAnAdministratorGeneric=true;}
+		if($this->AsDnsAdministrator){
+            $this->AsDnsMonitor=true;
+            $this->AsAnAdministratorGeneric=true;
+        }
         if($this->AsDatabaseAdministrator){$this->AsAnAdministratorGeneric=true;}
         if($this->AsWebMaster){
             $this->AsAnAdministratorGeneric=true;
@@ -1258,6 +1325,7 @@ class usersMenus {
 
 
 	public function isVPNAdminOnly(){
+        if($this->AsDnsMonitor==true){return false;}
         if($this->AsDatabaseAdministrator==true){return false;}
 		if($this->AsSystemAdministrator==true){return false;}
 		if($this->AsInventoryAdmin==true){return false;}
@@ -1267,6 +1335,7 @@ class usersMenus {
 		if($this->AsWebMaster==true){return false;}
 		if($this->AsSquidAdministrator==true){return false;}
 		if($this->AsArticaMetaAdmin==true){return false;}
+		if($this->AsMetaAdmin==true){return false;}
 		if($this->AsDansGuardianAdministrator==true){return false;}
 		if($this->AsArticaAdministrator==true){return false;}
 		if($this->AsHotSpotManager==true){return false;}
@@ -1306,6 +1375,7 @@ class usersMenus {
 		if($this->AsWebMaster==true){return false;}
 		if($this->AsSquidAdministrator==true){return false;}
 		if($this->AsArticaMetaAdmin==true){return false;}
+		if($this->AsMetaAdmin==true){return false;}
 		if($this->AsDansGuardianAdministrator==true){return false;}
 		if($this->AsArticaAdministrator==true){return false;}
 		if($this->AsHotSpotManager==true){return false;}
@@ -1317,6 +1387,7 @@ class usersMenus {
 		if($this->AllowAddUsers==true){return false;}
 		if($this->AllowChangeUserPassword==true){return false;}
 		if($this->AsDnsAdministrator==true){return false;}
+        if($this->AsDnsMonitor==true){return false;}
 		if($this->AsWebStatisticsAdministrator==true){return false;}
 		if($this->AsPostfixAdministrator==true){return false;}
 		if($this->AsMailBoxAdministrator==true){return false;}
@@ -1343,6 +1414,7 @@ class usersMenus {
 		if($this->AsSambaAdministrator==true){return false;}
 		if($this->AsWebMaster==true){return false;}
 		if($this->AsArticaMetaAdmin==true){return false;}
+		if($this->AsMetaAdmin==true){return false;}
 		if($this->AsDansGuardianAdministrator==true){return false;}
 		if($this->AsArticaAdministrator==true){return false;}
 		if($this->AsHotSpotManager==true){return false;}
@@ -1353,6 +1425,7 @@ class usersMenus {
 		if($this->AllowAddUsers==true){return false;}
 		if($this->AllowChangeUserPassword==true){return false;}
 		if($this->AsDnsAdministrator==true){return false;}
+        if($this->AsDnsMonitor==true){return false;}
 		if($this->AsWebStatisticsAdministrator==true){return false;}
 		if($this->AsPostfixAdministrator==true){return false;}
 		if($this->AsMailBoxAdministrator==true){return false;}
@@ -1380,6 +1453,7 @@ class usersMenus {
 		if($this->AsSambaAdministrator==true){return false;}
 		if($this->AsWebMaster==true){return false;}
 		if($this->AsArticaMetaAdmin==true){return false;}
+		if($this->AsMetaAdmin==true){return false;}
 		if($this->AsDansGuardianAdministrator==true){return false;}
 		if($this->AsArticaAdministrator==true){return false;}
 		if($this->AsHotSpotManager==true){return false;}
@@ -1390,6 +1464,7 @@ class usersMenus {
 		if($this->AllowAddUsers==true){return false;}
 		if($this->AllowChangeUserPassword==true){return false;}
 		if($this->AsDnsAdministrator==true){return false;}
+        if($this->AsDnsMonitor==true){return false;}
 		if($this->AsPostfixAdministrator==true){return false;}
 		if($this->AsMailBoxAdministrator==true){return false;}
 		if($this->AsOrgAdmin==true){return false;}
@@ -1414,6 +1489,7 @@ class usersMenus {
 		if($this->AsSambaAdministrator==true){return false;}
 		if($this->AsWebMaster==true){return false;}
 		if($this->AsArticaMetaAdmin==true){return false;}
+		if($this->AsMetaAdmin==true){return false;}
 		if($this->AsDansGuardianAdministrator==true){return false;}
 		if($this->AsArticaAdministrator==true){return false;}
 		if($this->AsHotSpotManager==true){return false;}
@@ -1423,6 +1499,7 @@ class usersMenus {
 		if($this->AllowAddUsers==true){return false;}
 		if($this->AllowChangeUserPassword==true){return false;}
 		if($this->AsDnsAdministrator==true){return false;}
+        if($this->AsDnsMonitor==true){return false;}
 		if($this->AsWebStatisticsAdministrator==true){return false;}
 		if($this->AsPostfixAdministrator==true){return false;}
 		if($this->AsMailBoxAdministrator==true){return false;}
@@ -1450,6 +1527,7 @@ class usersMenus {
 		if($this->AsSambaAdministrator==true){return false;}
 		if($this->AsWebMaster==true){return false;}
 		if($this->AsArticaMetaAdmin==true){return false;}
+		if($this->AsMetaAdmin==true){return false;}
 		if($this->AsDansGuardianAdministrator==true){return false;}
 		if($this->AsArticaAdministrator==true){return false;}
 		if($this->AsHotSpotManager==true){return false;}
@@ -1460,6 +1538,7 @@ class usersMenus {
 		if($this->AllowAddUsers==true){return false;}
 		if($this->AllowChangeUserPassword==true){return false;}
 		if($this->AsDnsAdministrator==true){return false;}
+        if($this->AsDnsMonitor==true){return false;}
 		if($this->AsWebStatisticsAdministrator==true){return false;}
 		if($this->AsPostfixAdministrator==true){return false;}
 		if($this->AsMailBoxAdministrator==true){return false;}
@@ -1471,6 +1550,9 @@ class usersMenus {
 		if($this->AsOrgPostfixAdministrator==true){return false;}
 		if($this->AsQuarantineAdministrator==true){return false;}
 		if($this->AsVPNManager==true){return false;}
+		// Spec 005: a Docker right (admin or sub-privilege) is not "proxy only":
+		// the left menu must still show the Docker entry.
+		if($this->AsDockerAny==true){return false;}
 		if($this->AsSquidAdministrator==true){return true;}
 		if($this->AsProxyMonitor==true){return true;}
 	}
@@ -1484,6 +1566,7 @@ class usersMenus {
 		$this->AllowAddUsers=true;
 		$this->AllowChangeUserPassword=true;
 		$this->AsDnsAdministrator=true;
+        $this->AsDnsMonitor=true;
 		$this->ASDCHPAdmin=true;
 		$this->AsCertifsManager=true;
 		$this->AllowEditOuSecurity=true;
@@ -1518,8 +1601,46 @@ class usersMenus {
 
 	}
 
+    // Spec 005: any Docker right (admin or one sub-privilege) lets the account
+    // into the console, like AsDockerAdmin alone did.
+    // Explicit list: AsDockerWeb (true for every account on webadm appliances),
+    // AsDockerReverse and AsDockerAny are NOT rights and must never count.
+    // Must match docker_priv_table() in class.docker.manager.inc.
+    private static $DOCKER_SUBPRIVS=array("AsDockerView","AsDockerContainerView","AsDockerContainerCreate",
+        "AsDockerContainerStart","AsDockerContainerStop","AsDockerContainerRestart",
+        "AsDockerContainerKill","AsDockerContainerEdit","AsDockerContainerRemove",
+        "AsDockerContainerConsole","AsDockerContainerLogs","AsDockerContainerPrivileged",
+        "AsDockerContainerHostMount","AsDockerMetricsView","AsDockerImageView",
+        "AsDockerImageSearch","AsDockerImagePull","AsDockerImageBuild","AsDockerImageTag",
+        "AsDockerImageRemove","AsDockerImageForceRemove","AsDockerImagePrune","AsDockerImageScan",
+        "AsDockerVolumeView","AsDockerVolumeRemove","AsDockerNetworkView",
+        "AsDockerNetworkEdit","AsDockerEventsView","AsDockerStackView","AsDockerStackDeploy",
+        "AsDockerStackEdit","AsDockerStackControl","AsDockerStackRemove",
+        "AsDockerStackSecrets","AsDockerDiskQuotaRead","AsDockerDiskQuotaCreate","AsDockerDiskQuotaResize","AsDockerDiskQuotaDelete","AsDockerDiskQuotaAdmin","AsDockerRuntimeView");
+
+    public static function DockerAnyFrom(array $props){
+        if(isset($props["AsDockerAdmin"]) && $props["AsDockerAdmin"]===true){return true;}
+        foreach(self::$DOCKER_SUBPRIVS as $k){
+            if(isset($props[$k]) && $props[$k]===true){return true;}
+        }
+        return false;
+    }
+
+    // Spec 005: any Docker right (admin or one sub-privilege) lets the account
+    // into the console (AsDockerAny, read by fw.login.php and the template guard).
+    // Only AsDockerAdmin also grants AsAnAdministratorGeneric: that flag is an
+    // authorization gate elsewhere (host folder create/delete, nodes, rustdesk...),
+    // a Docker sub-privilege must not open it.
+    private function DockerAny(){
+        $props=array("AsDockerAdmin"=>$this->AsDockerAdmin);
+        foreach(self::$DOCKER_SUBPRIVS as $k){if(isset($this->$k)){$props[$k]=$this->$k;}}
+        $this->AsDockerAny=self::DockerAnyFrom($props);
+        if($this->AsDockerAdmin){$this->AsAnAdministratorGeneric=true;}
+    }
+
 	private function AllRights(){
         $this->AsDockerAdmin=true;
+        $this->AsDockerAny=true;
 		$this->AsCertifsManager=true;
 		$this->AsSquidPersonalCategories=true;
 		$this->AsAnAdministratorGeneric=true;
@@ -1530,6 +1651,7 @@ class usersMenus {
 		$this->AsWebMaster=true;
 		$this->AsSquidAdministrator=true;
 		$this->AsArticaMetaAdmin=true;
+		$this->AsMetaAdmin=true;
 		$this->AsArticaAdministrator=true;
 		$this->AsWebFilterRepository=true;
 		$this->AsMailBoxAdministrator=true;
@@ -1625,7 +1747,6 @@ class usersMenus {
 		$this->SpamAssMilterEnabled=$artica->SpamAssMilterEnabled;
 		$this->spfmilterEnabled=$artica->spfmilterEnabled;
 		$this->MimeDefangEnabled=$artica->MimeDefangEnabled;
-		$this->DkimFilterEnabled=$artica->DkimFilterEnabled;
 		$this->EnableFetchmail=$artica->EnableFetchmail;
 		$this->EnableFDMFetch=$artica->EnableFDMFetch;
 		$this->P3ScanEnabled=$artica->P3ScanEnabled;
@@ -1643,7 +1764,7 @@ class usersMenus {
 
 
 		//writelogs("KasxFilterEnabled={$hash["KasxFilterEnabled"]},ApacheArticaEnabled=$this->ApacheArticaEnabled ",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$this->EnableAmavisDaemon==0;
+
 
 		if($this->SMTP_LEVEL==null){$this->SMTP_LEVEL=0;}
 		if($GLOBALS["DEBUG_TEMPLATE"]){error_log("[{$_SESSION["uid"]}]::DEBUG::{$GLOBALS["CURRENT_PAGE"]}: DONE; function ".__FUNCTION__." in " . __FILE__. " line ".__LINE__);}
@@ -1713,6 +1834,18 @@ class usersMenus {
                     $this->SIMPLE_ACLS=$priv["SIMPLE_ACLS"];
                     unset($priv["SIMPLE_ACLS"]);
                 }
+                // Retire de $priv AVANT la boucle generique: celle-ci n'accepte que « yes » et
+                // laisserait donc le perimetre sur le carreau, tout en le recopiant tel quel dans
+                // _TranslateRights ou il aurait l'air d'un droit portant le nom d'un tenant.
+                if(isset($priv["SIEM_TENANTS"])){
+                    $this->SIEM_TENANTS=usersmenus_csv_set($priv["SIEM_TENANTS"]);
+                    unset($priv["SIEM_TENANTS"]);
+                }
+                if(isset($priv["META_TENANTS"])){
+                    $this->META_TENANTS=usersmenus_csv_set($priv["META_TENANTS"]);
+                    unset($priv["META_TENANTS"]);
+                }
+                unset($priv["META_TENANTS_GEN"]);
 				foreach ($priv as $num=>$ligne){
 				$this->VERBOSE_PRIVS("$num == [[$ligne]]",__LINE__);
 					$GLOBALS["_TranslateRights"][$num]=$ligne;
@@ -1725,7 +1858,7 @@ class usersMenus {
 				}
 				if($this->AsSystemAdministrator){$this->SystemAdmin();}
 				if($this->AsSquidAdministrator){$this->ProxyAdmin();}
-				if($this->AsDockerAdmin){$this->AsAnAdministratorGeneric=true;}
+				$this->DockerAny();
                 if($this->AsDockerReverse){$this->AsAnAdministratorGeneric=true;}
 				return $GLOBALS["_TranslateRights"];
 			}
@@ -1751,6 +1884,15 @@ class usersMenus {
                 }
                 unset($TranslateRights["SimpleAclsPrivs"]);
             }
+            if(isset($TranslateRights["SIEM_TENANTS"])){
+                $this->SIEM_TENANTS=usersmenus_csv_set($TranslateRights["SIEM_TENANTS"]);
+                unset($TranslateRights["SIEM_TENANTS"]);
+            }
+            if(isset($TranslateRights["META_TENANTS"])){
+                $this->META_TENANTS=usersmenus_csv_set($TranslateRights["META_TENANTS"]);
+                unset($TranslateRights["META_TENANTS"]);
+            }
+            unset($TranslateRights["META_TENANTS_GEN"]);
 
 
 
@@ -1770,8 +1912,11 @@ class usersMenus {
 			}
 			if($this->AsSystemAdministrator){$this->SystemAdmin();}
 			if($this->AsSquidAdministrator){$this->ProxyAdmin();}
-			if($this->AsDnsAdministrator){$this->AsAnAdministratorGeneric=true;}
-            if($this->AsDockerAdmin){$this->AsAnAdministratorGeneric=true;}
+			if($this->AsDnsAdministrator){
+                $this->AsDnsMonitor=true;
+                $this->AsAnAdministratorGeneric=true;
+            }
+            $this->DockerAny();
             if($this->AsDockerReverse){$this->AsAnAdministratorGeneric=true;}
             return $GLOBALS["_TranslateRights"];
 		}
@@ -1796,8 +1941,11 @@ class usersMenus {
 		}
 		if($this->AsSystemAdministrator){$this->SystemAdmin();}
 		if($this->AsSquidAdministrator){$this->ProxyAdmin();}
-		if($this->AsDnsAdministrator){$this->AsAnAdministratorGeneric=true;}
-        if($this->AsDockerAdmin){$this->AsAnAdministratorGeneric=true;}
+		if($this->AsDnsAdministrator){
+            $this->AsDnsMonitor=true;
+            $this->AsAnAdministratorGeneric=true;
+        }
+        $this->DockerAny();
         if($this->AsDockerReverse){$this->AsAnAdministratorGeneric=true;}
 
 		return $GLOBALS["_TranslateRights"];
@@ -1837,6 +1985,9 @@ class usersMenus {
 			return false;}
 
 		if($this->AsArticaMetaAdmin){
+			return false;
+		}
+		if($this->AsMetaAdmin){
 			return false;
 		}
 
@@ -1886,6 +2037,10 @@ class usersMenus {
 		if($this->AsOrgStorageAdministrator){
 			if($log){writelogs("[{$_SESSION["uid"]}]: AsOrgStorageAdministrator=TRUE",__CLASS__.'/'.__FUNCTION__,__FILE__);}
 			return false;}
+
+        if($this->AsDnsMonitor==true){
+           if($log){writelogs("[{$_SESSION["uid"]}]: AsDnsMonitor=TRUE",__CLASS__.'/'.__FUNCTION__,__FILE__);}
+            return false;}
 
 		if($log){writelogs("[{$_SESSION["uid"]}]:logon:  None privileges found",__CLASS__.'/'.__FUNCTION__,__FILE__);}
 		return true;
@@ -1993,6 +2148,55 @@ class usersMenus {
 	}
 
 
+	/**
+	 * Compte dont le SEUL droit d'administration est AsMetaAdmin (spec 2026-11-13 5.10.6) :
+	 * il ne voit que les pages Artica Meta -- menus de l'appliance, tableau de bord d'accueil,
+	 * notifications et evenements systeme masques (ils nomment des noeuds de tous les clients).
+	 * Les privileges restent cumulatifs : le moindre autre droit (ou perimetre nginx, ACL, SIEM)
+	 * rend la console habituelle. AsDockerWeb/AsDockerAny ne sont pas des droits (deduits).
+	 */
+	public function isMetaAdminOnly():bool{
+		if(empty($this->AsMetaAdmin)){return false;}
+		if(!empty($this->AsArticaMetaAdmin)){return false;}
+		if(isset($_SESSION["uid"]) && strval($_SESSION["uid"])==="-100"){return false;}
+		if(is_array($this->NGINX_SERVICES) && count($this->NGINX_SERVICES)>0){return false;}
+		if(is_array($this->SIMPLE_ACLS) && count($this->SIMPLE_ACLS)>0){return false;}
+		if(is_array($this->SIEM_TENANTS) && count($this->SIEM_TENANTS)>0){return false;}
+		foreach(get_object_vars($this) as $k=>$v){
+			if($k==="AsMetaAdmin" || $k==="AsDockerWeb" || $k==="AsDockerAny"){continue;}
+			if(!preg_match('/^(A[sS][A-Z][A-Za-z]+|Allow[A-Z][A-Za-z]+|OverWriteRestrictedDomains)$/',$k)){continue;}
+			if($v===true || $v===1 || $v==="1"){return false;}
+		}
+		return true;
+	}
+
+	/**
+	 * Pages qu'un compte AsMetaAdmin SEUL (isMetaAdminOnly()) a le droit d'ouvrir : predicat
+	 * UNIQUE, lu par template_admin::xPrivs() (porte generique de la console) et par le menu de
+	 * gauche (fw-left-menus.php ne lui montre que des entrees de cette liste). Tout le reste lui
+	 * est refuse : un client d'infogerance ne doit atteindre ni le redemarrage, ni le mot de
+	 * passe root, ni la recherche globale de l'appliance Meta, meme par URL.
+	 *  - fw.index.php, fw-left-menus.php, fw-top-bar.php : cadre de la console (accueil = Meta) ;
+	 *  - fw.netagents.* : pages Artica Meta ; fw.artica.repository* : depot (envoi de mises a jour
+	 *    a SES noeuds, le daemon filtre).
+	 *  - pages libre-service du compte : fw.account.php (son compte, son second facteur),
+	 *    logoff.php, fw.progress*.php (liens de taches signes, rechecks propres),
+	 *    fw.fields.php (aide de champs partagee, sans ecriture).
+	 * Lue aussi par CheckSessions() (meta_only_page_refused()) pour TOUTE page, GET comme POST :
+	 * la plupart des pages n'appellent pas xPrivs().
+	 * $page : nom de fichier du script (basename de SCRIPT_FILENAME), jamais un parametre.
+	 */
+	public static function MetaOnlyPageAllowed($page):bool{
+		$page=basename(strval($page));
+		if(in_array($page,array("fw.index.php","fw-left-menus.php","fw-top-bar.php",
+			"fw.account.php","logoff.php","fw.progress.php","fw.progress.modal.php",
+			"fw.progress.modal.lock.php","fw.fields.php"),true)){return true;}
+		foreach(array("fw.netagents.","fw.artica.repository") as $prefix){
+			if(strpos($page,$prefix)===0 && substr($page,-4)===".php"){return true;}
+		}
+		return false;
+	}
+
 	function isTreeReadable($priv=null){
 		if(posix_getuid()==0){$this->uid=-100;}
 		if($this->uid==-100){return true;}
@@ -2079,4 +2283,184 @@ function GetRights_aliases() {
 	if($usersprivs->ASDCHPAdmin){return 1;}
 	$GLOBALS["ERRORS_PRIVS"][]="{ASDCHPAdmin}: {no}";
 	return 0;
+}
+
+/**
+ * Transforme une liste separee par des virgules en ensemble indexe par la valeur.
+ *
+ * Utilisee pour SIEM_TENANTS, dont les elements sont des identifiants TEXTE -- contrairement a
+ * NGINX_SERVICES et SIMPLE_ACLS, dont les elements sont numeriques et se filtrent par is_numeric().
+ * Une entree vide entre deux virgules vient d'une concatenation ratee et non d'une intention: elle
+ * est ignoree, sinon count() renverrait un perimetre non vide alors qu'il ne contient rien.
+ */
+function usersmenus_csv_set($raw):array{
+    if(is_array($raw)){return $raw;}
+    $out=array();
+    foreach(explode(",",(string)$raw) as $item){
+        $item=trim($item);
+        if($item===""){continue;}
+        $out[$item]=true;
+    }
+    return $out;
+}
+
+/**
+ * CheckSessions() (class.sessions.inc), pour toute page d'une session validee : true => la page
+ * est REFUSEE parce que le compte n'a que AsMetaAdmin (client d'un infogerant, spec 2026-11-13
+ * 5.10.6) et qu'elle n'est pas dans usersMenus::MetaOnlyPageAllowed(). Pre-filtre bon marche sur
+ * la session : un compte sans AsMetaAdmin ne construit aucun usersMenus ici.
+ * $users : injection pour le harnais seulement.
+ */
+if(!function_exists("meta_only_page_refused")){
+    function meta_only_page_refused($page,$users=null):bool{
+        if(!isset($_SESSION) || !is_array($_SESSION)){return false;}
+        // Sans uid : session non ouverte, CheckSessions() la renvoie deja vers la connexion.
+        $uid=isset($_SESSION["uid"])?strval($_SESSION["uid"]):"";
+        if($uid===""){return false;}
+        // Super-administrateur (SetManager) : pas de privileges_array, jamais restreint ici.
+        if($uid==="-100"){return false;}
+        $privs=isset($_SESSION["privileges_array"])?$_SESSION["privileges_array"]:array();
+        if(is_array($privs) && count($privs)>0){
+            if(!privileges_priv_yes($privs,"AsMetaAdmin")){return false;}
+            if($users===null){$users=new usersMenus();}
+            if(!$users->isMetaAdminOnly()){return false;}
+            return !usersMenus::MetaOnlyPageAllowed($page);
+        }
+        // ECHEC FERME : un compte connecte dont les privileges n'ont pas pu etre resolus
+        // (BuildSession en echec => privileges_array null ou vide). Il n'a aucun droit de toute
+        // facon ; on ne lui laisse que les pages de la liste (accueil, compte, deconnexion), au
+        // lieu de laisser chaque page decider seule -- beaucoup ne controlent rien. Exemptes : les
+        // sessions dont les droits vivent HORS de privileges_array (ACL dynamiques, categories
+        // gerees, reverse-proxy manage) ; la connexion elle-meme (fw.login.php) est noback.
+        if(!empty($_SESSION["VirtAclUser"])){return false;}
+        foreach(array("SQUID_DYNAMIC_ACLS","MANAGE_CATEGORIES","HAMRP_PRIVS") as $k){
+            if(isset($_SESSION[$k]) && is_array($_SESSION[$k]) && count($_SESSION[$k])>0){return false;}
+        }
+        if(isset($_SESSION["HARMPID"]) && intval($_SESSION["HARMPID"])>0){return false;}
+        return !usersMenus::MetaOnlyPageAllowed($page);
+    }
+}
+
+/**
+ * Gestion du depot Artica Meta (chemin, synchronisation, televersement et suppression de
+ * hotfixes / Service Packs, comportement) : infogerant seulement (spec 2026-11-13 5.10.5).
+ * Faux pour un compte AsMetaAdmin seul. Predicat unique des pages fw.artica.repository*.php.
+ */
+if(!function_exists("artrepo_can_write")){
+    function artrepo_can_write($users=null):bool{
+        // $users : injection pour le harnais seulement.
+        if($users===null){$users=new usersMenus();}
+        if(method_exists($users,"isMetaAdminOnly") && $users->isMetaAdminOnly()){return false;}
+        // Session au perimetre d'un tenant (AsMetaAdmin cumule avec un autre droit) : ce n'est
+        // pas l'infogerant, le depot ne se gere pas depuis elle (spec 2026-11-13 5.10.5).
+        if(meta_tenant_session()){return false;}
+        if($users->AsArticaMetaAdmin){return true;}
+        return (bool)$users->AsSystemAdministrator;
+    }
+}
+
+/*
+ * Predicats Artica Meta multi-tenant (spec 2026-11-13 5.5-5.7, tache 10). Source UNIQUE des
+ * decisions d'acces des pages fw.netagents.* et fw.artica.repository* :
+ *  - meta_tenant_session()       : la session parle au daemon avec X-Artica-Meta-Scope (tenant) ;
+ *                                  meme calcul que sockets::META_SCOPE_HEADERS(), donc ce que le
+ *                                  daemon appliquera. Echec ferme : AsMetaAdmin sans moyen de
+ *                                  calculer => tenant.
+ *  - meta_is_provider()          : infogerant (AsArticaMetaAdmin, perimetre global).
+ *  - meta_provider_or_sysadmin() : infogerant ou AsSystemAdministrator hors perimetre tenant
+ *                                  (pages qui acceptaient deja l'administrateur systeme).
+ *  - meta_can_view()             : pages Meta utilisables par un tenant (AsArticaMetaAdmin ou
+ *                                  AsMetaAdmin). Vaut aussi pour leurs ecritures : le daemon
+ *                                  borne chaque ecriture au tenant (404 hors perimetre ou sur un
+ *                                  element global en lecture seule).
+ *  - meta_can_push()             : envoi de mises a jour du depot a des noeuds (infogerant, ou
+ *                                  tenant vers SES noeuds, filtre par le daemon). La GESTION du
+ *                                  depot reste artrepo_can_write().
+ * $users : injection pour le harnais seulement.
+ */
+if(!function_exists("meta_tenant_session")){
+    function meta_tenant_session():bool{
+        if(!isset($_SESSION) || !is_array($_SESSION)){return false;}
+        $s=null;
+        if(isset($GLOBALS["CLASS_SOCKETS"]) && is_object($GLOBALS["CLASS_SOCKETS"]) && method_exists($GLOBALS["CLASS_SOCKETS"],"META_SCOPE_HEADERS")){
+            $s=$GLOBALS["CLASS_SOCKETS"];
+        }elseif(class_exists("sockets") && method_exists("sockets","META_SCOPE_HEADERS")){
+            // Pas de constructeur : celui de sockets parle deja au daemon.
+            try{$r=new ReflectionClass("sockets");$s=$r->newInstanceWithoutConstructor();}catch(Exception $e){$s=null;}
+        }
+        if($s!==null){
+            $h=$s->META_SCOPE_HEADERS();
+            return is_array($h) && count($h)>0;
+        }
+        $scope=isset($_SESSION["META_SCOPE"])?strval($_SESSION["META_SCOPE"]):"";
+        if(strpos($scope,"tenants:")===0){return true;}
+        $privs=isset($_SESSION["privileges_array"])&&is_array($_SESSION["privileges_array"])?$_SESSION["privileges_array"]:array();
+        $v=isset($privs["AsMetaAdmin"])?$privs["AsMetaAdmin"]:"";
+        return ($v==="yes" || $v===true || $v===1 || $v==="1") && $scope!=="global";
+    }
+}
+if(!function_exists("meta_is_provider")){
+    function meta_is_provider($users=null):bool{
+        if(meta_tenant_session()){return false;}
+        if($users===null){$users=isset($GLOBALS["CLASS_USERS"])&&is_object($GLOBALS["CLASS_USERS"])?$GLOBALS["CLASS_USERS"]:new usersMenus();}
+        return !empty($users->AsArticaMetaAdmin);
+    }
+}
+if(!function_exists("meta_provider_or_sysadmin")){
+    function meta_provider_or_sysadmin($users=null):bool{
+        if(meta_tenant_session()){return false;}
+        if($users===null){$users=isset($GLOBALS["CLASS_USERS"])&&is_object($GLOBALS["CLASS_USERS"])?$GLOBALS["CLASS_USERS"]:new usersMenus();}
+        return !empty($users->AsArticaMetaAdmin) || !empty($users->AsSystemAdministrator);
+    }
+}
+if(!function_exists("meta_can_view")){
+    function meta_can_view($users=null):bool{
+        if($users===null){$users=isset($GLOBALS["CLASS_USERS"])&&is_object($GLOBALS["CLASS_USERS"])?$GLOBALS["CLASS_USERS"]:new usersMenus();}
+        return !empty($users->AsArticaMetaAdmin) || !empty($users->AsMetaAdmin);
+    }
+}
+// Pages de noeud et pages Meta en general : administrateur Meta (infogerant ou tenant) ou
+// administrateur systeme hors perimetre tenant (comportement anterieur des pages de noeud).
+if(!function_exists("meta_node_admin")){
+    function meta_node_admin($users=null):bool{
+        if(meta_can_view($users)){return true;}
+        return meta_provider_or_sysadmin($users);
+    }
+}
+/*
+ * CheckSessions() (class.sessions.inc), pour toute page d'une session validee : true => la page
+ * Artica Meta (fw.netagents.*, fw.artica.repository*) est REFUSEE parce que le compte n'a aucun
+ * droit Meta (ni AsArticaMetaAdmin, ni AsMetaAdmin, ni AsSystemAdministrator hors perimetre
+ * tenant). Sans cette porte, un compte a role etroit (AsSquidAdministrator...) atteignait les
+ * handlers sans controle propre de ces pages, et ses appels au daemon partaient SANS en-tete de
+ * perimetre, donc en GLOBAL (le garde de privileges n'observe que, et seulement les POST).
+ * $page : basename(SCRIPT_FILENAME), jamais un parametre. $users : injection pour le harnais.
+ */
+if(!function_exists("meta_page_refused")){
+    function meta_page_refused($page,$users=null):bool{
+        $page=basename(strval($page));
+        if(substr($page,-4)!==".php"){return false;}
+        if(strpos($page,"fw.netagents.")!==0 && strpos($page,"fw.artica.repository")!==0){return false;}
+        if(!isset($_SESSION) || !is_array($_SESSION)){return false;}
+        $uid=isset($_SESSION["uid"])?strval($_SESSION["uid"]):"";
+        if($uid===""){return false;}           // pas de session : CheckSessions renvoie deja vers la connexion
+        if($uid==="-100"){return false;}       // super-administrateur (SetManager)
+        if($users===null){$users=new usersMenus();}
+        return !meta_node_admin($users);
+    }
+}
+// Politique globale en lecture seule visee par la requete courante (editeurs de types) :
+// voir natn_request_policy_ro() (class.netagents.tenants.inc), charge a la demande.
+if(!function_exists("meta_policy_request_ro")){
+    function meta_policy_request_ro():bool{
+        if(!function_exists("natn_request_policy_ro")){include_once(dirname(__FILE__)."/class.netagents.tenants.inc");}
+        return natn_request_policy_ro();
+    }
+}
+if(!function_exists("meta_can_push")){
+    function meta_can_push($users=null):bool{
+        if($users===null){$users=isset($GLOBALS["CLASS_USERS"])&&is_object($GLOBALS["CLASS_USERS"])?$GLOBALS["CLASS_USERS"]:new usersMenus();}
+        if(artrepo_can_write($users)){return true;}
+        return !empty($users->AsMetaAdmin);
+    }
 }

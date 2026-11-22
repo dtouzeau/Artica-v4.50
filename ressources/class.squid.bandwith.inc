@@ -2,6 +2,7 @@
 include_once(dirname(__FILE__).'/class.mysql.inc');
 include_once(dirname(__FILE__).'/class.cron.inc');
 include_once(dirname(__FILE__).'/class.tcpip.inc');
+include_once(dirname(__FILE__).'/class.acls.backend.inc');
 class squid_bandwith_builder{
 	var $rules_array=array();
 	var $delay_pools=array();
@@ -102,24 +103,42 @@ class squid_bandwith_builder{
             return;
         }
 
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-        $sql="SELECT ID FROM squid_http_bandwidth_acls WHERE enabled=1 ORDER BY zorder";
-        $results = $q->QUERY_SQL($sql);
-        if(count($results)==0){
+        $allRules = acls_api_get("/proxy/bandwidth/acls");
+        if(!is_array($allRules)){
+            $conf[]="# Bandwidth API unavailable, SKIP";
+            @file_put_contents("/etc/squid3/acls_bandwidth.conf", @implode("\n", $conf));
+            return;
+        }
+        $enabledRules=[];
+        foreach($allRules as $r){ if(intval($r["enabled"] ?? 0)===1){ $enabledRules[]=$r; } }
+        if(count($enabledRules)==0){
             $conf[]="# No Bandwidth Rule, SKIP";
             @file_put_contents("/etc/squid3/acls_bandwidth.conf", @implode("\n", $conf));
             return;
         }
         $c=1;
-        foreach($results as $index=>$ligne) {
-            $q->QUERY_SQL("UPDATE squid_http_bandwidth_acls SET delay_pool_number=$c WHERE `ID`={$ligne["ID"]}");
-            if(!$q->ok){echo $q->mysql_error_html(true);return;}
+        foreach($enabledRules as $index=>$r) {
+            list($ok,$err) = acls_api_send("PUT", "/proxy/bandwidth/acls/".intval($r["id"]), ["delayPoolNumber"=>$c]);
+            if(!$ok){ echo htmlspecialchars($err); return; }
+            $enabledRules[$index]["delayPoolNumber"] = $c;
             $c++;
         }
         if(function_exists("build_progress_bandwidth")){build_progress_bandwidth("{limit_rate} {reconfigure}",55);}
 
-        $sql="SELECT * FROM squid_http_bandwidth_acls WHERE enabled=1 ORDER BY zorder";
-        $results = $q->QUERY_SQL($sql);
+        $results = [];
+        foreach($enabledRules as $r){
+            $results[] = [
+                "ID" => intval($r["id"]),
+                "rulename" => (string)($r["ruleName"] ?? ""),
+                "delay_pool_number" => intval($r["delayPoolNumber"] ?? 0),
+                "limit_network" => intval($r["limitNetwork"] ?? 0),
+                "network_max_size" => intval($r["networkMaxSize"] ?? 0),
+                "network_bandwidth" => intval($r["networkBandwidth"] ?? 0),
+                "limit_client" => intval($r["limitClient"] ?? 0),
+                "client_maxsize" => intval($r["clientMaxsize"] ?? 0),
+                "client_bandwidth" => intval($r["clientBandwidth"] ?? 0),
+            ];
+        }
 
         $conf[]="# ". $this->ActiveDirectoryError;
         $conf[]="# Delay Pools, initialize";
@@ -180,12 +199,16 @@ class squid_bandwith_builder{
             $acls_array=$squid_acls_groups->buildacls_bytype_items($aclid,false,"squid_http_bandwidth_link");
             $conf[]="#-- [$aclid] $rulename ". count($acls_array). " items--------------------------------";
 
+            // delay_parameters arity MUST match the delay_class or Squid aborts
+            // at parse time: class 1 = 1 spec (aggregate), class 3 = 3 specs
+            // (aggregate network individual). Global cap -> aggregate bucket,
+            // per-client cap -> individual bucket, per-network bucket unused.
             $conf[]="delay_class $delay_pool_number $delay_pool_class";
             if($delay_pool_class==3) {
                 $conf[] = "delay_parameters $delay_pool_number\t$limit_network_final\tnone\t$limit_client_final";
             }
             if($delay_pool_class==1) {
-                $conf[] = "delay_parameters $delay_pool_number\t$limit_network_final\t$limit_client_final";
+                $conf[] = "delay_parameters $delay_pool_number\t$limit_network_final";
             }
             if(count($acls_array)==0){
                 $conf[]="delay_access $delay_pool_number deny all";

@@ -3,6 +3,9 @@ $GLOBALS["DNS_ACTIONS"]=array(0=>"{REFUSED}",1=>"{NXDOMAIN}",3=>"{SERVFAIL}",4=>
     5=>"{query_dnssrv}",6=>"{do_nothing_but_logs}");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -49,7 +52,7 @@ function page(){
 	$tpl=new template_admin();
 
     $DNSFW_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DNSFW_VERSION");
-    $html=$tpl->page_header("{APP_DNS_FIREWALL} v$DNSFW_VERSION","fab fa-free-code-camp","{APP_DNS_FIREWALL_ABOUT}","$page?tabs=yes","dnsfw","progress-dnsfw-restart",false,"table-dnsfw-rules-tabs");
+    $html=$tpl->page_header("{APP_DNS_FIREWALL} v$DNSFW_VERSION","fa-solid fa-block-brick-fire","{APP_DNS_FIREWALL_ABOUT}","$page?tabs=yes","dnsfw","progress-dnsfw-restart",false,"table-dnsfw-rules-tabs");
 
 
     if(isset($_GET["main-page"])){
@@ -66,6 +69,9 @@ function dashboard(){
     $html[]="<tr>";
     $html[]="<td colspan='2' style='vertical-align: top'><div id='top-dashboard'></div></td>";
     $html[]="</tr>";
+    // La seconde <tr> n'etait jamais ouverte: les deux cellules suivantes
+    // flottaient hors de toute ligne.
+    $html[]="<tr>";
     $html[]="<td style='width:50%;vertical-align:top'>";
     $html[]="<div id='left-dashboard'></div>";
     $html[]="</td>";
@@ -83,7 +89,6 @@ function dashboard(){
 function dashboard_top(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $results=$GLOBALS["CLASS_SOCKETS"]->ksrn_sockets("STATS");
     $MAIN=unserialize($results["RESPONSE"]);
     $CORP_LICENSE=intval($MAIN["CORP_LICENSE"]);
@@ -109,11 +114,11 @@ function dashboard_top(){
         $WEBFILTER_WIDGET= $tpl->widget_h("grey", "fas fa-shield-virus", "{inactive2}", "{web_filtering}",$button);
     }
 
-    $results=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM dnsfw_acls WHERE enabled=1");
-    $Rules=$results["tcount"];
-    $RULES_WIDGET=$tpl->widget_h("green", "fab fa-free-code-camp", "$Rules {current_rules}", "{APP_DNS_FIREWALL}",$button);
+    $cnt = acls_api_get("/dnsfw/acls/enabled-count");
+    $Rules = is_array($cnt) ? intval($cnt["count"]) : 0;
+    $RULES_WIDGET=$tpl->widget_h("green", "fa-solid fa-block-brick-fire", "$Rules {current_rules}", "{APP_DNS_FIREWALL}",$button);
     if($Rules==0){
-        $RULES_WIDGET=$tpl->widget_h("grey", "fab fa-free-code-camp", "{no_rules}", "{APP_DNS_FIREWALL}",$button);
+        $RULES_WIDGET=$tpl->widget_h("grey", "fa-solid fa-block-brick-fire", "{no_rules}", "{APP_DNS_FIREWALL}",$button);
     }
 
     $html[]="<table style=width:100%>";
@@ -158,12 +163,26 @@ function table_start(){
 }
 
 
+// Masquer une icone ne protege rien: le repartiteur en tete de fichier repond a
+// toute session authentifiee. Les mutations se gardent cote serveur.
+function dnsfw_require($tpl,$flag="AsDnsAdministrator"):bool{
+    $users=new usersMenus();
+    if($users->$flag){return true;}
+    $tpl->js_no_privileges();
+    return false;
+}
+
 function rule_delete_js(){
 	header("content-type: application/x-javascript");
-	$ID=$_GET["rule-delete-js"];
-	$md=$_GET["md"];
+	$tpl=new template_admin();
+	if(!dnsfw_require($tpl)){return;}
+	$ID=intval($_GET["rule-delete-js"]);
+	if($ID<1){return;}
 	if(!rule_delete($ID)){return;}
-	echo "$('#$md').remove();";
+	// La ligne s'identifie par acl-<ID>, comme celle que rule_enable() vise.
+	// $_GET["md"] -- un md5 recopie tel quel dans $('#...').remove() -- n'est
+	// plus lu du tout.
+	echo "$('#acl-$ID').remove();";
 }
 
 function js_example(){
@@ -174,290 +193,217 @@ function js_example(){
 }
 
 function check_tables(){
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-    $sql="CREATE TABLE IF NOT EXISTS `dnsfw_acls` (
-		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-		`rulename` TEXT NOT NULL ,
-		`description` TEXT NOT NULL ,
-		`enabled` INTEGER NOT NULL ,
-		`action` INTEGER NOT NULL DEFAULT 0,
-		`reply` TEXT,
-		`ttl` INTEGER NOT NULL DEFAULT 1800,
-		`redirector` TEXT NULL,
-		`zorder`  INTEGER NOT NULL DEFAULT 1
-		)";
-    $q->QUERY_SQL($sql);
-    if (!$q->ok) {echo "$q->mysql_error (".__LINE__.")\n$sql\n";}
-
-    $sql="CREATE TABLE IF NOT EXISTS `dnsfw_acls_link` (
-			`zmd5` TEXT NOT NULL PRIMARY KEY ,
-			`aclid` INTEGER ,
-			`negation` INTEGER ,
-			`gpid` INT UNSIGNED ,
-			`zorder` INTEGER
-			)";
-    $q->QUERY_SQL($sql);
+    // Schema migrations are handled by articarest::EnsureAclsSqliteSchema
+    // at daemon startup. This function is a no-op now.
+    return true;
 }
 
 function js_example_create(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    check_tables();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $FF[]="`rulename`";
-    $FF[]="`description`";
-    $FF[]="`action`";
-    $FF[]="`redirector`";
-    $FF[]="`reply`";
-    $FF[]="`ttl`";
-
-    $GLOBALS["DNS_ACTIONS"]=array(0=>"{REFUSED}",1=>"{NXDOMAIN}",3=>"{SERVFAIL}",4=>"{NOERROR}",
-        5=>"{query_dnssrv}",6=>"{do_nothing_but_logs}");
-
-    $fintro="INSERT OR IGNORE INTO dnsfw_acls (ID,`rulename`,`description`,`action`,`redirector`,`reply`,`ttl`,`enabled`) VALUES";
-
-    for($i=1;$i<10;$i++){
-        $q->QUERY_SQL("DELETE FROM dnsfw_acls_link WHERE aclid='$i'");
-    }
-
-    $q->QUERY_SQL("$fintro (1,'Suspicious TLD domains','Block tld that are mostly non-professional',0,'','',1800,1)");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-
-
-    $q->QUERY_SQL("$fintro (2,'Google forwarders','Redirects Google domains to Google redirectors',5,'8.8.8.8,8.8.4.4','',1800,1)");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-
-    $q->QUERY_SQL("$fintro (3,'DNS Filter','Block suspicious domains (license required)',4,'','127.0.0.1',1800,0)");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-
-    $q->QUERY_SQL("$fintro (4,'Who Query MX','If there is something that query MX ?',6,'','',1800,1)");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-
-    $q->QUERY_SQL("$fintro (5,'To Active Directory','domain.tld, redirects to Active Directory',5,'10.10.1.254','',1800,0)");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-
-    $q->QUERY_SQL("$fintro (6,'0-day reputation service','Use the Shields object as reputation service (license required)',1,'','',1800,0)");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_1'");
-    $querty_default_gpid=intval($ligne["ID"]);
-    if($querty_default_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('Common DNS Queries','dnsquerytype','1','WIZARDDNSFW_1',0)";
-        $q->QUERY_SQL($sql);
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_1'");
-        $querty_default_gpid=intval($ligne["ID"]);
-    }
-    $date=date("Y-m-d H:i:s");
-    $uid=$_SESSION["uid"];
-    if($uid==-100){$uid="Manager";}
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_2'");
-    $querty_mx_gpid=intval($ligne["ID"]);
-    if($querty_mx_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('MX DNS Query','dnsquerytype','1','WIZARDDNSFW_2',0)";
-        $q->QUERY_SQL($sql);
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_2'");
-        $querty_mx_gpid=intval($ligne["ID"]);
-    }
-
-    //Categories
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_3'");
-    $querty_catz_gpid=intval($ligne["ID"]);
-    if($querty_catz_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('Bad categories','categories','1','WIZARDDNSFW_3',0)";
-        $q->QUERY_SQL($sql);
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_3'");
-        $querty_catz_gpid=intval($ligne["ID"]);
-    }
-
-    //Google
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_4'");
-    $querty_google_gpid=intval($ligne["ID"]);
-    if($querty_google_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('Google Domains','dstdom_regex','1','WIZARDDNSFW_4',0)";
-        $q->QUERY_SQL($sql);
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_4'");
-        $querty_google_gpid=intval($ligne["ID"]);
-    }
-    //Tld domains
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_5'");
-    $querty_tld_gpid=intval($ligne["ID"]);
-    if($querty_tld_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('Suspicious TLD domains','dstdom_regex','1','WIZARDDNSFW_5',0)";
-        $q->QUERY_SQL($sql);
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_5'");
-        $querty_tld_gpid=intval($ligne["ID"]);
-    }
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_6'");
-    $querty_ad_gpid=intval($ligne["ID"]);
-    if($querty_ad_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('AD domain.tld','dstdomain','1','WIZARDDNSFW_6',0)";
-        $q->QUERY_SQL($sql);
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_6'");
-        $querty_ad_gpid=intval($ligne["ID"]);
-    }
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_DSHIELDS'");
-    $querty_dhsields_gpid=intval($ligne["ID"]);
-    if($querty_dhsields_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('O-Day reputation','the_shields','1','WIZARDDNSFW_DSHIELDS',0)";
-        $q->QUERY_SQL($sql);
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_DSHIELDS'");
-        $querty_dhsields_gpid=intval($ligne["ID"]);
-    }
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_INTERNAL");
-    $querty_localnet_gpid=intval($ligne["ID"]);
-    if($querty_localnet_gpid==0){
-        $sql="INSERT INTO webfilters_sqgroups (GroupName,GroupType,enabled,params,tplreset) 
-        VALUES ('Local network','src','1','WIZARDDNSFW_INTERNAL',0)";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_sqgroups WHERE params='WIZARDDNSFW_INTERNAL'");
-        if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-        $querty_localnet_gpid=intval($ligne["ID"]);
-        if($querty_localnet_gpid==0){echo $tpl->js_mysql_alert("WIZARDDNSFW_INTERNAL == 0");return;}
-    }
-    linkrule(1,$querty_localnet_gpid);
-    linkrule(1,$querty_default_gpid);
-    linkrule(1,$querty_tld_gpid);
-
-    linkrule(2,$querty_default_gpid);
-    linkrule(2,$querty_google_gpid);
-
-
-    linkrule(3,$querty_localnet_gpid);
-    linkrule(3,$querty_default_gpid);
-    linkrule(3,$querty_catz_gpid);
-
-    linkrule(4,$querty_localnet_gpid);
-    linkrule(4,$querty_mx_gpid);
-
-    linkrule(4,$querty_localnet_gpid);
-    linkrule(5,$querty_ad_gpid);
-
-    linkrule(6,$querty_localnet_gpid);
-    linkrule(6,$querty_default_gpid);
-    linkrule(6,$querty_dhsields_gpid);
-
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_catz_gpid");
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_mx_gpid");
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_default_gpid");
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_google_gpid");
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_ad_gpid");
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_tld_gpid");
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_dhsields_gpid");
-    $q->QUERY_SQL("DELETE FROM webfilters_sqitems WHERE gpid=$querty_localnet_gpid");
-
-
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_catz_gpid','92','$date','$uid',1)");
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_catz_gpid','105','$date','$uid',1)");
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_catz_gpid','135','$date','$uid',1)");
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_catz_gpid','111','$date','$uid',1)");
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_catz_gpid','64','$date','$uid',1)");
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_catz_gpid','149','$date','$uid',1)");
-
-
-
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_mx_gpid','MX','$date','$uid',1)");
-
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_ad_gpid','domain.tld','$date','$uid',1)");
-
-
-
-    $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_google_gpid','(^|\.)(google|googlevideo|googleapis|googleusercontent)\.[a-z]+$','$date','$uid',1)");
-
-
-    $querty_default["A"]=true;
-    $querty_default["NS"]=true;
-    foreach ($querty_default as $item=>$none) {
-        $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_default_gpid','$item','$date','$uid',1)");
-
-    }
-
-    $sustld["club"]=true;
-    $sustld["xxx"]=true;
-    $sustld["xyz"]=true;
-    $sustld["bid"]=true;
-    $sustld["live"]=true;
-    $sustld["date"]=true;
-    $sustld["name"]=true;
-    $sustld["top"]=true;
-    $sustld["link"]=true;
-    $sustld["(co|web)\.ve"]=true;
-
-    foreach ($sustld as $item=>$none) {
-        $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_tld_gpid','\.$item$','$date','$uid',1)");
-
-    }
-
-    $localnet["10.0.0.0/8"]=true;
-    $localnet["172.16.0.0/12"]=true;
-    $localnet["192.168.0.0/16"]=true;
-    foreach ($localnet as $item=>$none) {
-        $q->QUERY_SQL("INSERT INTO webfilters_sqitems (gpid,pattern,zdate,uid,enabled) 
-        VALUES ('$querty_localnet_gpid','$item','$date','$uid',1)");
-
-    }
-
-
     header("content-type: application/x-javascript");
-    echo "LoadAjax('table-dnsfw-rules','$page?table=yes');";
 
+    // Step 1: skip if any rules already exist.
+    $existingRules = acls_api_get("/dnsfw/acls");
+    if(is_array($existingRules) && count($existingRules) > 0){
+        echo "LoadAjax('table-dnsfw-rules','$page?table=yes');";
+        return;
+    }
+
+    // Step 2: create 6 example rules via POST /dnsfw/acls. Capture each new ID.
+    $exampleRules = [
+        1 => ["ruleName"=>"Suspicious TLD domains",     "description"=>"Block tld that are mostly non-professional",
+              "action"=>0, "reply"=>"",           "ttl"=>1800, "redirector"=>""],
+        2 => ["ruleName"=>"Google forwarders",          "description"=>"Redirects Google domains to Google redirectors",
+              "action"=>5, "reply"=>"",           "ttl"=>1800, "redirector"=>"8.8.8.8,8.8.4.4"],
+        3 => ["ruleName"=>"DNS Filter",                 "description"=>"Block suspicious domains (license required)",
+              "action"=>4, "reply"=>"127.0.0.1",  "ttl"=>1800, "redirector"=>""],
+        4 => ["ruleName"=>"Who Query MX",               "description"=>"If there is something that query MX ?",
+              "action"=>6, "reply"=>"",           "ttl"=>1800, "redirector"=>""],
+        5 => ["ruleName"=>"To Active Directory",        "description"=>"domain.tld, redirects to Active Directory",
+              "action"=>5, "reply"=>"",           "ttl"=>1800, "redirector"=>"10.10.1.254"],
+        6 => ["ruleName"=>"0-day reputation service",   "description"=>"Use the Shields object as reputation service (license required)",
+              "action"=>1, "reply"=>"",           "ttl"=>1800, "redirector"=>""],
+    ];
+    $newRuleIDs = [];
+    foreach($exampleRules as $idx=>$er){
+        list($ok,$data) = acls_api_send("POST","/dnsfw/acls",$er);
+        // alert() imprime son argument tel quel et n'a pas la meme allure que
+        // les autres dialogues de la console: js_error() resout les {tokens}.
+        if(!$ok){ $tpl->js_error("{failed}: {$er['ruleName']} - $data"); return; }
+        $newRuleIDs[$idx] = intval($data["id"] ?? 0);
+    }
+
+    // Step 3: look up or create the 8 wizard groups; search by exact GroupName.
+    // The API search uses LIKE %term%, so we fetch the full list and match exactly.
+    $allGroups = acls_api_get("/proxy/acls/sqlite/groups/all");
+    if(!is_array($allGroups)){ $allGroups=[]; }
+    $groupByName = [];
+    foreach($allGroups as $g){
+        $groupByName[$g["groupName"]] = intval($g["id"]);
+    }
+
+    // Helper: get existing gpid by name or create and return new id.
+    $ensureGroup = function($name, $type) use (&$groupByName, $tpl) {
+        if(isset($groupByName[$name]) && $groupByName[$name] > 0){
+            return $groupByName[$name];
+        }
+        list($ok,$data) = acls_api_send("POST","/proxy/acls/sqlite/group",[
+            "name"=>$name, "type"=>$type,
+        ]);
+        if(!$ok){ return 0; }
+        $gpid = intval($data["id"] ?? 0);
+        $groupByName[$name] = $gpid;
+        return $gpid;
+    };
+
+    // Groups: name => type (verbatim from legacy INSERTs)
+    $querty_default_gpid  = $ensureGroup("Common DNS Queries",      "dnsquerytype");
+    $querty_mx_gpid       = $ensureGroup("MX DNS Query",            "dnsquerytype");
+    $querty_catz_gpid     = $ensureGroup("Bad categories",          "categories");
+    $querty_google_gpid   = $ensureGroup("Google Domains",          "dstdom_regex");
+    $querty_tld_gpid      = $ensureGroup("Suspicious TLD domains",  "dstdom_regex");
+    $querty_ad_gpid       = $ensureGroup("AD domain.tld",           "dstdomain");
+    $querty_dhsields_gpid = $ensureGroup("O-Day reputation",        "the_shields");
+    $querty_localnet_gpid = $ensureGroup("Local network",           "src");
+
+    if($querty_localnet_gpid == 0){
+        $tpl->js_error("{failed}: Local network");
+        return;
+    }
+
+    // Step 4: link each rule to its groups (mirroring exact legacy linkrule calls).
+    $r1 = $newRuleIDs[1]; $r2 = $newRuleIDs[2]; $r3 = $newRuleIDs[3];
+    $r4 = $newRuleIDs[4]; $r5 = $newRuleIDs[5]; $r6 = $newRuleIDs[6];
+
+    linkrule($r1, $querty_localnet_gpid);
+    linkrule($r1, $querty_default_gpid);
+    linkrule($r1, $querty_tld_gpid);
+
+    linkrule($r2, $querty_default_gpid);
+    linkrule($r2, $querty_google_gpid);
+
+    linkrule($r3, $querty_localnet_gpid);
+    linkrule($r3, $querty_default_gpid);
+    linkrule($r3, $querty_catz_gpid);
+
+    linkrule($r4, $querty_localnet_gpid);
+    linkrule($r4, $querty_mx_gpid);
+
+    // Note: legacy had a duplicate linkrule(4,...) followed by linkrule(5,...);
+    // the second call with r4 was a copy-paste bug — rule 5 only needs ad_gpid.
+    linkrule($r5, $querty_ad_gpid);
+
+    linkrule($r6, $querty_localnet_gpid);
+    linkrule($r6, $querty_default_gpid);
+    linkrule($r6, $querty_dhsields_gpid);
+
+    // Step 5: wipe then re-seed items for each group via bulk API.
+    // categories group: IDs 92,105,135,111,64,149
+    acls_api_send("DELETE","/proxy/acls/sqlite/items?gpid=$querty_catz_gpid");
+    acls_api_send("POST","/proxy/acls/sqlite/items/bulk",[
+        "gpid"=>$querty_catz_gpid,
+        "items"=>[
+            ["pattern"=>"92"], ["pattern"=>"105"], ["pattern"=>"135"],
+            ["pattern"=>"111"],["pattern"=>"64"], ["pattern"=>"149"],
+        ],
+        "mode"=>"replace_all",
+    ]);
+
+    // MX query type group
+    acls_api_send("DELETE","/proxy/acls/sqlite/items?gpid=$querty_mx_gpid");
+    acls_api_send("POST","/proxy/acls/sqlite/items/bulk",[
+        "gpid"=>$querty_mx_gpid,
+        "items"=>[["pattern"=>"MX"]],
+        "mode"=>"replace_all",
+    ]);
+
+    // Active Directory domain placeholder
+    acls_api_send("DELETE","/proxy/acls/sqlite/items?gpid=$querty_ad_gpid");
+    acls_api_send("POST","/proxy/acls/sqlite/items/bulk",[
+        "gpid"=>$querty_ad_gpid,
+        "items"=>[["pattern"=>"domain.tld"]],
+        "mode"=>"replace_all",
+    ]);
+
+    // Google domains regex
+    acls_api_send("DELETE","/proxy/acls/sqlite/items?gpid=$querty_google_gpid");
+    acls_api_send("POST","/proxy/acls/sqlite/items/bulk",[
+        "gpid"=>$querty_google_gpid,
+        "items"=>[["pattern"=>'(^|\.)(google|googlevideo|googleapis|googleusercontent)\.[a-z]+$']],
+        "mode"=>"replace_all",
+    ]);
+
+    // Common DNS query types: A and NS
+    acls_api_send("DELETE","/proxy/acls/sqlite/items?gpid=$querty_default_gpid");
+    acls_api_send("POST","/proxy/acls/sqlite/items/bulk",[
+        "gpid"=>$querty_default_gpid,
+        "items"=>[["pattern"=>"A"],["pattern"=>"NS"]],
+        "mode"=>"replace_all",
+    ]);
+
+    // Suspicious TLD domains (stored as \.tld$ regex patterns)
+    acls_api_send("DELETE","/proxy/acls/sqlite/items?gpid=$querty_tld_gpid");
+    acls_api_send("POST","/proxy/acls/sqlite/items/bulk",[
+        "gpid"=>$querty_tld_gpid,
+        "items"=>[
+            ["pattern"=>'\.club$'],  ["pattern"=>'\.xxx$'],       ["pattern"=>'\.xyz$'],
+            ["pattern"=>'\.bid$'],   ["pattern"=>'\.live$'],       ["pattern"=>'\.date$'],
+            ["pattern"=>'\.name$'],  ["pattern"=>'\.top$'],        ["pattern"=>'\.link$'],
+            ["pattern"=>'(co|web)\.ve$'],
+        ],
+        "mode"=>"replace_all",
+    ]);
+
+    // Local network CIDR ranges
+    acls_api_send("DELETE","/proxy/acls/sqlite/items?gpid=$querty_localnet_gpid");
+    acls_api_send("POST","/proxy/acls/sqlite/items/bulk",[
+        "gpid"=>$querty_localnet_gpid,
+        "items"=>[
+            ["pattern"=>"10.0.0.0/8"],
+            ["pattern"=>"172.16.0.0/12"],
+            ["pattern"=>"192.168.0.0/16"],
+        ],
+        "mode"=>"replace_all",
+    ]);
+
+    // O-Day reputation group has no seed items — it gets populated by the shields feed.
+
+    admin_tracks("Seeded DNS firewall example rules + groups");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/parse");
+    echo "LoadAjax('table-dnsfw-rules','$page?table=yes');";
 }
 
 function linkrule($aclid,$gpid){
-    $tpl=new template_admin();
-    if($gpid==0){
-        $tpl->js_mysql_alert("linkrule -- $aclid - gpid = 0");
-        die();
-    }
-
-    $md5=md5($aclid.$gpid);
-
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("DELETE FROM dnsfw_acls_link WHERE zmd5='$md5'");
-    $q->QUERY_SQL("INSERT INTO dnsfw_acls_link (zmd5,aclid,gpid,zOrder) VALUES('$md5','$aclid','$gpid',1)");
-    if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);die();}
-
+    acls_api_send("POST","/proxy/acls/sqlite/link",[
+        "table"=>"dnsfw_acls_link",
+        "aclid"=>intval($aclid),
+        "gpid"=>intval($gpid),
+    ]);
 }
 
 function rule_enable(){
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 	header("content-type: application/x-javascript");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM dnsfw_acls WHERE ID='{$_GET["enable-js"]}'");
-	if(intval($ligne["enabled"])==0){
-		
-		$js="$( \"#acl-{$_GET["enable-js"]}\" ).removeClass( \"text-muted\" );";
-		$enabled=1;
-		}
-		else{
-			$js="$( \"#acl-{$_GET["enable-js"]}\" ).addClass( \"text-muted\" );";
-			$enabled=0;
-		}
-	
-	$q->QUERY_SQL("UPDATE dnsfw_acls SET enabled='$enabled' WHERE ID='{$_GET["enable-js"]}'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."')";return;}
-    admin_tracks("Set a DNS Firewall ACL rule ID {$_GET["enable-js"]} to enable=$enabled");
+	$tpl=new template_admin();
+	if(!dnsfw_require($tpl)){return;}
+	$ID=intval($_GET["enable-js"]);
+	$r = acls_api_get("/dnsfw/acls/$ID");
+	// alert() imprime son argument tel quel: un jeton renvoye par le daemon s'y
+	// affichait litteralement. js_error() resout les {tokens} et garde une seule
+	// famille de dialogue pour les deux issues.
+	if(!$r){$tpl->js_error("{failed}");return;}
+	$enabled = intval($r["enabled"])==1 ? 0 : 1;
+	// La ligne portait id='<md5>', pas id='acl-<ID>': ces deux lignes visaient un
+	// element inexistant et l'etat grise ne suivait jamais la bascule. Le
+	// tableau pose desormais les deux identifiants.
+	if($enabled==1){
+		$js="$( \"#acl-$ID\" ).removeClass( \"text-muted\" );";
+	} else {
+		$js="$( \"#acl-$ID\" ).addClass( \"text-muted\" );";
+	}
+	list($ok,$data) = acls_api_send("PUT","/dnsfw/acls/$ID",["enabled"=>$enabled]);
+	if(!$ok){$tpl->js_error($data);return;}
+    admin_tracks("Set a DNS Firewall ACL rule ID $ID to enable=$enabled");
 	$libmem=new lib_memcached();
 	$libmem->Delkey("DNSFWOBJS");
 	echo $js;
@@ -468,9 +414,9 @@ function rule_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ID=intval(trim($_GET["rule-id-js"]));
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT rulename FROM dnsfw_acls WHERE ID='$ID'");
-	$tpl->js_dialog5("{rule}: $ID {$ligne["rulename"]}","$page?rule-tabs=$ID");
+	$r = acls_api_get("/dnsfw/acls/$ID");
+	$ruleName = is_array($r) ? $r["ruleName"] : "";
+	$tpl->js_dialog5("{rule}: $ID $ruleName","$page?rule-tabs=$ID");
 }
 
 function rule_checker_js(){
@@ -537,27 +483,34 @@ function rule_checker_popup(){
 
 }
 function rule_checker_save(){
+    // La saisie est seulement memorisee : rule_checker_results() la soumet a
+    // articarest, qui rend le resultat directement (plus de fichier relu).
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $serialize=base64_encode(serialize($_POST));
-
-    foreach ($_POST as $key=>$val){
-        if($key=="t"){continue;}
-        $_SESSION[$key]=$val;
+    foreach (array("RULE_CHECKER_DOMAIN","RULE_CHECKER_SRC","RULE_CHECKER_QTYPE") as $key){
+        if(isset($_POST[$key])){$_SESSION[$key]=trim((string)$_POST[$key]);}
     }
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?dnsfw-checker=$serialize");
-    
 }
 function rule_checker_results(){
+    // POST /unbound/dnsfw/check : articarest valide la source, le domaine et le
+    // type, lance dnsfw-debug.py sans shell et rend son HTML. Remplace
+    // framework/unbound.php?dnsfw-checker.
     $tpl=new template_admin();
-    $t=$_GET["t"];
-    $tfile=PROGRESS_DIR."/$t.html";
-    if(!is_file($tfile)){
-        echo $tpl->div_error("$tfile no such file");
+    $req=array(
+        "source"=>isset($_SESSION["RULE_CHECKER_SRC"])?(string)$_SESSION["RULE_CHECKER_SRC"]:"",
+        "domain"=>isset($_SESSION["RULE_CHECKER_DOMAIN"])?(string)$_SESSION["RULE_CHECKER_DOMAIN"]:"",
+        "qtype"=>isset($_SESSION["RULE_CHECKER_QTYPE"])?(string)$_SESSION["RULE_CHECKER_QTYPE"]:"A",
+    );
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/unbound/dnsfw/check",$req,40));
+    if(!is_object($json) || empty($json->Status)){
+        $err="articarest: no answer";
+        if(is_object($json) && isset($json->Error)){$err=(string)$json->Error;}
+        elseif(is_object($json) && isset($json->error)){$err=(string)$json->error;}
+        echo $tpl->div_error(htmlspecialchars($err,ENT_QUOTES,"UTF-8"));
         return false;
     }
-    $html=@file_get_contents($tfile);
-    echo $tpl->_ENGINE_parse_body($html);
+    echo $tpl->_ENGINE_parse_body((string)$json->Html);
+    return true;
 }
 
 
@@ -584,74 +537,43 @@ function rule_settings(){
 	$ID=intval($_GET["rule-settings"]);
 	$tpl->CLUSTER_CLI=true;
 	if($ID==0){echo $tpl->FATAL_ERROR_SHOW_128("WRONG ID NUMBER");return;}
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM dnsfw_acls WHERE ID='$ID'");
+	$r = acls_api_get("/dnsfw/acls/$ID");
+	if(!$r){echo $tpl->FATAL_ERROR_SHOW_128("Failed to fetch rule $ID");return;}
     $form[]=$tpl->field_hidden("rule-save", "$ID");
-    $form[]=$tpl->field_text("rulename", "{rule_name}", $ligne["rulename"],true);
-    $form[]=$tpl->field_text("description", "{description}", $ligne["description"],false);
-    $form[]=$tpl->field_array_hash($GLOBALS["DNS_ACTIONS"],"action","{action}",$ligne["action"]);
-    $form[]=$tpl->field_numeric("ttl","{ttl} <small>({seconds})</small>",$ligne["ttl"]);
-    $form[]=$tpl->field_text("redirector","{dns_server}",$ligne["redirector"],null);
-    $form[]=$tpl->field_text("reply","{reply}",$ligne["reply"],null);
+    $form[]=$tpl->field_text("rulename", "{rule_name}", $r["ruleName"],true);
+    $form[]=$tpl->field_text("description", "{description}", $r["description"],false);
+    $form[]=$tpl->field_array_hash($GLOBALS["DNS_ACTIONS"],"action","{action}",$r["action"]);
+    $form[]=$tpl->field_numeric("ttl","{ttl} <small>({seconds})</small>",$r["ttl"]);
+    $form[]=$tpl->field_text("redirector","{dns_server}",$r["redirector"],null);
+    $form[]=$tpl->field_text("reply","{reply}",$r["reply"],null);
 
 	$jsafter="LoadAjax('table-dnsfw-rules','$page?table=yes');";
 
-	$html=$tpl->form_outside(utf8_encode($ligne["rulename"]), @implode("\n", $form),"{form_dnsfirewalr_explain}","{apply}",$jsafter,"AsDnsAdministrator");
+	$html=$tpl->form_outside(utf8_encode($r["ruleName"]), @implode("\n", $form),"{form_dnsfirewalr_explain}","{apply}",$jsafter,"AsDnsAdministrator");
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 function rule_save(){
-	$page=CurrentPageName();
 	$tpl=new template_admin();
+	if(!dnsfw_require($tpl)){return;}
 	$tpl->CLEAN_POST_XSS();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
-    if(!$q->FIELD_EXISTS("dnsfw_acls",'description')) {
-        $q->QUERY_SQL("ALTER TABLE dnsfw_acls add `description` TEXT NULL");
-    }
-	
-	$ID=$_POST["rule-save"];
-	$rulename=$q->sqlite_escape_string2(utf8_decode($_POST["rulename"]));
+	$ID=intval($_POST["rule-save"]);
+	$rulename=utf8_decode($_POST["rulename"] ?? "");
 
-
-    $FF[]="`rulename`";
-    $FF[]="`description`";
-    $FF[]="`action`";
-    $FF[]="`redirector`";
-    $FF[]="`reply`";
-    $FF[]="`ttl`";
-
-
-    $FA[]="'$rulename'";
-    $FA[]="'{$_POST["description"]}'";
-    $FA[]="'{$_POST["action"]}'";
-    $FA[]="'{$_POST["redirector"]}'";
-    $FA[]="'{$_POST["reply"]}'";
-    $FA[]="'{$_POST["ttl"]}'";
-
-
-	
-	foreach ($FF as $index=>$key){$FB[]="$key={$FA[$index]}";}
-	
-	$sql="UPDATE dnsfw_acls SET ".@implode(",", $FB)." WHERE ID=$ID";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
+	list($ok,$data) = acls_api_send("PUT","/dnsfw/acls/$ID",[
+		"ruleName"   => $rulename,
+		"description"=> $_POST["description"] ?? "",
+		"action"     => intval($_POST["action"] ?? 0),
+		"redirector" => $_POST["redirector"] ?? "",
+		"reply"      => $_POST["reply"] ?? "",
+		"ttl"        => intval($_POST["ttl"] ?? 1800),
+	]);
+	if(!$ok){echo "<div class='alert alert-danger'>".htmlspecialchars($data)."</div>";return;}
     admin_tracks("update $rulename DNS Firewall ACL rule settings");
     $libmem=new lib_memcached();
     $libmem->Delkey("DNSFWOBJS");
-
-    $c=0;
-	$sql="SELECT ID FROM dnsfw_acls ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-	
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE dnsfw_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return;}
-		$c++;
-	}
-	
-	
 }
 
 function new_rule_js(){
@@ -662,11 +584,13 @@ function new_rule_js(){
 }
 
 function HEADERS_ARRAY(){
-	$ql=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$sql="SELECT * FROM http_headers ORDER BY HeaderName";
-	$resultsHeaders=$ql->QUERY_SQL($sql);
-	foreach ($resultsHeaders as $index=>$ligneHeaders){
-		$HEADERSZ[$ligneHeaders["HeaderName"]]=$ligneHeaders["HeaderName"];
+	$HEADERSZ=[];
+	$results = acls_api_get("/http-headers");
+	if(is_array($results)){
+		foreach ($results as $index=>$ligneHeaders){
+			$name=$ligneHeaders["HeaderName"] ?? $ligneHeaders["headerName"] ?? "";
+			if($name!=""){ $HEADERSZ[$name]=$name; }
+		}
 	}
 	return $HEADERSZ;
 }
@@ -694,296 +618,199 @@ function new_rule_popup(){
 
 function rule_move(){
 	$tpl=new template_admin();
-	$ID=$_GET["acl-rule-move"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$sql="SELECT zorder FROM dnsfw_acls WHERE `ID`='$ID'";
-	$ligne=$q->mysqli_fetch_array($sql);
-	if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-	$xORDER_ORG=intval($ligne["zorder"]);
-	$xORDER=$xORDER_ORG;
-	
-	
-	if($_GET["acl-rule-dir"]==1){$xORDER=$xORDER_ORG-1;}
-	if($_GET["acl-rule-dir"]==0){$xORDER=$xORDER_ORG+1;}
-	if($xORDER<0){$xORDER=0;}
-	$sql="UPDATE dnsfw_acls SET zorder=$xORDER WHERE `ID`='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-	if($_GET["acl-rule-dir"]==1){
-		$xORDER2=$xORDER+1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE dnsfw_acls SET zorder=$xORDER2 WHERE `ID`<>'$ID' AND zorder=$xORDER";
-		$q->QUERY_SQL($sql);
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	}
-	if($_GET["acl-rule-dir"]==0){
-		$xORDER2=$xORDER-1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE dnsfw_acls SET zorder=$xORDER2 WHERE `ID`<>'{$_GET["acl-rule-move"]}'";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-	}
-
-	$c=0;
-	$sql="SELECT ID FROM dnsfw_acls ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE dnsfw_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if($GLOBALS["VERBOSE"]){echo "UPDATE dnsfw_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}\n";}
-		$c++;
-	}
-    $sql="SELECT ID FROM dnsfw_acls WHERE enabled=1 ORDER BY zorder";
-    $results = $q->QUERY_SQL($sql);
-    $c=1;
-    foreach($results as $index=>$ligne) {
-        $q->QUERY_SQL("UPDATE dnsfw_acls SET delay_pool_number=$c WHERE `ID`={$ligne["ID"]}");
-        if($GLOBALS["VERBOSE"]){echo "UPDATE dnsfw_acls SET delay_pool_number=$c WHERE `ID`={$ligne["ID"]}\n";}
-        $c++;
-    }
+	if(!dnsfw_require($tpl)){return;}
+	$ID=intval($_GET["acl-rule-move"]);
+	$dir=intval($_GET["acl-rule-dir"]);  // 1=up, 0=down
+	list($ok,$data) = acls_api_send("PUT","/dnsfw/acls/$ID/move",["dir"=>$dir]);
+	if(!$ok){$tpl->js_error($data);return;}
     $libmem=new lib_memcached();
     $libmem->Delkey("DNSFWOBJS");
-
 }
 
+
+// --- Lignes du tableau: une ligne = une fonction ----------------------------
+function dnsfw_row_rule($tpl,$page,$ligne,$slave):string{
+    $ID=intval($ligne["id"] ?? 0);
+    // ATTENTION: utf8_encode() est conserve. Il forme une PAIRE avec les
+    // utf8_decode() de rule_save()/new_rule_save(): le nom est stocke en
+    // latin1 et reconverti a l'affichage. Retirer une seule des deux moities
+    // casse les accents des regles deja enregistrees -- les deux ne peuvent
+    // partir qu'avec une migration des donnees.
+    $ruleName=$tpl->utf8_encode($ligne["ruleName"] ?? "");
+    $MUTED=(intval($ligne["enabled"] ?? 0)==0)?" text-muted":"";
+
+    // rule_enable() bascule la classe text-muted sur $("#acl-<ID>"): la ligne
+    // portait id='<md5>' et cet identifiant n'existait nulle part, la bascule
+    // ne changeait donc rien a l'ecran. C'est desormais l'id de la ligne, et le
+    // rule_delete_js() vise donc le meme identifiant pour retirer la ligne.
+    $h="<tr class='$MUTED' id='acl-$ID'>";
+    $h.="<td class='center' style='width:1%' nowrap><span class='awc-mono'>".intval($ligne["xOrder"] ?? 0)."</span></td>";
+    $h.="<td style='vertical-align:middle;width:1%' nowrap>"
+        .$tpl->td_href(htmlspecialchars((string)$ruleName),"{click_to_edit}","Loadjs('$page?rule-id-js=$ID')")."</td>";
+    $h.="<td style='vertical-align:middle'>".EXPLAIN_THIS_RULE($ID)."</td>";
+    if($slave==0){
+        $h.="<td class='center' style='width:1%' nowrap>"
+            .$tpl->icon_check($ligne["enabled"] ?? 0,"Loadjs('$page?enable-js=$ID')",null,"AsDnsAdministrator")."</td>";
+        $h.="<td class='center awc-nowrap' style='width:1%'>"
+            .$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');")."&nbsp;"
+            .$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');")."</td>";
+        $h.="<td class='center' style='vertical-align:middle;width:1%' nowrap>"
+            .$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')","AsDnsAdministrator")."</td>";
+    }
+    return $h."</tr>";
+}
+
+// La regle implicite de fin de chaine. Elle emettait SIX cellules meme quand le
+// tableau n'en comptait que trois (mode esclave de cluster), et l'une portait un
+// class='center'nowrap sans espace, donc un attribut malforme.
+function dnsfw_row_default($tpl,$page,$slave):string{
+    $h="<tr id='dnsfw-default-rule'>";
+    $h.="<td class='center' style='width:1%' nowrap>-</td>";
+    $h.="<td style='vertical-align:middle;width:1%' nowrap>"
+        .$tpl->td_href("{default}","{click_to_edit}","Loadjs('$page?options-js=yes')")."</td>";
+    $h.="<td style='vertical-align:middle'>{dnsfw_explain_theshields}</td>";
+    if($slave==0){
+        $h.="<td class='center' style='width:1%'>&nbsp;</td>";
+        $h.="<td class='center' style='width:1%'>&nbsp;</td>";
+        $h.="<td class='center' style='width:1%'>&nbsp;</td>";
+    }
+    return $h."</tr>";
+}
+
+function dnsfw_topbuttons($tpl,$page,$slave,$allRules):string{
+    $jsexample="Loadjs('$page?js-example=yes');";
+    $jsapply=$tpl->framework_buildjs("/unbound/restart",
+        "unbound.restart.progress","unbound.restart.log","progress-dnsfw-restart",
+        "LoadAjax('table-dnsfw-rules','$page?table=yes');");
+    $jshelp="s_PopUpFull('https://wiki.articatech.com/dns-firewall',1024,768,'Bandwidth Limiting')";
+
+    $h=array();
+    $h[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top: 15px'>";
+    if($slave==0){
+        $h[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?newrule-js=yes',true);\"><i class='fa fa-plus'></i> {new_rule} </label>";
+        // L'assistant d'exemples n'a de sens que si aucune regle n'est nommee.
+        $rule1=null;
+        foreach($allRules as $rr){ if(intval($rr["id"] ?? 0)==1){ $rule1=$rr; break; } }
+        if(strlen(trim($rule1["ruleName"] ?? ""))==0){
+            $h[]="<label class=\"btn btn btn-warning\" OnClick=\"$jsexample\"><i class='fas fa-hat-wizard'></i> {example} </label>";
+        }
+    }
+    $h[]="<label class=\"btn btn btn-info\" OnClick=\"$jsapply\"><i class='fas fa-file-check'></i> {apply_configuration}</label>";
+    $h[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?rule-checker-js=yes',true);\"><i class='fas fa-search'></i> {rules_checker} </label>";
+    $h[]="<label class=\"btn btn btn-info\" OnClick=\"Loadjs('$page?options-js=yes')\"><i class='fas fas fa-cogs'></i> {advanced_options} </label>";
+    $h[]="<label class=\"btn btn btn-warning\" OnClick=\"$jshelp\"><i class='fas fa-question-circle'></i> Wiki </label>";
+    $h[]="</div>";
+    return @implode("\n",$h);
+}
 
 function table(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$order=$tpl->_ENGINE_parse_body("{order}");
 	$enabled=$tpl->_ENGINE_parse_body("{enabled}");
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
-    $examples=null;
-    $jsexample="Loadjs('$page?js-example=yes');";
+	$slave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
 
+	$allRules = acls_api_get("/dnsfw/acls");
+	if(!is_array($allRules)){ $allRules=array(); }
 
-	if($PowerDNSEnableClusterSlave==0) {
-        $ligne = $q->mysqli_fetch_array("SELECT * FROM dnsfw_acls WHERE ID=1");
-        if (strlen(trim($ligne["rulename"])) == 0) {
-            $examples = "<label class=\"btn btn btn-warning\" OnClick=\"$jsexample\"><i class='fas fa-hat-wizard'></i> {example} </label>";
-        }
-    }
-
-    $jsapply=$tpl->framework_buildjs("/unbound/restart",
-        "unbound.restart.progress","unbound.restart.log","progress-dnsfw-restart","LoadAjax('table-dnsfw-rules','$page?table=yes');");
-
-	
-	
-	$t=time();
-	$add="Loadjs('$page?newrule-js=yes',true);";
-    $jchecker="Loadjs('$page?rule-checker-js=yes',true);";
-    $jshelp="s_PopUpFull('https://wiki.articatech.com/dns-firewall',1024,768,'Bandwidth Limiting')";
-	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top: 15px'>";
-	if($PowerDNSEnableClusterSlave==0) {
-        $html[] = "<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>";
-    }
-    $html[]="$examples";
-    $html[]="<label class=\"btn btn btn-info\" OnClick=\"$jsapply\"><i class='fas fa-file-check'></i> {apply_configuration}</label>";
-
-    $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$jchecker\"><i class='fas fa-search'></i> {rules_checker} </label>";
-
-    $html[]="<label class=\"btn btn btn-info\" OnClick=\"Loadjs('$page?options-js=yes')\"><i class='fas fas fa-cogs'></i> {advanced_options} </label>";
-
-    $html[]="<label class=\"btn btn btn-warning\" OnClick=\"$jshelp\"><i class='fas fa-question-circle'></i> Wiki </label>";
-    $html[]="</div>";
-
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='number' style='width:1%'>$order</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{rulename}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-	if($PowerDNSEnableClusterSlave==0) {
-        $html[] = "<th data-sortable=true class='text-capitalize center'>$enabled</th>";
-        $html[] = "<th data-sortable=false></th>";
-        $html[] = "<th data-sortable=false></th>";
-
-    }
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-	$jsAfter="LoadAjax('table-proxyheader-rules','$page?table=yes');";
-	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-
-	
-	$results=$q->QUERY_SQL("SELECT * FROM dnsfw_acls ORDER BY zorder");
-	$TRCLASS=null;
-	
-	
-	foreach($results as $index=>$ligne) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$MUTED=null;
-		$md=md5(serialize($ligne));
-		$ID=$ligne["ID"];
-		$ligne['rulename']=$tpl->utf8_encode($ligne['rulename']);
-		
-		$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID&md=$md')","AsDnsAdministrator");
-		$js="Loadjs('$page?rule-id-js=$ID')";
-		if($ligne["enabled"]==0){$MUTED=" text-muted";}
-		
-	
-		$explain=EXPLAIN_THIS_RULE($ID);
-		$up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
-		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
-		$enable_js="Loadjs('$page?enable-js=$ID')";
-		
-		$html[]="<tr class='$TRCLASS{$MUTED}' id='$md'>";
-		$html[]="<td class='center' style='width:1%' nowrap>{$ligne["zorder"]}</td>";
-		$html[]="<td style='vertical-align:middle;width:1%' nowrap>". $tpl->td_href($ligne["rulename"],"{click_to_edit}",$js)."</td>";
-		$html[]="<td style='vertical-align:middle'>$explain</td>";
-        if($PowerDNSEnableClusterSlave==0) {
-            $html[] = "<td class='center' style='width:1%' nowrap>" . $tpl->icon_check($ligne["enabled"], $enable_js) . "</td>";
-            $html[] = "<td style='vertical-align:middle;;width:1%' class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
-            $html[] = "<td style='vertical-align:middle;width:1%' class='center' nowrap>$delete</td>";
-        }
-		$html[]="</tr>";
-	
+	$rows=array();
+	foreach($allRules as $ligne) {
+		$rows[]=dnsfw_row_rule($tpl,$page,$ligne,$slave);
 	}
+	$c=count($rows);
+	// La regle par defaut ferme toujours la liste: elle n'entre pas dans le
+	// compte des regles configurees.
+	$rows[]=dnsfw_row_default($tpl,$page,$slave);
 
+	$COLS=($slave==0)?6:3;
 
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS' id='fegthi5678'>";
-    $html[]="<td class='center' style='width:1%' nowrap>&nbsp;-&nbsp;</td>";
-    $html[]="<td style='vertical-align:middle;width:1%'  nowrap>". $tpl->td_href("{default}","{click_to_edit}","Loadjs('$page?options-js=yes')")."</td>";
-    $html[]="<td style='vertical-align:middle'>{dnsfw_explain_theshields}</td>";
-    $html[] = "<td class='center' style='width:1%' nowrap>&nbsp;</td>";
-    $html[] = "<td style='vertical-align:middle;width:1%' nowrap>&nbsp;&nbsp;&nbsp;&nbsp</td>";
-    $html[] = "<td style='vertical-align:middle;width:1%' class='center'nowrap>&nbsp;</td>";
+	$html=array();
+	$html[]=dnsfw_topbuttons($tpl,$page,$slave,$allRules);
+	$html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
+	$html[]="<thead><tr>";
+	$html[]="<th class='center' style='width:1%'>$order</th>";
+	$html[]="<th nowrap>{rulename}</th>";
+	$html[]="<th>{description}</th>";
+	if($slave==0) {
+		$html[]="<th class='center' nowrap>$enabled</th>";
+		$html[]="<th class='center' style='width:1%'>&nbsp;</th>";
+		$html[]="<th class='center' style='width:1%'>&nbsp;</th>";
+	}
+	$html[]="</tr></thead><tbody id='dnsfw-rows'>";
+	$html[]=@implode("\n",$rows);
+	// Le <tfoot> annoncait colspan='7' pour six colonnes au plus (trois en mode
+	// esclave), et son <ul class='pagination'> n'etait jamais alimente: l'init
+	// footable ciblait $('#table-<time>'), un identifiant qu'AUCUN element de la
+	// page ne portait -- ni pagination, ni tri, ni filtrage.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $c {items}</span>";
+	$html[]="<span class='awc-pg' id='dnsfw-pager'></span>";
+	$html[]="</div></div></div>";
 
-    $html[]="</tr>";
-	
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); }); 
-</script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	// $jsAfter/$GLOBALS["jsAfterEnc"] visaient 'table-proxyheader-rules', le
+	// conteneur de la page des en-tetes de proxy, et n'etaient relus nulle part
+	// dans ce fichier: copie oubliee.
+
+	// ICON_SCRIPTS_COMPILE() et non $tpl->ICON_SCRIPTS: icon_check() alimente en
+	// parallele $GLOBALS["TPL_ICON_SCRIPTS"], et seule la version COMPILE draine
+	// les deux piles. Le script reste hors de _ENGINE_parse_body().
+	$script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.$script
+		.awc_pager_js(50,"dnsfw-rows","dnsfw-pager");
 }
 
 function new_rule_save(){
 	$tpl=new template_admin();
+	if(!dnsfw_require($tpl)){return;}
 	$tpl->CLEAN_POST();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 
-
-	if(!$q->FIELD_EXISTS("dnsfw_acls",'redirector')){
-        $q->QUERY_SQL("ALTER TABLE dnsfw_acls add `redirector` TEXT NULL");
-
-    }
-    if(!$q->FIELD_EXISTS("dnsfw_acls",'ttl')) {
-        $q->QUERY_SQL("ALTER TABLE dnsfw_acls add `ttl` INTEGER NOT NULL DEFAULT 1800");
-    }
-    if(!$q->FIELD_EXISTS("dnsfw_acls",'description')) {
-        $q->QUERY_SQL("ALTER TABLE dnsfw_acls add `description` TEXT NULL");
+	$rulename=utf8_decode($_POST["rulename"] ?? "");
+	$description=$_POST["description"] ?? null;
+	if($description==null){
+        $description="{added}". date("Y d l f H:i");
     }
 
-	$TempName=md5(time());
-	$rulename=sqlite_escape_string2(utf8_decode($_POST["rulename"]));
-
-	if($_POST["description"]==null){
-        $_POST["description"]="{added}". date("Y d l f H:i");
-    }
-
-	$ligne=$q->mysqli_fetch_array("SELECT ID FROM dnsfw_acls ORDER BY ID LIMIT 1" );
-    $ID=intval($ligne["ID"]);
-	if($ID==0){
-        $FF[]="`ID`";
-    }
-
-
-	$FF[]="`rulename`";
-	$FF[]="`action`";
-	$FF[]="`description`";
-	$FF[]="`reply`";
-	$FF[]="`redirector`";
-	$FF[]="`ttl`";
-	$FF[]="`enabled`";
-	$FF[]="`zorder`";
-
-	if($ID==0){
-        $FA[]="10";
-    }
-	$FA[]="'$TempName'";
-	$FA[]="'{$_POST["action"]}'";
-    $FA[]="'{$_POST["description"]}'";
-	$FA[]="'{$_POST["reply"]}'";
-    $FA[]="'{$_POST["redirector"]}'";
-	$FA[]="'{$_POST["ttl"]}'";
-	$FA[]=1;
-	$FA[]=0;
-	
-
-	
-	$sql="INSERT INTO dnsfw_acls (".@implode(",", $FF).") VALUES (".@implode(",", $FA).")";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
+	list($ok,$data) = acls_api_send("POST","/dnsfw/acls",[
+		"ruleName"   => $rulename,
+		"description"=> $description,
+		"action"     => intval($_POST["action"] ?? 0),
+		"reply"      => $_POST["reply"] ?? "",
+		"ttl"        => intval($_POST["ttl"] ?? 1800),
+		"redirector" => $_POST["redirector"] ?? "",
+	]);
+	if(!$ok){echo "<div class='alert alert-danger'>".htmlspecialchars($data)."</div>";return;}
 	admin_tracks("Create a new $rulename DNS Firewall ACL rule ");
-	
-	$ligne=$q->mysqli_fetch_array("SELECT ID FROM dnsfw_acls WHERE rulename='$TempName'");
-	$LASTID=$ligne["ID"];
-	
-	$q->QUERY_SQL("UPDATE dnsfw_acls SET rulename='$rulename' WHERE ID='$LASTID'");
-	
-	$c=0;
-	$sql="SELECT ID FROM dnsfw_acls WHERE enabled=1 ORDER BY zorder";
-	$results = $q->QUERY_SQL($sql);
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE dnsfw_acls SET zorder=$c WHERE `ID`={$ligne["ID"]}");
-		if(!$q->ok){echo $q->mysql_error_html(true);return;}
-		$c++;
-	}
-
     admin_tracks("Created/Updated DNS Firewall rule $rulename");
 }
 
 function rule_delete($ID){
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM dnsfw_acls WHERE aclid='$ID'");
-    $rulename=$ligne["rulename"];
-
-	$q->QUERY_SQL("DELETE FROM dnsfw_acls_link WHERE aclid='$ID'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";return false;}
-	$q->QUERY_SQL("DELETE FROM dnsfw_acls WHERE ID='$ID'");
-	if(!$q->ok){echo "alert('".$q->mysql_error."');";return false;}
+	$r = acls_api_get("/dnsfw/acls/$ID");
+	$rulename = is_array($r) ? $r["ruleName"] : "";
+	list($ok,$data) = acls_api_send("DELETE","/dnsfw/acls/$ID");
+	if(!$ok){$tpl=new template_admin();$tpl->js_error($data);return false;}
     admin_tracks("Delete a DNS Firewall ACL rule ID $ID");
     $libmem=new lib_memcached();
     $libmem->Delkey("DNSFWOBJS");
     admin_tracks("Removed DNS Firewall Rule ID $ID $rulename");
     return true;
-	
 }
 function EXPLAIN_THIS_RULE($ID){
     $tpl=new templates();
     $UnBoundCacheMinTTL = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheMinTTL"));
     $UnBoundCacheMAXTTL = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnBoundCacheMAXTTL"));
-    if($UnBoundCacheMinTTL==0){$UnBoundCacheMinTTL=3600;}
+
     if($UnBoundCacheMAXTTL==0){$UnBoundCacheMAXTTL=172800;}
 
 	$page=CurrentPageName();
 	$acls=new squid_acls_groups();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM dnsfw_acls WHERE ID=$ID");
-    $objects=$acls->getobjectsNameFromAclrule($ligne['ID'],"black","dnsfw_acls_link");
-    $description=$ligne["description"];
+	$r = acls_api_get("/dnsfw/acls/$ID");
+	if(!$r){ return ""; }
+    $objects=$acls->getobjectsNameFromAclrule(intval($r["id"]),"black","dnsfw_acls_link");
+    $description=$r["description"];
     if(count($objects)==0){
         $THEN_TEXT="{error_acl_no_object}";
 
@@ -997,10 +824,10 @@ function EXPLAIN_THIS_RULE($ID){
     if(count($objects)>0){$THEN[]="{for_objects} ". @implode(", {and} ", $objects)." {then}";}
 
 
-    $action=intval($ligne["action"]);
-	$reply=trim($ligne["reply"]);
-	$ttl=intval($ligne["ttl"]);
-	$redirector=$ligne["redirector"];
+    $action=intval($r["action"]);
+	$reply=trim($r["reply"]);
+	$ttl=intval($r["ttl"]);
+	$redirector=$r["redirector"];
 
 	if($action<>4 || $action<>5 ){$THEN[]=$GLOBALS["DNS_ACTIONS"][$action];}
 	if($action==4){
@@ -1091,8 +918,24 @@ function options_js(){
 
 function options_save(){
     $tpl=new template_admin();
+    // Le formulaire est garde par "AsSystemAdministrator": la meme exigence
+    // cote serveur, sinon le repartiteur repond a toute session authentifiee.
+    if(!dnsfw_require($tpl,"AsSystemAdministrator")){return;}
     $tpl->CLEAN_POST();
-    $tpl->SAVE_POSTs();
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?reload=yes");
+    // SAVE_POSTs() sans argument ecrit TOUTE cle postee dans les reglages: le
+    // formulaire n'en compte que quatre.
+    $KEYS=array("DNSFireWallVerbose","DNSFireWallDefaultReply","DNSFireWallDefaultTTL","DNSFireWallStatsRetention");
+    $corp=$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
+    foreach($KEYS as $k){
+        if(!isset($_POST[$k])){continue;}
+        if(is_array($_POST[$k])){continue;}
+        $v=(string)$_POST[$k];
+        // La fenetre plafonne deja la retention a 5 jours sans licence
+        // corporate; la borne n'existait QUE dans l'affichage.
+        if($k=="DNSFireWallStatsRetention" && !$corp && intval($v)>5){$v="5";}
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO($k,$v);
+    }
+    admin_tracks("DNS Firewall: saved advanced options");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/reconfigure");
 }
 

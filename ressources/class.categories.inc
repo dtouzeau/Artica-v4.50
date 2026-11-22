@@ -27,7 +27,8 @@ class categories{
 
         if($GLOBALS["VERBOSE"]){VERBOSE("INIT initialize();", __LINE__);}
         if($q->TABLE_EXISTS("personal_categories")) {
-            $q->QUERY_SQL("UPDATE personal_categories SET remotecatz=0 WHERE serviceid=0");
+            // La normalisation de remotecatz (serviceid=0) est faite par articarest,
+            // au demarrage et a l'ecriture ; elle ne doit plus tourner a chaque affichage.
             if ($q->COUNT_ROWS("personal_categories") > 100) {
                 VERBOSE("personal_categories > 100, return...", __LINE__);
                 return true;
@@ -277,68 +278,15 @@ class categories{
         $q->QUERY_SQL("UPDATE personal_categories SET categorytable='category_233', categoryname='Linode, LLC',categorykey='linode',category_description='Linode, LLC IP ranges',official_category=1,enabled=1 WHERE category_id=233");
         $q->QUERY_SQL("UPDATE personal_categories SET categorytable='category_234', categoryname='Cloudflare',categorykey='linode',category_description='Cloudflare, Inc',official_category=1,enabled=1 WHERE category_id=234");
         $q->QUERY_SQL("UPDATE personal_categories SET categorytable='hetzner_online', categoryname='Hetzner Online',categorykey='hetzner_online',category_description='Hetzner Online, Inc',official_category=1,enabled=1 WHERE category_id=236");
-        $q->QUERY_SQL("UPDATE personal_categories SET categorytable='hetzner_online', categoryname='DOH DNS',categorykey='doh_dns',category_description='DNS Over HTTPs',official_category=1,enabled=1 WHERE category_id=237");
-
+        $q->QUERY_SQL("UPDATE personal_categories SET categorytable='doh_dns', categoryname='DOH DNS',categorykey='doh_dns',category_description='DNS Over HTTPs',official_category=1,enabled=1 WHERE category_id=237");
         $q->QUERY_SQL("UPDATE personal_categories SET categorytable='category_nrds', categoryname='{nrds_cat}',categorykey='nrds',category_description='{nrds_cat_explain}',official_category=1,enabled=1, category_icon='/img/20-news.png' WHERE category_id=238");
 
 }
-
-    public function delete_category($category_id){
-        $q=new postgres_sql();
-        $ligne=$q->mysqli_fetch_array("SELECT categorytable FROM personal_categories WHERE category_id=$category_id");
-        $categorytable=$ligne["categorytable"];
-        $q->QUERY_SQL("DROP TABLE $categorytable");
-        $q->QUERY_SQL("DELETE FROM personal_categories WHERE category_id=$category_id");
-
-    }
-
     public function update_category_items($category_id,$items){
         $q=new postgres_sql();
         $q->QUERY_SQL("UPDATE personal_categories SET items='$items' WHERE category_id=$category_id");
     }
 
-    public function FreeIndex(){
-        $PersonalCategoriesIndexFrom=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PersonalCategoriesIndexFrom"));
-        if($PersonalCategoriesIndexFrom==0){$PersonalCategoriesIndexFrom=249;}
-
-        $sql="SELECT category_id FROM personal_categories WHERE category_id>$PersonalCategoriesIndexFrom AND ORDER BY category_id ASC";
-        $q=new postgres_sql();
-        $results=$q->QUERY_SQL($sql);
-
-        while ($ligne = pg_fetch_assoc($results)) {
-            $id=$ligne["category_id"];
-            if($GLOBALS["VERBOSE"]){echo "Reserved ID $id\n";}
-            $reserved[$id]=true;
-        }
-
-        $PersonalCategoriesIndexFrom=$PersonalCategoriesIndexFrom+1;
-        $PersonalCategoriesIndexTO=$PersonalCategoriesIndexFrom+3000;
-        for($i=$PersonalCategoriesIndexFrom;$i<$PersonalCategoriesIndexTO;$i++){
-            if(!isset($reserved[$i])){
-                return $i;
-            }
-
-        }
-
-        return $PersonalCategoriesIndexFrom;
-
-    }
-
-    public function PatchTables(){
-
-        $q=new postgres_sql();
-
-        if(!$q->FIELD_EXISTS("personal_categories","remotecatz")) {
-            $q->QUERY_SQL("ALTER TABLE personal_categories ADD remotecatz smallint NOT NULL DEFAULT 0");
-            $q->QUERY_SQL("ALTER TABLE personal_categories ADD serviceid bigint NOT NULL DEFAULT 0");
-            $q->create_index("personal_categories","idx_serviceid",array("serviceid"));
-            $q->create_index("personal_categories", "idx_rcatz", array("remotecatz"));
-        }
-
-        if(!$q->FIELD_EXISTS("personal_categories","created")) {
-            $q->QUERY_SQL("ALTER TABLE personal_categories ADD created bigint NOT NULL DEFAULT 0");
-        }
-    }
 
     public function create_category($categoryname,$description=null,$publicmode=0,$ID=0):bool{
         $array=array(
@@ -356,13 +304,6 @@ class categories{
         }
         return admin_tracks("Create a new personal category $categoryname ($description)");
     }
-
-    public function remote_categories_server_del($index){
-        $q=new postgres_sql();
-        $q->QUERY_SQL("DELETE FROM personal_categories WHERE serviceid=$index");
-        $q->QUERY_SQL("UPDATE personal_categories SET remotecatz=0 WHERE serviceid=0");
-    }
-
     public function CGuard_categories(){
         $lemCatz[5001] = "lem.adult.porn";
         $lemCatz[5002] = "lem.notlegal.appz";
@@ -495,25 +436,7 @@ class categories{
         return $lemCatz;
     }
 
-    public function remote_categories_server_md5($index){
-        $q=new postgres_sql();
-        $ARRAY=array();
-        $results=$q->QUERY_SQL("SELECT * FROM personal_categories WHERE serviceid=$index");
-        if(!$q->ok){
-            if($this->output) {
-                echo $q->mysql_error."\n";
-            }
-        }
-        while ($ligne = pg_fetch_assoc($results)) {
-            if($this->output) {
-                echo "serviceid ($index): {$ligne["category_id"]} == {$ligne["categoryname"]}\n";
-            }
-            $ARRAY[$ligne["category_id"]]=$ligne["categoryname"];
-        }
 
-        return md5(serialize($ARRAY));
-
-    }
 
 
     public function CreateCategoryTable($category,$fulltablename=null){

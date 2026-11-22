@@ -1,71 +1,67 @@
-<about>
-MIMEDefang is a framework for filtering e-mail.[br]
-It uses Sendmail's "Milter" API, some C glue code, and some Perl code to let you write high-performance mail filters in Perl.[br]
+<about>MIMEDefang to framework do filtrowania poczty e-mail.[br]
+U&#380;ywa API &quot;Milter&quot; Sendmaila, troch&#281; kodu &#322;&#261;cz&#261;cego w C i troch&#281; kodu Perl, aby umo&#380;liwi&#263; pisanie wydajnych filtr&#243;w poczty w Perlu.[br]
 
-People use MIMEDefang to:[ul]
+Ludzie u&#380;ywaj&#261; MIMEDefang do:[ul]
 
-[li]Block viruses[/li]
-[li]Block or tag spam[/li]
-[li]Remove HTML mail parts[/li]
-[li]Add boilerplate disclaimers to outgoing mail[/li]
-[li]Remove or alter attachments[/li]
-[li]Replace attachments with URL's[/li]
-[li]Implement sophisticated access controls.[/li]
-[/ul]
-</about>
-<AddWarningsInline>Add Warnings In line</AddWarningsInline>
-<AddWarningsInline_text>
-If you enable it then MIMEDefang tries *very* hard to add warnings directly in the message body (text or html) rather than adding a separate "WARNING.TXT" MIME part.[br]
-If the message has no text or html part, then a separate MIME part is still used.
-</AddWarningsInline_text>
-<add_deny_ext>Add Extension</add_deny_ext>
-<add_deny_ext_prompt>Give the extension name (without dot ".")</add_deny_ext_prompt>
-<add_deny_ext_text>Add a new banned file type</add_deny_ext_text>
-<AdminAddress>Administrator address</AdminAddress>
-<AdminAddress_text>Set administrator's e-mail address here.[br]
-The administrator receives quarantine messages and is listed as the contact for site-wide MIMEDefang policy.[br]
-A good example would be 'defang-admin@mydomain.com</AdminAddress_text>
-<AdminName>Administrator's name</AdminName>
-<AdminName_text>Administrator's name see in mails sent by MimeDefang</AdminName_text>
-<antispam_features>Anti-Spam features</antispam_features>
-<antivirus_features>Antivirus features</antivirus_features>
-<AUTOWHITE_LIST>Trust emails when my users send mail to</AUTOWHITE_LIST>
-<BACKUP_ENABLED>Enable HTML backup feature</BACKUP_ENABLED>
-<backup_filters>Backup & other filters</backup_filters>
-<backup_rows>Mails number in backup storage</backup_rows>
-<bad_exts>Bad Extensions</bad_exts>
-<BIGHTML_ENABLED>Strip big extensions feature</BIGHTML_ENABLED>
-<config>Main Configuration File</config>
-<CONVERT_TNEF>Convert TNEF</CONVERT_TNEF>
-<CONVERT_TNEF_text>convert those pesky winmail.dat into their attachment(s).</CONVERT_TNEF_text>
-<DaemonAddress>Daemon Address</DaemonAddress>
-<DaemonAddress_text>Set the e-mail address from which MIMEDefang quarantine warnings and user notifications appear to come.[br]
-A good example would be mimedefang@mydomain.com.[br]
-Make sure to have an alias for this address if you want replies to it to work.</DaemonAddress_text>
+[li]Blokowania wirus&#243;w[/li]
+[li]Blokowania lub oznaczania spamu[/li]
+[li]Usuwania cz&#281;&#347;ci wiadomo&#347;ci HTML[/li]
+[li]Dodawania standardowych klauzul do poczty wychodz&#261;cej[/li]
+[li]Usuwania lub zmiany za&#322;&#261;cznik&#243;w[/li]
+[li]Zast&#281;powania za&#322;&#261;cznik&#243;w adresami URL[/li]
+[li]Wdra&#380;ania zaawansowanych kontroli dost&#281;pu.[/li]
+[/ul]</about>
+<AddWarningsInline>Dodaj ostrze&#380;enia w tre&#347;ci</AddWarningsInline>
+<AddWarningsInline_text>Je&#347;li to w&#322;&#261;czysz, MIMEDefang *bardzo* si&#281; stara dodawa&#263; ostrze&#380;enia bezpo&#347;rednio w tre&#347;ci wiadomo&#347;ci (tekst lub html) zamiast dodawa&#263; osobn&#261; cz&#281;&#347;&#263; MIME &quot;WARNING.TXT&quot;.[br]
+Je&#347;li wiadomo&#347;&#263; nie ma cz&#281;&#347;ci tekstowej ani html, nadal u&#380;ywana jest osobna cz&#281;&#347;&#263; MIME.</AddWarningsInline_text>
+<add_deny_ext>Dodaj rozszerzenie</add_deny_ext>
+<add_deny_ext_prompt>Podaj nazw&#281; rozszerzenia (bez kropki &quot;.&quot;)</add_deny_ext_prompt>
+<add_deny_ext_text>Dodaj nowy zablokowany typ pliku</add_deny_ext_text>
+<AdminAddress>Adres administratora</AdminAddress>
+<AdminAddress_text>Podaj tutaj adres e-mail administratora.[br]
+Administrator otrzymuje wiadomo&#347;ci z kwarantanny i jest wymieniony jako kontakt dla og&#243;lnowitrynowej polityki MIMEDefang.[br]
+Dobrym przyk&#322;adem by&#322;by 'defang-admin@mydomain.com'</AdminAddress_text>
+<AdminName>Nazwa administratora</AdminName>
+<AdminName_text>Nazwa administratora widoczna w wiadomo&#347;ciach wysy&#322;anych przez MimeDefang</AdminName_text>
+<antispam_features>Funkcje antyspamowe</antispam_features>
+<antivirus_features>Funkcje antywirusowe</antivirus_features>
+<AUTOWHITE_LIST>Ufaj wiadomo&#347;ciom, gdy moi u&#380;ytkownicy wysy&#322;aj&#261; poczt&#281; do</AUTOWHITE_LIST>
+<BACKUP_ENABLED>W&#322;&#261;cz funkcj&#281; kopii zapasowej HTML</BACKUP_ENABLED>
+<backup_filters>Kopia zapasowa i inne filtry</backup_filters>
+<backup_rows>Liczba wiadomo&#347;ci w magazynie kopii zapasowej</backup_rows>
+<bad_exts>Z&#322;e rozszerzenia</bad_exts>
+<BIGHTML_ENABLED>Funkcja usuwania du&#380;ych rozszerze&#324;</BIGHTML_ENABLED>
+<config>G&#322;&#243;wny plik konfiguracyjny</config>
+<CONVERT_TNEF>Konwertuj TNEF</CONVERT_TNEF>
+<CONVERT_TNEF_text>Konwertuj te uci&#261;&#380;liwe winmail.dat na ich za&#322;&#261;czniki.</CONVERT_TNEF_text>
+<DaemonAddress>Adres demona</DaemonAddress>
+<DaemonAddress_text>Ustaw adres e-mail, z kt&#243;rego wydaj&#261; si&#281; pochodzi&#263; ostrze&#380;enia o kwarantannie MIMEDefang i powiadomienia u&#380;ytkownik&#243;w.[br]
+Dobrym przyk&#322;adem by&#322;by mimedefang@mydomain.com.[br]
+Upewnij si&#281;, &#380;e masz alias dla tego adresu, je&#347;li chcesz, aby odpowiedzi na niego dzia&#322;a&#322;y.</DaemonAddress_text>
 <database_size>Rozmiar bazy danych</database_size>
-<database_stats>Databases statistics</database_stats>
-<diclaimer_text>This features allows you to add boilerplate text on each messages[br]You can put html code here</diclaimer_text>
-<DISCARD_SPAM_KAS3>Discard mails when Kaspersky Anti-Spam rate exceed</DISCARD_SPAM_KAS3>
-<DISCARD_SPAM_SPAMASS>Discard mails when spamassassin rate exceed</DISCARD_SPAM_SPAMASS>
-<disclaimer>Disclaimer</disclaimer>
-<disclaimer_servers_address>Servers addresses</disclaimer_servers_address>
-<disclaimer_servers_address_text>Only append boilerplate if relaying from internal address:</disclaimer_servers_address_text>
-<disclaimer_servers_q>Give the address of the sender server eg 192.168.0 or 192. or 192.168.1.2</disclaimer_servers_q>
-<ENABLE_BOGOFILTER>Enable bogofilter</ENABLE_BOGOFILTER>
-<ENABLE_CLAMAV>Enable ClamAV Antivirus</ENABLE_CLAMAV>
-<ENABLE_DISCLAIMER>Enable boilerplate text</ENABLE_DISCLAIMER>
-<ENABLE_SPAMASSASSIN>Enable Spamassassin</ENABLE_SPAMASSASSIN>
-<FILTER_LOCAL_SENDER_ENABLED>Activate allow/disallow your Internet email users</FILTER_LOCAL_SENDER_ENABLED>
-<FILTER_LOCAL_SENDER_ENABLED_TEXT>This feature allow you to specifiy if your local users are allowed to send emails trought Internet or Not.[br]
-After enable this feature you will be able to allow or disallow on the user's section</FILTER_LOCAL_SENDER_ENABLED_TEXT>
-<html_features>HTML Features</html_features>
-<plugins>Plugins</plugins>
-<quarantines>Quarantines</quarantines>
-<quarantine_rows>Mails number in quarantine</quarantine_rows>
-<QUARANTINE_SPAM>Quarantine spams when rates are under discard rates</QUARANTINE_SPAM>
-<RECIPIENT_TRANSFORM>Recipients transform features</RECIPIENT_TRANSFORM>
-<RECIPIENT_TRANSFORM_TEXT>This feature enable:[ul][li]Duplicate messages from recipient rules[/li][li]Translate recipients rules[/li][/ul]</RECIPIENT_TRANSFORM_TEXT>
-<SA_RCPT_EMAIL>If Spam found, then Send to spam email address you fill here</SA_RCPT_EMAIL>
-<SA_RCPT_ENABLE>Enable redirect spam to a spam maildrop</SA_RCPT_ENABLE>
-<spamass_score>SpamAssassin Max Score</spamass_score>
-<whitelists>WhiteLists</whitelists>
+<database_stats>Statystyki baz danych</database_stats>
+<diclaimer_text>Ta funkcja umo&#380;liwia dodanie tekstu standardowego do ka&#380;dej wiadomo&#347;ci[br]Mo&#380;esz tutaj umie&#347;ci&#263; kod html</diclaimer_text>
+<DISCARD_SPAM_KAS3>Odrzu&#263; wiadomo&#347;ci, gdy wynik Kaspersky Anti-Spam zostanie przekroczony</DISCARD_SPAM_KAS3>
+<DISCARD_SPAM_SPAMASS>Odrzu&#263; wiadomo&#347;ci, gdy wynik spamassassin zostanie przekroczony</DISCARD_SPAM_SPAMASS>
+<disclaimer>Klauzula</disclaimer>
+<disclaimer_servers_address>Adresy serwer&#243;w</disclaimer_servers_address>
+<disclaimer_servers_address_text>Do&#322;&#261;cz tekst standardowy tylko przy przekazywaniu z adresu wewn&#281;trznego:</disclaimer_servers_address_text>
+<disclaimer_servers_q>Podaj adres serwera nadawcy, np. 192.168.0 lub 192. lub 192.168.1.2</disclaimer_servers_q>
+<ENABLE_BOGOFILTER>W&#322;&#261;cz bogofilter</ENABLE_BOGOFILTER>
+<ENABLE_CLAMAV>W&#322;&#261;cz ClamAV Antivirus</ENABLE_CLAMAV>
+<ENABLE_DISCLAIMER>W&#322;&#261;cz tekst standardowy</ENABLE_DISCLAIMER>
+<ENABLE_SPAMASSASSIN>W&#322;&#261;cz Spamassassin</ENABLE_SPAMASSASSIN>
+<FILTER_LOCAL_SENDER_ENABLED>W&#322;&#261;cz zezwalanie/blokowanie u&#380;ytkownik&#243;w poczty internetowej</FILTER_LOCAL_SENDER_ENABLED>
+<FILTER_LOCAL_SENDER_ENABLED_TEXT>Ta funkcja umo&#380;liwia okre&#347;lenie, czy lokalni u&#380;ytkownicy mog&#261; wysy&#322;a&#263; e-maile przez Internet, czy nie.[br]
+Po w&#322;&#261;czeniu tej funkcji b&#281;dziesz m&#243;g&#322; zezwoli&#263; lub odm&#243;wi&#263; w sekcji u&#380;ytkownik&#243;w</FILTER_LOCAL_SENDER_ENABLED_TEXT>
+<html_features>Funkcje HTML</html_features>
+<plugins>Wtyczki</plugins>
+<quarantines>Kwarantanny</quarantines>
+<quarantine_rows>Liczba wiadomo&#347;ci w kwarantannie</quarantine_rows>
+<QUARANTINE_SPAM>Poddaj kwarantannie spam, gdy wyniki s&#261; poni&#380;ej wynik&#243;w odrzucenia</QUARANTINE_SPAM>
+<RECIPIENT_TRANSFORM>Funkcje transformacji odbiorc&#243;w</RECIPIENT_TRANSFORM>
+<RECIPIENT_TRANSFORM_TEXT>Ta funkcja w&#322;&#261;cza:[ul][li]Duplikowanie wiadomo&#347;ci na podstawie regu&#322; odbiorc&#243;w[/li][li]T&#322;umaczenie regu&#322; odbiorc&#243;w[/li][/ul]</RECIPIENT_TRANSFORM_TEXT>
+<SA_RCPT_EMAIL>Je&#347;li znaleziono spam, wy&#347;lij na adres e-mail spamu podany tutaj</SA_RCPT_EMAIL>
+<SA_RCPT_ENABLE>W&#322;&#261;cz przekierowanie spamu do maildrop spamu</SA_RCPT_ENABLE>
+<spamass_score>Maks. wynik SpamAssassin</spamass_score>
+<whitelists>Bia&#322;e listy</whitelists>

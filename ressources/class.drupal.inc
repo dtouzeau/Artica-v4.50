@@ -17,7 +17,7 @@ class drupal_vhosts{
 			$this->load();
 			$unix=new unix();
 			$this->drush7=$unix->find_program("drush7");
-			if(!is_file($this->drush7)){die("DIE " .__FILE__." Line: ".__LINE__);}
+			if(!is_file($this->drush7)){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 		}	
 		
 		//cp -rf /usr/share/drupal7/* /var/www/drupal.touzeau.com/

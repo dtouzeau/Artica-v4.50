@@ -7,17 +7,17 @@
 <DELETE_THIS_TAB>Cancella questa pagina personale</DELETE_THIS_TAB>
 <DELETE_THIS_TAB_TEXT>Questa operazione canceller&agrave; questa pagina e questo tab form dal tuo pannello</DELETE_THIS_TAB_TEXT>
 <FILE_SHARE>Condivisione di file</FILE_SHARE>
-<MAILBOX>Mailboxes management</MAILBOX>
-<MAIL_SECU>Messaging (security)</MAIL_SECU>
-<MANAGE_WIDGETS>Configure widgets</MANAGE_WIDGETS>
-<MANAGE_WIDGETS_TEXT>Change the display order, delete widgets</MANAGE_WIDGETS_TEXT>
-<MTA>Mail transfert Agent (Postfix)</MTA>
+<MAILBOX>Gestione delle mailbox</MAILBOX>
+<MAIL_SECU>Messaggistica (sicurezza)</MAIL_SECU>
+<MANAGE_WIDGETS>Configura i widget</MANAGE_WIDGETS>
+<MANAGE_WIDGETS_TEXT>Cambia l'ordine di visualizzazione, elimina i widget</MANAGE_WIDGETS_TEXT>
+<MTA>Mail Transfer Agent (Postfix)</MTA>
 <NETWORK>Rete</NETWORK>
-<ORG>Organizations related operations</ORG>
-<organizations_text>[b]Organizations management:[/b]Display, Create or delete your organizations</organizations_text>
-<REBUILD_PAGE>Rebuild this area</REBUILD_PAGE>
-<REBUILD_PAGE_TEXT>This operation will erase the current cache and rebuild this area</REBUILD_PAGE_TEXT>
-<SYSTEM>System applications and settings</SYSTEM>
-<WIDGETS_AREA>Widgets Area</WIDGETS_AREA>
-<WIDGETS_AREA_EXPLAIN>Click on one of these icons in order to add or to [b]delete[/b] icon on your area</WIDGETS_AREA_EXPLAIN>
+<ORG>Operazioni relative alle organizzazioni</ORG>
+<organizations_text>[b]Gestione organizzazioni:[/b]Visualizza, crea o elimina le tue organizzazioni</organizations_text>
+<REBUILD_PAGE>Ricostruisci quest'area</REBUILD_PAGE>
+<REBUILD_PAGE_TEXT>Questa operazione canceller&#224; la cache attuale e ricostruir&#224; quest'area</REBUILD_PAGE_TEXT>
+<SYSTEM>Applicazioni e impostazioni di sistema</SYSTEM>
+<WIDGETS_AREA>Area widget</WIDGETS_AREA>
+<WIDGETS_AREA_EXPLAIN>Clicca su una di queste icone per aggiungere o [b]eliminare[/b] un'icona nella tua area</WIDGETS_AREA_EXPLAIN>
 <your_organizations>La tua Organizzazione</your_organizations>

@@ -3,8 +3,9 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 include_once(dirname(__FILE__)."/ressources/class.mimes-types.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
-if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["sandbox"])){sandbox_page();exit;}
@@ -29,7 +30,8 @@ function delete_js(){
     $content_type=$ligne["content_type"] ;
     $sbxcode=$ligne["sbxcode"];
     $md=$_GET["md"];
-    $tpl->js_confirm_delete("$filename / $content_type - $uri ($sbxcode)","delete",$id,"$('#$md').remove()");
+    // Pentest 2026-11-04 : filename/uri (contenu de la base issu du trafic) etaient recopies sans encodage dans la page (XSS).
+    $tpl->js_confirm_delete(req_html("$filename / $content_type - $uri ($sbxcode)"),"delete",$id,"$('#$md').remove()");
 
 }
 
@@ -208,7 +210,8 @@ function search(){
     $website=$tpl->_ENGINE_parse_body("{website}");
     $Items_text=$tpl->_ENGINE_parse_body("{items}");
     $hostname=$tpl->_ENGINE_parse_body("{hostname}");
-    $html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
 
@@ -216,29 +219,31 @@ function search(){
 
 
     $TRCLASS=null;
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{time}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>SandBox</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{filename}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{dstdomain}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{member}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{duration}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>DEL</th>";
+    $html[]="<th>{time}</th>";
+    $html[]="<th>SandBox</th>";
+    $html[]="<th>{status}</th>";
+    $html[]="<th>{filename}</th>";
+    $html[]="<th>{dstdomain}</th>";
+    $html[]="<th>{member}</th>";
+    $html[]="<th>{duration}</th>";
+    $html[]="<th>DEL</th>";
 
 
 
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='cicapsandbox-rows'>";
 
     $_SESSION["SANDBOXSEARCH"]=$_GET["search"];
 
     if($_GET["search"]<>null) {
         $search = $tpl->query_pattern(trim(strtolower($_GET["search"])), $aliases);
-        VERBOSE("{$_GET["search"]} = '{$search["Q"]}'");
+        // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+        VERBOSE(req_html("{$_GET["search"]} = '{$search["Q"]}'"));
         if($search["Q"]<>null){
 
-            $pattern="%{$_GET["search"]}%";
+            // Pentest 2026-11-04 : search etait concatene dans la requete.
+            $pattern=pg_escape_string2("%{$_GET["search"]}%");
             $search["Q"]="WHERE ( (uri ILIKE '$pattern') OR ( filename ILIKE '$pattern') OR (content_type ILIKE '$pattern') OR (sbxcode ILIKE '$pattern') )";
         }
     }
@@ -252,12 +257,13 @@ function search(){
     $results=$q->QUERY_SQL($sql);
     $Items=pg_num_rows($results);
 
-    if(!$q->ok){echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";}
+    // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+    if(!$q->ok){echo "<div class='alert alert-danger'>".req_html($q->mysql_error)."<br><strong><code>".req_html($_GET["search"])."</code></strong><br><strong><code>".req_html($sql)."</code></strong></div>";}
 
 
     $tpl2=new templates();
     while ($ligne = pg_fetch_assoc($results)) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md5file=$ligne["md5file"];
         $id=$ligne["id"];
         $workname=$ligne["workname"];
@@ -314,35 +320,18 @@ function search(){
         $html[]="</tr>";
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='cicapsandbox-pager'></span></div>";
+	$html[]="</div></div>";
     $html[]="<div><i>$Items $Items_text &laquo;$sql&raquo;</i></div>
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable(
-	{
-	\"filtering\": {
-	\"enabled\": false
-	},
-	\"sorting\": {
-	\"enabled\": true
-	}
-	
-	}
-	
-	
-	); });
 </script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"cicapsandbox-rows","cicapsandbox-pager");
 }
 
 

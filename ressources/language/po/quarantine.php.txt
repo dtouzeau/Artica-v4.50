@@ -1,2 +1,2 @@
-<QuarantineAutoCleanEnabled>Enable auto-cleaning Quarantine area</QuarantineAutoCleanEnabled>
-<QuarantineMaxDayToLive>Max day to live in quarantine area</QuarantineMaxDayToLive>
+<QuarantineAutoCleanEnabled>Ativar a limpeza autom&#225;tica da &#225;rea de quarentena</QuarantineAutoCleanEnabled>
+<QuarantineMaxDayToLive>Dias m&#225;ximos de perman&#234;ncia na &#225;rea de quarentena</QuarantineMaxDayToLive>

@@ -2,11 +2,15 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+// politique Artica Meta "ClamAV" : bandeau, champs tenus en lecture seule, refus d'enregistrement
+include_once(dirname(__FILE__)."/ressources/class.clamav.meta.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){tabs();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["settings"])){settings();exit;}
-if(isset($_POST["EnableClamavUnofficial"])){Save();exit;}
+if(clamav_meta_posted("EnableClamavUnofficial") || isset($_POST["FreshClamMaxAttempts"])){Save();exit;}
 
 
 page();
@@ -85,8 +89,9 @@ function settings(){
 	$form[]=$tpl->field_checkbox("EnableClamavSigTool","{use_sigtool}",$EnableClamavSigTool,false,"{use_sigtool_explain}");
 	
 	
-	$form[]=$tpl->field_checkbox("EnableClamavSecuriteInfo","{securiteinfo_antivirus_databases}$EnableClamavSecuriteInfo_text",$EnableClamavSecuriteInfo,false,"{securite_info_explain}",$EnableClamavSecuriteInfo_disabled);
-	$form[]=$tpl->field_checkbox("EnableClamavUnofficial","{clamav_unofficial}",$EnableClamavUnofficial,"MalwarePatrolCode","{clamav_unofficial_text}");
+	// reglages tenus par une politique Artica Meta : lecture seule (poste sous un autre nom)
+	$form[]=clamav_meta_fld($tpl,"field_checkbox","EnableClamavSecuriteInfo","{securiteinfo_antivirus_databases}$EnableClamavSecuriteInfo_text",$EnableClamavSecuriteInfo,false,"{securite_info_explain}",$EnableClamavSecuriteInfo_disabled);
+	$form[]=clamav_meta_fld($tpl,"field_checkbox","EnableClamavUnofficial","{clamav_unofficial}",$EnableClamavUnofficial,"MalwarePatrolCode","{clamav_unofficial_text}");
 	$form[]=$tpl->field_text("MalwarePatrolCode", "{MalwarePatrol}", $MalwarePatrolCode,false,"{malwarepatrol_receipt_code}");
 
 	$security="AsDansGuardianAdministrator";
@@ -97,6 +102,8 @@ function settings(){
 		$html[]="<div class='alert alert-warning' style='margin-top:20px'><strong>{license_error} {securiteinfo_antivirus_databases}</strong><br>{securite_info_explain}</div>";
 	}
 	
+	$banner=clamav_meta_banner($tpl);
+	if($banner<>""){$html[]=$banner;}
 	$html[]=$tpl->form_outside("{update_parameters}", @implode("\n", $form),"","{apply}",$jsCompile,$security);
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
@@ -373,26 +380,37 @@ function countrycodes(){
 
 
 function Save(){
-	$reconfigure_squid=false;
+	$tpl=new template_admin();
 	$sock=new sockets();
-	$users=new usersMenus();
-	if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){$_POST["EnableClamavSecuriteInfo"]=0;}
-
-    foreach ($_POST as $num=>$line){
+	// Reglage tenu par Artica Meta poste sous son vrai nom (page ouverte avant la prise de la
+	// politique) : rien n'est ecrit, le refus est affiche (le demon repondrait 423).
+	foreach (array_keys($_POST) as $num){
+		if(clamav_meta_key_held((string)$num)){return clamav_meta_refuse_post();}
+	}
+	if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE() && !clamav_meta_key_held("EnableClamavSecuriteInfo")){$_POST["EnableClamavSecuriteInfo"]=0;}
+	$post=clamav_meta_strip_post($_POST);
+	$refused=array();
+	foreach ($post as $num=>$line){
 		$line=url_decode_special_tool($line);
-		$sock->SET_INFO($num, $line);
+		if(!$sock->SET_INFO($num, $line)){$refused[]=$num;}
+	}
+	if(count($refused)>0){
+		// /setinfo refuse (423 d'un reglage tenu par Artica Meta, ou erreur) : jamais un faux succes
+		$locked=false;
+		foreach ($refused as $num){if(in_array((string)$num,clamav_meta_catalog_keys(),true)){$locked=true;}}
+		if($locked){return clamav_meta_refuse_post();}
+		echo $tpl->post_error("{error}: ".htmlspecialchars(implode(", ",$refused),ENT_QUOTES));
+		return false;
 	}
 	$sock->REST_API("/freshclam/reconfigure");
-
-	
 	NotifyServers();
+	return true;
 }
 
 function status(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$sock=new sockets();
-    $q=new lib_sqlite("/home/artica/SQLITE/antivirus.db");
 	$signature=$tpl->_ENGINE_parse_body("{signature}");
 	$zdate=$tpl->_ENGINE_parse_body("{date}");
 	$version=$tpl->_ENGINE_parse_body("{version}");
@@ -447,7 +465,8 @@ function status(){
 			");
 
 	    if(!is_array($bases)){$bases=array();}
-        $results=$q->QUERY_SQL("SELECT * FROM pattern_status");
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/clamd/pattern-status"),true);
+        $results=(is_array($json) && isset($json["data"]) && is_array($json["data"]))?$json["data"]:array();
 	    foreach ($results as $index=>$ligne){
             $dbname=$ligne["dbname"];
             $version=$ligne["version"];
@@ -517,26 +536,26 @@ function status(){
 	$bases["phishtank.ndb"]["TYPE"]="{clamav_unofficial}";
 	
 	$html[]=$tpl->_ENGINE_parse_body("
-	<table id='table-my-computers' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
+	<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>");
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$signature</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$zdate</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$type</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{version}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$items</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
+	$html[]="<th>$signature</th>";
+	$html[]="<th>$zdate</th>";
+	$html[]="<th>$type</th>";
+	$html[]="<th>{version}</th>";
+	$html[]="<th>$items</th>";
+	$html[]="<th>&nbsp;</th>";
 	
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='cicapupdates-rows'>";
 	
 	$users=new usersMenus();
 
 	
 	$TRCLASS=null;
 	foreach ($bases as $db=>$MAIN){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$color="black";
 		$text_class=null;
 		$diff=null;
@@ -587,22 +606,16 @@ function status(){
 	}
 	
 	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='5'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="";
+	$html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='cicapupdates-pager'></span></div></div></div>";
 	$html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
 	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"cicapupdates-rows","cicapupdates-pager");
 }
 
 
@@ -614,8 +627,5 @@ function NotifyServers(){
 	if(!is_numeric($EnableWebProxyStatsAppliance)){$EnableWebProxyStatsAppliance=0;}
 	if(!is_numeric($EnableRemoteStatisticsAppliance)){$EnableRemoteStatisticsAppliance=0;}
 	if($users->STATS_APPLIANCE){$EnableWebProxyStatsAppliance=1;}
-	if($EnableWebProxyStatsAppliance==1){
-		$sock->getFrameWork("squid.php?notify-remote-proxy=yes");
-	}
 
 }

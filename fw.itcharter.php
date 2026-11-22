@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.templates-simple.inc");
 
@@ -55,8 +58,9 @@ function tabs(){
     if($Enablehacluster==0) {
         $array["{events}"] = "fw.itcharter.events.php";
     }
+    $array["{backups}"]="fw.itcharter.backups.php";
 
-	
+
 	echo $tpl->tabs_default($array);
 	
 	
@@ -265,11 +269,16 @@ function itcharter_config_save():bool{
 
 
 
+    if(!class_exists("Redis")){
+        echo $tpl->post_error("{REDIS_PHP_EXTENSION_NOT_LOADED}");
+        die();
+    }
+
     $redis=new Redis();
     try {
         $redis->connect($redis_server,$redis_port);
     } catch (Exception $e) {
-        echo "jserror:".$tpl->javascript_parse_text($e->getMessage());
+        echo $tpl->post_error("Redis $redis_server:$redis_port - ".$e->getMessage());
         die();
     }
 
@@ -278,7 +287,7 @@ function itcharter_config_save():bool{
 
         if(strpos($key,".")>0){
             if(!$redis->set($key,$val)){
-                echo "jserror:$key:$val ".$redis->getLastError();
+                echo (new template_admin())->post_error("$key:$val ".$redis->getLastError());
                 die();
             }
             continue;
@@ -294,15 +303,40 @@ function itcharter_status():bool{
             echo $tpl->widget_rouge("{REDIS_PHP_EXTENSION_NOT_LOADED}", "{error}");
             return false;
         }
-        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/status"));
-        $bsini=new Bs_IniHandler();
-        $bsini->loadString($json->Info);
         $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ichart.restart.progress";
         $ARRAY["LOG_FILE"]=PROGRESS_DIR."/ichart.restart.log";
         $ARRAY["CMD"]="/itcharter/restart";
         $ARRAY["TITLE"]="{restarting_service}";
         $prgress=base64_encode(serialize($ARRAY));
-        $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-itcharter-restart')";
+        $jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-itcharter-restart')";
+
+        // json_decode() rend null des que /itcharter/status ne repond pas du
+        // JSON; $json->Info valait alors null, l'ini restait vide, et
+        // SERVICE_STATUS() ne rend QUE sa feuille de style quand la section
+        // demandee lui manque (class.template-admin.inc, "return $svccss").
+        // L'onglet restait donc blanc, sans un mot -- et surtout sans le bouton
+        // qui permet de demarrer le service. Signale le 2026-09-02.
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/status"));
+        $Info=(is_object($json) && isset($json->Info))?(string)$json->Info:"";
+        $bsini=new Bs_IniHandler();
+        if(trim($Info)<>""){$bsini->loadString($Info);}
+
+        if(!isset($bsini->_params["APP_ITCHARTER"])){
+            // On FABRIQUE la section absente plutot que d'appeler
+            // SERVICE_STATUS_STOPPED() en direct: svctile_css() est private et
+            // son drapeau global ne laisse emettre la feuille de style qu'une
+            // fois, or seule SERVICE_STATUS() sait la retenir AVANT de batir la
+            // tuile pour ne pas la faire traverser _ENGINE_parse_body(). En
+            // passant par elle, la tuile "arrete" -- et son bouton de demarrage
+            // -- sont rendus exactement comme sur toutes les autres pages.
+            $bsini->_params["APP_ITCHARTER"]=array(
+                "service_name"     => "APP_ITCHARTER",
+                "service_disabled" => 1,   // 0 voudrait dire "fonctionnalite desactivee"
+                "running"          => 0,
+                "installed"        => 1,
+            );
+        }
+        $final=array();
         $final[]=$tpl->SERVICE_STATUS($bsini, "APP_ITCHARTER",$jsRestart);
         echo $tpl->_ENGINE_parse_body($final);
         echo "<script>LoadAjaxSilent('redis-status','$page?redis-status=yes');</script>";
@@ -311,12 +345,19 @@ function itcharter_status():bool{
 function redis_status(){
     $tpl=new template_admin();
 
+    if(!class_exists("Redis")){
+        echo $tpl->widget_rouge("{REDIS_PHP_EXTENSION_NOT_LOADED}","{error}");
+        die();
+    }
+
     $redis=new Redis();
 
     try {
         $redis->connect('127.0.0.1','6123');
     } catch (Exception $e) {
-        echo $tpl->widget_rouge($e->getMessage(),"{error}");
+        // 6123 est le Redis dedie du service, pas la Valkey du systeme:
+        // le dire evite d'aller chercher la panne au mauvais endroit.
+        echo $tpl->widget_rouge("Redis 127.0.0.1:6123 - ".$e->getMessage(),"{error}");
         die();
     }
 

@@ -57,7 +57,6 @@ class sqlite_squid{
 	
 	
 	public	function QUERY_SQL($sql){
-		$chmod=false;
 		$LASTID=false;
 		if($this->db_path==null){$this->mysql_error="Line:". __LINE__." DB Path is null";return;}
 		if(!extension_loaded("pdo_sqlite")){
@@ -75,14 +74,36 @@ class sqlite_squid{
 		}
 		
 		$this->sql=$sql;
-		if(!is_file($this->db_path)){$chmod=true;}
+		// Refuse to silently create a fresh empty DB if the live file is
+		// briefly absent (during a daemon-side hot-swap, an admin script
+		// moving files, a failed restore, etc.). The previous behaviour let
+		// PDO create an empty SQLite file in DEFAULT rollback-journal mode
+		// and chmod it 0777, which would obliterate the Go daemon's WAL
+		// state AND commit the pending write into a brand-new blank DB.
+		// Loud failure here is strictly better than silent data divergence.
+		if(!is_file($this->db_path)){
+			$this->ok=false;
+			$this->mysql_error="Line:". __LINE__." database file does not exist: $this->db_path";
+			return false;
+		}
 		$this->ok=true;
-		
+
 		try {
 			$db = new PDO("sqlite:$this->db_path");
 			$db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 			$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT); //  | ERRMODE_EXCEPTION | ERRMODE_SILEN
-			if($chmod){@chmod($this->db_path, 0777);}
+			// Pin WAL journal mode. SQLite's WAL persistence only holds while
+			// the -wal file exists on disk; if it's ever missing when we open
+			// (concurrent checkpoint truncate, daemon hot-swap deleting the
+			// WAL/SHM siblings, etc.) the DB silently demotes to rollback-
+			// journal mode. Setting WAL here is idempotent when already WAL
+			// and converts back from rollback-mode automatically.
+			$db->exec("PRAGMA journal_mode=WAL");
+			// Match the Go daemon's 30s busy_timeout. Default is 0ms which
+			// turns every contention with the Go side's longer operations
+			// (VACUUM INTO, CleanBadAcls, replication ImportFromJson) into
+			// an immediate SQLITE_BUSY failure.
+			$db->exec("PRAGMA busy_timeout=30000");
 		} catch (PDOException $e){
 			
 			$trace=@debug_backtrace();

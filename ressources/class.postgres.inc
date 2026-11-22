@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 ini_set("pgsql.auto_reset_persistent",1);
 if(!isset($GLOBALS["OUTPUT"])){$GLOBALS["OUTPUT"]=false;}
 if(!isset($GLOBALS["TITLENAME"])){$GLOBALS["TITLENAME"]="PostgresSQL";}
@@ -85,7 +86,7 @@ class postgres_sql{
         $keys[]="EnableInfluxDB";
 
         foreach ($keys as $num=>$token){
-            if(is_file("/etc/artica-postfix/settings/Daemons/$token")){continue;}
+            if(artica_setting_exists("$token")){continue;}
             @touch("/etc/artica-postfix/settings/Daemons/$token");
 
         }
@@ -478,6 +479,41 @@ class postgres_sql{
         @pg_close($this->connection);
         return $results;
 
+    }
+
+    // Pentest 2026-11-04 : requete a parametres lies ($1, $2...) via pg_query_params.
+    // Meme contrat que QUERY_SQL() (resultat ou false, $this->ok, $this->mysql_error).
+    public function QUERY_SQL_PARAMS($sql,$params=array()){
+        if($this->DisablePostGres==1){
+            $this->ok=false;
+            $this->mysql_error="PostgreSQL is disabled";
+            return false;
+        }
+        if(!function_exists("pg_query_params")){
+            $this->ok=false;
+            $this->mysql_error="pg_query_params(), no such function...";
+            return false;
+        }
+        if(!is_array($params)){$params=array($params);}
+        $clean=array();
+        foreach($params as $p){
+            if(is_null($p)){$clean[]=null;continue;}
+            if(is_bool($p)){$clean[]=$p?"1":"0";continue;}
+            $clean[]=str_replace("\0","",(string)$p);
+        }
+        if(!$this->connect($this->database)){return false;}
+        $results = @pg_query_params($this->connection, $sql, $clean);
+        if(!$results){
+            $this->ok=false;
+            $this->mysql_error=@pg_last_error($this->connection);
+            $this->events_failed(__FUNCTION__,__LINE__);
+            $this->events("QUERY_SQL_PARAMS: Error: $this->mysql_error",__FILE__,__LINE__);
+            $this->events("QUERY_SQL_PARAMS: [".substr($sql, 0,255)."]",__FILE__,__LINE__);
+            return false;
+        }
+        $this->ok=true;
+        @pg_close($this->connection);
+        return $results;
     }
 
     public function smtprefused($hostname=null,$mailfrom=null,$mailto=null,$ipaddr=null,$reason=null){
@@ -1395,13 +1431,14 @@ class postgres_sql{
 		spamscore decimal,
 		sent int,
 		subject varchar(512),
-		msgid varchar(60),
+		msgid varchar(90),
 		spamreport text,
 		rblart text,
 		whitelisted int,
 		disclaimer int,
-		maintenance smallint NOT NULL default 0,
-		reason varchar(128)
+		maintenance bigint NOT NULL default 0,
+		reason text,
+		reason_category varchar(64)
 		)";
 
         $results = @pg_query ($this->connection, $sql);
@@ -1412,8 +1449,39 @@ class postgres_sql{
             if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]} SQL ERROR: $this->mysql_error\n";}
         }
 
+        $type = $this->GET_COLUMN_TYPE($tablename, "ipaddr");
+        if($type != "inet"){
+            $this->QUERY_SQL("
+        ALTER TABLE $tablename
+        ALTER COLUMN ipaddr TYPE inet
+        USING ipaddr::inet
+    ");
+        }
+
+        // smtplog et smtplog_query DOIVENT avoir le meme schema: la seconde est remplie par un
+        // INSERT ... SELECT depuis la premiere. Or elles ont deux proprietaires — le daemon Go
+        // (artica-postfix) cree smtplog, ce constructeur cree smtplog_query — et elles ont derive:
+        // reason est passe a TEXT et msgid a varchar(90) cote Go, pendant que la table de travail
+        // restait en varchar(128)/varchar(60). L'ecart ne se voit qu'a l'usage, et pas la ou il se
+        // produit: des qu'un serveur distant repond un refus verbeux (une reponse SMTP multi-ligne
+        // depasse 128 caracteres sans effort), l'INSERT echoue avec « value too long for type
+        // character varying(128) », la table de travail reste vide, et le tableau des messages
+        // s'affiche VIDE — sans erreur, comme si le motif ne concernait aucun message.
+        // Les deux conversions ci-dessous sont exemptees de reecriture par PostgreSQL
+        // (varchar(n) -> text, varchar(n) -> varchar(m>n)), donc sans danger sur une table de
+        // millions de lignes ouverte depuis une page web. maintenance (smallint -> bigint) en
+        // demanderait une: la declaration est alignee ci-dessus pour les creations futures, mais
+        // une table existante n'est pas convertie — la colonne ne porte que 0 ou 1.
+        if($this->GET_COLUMN_TYPE($tablename, "reason")=="character varying"){
+            $this->QUERY_SQL("ALTER TABLE $tablename ALTER COLUMN reason TYPE text");
+        }
+        $msgidlen=intval($this->GET_COLUMN_LENGTH($tablename, "msgid"));
+        if($msgidlen>0 && $msgidlen<90){
+            $this->QUERY_SQL("ALTER TABLE $tablename ALTER COLUMN msgid TYPE varchar(90)");
+        }
+
         if(!$this->FIELD_EXISTS($tablename, "aclid")){$this->QUERY_SQL("ALTER TABLE $tablename ADD aclid bigint");}
-        if(!$this->FIELD_EXISTS($tablename, "msgid")){$this->QUERY_SQL("ALTER TABLE $tablename ADD msgid varchar(60)");}
+        if(!$this->FIELD_EXISTS($tablename, "msgid")){$this->QUERY_SQL("ALTER TABLE $tablename ADD msgid varchar(90)");}
         if(!$this->FIELD_EXISTS($tablename, "spamscore")){$this->QUERY_SQL("ALTER TABLE $tablename ADD spamscore int");}
         if(!$this->FIELD_EXISTS($tablename, "spamreport")){$this->QUERY_SQL("ALTER TABLE $tablename ADD spamreport text");}
         if(!$this->FIELD_EXISTS($tablename, "maintenance")){$this->QUERY_SQL("ALTER TABLE $tablename ADD maintenance smallint NOT NULL default 0");}
@@ -1427,6 +1495,11 @@ class postgres_sql{
         if(!$this->FIELD_EXISTS($tablename, "compressed")){$this->QUERY_SQL("ALTER TABLE $tablename ADD compressed int");}
         if(!$this->FIELD_EXISTS($tablename, "stripped")){$this->QUERY_SQL("ALTER TABLE $tablename ADD stripped int");}
         if(!$this->FIELD_EXISTS($tablename, "rblart")){$this->QUERY_SQL("ALTER TABLE $tablename ADD rblart text");}
+        // Categorie de refus, calculee par le daemon a l'ecriture (postfix/maillog). Declaree
+        // des DEUX cotes parce que les deux tables doivent rester identiques: smtplog_query
+        // recoit un INSERT ... SELECT depuis smtplog, et une colonne presente d'un seul cote est
+        // exactement l'ecart qui a fait echouer ces INSERT en silence.
+        if(!$this->FIELD_EXISTS($tablename, "reason_category")){$this->QUERY_SQL("ALTER TABLE $tablename ADD reason_category varchar(64)");}
 
         $this->QUERY_SQL("alter table $tablename alter column spamscore type decimal(10,5);");
 
@@ -1443,6 +1516,79 @@ class postgres_sql{
         return true;
 
 
+    }
+
+    /** Longueur declaree d'une colonne varchar (0 si illimitee ou introuvable). */
+    public function GET_COLUMN_LENGTH($table, $fieldname)
+    {
+        if($this->DisablePostGres==1){
+            $this->ok=false;
+            $this->mysql_error="PostgreSQL is disabled";
+            return 0;
+        }
+        $fieldname = strtolower($fieldname);
+        if(!$this->connect($this->database)){
+            return 0;
+        }
+        $sql = "
+        SELECT character_maximum_length
+        FROM information_schema.columns
+        WHERE table_name = '$table'
+        AND column_name = '$fieldname'
+    ";
+        $results = @pg_query($this->connection, $sql);
+        if(!$results){
+            $this->ok=false;
+            $this->mysql_error=@pg_last_error($this->connection);
+            @pg_close($this->connection);
+            return 0;
+        }
+        $ligne = @pg_fetch_assoc($results);
+        @pg_close($this->connection);
+        return isset($ligne["character_maximum_length"])?intval($ligne["character_maximum_length"]):0;
+    }
+
+    public function GET_COLUMN_TYPE($table, $fieldname)
+    {
+        if($this->DisablePostGres==1){
+            $this->ok=false;
+            $this->mysql_error="PostgreSQL is disabled";
+            return false;
+        }
+
+        $fieldname = strtolower($fieldname);
+
+        if(!$this->connect($this->database)){
+            return false;
+        }
+
+        $sql = "
+        SELECT data_type
+        FROM information_schema.columns
+        WHERE table_name = '$table'
+        AND column_name = '$fieldname'
+    ";
+
+        $results = @pg_query($this->connection, $sql);
+
+        if(!$results){
+            $this->ok=false;
+            $this->mysql_error=@pg_last_error($this->connection);
+            $this->events_failed(__FUNCTION__, __LINE__);
+            @pg_close($this->connection);
+            return false;
+        }
+
+        $ligne = @pg_fetch_assoc($results);
+        @pg_close($this->connection);
+
+        if(!isset($ligne["data_type"])){
+            $this->mysql_error="in $table,$fieldname type not found";
+            $this->events_failed(__FUNCTION__, __LINE__);
+            return false;
+        }
+
+        return strtolower($ligne["data_type"]);
     }
 
 
@@ -3134,9 +3280,13 @@ class postgres_sql{
     }
 
 }
+// Pentest 2026-11-04 (injection SQL) : l'ancienne version rendait ' en \' (style
+// MySQL). PostgreSQL tourne avec standard_conforming_strings=on (defaut depuis 9.1) :
+// l'antislash y est un caractere ordinaire et l'apostrophe fermait la chaine, donc
+// toute valeur "echappee" restait injectable. Le seul echappement d'un litteral '...'
+// est le doublement de l'apostrophe ; l'octet nul est refuse par PostgreSQL.
+// Preferer $q->QUERY_SQL_PARAMS() pour toute nouvelle requete.
 function pg_escape_string2($line):string{
-    $search=array("\\","\0","\n","\r","\x1a","'",'"');
-    $replace=array("\\\\","\\0","\\n","\\r","\Z","\'",'\"');
-    return str_replace($search,$replace,$line);
+    return str_replace(array("\0","'"),array("","''"),(string)$line);
 }
 ?>

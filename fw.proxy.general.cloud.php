@@ -3,15 +3,19 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_POST["EnableProxyGeoIP"])){Save();exit;}
+if(isset($_GET["limit-countries-page-js"])){limit_countries_page_js();exit;}
+if(isset($_GET["limit-countries-page-popup"])){limit_countries_page_popup();exit;}
 if(isset($_GET["limit-countries-js"])){limit_countries_js();exit;}
 if(isset($_GET["limit-countries-popup"])){limit_countries_popup();exit;}
 if(isset($_GET["limit-countries-table"])){limit_countries_table();exit;}
 if(isset($_GET["limit-countries-deny-all"])){limit_countries_deny_all();exit;}
 if(isset($_GET["limit-countries-allow-all"])){limit_countries_allow_all();exit;}
 if(isset($_GET["limit-access-country"])){limit_countries_single();exit;}
-
-page();
+if(isset($_GET["flat"])){flat();exit;}
+start();
 
 function Save(){
     $tpl                    = new template_admin();
@@ -33,7 +37,7 @@ function limit_countries_js(){
     }
     if($EnableGeoipUpdate==0){$tpl->js_error("{GeoIPUpdate_not_installed}");return;}
 
-    $tpl->js_dialog1("{limit_countries}", "$page?limit-countries-popup=yes");
+    $tpl->js_dialog5("{limit_countries}", "$page?limit-countries-popup=yes");
 
 }
 function limit_countries_popup(){
@@ -102,15 +106,16 @@ function limit_countries_table(){
         <label class=\"btn btn btn-primary\" OnClick=\"$allow_all\"><i class='far fa-check-double'></i> {allow_all} </label>
      </div>";
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true style='width:1%'></th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{countries}</th>";
-    $html[]="<th data-sortable=false style='width:1%'>{deny}</th>";
+    $html[]="<th></th>";
+    $html[]="<th>{countries}</th>";
+    $html[]="<th>{deny}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='generalcloud-rows'>";
 
 
     $TRCLASS=null;
@@ -120,7 +125,7 @@ function limit_countries_table(){
 
     foreach ($GEOIPCOUNTRIES as $CountryCode=>$Country){
         $class=null;
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $aclid=md5($CountryCode);
         $Enabled=0;
         if(isset($ProxyDenyCountries[$CountryCode])){
@@ -133,25 +138,26 @@ function limit_countries_table(){
         $html[]="</tr>";
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='generalcloud-pager'></span></div>";
+	$html[]="</div></div>";
     $html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"generalcloud-rows","generalcloud-pager");
 }
-function page(){
+
+function limit_countries_page_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog2("{deny_countries}","$page?limit-countries-page-popup=yes",650);
+}
+function limit_countries_page_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
@@ -159,13 +165,49 @@ function page(){
     $ProxyDenyCountries=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProxyDenyCountries"));
     if(!is_array($ProxyDenyCountries)){$ProxyDenyCountries=array();}
     $labelcountries="<span id='dashboard-ProxyDeny-countries'>".count($ProxyDenyCountries)."</span> {items}";
-
-
     $EnableProxyGeoIP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableProxyGeoIP"));
-
     $form[]=$tpl->field_checkbox("EnableProxyGeoIP","{enable_geoip_localisation}",$EnableProxyGeoIP);
     $form[]=$tpl->td_button("{deny_countries}", "{manage}", "Loadjs('$page?limit-countries-js=yes');",$labelcountries);
-    $html=$tpl->form_outside("{cloud_mode}",$form,"{squid_cloud_mode_explain}","{apply}",null,"AsSquidAdministrator",true);
+    $html=$tpl->form_outside("",$form,"","{apply}","LoadAjaxSilent('proxy-cloud-start','$page?flat=yes');","AsSquidAdministrator",true);
     echo $html;
+    return true;
+}
+function flat():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $EnableProxyGeoIP=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableProxyGeoIP"));
 
+    $tpl->table_form_section("{cloud_mode}","{squid_cloud_mode_explain}");
+    $tpl->table_form_field_js("Loadjs('$page?limit-countries-page-js=yes')");
+    if($EnableProxyGeoIP==0){
+        $tpl->table_form_field_bool("{enable_geoip_localisation}",0,ico_earth);
+    }else{
+        $ProxyDenyCountries=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProxyDenyCountries"));
+        if(!is_array($ProxyDenyCountries)){$ProxyDenyCountries=array();}
+        $ct=count($ProxyDenyCountries);
+        $tpl->table_form_field_text("{enable_geoip_localisation}","{deny_countries}:$ct",ico_earth);
+    }
+    $EnableSquidFireWallScheduler=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidFireWallScheduler"));
+    $tpl->table_form_field_js("Loadjs('fw.proxy.firewall.schedule.php')");
+    if($EnableSquidFireWallScheduler==0){
+        $tpl->table_form_field_bool("{proxy_firewall_schedule}",0,ico_clock_desk);
+    }else{
+        $status=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/firewall/proxy/schedule/status"));
+        $cfg=(is_object($status) && isset($status->config) && is_object($status->config)) ? $status->config : null;
+        $daysArr  =($cfg && isset($cfg->days) && is_array($cfg->days)) ? array_map("intval",$cfg->days) : array();
+        $from     =($cfg && isset($cfg->from)) ? $cfg->from : "01:00";
+        $to       =($cfg && isset($cfg->to))   ? $cfg->to   : "06:00";
+        $excList  =($cfg && isset($cfg->exceptions) && is_array($cfg->exceptions)) ? $cfg->exceptions : array();
+        $tpl->table_form_field_text("{proxy_firewall_schedule}","$cfg->from {to} $cfg->to",ico_clock_desk);
+    }
+
+    echo $tpl->_ENGINE_parse_body($tpl->table_form_compile());
+    return true;
+
+}
+
+function start(){
+    $page=CurrentPageName();
+    echo "<div id='proxy-cloud-start'></div>";
+    echo "<script>LoadAjaxSilent('proxy-cloud-start','$page?flat=yes');</script>";
 }

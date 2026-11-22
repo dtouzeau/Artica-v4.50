@@ -61,7 +61,7 @@ function popup(){
     $form[]=$tpl->field_text("subjectAltName", "{subjectAltName}", $ligne["subjectAltName"],true,null);
     $form[]=$tpl->field_text("subjectAltName1", "{subjectAltName} (1)", $ligne["subjectAltName1"],true,null);
     $form[]=$tpl->field_text("subjectAltName2", "{subjectAltName} (2)", $ligne["subjectAltName2"],false,null);
-    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $ligne["CountryName"]);
+    $form[]=$tpl->field_array_hash($array_country_codes,"CountryName", "nonull:{countryName}", $array_country_codes2[$ligne["CountryName"]] ?? $ligne["CountryName"]);
     $form[]=$tpl->field_text("stateOrProvinceName", "{stateOrProvinceName}", $ligne["stateOrProvinceName"]);
     $form[]=$tpl->field_text("localityName", "{localityName}", $ligne["localityName"]);
     $form[]=$tpl->field_text("OrganizationName", "{organizationName}", $ligne["OrganizationName"]);

@@ -1,12 +1,9 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/frame.class.inc");
 include_once(dirname(__FILE__)."/class.unix.inc");
 if(isset($_GET["uninstall"])){UNINSTALL();exit;}
 if(isset($_GET["install"])){INSTALL();exit;}
-if(isset($_GET["status"])){STATUS();exit;}
-if(isset($_GET["restart"])){RESTART();exit;}
-if(isset($_GET["apply"])){APPLY();exit;}
-if(isset($_GET["events"])){SearchServiceEventsInSyslog();exit;}
 if(isset($_GET["new-node"])){NEW_NODE();exit;}
 if(isset($_GET["new-ssh"])){NEW_SSH();exit;}
 if(isset($_GET["update-agent"])){UPDATE_AGENT();exit;}
@@ -14,18 +11,9 @@ if(isset($_GET["sync-singlenode"])){SYNC_SINGLE_NODE();exit;}
 if(isset($_GET["adrest-events"])){ADREST_EVENTS();exit;}
 if(isset($_GET["refresh-group"])){REFRESH_GROUP();exit;}
 if(isset($_GET["reconfigure-nginx"])){RECONFIGURE_NGINX();exit;}
-if(isset($_GET["installv2"])){installv2();exit;}
-
 
 writelogs_framework("unable to understand query...",__FUNCTION__,__FILE__,__LINE__);	
 
-function STATUS(){
-    $unix=new unix();
-    $php=$unix->LOCATE_PHP5_BIN();
-    $cmd="$php /usr/share/artica-postfix/exec.status.php --nagios-client --nowachdog";
-    shell_exec($cmd);
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-}
 function NEW_NODE():bool{
     $unix=new unix();
     return $unix->framework_execute("exec.hamrp.php --newnode","harmp.connect.progress","harmp.connect.log");
@@ -46,25 +34,18 @@ function RECONFIGURE_NGINX():bool{
     return $unix->framework_execute("exec.hamrp.php --push-nginx $groupid","harmp.nginx.$groupid.progress","harmp.nginx.$groupid.log");
 }
 
-function installv2():bool{
-    $product=$_GET["product"];
-    $key=$_GET["key"];
-    $uuid=$_GET["uuid"];
-
-    $unix=new unix();
-
-    return $unix->framework_execute("exec.hamrp.php --installv2 $product $key $uuid",
-        "system.installsoft.$uuid.progress","system.installsoft.progress.$uuid.txt");
-}
-
 function ADREST_EVENTS():bool{
     $unix=new unix();
     $grep=$unix->find_program("grep");
     $tail=$unix->find_program("tail");
 
 
-    $MAIN=unserialize(base64_decode($_GET["adrest-events"]));
-    $uuid=$MAIN["uuid"];
+    // JSON from fw.hamrp.nodes.php (never unserialize() a request value in a root process).
+    $MAIN=json_decode((string)base64_decode((string)$_GET["adrest-events"],true),true);
+    if(!is_array($MAIN)){return false;}
+    $uuid=isset($MAIN["uuid"])?(string)$MAIN["uuid"]:"";
+    if(!preg_match('/^[A-Za-z0-9._:-]{1,128}$/',$uuid)){return false;}
+    $MAIN=array("MAX"=>isset($MAIN["MAX"])?intval($MAIN["MAX"]):200,"TERM"=>isset($MAIN["TERM"])?(string)$MAIN["TERM"]:"");
     $src="/home/artica/harmp/$uuid/articarest.log";
     $target     = PROGRESS_DIR."/$uuid.articarest.search";
 
@@ -80,6 +61,7 @@ function ADREST_EVENTS():bool{
 
     $max=intval($MAIN["MAX"]);
     if($max>1500){$max=1500;}
+    if($max<1){$max=200;}
     if(isset($MAIN["TERM"])) {
         if ($MAIN["TERM"] <> null) {
             $TERM = ".*?{$MAIN["TERM"]}";
@@ -89,7 +71,7 @@ function ADREST_EVENTS():bool{
     if($TERM<>null) {
         $search = "$TERM";
         $search = str_replace(".*?.*?", ".*?", $search);
-        $cmd = "$grep --binary-files=text -i -E '$search' $src |$tail -n $max >$target 2>&1";
+        $cmd = "$grep --binary-files=text -i -E ".fw_shell_quote($search)." $src |$tail -n $max >$target 2>&1";
         writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
         shell_exec($cmd);
         return true;
@@ -112,7 +94,7 @@ function NEW_SSH():bool{
 function SYNC_SINGLE_NODE(){
     $uuid=$_GET["sync-singlenode"];
     $unix=new unix();
-    return $unix->framework_execute("exec.hamrp.php --sync-single $uuid","harmp.connect.progress","harmp.connect.log");
+    return $unix->framework_execute("exec.hamrp.php --sync-single ".fw_shell_quote($uuid),"harmp.connect.progress","harmp.connect.log");
 }
 
 function INSTALL(){
@@ -126,17 +108,4 @@ function UNINSTALL(){
 	
 }
 
-function RESTART(){
-    $unix=new unix();
-    $unix->framework_execute("exec.nagios-client.php --restart","nagios.client.progress","nagios.client.progress.log");
-}
-
-
-function SearchServiceEventsInSyslog(){
-    $unix=new unix();
-    $unix->framework_search_syslog($_GET["events"],
-        "/var/log/nagios-client.log",
-        "nagios.events.syslog","
-        ");
-}
 ?>

@@ -34,15 +34,18 @@ if($ForceDefaultButtonColor<>null){
 }
 
 
-$skinf=dirname(__FILE__) . "/ressources/templates/{$_COOKIE["artica-template"]}/top-bar-color.conf";
-$skinOver=dirname(__FILE__) . "/ressources/templates/{$_COOKIE["artica-template"]}/top-bar-color-over.conf";
-$skinborder=dirname(__FILE__) . "/ressources/templates/{$_COOKIE["artica-template"]}/top-bar-color-border.conf";
-$body=dirname(__FILE__) . "/ressources/templates/{$_COOKIE["artica-template"]}/body.conf";
+// Pentest 2026-11-04 : nom de template du cookie -> nom simple uniquement (traversee de repertoire).
+$ArticaTplSafe=isset($_COOKIE["artica-template"])?basename((string)$_COOKIE["artica-template"]):"";
+if(!preg_match('#^[A-Za-z0-9_.-]+$#',$ArticaTplSafe) || $ArticaTplSafe=="." || $ArticaTplSafe==".."){$ArticaTplSafe="default";}
+$skinf=dirname(__FILE__) . "/ressources/templates/{$ArticaTplSafe}/top-bar-color.conf";
+$skinOver=dirname(__FILE__) . "/ressources/templates/{$ArticaTplSafe}/top-bar-color-over.conf";
+$skinborder=dirname(__FILE__) . "/ressources/templates/{$ArticaTplSafe}/top-bar-color-border.conf";
+$body=dirname(__FILE__) . "/ressources/templates/{$ArticaTplSafe}/body.conf";
 
 
 
 
-$css[]="/* template {$_COOKIE["artica-template"]} */";
+$css[]="/* template {$ArticaTplSafe} */";
 
 if(is_file($skinf)){
 	$Green=@file_get_contents($skinf);
@@ -63,7 +66,7 @@ if($Green==null){$Green="#005447";}
 if(is_file($body)){
 	
 	$body_content=@file_get_contents($body);
-	$body_content=str_replace("%TEMPLATE%","{$_COOKIE["artica-template"]}",$body_content);
+	$body_content=str_replace("%TEMPLATE%","{$ArticaTplSafe}",$body_content);
 	$css[]="/* *************** $body **************** */";
 	$css[]=$body_content;
 
@@ -111,7 +114,7 @@ $css[]="background:-moz-linear-gradient(center top , #F1F1F1 0px, #FFFFFF 45px) 
 $cssplus=@implode("\n", $css);
 
 
-$MAINCSS= "/* template {$_COOKIE["artica-template"]} */
+$MAINCSS= "/* template {$ArticaTplSafe} */
 body{
 	font-family:$font_family;
 }

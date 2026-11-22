@@ -33,7 +33,8 @@ function main_start():bool{
 }
 function delete_rule_js():bool{
     $tpl=new template_admin();
-    $ID=$_GET["delete-js"];
+    // Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+    $ID=intval($_GET["delete-js"]);
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $ligne=$q->mysqli_fetch_array("SELECT rulename FROM routes WHERE ID=$ID");
@@ -42,7 +43,8 @@ function delete_rule_js():bool{
 }
 function delete_rule_confirm():bool{
     $tpl=new template_admin();
-    $ID=$_POST["delete"];
+    // Pentest 2026-11-04 : delete etait concatene dans la requete.
+    $ID=intval($_POST["delete"]);
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM routes WHERE ID=$ID");
     $title=$ligne["rulename"];
@@ -75,6 +77,7 @@ function rule_popup():bool{
     $form[]=$tpl->field_text("rulename","{rulename}",$ligne["rulename"]);
 	$form[]=$tpl->field_ipaddr("ipaddr", "{from_ip_address}", $ligne["ipaddr"]);
 	$form[]=$tpl->field_ipaddr("netmask", "{netmask}",$ligne["netmask"]);
+	$form[]=$tpl->field_text("metric", "{metric}", $ligne["metric"] ?? 0);
 	$html=$tpl->form_outside($title, $form,"{routes_explain}",$btn,implode(";",$fs),"AsVPNManager");
 	echo $tpl->_ENGINE_parse_body($html);
     return true;
@@ -88,11 +91,15 @@ function route_save():bool{
     $Main["rulename"]=$_POST["rulename"];
     $Main["ipaddr"]=$_POST["ipaddr"];
     $Main["netmask"]=$_POST["netmask"];
+    $Main["metric"]=intval($_POST["metric"] ?? 0);
 
+    // Pentest 2026-11-04 : rulename/ipaddr/netmask (POST) etaient concatenes dans la requete.
+    $binds=array();
     foreach ($Main as $key=>$val){
         $ff[]=$key;
-        $fd[]="'$val'";
-        $fe[]="$key='$val'";
+        $fd[]="?";
+        $fe[]="$key=?";
+        $binds[]=$val;
     }
     if($ID==0){
         $sql=sprintf("INSERT INTO routes (%s) VALUES (%s)",implode(",",$ff),implode(",",$fd));
@@ -100,7 +107,7 @@ function route_save():bool{
         $sql=sprintf("UPDATE routes SET %s WHERE ID=%s",implode(",",$fe),$ID);
     }
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$binds);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;

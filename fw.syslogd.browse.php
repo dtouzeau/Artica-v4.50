@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+// Pentest 2026-11-04 : fname etait recopie sans encodage dans la page (XSS) et servait de nom de fichier.
+if(isset($_GET["fname"])){$_GET["fname"]=preg_replace('#[^A-Za-z0-9_-]#','',(string)$_GET["fname"]);}
 
 
 if(isset($_GET["progress"])){GetProgress();exit;}
@@ -128,7 +130,9 @@ function all_table_list():bool{
             }
             $size=formatBytes($size/1024);
             $fname=base64_encode($PATH);
-            $hostname_text=$tpl->td_href($hostname,"{download}","document.location.href='/$page?fsource=$fname&h=$hostname';");
+            // Pentest 2026-11-04 : nom d'hote emetteur syslog (donnee externe) recopie sans encodage dans le JS (XSS stockee).
+            $hostnameurl=req_url($hostname);
+            $hostname_text=$tpl->td_href($hostname,"{download}","document.location.href='/$page?fsource=$fname&h=$hostnameurl';");
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td class=\"$text_class\"><strong>$hostname_text</strong></td>";
         $html[]="<td class=\"$text_class\">$ipaddr</a></td>";
@@ -197,17 +201,24 @@ function refeshindex():bool{
     return true;
 }
 function download_fsource():bool{
-    $fname=base64_decode($_GET["fsource"]);
+    $users=new usersMenus();if(!$users->AsProxyMonitor){return false;}   // Pentest 2026-11-04 : telechargement sans controle de privilege
+    // Pentest 2026-11-04 : le chemin (base64) n'etait filtre que par str_replace("..") puis lu tel quel ;
+    // il est maintenant resolu par realpath() et doit rester sous LogSinkWorkDir. Nom d'hote nettoye pour Content-Disposition.
+    $fname=base64_decode((string)($_GET["fsource"] ?? ""));
     $LogSinkWorkDir=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinkWorkDir");
     if($LogSinkWorkDir==null){$LogSinkWorkDir="/home/syslog/logs_sink";}
-    $hostname=$_GET["h"];
-    $fname=str_replace($LogSinkWorkDir,"",$fname);
-    $fname=str_replace("..","",$fname);
-    $fname=str_replace("..","",$fname);
-    $fname="$LogSinkWorkDir$fname";
-
-    $fname2=basename($fname);
-    if($GLOBALS["VERBOSE"]){VERBOSE("$fname2 --- $fname",__LINE__);}
+    $LogSinkWorkDir=rtrim($LogSinkWorkDir,"/");
+    $hostname=preg_replace('/[^A-Za-z0-9_.-]/','',(string)($_GET["h"] ?? ""));
+    if(strpos($fname,"$LogSinkWorkDir/")!==0){$fname="$LogSinkWorkDir/".ltrim($fname,"/");}
+    $realdir=realpath($LogSinkWorkDir);
+    $real=realpath($fname);
+    if($realdir===false || $real===false || strpos($real,$realdir."/")!==0 || !is_file($real)){
+        header("HTTP/1.1 404 Not Found");
+        echo "No such file";
+        return false;
+    }
+    $fname2=preg_replace('/[^A-Za-z0-9_.-]/','_',basename($real));
+    if($GLOBALS["VERBOSE"]){VERBOSE("$fname2 --- $real",__LINE__);}
 
 
     if($GLOBALS["VERBOSE"]){return false;}
@@ -215,16 +226,17 @@ function download_fsource():bool{
     header('Content-Transfer-Encoding: binary');
     header("Content-Disposition: attachment; filename=\"$hostname-$fname2\"");
     header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date dans le passé
-    $fsize = @filesize($fname);
+    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date dans le passe
+    $fsize = @filesize($real);
     header("Content-Length: ".$fsize);
     ob_clean();
     flush();
-    readfile($fname);
+    readfile($real);
     return true;
 
 }
 function download_fname():bool{
+    $users=new usersMenus();if(!$users->AsProxyMonitor){return false;}   // Pentest 2026-11-04 : telechargement sans controle de privilege
     $fname=$_GET["fname"];
     $tmpfile=PROGRESS_DIR."/$fname.log";
     header('Content-type: '."application/text");
@@ -277,7 +289,8 @@ function search_section_form():bool{
     $f[]="                <ul class=\"dropdown-menu\" id='search-time'> </ul>";
     $f[]="            </div>";
     $f[]="            <input type='text' class='form-control' id='Search-text'";
-    $f[]="                OnKeyPress=\"javascript:zSearchSyslog(event);\" value=\"{$_SESSION["LOGSINK"]["SEARCH"]}\">";
+    // Pentest 2026-11-04 : la recherche (stext, memorisee en session) etait recopiee sans encodage dans la page (XSS).
+    $f[]="                OnKeyPress=\"javascript:zSearchSyslog(event);\" value=\"".req_html($_SESSION["LOGSINK"]["SEARCH"] ?? "")."\">";
     $f[]="            <div class=\"input-group-btn\">";
     $f[]="                <button data-toggle=\"dropdown\" class=\"btn btn-white dropdown-toggle\" ";
     $f[]="                type=\"button\" aria-expanded=\"false\">";
@@ -334,7 +347,7 @@ $f[]="\tif(rows<200){rows=200;}";
 $f[]="\tLoadjs('$page?Tiny=yes&date='+stime+'&search='+stext+'&host='+host+'&rows='+rows)";
 $f[]="}";
 if(isset($_SESSION["LOGSINK"]["HOST"])){
-    $f[]="SearchSyslogTime('{$_SESSION["LOGSINK"]["HOST"]}');";
+    $f[]="SearchSyslogTime('".req_js($_SESSION["LOGSINK"]["HOST"])."');";
 }
 if(isset($_SESSION["LOGSINK"]["DATE"])){
        $f[]="SearchSyslogDate('{$_SESSION["LOGSINK"]["DATE"]}');";
@@ -496,6 +509,15 @@ function search_results():bool{
             $line=trim($re[7]);
 
         }
+        // Pentest 2026-11-04 : ligne syslog distante (hote, programme, message : donnee externe) affichee sans encodage (XSS stockee).
+        // Encodee une seule fois ici : le bloc EvntSLog ci-dessous decoupe et decore la ligne deja encodee.
+        $Month=req_html($Month);
+        $time=req_html($time);
+        $Hostname=req_html($Hostname);
+        $program=req_html($program);
+        $pid=req_html($pid);
+        $Day=req_html($Day);
+        $line=req_html($line);
 
         if(preg_match("#^(.+?)\s+([0-9]+)\s+([0-9:]+)\s+(.+?)\s+EvntSLog\s+(.+)#",$line,$re)){
             $Month=$re[1];
@@ -542,7 +564,9 @@ function search_results():bool{
 				<td class='$class'>$line</td>
 				</tr>";
     }
-    $tiny="\tLoadjs('$page?Tiny=yes&date=$date&stext=$stextenc&host=$host&rows=$rows&CountOfResults=$COuntOfRows&fname=$fname');";
+    // Pentest 2026-11-04 : host etait recopie sans encodage dans la page (XSS).
+    $hostenc=req_url($host);
+    $tiny="\tLoadjs('$page?Tiny=yes&date=$date&stext=$stextenc&host=$hostenc&rows=$rows&CountOfResults=$COuntOfRows&fname=$fname');";
 
     $js=$tpl->RefreshInterval_Loadjs($fname,$page,"progress=yes&fname=$fname");
 
@@ -602,7 +626,8 @@ function Tiny():bool{
     $stext=$_GET["stext"];
     $rows=intval($_GET["rows"]);
     $fname=$_GET["fname"];
-    $title[]="{search} &laquo;$stext&raquo;";
+    // Pentest 2026-11-04 : stext et host etaient recopies sans encodage dans la page (XSS).
+    $title[]="{search} &laquo;".req_html($stext)."&raquo;";
     if($rows==0){$rows=200;}
     if(isset($_GET["CountOfResults"])){
         $CountOfResults=intval($_GET["CountOfResults"]);
@@ -610,7 +635,7 @@ function Tiny():bool{
     $host_field=$host;
     if($host==null){$host="{all}";}
     if($host=="all"){$host="{all}";}
-    $title[]="{host}: $host";
+    $title[]="{host}: ".req_html($host);
 
     if($date>0){
         $title[]=$tpl->time_to_date($date);

@@ -35,6 +35,15 @@ class IP {
 		}
 		
 		if(self::isIPAddress($ip)){return true;}
+		// IPv6 : adresse seule ou CIDR (prefixe 0-128)
+		$ip6=trim($ip);
+		if(strpos($ip6,":")!==false){
+			$p6=explode("/",$ip6,2);
+			if(filter_var($p6[0],FILTER_VALIDATE_IP,FILTER_FLAG_IPV6)){
+				if(count($p6)==1){return true;}
+				if(preg_match('#^[0-9]{1,3}$#',$p6[1]) && intval($p6[1])<=128){return true;}
+			}
+		}
 		if(self::IsACDIR($ip)){return true;}
 		$array=self::parseRange($ip);
 		if(!is_array($array)){return false;}
@@ -43,6 +52,21 @@ class IP {
 		
 	}
 	
+	/**
+	 * IPv6 locale : ::1, fe80::/10 (lien local), fc00::/7 (ULA). Faux pour tout le reste, IPv4 comprise.
+	 */
+	public static function isLocalIPv6( $ip ) {
+		if(!is_string($ip) || strpos($ip,":")===false){return false;}
+		$bin=@inet_pton($ip);
+		if($bin===false || strlen($bin)!=16){return false;}
+		if($bin===inet_pton("::1")){return true;}
+		$b0=ord($bin[0]);
+		$b1=ord($bin[1]);
+		if($b0==0xfe && ($b1 & 0xc0)==0x80){return true;}
+		if(($b0 & 0xfe)==0xfc){return true;}
+		return false;
+	}
+
 	public static function isIPAddress( $ip ) {
 		$ip=trim($ip);
 		if($ip==null){return false;}

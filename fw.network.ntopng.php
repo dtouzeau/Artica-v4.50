@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -53,7 +54,7 @@ function table(){
 	$ARRAY["TITLE"]="{restarting}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-ntopng','$page?table=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-ntopng-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ntopng-restart')";
 	
 	$arrayConf=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ntopng")));
 	if(!is_numeric($arrayConf["HTTP_PORT"])){$arrayConf["HTTP_PORT"]=3000;}
@@ -110,7 +111,7 @@ function status(){
 	$ARRAY["TITLE"]="{restarting}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-ntopng','$page?table=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-ntopng-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ntopng-restart')";
 	
 	
 	$html[]=$tpl->SERVICE_STATUS($ini, "APP_NTOPNG",$jsrestart);
@@ -121,7 +122,7 @@ function status(){
 	$ARRAY["TITLE"]="{restarting}";
 	$ARRAY["AFTER"]="LoadAjax('table-loader-ntopng','$page?table=yes');LoadAjaxSilent('top-barr','fw-top-bar.php');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-ntopng-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ntopng-restart')";
 	
 	$html[]=$tpl->SERVICE_STATUS($ini, "APP_REDIS_SERVER",$jsrestart);
 	

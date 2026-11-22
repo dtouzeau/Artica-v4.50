@@ -1,13 +1,12 @@
-<action_delete_rule>Are you sure to delete this rule ?</action_delete_rule>
-<add_rule_text>Add a new backup rule, when one email match your policies, it will backuped into SQL database.</add_rule_text>
+<action_delete_rule>Tem certeza de que deseja excluir esta regra?</action_delete_rule>
+<add_rule_text>Adicione uma nova regra de backup, quando um e-mail corresponder &#224;s suas pol&#237;ticas, ser&#225; copiado para o banco de dados SQL.</add_rule_text>
 <backup_disabled>Funcionalidade desativada</backup_disabled>
-<backup_disabled_text>Click on the red picture in order to enable this feature and make these rules active</backup_disabled_text>
+<backup_disabled_text>Clique na imagem vermelha para ativar este recurso e tornar estas regras ativas</backup_disabled_text>
 <backup_enabled>Executando</backup_enabled>
-<backup_enabled_text>You can disable this feature by clicking on the green picture. This will be stopping backup your eMails to Mysql database</backup_enabled_text>
-<from_match>Sender match</from_match>
-<from_text>caracter "*" is allowed.[br]
-You can set for example[br]
-[blk][b]*@yourdomain.com or *@youdomain* or user.*@domain.*[/b][/blk]
-</from_text>
-<subject_match>Subject Match</subject_match>
-<to_match>Recipient match</to_match>
+<backup_enabled_text>Voc&#234; pode desativar este recurso clicando na imagem verde. Isso interromper&#225; o backup dos seus e-mails para o banco de dados Mysql</backup_enabled_text>
+<from_match>Correspond&#234;ncia do remetente</from_match>
+<from_text>O caractere &quot;*&quot; &#233; permitido.[br]
+Voc&#234; pode definir por exemplo[br]
+[blk][b]*@yourdomain.com ou *@youdomain* ou user.*@domain.*[/b][/blk]</from_text>
+<subject_match>Correspond&#234;ncia do assunto</subject_match>
+<to_match>Correspond&#234;ncia do destinat&#225;rio</to_match>

@@ -1,38 +1,31 @@
-<active>The "active" queue</active>
-<active_text>
-The queue manager is a delivery agent scheduler; it works to ensure fast and fair delivery of mail to all destinations within designated resource limits.[br]
-The active queue is somewhat analogous to an operating system's process run queue. Messages in the active queue are ready to be sent (runnable), but are not necessarily in the process of being sent (running). 
-</active_text>
-<body_message>Body message</body_message>
-<body_message_text>Display message source</body_message_text>
-<create_time>Create time</create_time>
-<deferred>The "deferred" queue</deferred>
-<deferred_text>
-When all the deliverable recipients for a message are delivered, and for some recipients delivery failed for a transient reason (it might succeed later), 
-the message is placed in the deferred queue</deferred_text>
-<incoming>The "incoming" queue</incoming>
-<incoming_text>
-All new mail entering the Postfix queue is written by the cleanup service into the "incoming" queue.[br]
-New queue files are created owned by the "postfix" user with an access bitmask (or mode) of 0600.[br]
-Once a queue file is ready for further processing the cleanup service changes the queue file mode to 0700 and notifies the queue manager of new mail arrival.[br]
-The queue manager ignores incomplete queue files whose mode is 0600, as these are still being written by cleanup. 
-</incoming_text>
-<maildrop>The "maildrop" queue</maildrop>
-<maildrop_text>
-Messages that have been submitted via the Postfix sendmail command, but not yet brought into the main Postfix queue by the pickup service, await processing in the "maildrop" queue.[br]
-Messages can be added to the "maildrop" queue even when the Postfix system is not running.[br]
-They will begin to be processed once Postfix is started.
-The "maildrop" queue is drained by the single threaded pickup service scanning the queue directory periodically or when notified of new message arrival by the postdrop program.[br]
-The postdrop program is a setgid helper that allows the unprivileged Postfix sendmail program to inject mail into the "maildrop" queue and to notify the pickup(8) service of its arrival.[br]
-All mail that enters the main Postfix queue does so via the cleanup service.[br] The cleanup service is responsible for envelope and header rewriting, header and body regular expression checks, automatic bcc recipient processing, milter content processing, and reliable insertion of the message into the Postfix "incoming" queue. 
-</maildrop_text>
-<message_arrival_time>Message arrival time</message_arrival_time>
-<message_size>Message size</message_size>
-<named_attribute>Named attribute</named_attribute>
-<original_recipient>Original recipient</original_recipient>
-<routing_info>Postfix routing info</routing_info>
-<routing_info_text>Display information about postfix used fields</routing_info_text>
-<sender_fullname>sender full name</sender_fullname>
-<show_mail>View message</show_mail>
-<show_queue>Display the list of mails stored</show_queue>
-<too_late_or_no_queue_files>All messages are gone, you have clicked too late on the function... No messages stored...</too_late_or_no_queue_files>
+<active>Die &#8222;active&#8220;-Warteschlange</active>
+<active_text>Der Warteschlangenmanager ist ein Scheduler f&#252;r Zustellungsagenten; er sorgt f&#252;r eine schnelle und faire Zustellung von E-Mails an alle Ziele innerhalb festgelegter Ressourcengrenzen.[br]
+Die active-Warteschlange ist in etwa analog zur Prozess-Run-Queue eines Betriebssystems. Nachrichten in der active-Warteschlange sind bereit zum Versand (lauff&#228;hig), befinden sich aber nicht unbedingt im Versandprozess (laufend).</active_text>
+<body_message>Nachrichtentext</body_message>
+<body_message_text>Nachrichtenquelle anzeigen</body_message_text>
+<create_time>Erstellungszeit</create_time>
+<deferred>Die &#8222;deferred&#8220;-Warteschlange</deferred>
+<deferred_text>Wenn alle zustellbaren Empf&#228;nger einer Nachricht zugestellt wurden und die Zustellung f&#252;r einige Empf&#228;nger aus einem vor&#252;bergehenden Grund fehlgeschlagen ist (sie k&#246;nnte sp&#228;ter erfolgreich sein), 
+wird die Nachricht in die deferred-Warteschlange gestellt</deferred_text>
+<incoming>Die &#8222;incoming&#8220;-Warteschlange</incoming>
+<incoming_text>Alle neuen E-Mails, die in die Postfix-Warteschlange gelangen, werden vom Cleanup-Dienst in die &#8222;incoming&#8220;-Warteschlange geschrieben.[br]
+Neue Warteschlangendateien werden im Besitz des Benutzers &#8222;postfix&#8220; mit einer Zugriffsbitmaske (oder einem Modus) von 0600 erstellt.[br]
+Sobald eine Warteschlangendatei f&#252;r die weitere Verarbeitung bereit ist, &#228;ndert der Cleanup-Dienst den Modus der Warteschlangendatei auf 0700 und benachrichtigt den Warteschlangenmanager &#252;ber den Eingang neuer E-Mails.[br]
+Der Warteschlangenmanager ignoriert unvollst&#228;ndige Warteschlangendateien mit dem Modus 0600, da diese noch von cleanup geschrieben werden.</incoming_text>
+<maildrop>Die &#8222;maildrop&#8220;-Warteschlange</maildrop>
+<maildrop_text>Nachrichten, die &#252;ber den Postfix-sendmail-Befehl &#252;bermittelt, aber noch nicht vom Pickup-Dienst in die Haupt-Postfix-Warteschlange &#252;berf&#252;hrt wurden, warten in der &#8222;maildrop&#8220;-Warteschlange auf Verarbeitung.[br]
+Nachrichten k&#246;nnen der &#8222;maildrop&#8220;-Warteschlange auch dann hinzugef&#252;gt werden, wenn das Postfix-System nicht l&#228;uft.[br]
+Sie werden verarbeitet, sobald Postfix gestartet wird.
+Die &#8222;maildrop&#8220;-Warteschlange wird vom Single-Threaded-Pickup-Dienst geleert, der das Warteschlangenverzeichnis regelm&#228;&#223;ig durchsucht oder wenn er vom postdrop-Programm &#252;ber den Eingang neuer Nachrichten benachrichtigt wird.[br]
+Das postdrop-Programm ist ein setgid-Hilfsprogramm, das es dem unprivilegierten Postfix-sendmail-Programm erm&#246;glicht, E-Mails in die &#8222;maildrop&#8220;-Warteschlange einzuspeisen und den pickup(8)-Dienst &#252;ber deren Eingang zu benachrichtigen.[br]
+Alle E-Mails, die in die Haupt-Postfix-Warteschlange gelangen, tun dies &#252;ber den Cleanup-Dienst.[br] Der Cleanup-Dienst ist verantwortlich f&#252;r das Umschreiben von Umschlag und Headern, Header- und Body-Pr&#252;fungen mit regul&#228;ren Ausdr&#252;cken, die automatische Bcc-Empf&#228;ngerverarbeitung, die Milter-Inhaltsverarbeitung und das zuverl&#228;ssige Einf&#252;gen der Nachricht in die Postfix-&#8222;incoming&#8220;-Warteschlange.</maildrop_text>
+<message_arrival_time>Eingangszeit der Nachricht</message_arrival_time>
+<message_size>Nachrichtengr&#246;&#223;e</message_size>
+<named_attribute>Benanntes Attribut</named_attribute>
+<original_recipient>Urspr&#252;nglicher Empf&#228;nger</original_recipient>
+<routing_info>Postfix-Routing-Informationen</routing_info>
+<routing_info_text>Informationen &#252;ber die von Postfix verwendeten Felder anzeigen</routing_info_text>
+<sender_fullname>vollst&#228;ndiger Name des Absenders</sender_fullname>
+<show_mail>Nachricht anzeigen</show_mail>
+<show_queue>Die Liste der gespeicherten E-Mails anzeigen</show_queue>
+<too_late_or_no_queue_files>Alle Nachrichten sind weg, Sie haben zu sp&#228;t auf die Funktion geklickt... Keine Nachrichten gespeichert...</too_late_or_no_queue_files>

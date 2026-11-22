@@ -162,21 +162,6 @@ function main_uninstall_categories_cache():string{
     );
 
 }
-function main_install_ufdbcat():string{
-    $tpl=new template_admin();
-    return $tpl->framework_buildjs("/dnscatz/install",
-        "dnscatz.install.progress",
-        "dnscatz.install.progress.log",
-        "progress-ksrnfeatures-restart",restart_after());
-}
-function main_uninstall_ufdbcat():string{
-    $tpl=new template_admin();
-    return $tpl->framework_buildjs("/dnscatz/uninstall",
-        "dnscatz.install.progress",
-        "dnscatz.install.progress.log",
-        "progress-ksrnfeatures-restart",restart_after());
-}
-
 function main_install_ufdb():string{
     $tpl=new template_admin();
     return $tpl->framework_buildjs("/ufdb/install",
@@ -200,7 +185,7 @@ function main_install_go_shield_server():string{
 }
 function main_uninstall_go_shield_server():string{
     $tpl=new template_admin();
-    return $tpl->framework_buildjs("ksrn.php?disable-go-shield-server=yes",
+    return $tpl->framework_buildjs("/goshield/uninstall",
         "go.shield.server.progress",
         "go.shield.server.log",
         "progress-ksrnfeatures-restart",restart_after());
@@ -219,59 +204,125 @@ function main_uninstall_go_shield_connector():string{
         "go.shield.connector.log",
         "progress-ksrnfeatures-restart",restart_after());
 }
+/**
+ * Feuille de style de la page (design "Enhanced Setup Center").
+ * Concatenee autour du parsing, jamais dedans: _ENGINE_parse_body prendrait chaque
+ * corps de regle CSS pour un {token}. Emise une fois par requete.
+ */
+function ksf_style():string{
+    if(isset($GLOBALS["KSF_CSS_DONE"])){return "";}
+    $GLOBALS["KSF_CSS_DONE"]=true;
+    return "<style>
+.ksf-wrap{background:#f7fafc;padding:16px;border-radius:8px;margin:10px 0}
+.ksf-wrap *{-webkit-box-sizing:border-box;box-sizing:border-box}
+.ksf-card{background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden}
+.ksf-scroll{overflow-x:auto}
+.ksf-tbl{width:100%;border-collapse:collapse;text-align:left}
+.ksf-tbl thead tr{background:#f1f4f6;border-bottom:1px solid #e2e8f0}
+.ksf-tbl thead th{padding:16px 20px;font-size:12px;font-weight:600;line-height:16px;
+letter-spacing:.05em;text-transform:uppercase;color:#3e4944;white-space:nowrap}
+.ksf-tbl tbody tr{border-top:1px solid #e2e8f0}
+.ksf-tbl tbody tr:first-child{border-top:0}
+.ksf-tbl tbody td{padding:18px 20px;vertical-align:middle}
+.ksf-feat{display:-webkit-box;display:-ms-flexbox;display:flex;-webkit-box-align:center;
+-ms-flex-align:center;align-items:center}
+.ksf-ico{-webkit-box-flex:0;-ms-flex:0 0 auto;flex:0 0 auto;width:44px;margin-right:16px;
+font-size:30px;line-height:1;text-align:center}
+.ksf-ico-on{color:#0f765e}
+.ksf-ico-off{color:#8a959b}
+.ksf-ico-err{color:#ba1a1a}
+.ksf-name{font-size:15px;font-weight:700;line-height:20px;color:#181c1e}
+.ksf-name-off{color:#6e7a74}
+.ksf-desc{font-size:14px;line-height:20px;color:#3e4944;max-width:600px}
+.ksf-desc-off{color:#6e7a74}
+.ksf-badge{display:inline-block;font-size:11px;font-weight:700;line-height:12px;letter-spacing:.02em;
+text-transform:uppercase;padding:5px 8px;border-radius:2px;color:#fff;white-space:nowrap}
+.ksf-badge-on{background:#0f765e}
+.ksf-badge-off{background:#545f72}
+.ksf-badge-err{background:#ba1a1a}
+.ksf-act{text-align:right;white-space:nowrap}
+.ksf-btn{display:inline-block;border-radius:4px;padding:10px 18px;font-size:13px;font-weight:700;
+line-height:16px;text-decoration:none !important;border:1px solid transparent}
+.ksf-btn-primary{background:#0f765e;color:#fff !important}
+.ksf-btn-primary:hover{background:#005b48;color:#fff !important}
+.ksf-btn-ghost{background:#fff;border-color:#bec9c3;color:#3e4944 !important}
+.ksf-btn-ghost:hover{background:#f1f4f6;color:#181c1e !important}
+.ksf-btn-off{background:#fff;border-color:#e8edf0;color:#9aa5ab !important;cursor:default}
+</style>";
+}
+
+/**
+ * Etat numerique -> apparence.
+ * 0 desactive, 1 actif, 2 indisponible, 3 licence, 5 actif verrouille.
+ * Retourne array(icone, variante, libelle_du_badge, variante_du_badge).
+ */
+function ksf_state($status){
+    $status=intval($status);
+    if($status==1){return array("fas fa-thumbs-up","on","{active2}","on");}
+    if($status==5){return array("fas fa-thumbs-up","on","{active2}","on");}
+    if($status==2){return array("far fa-times-circle","off","{not_available}","off");}
+    if($status==3){return array("far fa-times-circle","err","{license_error}","err");}
+    return array("fas fa-thumbs-down","off","{disabled}","off");
+}
+
+/** Colonne "fonctionnalite": grande icone d'etat + intitule. */
+function ksf_feature($status,$title):string{
+    list($ico,$variant,$none1,$none2)=ksf_state($status);
+    $nameoff=($variant=="on")?"":" ksf-name-off";
+    return "<div class='ksf-feat'><span class='ksf-ico ksf-ico-$variant'><i class='$ico'></i></span>"
+        ."<span class='ksf-name$nameoff'>$title</span></div>";
+}
+
+/** Pastille d'etat rectangulaire. */
+function ksf_badge($status):string{
+    list($none,$variant,$label,$badge)=ksf_state($status);
+    return "<span class='ksf-badge ksf-badge-$badge'>$label</span>";
+}
+
+/**
+ * Bouton d'action.
+ * Un etat 0 sans CMD_ON (ou 1 sans CMD_OFF) n'a aucune commande a proposer: on rend
+ * un bouton inerte plutot qu'une cellule vide. L'ancien code laissait dans ce cas
+ * $install[$STATUS_R] indefini.
+ */
+function ksf_action($status,$cmd_on,$cmd_off):string{
+    $status=intval($status);
+    if($status==0){
+        if(strlen(trim(strval($cmd_on)))>0){
+            return "<a href=\"javascript:blur()\" OnClick=\"$cmd_on\" class='ksf-btn ksf-btn-primary'>"
+                ."<i class='fas fa-circle-plus'></i>&nbsp;{install_the_feature}</a>";
+        }
+        return "<span class='ksf-btn ksf-btn-off'><i class='fas fa-ban'></i>&nbsp;{not_available}</span>";
+    }
+    if($status==1){
+        if(strlen(trim(strval($cmd_off)))>0){
+            return "<a href=\"javascript:blur()\" OnClick=\"$cmd_off\" class='ksf-btn ksf-btn-ghost'>"
+                ."<i class='fas fa-gear'></i>&nbsp;{uninstall}</a>";
+        }
+        return "<span class='ksf-btn ksf-btn-off'><i class='fas fa-lock'></i>&nbsp;{locked}</span>";
+    }
+    if($status==2){return "<span class='ksf-btn ksf-btn-off'><i class='fas fa-ban'></i>&nbsp;{not_available}</span>";}
+    if($status==3){return "<span class='ksf-btn ksf-btn-off'><i class='fas fa-triangle-exclamation'></i>&nbsp;{license_error}</span>";}
+    return "<span class='ksf-btn ksf-btn-off'><i class='fas fa-lock'></i>&nbsp;{locked}</span>";
+}
+
 function row_status($array):string{
 
     $title=$array["TITLE"];
-    $TRCLASS=$array["TRCLASS"];
     $explain=$array["EXPLAIN"];
-    $STATUS_R=$array["STATUS"];
+    $STATUS_R=intval($array["STATUS"]);
+    $cmd_on=isset($array["CMD_ON"])?$array["CMD_ON"]:null;
+    $cmd_off=isset($array["CMD_OFF"])?$array["CMD_OFF"]:null;
 
-    $status[0]="<span class='label'>{disabled}</span>";
-    $status[1]="<span class='label label-primary'>{active2}</span>";
-    $status[2]="<span class='label'>{not_available}</span>";
-    $status[3]="<span class='label'>{license_error}</span>";
-    $status[5]="<span class='label label-primary'>{active2}</span>";
+    list($none1,$variant,$none2,$none3)=ksf_state($STATUS_R);
+    $descoff=($variant=="on")?"":" ksf-desc-off";
 
-    $text_class[0]="text-muted";
-    $text_class[1]="font-bold";
-    $text_class[2]="text-muted";
-    $text_class[3]="text-muted";
-    $text_class[5]="font-bold";
-
-    $icon[0]="<i class='fas fa-thumbs-down'>";
-    $icon[1]="<i class='text-navy fas fa-thumbs-up'>";
-    $icon[2]="<i class='far fa-times-circle'>";
-    $icon[3]="<i class='far fa-times-circle'>";
-    $icon[5]="<i class='text-navy fas fa-thumbs-up'>";
-
-    if($array["CMD_ON"]<>null) {
-        $install[0] = "<a href=\"javascript:blur()\" OnClick=\"{$array["CMD_ON"]}\" class='btn btn-primary btn-sm'>
-			<i class='fas fa-check'></i> {install_the_feature} </a>";
-    }
-
-    if($array["CMD_OFF"]<>null) {
-        $install[1] = "<a href=\"javascript:blur()\" OnClick=\"{$array["CMD_OFF"]}\" class='btn btn-warning btn-sm'>
-			<i class='fas fa-check'></i> {uninstall} </a>";
-    }
-
-
-    $install[2]= "<a href=\"javascript:blur()\" OnClick=\"blur()\" class='btn btn-default btn-sm'>
-			<i class='fas fa-check'></i> {not_available} </a>";
-
-    $install[3]= "<a href=\"javascript:blur()\" OnClick=\"blur()\" class='btn btn-default btn-sm'>
-			<i class='fas fa-check'></i> {license_error} </a>";
-
-    $install[5]= "<a href=\"javascript:blur()\" OnClick=\"blur()\" class='btn btn-default btn-sm'>
-			<i class='fas fa-check'></i> {locked} </a>";
-
-
-    $cxlass=$text_class[$STATUS_R];
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td nowrap style='width:1%'>$icon[$STATUS_R]</td>";
-    $html[]="<td nowrap style='width:20%'><strong class='$cxlass'>$title</strong></td>";
-    $html[]="<td style='width:80%'><span class='$cxlass'>$explain</span></td>";
-    $html[]="<td style='vertical-align:middle;width=1%' nowrap><span class='$cxlass'>$status[$STATUS_R]</span></td>";
-    $html[]="<td style='vertical-align:middle;width=1%' nowrap>$install[$STATUS_R]</span></td>";
+    $html=array();
+    $html[]="<tr>";
+    $html[]="<td style='width:1%' nowrap>".ksf_feature($STATUS_R,$title)."</td>";
+    $html[]="<td><div class='ksf-desc$descoff'>$explain</div></td>";
+    $html[]="<td style='width:1%' nowrap>".ksf_badge($STATUS_R)."</td>";
+    $html[]="<td class='ksf-act' style='width:1%' nowrap>".ksf_action($STATUS_R,$cmd_on,$cmd_off)."</td>";
     $html[]="</tr>";
     return @implode("\n",$html);
 }
@@ -293,19 +344,15 @@ function status(){
     }else{
         VERBOSE("CORP_LICENSE = FALSE",__LINE__);
     }
-    $TRCLASS=null;
-    $t=time();
     $html[]="<div id='global-status'></div>";
-    $html[]="<table id='table-$t' class=\"table table-stripped\" style='margin-top:20px' data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize'>{features}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{action}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
+    $html[]="<div class='ksf-wrap'><div class='ksf-card'><div class='ksf-scroll'>";
+    $html[]="<table class='ksf-tbl'>";
+    $html[]="<thead><tr>";
+    $html[]="<th>{features}</th>";
+    $html[]="<th>{description}</th>";
+    $html[]="<th>{status}</th>";
+    $html[]="<th style='text-align:right'>{action}</th>";
+    $html[]="</tr></thead>";
     $html[]="<tbody>";
 
     $EnableSquidMicroHotSpot=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidMicroHotSpot"));
@@ -343,8 +390,6 @@ function status(){
     if(!$CORP_LICENSE){
         $CloudCat=3;
     }
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $array["TRCLASS"]=$TRCLASS;
     $array["TITLE"]="{query_artica_cloud_database}";
     $array["EXPLAIN"]="{query_artica_cloud_database_explain}";
     $array["CMD_ON"] = null;
@@ -352,8 +397,6 @@ function status(){
     $array["CMD_OFF"]= null;
     $html[]=row_status($array);
 
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $array["TRCLASS"]=$TRCLASS;
     $array["TITLE"]="{blackandwhite_list}";
     $array["STATUS"]=5;
     $array["EXPLAIN"]="{blackandwhite_list_members}";
@@ -361,8 +404,6 @@ function status(){
 
 
 
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $array["TRCLASS"]=$TRCLASS;
     $array["TITLE"]="{reputation_services}";
     $array["EXPLAIN"]="{KSRN_EXPLAIN}";
     $array["CMD_ON"] = main_install_ksrn();
@@ -374,25 +415,20 @@ function status(){
     $currentMem = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TOTAL_MEMORY_MB"));
 
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $array["TRCLASS"]=$TRCLASS;
-        $array["TITLE"]="{APP_UFDBGUARDD}";
-        $array["EXPLAIN"]="{ufdbgdb_explain}";
-        $array["CMD_ON"] = main_install_ufdbcat();
-        $array["STATUS"]=$EnableUfdbGuard;
-        $array["CMD_OFF"]= main_uninstall_ufdbcat();
-        $html[]=row_status($array);
-
+    // Web filtering (ufdbGuard): its own routes (/ufdb/install, /ufdb/uninstall), the ones of the
+    // status widget below. This row used the categories service commands (/dnscatz/*) and, under
+    // 2.5 GB of memory, was rendered twice. Not enough memory only refuses the installation: an
+    // installed service can still be removed.
+    $array["TITLE"]="{APP_UFDBGUARDD}";
+    $array["EXPLAIN"]="{ufdbgdb_explain}";
+    $array["STATUS"]=$EnableUfdbGuard;
+    $array["CMD_ON"] = main_install_ufdb();
+    $array["CMD_OFF"]= main_uninstall_ufdb();
     if($currentMem<2500){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $array["TRCLASS"]=$TRCLASS;
-        $array["TITLE"]="{APP_UFDBGUARDD}";
         $array["EXPLAIN"]="{ufdbgdb_explain}<br><strong class='text-danger'>{NO_ENOUGH_MEMORY_FOR_THIS_SECTION}</strong>";
         $array["CMD_ON"] = "";
-        $array["STATUS"]=$EnableUfdbGuard;
-        $array["CMD_OFF"]= "";
-        $html[]=row_status($array);
     }
+    $html[]=row_status($array);
 
 
 
@@ -401,12 +437,6 @@ function status(){
 
 
     if($SQUIDEnable==1) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-        $array["TRCLASS"] = $TRCLASS;
         $array["TITLE"] = "{APP_CATEGORIES_CACHE}";
         $array["EXPLAIN"] = "{APP_CATEGORIES_CACHE_TEXT}";
         $array["CMD_ON"] = main_install_categories_cache();
@@ -415,13 +445,7 @@ function status(){
         $html[] = row_status($array);
 
 
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
 
-        $array["TRCLASS"] = $TRCLASS;
         $array["TITLE"] = "{web_portal_authentication}";
         $array["STATUS"] = $EnableSquidMicroHotSpot;
         $array["EXPLAIN"] = "{HotSpot_text}";
@@ -434,7 +458,6 @@ function status(){
         }
 
         $array = array();
-        $array["TRCLASS"] = $TRCLASS;
         $array["TITLE"] = "{APP_ITCHARTER}";
         $array["STATUS"] = $EnableITChart;
         $array["EXPLAIN"] = "{IT_charter_explain}";
@@ -442,12 +465,6 @@ function status(){
         $array["CMD_OFF"] = main_uninstall_itcharter();
         $html[] = row_status($array);
 
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-        $array["TRCLASS"] = $TRCLASS;
         $array["TITLE"] = "{UseCloudArticaCategories}";
         $array["EXPLAIN"] = "{UseCloudArticaCategories_text}";
         $array["CMD_ON"] = main_install_kcloud();
@@ -456,9 +473,9 @@ function status(){
         $html[] = row_status($array);
     }
 
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
     $html[]="</tbody>";
     $html[]="</table>";
+    $html[]="</div></div></div>";
 
     $refersh=$tpl->RefreshInterval_js("global-status",$page,"global-status=yes");
 
@@ -469,13 +486,13 @@ function status(){
     Loadjs('fw.ksrn.filtering.features.php?jstiny=yes');
 	</script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo ksf_style().$tpl->_ENGINE_parse_body(@implode("\n", $html));
 }
 function jstiny():bool{
     $tpl=new template_admin();
     $Go_Shield_Server_Enable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Enable"));
 
-    $remove_feature=$tpl->framework_buildjs("ksrn.php?uninstall-feature=yes",
+    $remove_feature=$tpl->framework_buildjs("/goshield/uninstall",
         "go.shield.server.progress",
         "go.shield.server.log",
         "progress-ksrnfeatures-restart","document.location.href='/index';");

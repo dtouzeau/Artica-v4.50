@@ -101,8 +101,9 @@ function search(){
         }
         if(intval($re[1])==0){continue;}
         $time=$tpl->time_to_date($re[1],true);
-        $ipaddr=$re[2];
-        $query=trim($re[3]." ($re[4])");
+        // Pentest 2026-11-04 : IP cliente / requete DNSBL (donnee externe) affichees sans encodage (XSS stockee).
+        $ipaddr=req_html($re[2]);
+        $query=req_html(trim($re[3]." ($re[4])"));
         $answer=$re[5];
         $Found=intval($re[6]);
         $ms=$re[7];

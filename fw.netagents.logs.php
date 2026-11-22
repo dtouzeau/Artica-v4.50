@@ -1,4 +1,11 @@
 <?php
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 // Network Agents Management logs page
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){
@@ -90,7 +97,7 @@ function search():bool{
 
     $count=intval($json->count??count($lines));
 
-    $html[]="<table class='table table-striped table-hover' id='table-agents'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead><tr>";
     $html[]="  <th>{date}</th>";
     $html[]="  <th>{type}</th>";
@@ -110,7 +117,7 @@ function search():bool{
     $LEVELS["TRACE"]="<span class='label label-default'>TRACE</span>";
 
     foreach ($lines as $line){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $json=json_decode($line,true);
 
         if(!$json){continue;}
@@ -126,22 +133,23 @@ function search():bool{
             $levelL=strtoupper($json["level"]);
             $level=$LEVELS[$levelL];
         }
+        // Pentest 2026-11-04 : journal de l'agent (methode, requete, chemin, statut) (donnee externe) affiche sans encodage (XSS stockee).
         if(isset($json["method"])){
-            $method=$json["method"];
+            $method=req_html($json["method"]);
         }
         if(isset($json["query"])){
-            $query=$json["query"];
+            $query=req_html($json["query"]);
         }
         if(isset($json["message"])){
-            $query=$json["message"];
+            $query=req_html($json["message"]);
             $textCl="";
         }
         if(isset($json["path"])){
-            $query=$query." <small>{$json["path"]}</small>";
+            $query=$query." <small>".req_html($json["path"])."</small>";
         }
 
         if(isset($json["status"])){
-            $status=$json["status"];
+            $status=req_html($json["status"]);
         }
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td $wd1 class='$textCl'><strong>$date</strong></td>";
@@ -161,12 +169,12 @@ function search():bool{
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
     $html[]="<script>";
 	$html[]="NoSpinner();";
 	$html[]=@implode("\n",$tpl->ICON_SCRIPTS);
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
     return true;
 }
 function syslog_search():bool{
@@ -206,7 +214,7 @@ function syslog_search():bool{
 
     $count=intval($json->count??count($lines));
 
-    $html[]="<table class='table table-striped table-hover' id='table-agents'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead><tr>";
     $html[]="  <th>{date}</th>";
     $html[]="  <th>{service}</th>";
@@ -225,12 +233,13 @@ function syslog_search():bool{
     $LEVELS["TRACE"]="<span class='label label-default'>TRACE</span>";
 
     foreach ($lines as $line){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $m=sFind($line);
         $time=$tpl->time_to_date(syslogToTimestamp("$m[1] $m[2] $m[3]"),true);
-        $service=$m[4];
-        $pid=$m[5];
-        $event=$m[6];
+        // Pentest 2026-11-04 : ligne syslog de l'agent (donnee externe) affiche sans encodage (XSS stockee).
+        $service=req_html($m[4] ?? "");
+        $pid=req_html($m[5] ?? "");
+        $event=req_html($m[6] ?? "");
         $textCl="text-muted";
 
         $html[]="<tr class='$TRCLASS'>";
@@ -250,7 +259,7 @@ function syslog_search():bool{
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
     $html[]="<script>";
     $html[]="NoSpinner();";
     $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
@@ -259,7 +268,10 @@ function syslog_search():bool{
     return true;
 }
 
-function syslogToTimestamp(string $dateString, ?int $year = null): int|false
+// Plancher PHP 7.3: le type de retour union `int|false` n'arrive qu'en 8.0 et
+// fait echouer l'analyse syntaxique du fichier entier. Le type reste documente.
+/** @return int|false */
+function syslogToTimestamp(string $dateString, ?int $year = null)
 {
     if ($year === null) {
         $year = date('Y');
@@ -293,6 +305,6 @@ function sFind($event):array{
         $z[6]=$m[5];
         return $z;
     }
-    echo "<li class='text-danger'>$event</li>";
+    echo "<li class='text-danger'>".req_html($event)."</li>";
     return array();
 }

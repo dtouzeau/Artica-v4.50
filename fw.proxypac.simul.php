@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
@@ -55,14 +56,11 @@ function form(){
     include_once(dirname(__FILE__)."/ressources/class.squid.acls.useragents.inc");
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $useragents=new useragents(false);
     $USERAGENT=$_SERVER["HTTP_USER_AGENT"];
     $regex=$useragents->PatternToRegex($USERAGENT);
-    $USERAGENT=$q->sqlite_escape_string2($USERAGENT);
-    $regex=$q->sqlite_escape_string2($regex);
-    $sql="INSERT OR IGNORE INTO UserAgents(source,regex) VALUES ('$USERAGENT','$regex')";
-    $q->QUERY_SQL($sql);
+    // acls.db is API-only — upsert the user agent via the useragents API.
+    acls_api_send("POST","/proxy/useragents",array("source"=>$USERAGENT,"regex"=>$regex));
 
     if(!isset($_SESSION["SIMULPACK_USERAGENT"])){$_SESSION["SIMULPACK_USERAGENT"]=null;}
     if(!isset($_SESSION["SIMULPACK_IPADDR"])){$_SESSION["SIMULPACK_IPADDR"]=$_SERVER["REMOTE_ADDR"];}

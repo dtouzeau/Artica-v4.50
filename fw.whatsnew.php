@@ -30,7 +30,20 @@ function popup(){
     $html[]="</tr>";
     $html[]="</thead>";
     $html[]="<tbody>";
-    rsort($table);
+    // Dated entries ("20260925-17: Fix: …") first, newest first, then the legacy undated
+    // lines in their previous order. A single rsort() put every dated line AFTER the
+    // "Fix:"/"Add:" ones: letters sort above digits, so the newest changes landed last.
+    $dated=array();
+    $undated=array();
+    foreach ($table as $line){
+        $line=trim($line);
+        if($line==null){continue;}
+        if(preg_match("#^[0-9]{8}-#",$line)){$dated[]=$line;continue;}
+        $undated[]=$line;
+    }
+    rsort($dated);
+    rsort($undated);
+    $table=array_merge($dated,$undated);
     foreach ($table as $line){
 
             $line   = trim($line);
@@ -38,7 +51,8 @@ function popup(){
             $md     = md5($line);
 
         if($line==null){continue;}
-        if(preg_match("#^([0-9\.]+):(.+)#",$line,$re)){
+        // "4.50.1: …" as before, and "20260925-17: …" — the dash kept the date glued to the text.
+        if(preg_match("#^([0-9][0-9\.\-]*):\s*(.+)#",$line,$re)){
             $xver=$re[1];
             $line=$re[2];
         }

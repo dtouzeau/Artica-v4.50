@@ -14,17 +14,10 @@ if(isset($_GET["milters-progress"])){milters_progress();exit;}
 if(isset($_GET["myhostname"])){myhostname();exit;}
 if(isset($_GET["maillog-postfix"])){maillog_postfix();exit;}
 if(isset($_GET["postcat-q"])){postfix_postcat_q();exit;}
-if(isset($_GET["postfix-hash-smtp-generic"])){postfix_hash_smtp_generic_maps();exit;}
-if(isset($_GET["apply_sender_routing_rule"])){apply_sender_routing_rule();exit;}
 if(isset($_GET["smtpd-client-restrictions"])){smtpd_client_restrictions();exit;}
 if(isset($_GET["mastercf"])){master_cf();exit;}
 if(isset($_GET["RunSaUpd"])){RunSaUpd();exit;}
-if(isset($_GET["postfix-instances-list"])){postfix_instances_list();exit;}
-if(isset($_GET["postfix-reconfigure-transport"])){postfix_reconfigure_transport();exit;}
-
-if(isset($_GET["instance-delete"])){postfix_instance_delete();exit;}
 if(isset($_GET["postsuper-remove-all"])){postfix_remove_all_queues();exit;}
-if(isset($_GET["postfix-debug-peer-list"])){postfix_debug_peer_list();exit;}
 if(isset($_GET["EnableStopPostfix"])){EnableStopPostfix();exit;}
 if(isset($_GET["smtp-adv-start"])){ExecuteAdvancedRouting();exit;}
 if(isset($_GET["multibubble"])){multibubble();exit;}
@@ -34,9 +27,7 @@ if(isset($_GET["query-maillog"])){query_maillog();exit();}
 if(isset($_GET["mgreylist-srv"])){milter_greylist_service_debug();exit();}
 if(isset($_GET["mgreylist-config"])){milter_greylist_config();exit();}
 if(isset($_GET["transactions-order"])){transaction_search_postfixid();exit;}
-if(isset($_GET["reconfigure-mailman"])){reconfigure_mailman();exit;}
 if(isset($_GET["mailbox-transport"])){mailbox_transport();exit;}
-if(isset($_GET["mailbox-transport-maps"])){mailbox_transport_maps();exit;}
 if(isset($_GET["milters"])){build_milters();exit;}
 if(isset($_GET["restart-mailarchiver"])){restart_mailarchiver();exit;}
 if(isset($_GET["mailarchiver-status"])){mailarchiver_status();exit;}
@@ -44,13 +35,12 @@ if(isset($_GET["varspool"])){checks_varspool();exit;}
 if(isset($_GET["changeSpool"])){changeSpool();exit;}
 if(isset($_GET["stats-var-spool"])){stats_var_spool();exit;}
 if(isset($_GET["CertificateConfigFile"])){CertificateConfigFile();exit;}
-if(isset($_GET["install"])){install_postfix();exit;}
-if(isset($_GET["uninstall"])){uninstall_postfix();exit;}
+
 
 if(isset($_GET["islocked"])){islocked();exit;}
 if(isset($_GET["RemovePostfixInterface"])){islocked_enable();exit;}
 if(isset($_GET["EnablePostfixInterface"])){islocked_disable();exit;}
-if(isset($_GET["happroxy"])){happroxy();exit;}
+
 
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
@@ -79,20 +69,7 @@ function master_cf(){
 	
 }
 
-function postfix_reconfigure_transport(){
-	$hostname=$_GET["hostname"];
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-		
-	if($hostname=="master"){
-		$cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix.hashtables.php --transport --reload >/dev/null 2>&1 &";
-        shell_exec($cmd);
-        writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	}
 
-
-}
 
 function ExecuteAdvancedRouting(){
 	$unix=new unix();
@@ -121,42 +98,6 @@ function restart_mailarchiver(){
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);		
 }
 
-function install_postfix(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php=$unix->LOCATE_PHP5_BIN();
-	
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/postfix.install";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/postfix.install.txt";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);	
-	$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-install.php --install >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-	
-}
-function uninstall_postfix(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php=$unix->LOCATE_PHP5_BIN();
-
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/postfix.install";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/postfix.install.txt";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);
-	$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-install.php --uninstall >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-
-}
 
 
 
@@ -209,24 +150,7 @@ function mailarchiver_status(){
 }
 
 
-function happroxy(){
-	$hostname=$_GET["hostname"];
-	if(trim($hostname)==null){return;}
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	
-	if($hostname=="master"){
-		$cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix.maincf.php --loadbalance >/dev/null 2>&1 &";	
-		shell_exec($cmd);
-		writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
-		return;		
-	}
-	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure \"$hostname\" >/dev/null 2>&1 &";
-	shell_exec($cmd);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
-}
+
 
 
 
@@ -243,67 +167,10 @@ function RunSaUpd(){
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
 }
 
-function postfix_debug_peer_list(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php=$unix->LOCATE_PHP5_BIN();	
 
-	if($_GET["hostname"]<>null){
-		if($_GET["hostname"]=="master"){
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix.maincf.php --debug-peer-list >/dev/null 2>&1 &";
-			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-			shell_exec($cmd);
-		}else{
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure ".escapeshellarg($_GET["hostname"])." >/dev/null 2>&1 &";
-			shell_exec($cmd);
-			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-		}
-		return;
-	}
-	$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix.maincf.php --debug-peer-list >/dev/null 2>&1 &";
-	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-	shell_exec($cmd);
-}
 
-function postfix_instance_delete(){
-	$unix=new unix();
-	$postmulti=$unix->find_program("postmulti");
-	$instance="postfix-".preg_replace('/[^a-zA-Z0-9_\-]/', '', $_GET["instance-delete"]);
-	$cmd="$postmulti -i ".escapeshellarg($instance)." -p stop";
-	$results=array();
-	exec($cmd,$results);
-	writelogs_framework($cmd ." ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
-	$cmd="$postmulti -i ".escapeshellarg($instance)." -e disable";
-	$results=array();
-	exec($cmd,$results);
-	writelogs_framework($cmd ." ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
-	$rm=$unix->find_program("rm");
-	$directory="/var/spool/$instance";
-	if(is_dir($directory)){
-		$cmd="$rm -rf $directory";
-		$results=array();
-		exec($cmd,$results);
-		writelogs_framework($cmd ." ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);			
-	}
-	
-}
 
-function postfix_instances_list(){
-	$unix=new unix();
-	$search=trim(strtolower($_GET["search"]));
-	if(strlen($search)>0){
-		$grep=$unix->find_program("grep");
-		$search=str_replace(".", "\.", $search);
-		$search=str_replace("*", ".*?", $search);
-		$searcchmd="|$grep --binary-files=text -i -E '$search.*?\s+'";
-	}
-	
-	$postmulti=$unix->find_program("postmulti");
-	$cmd="$postmulti -l$searcchmd 2>&1";
-	exec($cmd,$results);
-	writelogs_framework($cmd ." ". count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
-	echo "<articadatascgi>". base64_encode(serialize($results))."</articadatascgi>";
-}
+
 
 function postfix_remove_all_queues(){
 	$hostname=trim($_GET["hostname"]);
@@ -500,16 +367,7 @@ function transaction_search_postfixid(){
 	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);	
 	
 }
-function reconfigure_mailman(){
-	$hostname=$_GET["hostname"];
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix.hashtables.php --mailman >/dev/null 2>&1 &";
-	shell_exec($cmd);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);		
-	
-}
+
 
 function mailbox_transport(){
 	$unix=new unix();
@@ -522,31 +380,9 @@ function mailbox_transport(){
 			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 			shell_exec($cmd);
 			return;
-		}else{
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure ".escapeshellarg($_GET["hostname"])." >/dev/null 2>&1 &";
-			shell_exec($cmd);
-			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-			return;
 		}
 }
-function mailbox_transport_maps(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php=$unix->LOCATE_PHP5_BIN();	
-	if($_GET["hostname"]==null){$_GET["hostname"]="master";}
 
-	if($_GET["hostname"]=="master"){
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix.hashtables.php --mailbox-transport-maps >/dev/null 2>&1 &";
-			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-			shell_exec($cmd);
-			return;
-		}else{
-			$cmd="$nohup $php /usr/share/artica-postfix/exec.postfix-multi.php --instance-reconfigure ".escapeshellarg($_GET["hostname"])." >/dev/null 2>&1 &";
-			shell_exec($cmd);
-			writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
-			return;
-		}	
-}
 function checks_varspool(){
 	if(!is_link("/var/spool")){
 		echo "<articadatascgi>". base64_encode("/var/spool")."</articadatascgi>";
@@ -627,27 +463,7 @@ function CertificateConfigFile(){
 	}
 
 }
-function smtpd_client_restrictions(){
-	$instance_id=intval($_GET["instance-id"]);
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/smtpd_client_restrictions_progress";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/smtpd_client_restrictions_progress.log";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);
-	
-	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix.maincf.php --smtpd-client-restrictions --instance-id=$instance_id >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	shell_exec($cmd);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	
-}
+
 function clamav_milter(){
 	$hostname=$_GET["hostname"];
 	$unix=new unix();
@@ -694,89 +510,6 @@ function milters_progress(){
 
 }
 
-function postfix_hash_smtp_generic_maps(){
-	
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$instance_id=intval($_GET["instance-id"]);
-	
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/smtp_generic_maps";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/smtp_generic_maps.txt";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix.hashtables.php --smtp-generic-maps --instance-id=$instance_id >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	shell_exec($cmd);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
-
-
-function postmaster(){
-    $unix=new unix();
-    $nohup=$unix->find_program("nohup");
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $instance_id=intval($_GET["instance-id"]);
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/build_progress_postmaster";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/build_progress_postmaster.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0755);
-    @chmod($GLOBALS["LOG_FILE"], 0755);
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix.hashtables.php --postmaster --instance-id=$instance_id >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    shell_exec($cmd);
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-}
-
-function reconfigure(){
-
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-	$instance_id=intval($_GET["instance-id"]);
-    $unix->framework_execute(
-        "exec.postfix.maincf.php --reconfigure --instance-id=$instance_id","POSTFIX_COMPILES.$instance_id",
-        "POSTFIX_COMPILES.$instance_id.txt");
-
-
-}
-
-
-
-function apply_networks(){
-	$unix=new unix();
-	$instance_id=intval($_GET["instance-id"]);
-    $unix->framework_execute("exec.postfix.maincf.php --networks --instance-id=$instance_id","postfix.othervalues.progress","postfix.othervalues.progress.log");
-
-}
-
-
-function apply_sender_routing_rule(){
-	$unix=new unix();
-	$nohup=$unix->find_program("nohup");
-	$php5=$unix->LOCATE_PHP5_BIN();
-    $instance_id=intval($_GET["instance-id"]);
-	
-	$GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/build_progress_sender_routing";
-	$GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/build_progress_sender_routing.txt";
-	@unlink($GLOBALS["PROGRESS_FILE"]);
-	@unlink($GLOBALS["LOG_FILE"]);
-	@touch($GLOBALS["PROGRESS_FILE"]);
-	@touch($GLOBALS["LOG_FILE"]);
-	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
-	@chmod($GLOBALS["LOG_FILE"], 0755);
-	
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.postfix.hashtables.php --sender-dependent-relayhost --instance-id=$instance_id >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-	shell_exec($cmd);
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-		
-
-}
 function myhostname(){
 	$unix=new unix();
     $instance_id=intval($_GET["instance-id"]);

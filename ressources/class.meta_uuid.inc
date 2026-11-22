@@ -484,7 +484,7 @@ class mysql_uuid_meta{
 						$this->writeLogs("QUERY_SQL:".__LINE__.": DB:\"$database\" Error table {$re[1]} is crashed $errnum -> i will try to repair it, $called",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
 				}else{
 				$this->myisamchk($database,$re[2]);
-				die("DIE " .__FILE__." Line: ".__LINE__);
+				die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 				}
 				}
 	

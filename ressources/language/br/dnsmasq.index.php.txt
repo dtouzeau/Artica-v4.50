@@ -1,5 +1,5 @@
-<dnsmasq_DNS_cache_settings>DNS Cache settings</dnsmasq_DNS_cache_settings>
-<dnsmasq_DNS_cache_settings_text>Parameters in order to drive the DnsMasq caching addresses </dnsmasq_DNS_cache_settings_text>
+<dnsmasq_DNS_cache_settings>Configura&#231;&#245;es de cache DNS</dnsmasq_DNS_cache_settings>
+<dnsmasq_DNS_cache_settings_text>Par&#226;metros para gerenciar o armazenamento em cache de endere&#231;os do DnsMasq</dnsmasq_DNS_cache_settings_text>
 <dnsmasq_intro></dnsmasq_intro>
-<domain-needed>domain needed</domain-needed>
-<domain-needed_text>Never forward plain names (without a dot or domain part)</domain-needed_text>
+<domain-needed>dom&#237;nio necess&#225;rio</domain-needed>
+<domain-needed_text>Nunca encaminhar nomes simples (sem ponto ou parte de dom&#237;nio)</domain-needed_text>

@@ -68,9 +68,13 @@ function search_results():bool{
 
 
     $MAIN       = $tpl->format_search_protocol($_GET["search"],false,false,false,true);
-    $line       = base64_encode(serialize($MAIN));
-    $tfile      = PROGRESS_DIR."/logs-sink.rtt.syslog";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("syslog.php?logs-sink-rtt=$line");
+    // articarest /system/logfile/search/logsink-rtime : lignes les plus recentes d'abord.
+    $error      = "";
+    $results    = $tpl->logfile_search("logsink-rtime",$MAIN,true,250,$error);
+    if($error<>""){
+        echo $tpl->div_error($error);
+        return false;
+    }
 
 
     $html[]="
@@ -88,9 +92,6 @@ function search_results():bool{
 ";
 
     $rsyslogd=new rsyslogd_events();
-    $data=@file_get_contents($tfile);
-    $results=@explode("\n",$data);
-    krsort($results);
     $COuntOfRows=count($results);
     foreach ($results as $line){
         $WINEVNTS=false;
@@ -100,13 +101,14 @@ function search_results():bool{
 
         $main=$rsyslogd->parse_line($line);
 
-        $Month=$main["Month"];
-        $Day=$main["Day"];
-        $time=$main["time"];
-        $Hostname=$main["Hostname"];
-        $program=$main["program"];
-        $pid=$main["pid"];
-        $line=$main["line"];
+        // Pentest 2026-11-04 : ligne syslog temps reel (hote, programme, message : donnee externe) (donnee externe) affiche sans encodage (XSS stockee).
+        $Month=req_html($main["Month"]);
+        $Day=req_html($main["Day"]);
+        $time=req_html($main["time"]);
+        $Hostname=req_html($main["Hostname"]);
+        $program=req_html($main["program"]);
+        $pid=req_html($main["pid"]);
+        $line=req_html($main["line"]);
         $class=null;
 
         if(preg_match("#(No such file|Invalid|Error querying)#i",$line)){

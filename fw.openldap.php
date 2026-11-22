@@ -6,8 +6,17 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_POST["EnableLDAPSyncProv"])){cluster_save();exit;}
+if(isset($_POST["SyncProvUserDN"])){cluster_save();exit;}
+if(isset($_POST["EnableLDAPSyncProvClient"])){cluster_save();exit;}
 if(isset($_GET["cluster"])){cluster();exit;}
 if(isset($_GET["cluster2"])){cluster2();exit;}
+if(isset($_GET["cluster-flat"])){cluster_flat();exit;}
+if(isset($_GET["cluster-general-js"])){cluster_general_js();exit;}
+if(isset($_GET["cluster-general-popup"])){cluster_general_popup();exit;}
+if(isset($_GET["cluster-server-js"])){cluster_server_js();exit;}
+if(isset($_GET["cluster-server-popup"])){cluster_server_popup();exit;}
+if(isset($_GET["cluster-client-js"])){cluster_client_js();exit;}
+if(isset($_GET["cluster-client-popup"])){cluster_client_popup();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["table2"])){table2();exit;}
 if(isset($_GET["tab"])){tabs();exit;}
@@ -87,9 +96,36 @@ function join_js(){
 function join_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $WizardLdapCluster=serialize($_POST);
-    admin_tracks("Run wizard to join an OpenLDAP Master {$_POST["REMOTE_ARTICA_SERVER"]}");
+    $server=trim($_POST["REMOTE_ARTICA_SERVER"]);
+    $port=intval($_POST["REMOTE_ARTICA_SERVER_PORT"]);
+    if($port==0){$port=9000;}
+    $username=trim($_POST["REMOTE_ARTICA_USERNAME"]);
+    if($username==null){$username="Manager";}
+    $password=$_POST["REMOTE_ARTICA_PASSWORD"];
+
+    // La cle WizardLdapCluster ne sert plus qu'a re-remplir ce formulaire: elle
+    // ne porte PLUS le mot de passe administrateur du master. Il partait ici en
+    // clair dans Valkey, et n'y etait efface qu'en cas de SUCCES -- une jointure
+    // ratee l'y laissait indefiniment.
+    $WizardLdapCluster=serialize(array(
+        "REMOTE_ARTICA_SERVER"=>$server,
+        "REMOTE_ARTICA_SERVER_PORT"=>$port,
+        "REMOTE_ARTICA_USERNAME"=>$username));
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WizardLdapCluster",$WizardLdapCluster);
+
+    // Les identifiants voyagent dans le CORPS du POST: le daemon les garde en
+    // memoire (usage unique, 5 min) et le GET emis ensuite par framework_buildjs
+    // consomme ce ticket. Une URL est journalisee dans articarest.query.log, un
+    // corps ne l'est pas.
+    $payload=array("server"=>$server,"port"=>$port,"username"=>$username,"password"=>$password);
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/openldap/cluster/join",$payload));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        $error="{failed}";
+        if(is_object($json) && isset($json->Error)){$error=$json->Error;}
+        echo $tpl->post_error($error);
+        return;
+    }
+    admin_tracks("Run wizard to join an OpenLDAP Master $server");
 }
 
 function join_popup(){
@@ -111,7 +147,7 @@ function join_popup(){
     $form[]= $tpl->field_password("REMOTE_ARTICA_PASSWORD","{REMOTE_ARTICA_PASSWORD}",$REMOTE_ARTICA_PASSWORD,true);
 
     $applyjs=$tpl->framework_buildjs(
-        "openldap.php?join=yes",
+        "/openldap/cluster/join",
         "openldap.join.prog",
         "openldap.join.log",
         "progress-openldap-restart",
@@ -129,7 +165,8 @@ function join_popup(){
 }
 
 function suffix_js(){
-    $id=$_GET["id"];
+    // Pentest 2026-11-04 : id etait recopie sans encodage dans la page (XSS). C'est un id de DOM.
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
     $value=$_GET["value"];
     $valuencode=urlencode($value);
     $page=CurrentPageName();
@@ -144,13 +181,16 @@ function suffix_popup(){
     $id=$_GET["id"];
     $value=$_GET["suffix-popup"];
 
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/openldap.chsuffix.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/openldap.chsuffix.progress.txt";
-    $ARRAY["CMD"]="openldap.php?change-suffix=yes";
-    $ARRAY["TITLE"]="{suffix}";
-    $ARRAY["AFTER"]="window.location.href ='logoff.php';";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-openldap-suffix')";
+    // Le POST du formulaire arme l'operation cote daemon ; ce GET la lance et la
+    // fenetre suit openldap.chsuffix.progress. Le fichier de progression vit
+    // desormais dans PROGRESS_DIR (ressources/logs/web), ou notifs.BuildProgress
+    // ecrit, et non plus dans ressources/logs.
+    $jsrestart=$tpl->framework_buildjs(
+        "/openldap/suffix/change",
+        "openldap.chsuffix.progress",
+        "openldap.chsuffix.progress.txt",
+        "progress-openldap-suffix",
+        "window.location.href ='logoff.php';");
 
     $tpl->field_hidden("ChangeLDAPSuffixFrom",$value);
     $html[]="<div id='progress-openldap-suffix'></div>";
@@ -162,24 +202,37 @@ function suffix_popup(){
 }
 
 function suffix_save(){
-    $sock=new sockets();
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    
-    if(strtolower($_POST["ChangeLDAPSuffixTo"]) == strtolower($_POST["ChangeLDAPSuffixFrom"]) ){
+    $to=trim($_POST["ChangeLDAPSuffixTo"]);
+    $from=trim($_POST["ChangeLDAPSuffixFrom"]);
+
+    if(strtolower($to) == strtolower($from)){
         echo $tpl->post_error("{no_change}");
         exit;
     }
-    admin_tracks("Change LDAP Database suffix from {$_POST["ChangeLDAPSuffixFrom"]} to {$_POST["ChangeLDAPSuffixTo"]}");
-    $sock->SaveConfigFile(base64_encode($_POST["ChangeLDAPSuffixTo"]),"ChangeLDAPSuffixTo");
-    $sock->SaveConfigFile(base64_encode($_POST["ChangeLDAPSuffixFrom"]),"ChangeLDAPSuffixFrom");
+
+    // Le daemon valide le suffixe ICI et arme un ticket a usage unique (5 min) :
+    // l'operation DETRUIT et reconstruit l'annuaire, une URL seule ne doit pas
+    // suffire a la declencher. Valider au POST fait aussi apparaitre un refus
+    // dans la modale, et non dans une fenetre de progression qui n'avance pas.
+    // Les cles ChangeLDAPSuffixTo/From ne sont plus ecrites : le daemon lit le
+    // suffixe courant dans clladp.
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/openldap/suffix/change",array("to"=>$to)));
+    if(!is_object($json) || !isset($json->Status) || !$json->Status){
+        $error="{failed}";
+        if(is_object($json) && isset($json->Error)){$error=$json->Error;}
+        echo $tpl->post_error($error);
+        exit;
+    }
+    admin_tracks("Change LDAP Database suffix from $from to $to");
 }
 
 function page(){
 	$page=CurrentPageName();
     $tpl=new template_admin();
 
-    $html=$tpl->page_header("{APP_OPENLDAP}","fas fa-database","{APP_OPENLDAP_EXPLAIN}",
+    $html=$tpl->page_header("{APP_OPENLDAP}",ico_database,"{APP_OPENLDAP_EXPLAIN}",
         "$page?tab=yes","ldap-database","progress-openldap-restart",false,"table-loader-openldap-service");
 
     $tpl=new template_admin("{APP_OPENLDAP}",$html);
@@ -195,19 +248,36 @@ function page(){
 
 }
 function cluster_save(){
-
     $tpl=new template_admin();
-    $tpl->SAVE_POSTs();
-    $EnableLDAPSyncProv=intval($_POST["EnableLDAPSyncProv"]);
-    if($EnableLDAPSyncProv==0){
-        admin_tracks("Set LDAP Server Cluster replication to OFF");
-        return true;
+    // Le bouton est masque sans le privilege, mais la page repond a toute session :
+    // le controle se fait ici, cote serveur.
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){
+        echo $tpl->post_error("{ERROR_NO_PRIVS2}");
+        return false;
     }
-    if($EnableLDAPSyncProv==1){
-        admin_tracks("Set LDAP Server Cluster replication to ON Client mode={$_POST["EnableLDAPSyncProvClient"]}");
+    if(isset($_POST["LDAPSyncProvID"])){
+        $id=intval($_POST["LDAPSyncProvID"]);
+        if($id<1){$id=1;}
+        if($id>999){$id=999;}
+        $_POST["LDAPSyncProvID"]=$id;
+    }
+    $tpl->SAVE_POSTs();
+    // Chaque fenetre n'envoie que ses propres champs : le journal decrit ce qui a change.
+    if(isset($_POST["EnableLDAPSyncProv"])){
+        if(intval($_POST["EnableLDAPSyncProv"])==0){
+            admin_tracks("Set LDAP Server Cluster replication to OFF");
+        }else{
+            admin_tracks("Set LDAP Server Cluster replication to ON (server id {$_POST["LDAPSyncProvID"]})");
+        }
+    }
+    if(isset($_POST["SyncProvUserDN"])){
+        admin_tracks("Set LDAP Server Cluster sync user to {$_POST["SyncProvUserDN"]}");
+    }
+    if(isset($_POST["EnableLDAPSyncProvClient"])){
+        admin_tracks("Set LDAP Server Cluster client mode={$_POST["EnableLDAPSyncProvClient"]} master=".(isset($_POST["LDAPSyncProvClientServer"])?$_POST["LDAPSyncProvClientServer"]:""));
     }
     return true;
-
 }
 function cluster(){
     $page=CurrentPageName();
@@ -217,82 +287,153 @@ function cluster(){
 function cluster2(){
     $page=CurrentPageName();
     $tpl=new template_admin();
+
+    $EnableLDAPSyncProv=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProv"));
+    $EnableLDAPSyncProvClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProvClient"));
+
+    $title_add=" ({disabled})";
+    if($EnableLDAPSyncProv==1){
+        $title_add=" ({master_mode})";
+        if($EnableLDAPSyncProvClient==1){$title_add=" ({client_mode})";}
+    }
+
+    $html[]="<table style='width:100%;margin-top:10px'>";
+    $html[]="<tr>";
+    $html[]="<td style='width:240px;vertical-align: top'><div id='cluster-status'></div></td>";
+    $html[]="<td style='width:99%;vertical-align: top;padding-left:20px'><div id='cluster-flat'></div></td>";
+    $html[]="</tr>";
+    $html[]="</table>";
+
+    $topbuttons[]=array("Loadjs('$page?join-js=yes');","fas fa-sign-in","{join_a_cluster}");
+    $TINY_ARRAY["TITLE"]="{APP_OPENLDAP}:{cluster}$title_add";
+    $TINY_ARRAY["ICO"]="fad fa-exchange";
+    $TINY_ARRAY["EXPL"]="{APP_OPENLDAP_EXPLAIN}";
+    $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
+    $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+
+    $html[]="<script>";
+    $html[]="LoadAjax('cluster-status','$page?status=yes');";
+    $html[]="LoadAjaxSilent('cluster-flat','$page?cluster-flat=yes');";
+    $html[]=$headsjs;
+    $html[]="</script>";
+    echo $tpl->_ENGINE_parse_body($html);
+}
+function cluster_flat(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
     $security="AsSystemAdministrator";
 
     $EnableLDAPSyncProv=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProv"));
-    $EnableLDAPSyncProvClient=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProvClient");
+    $EnableLDAPSyncProvClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProvClient"));
+    $SyncProvUser=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SyncProvUserDN"));
+    $LDAPSyncProvClientServer=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientServer"));
+    $LDAPSyncProvClientSearchBase=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientSearchBase"));
+    $LDAPSyncProvClientBindDN=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindDN"));
+    $LDAPSyncProvClientBindPassword=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindPassword"));
+    $LDAPSyncProvID=cluster_sync_id();
 
-    $SyncProvUser=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SyncProvUserDN");
-    $LDAPSyncProvClientServer=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientServer");
-    $LDAPSyncProvClientSearchBase=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientSearchBase");
-    $LDAPSyncProvClientBindDN=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindDN");
-    $LDAPSyncProvClientBindPassword=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindPassword");
+    // --- Replication : le service et l'identifiant de ce serveur dans la grappe
+    $tpl->table_form_section("{replication}");
+    $tpl->table_form_field_js("Loadjs('$page?cluster-general-js=yes')",$security);
+    $tpl->table_form_field_bool("{enable_ldap_sync_service}",$EnableLDAPSyncProv,"fad fa-exchange");
+    $tpl->table_form_field_text("{uuid}",$LDAPSyncProvID,ico_computer);
 
-    $LDAPSyncProvID=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvID"));
-    if($LDAPSyncProvID==0){$LDAPSyncProvID=1;}
-    if($LDAPSyncProvID>999){$LDAPSyncProvID=999;}
-
-    $title_add=null;
-
-    if($EnableLDAPSyncProv==0){$title_add=" ({disabled})";}
-    if($EnableLDAPSyncProv==1){
-        $title_add=" ({master_mode})";
-        if($EnableLDAPSyncProvClient==1){
-            $title_add=" ({client_mode})";
-        }else{
-            $LdapListenInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LdapListenInterface"));
-            if($LdapListenInterface==null){$LdapListenInterface="lo";}
-            if($LdapListenInterface=="lo"){
-                echo $tpl->div_error("{error_server_listen_loopback}");
-            }
+    // --- Mode serveur : le compte avec lequel les autres serveurs lisent cet annuaire
+    $tpl->table_form_section("{server_mode}");
+    if($EnableLDAPSyncProv==1 && $EnableLDAPSyncProvClient==0){
+        $LdapListenInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LdapListenInterface"));
+        if($LdapListenInterface=="" || $LdapListenInterface=="lo"){
+            $tpl->table_form_field_warn("{error_server_listen_loopback}");
         }
     }
+    $tpl->table_form_field_js("Loadjs('$page?cluster-server-js=yes')",$security);
+    if($SyncProvUser==""){$SyncProvUser="{none}";}
+    $tpl->table_form_field_text("{sync_user}",$SyncProvUser,ico_admin);
 
+    // --- Mode client : le serveur maitre dont cet annuaire est la copie
+    $tpl->table_form_section("{client_mode}");
+    $tpl->table_form_field_js("Loadjs('$page?cluster-client-js=yes')",$security);
+    $tpl->table_form_field_bool("{enable_client_mode}",$EnableLDAPSyncProvClient,ico_sitemap);
+    if($EnableLDAPSyncProvClient==1){
+        if($LDAPSyncProvClientServer==""){$LDAPSyncProvClientServer="{none}";}
+        if($LDAPSyncProvClientSearchBase==""){$LDAPSyncProvClientSearchBase="{none}";}
+        if($LDAPSyncProvClientBindDN==""){$LDAPSyncProvClientBindDN="{none}";}
+        // Jamais le mot de passe en clair dans la liste : seulement s'il est defini.
+        $pass=strlen($LDAPSyncProvClientBindPassword)>0?"********":"{none}";
+        $tpl->table_form_field_text("{ldap_server}",$LDAPSyncProvClientServer,ico_server);
+        $tpl->table_form_field_text("{searchbasedn}",$LDAPSyncProvClientSearchBase,ico_database);
+        $tpl->table_form_field_text("{ldap_user_dn}",$LDAPSyncProvClientBindDN,ico_admin);
+        $tpl->table_form_field_text("{ldap_password}",$pass,ico_lock);
+    }
 
-    $form[]=$tpl->field_checkbox("EnableLDAPSyncProv","{enable_ldap_sync_service}",$EnableLDAPSyncProv,true);
-    $form[]=$tpl->field_numeric("LDAPSyncProvID","{uuid}",$LDAPSyncProvID);
-    $form[]=$tpl->field_section("{server_mode}");
-    $form[]=$tpl->field_browse_ldap_user("SyncProvUserDN","{sync_user}",$SyncProvUser);
-
-    $form[]=$tpl->field_section("{client_mode}");
-    $form[]=$tpl->field_checkbox("EnableLDAPSyncProvClient","{enable_client_mode}",$EnableLDAPSyncProvClient,"LDAPSyncProvClientServer,LDAPSyncProvClientSearchBase,LDAPSyncProvClientBindDN,LDAPSyncProvClientBindPassword");
-    $form[]=$tpl->field_text("LDAPSyncProvClientServer","{ldap_server}",$LDAPSyncProvClientServer);
-    $form[]=$tpl->field_text("LDAPSyncProvClientSearchBase","{searchbasedn}",$LDAPSyncProvClientSearchBase);
-    $form[]=$tpl->field_text("LDAPSyncProvClientBindDN","{ldap_user_dn}",$LDAPSyncProvClientBindDN);
-    $form[]=$tpl->field_password("LDAPSyncProvClientBindPassword","{ldap_password}",$LDAPSyncProvClientBindPassword);
-
-
+    echo $tpl->table_form_compile(2);
+}
+function cluster_sync_id():int{
+    $id=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvID"));
+    if($id==0){$id=1;}
+    if($id>999){$id=999;}
+    return $id;
+}
+// Apres chaque enregistrement : fermer la fenetre, redemarrer le service (barre de
+// progression du haut de page) puis rafraichir la liste des parametres.
+function cluster_jsafter():string{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
     $jsrestart=$tpl->framework_buildjs(
         "/openldap/restart",
         "openldap.progress",
         "openldap.log",
         "progress-openldap-restart",
-        "LoadAjaxSilent('cluster-parameters','$page?cluster2=yes');"
+        "LoadAjaxSilent('cluster-flat','$page?cluster-flat=yes');"
     );
-
-    $html[]="<table style='width:100%;margin-top:10px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:240px;vertical-align: top'><div id='cluster-status'></div></td>";
-    $html[]="<td style='width:99%;vertical-align: top'>";
-    $html[]=$tpl->form_outside("{LDAP} {cluster}", @implode("\n", $form),null,"{apply}",$jsrestart,$security);
-
-    $bts[]="<div class=\"btn-group\" data-toggle=\"buttons\">";
-    $bts[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?join-js=yes');\"><i class='fas fa-sign-in'></i> {join_a_cluster} </label>";
-    $bts[]="</div>";
-
-
-    $TINY_ARRAY["TITLE"]="{APP_OPENLDAP}:{cluster}$title_add";
-    $TINY_ARRAY["ICO"]="fad fa-exchange";
-    $TINY_ARRAY["EXPL"]="{APP_OPENLDAP_EXPLAIN}";
-    $TINY_ARRAY["BUTTONS"]=@implode("",$bts);
-    $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<script>";
-    $html[]="LoadAjax('cluster-status','$page?status=yes');";
-    $html[]=$headsjs;
-    $html[]="</script>";
+    return "dialogInstance1.close();LoadAjaxSilent('cluster-flat','$page?cluster-flat=yes');$jsrestart";
+}
+function cluster_general_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog1("{replication}","$page?cluster-general-popup=yes",650);
+}
+function cluster_server_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog1("{server_mode}","$page?cluster-server-popup=yes",650);
+}
+function cluster_client_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog1("{client_mode}","$page?cluster-client-popup=yes",650);
+}
+function cluster_general_popup(){
+    $tpl=new template_admin();
+    $EnableLDAPSyncProv=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProv"));
+    $form[]=$tpl->field_checkbox("EnableLDAPSyncProv","{enable_ldap_sync_service}",$EnableLDAPSyncProv,true);
+    $form[]=$tpl->field_numeric("LDAPSyncProvID","{uuid}",cluster_sync_id());
+    $html[]=$tpl->div_explain("{replication}||{ldap_cluster_general_explain}");
+    $html[]=$tpl->form_outside("", @implode("\n", $form),"","{apply}",cluster_jsafter(),"AsSystemAdministrator");
+    echo $tpl->_ENGINE_parse_body($html);
+}
+function cluster_server_popup(){
+    $tpl=new template_admin();
+    $SyncProvUser=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SyncProvUserDN");
+    $form[]=$tpl->field_browse_ldap_user("SyncProvUserDN","{sync_user}",$SyncProvUser);
+    $html[]=$tpl->div_explain("{server_mode}||{ldap_cluster_server_explain}");
+    $html[]=$tpl->form_outside("", @implode("\n", $form),"","{apply}",cluster_jsafter(),"AsSystemAdministrator");
+    echo $tpl->_ENGINE_parse_body($html);
+}
+function cluster_client_popup(){
+    $tpl=new template_admin();
+    $EnableLDAPSyncProvClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLDAPSyncProvClient"));
+    $LDAPSyncProvClientServer=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientServer");
+    $LDAPSyncProvClientSearchBase=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientSearchBase");
+    $LDAPSyncProvClientBindDN=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindDN");
+    $LDAPSyncProvClientBindPassword=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LDAPSyncProvClientBindPassword");
+    $form[]=$tpl->field_checkbox("EnableLDAPSyncProvClient","{enable_client_mode}",$EnableLDAPSyncProvClient,"LDAPSyncProvClientServer,LDAPSyncProvClientSearchBase,LDAPSyncProvClientBindDN,LDAPSyncProvClientBindPassword");
+    $form[]=$tpl->field_text("LDAPSyncProvClientServer","{ldap_server}",$LDAPSyncProvClientServer);
+    $form[]=$tpl->field_text("LDAPSyncProvClientSearchBase","{searchbasedn}",$LDAPSyncProvClientSearchBase);
+    $form[]=$tpl->field_text("LDAPSyncProvClientBindDN","{ldap_user_dn}",$LDAPSyncProvClientBindDN);
+    $form[]=$tpl->field_password("LDAPSyncProvClientBindPassword","{ldap_password}",$LDAPSyncProvClientBindPassword);
+    $html[]=$tpl->div_explain("{client_mode}||{ldap_cluster_client_explain}");
+    $html[]=$tpl->form_outside("", @implode("\n", $form),"","{apply}",cluster_jsafter(),"AsSystemAdministrator");
     echo $tpl->_ENGINE_parse_body($html);
 }
 function tabs(){
@@ -340,7 +481,7 @@ function table2()
         $APP_SLAPD_VERSION = " v$APP_SLAPD_VERSION";
     }
     $TINY_ARRAY["TITLE"] = "{APP_OPENLDAP}$APP_SLAPD_VERSION";
-    $TINY_ARRAY["ICO"] = "fas fa-database";
+    $TINY_ARRAY["ICO"] = ico_database;
     $TINY_ARRAY["EXPL"] = "{APP_OPENLDAP_EXPLAIN}";
     $TINY_ARRAY["BUTTONS"] = $tpl->table_buttons($topbuttons);
     $headsjs = "Loadjs('fw.progress.php?tiny-page=" . urlencode(base64_encode(serialize($TINY_ARRAY))) . "');";
@@ -403,30 +544,55 @@ function flat_config(){
         $LdapListenInterface="{loopback}";
     }
 
+    if($RestartLDAPEach==0){
+        $RestartOpenLDAP=0;
+    }
+    $EnableOpenLDAPRestFul=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAPRestFul"));
+    $OpenLDAPUseMDB=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenLDAPUseMDB"));
+
+    // Un theme par section. Chaque ligne repose son propre table_form_field_js() :
+    // le regroupement a separe des lignes qui partageaient un ouvreur par simple
+    // voisinage, et switchjs n'est jamais desarme.
+
+    // --- Reseau : ou et comment le service ecoute
+    $tpl->table_form_section("{network_settings}");
     $tpl->table_form_field_js("Loadjs('$page?form-service-js=yes')",$security);
     $tpl->table_form_field_text("{listen_interface}", $LdapListenInterface.":389", ico_nic);
-    $tpl->table_form_field_text("{log_level}", $loglevel_hash[$OpenLDAPLogLevel], ico_bug);
-    $tpl->table_form_field_text("{ldap_suffix}",$ldap->suffix,ico_database);
     if($OpenLDAPEnableSSL==0){
         $tpl->table_form_field_bool("{use_ssl}",0,ico_ssl);
     }else{
         $tpl->table_form_field_text("{use_ssl}", "{listen_port} 636", ico_ssl);
         $tpl->table_form_field_text("{certificate}", $OpenLDAPCertificate, ico_certificate);
     }
+
+    // --- Annuaire : l'arborescence, son administrateur et son decoupage
+    $tpl->table_form_section("{directory}");
+    $tpl->table_form_field_js("Loadjs('$page?form-service-js=yes')",$security);
+    $tpl->table_form_field_text("{ldap_suffix}",$ldap->suffix,ico_database);
     $tpl->table_form_field_js("Loadjs('fw.account.php?change-manager-js=yes')",$security);
     $tpl->table_form_field_text("{ldap_admin}", $ldap->ldap_admin, ico_admin);
-
-
     $tpl->table_form_field_js("Loadjs('$page?form-service2-js=yes')",$security);
     $tpl->table_form_field_bool("{EnableMultipleOrganizations}",$EnableMultipleOrganizations,ico_sitemap);
     $tpl->table_form_field_bool("{multidomains}",$EnableVirtualDomainsInMailBoxes,ico_earth);
+
+    // --- Securite : qui peut interroger, qui peut modifier
+    $tpl->table_form_section("{security_settings}");
+    $tpl->table_form_field_js("Loadjs('$page?form-service2-js=yes')",$security);
     $tpl->table_form_field_bool("{allowanonymouslogin}",$LdapAllowAnonymous,ico_unknown);
     if($LockLdapConfig==1){
         $tpl->table_form_field_bool("{LockLdapConfig}",1,ico_lock);
     }
-    if($RestartLDAPEach==0){
-        $RestartOpenLDAP=0;
+    if($EnableOpenLDAPRestFul==1){
+        $OpenLDAPRestFulApi=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenLDAPRestFulApi"));
+        $tpl->table_form_field_text("{API_KEY}",$OpenLDAPRestFulApi);
+    }else{
+        $tpl->table_form_field_bool("RESTFull API",0,ico_computer_down);
     }
+
+    // --- Service : journalisation, redemarrage planifie, cache
+    $tpl->table_form_section("{service_parameters}");
+    $tpl->table_form_field_js("Loadjs('$page?form-service-js=yes')",$security);
+    $tpl->table_form_field_text("{log_level}", $loglevel_hash[$OpenLDAPLogLevel], ico_bug);
     $tpl->table_form_field_js("Loadjs('$page?form-restart-js=yes')",$security);
     if($RestartOpenLDAP==1) {
         if ($RestartLDAPEach > 0) {
@@ -435,15 +601,6 @@ function flat_config(){
     }else{
         $tpl->table_form_field_bool("{restart_service_each}", 0, ico_clock);
     }
-    $tpl->table_form_field_js("Loadjs('$page?form-service2-js=yes')",$security);
-    $EnableOpenLDAPRestFul=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenLDAPRestFul"));
-    if($EnableOpenLDAPRestFul==1){
-        $OpenLDAPRestFulApi=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenLDAPRestFulApi"));
-        $tpl->table_form_field_text("{API_KEY}",$OpenLDAPRestFulApi);
-    }else{
-        $tpl->table_form_field_bool("RESTFull API",0,ico_computer_down);
-    }
-    $OpenLDAPUseMDB=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenLDAPUseMDB"));
     if($OpenLDAPUseMDB==0) {
         $tpl->table_form_field_js("Loadjs('$page?form-service3-js=yes')",$security);
         $LdapDBSetCachesize=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("LdapDBSetCachesize");
@@ -455,7 +612,7 @@ function flat_config(){
     }
 
 
-    echo $tpl->table_form_compile();
+    echo $tpl->table_form_compile(2);
 }
 function form_restart_popup(){
     $tpl = new template_admin();

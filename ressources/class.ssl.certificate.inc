@@ -56,7 +56,11 @@ class ssl_certificate{
 
 		
 		if(trim($this->ini_sources)==null){
-			$this->ini_sources=$sock->getFrameWork("postfix.php?CertificateConfigFile=yes");
+			// Ancien framework/postfix.php?CertificateConfigFile= : deux fichiers lisibles par www-data.
+			foreach(array("/etc/artica-postfix/ssl.certificate.conf",
+				"/usr/share/artica-postfix/ressources/databases/DEFAULT-CERTIFICATE-DB.txt") as $f){
+				if(is_readable($f)){$this->ini_sources=@file_get_contents($f);break;}
+			}
 		}
 		$ini=new Bs_IniHandler();
 		if($this->ini_sources==null){
@@ -91,16 +95,6 @@ class ssl_certificate{
 			return true;
 			}
 			
-	function SaveToDisk(){
-			$ini=new Bs_IniHandler();
-			$ini->_params=$this->array_ssl;
-			if(isset($GLOBALS["CLASS_SOCKETS"])){$sock=$GLOBALS["CLASS_SOCKETS"];}else{$GLOBALS["CLASS_SOCKETS"]=new sockets();$sock=$GLOBALS["CLASS_SOCKETS"];}
-			unset($_SESSION["CACHEINFOS_PostfixSSLCert"]);
-			$ret=$sock->getFrameWork("cmd.php?GenerateCert=yes&path=$tempfile");
-			
-			return "ok";
-			
-	}
 	
 	
 	

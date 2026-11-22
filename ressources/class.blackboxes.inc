@@ -135,8 +135,6 @@ class blackboxes{
 	}
 
 	public function reconfigure_squid(){
-		$sock=new sockets();
-		$sock->getFrameWork("services.php?nodes-export-tables=yes");
 		$parms["RECONFIGURE_SQUID"]="yes";
 		return $this->SendOrder($parms);			
 	}	

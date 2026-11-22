@@ -1,38 +1,31 @@
-<active>The "active" queue</active>
-<active_text>
-The queue manager is a delivery agent scheduler; it works to ensure fast and fair delivery of mail to all destinations within designated resource limits.[br]
-The active queue is somewhat analogous to an operating system's process run queue. Messages in the active queue are ready to be sent (runnable), but are not necessarily in the process of being sent (running). 
-</active_text>
-<body_message>Body message</body_message>
-<body_message_text>Display message source</body_message_text>
-<create_time>Create time</create_time>
-<deferred>The "deferred" queue</deferred>
-<deferred_text>
-When all the deliverable recipients for a message are delivered, and for some recipients delivery failed for a transient reason (it might succeed later), 
-the message is placed in the deferred queue</deferred_text>
-<incoming>The "incoming" queue</incoming>
-<incoming_text>
-All new mail entering the Postfix queue is written by the cleanup service into the "incoming" queue.[br]
-New queue files are created owned by the "postfix" user with an access bitmask (or mode) of 0600.[br]
-Once a queue file is ready for further processing the cleanup service changes the queue file mode to 0700 and notifies the queue manager of new mail arrival.[br]
-The queue manager ignores incomplete queue files whose mode is 0600, as these are still being written by cleanup. 
-</incoming_text>
-<maildrop>The "maildrop" queue</maildrop>
-<maildrop_text>
-Messages that have been submitted via the Postfix sendmail command, but not yet brought into the main Postfix queue by the pickup service, await processing in the "maildrop" queue.[br]
-Messages can be added to the "maildrop" queue even when the Postfix system is not running.[br]
-They will begin to be processed once Postfix is started.
-The "maildrop" queue is drained by the single threaded pickup service scanning the queue directory periodically or when notified of new message arrival by the postdrop program.[br]
-The postdrop program is a setgid helper that allows the unprivileged Postfix sendmail program to inject mail into the "maildrop" queue and to notify the pickup(8) service of its arrival.[br]
-All mail that enters the main Postfix queue does so via the cleanup service.[br] The cleanup service is responsible for envelope and header rewriting, header and body regular expression checks, automatic bcc recipient processing, milter content processing, and reliable insertion of the message into the Postfix "incoming" queue. 
-</maildrop_text>
-<message_arrival_time>Message arrival time</message_arrival_time>
-<message_size>Message size</message_size>
-<named_attribute>Named attribute</named_attribute>
-<original_recipient>Original recipient</original_recipient>
-<routing_info>Postfix routing info</routing_info>
-<routing_info_text>Display information about postfix used fields</routing_info_text>
-<sender_fullname>sender full name</sender_fullname>
-<show_mail>View message</show_mail>
-<show_queue>Display the list of mails stored</show_queue>
-<too_late_or_no_queue_files>All messages are gone, you have clicked too late on the function... No messages stored...</too_late_or_no_queue_files>
+<active>La coda &quot;active&quot;</active>
+<active_text>Il gestore della coda &#232; uno scheduler di agenti di consegna; lavora per garantire una consegna rapida ed equa della posta a tutte le destinazioni entro i limiti di risorse designati.[br]
+La coda active &#232; in qualche modo analoga alla run queue dei processi di un sistema operativo. I messaggi nella coda active sono pronti per essere inviati (eseguibili), ma non sono necessariamente in fase di invio (in esecuzione).</active_text>
+<body_message>Corpo del messaggio</body_message>
+<body_message_text>Visualizza il sorgente del messaggio</body_message_text>
+<create_time>Ora di creazione</create_time>
+<deferred>La coda &quot;deferred&quot;</deferred>
+<deferred_text>Quando tutti i destinatari recapitabili di un messaggio sono stati recapitati, e per alcuni destinatari il recapito &#232; fallito per un motivo transitorio (potrebbe riuscire in seguito), 
+il messaggio viene posto nella coda deferred</deferred_text>
+<incoming>La coda &quot;incoming&quot;</incoming>
+<incoming_text>Tutta la nuova posta che entra nella coda di Postfix viene scritta dal servizio cleanup nella coda &quot;incoming&quot;.[br]
+I nuovi file di coda vengono creati di propriet&#224; dell'utente &quot;postfix&quot; con una bitmask di accesso (o modalit&#224;) di 0600.[br]
+Una volta che un file di coda &#232; pronto per ulteriore elaborazione, il servizio cleanup cambia la modalit&#224; del file di coda in 0700 e notifica al gestore della coda l'arrivo di nuova posta.[br]
+Il gestore della coda ignora i file di coda incompleti la cui modalit&#224; &#232; 0600, poich&#233; questi sono ancora in fase di scrittura da parte di cleanup.</incoming_text>
+<maildrop>La coda &quot;maildrop&quot;</maildrop>
+<maildrop_text>I messaggi inviati tramite il comando sendmail di Postfix, ma non ancora portati nella coda principale di Postfix dal servizio pickup, attendono l'elaborazione nella coda &quot;maildrop&quot;.[br]
+I messaggi possono essere aggiunti alla coda &quot;maildrop&quot; anche quando il sistema Postfix non &#232; in esecuzione.[br]
+Inizieranno a essere elaborati una volta avviato Postfix.
+La coda &quot;maildrop&quot; viene svuotata dal servizio pickup a thread singolo che scansiona periodicamente la directory della coda o quando viene notificato dell'arrivo di un nuovo messaggio dal programma postdrop.[br]
+Il programma postdrop &#232; un helper setgid che consente al programma sendmail di Postfix non privilegiato di iniettare posta nella coda &quot;maildrop&quot; e di notificare al servizio pickup(8) il suo arrivo.[br]
+Tutta la posta che entra nella coda principale di Postfix lo fa tramite il servizio cleanup.[br] Il servizio cleanup &#232; responsabile della riscrittura di busta e header, dei controlli con espressioni regolari su header e body, dell'elaborazione automatica dei destinatari bcc, dell'elaborazione dei contenuti milter e dell'inserimento affidabile del messaggio nella coda &quot;incoming&quot; di Postfix.</maildrop_text>
+<message_arrival_time>Ora di arrivo del messaggio</message_arrival_time>
+<message_size>Dimensione del messaggio</message_size>
+<named_attribute>Attributo denominato</named_attribute>
+<original_recipient>Destinatario originale</original_recipient>
+<routing_info>Informazioni di routing di Postfix</routing_info>
+<routing_info_text>Visualizza informazioni sui campi usati da postfix</routing_info_text>
+<sender_fullname>nome completo del mittente</sender_fullname>
+<show_mail>Visualizza messaggio</show_mail>
+<show_queue>Visualizza l'elenco delle email archiviate</show_queue>
+<too_late_or_no_queue_files>Tutti i messaggi sono spariti, hai fatto clic troppo tardi sulla funzione... Nessun messaggio archiviato...</too_late_or_no_queue_files>

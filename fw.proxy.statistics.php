@@ -1,9 +1,15 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.os.system.tools.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 $tpl=new template_admin();
 if(!$tpl->xPrivs()){exit();}
+// Pentest 2026-11-04 : container, title et data-file etaient recopies sans encodage dans la page (XSS) ; data-file servait aussi de chemin de fichier.
+if(isset($_GET["container"])){$_GET["container"]=preg_replace('#[^A-Za-z0-9_-]#','',(string)$_GET["container"]);}
+if(isset($_GET["title"])){$_GET["title"]=preg_replace('#[^A-Za-z0-9_]#','',(string)$_GET["title"]);}
+if(isset($_GET["data-file"])){$_GET["data-file"]=preg_replace('#[^A-Za-z0-9_.-]#','',basename((string)$_GET["data-file"]));}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["hour"])){page_hour();exit;}
 if(isset($_GET["day"])){page_day();exit;}
@@ -69,7 +75,8 @@ function page_hour(){
 	$ProxyGraphsTOPNumber=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProxyGraphsTOPNumber"));
 	if($ProxyGraphsTOPNumber<2){$ProxyGraphsTOPNumber=10;}
 	
-	$html[]="<table style='width:100%'>";
+	// La table exterieure servait d'empilement vertical: un conteneur suffit.
+	$html[]="<div>";
 	$q=new postgres_sql();
 	$now=date("Y-m-d H:00:00",time());
 	
@@ -89,7 +96,7 @@ function page_hour(){
 	if(count($MAIN["xdata"])>1){
 		$data=serialize($MAIN);
 		@file_put_contents(PROGRESS_DIR."/hour.bandwidth.data", $data);
-		$html[]="<tr><td valign='top' colspan=2><div id='hour-bandwidth' style='with:1450;height:350px'></div></td></tr>";
+		$html[]="<div style='margin:10px 0'><div id='hour-bandwidth' style='height:350px'></div></div>";
 		$js[]="Loadjs('$page?bandwidth-hour=yes');";
 	}
 	
@@ -107,7 +114,7 @@ function page_hour(){
 	if(count($MAIN["xdata"])>1){
 		$data=serialize($MAIN);
 		@file_put_contents(PROGRESS_DIR."/hour.requests.data", $data);
-		$html[]="<tr><td valign='top' colspan=2><div id='hour-rqs' style='with:1450;height:350px'></div></td></tr>";
+		$html[]="<div style='margin:10px 0'><div id='hour-rqs' style='height:350px'></div></div>";
 		$js[]="Loadjs('$page?rqs-hour=yes');";
 	}
 	
@@ -120,30 +127,24 @@ function page_hour(){
 	$MAIN=array();
 	$PieData=array();
 	$table=array();
-	$table[]="<table class='table table-striped'>";
-	$table[]="<thead>";
-	$table[]="<tr>";
+	$table[]="<div class='awc-wrap' style='margin-top:0'><div class='awc-card'><div class='awc-scroll'>";
+	$table[]="<table class='awc-tbl'><thead><tr>";
 	$table[]="<th>{familysite}</th>";
-	$table[]="<th>{requests}</th>";
+	$table[]="<th class='center'>{requests}</th>";
 	$table[]="<th>{size}</th>";
-	$table[]="</tr>";
-	$table[]="</thead>";
+	$table[]="</tr></thead><tbody>";
 	while($ligne=pg_fetch_array($results)){
 		$familysite=$ligne["familysite"];
 		$size=$ligne["size"]/1024;
 		$rqs=FormatNumber($ligne["rqs"]);
 		$PieData[$familysite]=$size;
 		
-		$table[]="<tr>";
-		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td style='width:1%' nowrap>$rqs</td>";
-		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
-		$table[]="</tr>";
+		$table[]=pxst_top_row($familysite,$rqs,FormatBytes($size));
 		
 		
 	}
-	$table[]="</tr>";
-	$table[]="</table>";
+	// Un </tr> orphelin precedait la fermeture du tableau.
+	$table[]="</tbody></table></div></div></div>";
 	
 	$html[]="<!-- ".__LINE__.": $sql  -->";
 	$html[]="<!-- ".__LINE__.": From $now, ".count($PieData)." elements -->";
@@ -151,10 +152,10 @@ function page_hour(){
 	if(count($PieData)>1){
 		$data=serialize($PieData);
 		@file_put_contents(PROGRESS_DIR."/hour.familysite.data", $data);
-		$html[]="<tr>
-				<td valign='top'><div id='hour-familysite' style='with:600px;height:500px'></div></td>
-				<td valign='top' style='width:1%' nowrap>".@implode("\n", $table)."</td>
-				</tr>";
+		$html[]="<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:10px 0'>"
+			."<div style='flex:2 1 420px;min-width:0'><div id='hour-familysite' style='height:500px'></div></div>"
+			."<div style='flex:1 1 320px;min-width:0'>".@implode("\n", $table)."</div>"
+			."</div>";
 		$js[]="Loadjs('$page?camembert=yes&container=hour-familysite&data-file=hour.familysite.data&title=top_visited_websites');";
 	}
 //---------------------------------------------------------------------------------------------------------------------------------
@@ -167,30 +168,24 @@ function page_hour(){
 	$MAIN=array();
 	$PieData=array();
 	$table=array();
-	$table[]="<table class='table table-striped'>";
-	$table[]="<thead>";
-	$table[]="<tr>";
+	$table[]="<div class='awc-wrap' style='margin-top:0'><div class='awc-card'><div class='awc-scroll'>";
+	$table[]="<table class='awc-tbl'><thead><tr>";
 	$table[]="<th>{category}</th>";
-	$table[]="<th>{requests}</th>";
+	$table[]="<th class='center'>{requests}</th>";
 	$table[]="<th>{size}</th>";
-	$table[]="</tr>";
-	$table[]="</thead>";
+	$table[]="</tr></thead><tbody>";
 	while($ligne=pg_fetch_array($results)){
 		$familysite=$tpl->CategoryidToName($ligne["category"]);
 		$size=$ligne["size"]/1024;
 		$rqs=FormatNumber($ligne["rqs"]);
 		$PieData[$familysite]=$size;
 	
-		$table[]="<tr>";
-		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td style='width:1%' nowrap>$rqs</td>";
-		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
-		$table[]="</tr>";
+		$table[]=pxst_top_row($familysite,$rqs,FormatBytes($size));
 	
 	
 	}
-	$table[]="</tr>";
-	$table[]="</table>";
+	// Un </tr> orphelin precedait la fermeture du tableau.
+	$table[]="</tbody></table></div></div></div>";
 	
 	$html[]="<!-- ".__LINE__.": $sql  -->";
 	$html[]="<!-- ".__LINE__.": From $now, ".count($PieData)." elements -->";
@@ -198,10 +193,10 @@ function page_hour(){
 	if(count($PieData)>1){
 		$data=serialize($PieData);
 		@file_put_contents(PROGRESS_DIR."/hour.category.data", $data);
-		$html[]="<tr>
-				<td valign='top'><div id='hour-category' style='with:600px;height:500px'></div></td>
-				<td valign='top' style='width:1%' nowrap>".@implode("\n", $table)."</td>
-				</tr>";
+		$html[]="<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:10px 0'>"
+			."<div style='flex:2 1 420px;min-width:0'><div id='hour-category' style='height:500px'></div></div>"
+			."<div style='flex:1 1 320px;min-width:0'>".@implode("\n", $table)."</div>"
+			."</div>";
 		$js[]="Loadjs('$page?camembert=yes&container=hour-category&data-file=hour.category.data&title=top_visited_categories');";
 	}
 	//---------------------------------------------------------------------------------------------------------------------------------
@@ -216,30 +211,24 @@ function page_hour(){
 	$PieData=array();
 	$table=array();
 	
-	$table[]="<table class='table table-striped'>";
-	$table[]="<thead>";
-	$table[]="<tr>";
+	$table[]="<div class='awc-wrap' style='margin-top:0'><div class='awc-card'><div class='awc-scroll'>";
+	$table[]="<table class='awc-tbl'><thead><tr>";
 	$table[]="<th>{members}</th>";
-	$table[]="<th>{requests}</th>";
+	$table[]="<th class='center'>{requests}</th>";
 	$table[]="<th>{size}</th>";
-	$table[]="</tr>";
-	$table[]="</thead>";
+	$table[]="</tr></thead><tbody>";
 	while($ligne=pg_fetch_array($results)){
 		$familysite=$ligne["member"];
 		$size=$ligne["size"]/1024;
 		$rqs=FormatNumber($ligne["rqs"]);
 		$PieData[$familysite]=$size;
 	
-		$table[]="<tr>";
-		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td style='width:1%' nowrap>$rqs</td>";
-		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
-		$table[]="</tr>";
+		$table[]=pxst_top_row($familysite,$rqs,FormatBytes($size));
 	
 	
 	}
-	$table[]="</tr>";
-	$table[]="</table>";
+	// Un </tr> orphelin precedait la fermeture du tableau.
+	$table[]="</tbody></table></div></div></div>";
 	
 	$html[]="<!-- ".__LINE__.": $sql  -->";
 	$html[]="<!-- ".__LINE__.": From $now, ".count($PieData)." elements -->";
@@ -247,19 +236,19 @@ function page_hour(){
 	if(count($PieData)>1){
 		$data=serialize($PieData);
 		@file_put_contents(PROGRESS_DIR."/hour.member.data", $data);
-		$html[]="<tr>
-				<td valign='top'><div id='hour-member' style='with:600px;height:500px'></div></td>
-				<td valign='top' style='width:1%' nowrap>".@implode("\n", $table)."</td>
-				</tr>";
+		$html[]="<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:10px 0'>"
+			."<div style='flex:2 1 420px;min-width:0'><div id='hour-member' style='height:500px'></div></div>"
+			."<div style='flex:1 1 320px;min-width:0'>".@implode("\n", $table)."</div>"
+			."</div>";
 		$js[]="Loadjs('$page?camembert=yes&container=hour-member&data-file=hour.member.data&title=top_members');";
 	}
 	//---------------------------------------------------------------------------------------------------------------------------------
 		
 	
-	$html[]="</table>";
-	$html[]="<script>".@implode("\n", $js)."</script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	$html[]="</div>";
+	$html[]="<script>NoSpinner();".@implode("\n", $js)."</script>";
+
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html));
 			
 	
 	
@@ -282,7 +271,8 @@ function page_day(){
 	$PieData=array();
 	$table=array();
 	
-	$html[]="<table style='width:100%'>";
+	// La table exterieure servait d'empilement vertical: un conteneur suffit.
+	$html[]="<div>";
 	
 	while($ligne=pg_fetch_array($results)){
 	
@@ -297,7 +287,7 @@ function page_day(){
 	if(count($MAIN["xdata"])>1){
 		$data=serialize($MAIN);
 		@file_put_contents(PROGRESS_DIR."/day.bandwidth.data", $data);
-		$html[]="<tr><td valign='top' colspan=2><div id='day-bandwidth' style='with:1450;height:350px'></div></td></tr>";
+		$html[]="<div style='margin:10px 0'><div id='day-bandwidth' style='height:350px'></div></div>";
 		$js[]="Loadjs('$page?bandwidth-day=yes');";
 	}
 	
@@ -315,7 +305,7 @@ function page_day(){
 	if(count($MAIN["xdata"])>1){
 		$data=serialize($MAIN);
 		@file_put_contents(PROGRESS_DIR."/day.requests.data", $data);
-		$html[]="<tr><td valign='top' colspan=2><div id='day-rqs' style='with:1450;height:350px'></div></td></tr>";
+		$html[]="<div style='margin:10px 0'><div id='day-rqs' style='height:350px'></div></div>";
 		$js[]="Loadjs('$page?rqs-day=yes');";
 	}	
 	
@@ -331,30 +321,24 @@ function page_day(){
 	$PieData=array();
 	$table=array();
 	
-	$table[]="<table class='table table-striped'>";
-	$table[]="<thead>";
-	$table[]="<tr>";
+	$table[]="<div class='awc-wrap' style='margin-top:0'><div class='awc-card'><div class='awc-scroll'>";
+	$table[]="<table class='awc-tbl'><thead><tr>";
 	$table[]="<th>{familysite}</th>";
-	$table[]="<th>{requests}</th>";
+	$table[]="<th class='center'>{requests}</th>";
 	$table[]="<th>{size}</th>";
-	$table[]="</tr>";
-	$table[]="</thead>";
+	$table[]="</tr></thead><tbody>";
 	while($ligne=pg_fetch_array($results)){
 		$familysite=$ligne["familysite"];
 		$size=$ligne["size"]/1024;
 		$rqs=FormatNumber($ligne["rqs"]);
 		$PieData[$familysite]=$size;
 	
-		$table[]="<tr>";
-		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td style='width:1%' nowrap>$rqs</td>";
-		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
-		$table[]="</tr>";
+		$table[]=pxst_top_row($familysite,$rqs,FormatBytes($size));
 	
 	
 	}
-	$table[]="</tr>";
-	$table[]="</table>";
+	// Un </tr> orphelin precedait la fermeture du tableau.
+	$table[]="</tbody></table></div></div></div>";
 	
 	$html[]="<!-- ".__LINE__.": $sql  -->";
 	$html[]="<!-- ".__LINE__.": From $now, ".count($PieData)." elements -->";
@@ -362,10 +346,10 @@ function page_day(){
 	if(count($PieData)>1){
 		$data=serialize($PieData);
 		@file_put_contents(PROGRESS_DIR."/day.familysite.data", $data);
-		$html[]="<tr>
-				<td valign='top'><div id='day-familysite' style='with:600px;height:500px'></div></td>
-				<td valign='top' style='width:1%' nowrap>".@implode("\n", $table)."</td>
-				</tr>";
+		$html[]="<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:10px 0'>"
+			."<div style='flex:2 1 420px;min-width:0'><div id='day-familysite' style='height:500px'></div></div>"
+			."<div style='flex:1 1 320px;min-width:0'>".@implode("\n", $table)."</div>"
+			."</div>";
 		$js[]="Loadjs('$page?camembert=yes&container=day-familysite&data-file=day.familysite.data&title=top_visited_websites');";
 	}
 	//---------------------------------------------------------------------------------------------------------------------------------	
@@ -381,30 +365,24 @@ function page_day(){
 	$PieData=array();
 	$table=array();
 	
-	$table[]="<table class='table table-striped'>";
-	$table[]="<thead>";
-	$table[]="<tr>";
+	$table[]="<div class='awc-wrap' style='margin-top:0'><div class='awc-card'><div class='awc-scroll'>";
+	$table[]="<table class='awc-tbl'><thead><tr>";
 	$table[]="<th>{category}</th>";
-	$table[]="<th>{requests}</th>";
+	$table[]="<th class='center'>{requests}</th>";
 	$table[]="<th>{size}</th>";
-	$table[]="</tr>";
-	$table[]="</thead>";
+	$table[]="</tr></thead><tbody>";
 	while($ligne=pg_fetch_array($results)){
 		$familysite=$tpl->CategoryidToName($ligne["category"]);
 		$size=$ligne["size"]/1024;
 		$rqs=FormatNumber($ligne["rqs"]);
 		$PieData[$familysite]=$size;
 	
-		$table[]="<tr>";
-		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td style='width:1%' nowrap>$rqs</td>";
-		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
-		$table[]="</tr>";
+		$table[]=pxst_top_row($familysite,$rqs,FormatBytes($size));
 	
 	
 	}
-	$table[]="</tr>";
-	$table[]="</table>";
+	// Un </tr> orphelin precedait la fermeture du tableau.
+	$table[]="</tbody></table></div></div></div>";
 	
 	$html[]="<!-- ".__LINE__.": $sql  -->";
 	$html[]="<!-- ".__LINE__.": From $now, ".count($PieData)." elements -->";
@@ -412,10 +390,10 @@ function page_day(){
 	if(count($PieData)>1){
 		$data=serialize($PieData);
 		@file_put_contents(PROGRESS_DIR."/day.category.data", $data);
-		$html[]="<tr>
-				<td valign='top'><div id='day-category' style='with:600px;height:500px'></div></td>
-				<td valign='top' style='width:1%' nowrap>".@implode("\n", $table)."</td>
-				</tr>";
+		$html[]="<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:10px 0'>"
+			."<div style='flex:2 1 420px;min-width:0'><div id='day-category' style='height:500px'></div></div>"
+			."<div style='flex:1 1 320px;min-width:0'>".@implode("\n", $table)."</div>"
+			."</div>";
 		$js[]="Loadjs('$page?camembert=yes&container=day-category&data-file=day.category.data&title=top_visited_categories');";
 	}
 	//---------------------------------------------------------------------------------------------------------------------------------
@@ -431,30 +409,24 @@ function page_day(){
 	$PieData=array();
 	$table=array();
 	
-	$table[]="<table class='table table-striped'>";
-	$table[]="<thead>";
-	$table[]="<tr>";
+	$table[]="<div class='awc-wrap' style='margin-top:0'><div class='awc-card'><div class='awc-scroll'>";
+	$table[]="<table class='awc-tbl'><thead><tr>";
 	$table[]="<th>{members}</th>";
-	$table[]="<th>{requests}</th>";
+	$table[]="<th class='center'>{requests}</th>";
 	$table[]="<th>{size}</th>";
-	$table[]="</tr>";
-	$table[]="</thead>";
+	$table[]="</tr></thead><tbody>";
 	while($ligne=pg_fetch_array($results)){
 		$familysite=$ligne["member"];
 		$size=$ligne["size"]/1024;
 		$rqs=FormatNumber($ligne["rqs"]);
 		$PieData[$familysite]=$size;
 	
-		$table[]="<tr>";
-		$table[]="<td nowrap>$familysite</td>";
-		$table[]="<td style='width:1%' nowrap>$rqs</td>";
-		$table[]="<td style='width:1%' nowrap>". FormatBytes($size)."</td>";
-		$table[]="</tr>";
+		$table[]=pxst_top_row($familysite,$rqs,FormatBytes($size));
 	
 	
 	}
-	$table[]="</tr>";
-	$table[]="</table>";
+	// Un </tr> orphelin precedait la fermeture du tableau.
+	$table[]="</tbody></table></div></div></div>";
 	
 	$html[]="<!-- ".__LINE__.": $sql  -->";
 	$html[]="<!-- ".__LINE__.": From $now, ".count($PieData)." elements -->";
@@ -462,20 +434,20 @@ function page_day(){
 	if(count($PieData)>1){
 		$data=serialize($PieData);
 		@file_put_contents(PROGRESS_DIR."/day.member.data", $data);
-		$html[]="<tr>
-				<td valign='top'><div id='day-member' style='with:600px;height:500px'></div></td>
-				<td valign='top' style='width:1%' nowrap>".@implode("\n", $table)."</td>
-				</tr>";
+		$html[]="<div style='display:flex;flex-wrap:wrap;gap:12px;align-items:flex-start;margin:10px 0'>"
+			."<div style='flex:2 1 420px;min-width:0'><div id='day-member' style='height:500px'></div></div>"
+			."<div style='flex:1 1 320px;min-width:0'>".@implode("\n", $table)."</div>"
+			."</div>";
 		$js[]="Loadjs('$page?camembert=yes&container=day-member&data-file=day.member.data&title=top_members');";
 	}
 	//---------------------------------------------------------------------------------------------------------------------------------
 		
 	
 	
-	$html[]="</table>";
-	$html[]="<script>".@implode("\n", $js)."</script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	$html[]="</div>";
+	$html[]="<script>NoSpinner();".@implode("\n", $js)."</script>";
+
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
 	
 }
@@ -505,7 +477,7 @@ function hour_bandwidth(){
 function camembert(){
 	$tpl=new templates();
 	$page=CurrentPageName();
-	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data-file"]}"));
+	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data-file"]}"),array("allowed_classes"=>false));
 	$highcharts=new highcharts();
 	$highcharts->container=$_GET["container"];
 	$highcharts->PieDatas=$PieData;
@@ -584,3 +556,22 @@ function day_rqs(){
 
 
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}
+
+/**
+ * Une entree de palmares du tableau de bord proxy: libelle en identite, nombre de
+ * requetes et volume. Le libelle vient de la base (site, categorie, membre) et
+ * etait rendu BRUT.
+ */
+// Pentest 2026-11-04 : familysite/category/member (donnee externe) : htmlspecialchars UTF-8 rendait "" sur un octet Latin-1 (XSS stockee).
+function pxst_top_row($label,$rqs,$size):string{
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-chart-simple'></i></span>";
+    $h.="<span><span class='awc-name'>".req_html((string)$label)."</span></span>";
+    $h.="</div></td>";
+    $h.="<td class='center awc-mono'>$rqs</td>";
+    $h.="<td><span class='awc-seen'>$size</span></td>";
+    $h.="</tr>";
+    return $h;
+}
+

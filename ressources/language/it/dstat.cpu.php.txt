@@ -1,4 +1,4 @@
-<GNUPLOT_NOT_PNG>Gnuplot not support PNG format</GNUPLOT_NOT_PNG>
-<GNUPLOT_NOT_PNG_EXPLAIN>Gnuplot is the main program that generate graphs[br]Currently the png format is not compiled for gnuplot.[br]
-Try to install again the gnuplot engine trough Artica Setup Control Center[br]
-If the new install operation did not fix the problem, contact your support engeener</GNUPLOT_NOT_PNG_EXPLAIN>
+<GNUPLOT_NOT_PNG>Gnuplot non supporta il formato PNG</GNUPLOT_NOT_PNG>
+<GNUPLOT_NOT_PNG_EXPLAIN>Gnuplot &#232; il programma principale che genera i grafici[br]Attualmente il formato png non &#232; compilato per gnuplot.[br]
+Prova a installare di nuovo il motore gnuplot tramite l'Artica Setup Control Center[br]
+Se la nuova operazione di installazione non ha risolto il problema, contatta il tuo ingegnere del supporto</GNUPLOT_NOT_PNG_EXPLAIN>

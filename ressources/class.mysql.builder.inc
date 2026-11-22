@@ -224,46 +224,6 @@ public function check_storage_table($force=false){
 		$this->QUERY_SQL($sql,'artica_backup');
 		if(!$this->ok){writelogs("Fatal: $this->mysql_error",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
 		
-		$sql="CREATE TABLE IF NOT EXISTS `artica_backup`.`lsm_rules` (
-			`id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-			`interface` VARCHAR( 20 ) NOT NULL,
-			`enabled` smallint( 1 ) NOT NULL DEFAULT 1,
-			`check_arp` smallint( 1 ) NOT NULL DEFAULT 0,
-			`checkip` varchar(40) ,
-			`max_packet_loss` smallint( 2 ) NOT NULL DEFAULT '15',
-			`max_successive_pkts_lost` smallint( 2 ) NOT NULL DEFAULT '7',
-			`min_packet_loss` smallint( 2 ) NOT NULL DEFAULT '5',
-			`min_successive_pkts_rcvd` smallint( 2 ) NOT NULL DEFAULT '10',
-			`interval_ms` INT( 10 ) NOT NULL DEFAULT '1000',
-			`timeout_ms` INT( 10 ) NOT NULL DEFAULT '1000',
-			`ttl`  smallint( 2 ) NOT NULL DEFAULT '64',
-			`action`  smallint( 2 ) NOT NULL DEFAULT '1',
-			`actionconfig` TEXT,
-			 PRIMARY KEY ( `id` ),
-			 KEY `enabled`(`enabled`),
-			 KEY `action`(`action`),
-			 KEY `checkip`(`checkip`)
-			) ENGINE=MYISAM;";
-		$this->QUERY_SQL($sql,'artica_backup');
-		
-		
-		
-		if(!$this->ok){writelogs("Fatal: $this->mysql_error",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);}
-			
-		
-		#   checkip=127.108.68.69
-		#   eventscript=/usr/libexec/foolsm/conn1
-		#   max_packet_loss=15
-		#   max_successive_pkts_lost=7
-		#   min_packet_loss=5
-		#   min_successive_pkts_rcvd=10
-		#   interval_ms=1000
-		#   timeout_ms=1000
-		#   warn_email=root1@some.tld
-		#   check_arp=0
-		#   sourceip=
-		#   device=
-		#   ttl=64
 		
 
 		
@@ -3671,65 +3631,10 @@ public function CheckTablesPostfilter(){
 		}
 		
 		
-		if(!$this->TABLE_EXISTS('openldap_proxy','artica_backup')){
-			$sql="CREATE TABLE IF NOT EXISTS `openldap_proxy` (
-			`ID` BIGINT UNSIGNED NOT NULL auto_increment,
-			`hostname` VARCHAR(255) NOT NULL,
-			`port` smallint(5) NOT NULL,
-			`username` VARCHAR(128) NOT NULL,
-			`password` VARCHAR(128) NOT NULL,
-			`suffix` VARCHAR(255) NOT NULL,
-			`suffixlink` VARCHAR(255) NOT NULL,
-			`enabled` smallint(1) NOT NULL,
-			`cnxstring` VARCHAR(255) NOT NULL,
-			`articabranch` smallint(1) NOT NULL,
-			`params` TEXT NOT NULL,
-			 PRIMARY KEY (`ID`),
-			 KEY `hostname` (`hostname`),
-			 KEY `port` (`port`),
-			 KEY `enabled` (`enabled`),
-			 KEY `articabranch` (`articabranch`),
-			 KEY `cnxstring` (`cnxstring`)
-			 )";
-		$this->QUERY_SQL($sql,'artica_backup');
-		if(!$this->ok){writelogs("Fatal: $this->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
-	}
-	if(!$this->TABLE_EXISTS('openldap_proxyattrs','artica_backup')){
-			$sql="CREATE TABLE IF NOT EXISTS `openldap_proxyattrs` (
-			`ID` BIGINT UNSIGNED NOT NULL auto_increment,
-			`proxyid` BIGINT UNSIGNED NOT NULL,
-			`attribute` VARCHAR(90) NOT NULL,
-			`type` VARCHAR(90) NOT NULL,
-			`match` VARCHAR(90) NOT NULL,
-			 PRIMARY KEY (`ID`),
-			 KEY `attribute` (`attribute`),
-			 KEY `type` (`type`),
-			 KEY `match` (`match`),
-			 KEY `proxyid` (`proxyid`)
-			 )";
-		$this->QUERY_SQL($sql,'artica_backup');
-		if(!$this->ok){writelogs("Fatal: $this->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
-	}
-	
-	
-	
-	if(!$this->FIELD_EXISTS("openldap_proxy","suffix","artica_backup")){
-		$sql="ALTER TABLE `openldap_proxy` ADD `suffix` VARCHAR( 255 ) NOT NULL";
-		$this->QUERY_SQL($sql,'artica_backup');
-	}	
-	if(!$this->FIELD_EXISTS("openldap_proxy","cnxstring","artica_backup")){
-		$sql="ALTER TABLE `openldap_proxy` ADD `cnxstring` VARCHAR( 255 ) NOT NULL, ADD INDEX (`cnxstring`)";
-		$this->QUERY_SQL($sql,'artica_backup');
-	}	
-	if(!$this->FIELD_EXISTS("openldap_proxy","articabranch","artica_backup")){
-		$sql="ALTER TABLE `openldap_proxy` ADD `articabranch` smallint( 1 ) NOT NULL, ADD INDEX (`articabranch`)";
-		$this->QUERY_SQL($sql,'artica_backup');
-	}	
-	if(!$this->FIELD_EXISTS("openldap_proxy","suffixlink","artica_backup")){
-		$sql="ALTER TABLE `openldap_proxy` ADD `suffixlink` VARCHAR( 255 ) NOT NULL";
-		$this->QUERY_SQL($sql,'artica_backup');
-	}	
-		
+		// Les tables openldap_proxy / openldap_proxyattrs ont ete retirees avec la
+		// fonctionnalite back-meta d'OpenLDAP: aucune page ne les alimentait, et son
+		// unique moteur de rendu (exec.ldap.php --proxy) n'avait plus d'appelant.
+
 	if(!$this->TABLE_EXISTS('emailing_mailers','artica_backup')){			
 			$sql="CREATE TABLE IF NOT EXISTS `artica_backup`.`emailing_mailers` (
 					`ID` INT( 5 ) NOT NULL AUTO_INCREMENT PRIMARY KEY ,

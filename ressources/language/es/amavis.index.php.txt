@@ -95,13 +95,11 @@ En el &quot;campo a la IP&quot;, estableci&oacute; la &uacute;ltima direcci&oacu
 <mailfrom_notify_recip>Enviar la direcci&oacute;n de los beneficiarios sobre las notificaciones</mailfrom_notify_recip>
 <mailfrom_notify_spamadmin>Enviar direcci&oacute;n para notificaciones de Spam al administrador</mailfrom_notify_spamadmin>
 <max_requests>Peticiones M&aacute;ximas</max_requests>
-<max_requests_text>
-Max Requests controls the approximate number of tasks each child process is willing to handle.[br]
- After that the child process terminates and the main daemon provides a new child process to take its place.[br]
-On the low side, the number should not be too small in order for the startup cost to be averaged out / sufficiently diluted over an entire child lifetime.[br]
- A value above 5 or 10 meets this goal in most amavisd-new configurations.
-</max_requests_text>
-<max_servers>amavisd child processes to spawn number</max_servers>
+<max_requests_text>Max Requests controla el n&#250;mero aproximado de tareas que cada proceso hijo est&#225; dispuesto a manejar.[br]
+ Despu&#233;s de eso, el proceso hijo termina y el daemon principal proporciona un nuevo proceso hijo para ocupar su lugar.[br]
+En el lado bajo, el n&#250;mero no debe ser demasiado peque&#241;o para que el coste de inicio se promedie / diluya suficientemente a lo largo de toda la vida de un proceso hijo.[br]
+ Un valor superior a 5 o 10 cumple este objetivo en la mayor&#237;a de las configuraciones de amavisd-new.</max_requests_text>
+<max_servers>N&#250;mero de procesos hijo de amavisd a generar</max_servers>
 <max_servers_text>Especifica el n%C3%BAmero de instancias de procesos hijo de amavisd que se van a generar.[br]
 Debe aumentar o disminuir este n%C3%BAmero dependiendo de la cantidad de memoria que su PC tenga instalada.[br]
 Aseg%C3%BArese de que este n%C3%BAmero est%C3¡ sincronizado con la configuraci%C3%B3n de smtpd maxproc en el archivo postfix/master.cf
@@ -110,12 +108,11 @@ Para 4000 usuarios un valor entre 5 y 10 ser%C3%ADa un buen punto de partida[br]
 Con poca memoria (por ejemplo, 256 MB) un valor de 2 o 3 probablemente ser%C3%ADa suficiente.</max_servers_text>
 <notification_text>Notificaciones comportamientos seg&uacute;n las detecciones de Amavis</notification_text>
 <postfix_afterqueue>Pstfix despues-cola de contenido filtrado</postfix_afterqueue>
-<postfix_afterqueue_text>[b]Using Postfix After-Queue Content Filter[/b][br]
-Normally, Postfix receives mail, stores it in the mail queue and then delivers it.[br]
-With the external content filter, [b]mail is filtered AFTER it is queued.[/b][br]
-This approach decouples mail receiving processes from mail filtering processes, and gives you maximal control over how many filtering processes you are willing to run in parallel.[br]
-This method will give you all filtering features but it use more processes and memory and there is a risk to flood the Postfix queue if the filter is not be able to scan mails in time.[br]
-</postfix_afterqueue_text>
+<postfix_afterqueue_text>[b]Usar el filtro de contenido After-Queue de Postfix[/b][br]
+Normalmente, Postfix recibe el correo, lo almacena en la cola de correo y luego lo entrega.[br]
+Con el filtro de contenido externo, [b]el correo se filtra DESPU&#201;S de ponerse en cola.[/b][br]
+Este enfoque desacopla los procesos de recepci&#243;n de correo de los procesos de filtrado de correo y le da el m&#225;ximo control sobre cu&#225;ntos procesos de filtrado desea ejecutar en paralelo.[br]
+Este m&#233;todo le ofrece todas las funciones de filtrado, pero usa m&#225;s procesos y memoria, y existe el riesgo de inundar la cola de Postfix si el filtro no puede analizar los correos a tiempo.[br]</postfix_afterqueue_text>
 <postfix_beforequeue>Postfix ante-cola Milter</postfix_beforequeue>
 <postfix_beforequeue_text>[b]Utilizar el soporte Postfix antete-cola Milter[/b][br]Postfix versi&oacute;n 2.3 introduce soporte para Sendmail versi&oacute;n 8 Milter (filtro de correo electr&oacute;nico) protocolo.[br]Este protocolo es utilizado por aplicaciones que se ejecutan fuera de la MTA para inspeccionar los eventos SMTP (conectar, desconectar), los comandos SMTP (HELO, MAIL FROM, etc.) as&iacute; como el contenido de correo electr&oacute;nico (cabeceras y cuerpo).[br][b]Todo esto ocurre antes de la cola de correo electr&oacute;nico.[/b][br]Este m&eacute;todo se utilizar&aacute; amavisd-milter proceso con el fin de conectar postfix y el uso menos procesos y memoria para realizar las operaciones de filtrado de correo electr&oacute;nico[br]Sin embargo, hay algunas limitaciones en funci&oacute;n a las modificaciones del contenido de los Mensajes.[br]
 Por ejemplo usted no sera capaz de usar las politicas Altermime para su correo saliente.</postfix_beforequeue_text>

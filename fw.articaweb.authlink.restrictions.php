@@ -37,7 +37,9 @@ function delete_js(){
 	$tpl=new templates();
 	$t=time();
 	
-	$id=$_GET["delete-js"];
+	// Pentest 2026-11-04 : delete-js/id etaient recopies sans encodage dans la page (XSS).
+	$id=req_js($_GET["delete-js"]);
+	$rowid=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
 	$ask=$tpl->javascript_parse_text("{delete} $id");
 	
 	
@@ -46,7 +48,7 @@ function delete_js(){
 var xSave$t=function (obj) {
 	var results=obj.responseText;
 	if(results.length>0){alert(results);return;}	
-	$('#{$_GET["id"]}').remove();
+	$('#$rowid').remove();
 }
 function Save$t(){
 	if(!confirm('$ask')){return;}

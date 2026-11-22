@@ -3,18 +3,21 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 
 $id=md5(serialize($_GET));
 $page=basename(__FILE__);
-$title=base64_decode($_GET["title"]);
-$icon=base64_decode($_GET["icon"]);
-$subtitle=base64_decode($_GET["subtitle"]);
-$jsafter=base64_decode($_GET["jsafter"]);
-$defaultvalue=base64_decode($_GET["defaultvalue"]);
-$image=base64_decode($_GET["image"]);
+// Pentest 2026-11-04 : title, subtitle et image etaient decodes puis recopies
+// tels quels dans la page (XSS reflechi). Le texte est encode, l'image doit
+// etre un chemin local sous /ressources/ ; jsafter, icon et defaultvalue
+// n'etaient pas utilises.
+$title=req_html(base64_decode($_GET["title"] ?? ""));
+$subtitle=req_html(base64_decode($_GET["subtitle"] ?? ""));
+$image=strval(base64_decode($_GET["image"] ?? ""));
+if(strpos($image,"/ressources/")!==0 || strpos($image,"..")!==false){$image="";}
+$image=req_html($image);
 $tpl=new template_admin();
 $cancel=$tpl->_ENGINE_parse_body("{close}");
 
 
 
-$Close="OnClick=\"Loadjs('$page?remove={$_GET["image"]}');document.getElementById('artica-modal-dialog').innerHTML='';\"";
+$Close="OnClick=\"document.getElementById('artica-modal-dialog').innerHTML='';\"";
 
 $html[]="<div id=\"$id\" class=\"modal inmodal in\" style=\"display: block; z-index:9999 !important\">
 		<div class=\"modal-dialog\">

@@ -43,23 +43,20 @@ El valor predeterminado se ha calculado para una cuarentena/copia de seguridad d
 Este software est&aacute; escrito en perl y podr&iacute;a utilizar mucha memoria, puede controlar aqu&iacute; el comportamiento de MimeDefang seg&uacute;n las prestaciones de su equipo.</mimedefang_consumption_text>
 <mimedefang_macro>Comportamiento MimeDefang</mimedefang_macro>
 <MX_MAXIMUM>Maximo de procesos</MX_MAXIMUM>
-<MX_MAXIMUM_TEXT>
-Maximum number of processes to run (mail received while this many'); processes are running is rejected with a temporary failure, so be
-wary of how many emails you receive at a time).[br]  This applies only if you DO use the multiplexor.[br]
-The default value of 2 is probably too low; we suggest 10 instead;
-</MX_MAXIMUM_TEXT>
+<MX_MAXIMUM_TEXT>N&#250;mero m&#225;ximo de procesos a ejecutar (el correo recibido mientras se ejecuta esta cantidad de procesos se rechaza con un fallo temporal, as&#237; que tenga cuidado con cu&#225;ntos correos recibe a la vez).[br] Esto solo aplica si USA el multiplexor.[br]
+El valor predeterminado de 2 probablemente sea demasiado bajo; sugerimos 10 en su lugar;</MX_MAXIMUM_TEXT>
 <MX_MAX_AS>Limite de memoria total (KB)</MX_MAX_AS>
-<MX_MAX_AS_TEXT>Limit total size of slave processes memory space to this many kilobytes. Default is unlimited.</MX_MAX_AS_TEXT>
+<MX_MAX_AS_TEXT>Limita el tama&#241;o total del espacio de memoria de los procesos esclavos a esta cantidad de kilobytes. El valor predeterminado es ilimitado.</MX_MAX_AS_TEXT>
 <MX_MAX_RSS>L&iacute;mite de memoria (KB)</MX_MAX_RSS>
-<MX_MAX_RSS_TEXT>Limit slave processes resident-set size to this many kilobytes.  Default is unlimited.</MX_MAX_RSS_TEXT>
+<MX_MAX_RSS_TEXT>Limita el tama&#241;o del conjunto residente de los procesos esclavos a esta cantidad de kilobytes. El valor predeterminado es ilimitado.</MX_MAX_RSS_TEXT>
 <MX_MINIMUM>M&iacute;nima para mantener los procesos.</MX_MINIMUM>
-<MX_MINIMUM_TEXT>Minimum number of processes to keep. The default of 0 is probably too low; we suggest 2 instead.</MX_MINIMUM_TEXT>
+<MX_MINIMUM_TEXT>N&#250;mero m&#237;nimo de procesos a mantener. El valor predeterminado de 0 probablemente sea demasiado bajo; sugerimos 2 en su lugar.</MX_MINIMUM_TEXT>
 <MX_REQUESTS>Consultas m&aacute;ximas</MX_REQUESTS>
 <MX_REQUESTS_TEXT>N&uacute;mero m&aacute;ximo de solicitudes de un proceso handles</MX_REQUESTS_TEXT>
 <mysql_audit>Auditar Mysql</mysql_audit>
-<mysql_audit_text>Run MySQL High Performance Tuning Script in order to see if your have rights settings</mysql_audit_text>
+<mysql_audit_text>Ejecute el script MySQL High Performance Tuning para ver si tiene la configuraci&#243;n correcta</mysql_audit_text>
 <mysql_benchmark>Puntos de referencia</mysql_benchmark>
-<mysql_benchmark_text>Test your Mysql server and display the global performance with others tests</mysql_benchmark_text>
+<mysql_benchmark_text>Pruebe su servidor Mysql y muestre el rendimiento global con otras pruebas</mysql_benchmark_text>
 <mysql_performance_level_text>Ajustes y consejos para ajustar su servidor MySQL</mysql_performance_level_text>
 <mysql_repair_text>Reparaci&oacute;n de bases de datos easly ...</mysql_repair_text>
 <mysql_server_consumption>Consumo del servidor Mysql</mysql_server_consumption>
@@ -67,41 +64,33 @@ The default value of 2 is probably too low; we suggest 10 instead;
 es s%C3%B3lo un servicio cosmético[br].
 puede manejar aqu%C3%AD el consumo del servidor MySQL</mysql_server_text>
 <NoBootWithoutIP>Iniciar los servicios s&oacute;lo de red</NoBootWithoutIP>
-<NoBootWithoutIP_explain>When the server boot-up some services should take time because the server did not already have a network IP address. [br]
-Especially if the server is running in DHCP Client mode.[br]
-If you enable this feature, Artica will start services only if the server has an IP address.[br]This feature is designed to speed the boot time.</NoBootWithoutIP_explain>
+<NoBootWithoutIP_explain>Cuando el servidor arranca, algunos servicios tardan porque el servidor a&#250;n no tiene una direcci&#243;n IP de red. [br]
+Especialmente si el servidor se ejecuta en modo cliente DHCP.[br]
+Si activa esta funci&#243;n, Artica iniciar&#225; los servicios solo si el servidor tiene una direcci&#243;n IP.[br]Esta funci&#243;n est&#225; dise&#241;ada para acelerar el tiempo de arranque.</NoBootWithoutIP_explain>
 <no_sql_injection>Sin inyecci&oacute;n de Mysql</no_sql_injection>
 <only_errors>Solo errores</only_errors>
 <only_mail>Mail eventos y errores</only_mail>
 <others_benchmarks>Otros puntos de referencia</others_benchmarks>
 <service_performances>Servicios de rendimiento</service_performances>
-<syslogng_intro>
-If you are still having trouble with dropped messages,
-look into using flow control within syslog-ng.[br]
-Flow control allows you to finely tune the amount of messages received from a source.[br][br]
-Although, there are potential other issues you must account for, such as slowing down the source application if
-it cannot hand off its log messages, etc.[br][br]
-Users with traditional syslog clients sending their logs via UDP, should have a look at this page on UDP Buffer Sizing.[br][br]
-Also, "Flushing Buffers" and "Output Buffers" should be tweaked on your client servers as necessary if they are using syslog-ng,
-and handle heavy loads, sporadic sources, etc.[br]
-Remember to use your statistics log entries to help you identify problems and load effectively.
-</syslogng_intro>
+<syslogng_intro>Si sigue teniendo problemas con mensajes descartados, considere usar el control de flujo dentro de syslog-ng.[br]
+El control de flujo le permite ajustar finamente la cantidad de mensajes recibidos de una fuente.[br][br]
+Aunque hay otros problemas potenciales que debe tener en cuenta, como ralentizar la aplicaci&#243;n de origen si no puede entregar sus mensajes de registro, etc.[br][br]
+Los usuarios con clientes syslog tradicionales que env&#237;an sus registros por UDP deber&#237;an echar un vistazo a esta p&#225;gina sobre el dimensionamiento del b&#250;fer UDP.[br][br]
+Adem&#225;s, &quot;Flushing Buffers&quot; y &quot;Output Buffers&quot; deber&#237;an ajustarse en sus servidores cliente seg&#250;n sea necesario si usan syslog-ng y manejan cargas pesadas, fuentes espor&#225;dicas, etc.[br]
+Recuerde usar sus entradas de registro de estad&#237;sticas para ayudarle a identificar problemas y carga de forma efectiva.</syslogng_intro>
 <syslogng_max_connections>Conexiones Maximas</syslogng_max_connections>
 <syslogng_max_connections_text>Si ve muchos &quot;N%C3%BAmero de conexiones simult%C3¡neas permitidas superado&quot; significa que debe aumentar este valor.[br]
 Este par%C3¡metro limita el n%C3%BAmero de conexiones abiertas simult%C3¡neamente</syslogng_max_connections_text>
 <syslogng_sync>Limpiar Buffers</syslogng_sync>
-<syslogng_sync_text>
-The syslog-ng application buffers the log messages to be sent in an output queue.[br]
-The sync() parameter specifies the number of messages held in this buffer.[br][br]
-By default, Flushing Buffers is set to 0, which flushes messages immediately - which depending on your logging volume,
-can be fairly taxing.[br]
-Increasing this number gently, say to 10 or 20, will hold that number of messages in its buffer before they are written to their destination.
-</syslogng_sync_text>
+<syslogng_sync_text>La aplicaci&#243;n syslog-ng almacena en b&#250;fer los mensajes de registro que se enviar&#225;n en una cola de salida.[br]
+El par&#225;metro sync() especifica el n&#250;mero de mensajes retenidos en este b&#250;fer.[br][br]
+De forma predeterminada, Flushing Buffers est&#225; en 0, lo que vac&#237;a los mensajes inmediatamente, lo que dependiendo de su volumen de registro puede ser bastante exigente.[br]
+Aumentar este n&#250;mero suavemente, digamos a 10 o 20, retendr&#225; ese n&#250;mero de mensajes en su b&#250;fer antes de escribirse en su destino.</syslogng_sync_text>
 <syslog_server_consumption>Syslog-ng inyeccion</syslog_server_consumption>
-<syslog_server_consumption_text>You using syslog-ng and Artica automatically set it to force sending events to mysql in order to display them.[br]
-Mysql injection increase MySQL processes and need some performances.[br]
-This parameter allow you to totally disable this feature or to specify wich logs you want to send to mysql.</syslog_server_consumption_text>
+<syslog_server_consumption_text>Est&#225; usando syslog-ng y Artica lo configura autom&#225;ticamente para forzar el env&#237;o de eventos a mysql para mostrarlos.[br]
+La inyecci&#243;n de Mysql aumenta los procesos de MySQL y necesita algunos recursos.[br]
+Este par&#225;metro le permite desactivar totalmente esta funci&#243;n o especificar qu&#233; registros desea enviar a mysql.</syslog_server_consumption_text>
 <tune_title>Rendimiento de Artica</tune_title>
 <useIonice>Abilitar I/O prioridades</useIonice>
-<useIonice_explain>If it is enabled, artica will configure I/O scheduling priority for executed program</useIonice_explain>
+<useIonice_explain>Si est&#225; activado, artica configurar&#225; la prioridad de programaci&#243;n de E/S para el programa ejecutado</useIonice_explain>
 <very_low>Muy baja</very_low>

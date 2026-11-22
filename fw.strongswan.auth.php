@@ -1,15 +1,19 @@
 <?php
-// SP 127
+// Service Pack 9 2026-10-10
+// SP 127 - // Service Pack 9
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc"); if (!isset($GLOBALS["CLASS_SOCKETS"])) {
     if (!class_exists("sockets")) {
         include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
     }
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
+// Include INCONDITIONNEL de premier niveau (CLAUDE.md, awc-* regle 1).
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus(); if (!$users->AsFirewallManager) {
     exit();
 }
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 if (isset($_GET["verbose"])) {
     $GLOBALS["VERBOSE"]=true;
     ini_set('display_errors', 1);
@@ -91,14 +95,15 @@ function build_progress()
     $ARRAY["AFTER"]="LoadAjax('fw-objects-table-auth','$page?build-table=yes&rule-id={$DATAS["object-save"]}');";
 
     $prgress=base64_encode(serialize($ARRAY)); // Array is compiled
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid={$DATAS["form-id"]}')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid={$DATAS["form-id"]}')";
 
     echo $jsrestart;
 }
 
 function auth_move(){
-    $ID=$_GET["auth-rule-move"];
-    $TID=$_GET["tunnel-id"];
+    // Pentest 2026-11-04 : auth-rule-move et tunnel-id etaient concatenes dans la requete.
+    $ID=intval($_GET["auth-rule-move"]);
+    $TID=intval($_GET["tunnel-id"]);
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     $sql="SELECT `order` FROM strongswan_auth WHERE `ID`='$ID'";
     $ligne=$q->mysqli_fetch_array($sql);
@@ -125,7 +130,7 @@ function auth_move(){
     $results = $q->QUERY_SQL($sql);
 
     foreach ($results as $index=>$ligne) {
-        $q->QUERY_SQL("UPDATE strongswan_auth SET `order`=$c WHERE `ID`={$ligne["ID"]}");
+        $q->QUERY_SQL("UPDATE strongswan_auth SET `order`=$c WHERE `ID`=".intval($ligne["ID"]));
         $c++;
     }
     $page=CurrentPageName();
@@ -138,7 +143,9 @@ function auth_enable(){
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     header("content-type: application/x-javascript");
-    $ligne=$q->mysqli_fetch_array("SELECT conn_id, enable FROM strongswan_auth WHERE ID='{$_GET["enable-js"]}'");
+    // Pentest 2026-11-04 : enable-js etait concatene dans la requete.
+    $enableID=intval($_GET["enable-js"]);
+    $ligne=$q->mysqli_fetch_array("SELECT conn_id, enable FROM strongswan_auth WHERE ID='$enableID'");
     $aclname=$ligne["aclname"];
     if(intval($ligne["enable"])==0){
 
@@ -148,7 +155,7 @@ function auth_enable(){
         $enabled=0;
     }
 
-    $q->QUERY_SQL("UPDATE strongswan_auth SET enable='$enabled' WHERE ID='{$_GET["enable-js"]}'");
+    $q->QUERY_SQL("UPDATE strongswan_auth SET enable='$enabled' WHERE ID='$enableID'");
     if(!$q->ok){echo "alert('".$q->mysql_error."')";return;}
 
     echo "LoadAjax('fw-objects-table-auth','$page?build-table=yes&rule-id={$ligne["conn_id"]}');";
@@ -188,10 +195,11 @@ function delete_js()
     $tpl=new template_admin();
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
-    $ID=$_GET["delete-js"];
+    // Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+    $ID=intval($_GET["delete-js"]);
     $ligne=$q->mysqli_fetch_array("SELECT ID FROM strongswan_auth WHERE ID='$ID'");
     $title="{$ligne["ID"]} - {delete}";
-    $tpl->js_dialog_confirm($title, "$page?delete-confirm=$ID&js-after={$_GET["js-after"]}");
+    $tpl->js_dialog_confirm($title, "$page?delete-confirm=$ID&js-after=".jsafter_token($_GET["js-after"])."");
 }
 
 function delete_confirm()
@@ -199,8 +207,9 @@ function delete_confirm()
     $tpl            = new template_admin();
     $page           = CurrentPageName();
     $q              = new lib_sqlite("/home/artica/SQLITE/strongswan.db");
-    $ID             = $_GET["delete-confirm"];
-    $jsAfter        = base64_decode($_GET["js-after"]);
+    // Pentest 2026-11-04 : delete-confirm etait concatene dans la requete.
+    $ID             = intval($_GET["delete-confirm"]);
+    $jsAfter        = jsafter_sanitize(base64_decode($_GET["js-after"]));
     $t              = time();
 
 
@@ -246,8 +255,9 @@ function delete_confirm()
 
 function delete_remove()
 {
-    $ID=$_POST["delete-remove"];
-    $CONN_ID=$_POST["conn-id"];
+    // Pentest 2026-11-04 : delete-remove et conn-id etaient concatenes dans la requete.
+    $ID=intval($_POST["delete-remove"]);
+    $CONN_ID=intval($_POST["conn-id"]);
     $sock=new sockets();
 
 
@@ -368,8 +378,9 @@ function new_object()
         }
         $certToQuery=substr($certInUse, 0, strrpos($certInUse, "."));
         echo $certToQuery;
-        $sql="SELECT server_key FROM strongswan_certs WHERE `server_cert`='{$certToQuery}'";
-        $cert=$q->QUERY_SQL($sql);
+        // Pentest 2026-11-04 : server_cert etait concatene dans la requete.
+        $sql="SELECT server_key FROM strongswan_certs WHERE `server_cert`=?";
+        $cert=$q->QUERY_SQL_PARAMS($sql,array($certToQuery));
         foreach ($cert as $key=>$ligne) {
             $certs["{$ligne['server_key']}.pem"]="{$ligne['server_key']}.pem";
         }
@@ -414,18 +425,23 @@ function getVal($arr)
 
 function save_object()
 {
-    $ID=$_POST["object-save"];
+    // Pentest 2026-11-04 : object-save, secret, selector et authcert etaient concatenes dans la requete.
+    $ID=intval($_POST["object-save"]);
     $AUTHID=intval($_POST["auth-id"]);
     $TYPE=intval($_POST["type"]);
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
+    $sql=null;
+    $params=array();
     if ($TYPE==1) {
         if ($AUTHID==0) {
             $secret=$_POST["secret"];
             $sql="INSERT INTO strongswan_auth (`conn_id`,`selector`,`type`,`cert`,`secret`,`order`,`enable`)
-            VALUES ('$ID','','$TYPE','','$secret','0','1');";
+            VALUES ('$ID','','$TYPE','',?,'0','1');";
+            $params=array($secret);
         } else {
             $secret=$_POST["secret"];
-            $sql="UPDATE strongswan_auth SET `conn_id`='{$ID}',`type`='{$TYPE}', `secret`='{$secret}' WHERE ID='$AUTHID'";
+            $sql="UPDATE strongswan_auth SET `conn_id`='{$ID}',`type`='{$TYPE}', `secret`=? WHERE ID='$AUTHID'";
+            $params=array($secret);
         }
     }
 
@@ -434,26 +450,30 @@ function save_object()
 
             $selector=$_POST["selector"];
             $secret=$_POST["secret"];
-            $sql2=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_auth WHERE `selector`='{$selector}'");
-            $Items2=$sql2['count'];
+            $r2=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_auth WHERE `selector`=?",array($selector));
+            $sql2=isset($r2[0]) ? $r2[0] : array();
+            $Items2=isset($sql2['count']) ? $sql2['count'] : 0;
 
             if ($Items2>0) {
                 echo "jserror: The selector name is already in use by other tunnel, please choose a new one\n";
                 return;
             }
             $sql="INSERT INTO strongswan_auth (`conn_id`,`selector`,`type`,`cert`,`secret`,`order`,`enable`)
-            VALUES ('$ID','$selector','$TYPE','','$secret','0','1');";
+            VALUES ('$ID',?,'$TYPE','',?,'0','1');";
+            $params=array($selector,$secret);
         } else {
             $selector=$_POST["selector"];
             $secret=$_POST["secret"];
-            $sql2=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_auth WHERE `selector`='{$selector}' AND `conn_id` NOT IN ('$ID')");
-            $Items2=$sql2['count'];
+            $r2=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_auth WHERE `selector`=? AND `conn_id` NOT IN ('$ID')",array($selector));
+            $sql2=isset($r2[0]) ? $r2[0] : array();
+            $Items2=isset($sql2['count']) ? $sql2['count'] : 0;
 
             if ($Items2>0) {
                 echo "jserror: The selector name is already in use by other tunnel, please choose a new one\n";
                 return;
             }
-            $sql="UPDATE strongswan_auth SET `conn_id`='{$ID}',`selector`='{$selector}',`type`='{$TYPE}', `secret`='{$secret}' WHERE ID='$AUTHID'";
+            $sql="UPDATE strongswan_auth SET `conn_id`='{$ID}',`selector`=?,`type`='{$TYPE}', `secret`=? WHERE ID='$AUTHID'";
+            $params=array($selector,$secret);
         }
     }
 
@@ -461,30 +481,34 @@ function save_object()
         if ($AUTHID==0) {
             $selector=$_POST["selector"];
             $cert=$_POST["authcert"];
-            $sql3=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_auth WHERE `cert`='{$cert}'");
-            $Items3=$sql3['count'];
+            $r3=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_auth WHERE `cert`=?",array($cert));
+            $sql3=isset($r3[0]) ? $r3[0] : array();
+            $Items3=isset($sql3['count']) ? $sql3['count'] : 0;
 
             if ($Items3>0) {
                 echo "jserror: The certificate is already in use by other tunnel, please choose a new one\n";
                 return;
             }
             $sql="INSERT INTO strongswan_auth (`conn_id`,`selector`,`type`,`cert`,`secret`,`order`,`enable`)
-            VALUES ('$ID','','$TYPE','$cert','','0','1');";
+            VALUES ('$ID','','$TYPE',?,'','0','1');";
+            $params=array($cert);
         } else {
             $selector=$_POST["selector"];
             $cert=$_POST["authcert"];
-            $sql3=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_auth WHERE `cert`='{$cert}' AND `conn_id` NOT IN ('$ID')");
-            $Items3=$sql3['count'];
+            $r3=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_auth WHERE `cert`=? AND `conn_id` NOT IN ('$ID')",array($cert));
+            $sql3=isset($r3[0]) ? $r3[0] : array();
+            $Items3=isset($sql3['count']) ? $sql3['count'] : 0;
 
             if ($Items3>0) {
                 echo "jserror: The certificate is already in use by other tunnel, please choose a new one\n";
                 return;
             }
-            $sql="UPDATE strongswan_auth SET `conn_id`='{$ID}',`type`='{$TYPE}', `cert`='{$cert}' WHERE ID='$AUTHID'";
+            $sql="UPDATE strongswan_auth SET `conn_id`='{$ID}',`type`='{$TYPE}', `cert`=? WHERE ID='$AUTHID'";
+            $params=array($cert);
         }
     }
 
-    if (!$q->QUERY_SQL($sql)) {
+    if (!$q->QUERY_SQL_PARAMS($sql,$params)) {
         echo $q->mysql_error;
     }
     $_SESSION["POSTFORMED"]=serialize($_POST);
@@ -497,27 +521,15 @@ function negation_js()
     $tpl            = new template_admin();
     $page           = CurrentPageName();
     $mkey           = $_GET["negation-js"];
-    $q              = new lib_sqlite("/home/artica/SQLITE/acls.db");
     $table          = "firewallfilter_sqacllinks";
-    $sql            = "SELECT aclid,negation FROM $table WHERE zmd5='$mkey'";
-    $ligne          = $q->mysqli_fetch_array($sql);
     $id             = $_GET["id"];
-    $aclid          = $ligne["aclid"];
-
-    echo "//$sql --> negation == {$ligne["negation"]},ID={$ligne["aclid"]}\n";
-    if (intval($ligne["negation"])==0) {
-        $negation=1;
-    } else {
-        $negation=0;
-    }
-
-    $sql="UPDATE $table SET `negation`='$negation' WHERE zmd5='$mkey'";
-    $q->QUERY_SQL($sql);
-
-    if (!$q->ok) {
-        $tpl->js_mysql_alert($q->mysql_error);
+    list($ok,$data)=acls_api_send("PUT","/proxy/acls/sqlite/link/negation?table=".urlencode($table)."&zmd5=".urlencode($mkey));
+    if (!$ok) {
+        $tpl->js_mysql_alert($data);
         return;
     }
+    $aclid    = is_array($data)?intval($data["aclid"] ?? 0):0;
+    $negation = is_array($data)?intval($data["negation"] ?? 0):0;
     $text_is="{is}";
     if ($negation==1) {
         $text_is="{is_not}";
@@ -572,111 +584,85 @@ function build_table()
             </ul>
         </div>
         ";
-    $html[]="<table id='table-strongswan-objects' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$order</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$selector</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$types</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text'>$enabled</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text'>$action</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap' style='margin-top:10px'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>$selector</th>";
+    $html[]="<th class='center' nowrap>$types</th>";
+    $html[]="<th class='center' nowrap>$enabled</th>";
+    $html[]="<th style='text-align:right'>$action</th>";
+    // Identifiants propres a la page: awc_pager_js() pagine le premier <tbody>
+    // qu'il trouve quand on ne lui en nomme pas un.
+    $html[]="</tr></thead><tbody id='sswa-rows'>";
 
     $jsAfter=base64_encode("LoadAjax('fw-objects-table-auth','$page?build-table=yes&rule-id={$CONN_ID}');");
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
-    $sql = "SELECT * FROM strongswan_auth where conn_id='$CONN_ID' ORDER BY `order` ASC";
-    $results = $q->QUERY_SQL($sql);
+    $sql="SELECT * FROM strongswan_auth where conn_id='$CONN_ID' ORDER BY `order` ASC";
+    $results=$q->QUERY_SQL($sql);
 
-    foreach ($results as $index=>$ligne) {
-        $MUTED=null;
-        if ($ligne["enable"]==0) {
-            $MUTED=" text-muted";
-        }
-        if ($TRCLASS=="footable-odd") {
-            $TRCLASS=null;
-        } else {
-            $TRCLASS="footable-odd";
-        }
-        switch (intval($ligne["type"])) {
-            case 1:
-                $type='PSK';
-                break;
-            case 2:
-                $type='PSK';
-                break;
-            case 3:
-                $type='RSA';;
-                break;
-            case 4:
-                $type='XAUTH';
-                break;
-            case 5:
-                $type='EAP';
-                break;
-            case 6:
-                $type='NTLM';
-                break;
-            case 7:
-                $type='PIN';
-                break;
-            case 8:
-                $type='P12';
-                break;
-            case 9:
-                $type='BLISS';
-                break;
-            case 10:
-                $type='ECDSA';
-                break;
-        }
+    // Table de correspondance plutot qu'un switch de 30 lignes: les deux
+    // premiers types sont deja le meme libelle (PSK), et une valeur inconnue
+    // doit rester visible -- l'ancien switch laissait $type a sa valeur du
+    // TOUR PRECEDENT, si bien qu'un type inattendu heritait du libelle de la
+    // ligne d'au-dessus au lieu de se signaler.
+    $typeLabels=array(1=>"PSK",2=>"PSK",3=>"RSA",4=>"XAUTH",5=>"EAP",
+                      6=>"NTLM",7=>"PIN",8=>"P12",9=>"BLISS",10=>"ECDSA");
 
-        $html[]="<tr class='$TRCLASS{$MUTED}'  id='auth-{$ligne["ID"]}'>";
-
-
-        $MAIN=$tpl->table_object($ligne["ID"]);
-
+    $rows=array();
+    foreach($results as $ligne){
+        $tv=intval($ligne["type"]);
+        $type=isset($typeLabels[$tv])?$typeLabels[$tv]:"#".$tv;
+        $on=(intval($ligne["enable"])==1);
 
         $jsedit="LoadAjax('fw-objects-table-auth','$page?new-object=yes&ID={$ligne["conn_id"]}&auth-id={$ligne["ID"]}&type={$ligne["type"]}')";
         $edit=$tpl->icon_parameters($jsedit);
         $delete=$tpl->icon_delete("Loadjs('$page?delete-js={$ligne["ID"]}&js-after=$jsAfter')");
-
         $up=$tpl->icon_up("Loadjs('$page?auth-rule-move={$ligne["ID"]}&auth-rule-dir=1&tunnel-id={$ligne["conn_id"]}');");
         $down=$tpl->icon_down("Loadjs('$page?auth-rule-move={$ligne["ID"]}&auth-rule-dir=0&tunnel-id={$ligne["conn_id"]}');");
-        $enable=$tpl->icon_check($ligne["enable"], "Loadjs('$page?enable-js={$ligne["ID"]}')",null,"AsFirewallManager");
+        $enable=$tpl->icon_check($ligne["enable"],"Loadjs('$page?enable-js={$ligne["ID"]}')",null,"AsFirewallManager");
 
-        $html[]="<td nowrap >{$ligne["order"]}</td>";
-        $html[]="<td nowrap >{$ligne["selector"]}</td>";
-        $html[]="<td nowrap >$type</td>";
-        $html[]="<td nowrap >$enable</td>";
-        $html[]="<td nowrap >$up&nbsp;$down&nbsp;$edit&nbsp;$delete</td>";
-
-        $html[]="</tr>";
+        $h ="<tr id='auth-".intval($ligne["ID"])."'>";
+        $h.="<td><div class='awc-ident'>";
+        $h.="<span class='awc-ico".($on?"":" awc-ico-off")."'><i class='fas fa-key'></i></span>";
+        $h.="<span><span class='awc-name".($on?"":" awc-name-off")."'>"
+           ."<a href=\"javascript:blur();\" OnClick=\"$jsedit\">".htmlspecialchars((string)$ligne["selector"])."</a></span>";
+        // Le rang passe en sous-titre: la ligne est deja rendue dans cet ordre
+        // (ORDER BY `order`), une colonne entiere pour le repeter ne dit rien
+        // de plus, et les fleches de la colonne d'action le pilotent.
+        $h.="<div class='awc-meta'>#".intval($ligne["order"])."</div></span></div></td>";
+        $h.="<td class='center'><span class='awc-badge ".($on?"awc-badge-on":"awc-badge-off")."'>"
+           .htmlspecialchars($type)."</span></td>";
+        $h.="<td class='center'>$enable</td>";
+        $h.="<td><div class='awc-acts'>$up&nbsp;$down&nbsp;$edit&nbsp;$delete</div></td>";
+        $h.="</tr>";
+        $rows[]=$h;
     }
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span>"
+           ."<span class='awc-pg' id='sswa-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='7'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-
-    $html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-strongswan-objects').footable( { \"filtering\": { \"enabled\": $filtering }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+    // ICON_SCRIPTS_COMPILE() est IMPERATIF ici: ce tableau contient des
+    // icon_check(), dont les fonctions BtSwitch<id>() partent dans un
+    // accumulateur. $tpl->ICON_SCRIPTS est une propriete d'INSTANCE -- la case
+    // s'afficherait parfaitement et ne repondrait a aucun clic, sans la
+    // moindre erreur PHP (CLAUDE.md, awc-* regle 2).
+    $js="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."
 	function NewObject$t(x){
 		LoadAjax('fw-objects-table-auth','$page?new-object=yes&ID=$CONN_ID&auth-id=0&type='+x);
 	}
     </script>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        .$js
+        .awc_pager_js(25,"sswa-rows","sswa-pager");
 }
+
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.')
 {
     $tmp1 = round((float) $number, $decimals);

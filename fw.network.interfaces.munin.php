@@ -4,6 +4,8 @@
 	include_once('ressources/class.users.menus.inc');
 	include_once('ressources/class.main_cf.inc');
 
+	// Pentest 2026-11-04 : interface et stats etaient recopies sans encodage dans la page (XSS).
+	foreach(array("interface","stats") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET[$k]);}}
 	if(isset($_GET["stats"])){stats();exit;}
 js();
 

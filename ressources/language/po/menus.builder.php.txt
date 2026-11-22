@@ -1,25 +1,25 @@
 <ADDRESSBOOK>Lista de endereços</ADDRESSBOOK>
-<ADDRESSBOOK_TEXT>Store your contacts addres on this server and ensure you can query them everywhere</ADDRESSBOOK_TEXT>
-<AntiSpam_parameters>Your anti-spam settings</AntiSpam_parameters>
-<AntiSpam_parameters_text>Personnalize your anti-spam settings according your needs</AntiSpam_parameters_text>
-<calendar>Web Calendar</calendar>
-<dotclear_user_intro>Manager your DotClear personal Blog</dotclear_user_intro>
+<ADDRESSBOOK_TEXT>Armazene os endere&#231;os dos seus contactos neste servidor e garanta que pode consult&#225;-los em qualquer lugar</ADDRESSBOOK_TEXT>
+<AntiSpam_parameters>As suas defini&#231;&#245;es anti-spam</AntiSpam_parameters>
+<AntiSpam_parameters_text>Personalize as suas defini&#231;&#245;es anti-spam de acordo com as suas necessidades</AntiSpam_parameters_text>
+<calendar>Calend&#225;rio web</calendar>
+<dotclear_user_intro>Gerir o seu blog pessoal DotClear</dotclear_user_intro>
 <emailing>eMailing</emailing>
-<mailbox_rules>mailbox rules</mailbox_rules>
+<mailbox_rules>regras da caixa de correio</mailbox_rules>
 <menu_account_text>Configuraç%C3µes da sua conta</menu_account_text>
-<menu_backup_text>Search messages in your backup storage</menu_backup_text>
-<menu_calendar_text>Access to your web groupware calendar, use the same account to login</menu_calendar_text>
-<menu_fetchmail_text>Import your mails from an ISP or other server</menu_fetchmail_text>
-<menu_messaging_text>Manage your mail server and all securites settings</menu_messaging_text>
+<menu_backup_text>Procurar mensagens no seu armazenamento de backup</menu_backup_text>
+<menu_calendar_text>Acesso ao seu calend&#225;rio de groupware web, use a mesma conta para iniciar sess&#227;o</menu_calendar_text>
+<menu_fetchmail_text>Importe as suas mensagens de um ISP ou outro servidor</menu_fetchmail_text>
+<menu_messaging_text>Gerir o seu servidor de correio e todas as defini&#231;&#245;es de seguran&#231;a</menu_messaging_text>
 <menu_openvpn_text>Mostrar informaç%C3µes sobre a sua Rede Privada Virtual</menu_openvpn_text>
-<menu_organizations_text>Manage users & Organizations</menu_organizations_text>
-<menu_OUT_OF_OFFICE_text>Enable auto-reply from in response to incoming e-mails, based on your Status (Away, Out of Office, Vacation, custom Status)</menu_OUT_OF_OFFICE_text>
-<menu_quarantine_text>See Your anti-spam and antivirus quarantine</menu_quarantine_text>
-<menu_share_text>Share your local folders over the network</menu_share_text>
-<menu_sieve_text>Manage your mailbox rules</menu_sieve_text>
-<menu_statistic_text>See your mailbox statistics</menu_statistic_text>
-<menu_system_text>Manage your system</menu_system_text>
-<menu_webmail_text>Access to your mailbox</menu_webmail_text>
-<menu_web_proxy_text>Manage your Internet Proxy Squid</menu_web_proxy_text>
-<YOUR_ADDRESSBOOK>Fill your personal Address Book</YOUR_ADDRESSBOOK>
-<YOUR_ADDRESSBOOK_TEXT>Store your contacts addresses on this server and ensure you can query them everywhere</YOUR_ADDRESSBOOK_TEXT>
+<menu_organizations_text>Gerir utilizadores e organiza&#231;&#245;es</menu_organizations_text>
+<menu_OUT_OF_OFFICE_text>Ative a resposta autom&#225;tica &#224;s mensagens recebidas, com base no seu estado (Ausente, Fora do escrit&#243;rio, F&#233;rias, estado personalizado)</menu_OUT_OF_OFFICE_text>
+<menu_quarantine_text>Ver a sua quarentena anti-spam e antiv&#237;rus</menu_quarantine_text>
+<menu_share_text>Partilhe as suas pastas locais na rede</menu_share_text>
+<menu_sieve_text>Gerir as regras da sua caixa de correio</menu_sieve_text>
+<menu_statistic_text>Ver as estat&#237;sticas da sua caixa de correio</menu_statistic_text>
+<menu_system_text>Gerir o seu sistema</menu_system_text>
+<menu_webmail_text>Acesso &#224; sua caixa de correio</menu_webmail_text>
+<menu_web_proxy_text>Gerir o seu proxy de Internet Squid</menu_web_proxy_text>
+<YOUR_ADDRESSBOOK>Preencha o seu livro de endere&#231;os pessoal</YOUR_ADDRESSBOOK>
+<YOUR_ADDRESSBOOK_TEXT>Armazene os endere&#231;os dos seus contactos neste servidor e garanta que pode consult&#225;-los em qualquer lugar</YOUR_ADDRESSBOOK_TEXT>

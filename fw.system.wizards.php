@@ -16,22 +16,21 @@ function js(){
 
 function popup(){
     $tpl=new template_admin();
-    $hostname=$_SERVER["SERVER_NAME"];
+    // The profiles uninstall services: system administrators only (fw.progress.php
+    // also checks the PRIV of each task before starting it).
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{ERROR_NO_PRIVS2}"));
+        return;
+    }
+    // articarest wizards module (ex framework/wizards.php + exec.wizards.php).
     $html[]="<div class=\"wrapper wrapper-content animated fadeInRight\">";
-
     $html[]=$tpl->widget_wizard("{simple_proxy_and_webfiltering}",
-        "{simple_proxy_and_webfiltering_short}","{simple_proxy_and_webfiltering_explain}","wizards.php?create-simple-proxy=yes&domain=$hostname");
-
-
-    $html[]=$tpl->widget_wizard("{minimalist_gateway}","{minimalist_gateway_short}","{minimalist_gateway_explain}","wizards.php?create-gateway=yes&domain=$hostname");
-
-
-    $html[]=$tpl->widget_wizard("{FULL_WAF}","{FULL_WAF2}","{FULL_WAF3}","wizards.php?create-waf=yes&domain=$hostname");
-
-     $html[] = $tpl->widget_wizard("{cache_and_bandwidth}", "{cache_and_bandwidth2}", "{cache_and_bandwidth_explain}", "wizards.php?create-cache=yes&domain=$hostname",true);
-
-    $html[]=$tpl->widget_wizard("{APP_DNSFILTERD}","{APP_DNSFILTERD_WIZARD}","{APP_DNSFILTERD_EXPLAIN}","wizards.php?create-dns-filter=yes&domain=$hostname");
-    $html[]=$tpl->widget_wizard("{APP_STRONGSWAN}","{APP_STRONGSWAN_WIZARD}","{APP_STRONGSWAN_WIZARD_EXPLAIN}","wizards.php?create-ipsec=yes&domain=$hostname");
+        "{simple_proxy_and_webfiltering_short}","{simple_proxy_and_webfiltering_explain}","/system/wizards/simple-proxy");
+    $html[]=$tpl->widget_wizard("{minimalist_gateway}","{minimalist_gateway_short}","{minimalist_gateway_explain}","/system/wizards/gateway");
+    $html[]=$tpl->widget_wizard("{FULL_WAF}","{FULL_WAF2}","{FULL_WAF3}","/system/wizards/waf");
+    $html[]=$tpl->widget_wizard("{cache_and_bandwidth}", "{cache_and_bandwidth2}", "{cache_and_bandwidth_explain}", "/system/wizards/cache",true);
+    $html[]=$tpl->widget_wizard("{APP_STRONGSWAN}","{APP_STRONGSWAN_WIZARD}","{APP_STRONGSWAN_WIZARD_EXPLAIN}","/system/wizards/ipsec");
 
     $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);

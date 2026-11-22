@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.maincf.multi.inc");
@@ -7,7 +10,6 @@ if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["ipset-status"])){ipset_status();exit;}
 if(isset($_POST["PostFixAutopIpsets"])){save();exit;}
-if(isset($_GET["stats-mailvolume"])){stats_mailvolume();exit;}
 
 page();
 
@@ -78,19 +80,19 @@ function table(){
 	$ARRAY["TITLE"]="{APP_FIREWALL} {compile_rules}";
 	$ARRAY["AFTER"]="LoadAjax('table-postfix','$page?tabs=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-ipset-restart')";
+	$jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ipset-restart')";
 	
 	$PostFixAutopIpsets=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PostFixAutopIpsets"));
 	
-	$html[]="<table style='width:100%'>";
-	$html[]="<tr>";
-	$html[]="<td style='width:240px;vertical-align: top'><div id='ipset-status'></div></td>";
-	$html[]="<td valign='top' style='padding-left:20px'>";
-	
+	// Mise en page en flex: la cellule de gauche etait figee a 240px alors que la
+	// tuile de service qu'elle recoit en mesure 335.
+	$html[]="<div style='display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start'>";
+	$html[]="<div style='flex:0 0 auto'><div id='ipset-status'></div></div>";
+	$html[]="<div style='flex:1 1 420px;min-width:0'>";
 	$form[]=$tpl->field_checkbox("PostFixAutopIpsets","{use_public_rules}",$PostFixAutopIpsets,false,"{PostFixAutopIpsets_explain}");
 	$html[]=$tpl->form_outside("{parameters}", $form,null,"{apply}",$jsRestart,"AsPostfixAdministrator",true);
-	$html[]="</td>";
-	$html[]="</table>";
+	$html[]="</div>";
+	$html[]="</div>";
 	$html[]="<script>LoadAjax('ipset-status','$page?ipset-status=yes');</script>";
 	echo $tpl->_ENGINE_parse_body($html);
 }

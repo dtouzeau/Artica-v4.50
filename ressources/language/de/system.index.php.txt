@@ -1,28 +1,28 @@
-<APP_BACKUP_TEXT>Backup artica settings and required datas automatically</APP_BACKUP_TEXT>
-<APP_IPTABLES_TEXT>ipchains is a free software based firewall for Linux.</APP_IPTABLES_TEXT>
-<APP_NMAP_TEXT>Discover computers and services on a computer network</APP_NMAP_TEXT>
+<APP_BACKUP_TEXT>Artica-Einstellungen und erforderliche Daten automatisch sichern</APP_BACKUP_TEXT>
+<APP_IPTABLES_TEXT>ipchains ist eine kostenlose softwarebasierte Firewall f&#252;r Linux.</APP_IPTABLES_TEXT>
+<APP_NMAP_TEXT>Computer und Dienste in einem Computernetzwerk erkennen</APP_NMAP_TEXT>
 <APP_NTPD_TEXT>Die Uhr Ihres Systems automatisch aufrechterhalten</APP_NTPD_TEXT>
-<APP_ROUNDCUBE_TEXT>Configure and integrate RoundCube WebMail in  your system</APP_ROUNDCUBE_TEXT>
-<artica_autoupdate_text>Update Artica main program periodically</artica_autoupdate_text>
-<artica_performances>Artica performances</artica_performances>
-<artica_performances_text>Personalize some parameters to reduce or increase performances modules</artica_performances_text>
-<dns>DNS & resolutions</dns>
-<edit_acls>Edit LDAP Access List</edit_acls>
-<folders_monitor_text>Monitor your hard disk and follow folders size</folders_monitor_text>
-<mysql_database>Mysql Database</mysql_database>
-<mysql_database_text>Manage mysql settings and enable/disable mysql engine</mysql_database_text>
+<APP_ROUNDCUBE_TEXT>RoundCube WebMail in Ihrem System konfigurieren und integrieren</APP_ROUNDCUBE_TEXT>
+<artica_autoupdate_text>Das Artica-Hauptprogramm regelm&#228;&#223;ig aktualisieren</artica_autoupdate_text>
+<artica_performances>Artica-Leistung</artica_performances>
+<artica_performances_text>Einige Parameter personalisieren, um die Leistung der Module zu verringern oder zu erh&#246;hen</artica_performances_text>
+<dns>DNS &amp; Aufl&#246;sungen</dns>
+<edit_acls>LDAP-Zugriffsliste bearbeiten</edit_acls>
+<folders_monitor_text>&#220;berwachen Sie Ihre Festplatte und verfolgen Sie die Ordnergr&#246;&#223;e</folders_monitor_text>
+<mysql_database>MySQL-Datenbank</mysql_database>
+<mysql_database_text>MySQL-Einstellungen verwalten und die MySQL-Engine aktivieren/deaktivieren</mysql_database_text>
 <network>Netzwerk &amp; Netzwerkkarten</network>
-<nic_dynamic_dns_text>maintains the IP address of your host name.checks periodically whether your IP address stored by the DNS server is the real current address.</nic_dynamic_dns_text>
-<nic_static_dns_text>Manage hosts and minimal settings for hosts names resolutions</nic_static_dns_text>
-<per_user_addressbook>Per user Address Book</per_user_addressbook>
-<per_user_addressbook_explain>If you set to green, remote mail clients will be able to add or query the LDAP server has their own address book,each user will have an access to it's own NAB</per_user_addressbook_explain>
-<remote_addressbook>Address Book</remote_addressbook>
-<remote_addressbook_explain>If you set to green, remote mail clients such has Thunderbird or Outlook Express will be able to parse the LDAP server has an Address Book storage.</remote_addressbook_explain>
-<remote_addressbook_text>Enable or disable this system has a global address book</remote_addressbook_text>
-<repository_manager>repository manager</repository_manager>
-<repository_manager_text>Update and install packages according your system repositories manager</repository_manager_text>
+<nic_dynamic_dns_text>Verwaltet die IP-Adresse Ihres Hostnamens. Pr&#252;ft regelm&#228;&#223;ig, ob die vom DNS-Server gespeicherte IP-Adresse die tats&#228;chliche aktuelle Adresse ist.</nic_dynamic_dns_text>
+<nic_static_dns_text>Hosts und minimale Einstellungen f&#252;r die Aufl&#246;sung von Hostnamen verwalten</nic_static_dns_text>
+<per_user_addressbook>Adressbuch pro Benutzer</per_user_addressbook>
+<per_user_addressbook_explain>Wenn Sie auf Gr&#252;n setzen, k&#246;nnen Remote-Mail-Clients den LDAP-Server als ihr eigenes Adressbuch hinzuf&#252;gen oder abfragen; jeder Benutzer hat Zugriff auf sein eigenes NAB</per_user_addressbook_explain>
+<remote_addressbook>Adressbuch</remote_addressbook>
+<remote_addressbook_explain>Wenn Sie auf Gr&#252;n setzen, k&#246;nnen Remote-Mail-Clients wie Thunderbird oder Outlook Express den LDAP-Server als Adressbuch-Speicher auswerten.</remote_addressbook_explain>
+<remote_addressbook_text>Dieses System als globales Adressbuch aktivieren oder deaktivieren</remote_addressbook_text>
+<repository_manager>Repository-Manager</repository_manager>
+<repository_manager_text>Pakete gem&#228;&#223; dem Repository-Manager Ihres Systems aktualisieren und installieren</repository_manager_text>
 <services>Dienstleistungen</services>
 <system>System &amp; Hardware</system>
-<update>Update & Maintain</update>
-<usb_section>Manage USB devices</usb_section>
-<usb_section_text>Create a dedicated device for backup features and connect/disconnect usb devices</usb_section_text>
+<update>Aktualisieren &amp; Warten</update>
+<usb_section>USB-Ger&#228;te verwalten</usb_section>
+<usb_section_text>Ein dediziertes Ger&#228;t f&#252;r Backup-Funktionen erstellen und USB-Ger&#228;te verbinden/trennen</usb_section_text>

@@ -107,7 +107,8 @@ function table(){
 		if(trim($line)==null){continue;}
         if(!preg_match("#^(.+?)\s+([0-9]+)\s+([0-9:]+).*?\[([0-9]+)\]:(.*)#",trim($line),$re)){
             VERBOSE("NO MATCHES $line",__LINE__);
-            $line=htmlspecialchars($line);
+            // Pentest 2026-11-04 : ligne de journal (donnee externe) affiche sans encodage (XSS stockee).
+            $line=req_html($line);
             $html[]="<tr class='$TRCLASS'>";
             $html[]="<td $td1prc></td>";
             $html[]="<td $td1prc></td>";
@@ -117,10 +118,10 @@ function table(){
         }
         $line=trim($line);
         if($line==null){continue;}
-        $datetext=$re[1]." ".$re[2]." ".$re[3];
+        $datetext=req_html($re[1]." ".$re[2]." ".$re[3]);
         $pid=$re[4];
 		$line=$re[5];
-        $line=htmlspecialchars($line);
+        $line=req_html($line);
         $line=str_replace("ParseStats.go[squidstats/StatsCom.","[",$line);
 
 		if(preg_match("#(does not exist|Error while|Can not|error|fatal|failed)#i", $line)){

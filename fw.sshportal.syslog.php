@@ -97,7 +97,8 @@ function search(){
 		$ACTION=null;
 		$FF=false;
 		if(!preg_match("#^(.+?)\s+([0-9])+\s+([0-9:]+)\s+(.+?)\s+sshportal\[([0-9]+)\]:\s+(.+)#", $line,$re)){
-			echo "<strong style='color:red'>$line</strong><br>"; 
+		// Pentest 2026-11-04 : ligne syslog sshportal (nom d'utilisateur saisi, donnee externe) affichee sans encodage (XSS stockee).
+			echo "<strong style='color:red'>".req_html($line)."</strong><br>"; 
 			continue;}
 		
 		$date="{$re[1]} {$re[2]} ".date('Y')." {$re[3]}";
@@ -105,8 +106,9 @@ function search(){
 		$FTime=date("Y-m-d H:i:s",$xtime);
 		$curDate=date("Y-m-d");
 		$FTime=trim(str_replace($curDate, "", $FTime));
-		$pid=$re[5];
-		$line=$re[6];
+		$pid=req_html($re[5]);
+		// Pentest 2026-11-04 : ligne syslog sshportal (nom d'utilisateur saisi, donnee externe) affichee sans encodage (XSS stockee).
+		$line=req_html($re[6]);
 
 		if(preg_match("#(Failed password|Invalid user|user unknown)#i", $line)){
 			$line="<span class='text-danger'>$line</span>";
@@ -132,7 +134,8 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/sshportal.syslog.pattern")."</i></div>";
+	// Pentest 2026-11-04 : motif de recherche relu depuis un fichier, affiche sans encodage (XSS stockee).
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/sshportal.syslog.pattern"))."</i></div>";
 	echo @implode("\n", $html);
 	
 	

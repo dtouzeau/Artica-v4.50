@@ -915,6 +915,7 @@ fixed/testaghome.meshkov.info/237
 fixed/adguard.onlyfriends.info/237
 fixed/agh.printk.info/237
 fixed/dns.tracker.ink/237
+fixed/cdn.speedcurve.com/237
 fixed/fly.io/237
 fixed/query.hdns.io/237
 fixed/dns.nextdns.io/237
@@ -2420,7 +2421,7 @@ regex/logs\.datadoghq\.eu$/143
 regex/(^|\.)tracker\.adotmob\.com$/143
 regex/(^|\.)marketingautomation\.services$/143
 regex/(^|\.)(getjad|event\.prod\.bidr|ingest\.sentry|axept)\.io$/143
-regex/(\.|^)(nxtck|collect\.igodigital|youvisit|xiti|avantisvideo|bounceexchange|hyros)\.com$/143
+regex/(\.|^)(nxtck|collect\.igodigital|youvisit|xiti|avantisvideo|bounceexchange|hyros|abtasty)\.com$/143
 regex/(\.|^)(footprintdns|r66net|stats.avast|bf\.dynatrace|mobileapptracking|devatics|addthis|marketo|kameleoon)\.(com|io|ru|eu)/143
 regex/(^|\.)(stackpathdns|google-analytics|dwin2|appsflyer|criteo|estat|alexametrics|omnitagjs|adlooxtracking|imrworldwide)\.(com|io|net|org)$/143
 regex/(^|\.)(actonservice|gigya-api|wpengine\.netdna-cdn|ibytedtos|tailtarget|audiencerun)\.com$/143
@@ -3188,6 +3189,7 @@ fixed/khms3.google.com/94
 fixed/khms3.googleapis.com/94
 fixed/dev.virtualearth.net/94
 
+fixed/mweb-hb.presage.io/5
 fixed/eb2.3lift.com/5
 fixed/sync.adkernel.com/5
 fixed/ads.servenobid.com/5
@@ -3300,9 +3302,11 @@ regex/(\.|^)adop\.cc$/5
 regex/(\.|^)adj\.st$/5
 regex/(\.|^)adoptimize\.info$/5
 regex/(\.|^)(adnxs-simple|adnxs|admedia|geoadnxs|addthis|addthiscdn|adentifi|addtoany|adelement|addealsnetwork)\.(com|net)$/5
-regex/(\.|^)(intelligenceadx|adform|vivocha|taboola|affiliatly|advangelists|pushclk|adfurikun|admarvel)\.com$/5
+regex/(\.|^)(intelligenceadx|adform|vivocha|taboola|affiliatly|advangelists|pushclk|adfurikun|admarvel|nmrodam|pbstck|ctnsnet)\.com$/5
 regex/(\.|^)adreach\.me$/5
-regex/(\.|^)(advgo|adform)\.net$/5
+regex/(\.|^)presage\.io$/5
+regex/(\.|^)(advgo|adform|dm-event)\.net$/5
+regex/(\.|^)edge\.permutive\.app$/5
 regex/(\.|^)(spsvcpc-tls|xid).i-mobile.co.jp/5
 fixed/s.tgm.yahoo-net.jp/5
 
@@ -3318,11 +3322,12 @@ fixed/songbird.cardinalcommerce.com/8
 regex/(\.|^)(exlibris|bauundhobby|coop|lyreco)\.(com|fr|ch)$/8
 regex/(\.|^)(alicdn|westfield|cardinalcommerce|aliexpress)\.com$/8
 regex/(\.|^)bonprix\.fr$/8
-
+regex/(\.|^)fnacdarty\.com$/8
 regex/(^|\.)(youtube|ytimg|googlevideo)\.[a-z]+$/16
 
 # Cars 27
-regex/(\.|^)leparking\.fr$/27
+fixed/reseau.citroen.fr/27
+regex/(\.|^)(leparking|citroen)\.fr$/27
 regex/(\.|^)el-parking\.es$/27
 
 # Update Sites 147
@@ -3463,7 +3468,7 @@ regex/(^|\.)hpe\.com$/81
 regex/(^|\.)(diariodemallorca|prensaiberica|unidadeditorial)\.es/103
 regex/(^|\.)kioskoymas\.com/103
 regex/(^|\.)today.line.me/103
-regex/(^|\.)(lefigaro|lemonde|ouest-france|liberation|letudiant)\.fr/103
+regex/(^|\.)(lefigaro|lemonde|ouest-france|liberation|letudiant|leparisien)\.fr/103
 regex/(^|\.)prcdn\.co/103
 
 # CloudFlare 234
@@ -3492,26 +3497,31 @@ fixed/b.stripecdn.com/50
 fixed/hosted-checkout.stripecdn.com.cdn.cloudflare.net/50
 fixed/as-ex-ath-groupe.banquepopulaire.fr/50
 regex/(^|\.)(socgen|stripe|paypal|boursorama|pbebank|bankersalmanac|banquepopulaire)\.[a-z]+$/50
-regex/(^|\.)bnpparisbas$/50
 regex/(^|\.)caixabank\.es/50
 regex/(^|\.)(stripecdn|ccdc02)\.com/50
 regex/(^|\.)vakifbank\.com\.tr$/50
-
+regex/(^|\.)societegenerale\.fr$/50
+regex/\.bnpparibas$/50
 
 # Porn
 regex/(\.|^)(youporn|sex|pornxs|vptpsn|xhamster|phncdn|xhcdn|xvideos|tube8|xtube|pornhub|hardsextube|redtubefiles)\.(com|net)$/109
 regex/(\.|^)(icfcdn|ypncdn|youporn|playboy|xnxx|porn|tubepornclassic|teenshomeporn)\.(com|net)$/109
 regex/(^|\.)(sex|mmoframes|newsensations|porndoe|lit-erotica|tubepleasure|viptube|voyeurhit|cdn13)\.(com|net)$/109
-regex/\.xxx$','(^|\.)rabbits\.webcam$/109
-regex/(^|\.)txxx\.tube$/109
+regex/\.xxx$/109
+regex/(^|\.)rabbits\.webcam$/109
+regex/(^|\.)xxx\.tube$/109
 regex/(^|\.)(icfcdn|youporn|pornhub|playboy|xvideos|xnxx|porn|phncdn)\.(com|net)$/109
 regex/(^|\.)(sex|hclips|tubecorp|sex-and-flirt)\.(com|net)$/109
 regex/(^|\.)(pornhub|pornhublive|porntrex|redtube|yourporn|pornimg|7porn|porn|porno365go|pornomixfree|pornsocket|sexualpitfall)\.(com|com\.br|sexy|xyz|ru)$/109
+
 #Movies and streaming
 fixed/rtvelivestream.akamaized.net/100
 fixed/avodmp4s3ww-a.akamaihd.net/100
 fixed/api.eu-west-1.aiv-delivery.net/100
 regex/(^|\.)filmoflix\.to$/100
+
+# FileHosting
+regex/(^|\.)dropboxusercontent\.com$/49
 
 # Governements 62
 fixed/www.defense.gov/62
@@ -3537,11 +3547,13 @@ fixed/www.free.fr/83
 fixed/pro.free.fr/83
 fixed/cdnjs.cloudflare.com/234
 regex/(\.|^)(squarespace|synten|unpkg|jimstatic|parastorage|squarespace-cdn|website-files|webflow|jimcdn|wixstatic|herokuapp|ovhcloud)\.com$/83
-regex/(\.|^)ovh\.(fr|de|br|es|pl|com|net|cloud)$/83
+regex/(\.|^)(ovh|sfr)\.(fr|de|br|es|pl|com|net|cloud)$/83
 regex/(\.|^)fastly\.net$/83
 regex/(\.|^)sdv\.fr$/83
 regex/(\.|^)protectmy\.site$/83
 regex/(\.|^)bunny\.net$/83
+regex/(\.|^)(bouyguestelecom|bouyguestelecom-pro|bbox|bytel|b-and-you|btbd)\.(fr|com)$/83
+
 
 # Phishing
 regex/(\.|^)(firmwaresafe|soundestlink)\.(com|ru)$/105
@@ -3619,6 +3631,7 @@ fixed/pbs.twimg.com/134
 fixed/o.twimg.com/134
 fixed/amp.twimg.com/134
 fixed/ton.twimg.com/134
+regex/(\.|^)(reddit|redditmedia|redditstatic|redd)\.(com|it)$/134
 regex/(\.|^)linkedin\.(com|jp|fr|es|pl|pt|ru|co\.uk|it|nl|de|be|br|com\.br|li)$/134
 regex/(\.|^)cdninstagram\.(com|jp|fr|es|pl|pt|ru|co\.uk|it|nl|de|be|br|com\.br|li)$/134
 regex/(\.|^)instagram\.(com|jp|fr|es|pl|pt|ru|co\.uk|it|nl|de|be|br|com\.br|li)$/134
@@ -3890,9 +3903,12 @@ fixed/www.deepl.com/144
 fixed/www2.deepl.com/144
 fixed/dict.deepl.com/144
 fixed/static.deepl.com/144
-
 regex/(^|\.)translate\.(goog|google\.com|google\.fr)$/144
 regex/(^|\.)(linguee|deepl)\.(fr|pro|com|de|info|jp|pt|cn)$/144
+
+#Realestate ------------------------------------------------- 54
+
+regex/(^|\.)airbnb.com$/54
 
 # Finance/other
 regex/(^|\.)binance\.cloud$/53
@@ -3999,7 +4015,7 @@ fixed/activate.tacdn.com/119
 fixed/t1.tacdn.com/119
 fixed/media.tacdn.com/119
 fixed/static.tacdn.com/119
-regex/(\.|^)(easyvoyage|tacdn|tripadvisor).(com|fr)$/119
+regex/(\.|^)(easyvoyage|tacdn|tripadvisor|tourismecorreze).(com|fr)$/119
 
 # DOH Servers : 237
 fixed/dns.google/237

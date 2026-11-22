@@ -14,17 +14,14 @@ if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 
 js();
 
+
+
 function js():bool{
     $ID=intval($_GET["ID"]);
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $servicename="";
     $function=$_GET["function"];
-    if($ID>0){
-        $q = new lib_sqlite(NginxGetDB());
-        $ligne = $q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-        $servicename = $ligne["servicename"];
-    }
+    $servicename=fetch_nginx_servicename($ID);
     return $tpl->js_dialog4("{export}/{import} $servicename","$page?export-layer=$ID&function=$function",750);
 }
 function file_uploaded():bool{
@@ -80,18 +77,13 @@ function js_export(){
     $ID=intval($_GET["ID"]);
     $tpl=new template_admin();
     $page=CurrentPageName();
-
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $servicename=fetch_nginx_servicename($ID);
     $tpl->js_confirm_execute("{export_this_website}: $servicename","export",$ID,"Loadjs('$page?export-js=$ID')");
 
 }
 function export_confirm(){
     $ID=intval($_POST["export"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $servicename=fetch_nginx_servicename($ID);
     admin_tracks("Exporting source date of website $servicename");
 
 }
@@ -99,9 +91,7 @@ function export_confirm(){
 function export_js(){
     $page=CurrentPageName();
     $ID=intval($_GET["export-js"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $servicename=fetch_nginx_servicename($ID);
     $tpl=new template_admin();
     $tpl->js_dialog4("{export} $servicename","$page?export-popup=$ID",550);
 }
@@ -111,27 +101,10 @@ function export_popup():bool{
     $tpl=new template_admin();
     $js[]="dialogInstance4.close();";
     $js[]="document.location.href='ressources/logs/web/www-$ID.gz'";
-    $bugjs=$tpl->framework_buildjs("/reverse-proxy/export/$ID",
+    $bugjs=$tpl->framework_buildjs("nginx:/reverse-proxy/export/$ID",
         "nginx.export.$ID.progress","nginx.export.$ID.log","export-popup-$ID",@implode(";",$js));
     $html="<div id='export-popup-$ID'></div><script>$bugjs</script>";
     echo $html;
 return true;
 
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
 }

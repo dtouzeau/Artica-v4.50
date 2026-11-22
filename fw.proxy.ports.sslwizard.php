@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
@@ -34,20 +36,37 @@ function start():bool{
     echo "<div id='port-ssl-wizard'></div><script>LoadAjax('port-ssl-wizard','$page?popup=$portid$addon');</script>";
     return true;
 }
-function Save(){
+// Creates the authority (and enables SSL on the port when one is given) through
+// the daemon, then remembers the form and the new certificate for page_final().
+function Save():bool{
     $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSquidAdministrator){echo $tpl->post_error("{ERROR_NO_PRIVS2}");return false;}
     $tpl->CLEAN_POST();
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ProxyCertificateWizard",serialize($_POST));
+    $wizard=$_POST;
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/proxy/ports/ssl-wizard",array(
+        "portid"=>intval($_POST["portid"]),
+        "CountryName"=>$_POST["CountryName"] ?? "",
+        "stateOrProvinceName"=>$_POST["stateOrProvinceName"] ?? "",
+        "localityName"=>$_POST["localityName"] ?? "",
+        "organizationName"=>$_POST["organizationName"] ?? "",
+        "organizationalUnitName"=>$_POST["organizationalUnitName"] ?? "",
+    )));
+    if(!is_object($json)){echo "articarest: no answer";return false;}
+    if(empty($json->success)){echo $json->error ?? "unknown error";return false;}
+    $wizard["CommonName"]=$json->data->CertificateName;
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ProxyCertificateWizard",serialize($wizard));
+    admin_tracks("Created the proxy SSL certificate {$wizard["CommonName"]} for listening port {$wizard["portid"]}");
+    return true;
 }
 
 function page_final():bool{
     $tpl=new template_admin();
     $ProxyCertificateWizard=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProxyCertificateWizard"));
     $CertificateName=$ProxyCertificateWizard["CommonName"];
-    $sql="SELECT ID FROM sslcertificates WHERE CommonName='$CertificateName'";
-    $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-    $ligne=$q->mysqli_fetch_array($sql);
-    $ID=intval($ligne["ID"]);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    [$exists,$ID]=$cdb->exists((string)$CertificateName);
 
     if(isset($_GET["main-wizard"])){
 
@@ -79,7 +98,6 @@ function popup():bool{
     $portid=intval($_GET["popup"]);
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $t=time();
     $ProxyCertificateWizard=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProxyCertificateWizard"));
 
     $CountriesCodes["US"]="United States of America";
@@ -348,22 +366,15 @@ function popup():bool{
         $addon="&main-wizard=yes";
     }
 
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/selfsign.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/selfsign.log";
-    $ARRAY["CMD"]="openssl.php?wizard-proxy=yes";
-    $ARRAY["TITLE"]="{squid_wizard_ssl1_title}";
-    $ARRAY["AFTER"]="LoadAjax('port-ssl-wizard','$page?exit=$portid&$addon');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-$t')";
+    $jsafter="LoadAjax('port-ssl-wizard','$page?exit=$portid$addon');";
 
 
 
 
     $squid_wizard_ssl1=$tpl->_ENGINE_parse_body("{squid_wizard_ssl1}");
     $squid_wizard_ssl1=str_replace("%ppport","",$squid_wizard_ssl1);
-    $html[]="<div id='progress-$t' style='margin-top:20px;margin-bottom:20px;'></div>";
     $html[]=$tpl->div_wizard("{squid_wizard_ssl1_title}||$squid_wizard_ssl1");
-    $html[]=$tpl->form_outside(null, $form,null,"{next}",$jsrestart,"AsSquidAdministrator");
+    $html[]=$tpl->form_outside(null, $form,null,"{next}",$jsafter,"AsSquidAdministrator");
 
     echo $tpl->_ENGINE_parse_body($html);
     return true;

@@ -3,9 +3,10 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.upload.handler.inc");
 include_once(dirname(__FILE__)."/ressources/class.ad-agent.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
-if(isset($_POST["ip_addr"])){net_save();exit;}
 if(isset($_GET["item-js"])){ad_js();exit;}
 if(isset($_GET["item-deny-js"])){ad_deny_js();exit;}
 if(isset($_GET["ad-popup"])){ad_popup();exit;}
@@ -79,7 +80,8 @@ function block_user_js(){
 
         $settings=$adClass->FindParametersByDN($DN);
         if(!isset($settings["LDAP_SERVER"])){
-            $tpl->js_error("Unable to find paramaters of $DN");
+            // Pentest 2026-11-04 : block-user-js etait recopie sans encodage dans la page (XSS).
+            $tpl->js_error("Unable to find paramaters of ".req_html($DN));
             return false;
         }
     }
@@ -88,7 +90,9 @@ function block_user_js(){
 
 
     $DNEnc=urlencode($DN);
-    $tpl->js_dialog1("{block} {members} $DN", "$page?block-user-popup=$DNEnc",750);
+    // Pentest 2026-11-04 : block-user-js etait recopie sans encodage dans la page (XSS).
+    // Le titre est decode (html_entity_decode) puis rendu en HTML : double encodage.
+    $tpl->js_dialog1("{block} {members} ".req_html(req_html($DN)), "$page?block-user-popup=$DNEnc",750);
 }
 function block_user_popup(){
     $page = CurrentPageName();
@@ -129,47 +133,36 @@ function block_user_popup(){
         if($GLOBALS["VERBOSE"]){foreach ($ad->VERBOSED_ARRAY as $line){VERBOSE($line,__LINE__);}}
     }
 
-    $table[]="<table class='table table-hover' style='width:100%' id='wizard-primary_node-for-steps'>
-    <thead>
-	<tr>
-	<th>{members} ($DN)</th>
-	<th style='width:1%' nowrap>&nbsp;</th>
-	<th style='width:1%' nowrap>&nbsp;</th>
-	</tr>
-	</thead>
-	<tbody>
-	";
+    // json_decode() rend null sur une reponse invalide et HashUsersFromGroupDN()
+    // peut ne rien rendre: le foreach etait FATAL sous PHP 8.
+    if(!is_array($ARRAY)){$ARRAY=array();}
     $Groups=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotBlockMembers"));
+    if(!is_array($Groups)){$Groups=array();}
+
+    $jsafter="LoadAjax('wizard-primary_node-for-steps','$page?block-user-popup=$encodedval')";
+    $rows=array();
     foreach ($ARRAY as $index=>$DNUser){
-        if($EnableExternalACLADAgent==1){
-
-            $DisplayName=strtolower($DNUser["data"]["sAMAccountName"]);
-        }
-        else {
-            $DisplayName=strtolower($DNUser);
-        }
-
-        $jsafter="LoadAjax('wizard-primary_node-for-steps','$page?block-user-popup=$encodedval')";
-
-        if(isset($Groups[$decodedval."-".$DisplayName])){
-            $checkbox = $tpl->icon_check(1, "Loadjs('$page?unlink_block_ad_user_dn=$decodedval&unlink_block_ad_user_member=$DisplayName');$jsafter", null, "AsSquidAdministrator");
-
-        }
-        else {
-            $checkbox = $tpl->icon_check(0, "Loadjs('$page?link_block_ad_user_dn=$decodedval&link_block_ad_user_member=$DisplayName');$jsafter", null, "AsSquidAdministrator");
-
-        }
-
-        $id=md5($DNUser);
-        $table[]="<tr id='$id'>";
-        $table[]="<td><i class='fad fa-user'></i>&nbsp;$DisplayName</td>";
-        $table[]="<td>$checkbox</td>";
-        $table[]="</tr>";
-
+        $DisplayName=strtolower(hsad_member_name($DNUser,$EnableExternalACLADAgent==1,$HotspotRecursive!=0));
+        if($DisplayName===""){continue;}
+        // Le nom partait NON ENCODE dans l'URL: une esperluette ou un espace
+        // dans un identifiant tronquait le parametre.
+        $enc=urlencode($DisplayName);
+        $blocked=isset($Groups[$decodedval."-".$DisplayName]);
+        $action=$blocked?"unlink_block_ad_user":"link_block_ad_user";
+        $toggle=$tpl->icon_check($blocked?1:0,
+            // Pentest 2026-11-04 : block-user-popup etait recopie sans encodage dans la page (XSS).
+            "Loadjs('$page?{$action}_dn=".req_url($decodedval)."&{$action}_member=$enc');$jsafter",
+            null,"AsSquidAdministrator");
+        $rows[]=hsad_member_row($DisplayName,hsad_member_key($DNUser),$toggle,$blocked);
     }
-    $table[]="</tbody></table><script>NoSpinner();\n" . @implode("\n", $tpl->ICON_SCRIPTS) . "</script>";
+
+    // Le DN partait BRUT dans l'en-tete.
+    $table[]=hsad_member_table($rows,"{members} <small>".htmlspecialchars((string)$DN)."</small>",true,$tpl);
     $tpl=new template_admin();
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $table));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $table))
+        ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>"
+        .awc_pager_js(50,"hsad-mbr-rows","hsad-mbr-pager");
 
 }
 function list_js():bool{
@@ -187,7 +180,8 @@ function list_js():bool{
 
         $settings=$adClass->FindParametersByDN($DN);
         if(!isset($settings["LDAP_SERVER"])){
-            $tpl->js_error("Unable to find paramaters of $DN");
+            // Pentest 2026-11-04 : list-js etait recopie sans encodage dans la page (XSS).
+            $tpl->js_error("Unable to find paramaters of ".req_html($DN));
             return false;
         }
     }
@@ -196,7 +190,8 @@ function list_js():bool{
 
 
     $DNEnc=urlencode($DN);
-    return $tpl->js_dialog1("{members} $DN", "$page?list-popup=$DNEnc$addon",750);
+    // Pentest 2026-11-04 : list-js etait recopie sans encodage dans la page (XSS).
+    return $tpl->js_dialog1("{members} ".req_html(req_html($DN)), "$page?list-popup=$DNEnc$addon",750);
 }
 function ad_remove():bool{
   	$DN=$_GET["unlink"];
@@ -287,53 +282,31 @@ function list_popup(){
         $ARRAY=$ad->HashUsersFromGroupDN($DN,$HotspotRecursive);
         if($GLOBALS["VERBOSE"]){foreach ($ad->VERBOSED_ARRAY as $line){VERBOSE($line,__LINE__);}}
     }
-    if(!isset($_GET["denied"])) {
+    // La fermeture "</div>" etait emise INCONDITIONNELLEMENT alors que le bloc
+    // de boutons ne s'ouvre que hors mode "denied": la vue des groupes refuses
+    // sortait une balise orpheline.
+    $denied=isset($_GET["denied"]);
+    if(!$denied) {
         $table[] = "<div class=\"btn-group\" data-toggle=\"buttons\">";
         $table[] = "<label class=\"btn btn btn-warning\" OnClick=\"Loadjs('$page?block-user-js=$encodedval');\">";
         $table[] = "<i class='fa fa-plus'></i> {block} {members} </label>";
+        $table[] = "</div>";
     }
-    $table[] = "</div>";
-    $table[]="<table class='table table-hover' style='width:100%'>
-    <thead>
-	<tr>
-	<th>{members} ($DN)</th>
-	<th style='width:1%' nowrap>&nbsp;</th>
-	<th style='width:1%' nowrap>&nbsp;</th>
-	</tr>
-	</thead>
-	<tbody>
-	";
 
+    if(!is_array($ARRAY)){$ARRAY=array();}
+    $rows=array();
     foreach ($ARRAY as $index=>$DNUser){
-        if($EnableExternalACLADAgent==1){
-            if($HotspotRecursive==0){
-
-                $DisplayName=$ARRAY[$index]["data"]["sAMAccountName"];
-            }
-            else {
-                $DisplayName=explode(",", $DNUser);
-                $DisplayName=str_replace("CN=", "", $DisplayName[0]);
-            }
-
-        }
-        else {
-            $DisplayName=$DNUser;
-        }
-
-        $color=" text-info";
-        if(isset($_GET["denied"])) {
-            $color=" text-danger";
-        }
-
-        $id=md5($DNUser);
-        $table[]="<tr id='$id'>";
-        $table[]="<td><i class='fad fa-user$color'></i>&nbsp;$DisplayName</td>";
-        $table[]="</tr>";
-
+        $DisplayName=hsad_member_name($DNUser,$EnableExternalACLADAgent==1,$HotspotRecursive!=0);
+        if($DisplayName===""){continue;}
+        $rows[]=hsad_member_row($DisplayName,hsad_member_key($DNUser),null,$denied);
     }
-    $table[]="</tbody></table><script>NoSpinner()</script>";
+
+    $table[]=hsad_member_table($rows,"{members} <small>".htmlspecialchars((string)$DN)."</small>",false,$tpl);
     $tpl=new template_admin();
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $table));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $table))
+        ."<script>NoSpinner();</script>"
+        .awc_pager_js(50,"hsad-mbr-rows","hsad-mbr-pager");
 
 
 
@@ -398,6 +371,75 @@ function page():bool{
     return true;
 }
 
+
+/**
+ * Le nom affichable d'un membre renvoye par l'annuaire.
+ *
+ * Selon le chemin emprunte, une entree est soit une CHAINE (le DN), soit un
+ * TABLEAU indexe par "data" (agent ACL externe). Les deux tableaux de cette page
+ * calculaient ensuite md5($DNUser) sans distinguer les cas: avec un tableau,
+ * md5() leve une TypeError FATALE sous PHP 8.
+ */
+function hsad_member_name($entry,$externalAgent,$recursive):string{
+    if($externalAgent){
+        if(is_array($entry)){
+            if(isset($entry["data"]["sAMAccountName"])){
+                return (string)$entry["data"]["sAMAccountName"];
+            }
+            return "";
+        }
+        if(!$recursive){return "";}
+        // Mode recursif: l'agent renvoie le DN complet, on garde le CN.
+        $parts=explode(",",(string)$entry);
+        return str_replace("CN=","",$parts[0]);
+    }
+    return (string)$entry;
+}
+
+/** Une cle stable pour la ligne, quel que soit le type de l'entree. */
+function hsad_member_key($entry):string{
+    return md5(is_array($entry)?serialize($entry):(string)$entry);
+}
+
+/** Un membre du groupe, avec ou sans interrupteur de blocage. */
+function hsad_member_row($name,$key,$toggle,$denied):string{
+    $h ="<tr id='$key'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='".($denied?"awc-ico awc-ico-off":"awc-ico")."'><i class='fad fa-user'></i></span>";
+    // Le nom vient de l'annuaire et partait BRUT dans le HTML.
+    $h.="<span class='awc-name'>".($name!==""
+        ?htmlspecialchars($name)
+        :"<span class='awc-none'>&mdash;</span>")."</span>";
+    $h.="</div></td>";
+    if($toggle!==null){
+        $h.="<td class='center'>$toggle</td>";
+    }
+    $h.="</tr>";
+    return $h;
+}
+
+/** Le tableau des membres d'un groupe. */
+function hsad_member_table($rows,$title,$withToggle,$tpl):string{
+    $cols=$withToggle?2:1;
+    $h=array();
+    $h[]="<div class='awc-card'><div class='awc-scroll'>";
+    $h[]="<table class='awc-tbl'><thead><tr>";
+    $h[]="<th>$title</th>";
+    if($withToggle){$h[]="<th class='center'>{block}</th>";}
+    // Les deux tableaux declaraient TROIS colonnes d'en-tete pour deux cellules
+    // (voire une seule): les lignes ne s'alignaient pas sur l'en-tete.
+    $h[]="</tr></thead><tbody id='hsad-mbr-rows'>";
+    if(count($rows)==0){
+        $h[]="<tr><td colspan='$cols'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $h[]=@implode("\n",$rows);
+    }
+    $h[]="</tbody></table></div>";
+    $h[]="<div class='awc-foot'><span>{showing} ".count($rows)."</span>";
+    $h[]="<span class='awc-pg' id='hsad-mbr-pager'></span></div></div>";
+    return @implode("\n",$h);
+}
+
 function table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -405,85 +447,73 @@ function table(){
     if(!is_array($Groups)){$Groups=array();}
     $DeniedGroups=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotLimitDeniedAdGroups"));
     if(!is_array($DeniedGroups)){$DeniedGroups=array();}
-    $CountDeGroups=0;
-    $title="{ad_groups}";
-    foreach ($Groups as $DN=>$NONE){
-        if($DN==null){continue;}
-        $CountDeGroups++;
-    }
+
+    $rows=array();
     foreach ($DeniedGroups as $DN=>$NONE){
-        if($DN==null){continue;}
-        $CountDeGroups++;
+        if(trim((string)$DN)==null){continue;}
+        $rows[]=hsad_group_row($DN,true,$page,$tpl);
     }
-    if($CountDeGroups==0){$title="{AllowOnlyGroups}";}
+    foreach ($Groups as $DN=>$NONE){
+        if(trim((string)$DN)==null){continue;}
+        $rows[]=hsad_group_row($DN,false,$page,$tpl);
+    }
+    $CountDeGroups=count($rows);
 
-
-	$table[]="<table class='table table-hover' style='width:100%'>
-    <thead>
-	<tr>
-	<th  style='width:1%' nowrap></th>
-	<th>$title ($CountDeGroups)</th>
-	<th style='width:1%' nowrap>&nbsp;</th>
-	<th style='width:1%' nowrap>&nbsp;</th>
-	</tr>
-	</thead>
-	<tbody>
-	";
-
-
-    $id=md5(serialize($Groups));
+    // Sans aucun groupe declare, le portail laisse passer tout l'annuaire: la
+    // ligne le dit explicitement plutot que de laisser un tableau vide.
+    $title=($CountDeGroups==0)?"{AllowOnlyGroups}":"{ad_groups}";
     if($CountDeGroups==0){
-        $table[]="<tr id='$id'>";
-        $table[]="<td width='1%'><span class='label label-primary'>{allow}</span></td>";
-        $table[]="<td><strong>{all_ad_groups}</strong></td>";
-        $table[]="<td width='1%'>&nbsp;</td>";
-        $table[]="<td width='1%'>&nbsp;</td>";
-        $table[]="</tr>";
-        $table[]="</tbody></table><script>NoSpinner()</script>";
-        echo $tpl->_ENGINE_parse_body(@implode("\n", $table));
-        return;
+        $rows[]="<tr><td><div class='awc-ident'>"
+            ."<span class='awc-ico'><i class='fad fa-users'></i></span>"
+            ."<span class='awc-name'>{all_ad_groups}</span></div></td>"
+            ."<td class='center'><span class='awc-badge awc-badge-on'>{allow}</span></td>"
+            ."<td class='center'><span class='awc-none'>&mdash;</span></td></tr>";
     }
 
+	$table=array();
+    $table[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $table[]="<table class='awc-tbl'><thead><tr>";
+    $table[]="<th>$title ($CountDeGroups)</th>";
+    $table[]="<th class='center'>{status}</th>";
+    $table[]="<th class='center'>{actions}</th>";
+    // L'en-tete declarait QUATRE colonnes dont deux vides et sans libelle.
+    $table[]="</tr></thead><tbody id='hsad-grp-rows'>";
+    $table[]=@implode("\n",$rows);
+    $table[]="</tbody></table></div>";
+    $table[]="<div class='awc-foot'>";
+    $table[]="<span>{showing} $CountDeGroups</span>";
+    $table[]="<span class='awc-pg' id='hsad-grp-pager'></span>";
+    $table[]="</div></div></div>";
 
-    foreach ($DeniedGroups as $DN=>$NONE){
-        if(trim($DN)==null){continue;}
-        $id=md5($DN);
-        $DNEnc=urlencode($DN);
-        $js="Loadjs('$page?list-js=$DNEnc&md=$id&denied=yes')";
-
-        $list=$tpl->icon_list("Loadjs('$page?list-js=$DNEnc&md=$id&denied=yes')","AsHotSpotManager");
-        $remove=$tpl->icon_delete("Loadjs('$page?unlink-denied=$DNEnc&md=$id')","AsHotSpotManager");
-        $table[]="<tr id='$id'>";
-        $table[]="<td width='1%'><span class='label label-danger'>{deny}</span></td>";
-        $table[]="<td><i class=\"fad fa-users\"></i>&nbsp;". $tpl->td_href($DN,"{click_to_edit}","$js;")."</td>";
-        $table[]="<td width='1%'>$list</td>";
-        $table[]="<td width='1%'>$remove</td>";
-        $table[]="</tr>";
-
-    }
-
-    foreach ($Groups as $DN=>$NONE){
-        if(trim($DN)==null){continue;}
-        $id=md5($DN);
-        $DNEnc=urlencode($DN);
-        $js="Loadjs('$page?list-js=$DNEnc&md=$id')";
-
-        $list=$tpl->icon_list("Loadjs('$page?list-js=$DNEnc&md=$id')","AsHotSpotManager");
-        $remove=$tpl->icon_delete("Loadjs('$page?unlink=$DNEnc&md=$id')","AsHotSpotManager");
-        $table[]="<tr id='$id'>";
-        $table[]="<td width='1%'><span class='label label-primary'>{allow}</span></td>";
-        $table[]="<td><i class=\"fad fa-users\"></i>&nbsp;". $tpl->td_href($DN,"{click_to_edit}","$js;")."</td>";
-        $table[]="<td width='1%'>$list</td>";
-        $table[]="<td width='1%'>$remove</td>";
-        $table[]="</tr>";
-
-    }
-
-
-	$table[]="</tbody></table><script>NoSpinner()</script>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $table));
+	echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $table))
+        ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>"
+        .awc_pager_js(50,"hsad-grp-rows","hsad-grp-pager");
 }
 
+/** Un groupe Active Directory autorise ou refuse a l'acces au portail. */
+function hsad_group_row($DN,$denied,$page,$tpl):string{
+    $id=md5($DN);
+    $DNEnc=urlencode($DN);
+    $suffix=$denied?"&denied=yes":"";
+    $js="Loadjs('$page?list-js=$DNEnc&md=$id$suffix')";
+    $list=$tpl->icon_list($js,"AsHotSpotManager");
+    $remove=$tpl->icon_delete("Loadjs('$page?".($denied?"unlink-denied":"unlink")."=$DNEnc&md=$id')","AsHotSpotManager");
+
+    $h ="<tr id='$id'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='".($denied?"awc-ico awc-ico-off":"awc-ico")."'><i class='fad fa-users'></i></span>";
+    $h.="<span class='awc-name'>";
+    // Le DN vient de l'annuaire et partait BRUT dans le HTML.
+    $h.=$tpl->td_href(htmlspecialchars((string)$DN),"{click_to_edit}","$js;")."</span>";
+    $h.="</div></td>";
+    $h.="<td class='center'>".($denied
+        ?"<span class='awc-badge' style='background:#ba1a1a'>{deny}</span>"
+        :"<span class='awc-badge awc-badge-on'>{allow}</span>")."</td>";
+    $h.="<td class='center'><div class='awc-acts'>$list$remove</div></td>";
+    $h.="</tr>";
+    return $h;
+}
 
 function block_ad_user_remove(){
     $tpl=new template_admin();
@@ -491,7 +521,10 @@ function block_ad_user_remove(){
     $DN=$_GET["unlink_block_ad_user_dn"];
     $MEMBER=$_GET["unlink_block_ad_user_member"];
 
+    // unserialize() rend false quand le reglage est vide: unset() sur un
+    // booleen puis serialize() ecrasait le reglage par "b:0;".
     $Groups=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotBlockMembers"));
+    if(!is_array($Groups)){$Groups=array();}
     unset($Groups[$DN."-".$MEMBER]);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotBlockMembers",serialize($Groups));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/templates");
@@ -503,7 +536,10 @@ function block_ad_user_save(){
 
     $DN=$_GET["link_block_ad_user_dn"];
     $MEMBER=$_GET["link_block_ad_user_member"];
+    // unserialize() rend false quand le reglage est vide: affecter une cle sur
+    // un booleen est une Error FATALE depuis PHP 8.1.
     $Groups=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotBlockMembers"));
+    if(!is_array($Groups)){$Groups=array();}
     $Groups[$DN."-".$MEMBER]=True;
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HotSpotBlockMembers",serialize($Groups));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/hotspot/templates");

@@ -1,20 +1,17 @@
-<br>This section help you to add words.
- if these words watchs emails will be filtered and consider as REJECTED
-</br>
+<br>Esta secci&#243;n le ayuda a a&#241;adir palabras.
+ si estas palabras aparecen en los correos, estos se filtrar&#225;n y se considerar&#225;n RECHAZADOS</br>
 <bt_filter_headers>Reglas de los sujetos</bt_filter_headers>
 <bt_filter_headers_from>Correo de las reglas</bt_filter_headers_from>
 <bt_mime_attachments>Reglas para los archivos adjuntos</bt_mime_attachments>
-<extension_list_title>filtered file attachments extension list</extension_list_title>
-<from_rules_explain>
-This feature allows you to block mails with specified words in sender's address
-</from_rules_explain>
-<js_del_extension>Delete this extension filter</js_del_extension>
+<extension_list_title>Lista de extensiones de archivos adjuntos filtradas</extension_list_title>
+<from_rules_explain>Esta funci&#243;n le permite bloquear correos con palabras espec&#237;ficas en la direcci&#243;n del remitente</from_rules_explain>
+<js_del_extension>Eliminar este filtro de extensi&#243;n</js_del_extension>
 <js_del_from>Eliminar esta regla</js_del_from>
-<js_del_subject>Delete this subject rule</js_del_subject>
+<js_del_subject>Eliminar esta regla de asunto</js_del_subject>
 <mail_from_add>A%C3%B1adir regla de palabras para el correo de los correos</mail_from_add>
-<mime_attachments_add>Set the extension name like :exe or dll or bat</mime_attachments_add>
-<mime_attachments_explain>This feature allows you to block mails with specified attached file extension.</mime_attachments_explain>
-<postfix_error>Give the postfix error when pattern is matched</postfix_error>
-<subject_add>Add words rule for mail subjects</subject_add>
-<title_header>Subjects rules</title_header>
-<title_mime>attached files filtering</title_mime>
+<mime_attachments_add>Indique el nombre de la extensi&#243;n como: exe o dll o bat</mime_attachments_add>
+<mime_attachments_explain>Esta funci&#243;n le permite bloquear correos con la extensi&#243;n de archivo adjunto especificada.</mime_attachments_explain>
+<postfix_error>Indique el error de postfix cuando el patr&#243;n coincida</postfix_error>
+<subject_add>A&#241;adir regla de palabras para los asuntos de correo</subject_add>
+<title_header>Reglas de asuntos</title_header>
+<title_mime>Filtrado de archivos adjuntos</title_mime>

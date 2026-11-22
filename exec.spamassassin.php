@@ -33,7 +33,6 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once(
 	x_bounce();
 	
 	if($argv[1]=='--spf'){spf();exit();}
-	if($argv[1]=='--dkim'){dkim();amavis_reload();exit();}
 	if($argv[1]=='--dnsbl'){dnsbl();exit();}
 	if($argv[1]=='--DecodeShortURLs'){DecodeShortURLs();amavis_reload();exit();}
 	if($argv[1]=='--trusted'){TrustedNetworks(true);exit();}
@@ -368,7 +367,6 @@ function SPAMASSASSIN_V320(){
 $sock=new sockets();
 $EnableSpamassassinDnsEval=$sock->GET_INFO("EnableSpamassassinDnsEval");
 $EnableSPF=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSPF"));
-$enable_dkim_verification=$sock->GET_INFO("enable_dkim_verification");
 $EnableSpamassassinURIDNSBL=$sock->GET_INFO("EnableSpamassassinURIDNSBL");
 $EnableSpamAssassinFreeMail=$sock->GET_INFO("EnableSpamAssassinFreeMail");
 $EnablePhishTag=$sock->GET_INFO("EnablePhishTag");
@@ -376,7 +374,6 @@ $spam=new spamassassin();
 
 if(!is_numeric($EnableSpamassassinDnsEval)){$EnableSpamassassinDnsEval=0;}
 if(!is_numeric($EnableSPF)){$EnableSPF=0;}
-if(!is_numeric($enable_dkim_verification)){$enable_dkim_verification=0;}
 if(!is_numeric($EnableSpamassassinURIDNSBL)){$EnableSpamassassinURIDNSBL=1;}
 if(!is_numeric($EnableSpamAssassinFreeMail)){$EnableSpamAssassinFreeMail=0;}
 if(!is_numeric($EnablePhishTag)){$EnablePhishTag=0;}
@@ -392,7 +389,6 @@ $f[]="loadplugin Mail::SpamAssassin::Plugin::FreeMail";
 @copy("/usr/share/artica-postfix/bin/install/spamassassin/20_freemail_domains.cf", "/etc/spamassassin/20_freemail_domains.cf");
 
 if($EnableSPF==1){$f[]="loadplugin Mail::SpamAssassin::Plugin::SPF";}
-if($enable_dkim_verification==1){$f[]="loadplugin Mail::SpamAssassin::Plugin::DKIM";}
 if($EnableSpamassassinURIDNSBL==1){$f[]="loadplugin Mail::SpamAssassin::Plugin::URIDNSBL";}
 if($EnableSpamAssassinFreeMail==1){$f[]="loadplugin Mail::SpamAssassin::Plugin::FreeMail";}
 if($EnablePhishTag==1){$f[]="loadplugin Mail::SpamAssassin::Plugin::PhishTag";}
@@ -933,111 +929,7 @@ if(!$q->ok){
 }
 
 
-function dkim(){
-	
-	
-	$sock=new sockets();
-	$enable_dkim_verification=$sock->GET_INFO("enable_dkim_verification");
-	@unlink("/etc/spamassassin/dkim.pre");
-	@unlink("/etc/mail/spamassassin/dkim.pre");
-	if($enable_dkim_verification<>1){
-		echo "Starting......: ".date("H:i:s")." spamassassin writing dkim.pre inbound verification disabled\n";
-		return ;
-	}
-$r[]="ifplugin Mail::SpamAssassin::Plugin::DKIM";	
-$r[]="  score DKIM_VERIFIED -0.1";
-$r[]="  score DKIM_SIGNED    0";
-$r[]="";
-$r[]="  # don't waste time on fetching ASP record, hardly anyone publishes it";
-$r[]="  score DKIM_POLICY_SIGNALL  0";
-$r[]="  score DKIM_POLICY_SIGNSOME 0";
-$r[]="  score DKIM_POLICY_TESTING  0";
-$r[]="";
-$r[]="  # DKIM-based whitelisting of domains with good reputation:";
-$r[]="  score USER_IN_DKIM_WHITELIST -8.0";
-$r[]="";
 
-	$q=new mysql();
-	$sql="SELECT * FROM spamassassin_dkim_wl ORDER BY ID DESC";
-	$results=$q->QUERY_SQL($sql,"artica_backup");
-	
-	if(!$q->ok){
-		echo "Starting......: ".date("H:i:s")." spamassassin Mysql fatal error ! (DKIM)\n";
-		return; 
-	}
-	$count=0;
-	while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
-		$count=$count+1;
-		$r[]="whitelist_from_dkim   {$ligne["domain"]}";
-		
-	}
-$r[]="";
-$r[]="  # DKIM-based whitelisting of domains with less then perfect";
-$r[]="  # reputation can be given fewer negative score points:";
-$r[]="  score USER_IN_DEF_DKIM_WL -1.5";
-$r[]="  def_whitelist_from_dkim   *@google.com";
-$r[]="  def_whitelist_from_dkim   *@googlemail.com";
-$r[]="  def_whitelist_from_dkim   *@*  googlegroups.com";
-$r[]="  def_whitelist_from_dkim   *@*  yahoogroups.com";
-$r[]="  def_whitelist_from_dkim   *@*  yahoogroups.co.uk";
-$r[]="  def_whitelist_from_dkim   *@*  yahoogroupes.fr";
-$r[]="  def_whitelist_from_dkim   *@yousendit.com";
-$r[]="  def_whitelist_from_dkim   *@meetup.com";
-$r[]="  def_whitelist_from_dkim   dailyhoroscope@astrology.com";
-$r[]="";
-$r[]="  # reduce default scores, which are being abused";
-$r[]="  score ENV_AND_HDR_DKIM_MATCH -0.1";
-$r[]="  score ENV_AND_HDR_SPF_MATCH  -0.5";
-$r[]="";
-$r[]="  header   __ML1        Precedence =~ m{\b(list|bulk)\b}i";
-$r[]="  header   __ML2        exists:List-Id";
-$r[]="  header   __ML3        exists:List-Post";
-$r[]="  header   __ML4        exists:Mailing-List";
-$r[]="  header   __ML5        Return-Path:addr =~ m{^([^\@]+-(request|bounces|admin|owner)|owner-[^\@]+)(\@|\z)}mi";
-$r[]="  meta     __VIA_ML     __ML1 || __ML2 || __ML3 || __ML4 || __ML5";
-$r[]="  describe __VIA_ML     Mail from a mailing list";
-$r[]="";
-$r[]="  header   __AUTH_YAHOO1  From:addr =~ m{[\@.]yahoo\.com$}mi";
-$r[]="  header   __AUTH_YAHOO2  From:addr =~ m{\@yahoo\.com\.(ar|au|br|cn|hk|mx|my|ph|sg|tw)$}mi";
-$r[]="  header   __AUTH_YAHOO3  From:addr =~ m{\@yahoo\.co\.(id|in|jp|nz|th|uk)$}mi";
-$r[]="  header   __AUTH_YAHOO4  From:addr =~ m{\@yahoo\.(ca|cn|de|dk|es|fr|gr|ie|it|no|pl|se)$}mi";
-$r[]="  meta     __AUTH_YAHOO   __AUTH_YAHOO1 || __AUTH_YAHOO2 || __AUTH_YAHOO3 || __AUTH_YAHOO4";
-$r[]="  describe __AUTH_YAHOO   Author claims to be from Yahoo";
-$r[]="";
-$r[]="  header   __AUTH_GMAIL   From:addr =~ m{\@gmail\.com$}mi";
-$r[]="  describe __AUTH_GMAIL   Author claims to be from gmail.com";
-$r[]="";
-$r[]="  header   __AUTH_PAYPAL  From:addr =~ /[\@.]paypal\.(com|co\.uk)$/mi";
-$r[]="  describe __AUTH_PAYPAL  Author claims to be from PayPal";
-$r[]="";
-$r[]="  header   __AUTH_EBAY    From:addr =~ /[\@.]ebay\.(com|at|be|ca|ch|de|ee|es|fr|hu|ie|in|it|nl|ph|pl|pt|se|co\.(kr|uk)|com\.(au|cn|hk|mx|my|sg))$/mi";
-$r[]="  describe __AUTH_EBAY    Author claims to be from eBay";
-$r[]="";
-$r[]="  meta     NOTVALID_YAHOO !DKIM_VERIFIED && __AUTH_YAHOO && !__VIA_ML";
-$r[]="  priority NOTVALID_YAHOO 500";
-$r[]="  describe NOTVALID_YAHOO Claims to be from Yahoo but is not";
-$r[]="";
-$r[]="  meta     NOTVALID_GMAIL !DKIM_VERIFIED && __AUTH_GMAIL && !__VIA_ML";
-$r[]="  priority NOTVALID_GMAIL 500";
-$r[]="  describe NOTVALID_GMAIL Claims to be from gmail.com but is not";
-$r[]="";
-$r[]="  meta     NOTVALID_PAY   !DKIM_VERIFIED && (__AUTH_PAYPAL || __AUTH_EBAY)";
-$r[]="  priority NOTVALID_PAY   500";
-$r[]="  describe NOTVALID_PAY   Claims to be from PayPal or eBay, but is not";
-$r[]="";
-$r[]="  score    NOTVALID_YAHOO  2.8";
-$r[]="  score    NOTVALID_GMAIL  2.8";
-$r[]="  score    NOTVALID_PAY    6";
-$r[]="";
-$r[]="  # accept replies from abuse@yahoo.com even if not dkim/dk-signed:";
-$r[]="  whitelist_from_rcvd abuse@yahoo.com          yahoo.com";
-$r[]="  whitelist_from_rcvd MAILER-DAEMON@yahoo.com  yahoo.com";
-$r[]="endif";	
-$r[]="";
-@file_put_contents("/etc/spamassassin/dkim.pre",@implode("\n",$r));
-if(is_dir("/etc/mail/spamassassin")){@file_put_contents("/etc/mail/spamassassin/dkim.pre",@implode("\n",$r));}
-echo "Starting......: ".date("H:i:s")." spamassassin writing dkim.pre done ($count whitelisted sender(s))\n";	
-}
 
 function dnsbl(){
 	$sock=new sockets();

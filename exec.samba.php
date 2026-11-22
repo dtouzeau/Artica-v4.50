@@ -682,13 +682,10 @@ function activedirectory(){
 	$EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
 	if(!is_numeric("$EnableKerbAuth")){$EnableKerbAuth=0;}	
 	if($EnableKerbAuth==1){
-		$verbosed=null;
-		if($GLOBALS["VERBOSE"]){$verbosed=" --verbose";}
-		$unix=new unix();
-		$cmd=$unix->LOCATE_PHP5_BIN()." ". dirname(__FILE__)."/exec.kerbauth.php --build$verbosed";
+		// exec.kerbauth.php --build est porte : msktutils.Connect() enchaine la
+		// meme sequence (nom d'hote, synchro horaire, krb5.conf, kinit, msktutil).
 		echo "Enable Kerberos authentification is enabled, executing kerberos auth\n";
-		shell_exec($cmd);
-	
+		$GLOBALS["CLASS_SOCKETS"]->REST_API("/mktutils/connect");
 	}
 	$config=unserialize(base64_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SambaAdInfos")));
 	$kdc=new kdc();
@@ -1640,7 +1637,7 @@ function run_msktutils(){
 	if(!is_file($msktutil)){
 		if(is_file("/home/artica/mskutils.tar.gz.old")){
 			echo "Starting......: ".date("H:i:s")." $function, uncompress /home/artica/mskutils.tar.gz.old\n";
-			shell_exec("tar xf /home/artica/mskutils.tar.gz.old -C /");
+			shell_exec("tar xf /home/artica/mskutils.tar.gz.old --keep-directory-symlink --no-overwrite-dir -C /");
 		}
 	}
 	

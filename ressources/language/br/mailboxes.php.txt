@@ -1,39 +1,34 @@
-<add_pop3_imap_text>In order to enable POP3/IMAP access for this user, 
-you must set mailbox password. 
-Give the password for this user</add_pop3_imap_text>
-<ARRAY_TITLE>LOCAL DOMAINS</ARRAY_TITLE>
-<bt_add_domain>Add a new domain</bt_add_domain>
-<edit_pop3_imap_text>If you want to edit this user,
-you must set the password for this user
-Set the new or old password</edit_pop3_imap_text>
-<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>You have already set a rule for this domain to relay all emails to an another mail server.[br]
-In this case, you are not allowed to add alias/domain/Mailbox system.
-</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
-<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>You have already set a rule for this domain to relay all emails to an another mail server.[br]
-In this case, you are not allowed to add alias/domain/Mailbox system.
-</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
+<add_pop3_imap_text>Para habilitar o acesso POP3/IMAP para este usu&#225;rio,
+voc&#234; deve definir a senha da caixa de correio.
+Indique a senha para este usu&#225;rio</add_pop3_imap_text>
+<ARRAY_TITLE>DOM&#205;NIOS LOCAIS</ARRAY_TITLE>
+<bt_add_domain>Adicionar um novo dom&#237;nio</bt_add_domain>
+<edit_pop3_imap_text>Se quiser editar este usu&#225;rio,
+voc&#234; deve definir a senha para este usu&#225;rio
+Defina a nova ou a antiga senha</edit_pop3_imap_text>
+<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>Voc&#234; j&#225; definiu uma regra para este dom&#237;nio para retransmitir todos os e-mails para outro servidor de correio.[br]
+Neste caso, voc&#234; n&#227;o pode adicionar um sistema de alias/dom&#237;nio/caixa de correio.</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
+<ERROR_CANNOT_ADD_TRANSPORT_EXISTS>Voc&#234; j&#225; definiu uma regra para este dom&#237;nio para retransmitir todos os e-mails para outro servidor de correio.[br]
+Neste caso, voc&#234; n&#227;o pode adicionar um sistema de alias/dom&#237;nio/caixa de correio.</ERROR_CANNOT_ADD_TRANSPORT_EXISTS>
 <expand_domain>Endereço</expand_domain>
-<expand_domain_goto>&nbsp;</expand_domain_goto>
+<expand_domain_goto>&amp;nbsp;</expand_domain_goto>
 <expand_domain_mailbox>IMAP/POP3</expand_domain_mailbox>
 <expand_domain_object>Objetos</expand_domain_object>
-<expand_domain_target>GO TO</expand_domain_target>
-<js_add_user>Add a user mailboxes - redirection</js_add_user>
-<js_del_alias>Delete this alias rule</js_del_alias>
-<js_del_domain>Delete the domain and aliases</js_del_domain>
-<js_del_transport>Delete this transport target</js_del_transport>
-<js_edit_alias>Edit this alias rule</js_edit_alias>
-<js_edit_mailbox_storage>Add/edit Mailbox storage</js_edit_mailbox_storage>
-<js_edit_transport>Edit the transport target for this domain</js_edit_transport>
-<js_expand_domain>Expand this domain to view settings</js_expand_domain>
-<PAGE_TEXT>This area is designed to manage local domains of your network. These domains store your mailboxes or local emails</PAGE_TEXT>
-<title>Manage Mailboxes and domains</title>
-<xdelete_alias_text>Are you sure to remove this alias rule? 
-mailbox will be not deleted but the Postfix mail system will be no able to transfert emails for this alias
-</xdelete_alias_text>
-<xdelete_domain_text>Are tou sure to remove this domain ? 
-aliases and/or transport generated for this domain will be removed too
-mailboxes will not remove
-</xdelete_domain_text>
-<xdelete_transport_text>Are you sure to remove this transport rule?
-aliases generated for this domain will be removed too
-</xdelete_transport_text>
+<expand_domain_target>IR PARA</expand_domain_target>
+<js_add_user>Adicionar uma caixa de correio de usu&#225;rio - redirecionamento</js_add_user>
+<js_del_alias>Excluir esta regra de alias</js_del_alias>
+<js_del_domain>Excluir o dom&#237;nio e os aliases</js_del_domain>
+<js_del_transport>Excluir este destino de transporte</js_del_transport>
+<js_edit_alias>Editar esta regra de alias</js_edit_alias>
+<js_edit_mailbox_storage>Adicionar/editar armazenamento da caixa de correio</js_edit_mailbox_storage>
+<js_edit_transport>Editar o destino de transporte para este dom&#237;nio</js_edit_transport>
+<js_expand_domain>Expandir este dom&#237;nio para ver as configura&#231;&#245;es</js_expand_domain>
+<PAGE_TEXT>Esta &#225;rea foi projetada para gerenciar os dom&#237;nios locais da sua rede. Estes dom&#237;nios armazenam as suas caixas de correio ou e-mails locais</PAGE_TEXT>
+<title>Gerenciar caixas de correio e dom&#237;nios</title>
+<xdelete_alias_text>Tem certeza de que deseja remover esta regra de alias?
+A caixa de correio n&#227;o ser&#225; exclu&#237;da, mas o sistema de correio Postfix n&#227;o poder&#225; transferir e-mails para este alias</xdelete_alias_text>
+<xdelete_domain_text>Tem certeza de que deseja remover este dom&#237;nio?
+Os aliases e/ou transportes gerados para este dom&#237;nio tamb&#233;m ser&#227;o removidos
+as caixas de correio n&#227;o ser&#227;o removidas</xdelete_domain_text>
+<xdelete_transport_text>Tem certeza de que deseja remover esta regra de transporte?
+Os aliases gerados para este dom&#237;nio tamb&#233;m ser&#227;o removidos</xdelete_transport_text>

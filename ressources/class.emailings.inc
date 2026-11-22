@@ -7,7 +7,7 @@
 	if(!VerifyEmailingRights()){
 		$tpl=new templates();
 		echo "alert('". $tpl->javascript_parse_text("{ERROR_NO_PRIVS}")."');";
-		die("DIE " .__FILE__." Line: ".__LINE__);exit();
+		die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");exit();
 	}	
 	
 	

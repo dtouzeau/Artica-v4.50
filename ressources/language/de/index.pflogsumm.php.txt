@@ -1,7 +1,7 @@
-<ERROR_NOTIFICATION_NOT_ENABLED>Warning, Artica notification is not enabled. This feature only working if you have enabled Artica SMTP notifications</ERROR_NOTIFICATION_NOT_ENABLED>
-<PFLOGSUMM_ADD_RECIPIENT>Add a new recipient</PFLOGSUMM_ADD_RECIPIENT>
-<PFLOGSUMM_GIVE_EMAIL_ADDRESS>Give the external eMail address</PFLOGSUMM_GIVE_EMAIL_ADDRESS>
-<PFLOGSUMM_SEND_REPORT_EACH>Send report by eMail each day at</PFLOGSUMM_SEND_REPORT_EACH>
-<send_report_now>Send the report now</send_report_now>
-<send_report_now_text>The report will be executed in background mode, please check your mailbox</send_report_now_text>
-<use_send_mail>Use internal SMTP engine</use_send_mail>
+<ERROR_NOTIFICATION_NOT_ENABLED>Warnung, Artica-Benachrichtigung ist nicht aktiviert. Diese Funktion funktioniert nur, wenn Sie die Artica-SMTP-Benachrichtigungen aktiviert haben</ERROR_NOTIFICATION_NOT_ENABLED>
+<PFLOGSUMM_ADD_RECIPIENT>Neuen Empf&#228;nger hinzuf&#252;gen</PFLOGSUMM_ADD_RECIPIENT>
+<PFLOGSUMM_GIVE_EMAIL_ADDRESS>Geben Sie die externe E-Mail-Adresse an</PFLOGSUMM_GIVE_EMAIL_ADDRESS>
+<PFLOGSUMM_SEND_REPORT_EACH>Bericht per E-Mail jeden Tag senden um</PFLOGSUMM_SEND_REPORT_EACH>
+<send_report_now>Bericht jetzt senden</send_report_now>
+<send_report_now_text>Der Bericht wird im Hintergrundmodus ausgef&#252;hrt, bitte &#252;berpr&#252;fen Sie Ihr Postfach</send_report_now_text>
+<use_send_mail>Interne SMTP-Engine verwenden</use_send_mail>

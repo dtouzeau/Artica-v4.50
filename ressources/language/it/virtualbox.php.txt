@@ -1,130 +1,123 @@
-<accelerate3d>hardware 3D acceleration</accelerate3d>
+<accelerate3d>accelerazione 3D hardware</accelerate3d>
 <acpi>Advanced Programmable Interrupt Controllers</acpi>
-<ACTIVATE_ARTICA_ASPXE>Enable Artica has PXE</ACTIVATE_ARTICA_ASPXE>
-<ACTIVATE_ARTICA_ASPXE_TEXT>Set this server has a DHCP server and server that serves ThinClient Operating system trough PXE protocol</ACTIVATE_ARTICA_ASPXE_TEXT>
-<add_thinclient>Add a new thinClient</add_thinclient>
-<add_thinclient_text>Add a new thinclient in the database in order to define properties</add_thinclient_text>
-<APP_VIRTUALBOX_WEBSERVICE>VirtualBox Web service</APP_VIRTUALBOX_WEBSERVICE>
-<AsVirtualBoxManager>Can manage Virtual Machines and ThinClients</AsVirtualBoxManager>
-<AUDIO_LEVEL>Audio level</AUDIO_LEVEL>
-<CLONE_HD>Clone Hard disk</CLONE_HD>
-<CLONE_HD_TEXT>duplicates a registered virtual hard disk image to a new image file with a new unique identifier (UUID)</CLONE_HD_TEXT>
-<colour_depth>colour depth</colour_depth>
-<COMPILE_PXE_SYSTEM>Compile PXE system</COMPILE_PXE_SYSTEM>
-<could_not_with_computername>Could not perform this operation with computer name:</could_not_with_computername>
-<CUSTOM_CONFIG>Custom config</CUSTOM_CONFIG>
-<CUSTOM_CONFIG_EXPLAIN>Allows choosing custom boot config</CUSTOM_CONFIG_EXPLAIN>
+<ACTIVATE_ARTICA_ASPXE>Abilita Artica come PXE</ACTIVATE_ARTICA_ASPXE>
+<ACTIVATE_ARTICA_ASPXE_TEXT>Imposta questo server come server DHCP e come server che fornisce sistemi operativi ThinClient tramite il protocollo PXE</ACTIVATE_ARTICA_ASPXE_TEXT>
+<add_thinclient>Aggiungi un nuovo thinClient</add_thinclient>
+<add_thinclient_text>Aggiungi un nuovo thinclient nel database per definire le propriet&#224;</add_thinclient_text>
+<APP_VIRTUALBOX_WEBSERVICE>Servizio web VirtualBox</APP_VIRTUALBOX_WEBSERVICE>
+<AsVirtualBoxManager>Pu&#242; gestire macchine virtuali e ThinClient</AsVirtualBoxManager>
+<AUDIO_LEVEL>Livello audio</AUDIO_LEVEL>
+<CLONE_HD>Clona disco rigido</CLONE_HD>
+<CLONE_HD_TEXT>Duplica un'immagine di disco rigido virtuale registrata in un nuovo file immagine con un nuovo identificatore univoco (UUID)</CLONE_HD_TEXT>
+<colour_depth>Profondit&#224; di colore</colour_depth>
+<COMPILE_PXE_SYSTEM>Compila il sistema PXE</COMPILE_PXE_SYSTEM>
+<could_not_with_computername>Impossibile eseguire questa operazione con il nome del computer:</could_not_with_computername>
+<CUSTOM_CONFIG>Configurazione personalizzata</CUSTOM_CONFIG>
+<CUSTOM_CONFIG_EXPLAIN>Consente di scegliere una configurazione di boot personalizzata</CUSTOM_CONFIG_EXPLAIN>
 <DAILY_REBOOT>Riavvio giornaliero</DAILY_REBOOT>
-<DAILY_REBOOT_EXPLAIN>Will reboot server if up over a day and one of the session types is closed</DAILY_REBOOT_EXPLAIN>
-<DHCPD_NOT_ENABLED>Your DHCP server is not enabled</DHCPD_NOT_ENABLED>
-<DHCP_THINCLIENT_NOT_INSTALLED>No DHCP server stored on this server</DHCP_THINCLIENT_NOT_INSTALLED>
-<DHCP_THINCLIENT_NOT_INSTALLED_TEXT>Click on this icon to view how to implement PXE protocol on your DHCP server</DHCP_THINCLIENT_NOT_INSTALLED_TEXT>
-<DONT_VT_SWITCH_STATE>Disallows the use of the Ctrl+Alt+Fn sequence</DONT_VT_SWITCH_STATE>
-<DONT_ZAP_STATE>Disallows the use of the Ctrl+Alt+Backspace sequence</DONT_ZAP_STATE>
-<ENABLE_VIRTUALBOX_WATCHDOG>Activate watchdog</ENABLE_VIRTUALBOX_WATCHDOG>
+<DAILY_REBOOT_EXPLAIN>Riavvier&#224; il server se &#232; acceso da pi&#249; di un giorno e uno dei tipi di sessione &#232; chiuso</DAILY_REBOOT_EXPLAIN>
+<DHCPD_NOT_ENABLED>Il tuo server DHCP non &#232; abilitato</DHCPD_NOT_ENABLED>
+<DHCP_THINCLIENT_NOT_INSTALLED>Nessun server DHCP memorizzato su questo server</DHCP_THINCLIENT_NOT_INSTALLED>
+<DHCP_THINCLIENT_NOT_INSTALLED_TEXT>Clicca su questa icona per vedere come implementare il protocollo PXE sul tuo server DHCP</DHCP_THINCLIENT_NOT_INSTALLED_TEXT>
+<DONT_VT_SWITCH_STATE>Non consente l'uso della sequenza Ctrl+Alt+Fn</DONT_VT_SWITCH_STATE>
+<DONT_ZAP_STATE>Non consente l'uso della sequenza Ctrl+Alt+Backspace</DONT_ZAP_STATE>
+<ENABLE_VIRTUALBOX_WATCHDOG>Attiva watchdog</ENABLE_VIRTUALBOX_WATCHDOG>
 <filesystem>Filesystem</filesystem>
-<format>Format</format>
-<guestmemoryballoon>guest memory balloon</guestmemoryballoon>
-<guestmemoryballoon_text>Memory allocated by the VirtualBox Guest Additions from the guest operating system and returned to 
-the hypervisor for re-use by other virtual machines.[br]
-With memory ballooning, memory that was allocated for a virtual machine can be given to another 
-virtual machine without having to shut the machine down.[br]
-This can be useful to temporarily start another virtual machine, or in more complicated environments for sophisticated memory management of many virtual machines 
-that may be running in parallel depending on how memory is used by the guests.
-</guestmemoryballoon_text>
-<HOWTO_INSTALL_VDI>This section will transform this server to a server that provides Virtual Desktop Infrastructure.[br]
-This will install VirtualBox has the main virtualization enfgine.[br]
-It will install ThinClient2 that provides a Terminal Operating system with Remote desktop client.[br]
-With these softwares you will be able to create Virtual machines that will serves ThinClients.[br]
-Thinclient will use the PXE boot method to downlaod a light operating system in order to open a session trough the Remote desktop client
-Click on the button install in order to Manage VirtualBox and ThinClient trough Artica.[br]
-You can use this command line:[b]/usr/share/artica-postfix/bin/setup-ubuntu --check-virtualbox[/b]
-</HOWTO_INSTALL_VDI>
-<HOWTO_PXE_DHCP>Howto enable PXE and load thinclient trough DHCP ?</HOWTO_PXE_DHCP>
-<HOWTO_PXE_DHCP_TEXT>There are several ways computers can boot over a network, but the one mandated is called PXE.[br]
-PXE is a kind of DHCP extension, so all you need is an up-to-date DHCP server and a TFTP server.[br]
-If your DHCP server is a windows server read these articles :[ul]
+<format>Formato</format>
+<guestmemoryballoon>Memory balloon del guest</guestmemoryballoon>
+<guestmemoryballoon_text>Memoria allocata dalle VirtualBox Guest Additions dal sistema operativo guest e restituita all'hypervisor per il riutilizzo da parte di altre macchine virtuali.[br]
+Con il memory ballooning, la memoria che era stata allocata per una macchina virtuale pu&#242; essere data a un'altra macchina virtuale senza dover spegnere la macchina.[br]
+Questo pu&#242; essere utile per avviare temporaneamente un'altra macchina virtuale, o in ambienti pi&#249; complessi per una sofisticata gestione della memoria di molte macchine virtuali che possono essere in esecuzione in parallelo a seconda di come la memoria viene utilizzata dai guest.</guestmemoryballoon_text>
+<HOWTO_INSTALL_VDI>Questa sezione trasformer&#224; questo server in un server che fornisce Virtual Desktop Infrastructure.[br]
+Questo installer&#224; VirtualBox come motore di virtualizzazione principale.[br]
+Installer&#224; ThinClient2 che fornisce un sistema operativo Terminal con client desktop remoto.[br]
+Con questi software sarai in grado di creare macchine virtuali che serviranno i ThinClient.[br]
+ThinClient user&#224; il metodo di boot PXE per scaricare un sistema operativo leggero al fine di aprire una sessione tramite il client desktop remoto
+Clicca sul pulsante installa per gestire VirtualBox e ThinClient tramite Artica.[br]
+Puoi usare questa riga di comando:[b]/usr/share/artica-postfix/bin/setup-ubuntu --check-virtualbox[/b]</HOWTO_INSTALL_VDI>
+<HOWTO_PXE_DHCP>Come abilitare PXE e caricare il thinclient tramite DHCP?</HOWTO_PXE_DHCP>
+<HOWTO_PXE_DHCP_TEXT>Esistono diversi modi in cui i computer possono avviarsi tramite rete, ma quello obbligatorio si chiama PXE.[br]
+PXE &#232; una sorta di estensione DHCP, quindi tutto ci&#242; che serve &#232; un server DHCP aggiornato e un server TFTP.[br]
+Se il tuo server DHCP &#232; un server windows, leggi questi articoli:[ul]
 [li]http://technet.microsoft.com/en-us/library/bb694069.aspx[/li]
 [li]http://technet.microsoft.com/en-us/library/bb680668.aspx[/li]
 [/ul]
-[b]on Both windows or Linux you need to add "/pxe/pxelinux.0" file path on the DHCP server configuration.[b][br]
-On Linux DHCPD server configuration file, you have just to add these directives:[br]
-filename "/pxe/pxelinux.0";[br]
+[b]Sia su windows che su Linux devi aggiungere il percorso file &quot;/pxe/pxelinux.0&quot; nella configurazione del server DHCP.[b][br]
+Nel file di configurazione del server DHCPD Linux, devi solo aggiungere queste direttive:[br]
+filename &quot;/pxe/pxelinux.0&quot;;[br]
 next-server x.x.x.x;[br]
-[i]has x.x.x.x is the ip address of this server[/i]
+[i]dove x.x.x.x &#232; l'indirizzo IP di questo server[/i]
 [br]
-If you want to Artica has the main DHCP server, you need to install dhcpd and enable it trough the web console.
-</HOWTO_PXE_DHCP_TEXT>
-<hpet>High Precision Event Timer</hpet>
-<hpet_text>can replace the legacy system timers.[br] This is turned off by default.[br] Note that Windows supports a HPET only from Vista onwards</hpet_text>
-<hwvirtex>Intel VT-x or AMD-V</hwvirtex>
-<hwvirtexexcl>exclusive use Intel VT-x or AMD-V</hwvirtexexcl>
-<ioapic>I/O APICs</ioapic>
+Se vuoi che Artica sia il server DHCP principale, devi installare dhcpd e abilitarlo tramite la console web.</HOWTO_PXE_DHCP_TEXT>
+<hpet>Timer eventi ad alta precisione</hpet>
+<hpet_text>pu&#242; sostituire i timer di sistema legacy.[br] Questo &#232; disattivato per impostazione predefinita.[br] Nota che Windows supporta un HPET solo da Vista in poi</hpet_text>
+<hwvirtex>Intel VT-x o AMD-V</hwvirtex>
+<hwvirtexexcl>uso esclusivo di Intel VT-x o AMD-V</hwvirtexexcl>
+<ioapic>I/O APIC</ioapic>
 <keyboard>Tastiera</keyboard>
 <KEYBOARD_MAP>Mappa della tastiera</KEYBOARD_MAP>
-<largepages>Large pages</largepages>
-<MENU_SHOW>Menu show</MENU_SHOW>
-<nestedpaging>Nested paging</nestedpaging>
-<network_drivers>Network drivers</network_drivers>
-<NO_VMS_HERE>No virtual machines referenced in the Virtual machines manager</NO_VMS_HERE>
-<pae>Physical Address Extension</pae>
-<RDESKTOP_SERVER>Remote desktop server address</RDESKTOP_SERVER>
-<rebuild_defaults>Rebuild parameters</rebuild_defaults>
-<rebuild_default_warning_modules>This will erase drivers and packages and rebuild a new set of drivers and packages</rebuild_default_warning_modules>
-<RECONNECT_AUTO>Automatic reconnect</RECONNECT_AUTO>
-<RECONNECT_PROMPT>Reconnect prompt</RECONNECT_PROMPT>
-<refresh_virtual_machines>Refresh list</refresh_virtual_machines>
-<refresh_virtual_machines_text>Refresh the virtual machines list</refresh_virtual_machines_text>
-<rtcuseutc>real-time clock (RTC) operate in UTC time</rtcuseutc>
-<same_format>same format</same_format>
-<screen>Screen</screen>
-<SCREEN_BLANK_TIME>blank screen after</SCREEN_BLANK_TIME>
-<SCREEN_OFF_TIME>Turn off session after</SCREEN_OFF_TIME>
-<SCREEN_RESOLUTION>Screen resolution</SCREEN_RESOLUTION>
-<SCREEN_RESOLUTION_SEQUENCE>Enable sequence resolution</SCREEN_RESOLUTION_SEQUENCE>
-<SCREEN_STANDBY_TIME>standby mode after</SCREEN_STANDBY_TIME>
-<SCREEN_SUSPEND_TIME>Suspend mode after</SCREEN_SUSPEND_TIME>
-<SEQUENCE>Sequence</SEQUENCE>
-<session>session</session>
-<session_name>Session name</session_name>
-<sound_drivers>Sound drivers</sound_drivers>
-<source_hd>Hard disk source</source_hd>
-<start_virtual_machine>START this Virtual Machine</start_virtual_machine>
-<stop_virtual_machine>STOP this Virtual Machine</stop_virtual_machine>
-<storage_drivers>Storage drivers</storage_drivers>
-<take_snapshot>Take a system snapshot</take_snapshot>
-<TFTP_IS_NOT_INSTALLED>No TFTP server installed</TFTP_IS_NOT_INSTALLED>
+<largepages>Pagine grandi</largepages>
+<MENU_SHOW>Mostra menu</MENU_SHOW>
+<nestedpaging>Paginazione nidificata</nestedpaging>
+<network_drivers>Driver di rete</network_drivers>
+<NO_VMS_HERE>Nessuna macchina virtuale referenziata nel gestore delle macchine virtuali</NO_VMS_HERE>
+<pae>Estensione indirizzo fisico</pae>
+<RDESKTOP_SERVER>Indirizzo del server desktop remoto</RDESKTOP_SERVER>
+<rebuild_defaults>Ricostruisci parametri</rebuild_defaults>
+<rebuild_default_warning_modules>Questo canceller&#224; driver e pacchetti e ricostruir&#224; un nuovo set di driver e pacchetti</rebuild_default_warning_modules>
+<RECONNECT_AUTO>Riconnessione automatica</RECONNECT_AUTO>
+<RECONNECT_PROMPT>Richiesta di riconnessione</RECONNECT_PROMPT>
+<refresh_virtual_machines>Aggiorna elenco</refresh_virtual_machines>
+<refresh_virtual_machines_text>Aggiorna l'elenco delle macchine virtuali</refresh_virtual_machines_text>
+<rtcuseutc>l'orologio in tempo reale (RTC) funziona in ora UTC</rtcuseutc>
+<same_format>stesso formato</same_format>
+<screen>Schermo</screen>
+<SCREEN_BLANK_TIME>Schermo vuoto dopo</SCREEN_BLANK_TIME>
+<SCREEN_OFF_TIME>Spegni la sessione dopo</SCREEN_OFF_TIME>
+<SCREEN_RESOLUTION>Risoluzione dello schermo</SCREEN_RESOLUTION>
+<SCREEN_RESOLUTION_SEQUENCE>Abilita la sequenza di risoluzione</SCREEN_RESOLUTION_SEQUENCE>
+<SCREEN_STANDBY_TIME>Modalit&#224; standby dopo</SCREEN_STANDBY_TIME>
+<SCREEN_SUSPEND_TIME>Modalit&#224; sospensione dopo</SCREEN_SUSPEND_TIME>
+<SEQUENCE>Sequenza</SEQUENCE>
+<session>sessione</session>
+<session_name>Nome della sessione</session_name>
+<sound_drivers>Driver audio</sound_drivers>
+<source_hd>Origine disco rigido</source_hd>
+<start_virtual_machine>AVVIA questa macchina virtuale</start_virtual_machine>
+<stop_virtual_machine>ARRESTA questa macchina virtuale</stop_virtual_machine>
+<storage_drivers>Driver di archiviazione</storage_drivers>
+<take_snapshot>Acquisisci uno snapshot del sistema</take_snapshot>
+<TFTP_IS_NOT_INSTALLED>Nessun server TFTP installato</TFTP_IS_NOT_INSTALLED>
 <thinclient>ThinClient</thinclient>
-<thinclients>ThinClients</thinclients>
-<thinclient_compile_logs>Compilation events</thinclient_compile_logs>
-<thinclient_hardware>Hardware settings</thinclient_hardware>
-<thinclient_hardware_text>Define modules and drivers that will be loaded by the computer at the boot time</thinclient_hardware_text>
-<thinclient_network_modules_explain>This the list of network drivers will be loaded by the computer when booting trough the network.[br]
-You can define several modules, just load drivers that should be used in order to not increase the boot time.</thinclient_network_modules_explain>
-<THINCLIENT_REBUILDED_TEXT>Rebuild operation has been performed in background mode, check events to see results of this operation</THINCLIENT_REBUILDED_TEXT>
-<thinclient_software_text>Define services that should be included in the master system.[br]These services can be set for each thinclient</thinclient_software_text>
-<THINCLIENT_TFTP_IS_NOT_INSTALLED>Without any TFTP server you will not be able to load the operating system trough PXE protocol.[br]You need to install a tftp server before</THINCLIENT_TFTP_IS_NOT_INSTALLED>
-<THINCOMPILE_SYSTEM_TEXT>Compile your settings and make them bootable via PXE</THINCOMPILE_SYSTEM_TEXT>
-<usb_drivers>USB drivers</usb_drivers>
-<USB_ENABLED>Enable USB</USB_ENABLED>
-<user_safe_mode>Safe mode for users</user_safe_mode>
-<user_safe_mode_text>Set this option to skip the creation and deletion of new users.[br]
-The action will be logged, so you can see if your changes configuration are correct.</user_safe_mode_text>
-<use_this_dont_know>use this if you don't know what to use</use_this_dont_know>
-<utilities>utilities</utilities>
-<video_drivers>Video drivers</video_drivers>
-<VIRTUALBOX_ABOUT>VirtualBox is a general-purpose full virtualizer  for x86 hardware.[br] Targeted at server, desktop and embedded use, it is now 
-the only professional-quality virtualization solution that is also Open Source Software</VIRTUALBOX_ABOUT>
-<virtualbox_manager>VirtualBox Manager</virtualbox_manager>
-<virtualbox_manager_text>Open the VirtualBox manager Web console in order to manage your virtual machines</virtualbox_manager_text>
-<VIRTUALBOX_WATCHDOG>VirtualBox Watchdog</VIRTUALBOX_WATCHDOG>
-<VIRTUALBOX_WATCHDOG_TEXT>Ensure that this virtual machine is up and running.[br]If the server was rebooted this Virtual machine will be automatically started.[br]
-In other case, it the server shutdown, the virtual machine was properly stopped before halt the server</VIRTUALBOX_WATCHDOG_TEXT>
-<virtual_box_cpus>CPU(s) Number</virtual_box_cpus>
-<virtual_desktop_infr>Virtual Desktop</virtual_desktop_infr>
-<virtual_machine>Virtual machine</virtual_machine>
-<virtual_machines>Virtual machines</virtual_machines>
-<virtual_machine_name>Virtual machine name</virtual_machine_name>
-<vramsize>Video memory size</vramsize>
-<vtxvpid>Tagged TLB (VPID)</vtxvpid>
-<windows_manager>Windows Manager</windows_manager>
+<thinclients>ThinClient</thinclients>
+<thinclient_compile_logs>Eventi di compilazione</thinclient_compile_logs>
+<thinclient_hardware>Impostazioni hardware</thinclient_hardware>
+<thinclient_hardware_text>Definisci moduli e driver che verranno caricati dal computer all'avvio</thinclient_hardware_text>
+<thinclient_network_modules_explain>Questo &#232; l'elenco dei driver di rete che verranno caricati dal computer all'avvio tramite rete.[br]
+Puoi definire pi&#249; moduli, carica solo i driver che devono essere usati per non aumentare il tempo di avvio.</thinclient_network_modules_explain>
+<THINCLIENT_REBUILDED_TEXT>L'operazione di ricostruzione &#232; stata eseguita in modalit&#224; background, controlla gli eventi per vedere i risultati di questa operazione</THINCLIENT_REBUILDED_TEXT>
+<thinclient_software_text>Definisci i servizi che devono essere inclusi nel sistema master.[br]Questi servizi possono essere impostati per ogni thinclient</thinclient_software_text>
+<THINCLIENT_TFTP_IS_NOT_INSTALLED>Senza un server TFTP non sarai in grado di caricare il sistema operativo tramite il protocollo PXE.[br]Devi installare un server tftp prima</THINCLIENT_TFTP_IS_NOT_INSTALLED>
+<THINCOMPILE_SYSTEM_TEXT>Compila le tue impostazioni e rendile avviabili tramite PXE</THINCOMPILE_SYSTEM_TEXT>
+<usb_drivers>Driver USB</usb_drivers>
+<USB_ENABLED>Abilita USB</USB_ENABLED>
+<user_safe_mode>Modalit&#224; sicura per gli utenti</user_safe_mode>
+<user_safe_mode_text>Imposta questa opzione per saltare la creazione e l'eliminazione di nuovi utenti.[br]
+L'azione verr&#224; registrata, cos&#236; puoi vedere se le modifiche alla configurazione sono corrette.</user_safe_mode_text>
+<use_this_dont_know>usa questo se non sai cosa usare</use_this_dont_know>
+<utilities>utilit&#224;</utilities>
+<video_drivers>Driver video</video_drivers>
+<VIRTUALBOX_ABOUT>VirtualBox &#232; un virtualizzatore completo per uso generico per hardware x86.[br] Pensato per l'uso su server, desktop e sistemi embedded, &#232; oggi l'unica soluzione di virtualizzazione di qualit&#224; professionale che &#232; anche software open source</VIRTUALBOX_ABOUT>
+<virtualbox_manager>Gestore VirtualBox</virtualbox_manager>
+<virtualbox_manager_text>Apri la console web del gestore VirtualBox per gestire le tue macchine virtuali</virtualbox_manager_text>
+<VIRTUALBOX_WATCHDOG>Watchdog VirtualBox</VIRTUALBOX_WATCHDOG>
+<VIRTUALBOX_WATCHDOG_TEXT>Assicurati che questa macchina virtuale sia attiva e in esecuzione.[br]Se il server &#232; stato riavviato, questa macchina virtuale verr&#224; avviata automaticamente.[br]
+In caso contrario, se il server si spegne, la macchina virtuale viene arrestata correttamente prima di arrestare il server</VIRTUALBOX_WATCHDOG_TEXT>
+<virtual_box_cpus>Numero di CPU</virtual_box_cpus>
+<virtual_desktop_infr>Desktop virtuale</virtual_desktop_infr>
+<virtual_machine>Macchina virtuale</virtual_machine>
+<virtual_machines>Macchine virtuali</virtual_machines>
+<virtual_machine_name>Nome della macchina virtuale</virtual_machine_name>
+<vramsize>Dimensione della memoria video</vramsize>
+<vtxvpid>TLB con tag (VPID)</vtxvpid>
+<windows_manager>Gestore finestre</windows_manager>

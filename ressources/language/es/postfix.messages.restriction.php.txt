@@ -1,10 +1,8 @@
-<default_destination_recipient_limit>default destination recipient limit</default_destination_recipient_limit>
-<default_destination_recipient_limit_text>
-The default maximal number of recipients per message delivery.[br]
-This is the default limit for delivery via the lmtp, pipe, smtp and virtual delivery agents.[br]
-Setting this parameter to a value of 1 changes the meaning of the corresponding per-destination concurrency limit from concurrency per domain into concurrency per recipient
-</default_destination_recipient_limit_text>
-<smtpd_recipient_limit>smtpd recipient limit</smtpd_recipient_limit>
-<smtpd_recipient_limit_text>The maximal number of recipients that the Postfix SMTP server accepts per message delivery request</smtpd_recipient_limit_text>
-<virtual_mailbox_limit>Virtual mailbox limit</virtual_mailbox_limit>
-<virtual_mailbox_limit_text>The maximal size in bytes of an individual mailbox or maildir file, or zero (no limit).</virtual_mailbox_limit_text>
+<default_destination_recipient_limit>l&#237;mite de destinatarios de destino predeterminado</default_destination_recipient_limit>
+<default_destination_recipient_limit_text>El n&#250;mero m&#225;ximo predeterminado de destinatarios por entrega de mensaje.[br]
+Este es el l&#237;mite predeterminado para la entrega a trav&#233;s de los agentes de entrega lmtp, pipe, smtp y virtual.[br]
+Establecer este par&#225;metro en un valor de 1 cambia el significado del l&#237;mite de concurrencia por destino correspondiente, de concurrencia por dominio a concurrencia por destinatario</default_destination_recipient_limit_text>
+<smtpd_recipient_limit>l&#237;mite de destinatarios smtpd</smtpd_recipient_limit>
+<smtpd_recipient_limit_text>El n&#250;mero m&#225;ximo de destinatarios que el servidor SMTP de Postfix acepta por solicitud de entrega de mensaje</smtpd_recipient_limit_text>
+<virtual_mailbox_limit>L&#237;mite de buz&#243;n virtual</virtual_mailbox_limit>
+<virtual_mailbox_limit_text>El tama&#241;o m&#225;ximo en bytes de un buz&#243;n individual o archivo maildir, o cero (sin l&#237;mite).</virtual_mailbox_limit_text>

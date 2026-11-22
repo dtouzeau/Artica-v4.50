@@ -9,7 +9,7 @@ if(isset($_POST["ModSecurityAction"])){Save();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["charts"])){render_charts();exit;}
-
+if(isset($_GET["modsec-web-status"])){modsec_status();exit;}
 page();
 
 function page():bool{
@@ -20,7 +20,7 @@ function page():bool{
     if($MODSECURITY_VER<>null){
         $MODSECURITY_VERSION=" v{$MODSECURITY_VER}";
     }
-	$html=$tpl->page_header("{WAF_LONG}$MODSECURITY_VERSION","fab fa-free-code-camp",
+	$html=$tpl->page_header("{WAF_LONG}$MODSECURITY_VERSION","fa-solid fa-block-brick-fire",
         "{APP_NGINX_FW_EXPLAIN}","$page?tabs=yes","web-firewall","progress-web-firewall",false,"webf-section");
 
 	if(isset($_GET["main-page"])){
@@ -48,6 +48,47 @@ function tabs():bool{
     return true;
 }
 
+function modsec_status():bool{
+    $EnableModSecurityIngix         = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableModSecurityIngix"));
+    $MODSECURITY_INSTALLED      =intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("MODSECURITY_INSTALLED"));
+    $disable_icon                   = "far fa-times-circle";
+    $page                           = CurrentPageName();
+    $tpl                            = new template_admin();
+    $refreshAll="Loadjs('fw.progress.php?refresh-menus=yes');";
+    if($MODSECURITY_INSTALLED==0){
+       echo $tpl->_ENGINE_parse_body($tpl->widget_h("gray",$disable_icon,"{not_installed}","{WAF_LONG}"));
+        return true;
+    }
+
+    if($EnableModSecurityIngix==0) {
+
+        $install_modsecurity = $tpl->framework_buildjs("nginx:/modsecurity/enable",
+            "modsecurity.progress",
+            "modsecurity.progress.log",
+            "progress-web-firewall", "LoadAjaxSilent('webf-section','$page?tabs=yes');$refreshAll");
+
+        $button["name"] = "{install}";
+        $button["js"] = $install_modsecurity;
+        $button["ico"] = "fa-solid fa-compact-disc";
+
+        echo $tpl->_ENGINE_parse_body($tpl->widget_h("gray", ico_shield_disabled, "{disabled}", "{WAF_LONG}", $button));
+        return true;
+    }
+
+    $install_modsecurity=$tpl->framework_buildjs("nginx:/modsecurity/disable",
+        "modsecurity.progress",
+        "modsecurity.progress.log",
+        "progress-web-firewall","LoadAjaxSilent('webf-section','$page?tabs=yes');$refreshAll");
+
+    $button["name"] = "{uninstall}";
+    $button["js"] = $install_modsecurity;
+    $button["ico"]=ico_trash;
+
+    echo $tpl->_ENGINE_parse_body($tpl->widget_h("green",ico_shield,"{active2}","{WAF_LONG}",$button));
+    return true;
+
+}
+
 function status():bool{
 	$page                           = CurrentPageName();
 	$tpl                            = new template_admin();
@@ -60,47 +101,22 @@ function status():bool{
     $ModSecurityDisableOWASP    = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ModSecurityDisableOWASP"));
     if($MODSECURITY_INSTALLED==0){$EnableModSecurityIngix=0;}
 
-    if($EnableModSecurityIngix==1){
-        $uninstall_modsecurity=$tpl->framework_buildjs("nginx:/modsecurity/disable",
-            "modsecurity.progress",
-            "modsecurity.progress.log",
-            "progress-web-firewall","LoadAjaxSilent('webf-section','$page?tabs=yes');$refreshAll");
 
-        $button["name"] = "{uninstall}";
-        $button["js"] = $uninstall_modsecurity;
-        $button["ico"]="fa fa-trash";
 
-        $MODSECURITY_GLOBAL = $tpl->widget_h("green", "fa fa-thumbs-up", "{enabled}", "{WAF_LONG}",$button);
-    }else{
-
-        $install_modsecurity=$tpl->framework_buildjs("nginx:/modsecurity/enable",
-            "modsecurity.progress",
-            "modsecurity.progress.log",
-            "progress-web-firewall","LoadAjaxSilent('webf-section','$page?tabs=yes');$refreshAll");
-
-        $button["name"] = "{install}";
-        $button["js"] = $install_modsecurity;
-        $button["ico"]="fa-solid fa-compact-disc";
-
-        $MODSECURITY_GLOBAL=$tpl->widget_h("gray",$disable_icon,"{disabled}","{WAF_LONG}",$button);
-    }
-    if($MODSECURITY_INSTALLED==0){
-        $MODSECURITY_GLOBAL=$tpl->widget_h("gray",$disable_icon,"{not_installed}","{WAF_LONG}");
-    }
-
-    if($EnableNginxFW==1){
+    // EnableNginxFW dit seulement que la fonctionnalité est installée. Un pare-feu
+    // arrêté (NGINX_FW_STOPPED=1) s'affichait pourtant « Activé » en vert, alors
+    // que la tuile de fw.nginx.status.php et le widget d'état juste en dessous
+    // le donnaient inactif (arpx4, 2026-11-19). Même règle que la tuile.
+    $NGINX_FW_STOPPED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NGINX_FW_STOPPED"));
+    if($EnableNginxFW==1 && $NGINX_FW_STOPPED==1){
+        $FIREWALL_GLOBAL=$tpl->widget_h("gray",$disable_icon,"{inactive2}","{firewall_for_web}");
+    }elseif($EnableNginxFW==1){
         $FIREWALL_GLOBAL = $tpl->widget_h("green", "fa fa-thumbs-up", "{enabled}", "{firewall_for_web}");
     }else{
         $FIREWALL_GLOBAL=$tpl->widget_h("gray",$disable_icon,"{disabled}","{firewall_for_web}");
     }
 
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT count(ID) as tcount from service_parameters WHERE zkey='EnableModSecurity' AND zvalue='1'");
-    if(!$q->ok){echo $q->mysql_error;}
-
-    $ProtectedSites=intval($ligne["tcount"]);
-    $qp=new postgres_sql();
-    $modsecurity_events=$qp->COUNT_ROWS("modsecurity_events");
+    $ProtectedSites=count_protected_sites();
 
     $jsSchedule=$tpl->RefreshInterval_js("firewall-web-status","fw.nginx.fw.php","fw-status=yes");
 
@@ -108,7 +124,7 @@ function status():bool{
 	$html[]="<table style='width:100%'>";
 	$html[]="<tr>";
 	$html[]="<td style='width:412px;padding-top:10px;vertical-align: top'>";
-	$html[]= $MODSECURITY_GLOBAL;
+    $html[]="<div id='modsec-web-status'></div>";
 	$html[]= $FIREWALL_GLOBAL;
     $html[]="<div id='firewall-web-status'></div>";
     $html[]="</td>";
@@ -123,15 +139,15 @@ function status():bool{
             $ModSecurityPatternVersion=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ModSecurityPatternVersion"));
             $ModSecurityPatternVersion=str_replace("OWASP_CRS/","",$ModSecurityPatternVersion);
             $xtime = $tpl->time_to_date($oldIniArry["zDate"]);
-            $ids_signatures = $tpl->widget_h("green", "fas fa-database",
+            $ids_signatures = $tpl->widget_h("green", ico_database,
                 $ModSecurityPatternCount."&nbsp;<small style='font-size:11px;color:white'>v$ModSecurityPatternVersion</small>",
                 "{signatures} ($xtime)");
         } else {
-            $ids_signatures = $tpl->widget_h("red", "fas fa-database", $ModSecurityPatternCount, "{signatures}");
+            $ids_signatures = $tpl->widget_h("red", ico_database, $ModSecurityPatternCount, "{signatures}");
         }
 
         if ($ModSecurityDisableOWASP == 1) {
-            $ids_signatures = $tpl->widget_h("grey", "fas fa-database", "{disabled}", "{signatures}");
+            $ids_signatures = $tpl->widget_h("grey", ico_database, "{disabled}", "{signatures}");
         }
 
         if ($ProtectedSites == 0) {
@@ -140,12 +156,6 @@ function status():bool{
             $protected_sites = $tpl->widget_h("green", "fas fa-shield-check", $ProtectedSites, "{protected_sites}");
         }
 
-        if ($modsecurity_events == 0) {
-            $modsecurity_evs = $tpl->widget_h("grey", "fas fa-user-secret", 0, "{total}: {EmergingThreats}");
-        } else {
-            $modsecurity_events = $tpl->FormatNumber($modsecurity_events);
-            $modsecurity_evs = $tpl->widget_h("yellow", "fas fa-user-secret", $modsecurity_events, "{total}: {EmergingThreats}");
-        }
         $html[] = "<table style='width:100%'>";
 
         $html[] = "<tr>";
@@ -186,291 +196,152 @@ function status():bool{
     $topbuttons[] = array($jsrestart, ico_retweet, "{reconfigure}");
 
     $TINY_ARRAY["TITLE"]="{WAF_LONG}$MODSECURITY_VERSION";
-    $TINY_ARRAY["ICO"]="fab fa-free-code-camp";
+    $TINY_ARRAY["ICO"]="fa-solid fa-block-brick-fire";
     $TINY_ARRAY["EXPL"]="{APP_NGINX_FW_EXPLAIN}";
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
-    $html[]="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');\n";
 
+    $jRefersh=$tpl->RefreshInterval_js("modsec-web-status",$page,"modsec-web-status=yes");
+
+    $html[]="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');\n";
+    $html[]=$jRefersh;
     $html[]="</script>";
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 	return true;
 }
 
+// The charts come from the reverse-proxy daemon (GET /waf/stats/overview, module
+// WafOverview): the page no longer queries PostgreSQL, so it no longer breaks
+// when it is newer than the database schema.
+function waf_status_js($v):string{
+    // labels come from the traffic: never let one close the <script>
+    return json_encode($v,JSON_HEX_TAG|JSON_HEX_AMP|JSON_HEX_APOS|JSON_HEX_QUOT);
+}
+
+function waf_status_points($o,$sec):array{
+    if(!isset($o[$sec]) || !is_array($o[$sec])){return array();}
+    return $o[$sec];
+}
+
+// A section the daemon could not read is a warning, never "no data".
+function waf_status_empty($tpl,$errors,$sec):string{
+    if(isset($errors[$sec])){
+        return $tpl->div_warning("{error}||".htmlspecialchars(strval($errors[$sec]),ENT_QUOTES));
+    }
+    return $tpl->div_info("{no_data}");
+}
+
+function waf_status_box($title,$icon,$body):string{
+    return "<div class='ibox'><div class='ibox-title'><h5><i class='$icon'></i>&nbsp; $title</h5></div><div class='ibox-content'>$body</div></div>";
+}
+
+function waf_status_chart($id,$height,$type,$labels,$datasets,$options):string{
+    return "<div style='position:relative;height:{$height}px'><canvas id='$id'></canvas></div>".
+        "<script>new Chart(document.getElementById('$id'),{type:'$type',data:{labels:".waf_status_js($labels).
+        ",datasets:$datasets},options:$options});</script>";
+}
+
 function render_charts():bool{
     $tpl=new template_admin();
-    $q=new postgres_sql();
-
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/waf/stats/overview");
+    $json=json_decode($resp,true);
+    if(!is_array($json) || empty($json["Status"]) || !isset($json["overview"]) || !is_array($json["overview"])){
+        $err=is_array($json) && isset($json["Error"]) ? strval($json["Error"]) : "{error}";
+        echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($err,ENT_QUOTES))."<script>NoSpinner();</script>");
+        return false;
+    }
+    $o=$json["overview"];
+    $errors=isset($o["errors"]) && is_array($o["errors"]) ? $o["errors"] : array();
+    $threatsT=waf_status_js($tpl->javascript_parse_text("{threats}"));
+    $noLegend="plugins:{legend:{display:false}}";
     $h=array();
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
 
-    // ════════════════════════════════════════════════════════════════════════════
-    // ROW 1: Threats by hour today (line) — full width
-    // ════════════════════════════════════════════════════════════════════════════
-    $currentday=date("Y-m-d");
-    $sql="SELECT to_char(date_trunc('hour', created), 'MM-DD-YYYY HH24') AS hour_formatted,
-    COUNT(*) AS event_count FROM modsecurity_audit WHERE created>'$currentday 00:00:00' GROUP BY 1 ORDER BY 1;";
-    $xLabels=array();$yData=array();
-    $results=$q->QUERY_SQL($sql);
-    while($ligne=@pg_fetch_assoc($results)){
-        $hour_formatted=strtotime($ligne["hour_formatted"].":00:00");
-        $xLabels[]=json_encode(date("H",$hour_formatted)."h");
-        $yData[]=$ligne["event_count"];
-    }
-    $titleToday=$tpl->javascript_parse_text("{threats} {by_hour} {today}");
-    $threatsT=$tpl->javascript_parse_text("{threats}");
+    $line=function($sec,$id,$height,$title,$icon,$color,$fill,$extra) use ($tpl,$o,$errors,$threatsT,$noLegend){
+        $pts=waf_status_points($o,$sec);
+        if(count($pts)==0){return waf_status_box($title,$icon,waf_status_empty($tpl,$errors,$sec));}
+        $labels=array();$data=array();
+        foreach($pts as $p){$labels[]=strval($p["label"]);$data[]=intval($p["count"]);}
+        $ds="[{label:$threatsT,data:".json_encode($data).",borderColor:'$color',backgroundColor:'$fill',fill:true,$extra}]";
+        return waf_status_box($title,$icon,waf_status_chart($id,$height,"line",$labels,$ds,
+            "{responsive:true,maintainAspectRatio:false,$noLegend,scales:{y:{beginAtZero:true,ticks:{precision:0}}}}"));
+    };
+    $hbar=function($sec,$id,$title,$icon,$color,$rowpx,$prefix) use ($tpl,$o,$errors,$threatsT,$noLegend){
+        $pts=waf_status_points($o,$sec);
+        if(count($pts)==0){return waf_status_box($title,$icon,waf_status_empty($tpl,$errors,$sec));}
+        $labels=array();$data=array();
+        foreach($pts as $p){
+            $l=$prefix.strval($p["label"]);
+            if(strlen($l)>45){$l=substr($l,0,42)."...";}
+            $labels[]=$l;$data[]=intval($p["count"]);
+        }
+        $ds="[{label:$threatsT,data:".json_encode($data).",backgroundColor:'$color'}]";
+        return waf_status_box($title,$icon,waf_status_chart($id,max(280,count($data)*$rowpx),"bar",$labels,$ds,
+            "{indexAxis:'y',responsive:true,maintainAspectRatio:false,$noLegend,scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{ticks:{font:{size:11}}}}}"));
+    };
+    $pie=function($sec,$id,$type,$title,$icon,$colors,$legendPos) use ($tpl,$o,$errors){
+        $pts=waf_status_points($o,$sec);
+        if(count($pts)==0){return waf_status_box($title,$icon,waf_status_empty($tpl,$errors,$sec));}
+        $labels=array();$data=array();$bg=array();$i=0;
+        foreach($pts as $p){
+            $labels[]=strval($p["label"]);$data[]=intval($p["count"]);
+            $bg[]=is_callable($colors) ? $colors($p) : $colors[$i % count($colors)];
+            $i++;
+        }
+        $ds="[{data:".json_encode($data).",backgroundColor:".json_encode($bg).",borderWidth:2}]";
+        return waf_status_box($title,$icon,waf_status_chart($id,300,$type,$labels,$ds,
+            "{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'$legendPos',labels:{padding:6,boxWidth:12,font:{size:11}}}}}"));
+    };
 
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-clock'></i>&nbsp; $titleToday</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($xLabels)>0){
-        $h[]="<div style='position:relative;height:260px'><canvas id='chart-today'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-today'),{type:'line',";
-        $h[]="data:{labels:[".implode(",",$xLabels)."],datasets:[{label:'$threatsT',data:[".implode(",",$yData)."],";
-        $h[]="borderColor:'#1ab394',backgroundColor:'rgba(26,179,148,0.15)',fill:true,tension:0.3,pointRadius:3,pointBackgroundColor:'#1ab394'}]},";
-        $h[]="options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},";
-        $h[]="scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{font:{size:11}}}}}});";
-        $h[]="</script>";
-    }else{
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="</div></div>";
+    // Row 1: threats by hour today, row 2: 10-minute counters of the last 24 h, row 3: by day
+    $h[]=$line("today_by_hour","chart-today",260,$tpl->javascript_parse_text("{threats} {by_hour} {today}"),
+        "fas fa-clock","#1ab394","rgba(26,179,148,0.15)","tension:0.3,pointRadius:3,pointBackgroundColor:'#1ab394'");
+    $h[]=$line("last_24h","chart-10min",220,$tpl->javascript_parse_text("{threats} {last} 24h (10min)"),
+        "fas fa-wave-square","#1c84c6","rgba(28,132,198,0.10)","tension:0.2,pointRadius:0,borderWidth:1.5");
 
-    // ════════════════════════════════════════════════════════════════════════════
-    // ROW 2: 10-minute hit rate last 24h (line) from modsec_counters
-    // ════════════════════════════════════════════════════════════════════════════
-    $yesterday=date("Y-m-d H:i:s",strtotime("-24 hours"));
-    $sql="SELECT to_char(zdate,'HH24:MI') AS lbl, hits FROM modsec_counters WHERE zdate>'$yesterday' ORDER BY zdate;";
-    $xC=array();$yC=array();
-    $results=$q->QUERY_SQL($sql);
-    while($ligne=@pg_fetch_assoc($results)){
-        $xC[]=json_encode($ligne["lbl"]);
-        $yC[]=$ligne["hits"];
-    }
-    $title24h=$tpl->javascript_parse_text("{threats} {last} 24h (10min)");
-
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-wave-square'></i>&nbsp; $title24h</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($xC)>0){
-        $h[]="<div style='position:relative;height:220px'><canvas id='chart-10min'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-10min'),{type:'line',";
-        $h[]="data:{labels:[".implode(",",$xC)."],datasets:[{label:'$threatsT',data:[".implode(",",$yC)."],";
-        $h[]="borderColor:'#1c84c6',backgroundColor:'rgba(28,132,198,0.10)',fill:true,tension:0.2,pointRadius:0,borderWidth:1.5}]},";
-        $h[]="options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},";
-        $h[]="scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{maxTicksLimit:24,font:{size:10}}}}}});";
-        $h[]="</script>";
-    }else{
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="</div></div>";
-
-    // ════════════════════════════════════════════════════════════════════════════
-    // ROW 3: Threats by day (bar chart) from modsec_counters_days
-    // ════════════════════════════════════════════════════════════════════════════
-    $sql="SELECT to_char(zdate,'MM-DD') AS lbl, hits FROM modsec_counters_days ORDER BY zdate;";
-    $xD=array();$yD=array();
-    $results=$q->QUERY_SQL($sql);
-    while($ligne=@pg_fetch_assoc($results)){
-        $xD[]=json_encode($ligne["lbl"]);
-        $yD[]=$ligne["hits"];
-    }
     $titleDays=$tpl->javascript_parse_text("{threats} {by_day}");
-
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-chart-bar'></i>&nbsp; $titleDays</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($xD)>0){
-        $h[]="<div style='position:relative;height:260px'><canvas id='chart-days'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-days'),{type:'bar',";
-        $h[]="data:{labels:[".implode(",",$xD)."],datasets:[{label:'$threatsT',data:[".implode(",",$yD)."],";
-        $h[]="backgroundColor:'rgba(26,179,148,0.7)',borderColor:'#1ab394',borderWidth:1}]},";
-        $h[]="options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},";
-        $h[]="scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{font:{size:11}}}}}});";
-        $h[]="</script>";
+    $days=waf_status_points($o,"by_day");
+    if(count($days)==0){
+        $h[]=waf_status_box($titleDays,"fas fa-chart-bar",waf_status_empty($tpl,$errors,"by_day"));
     }else{
-        $h[]=$tpl->div_info("{no_data}");
+        $labels=array();$data=array();
+        foreach($days as $p){$labels[]=strval($p["label"]);$data[]=intval($p["count"]);}
+        $ds="[{label:$threatsT,data:".json_encode($data).",backgroundColor:'rgba(26,179,148,0.7)',borderColor:'#1ab394',borderWidth:1}]";
+        $h[]=waf_status_box($titleDays,"fas fa-chart-bar",waf_status_chart("chart-days",260,"bar",$labels,$ds,
+            "{responsive:true,maintainAspectRatio:false,$noLegend,scales:{y:{beginAtZero:true,ticks:{precision:0}},x:{ticks:{font:{size:11}}}}}"));
     }
-    $h[]="</div></div>";
 
-    // ════════════════════════════════════════════════════════════════════════════
-    // ROW 4: 2-column — Severity doughnut + Top attack types bar
-    // ════════════════════════════════════════════════════════════════════════════
-    $h[]="<table style='width:100%'><tr>";
-
-    // -- Severity doughnut --
-    $sql="SELECT severity, COUNT(*) AS cnt FROM modsecurity_audit GROUP BY severity ORDER BY cnt DESC;";
-    $sevLabels=array();$sevData=array();$sevColors=array();
-    $SEV_MAP=array(0=>"None",1=>"Notice",2=>"Warning",3=>"Error",4=>"Critical",5=>"Emergency");
+    // Row 4: severity doughnut + top attack types
     $SEV_COLORS=array(0=>"#97c782",1=>"#1ab394",2=>"#f8ac59",3=>"#ed5565",4=>"#c23616",5=>"#470000");
-    $results=$q->QUERY_SQL($sql);
-    while($ligne=@pg_fetch_assoc($results)){
-        $sev=intval($ligne["severity"]);
-        $sevLabels[]=json_encode($SEV_MAP[$sev] ?? "Sev-$sev");
-        $sevData[]=$ligne["cnt"];
-        $sevColors[]="'".(isset($SEV_COLORS[$sev]) ? $SEV_COLORS[$sev] : "#676a6c")."'";
-    }
-    $titleSev=$tpl->javascript_parse_text("{severity}");
+    $sevColor=function($p) use ($SEV_COLORS){$k=intval($p["key"]);return isset($SEV_COLORS[$k]) ? $SEV_COLORS[$k] : "#676a6c";};
+    $h[]="<table style='width:100%'><tr><td style='width:40%;vertical-align:top'>";
+    $h[]=$pie("severity","chart-severity","doughnut",$tpl->javascript_parse_text("{severity}"),"fas fa-exclamation-triangle",$sevColor,"bottom");
+    $h[]="</td><td style='width:60%;vertical-align:top;padding-left:10px'>";
+    $h[]=$hbar("top_attacks","chart-attacks",$tpl->javascript_parse_text("{top} {threats}"),"fas fa-bug","#ed5565",32,"");
+    $h[]="</td></tr></table>";
 
-    $h[]="<td style='width:40%;vertical-align:top'>";
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-exclamation-triangle'></i>&nbsp; $titleSev</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($sevLabels)>0){
-        $h[]="<div style='position:relative;height:280px'><canvas id='chart-severity'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-severity'),{type:'doughnut',";
-        $h[]="data:{labels:[".implode(",",$sevLabels)."],datasets:[{data:[".implode(",",$sevData)."],";
-        $h[]="backgroundColor:[".implode(",",$sevColors)."],borderWidth:2}]},";
-        $h[]="options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{padding:8,boxWidth:12}}}}});";
-        $h[]="</script>";
-    }else{
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="</div></div>";
-    $h[]="</td>";
-
-    // -- Top attack types (horizontal bar) --
-    $sql="SELECT m.explain, COUNT(*) AS cnt FROM modsecurity_audit a
-    JOIN modsecurity_messages m ON a.msgid=m.id
-    WHERE m.explain<>'none' GROUP BY m.explain ORDER BY cnt DESC LIMIT 10;";
-    $atkLabels=array();$atkData=array();
-    $results=$q->QUERY_SQL($sql);
-    while($ligne=@pg_fetch_assoc($results)){
-        $label=$ligne["explain"];
-        if(strlen($label)>45){$label=substr($label,0,42)."...";}
-        $atkLabels[]=json_encode($label);
-        $atkData[]=$ligne["cnt"];
-    }
-    $titleAtk=$tpl->javascript_parse_text("{top} {threats}");
-    $atkHeight=max(280,count($atkData)*32);
-
-    $h[]="<td style='width:60%;vertical-align:top;padding-left:10px'>";
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-bug'></i>&nbsp; $titleAtk</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($atkLabels)>0){
-        $h[]="<div style='position:relative;height:{$atkHeight}px'><canvas id='chart-attacks'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-attacks'),{type:'bar',";
-        $h[]="data:{labels:[".implode(",",$atkLabels)."],datasets:[{label:'$threatsT',data:[".implode(",",$atkData)."],";
-        $h[]="backgroundColor:'#ed5565'}]},";
-        $h[]="options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,";
-        $h[]="plugins:{legend:{display:false}},";
-        $h[]="scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{ticks:{font:{size:11}}}}}});";
-        $h[]="</script>";
-    }else{
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="</div></div>";
-    $h[]="</td>";
-    $h[]="</tr></table>";
-
-    // ════════════════════════════════════════════════════════════════════════════
-    // ROW 5: 2-column — Top sites pie + Top IPs pie
-    // ════════════════════════════════════════════════════════════════════════════
+    // Row 5: top exposed websites + top source addresses
     $PIE_COLORS=array("#005447","#006455","#1ab394","#3fb88f","#5fbd8b","#7cc287","#97c782","#b0cc5d","#d4e297","#F6F9D1",
         "#1c84c6","#23c6c8","#f8ac59","#ed5565","#676a6c","#ab7df6","#e74c3c","#3498db","#2ecc71","#9b59b6");
+    $h[]="<table style='width:100%'><tr><td style='width:50%;vertical-align:top'>";
+    $h[]=$pie("top_sites","chart-sites","pie",$tpl->javascript_parse_text("{top_exposed_websites}"),"fas fa-globe",$PIE_COLORS,"right");
+    $h[]="</td><td style='width:50%;vertical-align:top;padding-left:10px'>";
+    $h[]=$pie("top_ips","chart-ips","pie",$tpl->javascript_parse_text("{top} {src}"),"fas fa-network-wired",array_merge(array_slice($PIE_COLORS,5),array_slice($PIE_COLORS,0,5)),"right");
+    $h[]="</td></tr></table>";
 
-    $h[]="<table style='width:100%'><tr>";
-
-    // -- Top exposed websites (pie) --
-    $sql="SELECT serviceid, COUNT(*) AS event_count FROM modsecurity_audit GROUP BY serviceid ORDER BY event_count DESC LIMIT 10;";
-    $siteLabels=array();$siteData=array();$siteColors=array();
-    $results=$q->QUERY_SQL($sql);
-    $i=0;
-    while($ligne=@pg_fetch_assoc($results)){
-        $servicename=get_servicename(intval($ligne["serviceid"]));
-        $siteLabels[]=json_encode($servicename);
-        $siteData[]=$ligne["event_count"];
-        $siteColors[]="'".$PIE_COLORS[$i % count($PIE_COLORS)]."'";
-        $i++;
-    }
-    $titleSites=$tpl->javascript_parse_text("{top_exposed_websites}");
-
-    $h[]="<td style='width:50%;vertical-align:top'>";
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-globe'></i>&nbsp; $titleSites</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($siteLabels)>0){
-        $h[]="<div style='position:relative;height:300px'><canvas id='chart-sites'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-sites'),{type:'pie',";
-        $h[]="data:{labels:[".implode(",",$siteLabels)."],datasets:[{data:[".implode(",",$siteData)."],";
-        $h[]="backgroundColor:[".implode(",",$siteColors)."],borderWidth:2}]},";
-        $h[]="options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{padding:6,boxWidth:12,font:{size:11}}}}}});";
-        $h[]="</script>";
-    }else{
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="</div></div>";
-    $h[]="</td>";
-
-    // -- Top source IPs (pie) --
-    $sql="SELECT ipaddr, COUNT(*) AS event_count FROM modsecurity_audit GROUP BY ipaddr ORDER BY event_count DESC LIMIT 10;";
-    $ipLabels=array();$ipData=array();$ipColors=array();
-    $results=$q->QUERY_SQL($sql);
-    $i=0;
-    while($ligne=@pg_fetch_assoc($results)){
-        $ipLabels[]=json_encode($ligne["ipaddr"]);
-        $ipData[]=$ligne["event_count"];
-        $ipColors[]="'".$PIE_COLORS[($i+5) % count($PIE_COLORS)]."'";
-        $i++;
-    }
-    $titleIps=$tpl->javascript_parse_text("{top} {src}");
-
-    $h[]="<td style='width:50%;vertical-align:top;padding-left:10px'>";
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-network-wired'></i>&nbsp; $titleIps</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($ipLabels)>0){
-        $h[]="<div style='position:relative;height:300px'><canvas id='chart-ips'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-ips'),{type:'pie',";
-        $h[]="data:{labels:[".implode(",",$ipLabels)."],datasets:[{data:[".implode(",",$ipData)."],";
-        $h[]="backgroundColor:[".implode(",",$ipColors)."],borderWidth:2}]},";
-        $h[]="options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{padding:6,boxWidth:12,font:{size:11}}}}}});";
-        $h[]="</script>";
-    }else{
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="</div></div>";
-    $h[]="</td>";
-    $h[]="</tr></table>";
-
-    // ════════════════════════════════════════════════════════════════════════════
-    // ROW 6: Top rule IDs (horizontal bar) — full width
-    // ════════════════════════════════════════════════════════════════════════════
-    $sql="SELECT ruleid, COUNT(*) AS cnt FROM modsecurity_audit GROUP BY ruleid ORDER BY cnt DESC LIMIT 15;";
-    $ruleLabels=array();$ruleData=array();
-    $results=$q->QUERY_SQL($sql);
-    while($ligne=@pg_fetch_assoc($results)){
-        $ruleLabels[]=json_encode("Rule ".$ligne["ruleid"]);
-        $ruleData[]=$ligne["cnt"];
-    }
-    $titleRules=$tpl->javascript_parse_text("{top} {rules}");
-    $ruleHeight=max(280,count($ruleData)*28);
-
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-list-ol'></i>&nbsp; $titleRules</h5></div>";
-    $h[]="<div class='ibox-content'>";
-    if(count($ruleLabels)>0){
-        $h[]="<div style='position:relative;height:{$ruleHeight}px'><canvas id='chart-rules'></canvas></div>";
-        $h[]="<script>";
-        $h[]="new Chart(document.getElementById('chart-rules'),{type:'bar',";
-        $h[]="data:{labels:[".implode(",",$ruleLabels)."],datasets:[{label:'$threatsT',data:[".implode(",",$ruleData)."],";
-        $h[]="backgroundColor:'#1c84c6'}]},";
-        $h[]="options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,";
-        $h[]="plugins:{legend:{display:false}},";
-        $h[]="scales:{x:{beginAtZero:true,ticks:{precision:0}},y:{ticks:{font:{size:11}}}}}});";
-        $h[]="</script>";
-    }else{
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="</div></div>";
+    // Row 6: top rule ids
+    $h[]=$hbar("top_rules","chart-rules",$tpl->javascript_parse_text("{top} {rules}"),"fas fa-list-ol","#1c84c6",28,"Rule ");
 
     $h[]="<script>NoSpinner();</script>";
     echo $tpl->_ENGINE_parse_body(implode("\n",$h));
     return true;
 }
 
-function get_servicename($ID):string{
-    $ID=intval($ID);
-    if($ID==0){return "Unknown";}
-    $sock=new socksngix($ID);
-    return $sock->GetServiceName();
+function count_protected_sites():int{
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/service_parameters/zkey/EnableModSecurity");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){return 0;}
+    $n=0;
+    foreach($data["rows"] as $r){
+        if(isset($r["zvalue"]) && trim(strval($r["zvalue"]))==="1"){$n++;}
+    }
+    return $n;
 }

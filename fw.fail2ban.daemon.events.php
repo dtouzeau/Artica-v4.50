@@ -120,9 +120,10 @@ function search(){
 			
 		}
 		
+		// Pentest 2026-11-04 : ligne de journal fail2ban (donnee externe) affichee sans encodage (XSS stockee).
 		if($FTime==null){
 			$html[]="<tr>
-			<td colspan=5>{$line}</span></td>
+			<td colspan=5>".req_html($line)."</span></td>
 			</tr>";
 			continue;
 		}
@@ -136,17 +137,17 @@ function search(){
 
 		
 		$html[]="<tr>
-				<td style='width:1%' nowrap><span class='label $state'>{$re[4]}</span></td>
-				<td style='width:1%' nowrap>$FTime</td>
-				<td style='width:1%' nowrap>$pid</td>
-				<td style='width:1%' nowrap>$service</td>
-				<td >$line</td>
+				<td style='width:1%' nowrap><span class='label $state'>".req_html($re[4])."</span></td>
+				<td style='width:1%' nowrap>".req_html($FTime)."</td>
+				<td style='width:1%' nowrap>".req_html($pid)."</td>
+				<td style='width:1%' nowrap>".req_html($service)."</td>
+				<td >".req_html($line)."</td>
 				</tr>";
 		
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/fail2ban.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/fail2ban.syslog.pattern"))."</i></div>";
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
 	
 	

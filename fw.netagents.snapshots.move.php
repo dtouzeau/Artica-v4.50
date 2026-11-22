@@ -9,7 +9,7 @@ if(isset($_GET["verbose"])){
 }
 
 $users=new usersMenus();
-if(!$users->AsSystemAdministrator){exit;}
+if(!meta_node_admin($users)){exit;}
 
 if(isset($_GET["move-js"])){move_js();exit;}
 
@@ -111,13 +111,13 @@ function move_form(){
     }
 
     $h[]="<div class='alert alert-warning' style='margin-top:10px'>";
-    $h[]="  <i class='fas fa-exclamation-triangle'></i> {snapshot_restore_warning}";
+    $h[]="  <i class='fas fa-exclamation-triangle'></i> {snapshot_restore_warning}<br>{snap_copy_keeps_original}";
     $h[]="</div>";
 
     $fnameJs=htmlspecialchars(json_encode($filename),ENT_QUOTES);
 
     $h[]="<button class='btn btn-primary' onclick=\"SnapshotMoveSubmit_$source_id()\">";
-    $h[]="  <i class='fas fa-share'></i> {move_to_agent}</button>";
+    $h[]="  <i class='fas fa-share'></i> {snap_copy_to_node}</button>";
 
     $h[]="<script>";
     $h[]="function SnapshotMoveSubmit_$source_id(){";

@@ -2,6 +2,8 @@
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $users=new usersMenus();
 if(!$users->AsDansGuardianAdministrator){
@@ -33,25 +35,29 @@ function page(){
 function search(){
     $tpl=new template_admin();
     $gpid=intval($_GET["gpid"]);
-    $search=$_GET["search"];
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid2.php?urlsdb-search=$search&gpid=$gpid");
-    $sfile="/usr/share/artica-postfix/ressources/logs/urlsdb.$gpid.log";
+    $search=(string)$_GET["search"];
+    // articarest squid/urlsdb_search.go: the list is read by the daemon and the
+    // search stays data (squid2.php?urlsdb-search pasted it into a root shell).
+    $resp=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/acls/urlsdb/$gpid/search?q=".rawurlencode($search)),true);
+    $urls=array();
+    if(is_array($resp) && !empty($resp["success"]) && isset($resp["data"]["urls"]) && is_array($resp["data"]["urls"])){
+        $urls=$resp["data"]["urls"];
+    }
     $t=time();
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize'>{urls}</th>";
+    $html[]="<th>{urls}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
-
-    $results=explode("\n",@file_get_contents($sfile));
+    $html[]="<tbody id='rulesitemsur-rows'>";
 
     $TRCLASS=null;
-    foreach ($results as $url){
-        $url=trim($url);
-        if($url==null){continue;}
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+    foreach ($urls as $url){
+        $url=trim((string)$url);
+        if($url===""){continue;}
+        // A list entry is data: escaped, and its braces kept away from the token engine.
+        $url=str_replace(array("{","}"),array("&#123;","&#125;"),htmlspecialchars($url,ENT_QUOTES));
         $html[]= "<tr class='$TRCLASS'>";
         $html[]= "<td><strong>$url</strong></td>";
         $html[]= "</tr>";
@@ -59,21 +65,15 @@ function search(){
 
 
     $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='1'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='rulesitemsur-pager'></span></div></div></div>";
     $html[]="
 	<script>
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"rulesitemsur-rows","rulesitemsur-pager");
 
 }

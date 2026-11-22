@@ -1,8 +1,14 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.external.ad.inc");
+// Kit de tables awc_* + barre de recherche. Inclusion INCONDITIONNELLE : dans le
+// bootstrap if(!class_exists("sockets")) elle ne s'executerait jamais, et la page
+// mourrait sur "Call to undefined function awc_table_style()" -- un spinner infini.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : field-id etait recopie sans encodage dans la page (XSS). C'est un id de DOM.
+if(isset($_GET["field-id"])){$_GET["field-id"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["field-id"]);}
 if(isset($_GET["content"])){content();exit;}
 if(isset($_GET["search"])){search();exit;}
 
@@ -20,21 +26,19 @@ function content(){
 	$t=time();
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-$html="	<div class=\"row\"> 
-		<div class='ibox-content'>
-		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["AD_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
-      		<span class=\"input-group-btn\">
-       		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
-      	</span>
-     </div>
-     <div id='search-$t'></div>
-    </div>
+// La barre est enveloppee dans .siem-pick : search_block_css() fixe
+	// ".sb-stitch .input-group{width:800px}", dimensionne pour une pleine page. Dans
+	// cette modale de 650px le bouton Go! sortirait du cadre. siem_pick_style() rend
+	// la largeur fluide, par une classe et non en elargissant la feuille partagee.
+	$html ="<div class='siem-pick'>";
+	$html.=awc_search_bar("search-this-$t");
+	$html.="</div>";
+	$html.="<div id='search-$t'></div>";
+	$html.="
 	<script>
-		function Search$t(e){
-			if(!checkEnter(e) ){return;}
-			ss$t();
-		}
+		document.getElementById('search-this-$t').value='".addslashes((string)($_SESSION["AD_SEARCH"] ?? ""))."';
+		document.getElementById('search-this-$t').onkeypress=function(e){ if(checkEnter(e)){ ss$t(); } };
+		document.getElementById('search-this-$t-go').onclick=function(){ ss$t(); };
 		
 		function ss$t(){
 			var ss=encodeURIComponent(document.getElementById('search-this-$t').value);
@@ -50,8 +54,8 @@ $html="	<div class=\"row\">
     
     
     ";
-	echo $tpl->_ENGINE_parse_body($html);
-	
+	echo siem_pick_style().$tpl->_ENGINE_parse_body($html);
+
 }
 function search(){
 	$search="*{$_GET["search"]}*";
@@ -64,21 +68,21 @@ function search(){
 
 
 	$t=time();
-	$html[]="<table id='proxy-ad-groups-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{groupname}</th>";
-	$html[]="<th data-sortable=false>&nbsp;</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'>";
+	$html[]="<thead><tr>";
+	$html[]="<th>{groupname}</th>";
+	$html[]="<th style='text-align:right'>{select}</th>";
+	$html[]="</tr></thead>";
+	// L'id du <tbody> ancre awc_pager_js() : sans lui le pager rend vide et toutes
+	// les lignes s'affichent d'un bloc, sans que rien ne le signale.
+	$html[]="<tbody id='llg-rows-$t'>";
 	$TRCLASS=null;
 	$c=0;
 
 	$Max=$array["count"];
 
 	for($i=0;$i<$Max;$i++){
-	    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$c++;
 	    $main=$array[$i];
         $memberuids=$main["memberuid"]["count"];
@@ -88,30 +92,34 @@ function search(){
 	    $gidnumber=$main["gidnumber"][0];
 
 		$zmd5=md5(serialize($main));
-        $html[]="<tr class='$TRCLASS' id='tr-$zmd5'>";
-		
-		$select=$tpl->icon_select("SelectThis$t('$gidnumber')");
-		if($description<>null){$description="<br><small>$description</small>";}
-		$html[]="<td><span style='font-weight:bold'>$groupname ($memberuids {members})</span>$description</td>";
-		$html[]="<td class=center><center>$select</center></td>";
-		$html[]="</tr>";
+        $select=$tpl->icon_select("SelectThis$t('$gidnumber')");
+		$meta="$memberuids {members}";
+		if($description<>null){$meta=$meta." &middot; ".htmlspecialchars($description);}
+		$h ="<tr id='tr-$zmd5'>";
+		$h.="<td><div class='awc-ident'>";
+		$h.="<span class='awc-ico'><i class='fas fa-users'></i></span>";
+		$h.="<span><span class='awc-name'>".htmlspecialchars((string)$groupname)."</span>";
+		$h.="<div class='awc-meta'>$meta</div>";
+		$h.="</span></div></td>";
+		$h.="<td><div class='awc-acts'>$select</div></td>";
+		$h.="</tr>";
+		$html[]=$h;
 		
 		
 	}
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='2'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	if($c==0){
+		$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>$c {groups2}</span>";
+	$html[]="<span class='awc-pg' id='llg-pager-$t'></span></div>";
+	$html[]="</div></div>";
+	// ICON_SCRIPTS_COMPILE() et non $tpl->ICON_SCRIPTS : la propriete d'instance se
+	// perd des qu'une ligne est batie par une autre instance, et l'icone repondrait
+	// alors a aucun clic, sans la moindre erreur PHP.
 	$html[]="
 	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#proxy-ad-groups-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });	
+	NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."
 	
 	function SelectThis$t(name){
 		if(!document.getElementById('$field_user') ){
@@ -126,6 +134,8 @@ function search(){
 	
 	</script>";
 	
-	echo $tpl->_ENGINE_parse_body($html);
-	
+	// Feuille et pager concatenes AUTOUR du parsing : la regex #{(.+?)}# de
+	// _ENGINE_parse_body lit chaque corps de regle CSS et chaque bloc JS comme un jeton.
+	echo awc_table_style().$tpl->_ENGINE_parse_body($html).awc_pager_js(25,"llg-rows-$t","llg-pager-$t");
+
 }

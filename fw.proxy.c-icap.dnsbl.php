@@ -1,10 +1,23 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : eth/dnsbl etaient recopies sans encodage dans la page (XSS) ; dnsbl est un nom de zone DNS.
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
+if(isset($_GET["dnsbl"])){$_GET["dnsbl"]=preg_replace('/[^A-Za-z0-9_.-]/','',(string)$_GET["dnsbl"]);}
 if(isset($_GET["dnsbl"])){dnsbl_js();exit;}
 if(isset($_POST["dnsbl"])){dnsbl_save();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["dnsbl-delete-js"])){dnsbl_delete_js();exit;}
 if(isset($_GET["enable-dnsbl"])){dnsbl_enable_js();exit;}
 if(isset($_POST["dnbsl-delete"])){dnsbl_delete();exit;}
@@ -33,7 +46,8 @@ function dnsbl_delete_js(){
 function dnsbl_delete(){
 	$ID=$_POST["dnbsl-delete"];
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	$q->QUERY_SQL("DELETE FROM webfilter_dnsbl WHERE dnsbl='$ID'");
+	// Pentest 2026-11-04 : dnbsl-delete etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM webfilter_dnsbl WHERE dnsbl=?",array((string)$ID));
 }
 
 function popup(){
@@ -41,7 +55,9 @@ function popup(){
 	$tpl=new template_admin();
 	$ID=$_GET["popup"];
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM webfilter_dnsbl WHERE dnsbl='$ID'");
+	// Pentest 2026-11-04 : popup etait concatene dans la requete.
+	$r=$q->QUERY_SQL_PARAMS("SELECT * FROM webfilter_dnsbl WHERE dnsbl=?",array((string)$ID));
+	$ligne=isset($r[0]) ? $r[0] : array();
 	$btn="{add}";
 	$jsafter="dialogInstance1.close();LoadAjax('table-ksrn-dnsbl','$page?table=yes');";
 	if($ID<>null){
@@ -58,15 +74,17 @@ function popup(){
 function dnsbl_enable_js(){
 	$dnsbl=$_GET["enable-dnsbl"];
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM webfilter_dnsbl WHERE dnsbl='$dnsbl'");
+	// Pentest 2026-11-04 : enable-dnsbl etait concatene dans la requete.
+	$r=$q->QUERY_SQL_PARAMS("SELECT enabled FROM webfilter_dnsbl WHERE dnsbl=?",array((string)$dnsbl));
+	$ligne=isset($r[0]) ? $r[0] : array();
 	$enabled=intval($ligne["enabled"]);
 	if($enabled==1){
-		$sql="UPDATE webfilter_dnsbl SET enabled=0 WHERE dnsbl='$dnsbl';";
-		$q->QUERY_SQL($sql);
+		$sql="UPDATE webfilter_dnsbl SET enabled=0 WHERE dnsbl=?;";
+		$q->QUERY_SQL_PARAMS($sql,array((string)$dnsbl));
 		if(!$q->ok){echo $q->mysql_error;}
 	}else{
-		$sql="UPDATE webfilter_dnsbl SET enabled=1 WHERE dnsbl='$dnsbl';";
-		$q->QUERY_SQL($sql);
+		$sql="UPDATE webfilter_dnsbl SET enabled=1 WHERE dnsbl=?;";
+		$q->QUERY_SQL_PARAMS($sql,array((string)$dnsbl));
 		if(!$q->ok){echo $q->mysql_error;}	
 	}
 }
@@ -80,9 +98,10 @@ function dnsbl_save(){
 	$q=new lib_sqlite("/home/artica/SQLITE/webfilter.db");
 	$date=date("Y-m-d H:i:s");
 
-	$q->QUERY_SQL("DELETE FROM webfilter_dnsbl WHERE dnsbl='$ID'");
-    $sql="INSERT INTO webfilter_dnsbl (dnsbl,name,uri,enabled,tokens) VALUES ('{$_POST["dnsbl"]}','$uid: $date: {$_POST["name"]}','{$_POST["uri"]}','1','{$_POST["tokens"]}')";
-    $q->QUERY_SQL($sql);
+	// Pentest 2026-11-04 : dnsbl, name, uri et tokens etaient concatenes dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM webfilter_dnsbl WHERE dnsbl=?",array((string)$ID));
+    $sql="INSERT INTO webfilter_dnsbl (dnsbl,name,uri,enabled,tokens) VALUES (?,?,?,'1',?)";
+    $q->QUERY_SQL_PARAMS($sql,array((string)$_POST["dnsbl"],"$uid: $date: {$_POST["name"]}",(string)$_POST["uri"],(string)$_POST["tokens"]));
 	if(!$q->ok){echo $q->mysql_error;}
 
 	
@@ -146,7 +165,7 @@ function reconfigure():string{
     $ARRAY["AFTER"]="LoadAjax('table-ksrn-dnsbl','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
     header("content-type: application/x-javascript");
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-ksrn-dnsbl-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ksrn-dnsbl-restart')";
 }
 function jscache(){
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/ksrn.progress";
@@ -155,7 +174,7 @@ function jscache(){
     $ARRAY["TITLE"]="{clean_cache}";
     $prgress=base64_encode(serialize($ARRAY));
     header("content-type: application/x-javascript");
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-ksrn-dnsbl-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-ksrn-dnsbl-restart')";
 }
 
 function table(){
@@ -217,16 +236,17 @@ function table(){
                 <i class='fa fa-trash'></i> {clean_cache} </label>";
 
 	$html[]="</div>";
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
-	$html[]="<th data-sortable=true data-type='text'>{dnsbl_service}</th>";
-	$html[]="<th data-sortable=true data-type='text'>{description}</th>";
-	$html[]="<th data-sortable=true data-type='text'>{enabled}</th>";
-	$html[]="<th data-sortable=false>{delete}</th>";
+	$html[]="<th>{dnsbl_service}</th>";
+	$html[]="<th>{description}</th>";
+	$html[]="<th>{enabled}</th>";
+	$html[]="<th>{delete}</th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='cicapdnsbl-rows'>";
 	
 	$jsAfter="LoadAjax('table-loader-webhttp-rules','$page?table=yes&eth={$_GET["eth"]}');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
@@ -239,7 +259,7 @@ function table(){
 	
 	
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$zmd5=md5(serialize($ligne));
 		$dnsbl=$ligne["dnsbl"];
         $name=$ligne["name"];
@@ -270,23 +290,18 @@ function table(){
 		
 	}
 	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='cicapdnsbl-pager'></span></div>";
+	$html[]="</div></div>";
 	$html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"cicapdnsbl-rows","cicapdnsbl-pager");
 }
 
 function checkDNSBLTables(){

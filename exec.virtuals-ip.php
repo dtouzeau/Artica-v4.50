@@ -1,5 +1,6 @@
 #!/usr/bin/php
 <?php
+// stamp 01/11/2026
 $GLOBALS["WIZARD"] = false;
 if (preg_match("#--verbose#", implode(" ", $argv))) {
     $GLOBALS["VERBOSE"] = true;
@@ -73,6 +74,14 @@ if ($DisableNetworking == 1) {
 
 
 if (isset($argv[1])) {
+    // --ucarp-start / --ucarp-stop : seul appelant, le script SysV hérité
+    // /etc/init.d/artica-failover (plus aucun générateur ; le daemon le retire,
+    // ArticaIfUP.RemoveLegacyFailover). Ces arguments n'ont jamais été traités :
+    // ils tombaient dans build() à chaque boot et à chaque arrêt.
+    if ($argv[1] == "--ucarp-start" || $argv[1] == "--ucarp-stop") {
+        echo "Starting......: " . date("H:i:s") . " {$argv[1]}: legacy artica-failover call, nothing to do\n";
+        exit(0);
+    }
 
 
     if ($argv[1] == "--just-add") {
@@ -200,20 +209,6 @@ function wizard_progress($perc, $text)
 
     $unix->events("$perc} $text", "/var/log/artica-wizard.log", $sourcefunction, $sourceline, $sourcefile);
 
-}function ScriptInfo($line,$ASSYSTEMD):string{
-
-    $line = str_replace("\n", "", $line);
-    $line = str_replace("\r", "", $line);
-    $line = str_replace("\r\n", "", $line);
-    if($ASSYSTEMD){
-        $NewLine=$line;
-        $NewLine=str_replace('"', "'", $NewLine);
-        $NewLine=str_replace('#', "", $NewLine);
-        $NewLine="echo \"$NewLine\" | systemd-cat -t artica-ifup";
-        return $NewLine."\n".$line;
-    }
-    return $line;
-
 }
 function build_progress_watchdog($text, $pourc){
     wizard_progress($pourc, $text);
@@ -313,68 +308,21 @@ function event($text, $function = null, $line = null)
     events($text, $function, $line);
 }
 
-function uninstall_network():bool{
-    if(!is_file("/etc/init.d/artica-ifup")){
-        return true;
-    }
-    $unix=new unix();
-    return $unix->remove_service("/etc/init.d/artica-ifup");
-}
-function ExecSystemd($cmdline,$AsSystemd=false):string{
-    $logfile = "/var/log/net-start.log";
-
-    if(!$AsSystemd){
-        if(strpos($cmdline,">>")==0){
-            $cmdline="$cmdline >> $logfile || true";
-        }
-        return $cmdline;
-    }
-    
-    $cmdlineTR=str_replace('"',"'",$cmdline);
-    $f[]="echo \"Running $cmdlineTR\" | systemd-cat -t artica-ifup";
-    $f[]="$cmdline | systemd-cat -t artica-ifup || true";
-    return @implode("\n",$f);
-}
-function ScriptEcho($echobin,$line,$ASSYSTEMD):string{
-    if($ASSYSTEMD){
-        $sh[]="$echobin \"$line\" | systemd-cat -t artica-ifup 2>&1";
-        $sh[] = "$line 2>&1 | systemd-cat -t artica-ifup || true";
-        return @implode("\n",$sh);
-    }
-    $logfile = "/var/log/net-start.log";
-    $sh[]="$echobin \"$line\" >>$logfile 2>&1 || true";
-    $sh[] = "$line >>$logfile 2>&1 || true";
-    return @implode("\n",$sh);
-}
-function ScriptOut($echobin,$text,$ASSYSTEMD,$line=0):string{
-    if($ASSYSTEMD){
-        return "$echobin \"[$line]: $text\" | systemd-cat -t artica-ifup 2>&1";
-    }
-    return "$echobin \"$text\" || true";
-}
 function build(){
+    // /etc/init.d/artica-ifup n'est plus écrit ici. Son seul propriétaire est le
+    // daemon (ArticaIfUP.Install, unité systemd native + script SysV homonyme).
+    // Ce build() réécrivait un script v1 (Default-Start: S) puis relançait
+    // update-rc.d remove/defaults : les liens rc ne couvraient plus les niveaux
+    // 3 4 5 du script Go, `systemctl enable artica-ifup` échouait
+    // (« no runlevel symlinks to modify ») avant de poser le lien
+    // multi-user.target.wants, et l'unité ne démarrait plus au boot : aucune
+    // adresse IPv4 avant le repli de ChecksRoutes (30 s à 2 min).
+    // Le script v1 n'était de toute façon jamais exécuté : l'unité native le masque.
     $unix = new unix();
-    $q = new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-    $GLOBALS["SCRIPTS"]=array();
-    $sock = new sockets();
-    $DisableNetworking=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableNetworking"));
-
-    if($DisableNetworking==1){
-        uninstall_network();
-    }
-    $ASSYSTEMD=false;
-    $systemdCat=$unix->find_program("systemd-cat");
-    if(is_file($systemdCat)){
-        if(is_dir("/run/systemd/journal")) {
-            $ASSYSTEMD = true;
-        }
-    }
-    $logfile = "/var/log/net-start.log";
     $pidfile = "/etc/artica-postfix/pids/" . basename(__FILE__) . ".pid";
     $pid = @file_get_contents($pidfile);
 
     $GLOBALS["ipbin"] = $unix->find_program("ip");
-    $GLOBALS["SCRIPTS_DOWN"] = array();
 
     if ($GLOBALS["FIRST_TIME"]) {
         if (is_file("/etc/artica-postfix/settings/Daemons/NetworksConfiguredFirstTime")) {
@@ -387,266 +335,26 @@ function build(){
         echo @file_get_contents("/proc/$pid/cmdline") . "\n";
         echo "*******************************************************************************\n";
     }
-    $echobin = $unix->find_program("echo");
-    $logger = $unix->find_program("logger");
     $cacheFile = "/etc/artica-postfix/Interfaces.gob";
-	$BondCachefile = "/etc/artica-postfix/bonds.gob";
+    $BondCachefile = "/etc/artica-postfix/bonds.gob";
 
     @unlink($cacheFile);
     @unlink($BondCachefile);
-    $GLOBALS["SCRIPTS_TOP"]=array();
-    $GLOBALS["SAVED_INTERFACES"] = array();
     @file_put_contents($pidfile, getmypid());
     build_progress(40, "{checking} bridges");
     $prc=40;
-    $sh = array();
-    $sh[] = "#!/bin/sh -e";
-    $sh[] = "### BEGIN INIT INFO";
-    $sh[] = "# Provides:          artica-ifup";
-    $sh[] = "# Required-Start:    \$local_fs";
-    $sh[] = "# Required-Stop:     \$local_fs";
-    $sh[] = "# Should-Start:		";
-    $sh[] = "# Should-Stop:		";
-    $sh[] = "# Default-Start:     S";
-    $sh[] = "# Default-Stop:      0 6";
-    $sh[] = "# Short-Description: start and stop the network";
-    $sh[] = "# Description:       Artica ifup service Raise network interfaces";
-    $sh[] = "### END INIT INFO";
-    $sh[] = "case \"\$1\" in";
-    $sh[] = "start)";
     $prc++;build_progress($prc,"{building} ".__LINE__);
     system("/usr/sbin/artica-phpfpm-service -build-dhcp-interfaces");
     $prc++;build_progress($prc,"{building} ".__LINE__);
     system("/usr/sbin/artica-phpfpm-service -optimize-os");
-    $prc++;build_progress($prc,"{building} ".__LINE__);
-    $sh[] = "$logger -i -t network \"Artica network Script executed (start)\" || true";
-    $sh[] = "$echobin \"  **** Apply Network configuration, please wait... ****\"";
-    $sh[] = "$echobin \"  **** Apply modprobes... ****\"";
-    $sh[] = "if [ -f /usr/sbin/artica-net-startup.sh ]; then";
-    $sh[] = "\t/usr/sbin/artica-net-startup.sh";
-    $sh[] = "fi";
-    $sh[] = "$echobin \"  **** Apply DHCP interfaces... ****\"";
-    $sh[] = "/usr/sbin/artica-phpfpm-service -start-dhcp-client || true";
-    $sh[] = "$echobin \"  **** Apply Physical interfaces... ****\"";
-    $sh[] = "/usr/sbin/artica-phpfpm-service -physical-interfaces || true";
-    $sh[] = "$echobin \"  **** Apply Flush routes... ****\"";
-    $sh[] = "/usr/sbin/artica-phpfpm-service -flush-ip-rules || true";
-    $sh[] = "$echobin \"  **** Apply Build routes... ****\"";
-    $sh[] = "/usr/sbin/artica-phpfpm-service -build-routes || true";
     build_progress(76, "{checking} WIFI...");
-    $prc=Check_wifi_cards();
+    Check_wifi_cards();
     shell_exec("/usr/sbin/artica-phpfpm-service -network-systemd");
-    $sh[] = "$echobin \"\" > /var/log/net-start.log";
-    $sh[] = "$echobin \"  **** Apply Network configuration, please wait... ****\"";
-
-
-    $prc++;build_progress($prc,"{building} ".__LINE__);
-
-    foreach ($GLOBALS["SCRIPTS_TOP"] as $line) {
-        $line = trim($line);
-        if ($line == null) {
-            continue;
-        }
-
-        if (preg_match("#^(if|fi)\s+#", $line)) {
-            $sh[] = "$line";
-            continue;
-        }
-
-        if (preg_match("#^(if|fi|while)\s+#", $line)) {
-            $sh[] = "$line";
-            continue;
-        }
-
-        if (substr($line, 0, 1) == "#") {
-            $sh[] = ScriptInfo($line,$ASSYSTEMD);
-            continue;
-        }
-        $md = md5($line);
-
-        if (isset($AL[$md])) {
-            echo "Starting......: " . date("H:i:s") . " SKIPING `$line`\n";
-            continue;
-        }
-        $AL[$md] = true;
-        echo "Starting......: " . date("H:i:s") . " `$line`\n";
-
-        if (strpos($line, "/etc/hosts") > 0) {
-            $sh[] = "$line";
-            continue;
-        }
-
-
-        if (preg_match("#\/echo\s+#", $line)) {
-            $sh[] = "$line";
-            continue;
-        }
-
-        if (preg_match("#^[A-Z]+=#", $line)) {
-            $sh[] = "$echobin \"SET variable [$line]\" >>$logfile 2>&1";
-            $sh[] = "$line";
-            continue;
-        }
-
-        if (preg_match("#ifconfig\s+(.+?)\s+(.+?)netmask(.+?)\s+#", $line, $re)) {
-            $sh[] = ScriptOut($echobin,"adding $re[2]/$re[3] in $re[1] interface",$ASSYSTEMD);
-        }
-        $sh[] =ScriptEcho($echobin,$line,$ASSYSTEMD);
-
-
-    }
-    foreach ($GLOBALS["SCRIPTS"] as $line) {
-        $line = trim($line);
-        if ($line == null) {
-            continue;
-        }
-        if (substr($line, 0, 1) == "#") {
-            $sh[] = ScriptInfo($line,$ASSYSTEMD);
-            continue;
-        }
-
-        if (preg_match("#^(if|fi)\s+#", $line)) {
-            $sh[] = "$line";
-            continue;
-        }
-
-        if (preg_match("#^OUTPUT\s+(.+)#", $line, $re)) {
-            $re[1] = str_replace('"', "'", $re[1]);
-            $sh[] = "$echobin \"$re[1]\"";
-            continue;
-        }
-
-        $md = md5($line);
-        if (isset($AL[$md])) {
-            echo "Starting......: " . date("H:i:s") . " SKIPING `$line`\n";
-            continue;
-        }
-        if (preg_match("#\/echo\s+#", $line)) {
-            $sh[] = "$line";
-            continue;
-        }
-
-
-        if (preg_match("#^[A-Z]+=#", trim($line))) {
-            $sh[] = "$echobin \"SET variable [$line]\" >>$logfile 2>&1";
-            $sh[] = "$line";
-            continue;
-        }
-
-        $AL[$md] = true;
-        echo "Starting......: " . date("H:i:s") . " `$line`\n";
-
-        if (strpos($line, "/etc/hosts") > 0) {
-            $sh[] = "$line";
-            continue;
-        }
-
-
-        if (preg_match("#ifconfig\s+(.+?)\s+(.+?)netmask(.+?)\s+#", $line, $re)) {
-            $sh[] = ScriptOut($echobin,"adding $re[2]/$re[3] in $re[1] interface",$ASSYSTEMD,__LINE__);
-
-
-        }
-
-        if (strpos('echo "', $line) == 0) {
-            $sh[] = ScriptOut($echobin,$line,$ASSYSTEMD,__LINE__);
-        }
-        $sh[] = ExecSystemd($line,$ASSYSTEMD);
-    }
-    $cmdlines = unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EthtoolsCommands"));
-    if (is_array($cmdlines)) {
-        if (count($cmdlines) > 0) {
-            $sh[] = "";
-            $sh[] = "# [" . __LINE__ . "]";
-            $sh[] = "# [" . __LINE__ . "] *******************************";
-            $sh[] = "# [" . __LINE__ . "] ****     ETH TOOLS    ****";
-            $sh[] = "# [" . __LINE__ . "] *******************************";
-            $sh[] = "# [" . __LINE__ . "] See /etc/artica-postfix/settings/Daemons/EthtoolsCommands";
-            $sh[] = "# [" . __LINE__ . "]";
-            foreach ($cmdlines as $line) {
-                $sh[] = "$line >>$logfile 2>&1 || true";
-            }
-        }
-    }
-
-
-
-    $GLOBALS["START_ROUTES"][] = "$echobin \"Apply network routes, please wait...\"";
-    $GLOBALS["START_ROUTES"][] = "# [" . __LINE__ . "]";
-    $GLOBALS["START_ROUTES"][] = "# [" . __LINE__ . "] *******************************";
-    $GLOBALS["START_ROUTES"][] = "# [" . __LINE__ . "] ****     NETWORK ROUTES    ****";
-    $GLOBALS["START_ROUTES"][] = "# [" . __LINE__ . "] *******************************";
-    $GLOBALS["START_ROUTES"][] = "# [" . __LINE__ . "]";
-
-    $unix = new unix();
-    $echo = $unix->find_program("echo");
-    $nohup = $unix->find_program("nohup");
-    $php = $unix->LOCATE_PHP5_BIN();
-    $prc++;build_progress($prc,"{building} ".__LINE__);
-
-    $sh[]="$nohup /usr/sbin/artica-phpfpm-service -restart-network-services >/dev/null 2>&1 &";
-    $sh[] = nics_vde_build();
-    $EnableLinkBalancer = intval($sock->GET_INFO("EnableLinkBalancer"));
-
-    if ($EnableLinkBalancer == 1) {
-        if (!is_dir("/etc/firehol")) {
-            @mkdir("/etc/firehol", 0755, true);
-        }
-        system("$php /usr/share/artica-postfix/exec.firehol.php --configure-lb");
-        $linkbalancerbin = $unix->find_program("link-balancer");
-        $sh[] = "# [" . __LINE__ . "] Running Link-balancer";
-        $sh[] = "if [ -x /etc/firehol/link-balancer.conf ] ; then";
-        $sh[] = "\t$linkbalancerbin ||true";
-        $sh[] = "fi";
-    }
-    $prc++;build_progress($prc,"{building} ".__LINE__);
-    $logger = $unix->find_program("logger");
-    $sh[] = "$echo \"  ****      Apply Network configuration, done      ****\"";
-    $sh[] = "$logger -i -t network \"Artica network Script terminated\" || true";
-    $sh[] = ";;";
-    $sh[] = "  stop)";
-    $sh[] = "$logger -i -t network \"* * * * * * * * * * * * * * SUSPECTED STOPPED SERVER !!! * * * * * * * * * * * * * *\" || true";
-    $sh[] = "$logger -i -t network \"Artica network Script executed (stop)\" || true";
-    if (is_array($GLOBALS["SCRIPTS_DOWN"])) {
-        foreach ($GLOBALS["SCRIPTS_DOWN"] as $line) {
-            if (substr($line, 0, 1) == "#") {
-                $sh[] = ScriptInfo($line,$ASSYSTEMD);
-                continue;
-            }
-            $sh[] = "$line >>/var/log/net-stop.log 2>&1 || true";
-
-        }
-    }
-
-
-    $php = $unix->LOCATE_PHP5_BIN();
-    $sh[] = ";;";
-    $sh[] = "reconfigure)";
-    $sh[] = "$logger -i -t network \"Artica network Script Executed (reconfigure)\" || true";
-    $sh[] = "$php " . __FILE__ . " --build --force $2 $3";
-    $sh[] = "/usr/sbin/artica-phpfpm-service -restart-network";
-    $sh[] = ";;";
-    $sh[] = "routes)";
-    $sh[] = "$echobin \"Routes applied to the system\"";
-    $sh[] = "/usr/sbin/artica-phpfpm-service -reconfigure-firewall >> /var/log/net-start.log 2>&1";
-    $sh[] = ";;";
-    $sh[] = "*)";
-    $sh[] = "$logger -i -t network \"Artica network Script executed (unknown)\" || true";
-    $sh[] = " echo \"Usage: $0 {start or reconfigure only}\"";
-    $sh[] = "exit 1";
-    $sh[] = ";;";
-    $sh[] = "esac";
-    $sh[] = "exit 0\n";
 
     if (!is_file("/etc/artica-postfix/settings/Daemons/NetworksConfiguredFirstTime")) {
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NetworksConfiguredFirstTime", time());
     }
-    echo " * * * * /etc/init.d/artica-ifup DONE * * * *\n";
-    @file_put_contents("/etc/init.d/artica-ifup", @implode("\n", $sh));
-    @chmod("/etc/init.d/artica-ifup", 0755);
     if (is_file('/usr/sbin/update-rc.d')) {
-        shell_exec("/usr/sbin/update-rc.d -f artica-ifup defaults >/dev/null 2>&1");
-
         if (is_file('/etc/init.d/networking')) {
             shell_exec("/usr/sbin/update-rc.d -f networking disable  >/dev/null 2>&1");
             @copy("/etc/init.d/networking", "/etc/init.d/networking.back");
@@ -654,25 +362,9 @@ function build(){
         }
     }
 
-    if (is_file('/sbin/chkconfig')) {
-        shell_exec("/sbin/chkconfig --add artica-ifup >/dev/null 2>&1");
-        shell_exec("/sbin/chkconfig --level 1234 artica-ifup on >/dev/null 2>&1");
-    }
-    shell_exec("/usr/sbin/update-rc.d -f artica-ifup remove >/dev/null 2>&1");
-    shell_exec("/usr/sbin/update-rc.d -f artica-ifup defaults >/dev/null 2>&1");
-
     if (is_file("/bin/iptables-iproute2.sh")) {
         @unlink("/bin/iptables-iproute2.sh");
     }
-
-    if (isset($GLOBALS["SCRIPTS_IPTABLES"])) {
-        $sh_iptables[] = "#!/bin/sh -e";
-        $sh_iptables[] = @implode("\n", $GLOBALS["SCRIPTS_IPTABLES"]);
-        $sh_iptables[] = "";
-        @file_put_contents("/bin/iptables-iproute2.sh", @implode("\n", $sh_iptables));
-        @chmod("/bin/iptables-iproute2.sh", 0755);
-    }
-
 
     $inter[] = "# This file describes the network interfaces available on your system";
     $inter[] = "## and how to activate them. For more information, see interfaces(5).";
@@ -685,12 +377,8 @@ function build(){
     if (is_file("/etc/network/interfaces")) {
         @file_put_contents("/etc/network/interfaces", @implode("\n", $inter));
     }
-    squid_admin_mysql(2, "Network script was successfully rebuilded", null, __FILE__, __LINE__);
+    squid_admin_mysql(2, "Network configuration was successfully refreshed", null, __FILE__, __LINE__);
     echo "Starting......: " . date("H:i:s") . " done...\n";
-    $CRC32_INTERFACES_DB=crc32_file("/home/artica/SQLITE/interfaces.db");
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("CRC32_INTERFACES_DB",$CRC32_INTERFACES_DB);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("CRC32_INTERFACES_CURRENT",$CRC32_INTERFACES_DB);
-    $prc++;
     build_progress(100,"{configuring} {done}");
 }
 
@@ -711,32 +399,6 @@ function ifconfig_tests()
 
 }
 
-function nics_vde_build()
-{
-    $unix = new unix();
-    if($unix->ServerRunSince());
-    $virtualports = $unix->DirFiles("/etc/init.d", "virtualport-[0-9]+");
-
-    $sh[] = "# [" . __LINE__ . "]";
-    $sh[] = "# [" . __LINE__ . "]";
-    $sh[] = "# [" . __LINE__ . "] ************************************************";
-    $sh[] = "# [" . __LINE__ . "] Virtual Network interfaces via virtual SWITCH";
-    $sh[] = "# [" . __LINE__ . "] ************************************************";
-    $sh[] = "";
-
-    $c = 0;
-    foreach ($virtualports as $numFile => $xfile) {
-        $c++;
-        $sh[] = "/etc/init.d/$numFile restart || true";
-    }
-    $sh[] = "";
-    $sh[] = "";
-
-    if ($c == 0) {
-        return null;
-    }
-    return @implode("\n", $sh);
-}
 
 
 

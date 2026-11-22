@@ -1,4 +1,6 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__).'/ressources/class.templates.inc');
 include_once('ressources/class.users.menus.inc');
 include_once('ressources/class.firecracker.inc');
@@ -59,6 +61,7 @@ function convert_js():bool{
     return $tpl->js_dialog3("{convert}","$page?convert-popup=$data&mainfunc=$mainfunc");
 }
 function convert_popup():bool{
+    if(!fw_progress_page_priv("AsSystemAdministrator|AsDockerAdmin")){return false;}   // task link signed for this session: built only for whom may run it
     $mainfunc=$_GET["mainfunc"];
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -90,6 +93,7 @@ function registries_popup():bool{
     return true;
 }
 function registries_search():bool{
+    if(!fw_progress_page_priv("AsSystemAdministrator|AsDockerAdmin")){return false;}   // task link signed for this session: built only for whom may run it
 
     $mainfunc=$_GET["mainfunc"];
     $tpl=new template_admin();
@@ -214,7 +218,7 @@ function registries_search_old():bool{
 function delete_image_perform():bool{
     $fname=$_POST["delete-image"];
     $sock=new sockets();
-    $data=json_decode($sock->REST_API("/firecracker/image/delete/$fname"));
+    $data=json_decode($sock->REST_API_FIRECR("/firecracker/image/delete/$fname"));
     if(!$data->Status){
         echo $data->Error;
         return false;
@@ -222,10 +226,12 @@ function delete_image_perform():bool{
     return admin_tracks("Deleting MicroVM Image $fname");
 }
 function install(){
+    if(!fw_progress_page_priv("AsSystemAdministrator|AsDockerAdmin")){return false;}   // task link signed for this session: built only for whom may run it
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $fname=$_GET["install"];
-    echo $tpl->framework_buildjs("/firecracker/image/download/$fname",
+    $fname=fw_progress_seg($_GET["install"] ?? "");   // closed list: the firecracker daemon is not in this tree, its use of the name cannot be checked
+    if($fname===""){return fw_progress_bad_value("install");}
+    echo $tpl->framework_buildjs("firecrack:/firecracker/image/download/$fname",
     "firecracker.images.download","firecracker.images.log",
         "progress-firecracker-images","LoadAjax('table-firecracker-images','$page?table=yes');");
 }

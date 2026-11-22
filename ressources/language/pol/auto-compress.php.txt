@@ -1,10 +1,9 @@
-<addextension_help>
-You can one extension byt typing just the extension name after the dot eg "doc" or
-you can add multiple extensions by separate extension name by a comma eg "doc,xls,pdf,exe,com,vbs"</addextension_help>
-<Auto-compress_explain>auto-compress feature allow you to automatically convert and compress attached files in outgoing/incoming mails.[br]
-This feature have 2 benefits :[ul]
-[li]Prevent malicious executables codes running automatically when your users read mails or save attachments.[/li]
-[li]Save bandwith by compressing attached documents.[/li]
+<addextension_help>Mo&#380;esz doda&#263; jedno rozszerzenie, wpisuj&#261;c po prostu nazw&#281; rozszerzenia po kropce, np. &quot;doc&quot;, lub
+mo&#380;esz doda&#263; wiele rozszerze&#324;, oddzielaj&#261;c nazwy rozszerze&#324; przecinkiem, np. &quot;doc,xls,pdf,exe,com,vbs&quot;</addextension_help>
+<Auto-compress_explain>Funkcja automatycznej kompresji umo&#380;liwia automatyczn&#261; konwersj&#281; i kompresj&#281; plik&#243;w za&#322;&#261;czonych w wiadomo&#347;ciach wychodz&#261;cych/przychodz&#261;cych.[br]
+Ta funkcja ma 2 korzy&#347;ci:[ul]
+[li]Zapobiega automatycznemu uruchamianiu z&#322;o&#347;liwych kod&#243;w wykonywalnych, gdy u&#380;ytkownicy czytaj&#261; wiadomo&#347;ci lub zapisuj&#261; za&#322;&#261;czniki.[/li]
+[li]Oszcz&#281;dza przepustowo&#347;&#263; poprzez kompresj&#281; za&#322;&#261;czonych dokument&#243;w.[/li]
 [/ul]
-You need to add extensions eg doc,ppt,xls,exe,com in the interface in order to enable compression of these attached files</Auto-compress_explain>
-<enable_autocompress>Enable auto-compress feature</enable_autocompress>
+Musisz doda&#263; rozszerzenia takie jak doc,ppt,xls,exe,com w interfejsie, aby w&#322;&#261;czy&#263; kompresj&#281; tych za&#322;&#261;czonych plik&#243;w</Auto-compress_explain>
+<enable_autocompress>W&#322;&#261;cz funkcj&#281; automatycznej kompresji</enable_autocompress>

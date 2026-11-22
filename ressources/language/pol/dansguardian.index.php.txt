@@ -39,13 +39,11 @@ powy%u017Cej 0 = minimum punkt&oacute;w, aby kategoria by%u0142a wy%u015Bwietlon
 <content_scanner>Silnik Analizy Fraz</content_scanner>
 <content_scanner_text>Zdefiniuj zachowanie skanera stron internetowych</content_scanner_text>
 <createlistcachefiles>Utw&oacute;rz list%u0119 cachowanych plik&oacute;w</createlistcachefiles>
-<createlistcachefiles_text>
-[b]Build banned site list and banned url list cache files.[/b][br]
-This will compare the date stamp of the list file with the date stamp of the cache file and will recreate as needed.[br]
-If a bsl or bul .processed file exists, then that will be used instead.[br]
-It will increase process start speed by 300%.  On slow computers this will be significant.[br]
-Fast computers do not need this option.
-</createlistcachefiles_text>
+<createlistcachefiles_text>[b]Tw&#243;rz pliki pami&#281;ci podr&#281;cznej listy zablokowanych witryn i listy zablokowanych adres&#243;w URL.[/b][br]
+Spowoduje to por&#243;wnanie znacznika czasu pliku listy ze znacznikiem czasu pliku pami&#281;ci podr&#281;cznej i odtworzy go w razie potrzeby.[br]
+Je&#347;li istnieje plik .processed (bsl lub bul), zostanie u&#380;yty w zamian.[br]
+Zwi&#281;kszy to szybko&#347;&#263; uruchamiania procesu o 300%. Na wolnych komputerach b&#281;dzie to znacz&#261;ce.[br]
+Szybkie komputery nie potrzebuj&#261; tej opcji.</createlistcachefiles_text>
 <create_new_category>Utw&oacute;rz now%u0105 katerogi%u0119</create_new_category>
 <create_new_category_text>Podaj nazw%u0119 nowej kategorii</create_new_category_text>
 <dangerous_material>Strony opisuj%u0105ce jak robi%u0107 bomby i wybuchowe materia%u0142y.</dangerous_material>
@@ -62,13 +60,11 @@ Musisz rozwi%u0105za%u0107 ten problem aby skorzysta%u0107 z filtrowania.</dansg
 <deepurlanalysis_text>Kiedy w%u0142%u0105czone, DansGuardian szuka wszystkich URLi pojawiaj%u0105cych si%u0119 w obr%u0119bie wy%u015Bwietlanej strony URL, sprawdzaj%u0105c je na li%u015Bcie blokowanych stron i li%u015Bcie blokowanych URLi.[br]
 To mo%u017Ce by%u0107 u%u017Cyteczne do blokowania obrazk&oacute;w pochodz%u0105cych z obcych, blokowanych stron.</deepurlanalysis_text>
 <deletedownloadedtempfiles>Usu%u0144 pobrane, tymczasowe pliki</deletedownloadedtempfiles>
-<deletedownloadedtempfiles_text>
-Delete file cache after user completes download[br]
-When a file gets save to temp it stays there until it is deleted.[br]
-You can choose to have the file deleted when the user makes a sucessful download.[br]
-This will mean if they click on the link to download from the temp store a second time it will give a 404 error.[br]
-You should configure something to delete old files in temp to stop it filling up.
-</deletedownloadedtempfiles_text>
+<deletedownloadedtempfiles_text>Usu&#324; pami&#281;&#263; podr&#281;czn&#261; plik&#243;w po zako&#324;czeniu pobierania przez u&#380;ytkownika[br]
+Gdy plik zostanie zapisany w temp, pozostaje tam do momentu usuni&#281;cia.[br]
+Mo&#380;esz wybra&#263; usuni&#281;cie pliku, gdy u&#380;ytkownik zako&#324;czy pomy&#347;lne pobieranie.[br]
+Oznacza to, &#380;e je&#347;li kliknie link, aby pobra&#263; z magazynu temp po raz drugi, otrzyma b&#322;&#261;d 404.[br]
+Powiniene&#347; skonfigurowa&#263; co&#347;, co usunie stare pliki w temp, aby zapobiec jego przepe&#322;nieniu.</deletedownloadedtempfiles_text>
 <description>Opis</description>
 <domainsforsale>zaparkowane domeny - domeny na sprzeda%u017C</domainsforsale>
 <download>Menad%u017Cer pobierania</download>
@@ -76,15 +72,12 @@ You should configure something to delete old files in temp to stop it filling up
 <drogue>Strony o narkotykach, zar%C3%B3wno twardych, jak i mi%C4%99kkich. Umo%C5%BCliwiaj%C4%85 ich zakup, wytwarzanie lub rozmow%C4%99 o ich zaletach. Nie dotycz%C4%85 tytoniu ani alkoholu.</drogue>
 <drugadvocacy>Popieraj%u0105ce narkotyki</drugadvocacy>
 <edit_your_weighted_category>Edytuj swoj%u0105 list%u0119 kategorii wa%u017Conych fraz</edit_your_weighted_category>
-<embeddedurlweight>Embedded Url Weight</embeddedurlweight>
-<embeddedurlweight_text>
-When set to something greater than zero, this option causes URLs embedded within a page's HTML (from links, image tags, etc.) to be extracted and checked against the
-banned site list and banned url list.[br]
-Each link to a banned page causes the amount set here to be added to the page's weighting.[br]
-The behaviour of this option with regards to multiple occurrences of a site/URL is affected by the weighted phrase mode setting.[br]
-[br]Set to 0 to disable. (Defaults to 0.)
-[br][i]WARNING: This option is highly CPU intensive![/i]
-</embeddedurlweight_text>
+<embeddedurlweight>Waga osadzonych URL</embeddedurlweight>
+<embeddedurlweight_text>Gdy ustawiona na warto&#347;&#263; wi&#281;ksz&#261; od zera, ta opcja powoduje, &#380;e adresy URL osadzone w kodzie HTML strony (z link&#243;w, tag&#243;w obraz&#243;w itp.) s&#261; wyodr&#281;bniane i sprawdzane na li&#347;cie zablokowanych witryn i adres&#243;w URL.[br]
+Ka&#380;dy link do zablokowanej strony powoduje dodanie ustawionej tu warto&#347;ci do wagi strony.[br]
+Na zachowanie tej opcji w odniesieniu do wielokrotnych wyst&#261;pie&#324; witryny/URL wp&#322;ywa ustawienie trybu wa&#380;onych fraz.[br]
+[br]Ustaw na 0, aby wy&#322;&#261;czy&#263;. (Domy&#347;lnie 0.)
+[br][i]OSTRZE&#379;ENIE: ta opcja bardzo obci&#261;&#380;a procesor![/i]</embeddedurlweight_text>
 <enable_clamav>Aktywuj antywirusa</enable_clamav>
 <enable_clamav_text>Je%u015Bli w%u0142%u0105czysz t%u0119 opcj%u0119, ka%u017Cda pobrana przez DG strona b%u0119dzie skanowana przez skaner antywirusowy ClamAV</enable_clamav_text>
 <enable_user_button>W%u0142%u0105cz przycisk (dodania wyj%u0105tku) u%u017Cytkownika</enable_user_button>
@@ -118,55 +111,44 @@ Obecnie zaimplementowany szukaj%u0105cy algorytm DFA nie jest zupe%u0142nie komp
 <groupmode_0>blokowane</groupmode_0>
 <groupmode_1>filtrowane</groupmode_1>
 <groupmode_2>niefiltrowane (wyj%u0105tek)</groupmode_2>
-<groupmode_text>This option determines whether members of this group have their web access unfiltered, filtered, or banned.
-[br]This mechanism replaces the "Banned User List" and "Exception User List" files from previous versions.
-Only filter groups with a mode of "filtered" need to define phrase, URL, site, extension,mimetype and PICS lists;
-[br]in other modes, these options are ignored to conserve memory.[br]
-Defaults to "banned" if unspecified.
-[br]Unauthenticated users are treated as being in the first filter group.
-</groupmode_text>
+<groupmode_text>Ta opcja okre&#347;la, czy cz&#322;onkowie tej grupy maj&#261; dost&#281;p do sieci niefiltrowany, filtrowany czy zablokowany.
+[br]Ten mechanizm zast&#281;puje pliki &quot;Banned User List&quot; i &quot;Exception User List&quot; z poprzednich wersji.
+Tylko grupy filtr&#243;w w trybie &quot;filtered&quot; musz&#261; definiowa&#263; listy fraz, URL, witryn, rozszerze&#324;, typ&#243;w MIME i PICS;
+[br]w innych trybach te opcje s&#261; ignorowane w celu oszcz&#281;dzania pami&#281;ci.[br]
+Domy&#347;lnie &quot;banned&quot;, je&#347;li nieokre&#347;lono.
+[br]Niezuwierzytelnieni u&#380;ytkownicy s&#261; traktowani jako nale&#380;&#261;cy do pierwszej grupy filtr&#243;w.</groupmode_text>
 <groupname>Nazwa grupy</groupname>
-<groupname_text>
-Used to fill in the -FILTERGROUP- placeholder in the HTML template file, and to name the group in the access logs Defaults to empty string
-</groupname_text>
+<groupname_text>U&#380;ywane do wype&#322;nienia symbolu zast&#281;pczego -FILTERGROUP- w pliku szablonu HTML oraz do nazwania grupy w logach dost&#281;pu. Domy&#347;lnie pusty ci&#261;g</groupname_text>
 <hacking>Witryny zwi%u0105zane z hackingiem.</hacking>
 <hexdecodecontent>Dekodowanie hex</hexdecodecontent>
-<hexdecodecontent_text>When a document is scanned it can optionally convert %XX to chars.[br]
-If you find documents are getting past the phrase filtering due to encoding then enable.[br]
-However this can break Big5 and other 16-bit texts.</hexdecodecontent_text>
-<idtheft>Limit access to ID theft tutorial sites</idtheft>
+<hexdecodecontent_text>Gdy dokument jest skanowany, mo&#380;e opcjonalnie konwertowa&#263; %XX na znaki.[br]
+Je&#347;li zauwa&#380;ysz, &#380;e dokumenty omijaj&#261; filtrowanie fraz z powodu kodowania, w&#322;&#261;cz t&#281; opcj&#281;.[br]
+Mo&#380;e to jednak uszkodzi&#263; Big5 i inne teksty 16-bitowe.</hexdecodecontent_text>
+<idtheft>Ogranicz dost&#281;p do witryn z poradnikami o kradzie&#380;y to&#380;samo&#347;ci</idtheft>
 <illegaldrugs>Narkotyki</illegaldrugs>
-<initialtrickledelay>Initial Trickle delay</initialtrickledelay>
-<initialtrickledelay_text>
-This is the number of seconds a browser connection is left waiting before first being sent *something* to keep it alive.
-The *something* depends on the download manager chosen.[br]
-Do not choose a value too low or normal web pages will be affected.[br]
-A value between 20 and 110 would be sensible[br]
-This may be ignored by the configured download manager.
-</initialtrickledelay_text>
+<initialtrickledelay>Pocz&#261;tkowe op&#243;&#378;nienie Trickle</initialtrickledelay>
+<initialtrickledelay_text>Jest to liczba sekund, przez kt&#243;re po&#322;&#261;czenie przegl&#261;darki czeka, zanim po raz pierwszy zostanie wys&#322;ane *co&#347;*, aby utrzyma&#263; je przy &#380;yciu.
+*Co&#347;* zale&#380;y od wybranego mened&#380;era pobierania.[br]
+Nie wybieraj zbyt niskiej warto&#347;ci, bo ucierpi&#261; normalne strony internetowe.[br]
+Warto&#347;&#263; mi&#281;dzy 20 a 110 by&#322;aby rozs&#261;dna[br]
+Mo&#380;e to by&#263; ignorowane przez skonfigurowany mened&#380;er pobierania.</initialtrickledelay_text>
 <intolerance>Witryny zwi%u0105zane z nietolerancj%u0105.</intolerance>
 <ip_artica_server>Adres tego serwera</ip_artica_server>
 <ip_start>Pocz%u0105tkowe IP</ip_start>
 <ip_to>Ko%u0144cowe IP</ip_to>
 <legaldrugs>Legalne u%u017Cywki (alkohol, tyto%u0144)</legaldrugs>
 <liste_bu>Francuska strona edukacyjnych witryn. BARDZO lokalnie zorientowana.</liste_bu>
-<main_rules_category_user_edit>
-set here web sites you want to block example if you want to block http://www.badboys.com, set "badboys.com" if you want to block an IP address set "128.11.213.81"
-</main_rules_category_user_edit>
+<main_rules_category_user_edit>Ustaw tutaj witryny, kt&#243;re chcesz zablokowa&#263;. Przyk&#322;ad: je&#347;li chcesz zablokowa&#263; http://www.badboys.com, ustaw &quot;badboys.com&quot;; je&#347;li chcesz zablokowa&#263; adres IP, ustaw &quot;128.11.213.81&quot;</main_rules_category_user_edit>
 <malware>malware (trojan, wirus, spyware) i fa%u0142szywe anti-malwareowe strony</malware>
 <marketingware>Bardzo specjalistyczne strony z marketingiem</marketingware>
 <maxagechildren>Max wiek potomk&oacute;w</maxagechildren>
-<maxagechildren_text>
-Sets the maximum age of a child process before it croaks it.[br]
-This is the number of connections they handle before exiting.[br]
-On large sites you might want to try 10000.
-</maxagechildren_text>
+<maxagechildren_text>Ustawia maksymalny wiek procesu potomnego, zanim zostanie zako&#324;czony.[br]
+Jest to liczba po&#322;&#261;cze&#324;, kt&#243;re obs&#322;uguj&#261; przed zako&#324;czeniem.[br]
+Na du&#380;ych witrynach mo&#380;esz spr&#243;bowa&#263; 10000.</maxagechildren_text>
 <maxchildren>Max ilo%u015B%u0107 potomk&oacute;w</maxchildren>
-<maxchildren_text>
-sets the maximum number of processes to spawn to handle the incoming connections.[br]
-Max value usually 250 depending on OS.[br]
-On large sites you might want to try 180
-</maxchildren_text>
+<maxchildren_text>Ustawia maksymaln&#261; liczb&#281; proces&#243;w do uruchomienia w celu obs&#322;ugi przychodz&#261;cych po&#322;&#261;cze&#324;.[br]
+Warto&#347;&#263; maksymalna zwykle 250 w zale&#380;no&#347;ci od systemu operacyjnego.[br]
+Na du&#380;ych witrynach mo&#380;esz spr&#243;bowa&#263; 180</maxchildren_text>
 <maxcontentfilecachescansize>Max pojemno%u015B%u0107 dysku dla skanowanego pojedy%u0144czego pliku</maxcontentfilecachescansize>
 <maxcontentfilecachescansize_text>Opcja u%u017Cywana je%u015Bli u%u017Cywamy pluginu skanera AV[br]
 Max rozmiar pliku kt&oacute;ry DG b%u0119dzie pobiera%u0142
@@ -175,12 +157,10 @@ Ta warto%u015B%u0107 musi by%u0107 wi%u0119ksza lub r&oacute;wna &quot;Max pojem
 
 Jest podawana w KB - eg 10240 = 10Mb</maxcontentfilecachescansize_text>
 <maxcontentfiltersize>Max Rozmiar Skanowanego Elementu</maxcontentfiltersize>
-<maxcontentfiltersize_text>
-Sometimes web servers label binary files as text which can be very large which causes a huge drain on memory and cpu resources.[br]
-To counter this, you can limit the size of the document to be filtered and get it to just pass it straight through.[br]
-This setting also applies to content regular expression modification.[br]
-The value must not be higher than "max content ram cache scan size" The size is in Kibibytes - eg 2048 = 2Mb, use 0 to set it to "max content ram cache scan size"
-</maxcontentfiltersize_text>
+<maxcontentfiltersize_text>Czasami serwery internetowe oznaczaj&#261; pliki binarne jako tekst, kt&#243;ry mo&#380;e by&#263; bardzo du&#380;y, co powoduje ogromne obci&#261;&#380;enie pami&#281;ci i zasob&#243;w procesora.[br]
+Aby temu zaradzi&#263;, mo&#380;esz ograniczy&#263; rozmiar dokumentu do filtrowania i sprawi&#263;, &#380;e zostanie po prostu przepuszczony.[br]
+To ustawienie dotyczy r&#243;wnie&#380; modyfikacji tre&#347;ci za pomoc&#261; wyra&#380;e&#324; regularnych.[br]
+Warto&#347;&#263; nie mo&#380;e by&#263; wy&#380;sza ni&#380; &quot;max content ram cache scan size&quot;. Rozmiar jest w kibibajtach, np. 2048 = 2 MB, u&#380;yj 0, aby ustawi&#263; go na &quot;max content ram cache scan size&quot;</maxcontentfiltersize_text>
 <maxcontentramcachescansize>Max pojemno%u015B%u0107 RAMu dla skanowanego pojedy%u0144czego pliku</maxcontentramcachescansize>
 <maxcontentramcachescansize_text>Opcja u%u017Cywana je%u015Bli u%u017Cywamy pluginu skanera AV[br]
 Max rozmiar pliku kt&oacute;ry DG b%u0119dzie pobiera%u0142 i wrzuca%u0142 do RAMu.[br]
@@ -196,24 +176,20 @@ Ustaw tu twardy limit u%u017Cytkownik&oacute;w mog%u0105cych jednocze%u015Bnie k
 
 0 = bez limitu, wy%u0142%u0105cza r&oacute;wnie%u017C proces cachowania adres&oacute;w IP</maxips_text>
 <maxsparechildren>Max ilo%u015B%u0107 zamiennych dzieci</maxsparechildren>
-<maxsparechildren_text>Sets the maximum number of processes to have doing nothing.[br]
- When this many are spare it will cull of them.[br]
-On large sites you might want to try 64.</maxsparechildren_text>
+<maxsparechildren_text>Ustawia maksymaln&#261; liczb&#281; proces&#243;w nic nierobi&#261;cych.[br]
+ Gdy tyle b&#281;dzie wolnych, cz&#281;&#347;&#263; z nich zostanie usuni&#281;ta.[br]
+Na du&#380;ych witrynach mo&#380;esz spr&#243;bowa&#263; 64.</maxsparechildren_text>
 <maxuploadsize>Max Rozmiar Uploadowanego Pliku</maxuploadsize>
-<maxuploadsize_text>
-[b]POST protection (web upload and forms)[/b][br]
-does not block forms without any file upload, i.e. this is just for blocking or limiting uploads measured in kibibytes after MIME encoding and header bumph.
-[ul][li]use 0 for a complete block[/li][li]use higher (e.g. 512 = 512Kbytes) for limiting[/li][li]use -1 for no blocking[/li]
-[/ul]
-</maxuploadsize_text>
+<maxuploadsize_text>[b]Ochrona POST (przesy&#322;anie plik&#243;w i formularze)[/b][br]
+nie blokuje formularzy bez przesy&#322;ania plik&#243;w, tzn. s&#322;u&#380;y to tylko do blokowania lub ograniczania przesy&#322;ania mierzonego w kibibajtach po kodowaniu MIME i narzucie nag&#322;&#243;wk&#243;w.
+[ul][li]u&#380;yj 0 dla ca&#322;kowitej blokady[/li][li]u&#380;yj wy&#380;szych warto&#347;ci (np. 512 = 512 KB) do ograniczania[/li][li]u&#380;yj -1, aby nie blokowa&#263;[/li]
+[/ul]</maxuploadsize_text>
 <minchildren>Minimum potomk&oacute;w</minchildren>
-<minchildren_text>
-sets the minimum number of processes to spawn to handle the incoming connections.[br]
-On large sites you might want to try 32.
-</minchildren_text>
+<minchildren_text>Ustawia minimaln&#261; liczb&#281; proces&#243;w do uruchomienia w celu obs&#322;ugi przychodz&#261;cych po&#322;&#261;cze&#324;.[br]
+Na du&#380;ych witrynach mo&#380;esz spr&#243;bowa&#263; 32.</minchildren_text>
 <minsparechildren>Min proces&oacute;w</minsparechildren>
-<minsparechildren_text>Sets the minimum number of processes to be kept ready to handle connections.
-[br]On large sites you might want to try 8.</minsparechildren_text>
+<minsparechildren_text>Ustawia minimaln&#261; liczb&#281; proces&#243;w utrzymywanych w gotowo&#347;ci do obs&#322;ugi po&#322;&#261;cze&#324;.
+[br]Na du&#380;ych witrynach mo&#380;esz spr&#243;bowa&#263; 8.</minsparechildren_text>
 <mixed_adult>Witryny z tre%u015Bciami dla doros%u0142ych, nieuporz%u0105dkowane.</mixed_adult>
 <mobile-phone>Strony dla telefoni kom&oacute;rkowej (dzwonki, itp)</mobile-phone>
 <music>Witryny ekosystemu muzycznego, takie jak witryny do pobierania plik%C3%B3w muzycznych, witryny edukacyjne, witryny po%C5%9Bwi%C4%99cone kulturze i historii muzyki, witryny promuj%C4%85ce muzyk%C4%99 itp.</music>
@@ -224,7 +200,7 @@ Na danej stronie zwroty dobre jak &quot;rak piersi&quot; maj%u0105 ujemne warto%
 <news>Witryny, serwisy informacyjne</news>
 <nudism>Nudyzm</nudism>
 <peer2peer>Strony z peer to peer (p2p)</peer2peer>
-<performances>Performances</performances>
+<performances>Wydajno&#347;&#263;</performances>
 <performances_text>Ustaw ustawienia deamona wed%u0142ug Twojego serwera</performances_text>
 <personals>Strony ze zwi%u0105zkami, randkami, pary.</personals>
 <phishing>Witryny zwi%u0105zane z wy%u0142udzaniem poufnych informacji, hase%u0142, numer&oacute;w kart kredytowych (tzw. phishing)</phishing>
@@ -239,8 +215,8 @@ Raw - nieprzetworzony HTML %u0142%u0105cznie z meta tagami jest filtrowany
 [br]Meta/Title - tylko znaczniki meta i title s%u0105 filtrowane (wersja szybka)</phrasefiltermode_text>
 <pornography>Pornografia</pornography>
 <preforkchildren>Prefork children</preforkchildren>
-<preforkchildren_text>Sets the minimum number of processes to spawn when it runs out
-On large sites you might want to try 10.</preforkchildren_text>
+<preforkchildren_text>Ustawia minimaln&#261; liczb&#281; proces&#243;w do uruchomienia, gdy si&#281; wyczerpi&#261;
+Na du&#380;ych witrynach mo&#380;esz spr&#243;bowa&#263; 10.</preforkchildren_text>
 <preservecase>Opcje ma%u0142ych liter</preservecase>
 <preservecase_0>wymuszaj ma%u0142e litery (domy%u015Blnie)</preservecase_0>
 <preservecase_1>nie zmieniaj rozmiaru</preservecase_1>
@@ -251,7 +227,7 @@ Mo%u017Ce to jednak powodowa%u0107 b%u0142%u0119dy przy Big5 i innymi 16 bitowym
 <publicite>Reklama.</publicite>
 <radio>Radia internetowe</radio>
 <reaffected>Strony internetowe, kt%C3%B3re zosta%C5%82y ponownie przypisane, s%C4%85 niedost%C4%99pne lub nadal s%C4%85 online, ale ich zawarto%C5%9B%C4%87 zosta%C5%82a opr%C3%B3%C5%BCniona i wykorzystana jako reklama przez dostawc%C3%B3w dost%C4%99pu.</reaffected>
-<redirector>redirector sites, which are used to circumvent filtering.</redirector>
+<redirector>Strony przekierowuj&#261;ce, u&#380;ywane do obej&#347;cia filtrowania.</redirector>
 <restrictions>Ograniczenia</restrictions>
 <reverseaddresslookups>Odwrotne zapytania DNS dla banowanych stron i URL&oacute;w</reverseaddresslookups>
 <reverseaddresslookups_text>[b]Odwrotne zapytania DNS dla banowanych stron i URL&oacute;w.[/b][br]
@@ -262,13 +238,13 @@ Chroni to przed wpisaniem wprost do przegl%u0105darki adresu IP z blacklisty. Zm
 Te regu%u0142y b%u0119d%u0105 stosowane do zakresu u%u017Cytkownika.</rules_text>
 <rule_behavior>Zachowania regu%u0142</rule_behavior>
 <safelabel>Bezpieczne Etykiety</safelabel>
-<scancleancache>Scan clean cache</scancleancache>
-<scancleancache_text>Clean cache for content (AV) scan results[br]
-By default, to save CPU, files scanned and found to be clean are inserted into the clean cache and NOT scanned again for a while.[br]
-If you don't like this then choose to disable it.</scancleancache_text>
+<scancleancache>Czysta pami&#281;&#263; podr&#281;czna skanowania</scancleancache>
+<scancleancache_text>Wyczy&#347;&#263; pami&#281;&#263; podr&#281;czn&#261; wynik&#243;w skanowania tre&#347;ci (AV)[br]
+Domy&#347;lnie, aby oszcz&#281;dza&#263; procesor, przeskanowane i uznane za czyste pliki s&#261; wstawiane do czystej pami&#281;ci podr&#281;cznej i przez pewien czas NIE s&#261; ponownie skanowane.[br]
+Je&#347;li ci si&#281; to nie podoba, wy&#322;&#261;cz t&#281; opcj&#281;.</scancleancache_text>
 <secretsocieties>Tajne stowarzyszenia i lo%u017Ce</secretsocieties>
 <sect>Sekty</sect>
-<select_ip_family>Select the IP model</select_ip_family>
+<select_ip_family>Wybierz model IP</select_ip_family>
 <select_rule>Wybierz regu%u0142%u0119</select_rule>
 <sexual_education>Witryny o edukacji seksualnej i mog%u0105ce by%u0107 niepoprawnie wykryte jako pornografia</sexual_education>
 <shopping>Sklepy internetowe.</shopping>
@@ -276,26 +252,24 @@ If you don't like this then choose to disable it.</scancleancache_text>
 <showweightedfound_text>Je%u015Bli w%u0142%u0105czone, znalezione frazy przekraczaj%u0105ce &quot;limit niepos%u0142usze%u0144stwa&quot; b%u0119d%u0105 zalogowane, a je%u015Bli poziom rapornowania jest wystarczaj%u0105co wysoki zostanie wy%u015Bwietlona strona o zabronionym dost%u0119pie.[br]
 Opcja przydatna przy ustalaniu wag i poziomu niepos%u0142usze%u0144stwa</showweightedfound_text>
 <sport>Witryny zwi%u0105zane ze sportem</sport>
-<strict_redirector>Same as redirector, but with google, yahoo, and other cache/images search robots.</strict_redirector>
-<strong_redirector>Same as strict_redirector, but, for google, yahoo, we are only blocking terms.</strong_redirector>
-<template_explain>The HTML Template File is the most common way of delivering a blocked page message to a user.[br]
-It delivers a blocked page message quickly and cleanly to all web browsers, and does almost nothing else.[br]
-It's just regular HTML; there's no special syntax.[br] You can edit it with any text editor.</template_explain>
+<strict_redirector>Tak samo jak redirector, ale z google, yahoo i innymi robotami wyszukiwania cache/obraz&#243;w.</strict_redirector>
+<strong_redirector>Tak samo jak strict_redirector, ale dla google, yahoo blokujemy tylko terminy.</strong_redirector>
+<template_explain>Plik szablonu HTML to najcz&#281;stszy spos&#243;b dostarczania u&#380;ytkownikowi komunikatu o zablokowanej stronie.[br]
+Dostarcza komunikat o zablokowanej stronie szybko i czysto do wszystkich przegl&#261;darek internetowych i prawie nic innego nie robi.[br]
+To zwyk&#322;y HTML; nie ma specjalnej sk&#322;adni.[br] Mo&#380;esz go edytowa&#263; dowolnym edytorem tekstu.</template_explain>
 <template_label>Modyfikacja Szablonu STOP</template_label>
 <translation>Witryny zwi%u0105zane z t%u0142umaczeniem.</translation>
 <travel>Podr&oacute;%u017Ce i wakacje</travel>
-<tricheur>Sites which are designed to explains cheating on exams.</tricheur>
-<trickledelay>Trickle Delay</trickledelay>
-<trickledelay_text>
-This is the number of seconds a browser connection is left waiting before being sent more *something* to keep it alive.
-The *something* depends on the download manager chosen.[br]
-This may be ignored by the configured download manager.
-</trickledelay_text>
-<upstreamfilter>Convert upstream filter blocking pages to DansGuardian block pages</upstreamfilter>
+<tricheur>Witryny zaprojektowane, aby wyja&#347;nia&#263; oszukiwanie na egzaminach.</tricheur>
+<trickledelay>Op&#243;&#378;nienie Trickle</trickledelay>
+<trickledelay_text>Jest to liczba sekund, przez kt&#243;re po&#322;&#261;czenie przegl&#261;darki czeka, zanim zostanie wys&#322;ane *co&#347;* wi&#281;cej, aby utrzyma&#263; je przy &#380;yciu.
+*Co&#347;* zale&#380;y od wybranego mened&#380;era pobierania.[br]
+Mo&#380;e to by&#263; ignorowane przez skonfigurowany mened&#380;er pobierania.</trickledelay_text>
+<upstreamfilter>Konwertuj strony blokuj&#261;ce filtra nadrz&#281;dnego na strony blokuj&#261;ce DansGuardian</upstreamfilter>
 <urlcacheage>Czas cachowana URLi</urlcacheage>
 <urlcacheage_text>Raz przefiltrowana strona nie musi by%u0107 przez pewien czas ponownie filtrowana. Parametr okre%u015Bla czas po kt&oacute;rym buforowane adresy powinno zosta%u0107 ponownie sprawdzone, w [sekundach]. Po jego up%u0142ywie ponownie skanuj stron%u0119.[br]
 0 = nigdy, 900 = zalecane = 15 mins</urlcacheage_text>
-<urlcachenumber>URL Cache number</urlcachenumber>
+<urlcachenumber>Liczba pami&#281;ci podr&#281;cznej URL</urlcachenumber>
 <urlcachenumber_text>Pozytywne (czyste) buforowanie wynik&oacute;w dla adres&oacute;w URL. Raz sprawdzone strony nie musz%u0105 by%u0107 filtrowane ponownie (dzia%u0142a r&oacute;wnie%u017C z pluginem AV). Parametr okre%u015Bla licz%u0119 trzymanych w pami%u0119ci adres&oacute;w URL. 
 [ul]
 [li]0 = wy%u0142%u0105cz (zalecane dla ISP z u%u017Cytkownikami o r&oacute;%u017Cnych przegl%u0105darkach),[/li]

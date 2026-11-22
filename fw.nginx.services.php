@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 $GLOBALS["DYNAMIC_RATE_FEATURE"]=false;
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
@@ -6,7 +7,20 @@ include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.reverse.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.tpl.inc");
 include_once(dirname(__FILE__)."/ressources/class.modsecurity.tools.inc");
+// awc_table_style()/awc_pager_js()/awc_pager_server(): kit des tableaux
+// d'entites. Include au PREMIER NIVEAU obligatoire -- glisse dans un bloc
+// conditionnel il ne s'executerait jamais et la page mourrait a l'affichage.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+// Pentest 2026-11-04 : des parametres de requete etaient recopies sans encodage dans la page (XSS) :
+// IDs de site, pagination et groupe (entiers), ids DOM, nom de fonction de rappel CertCenter.
+foreach(array("td-row","www-parameters","www-hosts","service-id","backend-analyze-js","backend-analyze2-js","harmpid","MaxItems","TableNavigate","offset") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}
+}
+foreach(array("jping","js-tiny-ping","id","forcediv") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET[$k]);}
+}
+if(isset($_GET["CertCenter"])){$_GET["CertCenter"]=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["CertCenter"]);}
 if(isset($_GET["jping"])){jsping();exit;}
 if(isset($_GET["js-tiny-ping"])){js_tiny_ping();exit;}
 if(isset($_GET["download-db"])){download_database();exit;}
@@ -98,13 +112,13 @@ if(isset($_POST["reconfigure_all_sites"])){reconfigure_all_sites_perform();exit;
 
 
 page();
+
 function cache_settings_js():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
     $ID=intval($_GET["cache-settings-js"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     return $tpl->js_dialog1("{cache} $servicename","$page?cache-settings-popup=$ID");
 }
 function locked_config_js():bool{
@@ -167,13 +181,9 @@ function rows_ping(){
 }
 
 
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
+
+
+
 function success_js():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     return $tpl->js_config_applied();
@@ -247,14 +257,11 @@ function enable_fw_js():bool{
 function disable_all_perform():bool{
     admin_tracks("Disable all web services");
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/sites/disable-all", []);
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?disable-all=yes");
     return true;
 }
 function disable_fw_perform():bool{
     admin_tracks("Disable Web application firewall on all web services");
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT ID FROM nginx_services");
-    foreach ($results as $index=>$ligne){
+    foreach (fetch_nginx_services_all() as $ligne){
         $ID=$ligne["ID"];
         $sockngix=new socksngix($ID);
         $sockngix->SET_INFO("EnableModSecurity",0);
@@ -265,9 +272,8 @@ function disable_fw_perform():bool{
 function enable_fw_single():bool{
     header("content-type: application/x-javascript");
     $ID=intval($_GET["enable-waf"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
 
     $sockngix=new socksngix($ID);
     $sockngix->SET_INFO("EnableModSecurity",1);
@@ -278,9 +284,7 @@ function enable_fw_single():bool{
 
 function enable_fw_perform():bool{
     admin_tracks("Enable Web application firewall on all web services");
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT ID FROM nginx_services");
-    foreach ($results as $index=>$ligne){
+    foreach (fetch_nginx_services_all() as $ligne){
         $ID=$ligne["ID"];
         $sockngix=new socksngix($ID);
         $sockngix->SET_INFO("EnableModSecurity",1);
@@ -292,10 +296,9 @@ function duplicate_js():bool{
     $ID                         = intval($_GET["duplicate-js"]);
     $page                       = CurrentPageName();
     $tpl                        = new template_admin();$tpl->CLUSTER_CLI=true;
-    $q                          = new lib_sqlite(NginxGetDB());
     $t2=time();
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
 
     $tmpname="$servicename - copied";
     header("content-type: application/x-javascript");
@@ -351,7 +354,7 @@ function reconfigure_all_sites():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
 
     $service_reconfigure=$tpl->framework_buildjs(
-        "/reverse-proxy/hupreconfigure",
+        "nginx:/reverse-proxy/hupreconfigure",
         "nginx.reconfigure.allsites.progress",
         "nginx.reconfigure.all.progress.txt",
         "progress-websites-restart",
@@ -398,42 +401,38 @@ function enable():bool{
 }
 function delete_js(){
     $ID=intval($_GET["delete"]);
-    $q=new lib_sqlite(NginxGetDB());
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
+    $ligne=fetch_nginx_service_row($ID);
     $md=$_GET["md"];
     $jsafter="$('#$md').remove();";
-    $tpl->js_confirm_delete($ligne["servicename"], "delete", $ID,$jsafter);
+    $tpl->js_confirm_delete(isset($ligne["servicename"])?$ligne["servicename"]:"", "delete", $ID,$jsafter);
 }
 
 
 function badconf_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["badconf"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ID=intval($_GET["badconf"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     $tpl->js_dialog1("{bad_configuration} $servicename", "$page?badconf-popup=$ID");
 }
 function badconf_popup(){
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["badconf-popup"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT badconf FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ID=intval($_GET["badconf-popup"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
 
-    $form[]=$tpl->field_textareacode("null", null, base64_decode($ligne["badconf"]));
+    $form[]=$tpl->field_textareacode("null", null, base64_decode(isset($ligne["badconf"])?$ligne["badconf"]:""));
     echo $tpl->form_outside($servicename, $form,null,null,"NgixSitesReload();","AsSystemWebMaster");
 }
 function goodconf_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["goodconf"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ID=intval($_GET["goodconf"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     return $tpl->js_dialog1("{configuration} $servicename", "$page?goodconf-popup=$ID");
 }
 
@@ -469,9 +468,8 @@ function check_reverse_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $ID=intval($_GET["check-reverse"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     return $tpl->js_dialog1("{check} $servicename", "$page?check-reverse-popup=$ID");
 }
 function check_reverse_popup():bool{
@@ -508,9 +506,10 @@ function check_reverse_perform():bool{
 function extract_domains_popup():bool{
     $f=array();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT * FROM nginx_services ORDER BY zorder";
-    $results=$q->QUERY_SQL($sql);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/nginx_services?order=zorder");
+    $data=json_decode($resp,true);
+    $results=(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])) ? $data["rows"] : [];
+    $zfirst=array();
     foreach ($results as $index=>$ligne){
        $hosts=explode("||",$ligne["hosts"]);
        foreach ($hosts as $servername){
@@ -530,12 +529,11 @@ function extract_domains_popup():bool{
 function goodconf_popup(){
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["goodconf-popup"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename,goodconf FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ID=intval($_GET["goodconf-popup"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     $form[]=$tpl->field_hidden("goodconf_id", $ID);
-    $form[]=$tpl->field_textareacode("goodconf", null, base64_decode($ligne["goodconf"]));
+    $form[]=$tpl->field_textareacode("goodconf", null, base64_decode(isset($ligne["goodconf"])?$ligne["goodconf"]:""));
     echo $tpl->form_outside($servicename, $form,null,"{apply}","dialogInstance1.close();NgixSitesReload()","AsSystemWebMaster");
 }
 function goodconf_save(){
@@ -565,93 +563,183 @@ function delete():bool{
     return true;
 }
 
+function nginx_actions_css():string{
+    $f=array();
+    $f[]="<style>";
+    $f[]=".nact-wrap{padding:10px;background:#fbf9f8;color:#1b1c1c;font-family:Inter,'Helvetica Neue',Helvetica,Arial,sans-serif;}";
+    $f[]=".nact-sec{margin-bottom:26px;}";
+    $f[]=".nact-sec:last-child{margin-bottom:0;}";
+    $f[]=".nact-sec-title{font-size:20px;line-height:28px;font-weight:400;letter-spacing:-0.01em;color:#1b1c1c;margin:0 0 12px 0;padding:0;}";
+    $f[]=".nact-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#eeeeee;border:1px solid #eeeeee;border-radius:4px;overflow:hidden;}";
+    $f[]=".nact-card{box-sizing:border-box;background:#ffffff;padding:20px;position:relative;min-height:96px;}";
+    $f[]=".nact-card *{box-sizing:border-box;}";
+    $f[]=".nact-card:nth-child(even){background:#f9f9f9;}";
+    $f[]=".nact-card-full{grid-column:1 / -1;}";
+    $f[]=".nact-card-danger{background:#ffffff;border-left:4px solid #ba1a1a;}";
+    $f[]=".nact-body{padding-right:150px;}";
+    $f[]=".nact-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;}";
+    $f[]=".nact-ico{font-size:18px;color:#5d5f5f;flex:0 0 auto;}";
+    $f[]=".nact-ico-danger{font-size:18px;color:#ba1a1a;flex:0 0 auto;}";
+    $f[]=".nact-title{font-size:17px;line-height:24px;font-weight:500;color:#333333;margin:0;padding:0;}";
+    $f[]=".nact-title-danger{font-size:17px;line-height:24px;font-weight:500;color:#ba1a1a;margin:0;padding:0;}";
+    $f[]=".nact-text{font-size:14px;line-height:20px;color:#3f4a3d;margin:0;padding:0;}";
+    $f[]=".nact-warn{display:inline-flex;align-items:center;gap:8px;margin-top:12px;padding:8px 12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;color:#92400e;font-size:13px;line-height:18px;font-weight:500;}";
+    $f[]=".nact-wico{font-size:16px;color:#d97706;flex:0 0 auto;}";
+    $f[]=".nact-btn{position:absolute;top:20px;right:20px;display:inline-flex;align-items:center;gap:8px;margin:0;background:#016e1c;color:#ffffff;border:0;border-radius:4px;padding:8px 16px;font-size:13px;line-height:16px;font-weight:600;text-transform:uppercase;white-space:nowrap;cursor:pointer;transition:background .15s ease;}";
+    $f[]=".nact-btn:hover{background:#015a17;color:#ffffff;}";
+    $f[]=".nact-btn-danger{background:#ba1a1a;}";
+    $f[]=".nact-btn-danger:hover{background:#a01616;}";
+    $f[]=".nact-bico{font-size:14px;}";
+    $f[]="@media (max-width:720px){";
+    $f[]=".nact-grid{grid-template-columns:1fr;}";
+    $f[]=".nact-body{padding-right:0;}";
+    $f[]=".nact-btn{position:static;margin-top:12px;width:100%;justify-content:center;}";
+    $f[]="}";
+    $f[]="</style>";
+    return @implode("\n",$f);
+}
+
+function nginx_action_tile(array $c):string{
+    $h=array();
+    $danger=!empty($c["DANGER"]);
+    $classes="nact-card";
+    if(!empty($c["FULL"])){$classes.=" nact-card-full";}
+    if($danger){$classes.=" nact-card-danger";}
+    $icoClass=$danger?"nact-ico-danger":"nact-ico";
+    $titleClass=$danger?"nact-title-danger":"nact-title";
+    $btnClass=$danger?"nact-btn nact-btn-danger":"nact-btn";
+    $ico=isset($c["ICO"])?$c["ICO"]:"fas fa-circle-info";
+    $btnIco=isset($c["BTNICO"])?$c["BTNICO"]:"fas fa-play";
+    $btnText=isset($c["BTNTEXT"])?$c["BTNTEXT"]:"{run_task}";
+    $title=isset($c["TITLE"])?$c["TITLE"]:"";
+    $text=isset($c["TEXT"])?$c["TEXT"]:"";
+    $js=str_replace('"',"&quot;",isset($c["JS"])?$c["JS"]:"");
+
+    $h[]="<div class=\"$classes\">";
+    $h[]="<div class=\"nact-body\">";
+    if(!empty($c["PROGRESS"])){$h[]="<div id=\"{$c["PROGRESS"]}\"></div>";}
+    $h[]="<div class=\"nact-head\"><i class=\"$ico $icoClass\"></i><h3 class=\"$titleClass\">$title</h3></div>";
+    $h[]="<p class=\"nact-text\">$text</p>";
+    if(!empty($c["WARN"])){
+        $h[]="<div class=\"nact-warn\"><i class=\"fas fa-triangle-exclamation nact-wico\"></i><span>{$c["WARN"]}</span></div>";
+    }
+    $h[]="</div>";
+    $h[]="<label class=\"$btnClass\" OnClick=\"$js\">$btnText <i class=\"$btnIco nact-bico\"></i></label>";
+    $h[]="</div>";
+    return @implode("\n",$h);
+}
+
+function nginx_action_section(string $title,array $cards):string{
+    if(count($cards)==0){return "";}
+    $h=array();
+    $h[]="<div class=\"nact-sec\">";
+    $h[]="<h2 class=\"nact-sec-title\">$title</h2>";
+    $h[]="<div class=\"nact-grid\">".@implode("\n",$cards)."</div>";
+    $h[]="</div>";
+    return @implode("\n",$h);
+}
+
 function action_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $service_reconfigure_all="Loadjs('$page?reconfigure-all-js=yes');";
-    $function=$_GET["function"];
+    $function=isset($_GET["function"])?$_GET["function"]:"";
     $DisableBuildNginxConfig=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableBuildNginxConfig"));
-    $html[]="<table style='width:100%'>";
-    $TRCLASS=null;
+    $css=nginx_actions_css();
+    $sections=array();
 
-
-
-    if($DisableBuildNginxConfig==0) {
-        if ($TRCLASS == "footable-odd") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd";
-        }
-        $html[] = "<tr class='$TRCLASS'>";
-        $html[] = "<td style='width:99%;padding:10px'><H2>{rebuild_all_websites}</H2><p>{rebuild_all_websites_explain}</p></td>";
-        $html[] = "<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"$service_reconfigure_all\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-        $html[] = "</tr>";
+    // Les sept taches sont celles que portait deja cette page: seule leur mise
+    // en forme change (un <table> de deux colonnes -> des tuiles .nact-card).
+    if($DisableBuildNginxConfig==0){
+        $maintenance=array();
+        $maintenance[]=nginx_action_tile(array(
+            "ICO"=>"fas fa-arrows-rotate",
+            "TITLE"=>"{rebuild_all_websites}",
+            "TEXT"=>"{rebuild_all_websites_explain}",
+            "FULL"=>true,
+            "JS"=>"Loadjs('$page?reconfigure-all-js=yes');"));
+        $sections[]=nginx_action_section("{maintenance_and_rebuild}",$maintenance);
     }
 
+    $data=array();
+    $data[]=nginx_action_tile(array(
+        "ICO"=>"fas fa-file-export",
+        "TITLE"=>"{extract_domains}",
+        "TEXT"=>"{extract_domains_nginx_explain}",
+        "JS"=>"Loadjs('$page?extract-domains-js=yes&function=$function');"));
+    $data[]=nginx_action_tile(array(
+        "ICO"=>"fas fa-file-import",
+        "TITLE"=>"{import_a_rule}",
+        "TEXT"=>"{import_a_rule_nginx_explain}",
+        "BTNTEXT"=>"{import}",
+        "BTNICO"=>"fas fa-upload",
+        "JS"=>"Loadjs('fw.nginx.export.php?ID=0&function=$function');"));
+    // L'ancien bouton portait document.location.href='...?download-db=yes');
+    // -- une parenthese et un point-virgule en trop, donc un SyntaxError et un
+    // bouton mort. Retabli ici.
+    $data[]=nginx_action_tile(array(
+        "ICO"=>"fas fa-download",
+        "TITLE"=>"{export_rules}",
+        "TEXT"=>"{export_rules_nginx_explain}",
+        "BTNTEXT"=>"{export}",
+        "BTNICO"=>"fas fa-download",
+        "JS"=>"document.location.href='$page?download-db=yes';"));
+    $sections[]=nginx_action_section("{data_management}",$data);
 
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='width:99%;padding:10px'><H2>{extract_domains}</H2><p>{extract_domains_nginx_explain}</p></td>";
-    $html[]="<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?extract-domains-js=yes&function=$function');\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-    $html[]="</tr>";
+    $controls=array();
+    $controls[]=nginx_action_tile(array(
+        "ICO"=>"fas fa-triangle-exclamation",
+        "TITLE"=>"{disable_all}",
+        "TEXT"=>"{disable_all_nginx}",
+        "DANGER"=>true,
+        "FULL"=>true,
+        "BTNICO"=>"fas fa-circle-xmark",
+        "JS"=>"Loadjs('$page?disable-all-js=yes&function=$function');"));
+    $controls[]=nginx_action_tile(array(
+        "ICO"=>"fas fa-shield-xmark",
+        "TITLE"=>"{disable_all_web_firewall}",
+        "TEXT"=>"{disable_all_web_firewall_explain}",
+        "JS"=>"Loadjs('$page?disable-fw-js=yes&function=$function');"));
+    $controls[]=nginx_action_tile(array(
+        "ICO"=>"fas fa-shield-halved",
+        "TITLE"=>"{enable_all_web_firewall}",
+        "TEXT"=>"{enable_all_web_firewall_explain}",
+        "JS"=>"Loadjs('$page?enable-fw-js=yes&function=$function');"));
+    $sections[]=nginx_action_section("{global_controls_and_security}",$controls);
 
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='width:99%;padding:10px'><H2>{import_a_rule}</H2><p>{import_a_rule_nginx_explain}</p></td>";
-    $html[]="<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"Loadjs('fw.nginx.export.php?ID=0&function=$function');\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-    $html[]="</tr>";
-
-
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='width:99%;padding:10px'><H2>{export_rules}</H2><p>{export_rules_nginx_explain}</p></td>";
-    $html[]="<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"document.location.href='$page?download-db=yes');\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-    $html[]="</tr>";
-
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='width:99%;padding:10px'><H2>{import_rules}</H2><p>{import_rules_nginx_explain}</p></td>";
-    $html[]="<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"Loadjs('fw.nginx.importdb.php?function=$function');\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-    $html[]="</tr>";
-
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='width:99%;padding:10px'><H2>{disable_all}</H2><p>{disable_all_nginx}</p></td>";
-    $html[]="<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?disable-all-js=yes&function=$function')\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-    $html[]="</tr>";
-
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='width:99%;padding:10px'><H2>{disable_all_web_firewall}</H2><p>{disable_all_web_firewall_explain}</p></td>";
-    $html[]="<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?disable-fw-js=yes&function=$function')\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-    $html[]="</tr>";
-
-    if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-    $html[]="<tr class='$TRCLASS'>";
-    $html[]="<td style='width:99%;padding:10px'><H2>{enable_all_web_firewall}</H2><p>{enable_all_web_firewall_explain}</p></td>";
-    $html[]="<td nowrap style='width:1%;padding:10px'><label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?enable-fw-js=yes&function=$function')\"><i class='fas fa-arrow-alt-right'></i> {run_task} </label>";
-    $html[]="</tr>";
-
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html=array();
+    $html[]="<div class=\"nact-wrap\">";
+    $html[]=@implode("\n",$sections);
+    $html[]="</div>";
+    // La feuille se concatene AVANT le parse sans le traverser: la regex
+    // #{(.+?)}# de _ENGINE_parse_body() lit chaque corps de regle CSS comme un
+    // {token} et declenche une recherche memcached par regle.
+    echo $css.$tpl->_ENGINE_parse_body(@implode("\n",$html));
     return true;
 }
 
 function download_database():bool{
     $users=new usersMenus();
     if(!$users->AsWebMaster){die();}
-    $db=NginxGetDB();
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/download");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || empty($data["data"]) || !is_file($data["data"])){
+        header("HTTP/1.1 503 Service Unavailable");
+        echo is_array($data) && isset($data["Error"]) ? $data["Error"] : "snapshot unavailable";
+        return false;
+    }
+    $db=$data["data"];
     $size=filesize($db);
     $baseName="database.db";
     header('Content-type: application/octet-stream');
     header('Content-Transfer-Encoding: binary');
     header("Content-Disposition: attachment; filename=\"$baseName\"");
-    header("Cache-Control: no-cache, must-revalidate"); // HTTP/1.1
-    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT"); // Date dans le passé
+    header("Cache-Control: no-cache, must-revalidate");
+    header("Expires: Sat, 26 Jul 1997 05:00:00 GMT");
     header("Content-Length: ".$size);
     ob_clean();
     flush();
     readfile($db);
+    @unlink($db);
     return true;
 }
 
@@ -737,7 +825,7 @@ function js_tiny():bool{
     $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
     if(isset($_GET["harmpid"])){
         if(intval($_GET["harmpid"])>0){
-            $_SESSION["HARMPID"]=$_GET["harmpid"];
+            $_SESSION["HARMPID"]=intval($_GET["harmpid"]); // Pentest 2026-11-04 : harmpid etait concatene dans la requete.
         }
     }
 
@@ -792,7 +880,7 @@ function js_tiny():bool{
     }
     if(isHarmpID()) {
         $q = new lib_sqlite("/home/artica/SQLITE/hamrp.db");
-        $ligne = $q->mysqli_fetch_array("SELECT * FROM groups WHERE ID='{$_SESSION["HARMPID"]}'");
+        $ligne = $q->mysqli_fetch_array("SELECT * FROM groups WHERE ID='".intval($_SESSION["HARMPID"])."'");
         $groupname       = $ligne["groupname"];
         $titleadd = "&nbsp;&raquo;&nbsp;$groupname";
     }
@@ -826,7 +914,7 @@ function page():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     if(isset($_GET["harmpid"])){
         if(intval($_GET["harmpid"])>0){
-            $_SESSION["HARMPID"]=$_GET["harmpid"];
+            $_SESSION["HARMPID"]=intval($_GET["harmpid"]); // Pentest 2026-11-04 : harmpid etait concatene dans la requete.
         }
     }
      $html=$tpl->page_header("{web_services}","fa fa-globe-africa","{about_nginx_services}","$page?table-form=yes",
@@ -848,17 +936,16 @@ function new_www_js():bool{
 }
 function compile_js():bool{
     $tpl    =  new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID     = $_GET["compile"];
-    $q=new lib_sqlite(NginxGetDB());
+    $ID     = intval($_GET["compile"]);
     $function=$_GET["function"];
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     $js=compile_js_progress($ID,"progress-websites-restart");
     if(isset($_GET["forcediv"])){
         $js=compile_js_progress($ID,$_GET["forcediv"]);
     }
 
-    $type=$ligne["type"];
+    $type=isset($ligne["type"])?$ligne["type"]:0;
     if($type==2){
         $js="$function()";
     }
@@ -871,11 +958,9 @@ function compile_js():bool{
 function compile_firewall():bool{
     $page   = CurrentPageName();
     $tpl    =  new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["compile-firewall"];
-    $q=new lib_sqlite(NginxGetDB());
-
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ID=intval($_GET["compile-firewall"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     $GLOBALS["CLASS_SOCKETS"]->CLUSTER_NGINX($ID);
     header("content-type: application/x-javascript");
     echo "Loadjs('fw.nginx.apply.php?serviceid=$ID');\n";
@@ -883,12 +968,11 @@ function compile_firewall():bool{
 }
 
 function compile_confirm():bool{
-    $ID=$_POST["compile-confirm"];
+    $ID=intval($_POST["compile-confirm"]);
     $sock=new sockets();
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
-    $type=$ligne["type"];
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
+    $type=isset($ligne["type"])?$ligne["type"]:0;
     if( ($type==2) OR ($type==5) ) {
         $data=$sock->REST_API_NGINX("/reverse-proxy/single/$ID");
         $json=json_decode($data);
@@ -908,10 +992,10 @@ function compile_confirm():bool{
 }
 
 function compile_js_progress($ID,$sdiv=null):string{
+    // Pentest 2026-11-04 : addjs etait recopie decode et sans encodage dans la page (XSS).
+    // Aucun appelant ne passe addjs a cette page et fw.nginx.apply.php attend du base64 :
+    // la valeur decodee n'a jamais pu servir, on ne la relaie plus.
     $addjs="";
-    if(isset($_GET["addjs"])){
-        $addjs=base64_decode($_GET["addjs"]);
-    }
     return "Loadjs('fw.nginx.apply.php?serviceid=$ID&function=NgixSitesReload&addjs=$addjs');";
 }
 
@@ -956,9 +1040,8 @@ function www_parameters_section_js($section):bool{
 function www_tabs(){
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["www-tabs"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT `type` FROM nginx_services WHERE ID=$ID");
+    $ID=intval($_GET["www-tabs"]);
+    $ligne=fetch_nginx_service_row($ID);
     $type=intval($ligne["type"]);
     $Limited[14]=true;
     $icoParam=ico_params;
@@ -1013,10 +1096,9 @@ function www_tabs(){
 function doh_parameters(){
     $page=CurrentPageName();
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["doh-params"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
-    $servicename=$ligne["servicename"];
+    $ID=intval($_GET["doh-params"]);
+    $ligne=fetch_nginx_service_row($ID);
+    $servicename=isset($ligne["servicename"])?$ligne["servicename"]:"";
     $sockngix=new socksngix($ID);
 
     $doh_subfolder=$sockngix->GET_INFO("doh_subfolder");
@@ -1025,7 +1107,8 @@ function doh_parameters(){
     $tpl->field_hidden("doh-params",$ID);
     $form[]=$tpl->field_text("doh_subfolder","{doh_subfolder}",$doh_subfolder);
 
-    echo $tpl->form_outside("$servicename <small>({DOH_WEB_SERVICE})</small>", $form,"{CREATE_DOH_WEB_SERVICE_SERVICE} ({$ligne["type"]})","{apply}","NgixSitesReload();","AsSystemWebMaster");
+    $type=isset($ligne["type"])?$ligne["type"]:0;
+    echo $tpl->form_outside("$servicename <small>({DOH_WEB_SERVICE})</small>", $form,"{CREATE_DOH_WEB_SERVICE_SERVICE} ($type)","{apply}","NgixSitesReload();","AsSystemWebMaster");
 
 }
 function doh_parameters_save(){
@@ -1046,9 +1129,8 @@ function www_parameters():bool{
 function get_ServiceType($ID):int{
     $ID=intval($ID);
     if($ID==0){return 0;}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT type FROM nginx_services WHERE ID=$ID");
-    return intval($ligne["type"]);
+    $ligne=fetch_nginx_service_row($ID);
+    return intval(isset($ligne["type"])?$ligne["type"]:0);
 }
 function get_servicename($ID):string{
     $ID=intval($ID);
@@ -1067,11 +1149,10 @@ function www_parameters_general_popup():bool{
     $page                       = CurrentPageName();
     $tpl                        = new template_admin();$tpl->CLUSTER_CLI=true;
     $ID                         = intval($_GET["www-parameters-general-popup"]);
-    $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($ID);
 
 
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
+    $ligne=fetch_nginx_service_row($ID);
     $servicename=get_servicename($ID);
     $DenyAccess=$sockngix->GET_INFO("DenyAccess");
     $RedirectQueries=trim($sockngix->GET_INFO("RedirectQueries"));
@@ -1138,13 +1219,12 @@ function www_parameters_security_popup():bool{
     $tpl                        = new template_admin();$tpl->CLUSTER_CLI=true;
     $ID                         = intval($_GET["www-parameters-security-popup"]);
 
-    $q                          = new lib_sqlite(NginxGetDB());
     $users                      = new usersMenus();
     $sockngix                   = new socksngix($ID);
     $ASPROXY                    = www_parameters_isProxy($ID);
     $hts_enabled                = intval($sockngix->GET_INFO("hts_enabled"));
     $EnableCrowdSec             = intval($sockngix->GET_INFO("EnableCrowdSec"));
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
+    $ligne=fetch_nginx_service_row($ID);
 
     $form[]=$tpl->field_hidden("ID", $ID);
     $form[]=$tpl->field_hidden("ztype", $ligne["type"]);
@@ -1185,11 +1265,10 @@ function www_parameters_ssl_popup():bool{
     $page                       = CurrentPageName();
     $tpl                        = new template_admin();$tpl->CLUSTER_CLI=true;
     $ID                         = intval($_GET["www-parameters-ssl-popup"]);
-    $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($ID);
 
 
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
+    $ligne=fetch_nginx_service_row($ID);
 
     $ssl_protocols=$sockngix->GET_INFO("ssl_protocols");
     $ssl_ciphers=$sockngix->GET_INFO("ssl_ciphers");
@@ -1263,13 +1342,9 @@ function nginx_pagespeed_enabled():int{
 
 function www_parameters2_isSSL($tpl,$ID){
 
-    $q=new lib_sqlite(NginxGetDB());
     $isSSL=false;
-    // On check les ports.
-    $results=$q->QUERY_SQL("SELECT options,port FROM stream_ports WHERE serviceid=$ID");
-    if(!$q->ok){
-        VERBOSE($q->mysql_error,__LINE__);
-    }
+    // On check les ports via the daemon API.
+    $results=fetch_stream_ports_for_service($ID);
     foreach ($results as $index=>$ligne){
         $options=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["options"]);
         $port=intval($ligne["port"]);
@@ -1345,7 +1420,6 @@ function www_parameters2():bool{
     $page                       = CurrentPageName();
     $tpl                        = new template_admin();$tpl->CLUSTER_CLI=true;
     $ID                         = intval($_GET["www-parameters2"]);
-    $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($ID);
     $ASPROXY                    = www_parameters_isProxy($ID);
     $GenericHarden              = intval($sockngix->GET_INFO("GenericHarden"));
@@ -1355,9 +1429,9 @@ function www_parameters2():bool{
     }
 
 
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
+    $ligne=fetch_nginx_service_row($ID);
     $servicename=get_servicename($ID);
-    $type=$ligne["type"];
+    $type=isset($ligne["type"])?$ligne["type"]:0;
 
 
     $exTypes[1]="{php_website_explain}";
@@ -1556,12 +1630,10 @@ function www_parameters2():bool{
     }
     if($ligne["type"]==12){
         $WebCopyList=array();
-        $results=$q->QUERY_SQL("SELECT ID,enforceuri FROM httrack_sites ORDER BY enforceuri");
-        foreach ($results as $index=>$WebCopyLine){
+        foreach (fetch_httrack_sites_ordered() as $WebCopyLine){
             $WebCopyList[$WebCopyLine["ID"]]=$WebCopyLine["enforceuri"];
-
         }
-        $tpl->table_form_field_text("{mirror}",$WebCopyList[$WebCopyID],ico_copy);
+        $tpl->table_form_field_text("{mirror}",isset($WebCopyList[$WebCopyID])?$WebCopyList[$WebCopyID]:"",ico_copy);
     }
 
     // Not show others settings because there is no sense to continue ( see RedirectQueries for example)
@@ -1746,9 +1818,10 @@ function www_parameters2():bool{
                 $LocalProto = array("TLSv1.2", "TLSv1.3");
             }
             if(preg_match("#^SUB:([0-9]+)#",$ssl_certificate,$re)){
-                $qSSL=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-                $ligneSSL=$qSSL->mysqli_fetch_array("SELECT commonName FROM subcertificates WHERE ID=$re[1]");
-                $ssl_certificate=$ligneSSL["commonName"];
+                include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+                $cdbSSL=new CertificatesDB();
+                $subSSL=$cdbSSL->subGetById(intval($re[1]));
+                $ssl_certificate=is_object($subSSL)?(string)($subSSL->commonName ?? ""):"";
             }
             $ssl_ciphers_array = explode(":", $ssl_ciphers);
             $tpl->table_form_field_bool("{Redirect80To443}", intval($sockngix->GET_INFO("Redirect80To443")), ico_arrow_right);
@@ -2085,19 +2158,18 @@ function www_hosts_edit_popup():bool{
 function www_hosts2():bool{
     $page       = CurrentPageName();
     $tpl        = new template_admin();$tpl->CLUSTER_CLI=true;
-    $q          = new lib_sqlite(NginxGetDB());
     $ID         = intval($_GET["www-hosts2"]);
     $socksngix  = new socksngix($ID);
 
-    if(!$q->FIELD_EXISTS("nginx_services","ResolvErrDetail")){
-        $q->QUERY_SQL("ALTER TABLE nginx_services ADD ResolvErrDetail TEXT NOT NULL DEFAULT ''");
-    }
-    $ligne      = $q->mysqli_fetch_array("SELECT servicename,hosts,ResolvErrDetail FROM nginx_services WHERE ID=$ID");
+    // Daemon owns nginx_services schema migrations (DBConf.go FixTables); the
+    // ResolvErrDetail column is created there, so the PHP ALTER TABLE check is
+    // redundant.
+    $ligne=fetch_nginx_service_row($ID);
 
     $html[]="<div style='margin-top:20px;width=80%'>";
     $ExpireCert="";
-    $Zhosts=explode("||",$ligne["hosts"]);
-    $ResolvErrDetail=unserialize($ligne["ResolvErrDetail"]);
+    $Zhosts=explode("||",isset($ligne["hosts"])?$ligne["hosts"]:"");
+    $ResolvErrDetail=unserialize(isset($ligne["ResolvErrDetail"])?$ligne["ResolvErrDetail"]:"");
     $ssl_certificate = $socksngix->GET_INFO("ssl_certificate");
     $ssl_certificates = array();
     if(strlen($ssl_certificate)>3){
@@ -2126,17 +2198,18 @@ function www_hosts2():bool{
     $btns=$tpl->th_buttons($topbuttons);
 
     $html[]=$btns;
-    $html[]="<table class=\"table table-stripped\" style='margin-top:20px'>";
+    $html[]="<div class='awc-wrap' style='margin-top:20px'><div class='awc-card'>"
+           ."<div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th colspan='2'>{domains}</th>";
     $html[]="<th>{certificate}</th>";
     $html[]="<th>{RESOLVED}</th>";
     $html[]="<th>{available}</th>";
-
-
     $html[]="<th></th>";
     $html[]="</tr>";
+    $html[]="</thead>";
+    $html[]="<tbody id='ngxdom-rows'>";
     $TRCLASS=null;
 
     $ForwardServersDynamics =   intval($socksngix->GET_INFO("ForwardServersDynamics"));
@@ -2145,7 +2218,7 @@ function www_hosts2():bool{
         $FSDynamicsExt = intval($socksngix->GET_INFO("FSDynamicsExt"));
         $FSDynamicsSrc = trim($socksngix->GET_INFO("FSDynamicsSrc"));
         $FSDynamicsDst = trim($socksngix->GET_INFO("FSDynamicsDst"));
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         if($FSDynamicsExt==1){
             if(preg_match("#\.(.*?)$#",$FSDynamicsSrc,$re)){
@@ -2172,7 +2245,7 @@ function www_hosts2():bool{
 
     foreach ($Zhosts as $domains){
         if (trim($domains)==null){continue;}
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $md=md5($domains);
         $arrow=null;$redir=null;
         $domainsenc=urlencode(base64_encode($domains));
@@ -2250,10 +2323,16 @@ function www_hosts2():bool{
         $html[]="</tr>";
 
     }
-    $html[]="</table>";
+    $html[]="</tbody>";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='ngxdom-pager'></span></div></div></div>";
     $html[]="</div>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    // Le pager se concatene APRES le parse: la regex #{(.+?)}# du moteur de
+    // traduction lirait chaque bloc {...} de son JS comme un {token}.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"ngxdom-rows","ngxdom-pager");
     return true;
 
 
@@ -2267,7 +2346,8 @@ function www_hosts_delete():bool{
     $array["service-id"]=$ID;
     $array["value"]=$value;
     $finale=urlencode(base64_encode(serialize($array)));
-    return $tpl->js_confirm_delete("$servicename>$value","hosts-delete",$finale,"$('#$md').remove();Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$ID');");
+    // Pentest 2026-11-04 : www-host-delete etait recopie sans encodage dans la page (XSS).
+    return $tpl->js_confirm_delete(req_html("$servicename>$value"),"hosts-delete",$finale,"$('#$md').remove();Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$ID');");
 }
 function www_hosts_delete_perform():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
@@ -2351,10 +2431,10 @@ function www_hosts_save():bool{
 }
 
 function isAlready14():bool{
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM nginx_services WHERE type=14");
-    if(isset($ligne["ID"])){return true;}
-    return false;
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/type/14");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"])){return false;}
+    return count($data["rows"])>0;
 }
 
 function new_www():bool{
@@ -2414,10 +2494,7 @@ function new_www():bool{
     }
 
 
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT *  FROM nginx_templates");
-
-    foreach ($results as $index=>$ligne) {
+    foreach (fetch_nginx_templates_all() as $index=>$ligne) {
         $ID = intval($ligne["ID"]);
         $tpname = $ligne["tpname"];
         $tpdate = $ligne["tpdate"];
@@ -2660,13 +2737,12 @@ function MaintenanceSite():bool{
     return admin_tracks("Set maintenance reverse-proxy website of $Sitename to $Text");
 }
 function td_destinations():bool{
-    $ID=$_GET["td-destinations"];
+    $ID=intval($_GET["td-destinations"]);
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
 
-    $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($ID);
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$ID");
+    $ligne=fetch_nginx_service_row($ID);
     $idDiv="rcolor9-$ID";
     if(!isset($ligne["type"])){$ligne["type"]=0;}
 
@@ -2793,8 +2869,9 @@ function MillisToText($mill):string{
 }
 
 function backend_error_popup():bool{
+    if(!fw_progress_page_priv("AsWebMaster|AsSystemWebMaster")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $ID=$_GET["backend-error-popup"];
+    $ID=intval($_GET["backend-error-popup"]);
     $page=CurrentPageName();
     $Gpid=intval($_SESSION["HARMPID"]);
     $restart=$tpl->framework_buildjs("nginx:/reverse-proxy/progress/checkbackend/$ID/$Gpid",
@@ -2963,9 +3040,8 @@ function td_row_status($id=0):bool{
     if($id==0) {
         $id = intval($_GET["td-status"]);
     }
-    $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($id);
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$id");
+    $ligne=fetch_nginx_service_row($id);
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("nginx.php?reverse-fs=yes");
 
     $WAF=base64_encode(td_row_waf($id));
@@ -3125,7 +3201,8 @@ function table():bool{
     $IS_LICENSE=IS_LICENSE();
 
 
-    $html[]="<table id='table-websites-main' class=\"table table-stripped\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+           ."<table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' >{status}</th>";
@@ -3144,50 +3221,49 @@ function table():bool{
 
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='ngxs-rows'>";
 
-    $q=new lib_sqlite(NginxGetDB());
-    $ANDPRIVS="";
+    // Daemon API gives the full nginx_services list ordered by zorder; we
+    // filter privileges (NGINX_SERVICES) and numeric-ID search PHP-side
+    // because /nginx-db/list only supports column-equals.
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/nginx_services?order=zorder");
+    $data=json_decode($resp,true);
+    $allRows=(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])) ? $data["rows"] : [];
 
-    $sql="SELECT * FROM nginx_services ORDER BY zorder";
+    $allowedSet=null;
     if(!$users->AsWebMaster){
         if(count($users->NGINX_SERVICES)==0){
             echo $tpl->div_error("{error}||{ERROR_NO_PRIVS2}");
             $html[]="</tbody>";
-            $html[]="";
-            $html[]="</table>";
+            $html[]="</table></div></div></div>";
             $html[]="";
             $html[]="<script>";
             $html[]="Loadjs('$page?js-tiny=yes&function=$function')";
             $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
             $html[]="</script>";
-            echo $tpl->_ENGINE_parse_body($html);
+            echo awc_table_style().$tpl->_ENGINE_parse_body($html);
             return true;
         }
-        $tql=array();
+        $allowedSet=array();
         foreach ($users->NGINX_SERVICES as $ServiceID=>$none){
             if(!is_numeric($ServiceID)){continue;}
-            $tql[]="(ID=$ServiceID)";
+            $allowedSet[intval($ServiceID)]=true;
         }
-
-        if(count($tql)==0){
+        if(count($allowedSet)==0){
             echo $tpl->div_error("{error}||{ERROR_NO_PRIVS2}");
             $html[]="</tbody>";
-            $html[]="";
-            $html[]="</table>";
+            $html[]="</table></div></div></div>";
             $html[]="";
             $html[]="<script>";
             $html[]="Loadjs('$page?js-tiny=yes&function=$function')";
             $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
             $html[]="</script>";
-            echo $tpl->_ENGINE_parse_body($html);
+            echo awc_table_style().$tpl->_ENGINE_parse_body($html);
             return true;
         }
-
-        $ANDPRIVS=sprintf(" AND (%s)",@implode(" OR ",$tql));
-        $sql=sprintf("SELECT * FROM nginx_services WHERE (%s) ORDER BY zorder",@implode(" OR ",$tql));
     }
     $SEARCH_SSL=false;
+    $searchID=0;
 
     if(strlen($search)>0) {
         if (!$tpl->is_regex($search)) {
@@ -3203,17 +3279,18 @@ function table():bool{
                 $search = str_replace(".", "\.", $search);
                 $search = str_replace("*", ".*?", $search);
             } else {
-                $sql = "SELECT * FROM nginx_services WHERE ID=$search$ANDPRIVS";
+                $searchID=intval($search);
                 $search = "";
             }
         }
     }
 
-    $results=$q->QUERY_SQL($sql);
-
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
-        return false;
+    $results=array();
+    foreach($allRows as $r){
+        $rid=intval($r["ID"]);
+        if($allowedSet!==null && !isset($allowedSet[$rid])){continue;}
+        if($searchID>0 && $rid!==$searchID){continue;}
+        $results[]=$r;
     }
 
     $GLOBALS["PEITYCONF"]="{ width:200,height:25,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
@@ -3241,7 +3318,7 @@ function table():bool{
     }
 
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $ID=$ligne["ID"];
         $md="MdNginxRule$ID";
         $LOCK_ACTION=false;
@@ -3336,8 +3413,9 @@ function table():bool{
 
 
     $html[]="</tbody>";
+    $html[]="</table></div>";
     $html[]=table_footer($MAX_WEB_SITES);
-    $html[]="</table>";
+    $html[]="</div></div>";
     $html[]="";
     $html[]="<script>";
     $html[]="Loadjs('$page?js-tiny=yes&function=$function')";
@@ -3350,7 +3428,11 @@ function table():bool{
     }
     $html[]=sprintf("Loadjs('$page?destinations-prepare=%s&function=$function')",base64_encode(serialize($DestinationsPrepare)));
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // Le cablage du pager se concatene APRES le parse: la regex #{(.+?)}# du
+    // moteur de traduction lirait chaque bloc {...} de son JS comme un {token}.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .table_footer_js($function);
     return true;
 }
 
@@ -3358,11 +3440,9 @@ function td_btnAction($ID){
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
     $md="MdNginxRule$ID";
-    $q= new lib_sqlite(NginxGetDB());
-
-    $ligne=$q->mysqli_fetch_array("SELECT MaintenanceSite,enabled FROM nginx_services WHERE ID=$ID");
-    $MaintenanceSite=$ligne["MaintenanceSite"];
-    $enabled=$ligne["enabled"];
+    $ligne=fetch_nginx_service_row($ID);
+    $MaintenanceSite=isset($ligne["MaintenanceSite"])?$ligne["MaintenanceSite"]:0;
+    $enabled=isset($ligne["enabled"])?$ligne["enabled"]:0;
 
 
 
@@ -3412,7 +3492,7 @@ function IS_LICENSE():bool{
             return true;
         }
 
-        if (intval($LICJSON->ActiveRules)<2){
+        if (intval($LICJSON->ActiveRules)<3){ // 2 websites without license, same as ReverseLicense.FreeWebsites
             return true;
         }
        return $LICJSON->Status;
@@ -3426,9 +3506,8 @@ function td_row_sslcertificate($id):string{
     $tpl->CLUSTER_CLI=true;
     $ssl_certificate = $sockngix->GET_INFO("ssl_certificate");
     $labeldanger="label-danger";
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM nginx_services WHERE ID=$id");
-    $enabled=intval($ligne["enabled"]);
+    $ligne=fetch_nginx_service_row($id);
+    $enabled=intval(isset($ligne["enabled"])?$ligne["enabled"]:0);
     if($enabled==0){
         $labeldanger="label-default";
     }
@@ -3489,23 +3568,20 @@ function td_row_serversnames($id):string{
     if($id==0) {
         $id = intval($_GET["td-status"]);
     }
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT type,hosts FROM nginx_services WHERE ID=$id");
-    $ServerType=$ligne["type"];
+    $ligne=fetch_nginx_service_row($id);
+    $ServerType=isset($ligne["type"])?$ligne["type"]:0;
     if($ServerType==5){
-        return td_row_serversnames_stream();
+        return td_row_serversnames_stream($id);
     }
 
 
-    list($serversnames,$ServerNameFields)=extract_hosts($ligne["hosts"],$id);
+    list($serversnames,$ServerNameFields)=extract_hosts(isset($ligne["hosts"])?$ligne["hosts"]:"",$id);
     return $tpl->_ENGINE_parse_body($ServerNameFields);
 }
 
 function td_row_serversnames_stream($id):string{
     $f=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $results=$q->QUERY_SQL("SELECT * FROM stream_ports WHERE serviceid='$id'");
-    if(!$q->ok){return "";}
+    $results=fetch_stream_ports_for_service($id);
     foreach ($results as $index=>$ligne) {
         $options = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["options"]);
         $interface = $ligne["interface"];
@@ -3539,13 +3615,12 @@ function td_row_servicename($id=0):string{
         return "";
     }
 
-    $q                          = new lib_sqlite(NginxGetDB());
     $sockngix                   = new socksngix($id);
 
 
-    $ligne=$q->mysqli_fetch_array("SELECT enabled,badconf,servicename FROM nginx_services WHERE ID=$id");
-    $enabled=$ligne["enabled"];
-    $badconflength=strlen($ligne["badconf"]);
+    $ligne=fetch_nginx_service_row($id);
+    $enabled=isset($ligne["enabled"])?$ligne["enabled"]:0;
+    $badconflength=strlen(isset($ligne["badconf"])?$ligne["badconf"]:"");
     $debug=intval($sockngix->GET_INFO("Debug"));
     $debug_ico="&nbsp;";
     $badconf="";
@@ -3588,54 +3663,55 @@ function td_row_servicename($id=0):string{
 }
 
 function table_footer($totalRecords):string{
-    $currentPage=1;
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-    $PageText=$tpl->_ENGINE_parse_body("{page}");
-    $me=CurrentPageName();
+    $currentPage=1;
     if(isset($_SESSION["NginxTableCurpage"])){
-        $currentPage=$_SESSION["NginxTableCurpage"];
+        $currentPage=intval($_SESSION["NginxTableCurpage"]);
     }
-    $function=$_GET["function"];
-    $recordsPerPage=$_SESSION["NginxTableMaxRecs"];
-    $totalPages = ceil($totalRecords / $recordsPerPage);
+    $recordsPerPage=intval($_SESSION["NginxTableMaxRecs"]);
+    if($recordsPerPage<1){$recordsPerPage=25;}
+    $totalPages=ceil($totalRecords/$recordsPerPage);
 
-    $f[]="<tfoot>";
-    $f[]="<tr>";
-    $f[]="<td colspan='17'>";
-
-
-    $f[]="<div class=\"dataTables_paginate paging_simple_numbers\" id=\"DataTables_Table_0_paginate\" style='text-align:right'>";
-    $f[]="	<ul class=\"pagination\">";
-    for ($page = 1; $page <= $totalPages; $page++) {
-
-    $class="";
-    if($page==$currentPage){
-        $class="active";
-    }
-        $offset = ($page - 1) * $recordsPerPage;
-    if($offset>$totalRecords){
-        continue;
-    }
-    $js="Loadjs('$me?TableNavigate=$page&offset=$recordsPerPage&max=$recordsPerPage&function=$function');";
-
-    $f[]="		<li class=\"paginate_button $class\" style='text-transform:capitalize'>";
-    $f[]="			<a href=\"#\" OnClick=\"$js\">&laquo;&laquo;&nbsp;$PageText $page&nbsp;&raquo;&raquo;</a>";
-    $f[]="		</li>";
-
-
-    }
-    $f[]="		</ul>";
+    // awc_pager_server() -- et non awc_pager_js() -- parce que le fragment ne
+    // contient qu'UNE page de lignes: la boucle de table() s'arrete a
+    // NginxTableMaxRecs, il n'y a donc rien a masquer cote navigateur.
+    // Il rend une fenetre de cinq pages + precedent/suivant, la ou l'ancien
+    // <tfoot> alignait un <li> par page -- 100 liens pour 500 sites a 5 par page.
+    $f[]="<div class='awc-foot'>";
+    $f[]="<span>".number_format($totalRecords)." {websites}</span>";
+    $f[]="<span class='awc-pg' id='ngxs-pager'>".awc_pager_server($currentPage,$totalPages)."</span>";
     $f[]="</div>";
-    $f[]="</td>";
-    $f[]="</tr>";
-    $f[]="</tfoot>";
     return @implode("\n",$f);
-
+}
+/**
+ * Cablage des liens du pager. awc_pager_server() ne rend que le balisage
+ * (chaque lien porte data-p="<numero>"): lui seul ne peut pas connaitre l'URL a
+ * recharger. On rebranche donc ici le meme Loadjs() que l'ancien <tfoot>.
+ *
+ * A concatener APRES _ENGINE_parse_body(): la regex #{(.+?)}# du moteur lirait
+ * chaque bloc {...} de ce JS comme un {token}.
+ */
+function table_footer_js($function):string{
+    $me=CurrentPageName();
+    $recordsPerPage=intval($_SESSION["NginxTableMaxRecs"]);
+    if($recordsPerPage<1){$recordsPerPage=25;}
+    // $function vient de $_GET et part dans un litteral JS: liste blanche.
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)$function);
+    $js ="<script>(function(){";
+    $js.="var b=document.getElementById('ngxs-pager'); if(!b){return;}";
+    $js.="var a=b.getElementsByTagName('a');";
+    $js.="for(var i=0;i<a.length;i++){ a[i].onclick=function(){";
+    $js.="var p=parseInt(this.getAttribute('data-p'),10); if(isNaN(p)){return false;}";
+    $js.="Loadjs('$me?TableNavigate='+p+'&offset=$recordsPerPage";
+    $js.="&max=$recordsPerPage&function=$function'); return false; }; }";
+    $js.="})();</script>";
+    return $js;
 }
 function table_peity($ID):array{
     $date=date("Y-m-d H:i:s",strtotime('-12 hours'));
     $q=new postgres_sql();
     $field_time="date_trunc('hour', zdate) + INTERVAL '10 minute' * floor(EXTRACT(MINUTE FROM zdate) / 10) as hour_formatted";
+    $ID=intval($ID);
     $sql="SELECT SUM(requestcounter) as tsum,$field_time FROM nginx_stats WHERE serviceid=$ID AND requestcounter>0 AND zdate>'$date' GROUP BY hour_formatted";
     VERBOSE("$ID:$sql",__LINE__);
     $results=$q->QUERY_SQL($sql);
@@ -3791,9 +3867,7 @@ function td_status($ligne,$sockngix):string{
             $js = "Loadjs('fw.nginx.sites.php?www-parameters-ssl-js=$ID')";
             return $tpl->td_href("<span class='label label-danger'>#$ID {no_certificate}</span>", null, $js);
         }
-        $q = new lib_sqlite(NginxGetDB());
-        $sligne = $q->mysqli_fetch_array("SELECT count(*) as tcount FROM backends WHERE serviceid='$ID'");
-        $tcount = intval($sligne["tcount"]);
+        $tcount = count(fetch_backends_for_service($ID));
         if ($tcount == 0) {
             return $tpl->td_href("<span class='label label-danger'>#$ID no backend</span>", null, $goodconf_js);
         }
@@ -3874,8 +3948,7 @@ function extract_backends($serviceid):string{
         }
     }
 
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT * FROM backends WHERE serviceid='$serviceid'");
+    $results=fetch_backends_for_service($serviceid);
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $ServiceType=get_ServiceType($serviceid);
 
@@ -3954,8 +4027,7 @@ function extract_hosts($hosts,$serviceid):array{
     $Redirect80To443=intval($sockngix->GET_INFO("Redirect80To443"));
     $MAIN_PORTS=array();
 
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT * FROM stream_ports WHERE serviceid='$serviceid'");
+    $results=fetch_stream_ports_for_service($serviceid);
     foreach ($results as $md5=>$ligne){
         $port=intval($ligne["port"]);
         if($port==0){continue;}
@@ -4058,8 +4130,7 @@ function extract_hosts($hosts,$serviceid):array{
 
 function stream_ports($serviceid):string{
     $f=array();
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT * FROM stream_ports WHERE serviceid='$serviceid'");
+    $results=fetch_stream_ports_for_service($serviceid);
     foreach ($results as $md5=>$ligne){
         $interface=$ligne["interface"];
         if($interface==null){$interface="{all}";}
@@ -4073,8 +4144,7 @@ function stream_ports($serviceid):string{
 function backendsOf($serviceid):string{
     $f=array();
     VERBOSE("Backend of $serviceid ----------------------------------------",__LINE__);
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT * FROM backends WHERE serviceid='$serviceid'");
+    $results=fetch_backends_for_service($serviceid);
     foreach ($results as $md5=>$ligne){
         $hostname=$ligne["hostname"];
         VERBOSE("Backend of $serviceid = $hostname",__LINE__);

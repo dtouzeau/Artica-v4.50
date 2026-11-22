@@ -23,7 +23,7 @@ function popup(){
     $tpl=new template_admin();
     $js3="if(document.getElementById('ad-right-status')){LoadAjax('ad-right-status','fw.proxy.ad.status.php?kerberos-status=yes');}";
 
-    $jsrestart=$tpl->framework_buildjs("services.php?verifpackages=yes",
+    $jsrestart=$tpl->framework_buildjs("/aptget/verif-packages/run",
         "verifpackages.progress","verifpackages.log","progress-php7-$t","dialogInstance6.close();LoadAjaxSilent('artica-notifs-barr','fw.icon.top.php?notifs=yes');$js3;"
     );
 	$html="<div id='progress-php7-$t'></div><script>$jsrestart</script>";

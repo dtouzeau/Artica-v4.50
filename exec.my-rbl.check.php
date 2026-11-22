@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 $GLOBALS["VERBOSE"]=false;
 $GLOBALS["DEBUG"]=false;;
 $GLOBALS["FORCE"]=false;

@@ -1,28 +1,26 @@
-<add_local_domain_form>Give the local domain you want to store on this server</add_local_domain_form>
-<add_local_domain_text>Local domains are stored on this computer and must be deliver in it`s mailbox server.</add_local_domain_text>
+<add_local_domain_form>Indique el dominio local que desea almacenar en este servidor</add_local_domain_form>
+<add_local_domain_text>Local domains are stored on this computer and must be deliver in it's mailbox server.</add_local_domain_text>
 <add_relay_domain>A%C3%B1adir un nuevo dominio reenviado</add_relay_domain>
-<add_relay_domain_text>All emails for a "relay domain" will be forwarded to an other dedicated server.</add_relay_domain_text>
-<autoaliases>Auto-aliase</autoaliases>
-<autoaliases_text>If you enable this feature, each user will have automatically a new aliase with this domain when you update it on create a new one</autoaliases_text>
-<duplicate_domain>Duplicate domain</duplicate_domain>
-<duplicate_domain_text>If you enable this feature, mails will be forwared to the local mailbox AND be duplicated to a remote target mail server</duplicate_domain_text>
-<introduction>
-This section help you to create smtp domains in your organization.[br]
-You have 2 ways to create your domains[br]
+<add_relay_domain_text>Todos los correos de un &quot;dominio de retransmisi&#243;n&quot; se reenviar&#225;n a otro servidor dedicado.</add_relay_domain_text>
+<autoaliases>Alias autom&#225;tico</autoaliases>
+<autoaliases_text>Si habilita esta funci&#243;n, cada usuario tendr&#225; autom&#225;ticamente un nuevo alias con este dominio cuando lo actualice o cree uno nuevo</autoaliases_text>
+<duplicate_domain>Duplicar dominio</duplicate_domain>
+<duplicate_domain_text>Si habilita esta funci&#243;n, los correos se reenviar&#225;n al buz&#243;n local Y se duplicar&#225;n a un servidor de correo de destino remoto</duplicate_domain_text>
+<introduction>Esta secci&#243;n le ayuda a crear dominios SMTP en su organizaci&#243;n.[br]
+Tiene 2 formas de crear sus dominios[br]
 [ul]
-[li][strong]Local domain[/strong][br]
-local domains are stored on this computer and must be deliver in it's mailbox server.[/li]
-[li][strong]Relay domains[/strong][br]
-All emails for a "relay domain" will be forwarded to an other dedicated server.[/li][/ul]
-</introduction>
-<local_domain_map>Local domains used by your organization</local_domain_map>
-<mx_look>[b]MX lookup[/b][ul]
-[li][b]Red[/b]:disable resolve the computer in DNS[/li]
-[li][b]Green[/b]:Enable resolving the computer by DNS[/li]
+[li][strong]Dominio local[/strong][br]
+los dominios locales se almacenan en este equipo y deben entregarse en su servidor de buzones.[/li]
+[li][strong]Dominios de retransmisi&#243;n[/strong][br]
+Todos los correos de un &quot;dominio de retransmisi&#243;n&quot; se reenviar&#225;n a otro servidor dedicado.[/li][/ul]</introduction>
+<local_domain_map>Dominios locales utilizados por su organizaci&#243;n</local_domain_map>
+<mx_look>[b]B&#250;squeda MX[/b][ul]
+[li][b]Rojo[/b]: deshabilitar la resoluci&#243;n del equipo en DNS[/li]
+[li][b]Verde[/b]: habilitar la resoluci&#243;n del equipo mediante DNS[/li]
 [/ul]</mx_look>
-<mx_look_text>MX lookup</mx_look_text>
-<no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
-<relay_domain_map>others relayed domains used by your organization</relay_domain_map>
+<mx_look_text>B&#250;squeda MX</mx_look_text>
+<no_remote_domain_here>Actualmente no hay ning&#250;n dominio de retransmisi&#243;n establecido</no_remote_domain_here>
+<relay_domain_map>otros dominios de retransmisi&#243;n utilizados por su organizaci&#243;n</relay_domain_map>
 <roundrobin>Round Robin</roundrobin>
 <roundrobin_text>El DNS round robin es una técnica de distribuci%C3%B3n de la carga, de equilibrio de la carga o de provisi%C3%B3n de tolerancia a fallos de m%C3%BAltiples
 m%C3%BAltiples y redundantes hosts de servicio de Protocolo de Correo, por ejemplo, gestionando las respuestas del Sistema de Nombres de Dominio (DNS)
@@ -32,5 +30,5 @@ sino con una lista de direcciones IP de varios servidores que alojan servicios i
 El orden en que se devuelven las direcciones IP de la lista es la base del término round robin[br].
 Con cada respuesta DNS, la secuencia de direcciones IP de la lista se permuta. Normalmente, los clientes IP b%C3¡sicos intentan conectarse con la primera
 direcci%C3%B3n devuelta de una consulta DNS para que en diferentes intentos de conexi%C3%B3n los clientes reciban servicio de diferentes proveedores, distribuyendo as%C3%AD la carga total entre los servidores.</roundrobin_text>
-<target_computer_name>Target server name or IP</target_computer_name>
+<target_computer_name>Nombre o IP del servidor de destino</target_computer_name>
 <target_computer_port>Puerto</target_computer_port>

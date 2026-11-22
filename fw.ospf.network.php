@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
@@ -35,7 +38,7 @@ function compile_js_progress():string{
     $ARRAY["TITLE"]="{restarting}";
     $ARRAY["AFTER"]="LoadAjax('ospfd-section-status','fw.network.ospf.php?status2=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsafter="Loadjs('fw.progress.php?content=$prgress&mainid=ospfd-section-progress')";
+    $jsafter="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=ospfd-section-progress')";
     return $jsafter;
 }
 
@@ -48,7 +51,7 @@ function rule_remove():bool{
 
     $network    = $ligne["network"];
     $q->QUERY_SQL("DELETE FROM ospf_networks WHERE ID=$ruleid");
-    if (!$q->ok) {echo "jserror:" . $tpl->javascript_parse_text($q->mysql_error);return false;}
+    if (!$q->ok) {echo (new template_admin())->post_error("" . $tpl->javascript_parse_text($q->mysql_error));return false;}
     admin_tracks("OSPF, remove area $network");
 
     echo "$('#$id').remove();\n";
@@ -65,14 +68,14 @@ function rule_enable():bool{
     if(intval($ligne["enabled"])==1) {
         $q->QUERY_SQL("UPDATE ospf_networks SET enabled='0' WHERE ID=$ruleid");
         if (!$q->ok) {
-            echo "jserror:" . $tpl->javascript_parse_text($q->mysql_error);
+            echo (new template_admin())->post_error("" . $tpl->javascript_parse_text($q->mysql_error));
             return false;
         }
         admin_tracks("OSPF, turn area {$ligne["network"]} to disabled");
         return true;
     }
     $q->QUERY_SQL("UPDATE ospf_networks SET enabled='1' WHERE ID=$ruleid");
-    if (!$q->ok) {echo "jserror:" . $tpl->javascript_parse_text($q->mysql_error);return false;}
+    if (!$q->ok) {echo (new template_admin())->post_error("" . $tpl->javascript_parse_text($q->mysql_error));return false;}
     admin_tracks("OSPF, turn area {$ligne["network"]} to enabled");
     return true;
 }
@@ -106,21 +109,22 @@ function rule_save():bool{
     $tpl->CLEAN_POST();
     $ID     = intval($_POST["ruleid"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-    $enable     = $_POST["enabled"];
-    $network    = $_POST["network"];
-    $realm      = $_POST["realm"];
+    // Pentest 2026-11-04 : enabled, network et realm etaient concatenes dans la requete.
+    $enable     = intval($_POST["enabled"]);
+    $network    = sqlite_escape_string2((string)$_POST["network"]);
+    $realm      = sqlite_escape_string2((string)$_POST["realm"]);
 
     if($ID==0){
         $q->QUERY_SQL("INSERT INTO ospf_networks
         (network, realm, enabled) VALUES ( '$network','$realm','$enable')");
-        if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+        if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
         admin_tracks("Created a new OSPF area $network/$realm");
         return true;
     }
 
     $q->QUERY_SQL("UPDATE ospf_networks 
         SET enabled='$enable',realm='$realm',network='$network' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
     admin_tracks("Modified OSPF area $network/$realm");
     return true;
 }

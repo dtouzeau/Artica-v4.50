@@ -1,9 +1,8 @@
-<maincf_data>Key data</maincf_data>
+<maincf_data>Datos de la clave</maincf_data>
 <maincf_key>Archivo de claves</maincf_key>
-<main_help>This section allow you to add entries in main.cf configuration file[br]
-each entry can replace the artica pre-formatted parametter or add datas to the pre-formatted parametter[br]
-for example[br]
-virtual_transport_maps -&amp;raquo; /etc/postfix/mytransport.cf -&amp;raquo; add[br]
-default_process_limit -&amp;raquo; 100 -&amp;raquo; replace
-</main_help>
-<perso_maincf>Personalize the main.cf configuration file</perso_maincf>
+<main_help>Esta secci&#243;n le permite a&#241;adir entradas en el archivo de configuraci&#243;n main.cf[br]
+cada entrada puede reemplazar el par&#225;metro preformateado de artica o a&#241;adir datos al par&#225;metro preformateado[br]
+por ejemplo[br]
+virtual_transport_maps &#187; /etc/postfix/mytransport.cf &#187; a&#241;adir[br]
+default_process_limit &#187; 100 &#187; reemplazar</main_help>
+<perso_maincf>Personalizar el archivo de configuraci&#243;n main.cf</perso_maincf>

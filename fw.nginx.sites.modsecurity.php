@@ -3,6 +3,8 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.modsecurity.tools.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["www-tabs"])){www_tabs();exit;}
 if(isset($_GET["www-parameters"])){www_parameters();exit;}
@@ -52,7 +54,17 @@ function EnableModSecurity():bool{
 function EnableCrowdSec():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $EnableCrowdSec=intval($_GET["EnableCrowdSec"]);
-    $serviceid=$_GET["serviceid"];
+    // Meme garde que EnableModSecurity() dix lignes plus haut : elle avait ete perdue
+    // en recopiant cette fonction, avec le intval(). Sans serviceid, socksngix(null)
+    // vaut socksngix(0) et l'ecriture part sur /site/0/params -- les parametres GLOBAUX
+    // du reverse-proxy, pas un site. Le demon ramasse ensuite ce pseudo-service 0 dans
+    // CrowdSec.Sites() comme s'il s'agissait d'un site : crowdsec_sites_count gonfle et
+    // aucun trafic ne correspond jamais (constate sur reverse-proxy88, 2026-08-26).
+    $serviceid=intval($_GET["serviceid"]);
+    if($serviceid==0){
+        echo $tpl->js_error("EnableCrowdSec Site ID==0");
+        return false;
+    }
     $servicename=get_servicename($serviceid);
     $sock=new socksngix($serviceid);
     $sock->SET_INFO("EnableCrowdSec",$EnableCrowdSec);
@@ -131,7 +143,7 @@ function section_exclude_js():bool{
         return $tpl->js_error("{corrupted} {website} ID (0) section_exclude_js");
     }
     $servicename=get_servicename($ID);
-    return $tpl->js_dialog6("#$ID - $servicename - {exclude}", "$page?section-exclude-popup=yes&serviceid=$ID",650);
+    return $tpl->js_dialog6("#$ID - $servicename - {exclude} {rules}", "$page?section-exclude-popup=yes&serviceid=$ID",650);
 }
 
 
@@ -243,7 +255,7 @@ function  search(){
         }
     }
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" style='margin-top:10px' data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' nowrap>{rule}</th>";
@@ -254,12 +266,12 @@ function  search(){
     $html[]="<tbody>";
 
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $serviceid=$ligne["serviceid"];
         $path=$ligne["spath"];
         $md=md5(serialize($ligne));
         $www="{all_websites}";
-        $ruleid=$ligne["wfrule"];
+        $ruleid=intval($ligne["wfrule"]);
         if($path==null){$path="{all_directories}";}
         $ID=$ligne["ID"];
         $uri_rule=null;
@@ -289,26 +301,17 @@ function  search(){
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td width='1%' nowrap>$ruleid_column</td>";
-        $html[]="<td width='5%' nowrap>$www</td>";
-        $html[]="<td width='50%' nowrap>$path</td>";
+        // Pentest 2026-11-04 : chemin de la liste blanche WAF (donnee externe, issu des URI attaquees) affiche sans encodage (XSS stockee).
+        $html[]="<td width='5%' nowrap>".req_html($www)."</td>";
+        $html[]="<td width='50%' nowrap>".req_html($path)."</td>";
         $html[]="</tr>";
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div></div></div>";
     $html[]="<script>";
     $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="
-$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": false },\"sorting\": { \"enabled\": false },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 
 }
 function www_parameters():bool{
@@ -374,6 +377,7 @@ function www_parameters2():bool{
     $crs_exclusions_wordpress=intval($sock->GET_INFO("crs_exclusions_wordpress"));
     $crs_exclusions_xenforo=intval($sock->GET_INFO("crs_exclusions_xenforo"));
     $ModSecurityExcludeCountries=trim($sock->GET_INFO("ModSecurityExcludeCountries"));
+    $WafNoPrestaShop=intval($sock->GET_INFO("WafNoPrestaShop"));
 
     $excludes=array();
     if($crs_exclusions_wordpress==1){
@@ -394,6 +398,11 @@ function www_parameters2():bool{
     if($crs_exclusions_nextcloud==1){
         $excludes[]="NextCloud";
     }
+    if($WafNoPrestaShop==1){
+        $excludes[]="PrestaShop";
+    }
+
+
     $tpl->table_form_field_js("Loadjs('$page?section-exclude-js=yes&serviceid=$ID')");
     if(count($excludes)==0){
         $tpl->table_form_field_bool("{exclude} {rules}",0,ico_params);
@@ -480,14 +489,21 @@ function www_parameters2():bool{
         $tpl->table_form_field_text("{deny_uploads}",@implode(", ",$denys)." $Scnner",ico_file);
     }
 
+    // Propositions de faux positifs WAF de ce site (fw.nginx.waf.falsepositives.php filtrée).
+    $tpl->table_form_field_js("typeof dialogInstance4!=='undefined' && dialogInstance4 && dialogInstance4.close();LoadAjax('MainContent','fw.nginx.waf.falsepositives.php?serviceid=$ID');");
+    $tpl->table_form_field_text("{wfp_menu}","{wfp_site_link}","fas fa-user-check");
+
     $form=$tpl->table_form_compile();
 
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
     $html[]="<td style='width:335px;vertical-align:top;padding-top:9px'><div id='widget-$ID'></div></td>";
+    // Cette cellule n'etait JAMAIS refermee: le </tr> suivait directement le
+    // formulaire. Defaut prealable, dans un tableau de mise en page.
     $html[]="<td style='padding-left:15px;vertical-align:top;'>";
     $html[]="<div id='modsecurity-compile-$ID'></div>";
     $html[]=$form;
+    $html[]="</td>";
     $html[]="</tr>";
     $html[]="</table>";
     $html[]="<script>";
@@ -608,6 +624,7 @@ function section_exclude_popup():bool{
     $crs_exclusions_nextcloud=intval($sock->GET_INFO("crs_exclusions_nextcloud"));
     $crs_exclusions_wordpress=intval($sock->GET_INFO("crs_exclusions_wordpress"));
     $crs_exclusions_xenforo=intval($sock->GET_INFO("crs_exclusions_xenforo"));
+    $WafNoPrestaShop=intval($sock->GET_INFO("WafNoPrestaShop"));
 
     $form[]=$tpl->field_checkbox("crs_exclusions_wordpress","WordPress",$crs_exclusions_wordpress);
     $form[]=$tpl->field_checkbox("crs_exclusions_cpanel","CPanel",$crs_exclusions_cpanel,false);
@@ -615,11 +632,12 @@ function section_exclude_popup():bool{
     $form[]=$tpl->field_checkbox("crs_exclusions_dokuwiki","DokuWiki",$crs_exclusions_dokuwiki);
     $form[]=$tpl->field_checkbox("crs_exclusions_nextcloud","NextCloud",$crs_exclusions_nextcloud);
     $form[]=$tpl->field_checkbox("crs_exclusions_xenforo","XenForo",$crs_exclusions_xenforo);
+    $form[]=$tpl->field_checkbox("WafNoPrestaShop","PrestaShop",$WafNoPrestaShop);
 
     if(!$modSecDisabled){
         VERBOSE("DISABLE FORM = FALSE",__LINE__);
     }
-    $html=$tpl->form_outside("{exclude} {rules}", $form,"","{apply}",$js,"AsSystemWebMaster",false,$modSecDisabled);
+    $html=$tpl->form_outside("", $form,"","{apply}",$js,"AsSystemWebMaster",false,$modSecDisabled);
     echo $tpl->_ENGINE_parse_body($html);
     return true;
 }

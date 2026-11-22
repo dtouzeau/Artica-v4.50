@@ -16,7 +16,7 @@ function js():bool{
     $function=$_GET["function"];
     $addjs="";
     if(isset($_GET["addjs"])){
-        $addjs="&addjs=".$_GET["addjs"];
+        $addjs="&addjs=".jsafter_token($_GET["addjs"]);
     }
 
 
@@ -77,7 +77,7 @@ function popup():bool{
 
     $addjs="";
     if(isset($_GET["addjs"])){
-        $addjs="&addjs=".$_GET["addjs"];
+        $addjs="&addjs=".jsafter_token($_GET["addjs"]);
     }
 
 $f[]="<H1>{apply_configuration} {please_wait}...</H1>";
@@ -93,7 +93,8 @@ $f[]="<script>";
     }
 
     if(isset($_GET["addjs"])){
-        $addjs=base64_decode($_GET["addjs"]);
+        // Pentest 2026-11-04 : JavaScript recu par l'URL, valide comme js-after.
+        $addjs=jsafter_sanitize(base64_decode(jsafter_token($_GET["addjs"])));
         $f[]="\t\t$addjs\n";
     }
 

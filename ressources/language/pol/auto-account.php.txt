@@ -1,6 +1,6 @@
 <add_network>Nowa sie%C4%87</add_network>
-<auto_account_explain>If you enable this feature, a new form will be added in the Artica logon web page.[br]This form helps yours users to fill informations in order to create their account (mailbox and access to the user interface).[br]
-This form will be displayed if users are connected trought specific networks you add in this section</auto_account_explain>
-<enable_autocreate>Enable Auto-create account form</enable_autocreate>
-<ipfrom>From IP Address</ipfrom>
-<ipto>To IP Address</ipto>
+<auto_account_explain>Je&#347;li w&#322;&#261;czysz t&#281; funkcj&#281;, do strony logowania Artica zostanie dodany nowy formularz.[br]Ten formularz pomaga u&#380;ytkownikom wype&#322;ni&#263; informacje w celu utworzenia konta (skrzynka pocztowa i dost&#281;p do interfejsu u&#380;ytkownika).[br]
+Ten formularz b&#281;dzie wy&#347;wietlany, je&#347;li u&#380;ytkownicy s&#261; po&#322;&#261;czeni za po&#347;rednictwem okre&#347;lonych sieci dodanych w tej sekcji</auto_account_explain>
+<enable_autocreate>W&#322;&#261;cz formularz automatycznego tworzenia konta</enable_autocreate>
+<ipfrom>&#377;r&#243;d&#322;owy adres IP</ipfrom>
+<ipto>Docelowy adres IP</ipto>

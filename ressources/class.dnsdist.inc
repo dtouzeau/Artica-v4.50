@@ -6,80 +6,10 @@ class dnsdist_status{
     public $error=null;
     public  $mainStats=array();
     private $json=array();
-    public $rules_array=array();
-    public $pools_array=array();
 
     public function __construct($localip="127.0.0.1"){
         if($localip<>null){$this->localip=$localip;}
 
-    }
-
-    public function localhost():bool{
-        if(!$this->connect("servers/localhost")){
-            VERBOSE("Connection Failed!!!",__LINE__);
-            return false;
-        }
-        VERBOSE("Connection Success",__LINE__);
-        $main=$this->json;
-
-        if(property_exists($main,"servers")){
-            $this->parse_servers($main);
-        }
-        if(property_exists($main,"pools")){
-            $this->parse_pools($main);
-        }
-
-        if(property_exists($main,"rules")){
-            $this->parse_rules($main);
-        }
-        return true;
-
-    }
-    private function parse_pools($main){
-
-        foreach ($main->pools as $index=>$pools){
-            $pool=$pools->name;
-            if($pool==null){continue;}
-            $hits=$pools->cacheHits;
-            $misses=$pools->cacheMisses;
-            $cacheSize=$pools->cacheSize;
-            $cacheEntries=$pools->cacheEntries;
-            $this->pools_array[$pool]["STATS"]=array(
-                "hits"=>$hits,
-                "miss"=>$misses,
-                "cachesize"=>$cacheSize,
-                "entries"=>$cacheEntries);
-
-        }
-    }
-
-    private function parse_servers($main){
-
-        foreach ($main->servers as $index=>$servers){
-            $address=$servers->address;
-            $name=$servers->name;
-            $latency=$servers->latency;
-            $queries=$servers->queries;
-            $state=$servers->state;
-            $pool=$servers->pools[0];
-            $id=$servers->id;
-
-            $this->pools_array[$pool]["SERVERS"][]=array(
-                "address"=>$address,
-                "name"=>$name,
-                "latency"=>$latency,
-                "queries"=>$queries,
-                "state"=>$state,
-                "id"=>$id
-            );
-        }
-
-    }
-    private function parse_rules($main){
-        foreach ($main->rules as $index=>$rules){
-            $this->rules_array[$rules->uuid]=$rules->matches;
-
-        }
     }
 
     public function generic_stats(){

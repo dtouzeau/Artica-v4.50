@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
@@ -76,6 +77,6 @@ function Save(){
 		$sock->SET_INFO($num, url_decode_special_tool($val));
 	}
 	
-	$sock->getFrameWork("tftpd.php?check=yes");
+	$sock->REST_API("/tftpd/apply");
 
 }

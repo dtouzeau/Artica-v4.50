@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DHCP management main page for a single remote agent.
  * Handles health check, install flow, restart, and leases (Status tab).
@@ -128,7 +130,7 @@ function dhcp_leases_table():bool{
 
     }
 
-    $h[] = "<table class='table table-stripped' data-page-size='50'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "  <thead><tr>";
     $h[] = "    <th data-sortable='true' data-type='text'>IP</th>";
     $h[] = "    <th data-sortable='true' data-type='text'>MAC</th>";
@@ -140,7 +142,7 @@ function dhcp_leases_table():bool{
     $now = new DateTime();
 
     foreach ($leases as $l) {
-            if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+            $TRCLASS=null;
             $ip       = htmlspecialchars($l["ip_address"]   ?? '');
             $mac      = htmlspecialchars($l["hardware_address"] ?? $l["mac"] ?? '');
             $hn       = htmlspecialchars($l["client_hostname"]  ?? $l["hostname"] ?? '—');
@@ -168,11 +170,11 @@ function dhcp_leases_table():bool{
     }
 
     $h[] = "  </tbody><tfoot><tr><td colspan='5'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $h[] = "</table>";
+    $h[] = "</table></div></div></div>";
     $h[] = "<script>NoSpinner();" . implode("\n", $tpl->ICON_SCRIPTS);
     $h[] = "</script>";
     $h[] = "</div>";
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     return true;
 }
 
@@ -246,7 +248,7 @@ function dhcp_install_status(): void {
     if ($running && !$done) {
         $h[] = "<div class='alert alert-info'>";
         $h[] = "  <i class='fas fa-spinner fa-spin'></i> <strong>{installing_dhcp}</strong>";
-        $h[] = "  <div id='install-log-$id' style='margin-top:8px;font-family:monospace;font-size:12px;max-height:80px;overflow-y:auto'>";
+        $h[] = "  <div id='install-log-$id' style='margin-top:8px;font-size:12px;max-height:80px;overflow-y:auto'>";
         foreach ($last5 as $line) { $h[] = htmlspecialchars($line) . "<br>"; }
         $h[] = "  </div>";
         $h[] = "</div>";
@@ -327,7 +329,7 @@ function dhcp_restart_status(): void {
     if ($running && !$done) {
         $h[] = "<div class='alert alert-info'>";
         $h[] = "  <i class='fas fa-spinner fa-spin'></i> <strong>{restarting_dhcp}</strong>";
-        $h[] = "  <div style='margin-top:8px;font-family:monospace;font-size:12px;max-height:80px;overflow-y:auto'>";
+        $h[] = "  <div style='margin-top:8px;font-size:12px;max-height:80px;overflow-y:auto'>";
         foreach ($last5 as $line) { $h[] = htmlspecialchars($line) . "<br>"; }
         $h[] = "  </div>";
         $h[] = "</div>";

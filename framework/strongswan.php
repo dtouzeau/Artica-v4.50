@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 //SP119
 include_once(dirname(__FILE__)."/frame.class.inc");
 include_once(dirname(__FILE__)."/class.unix.inc");
@@ -18,8 +19,6 @@ if(isset($_GET["restart"])){restart();exit;}
 if(isset($_GET["reconfigure"])){reconfigure();exit;}
 if(isset($_GET["syslog"])){strongswan_syslog();exit;}
 if(isset($_GET["refresh-sessions"])){refresh_sessions();exit;}
-if(isset($_GET["tunnel-status"])){tunnel_status();exit;}
-if(isset($_GET["tunnel-statusall"])){tunnel_statuall();exit;}
 if(isset($_GET["restart-parser"])){restart_parser();exit;}
 if(isset($_GET["status-vici"])){status_vici();exit;}
 if(isset($_GET["status-vici-parser"])){status_vici_parser();exit;}
@@ -113,7 +112,7 @@ function strongswan_syslog(){
     $unix=new unix();
     $grep=$unix->find_program("grep");
     $tail=$unix->find_program("tail");
-    $MAIN=unserialize(base64_decode($_GET["syslog"]));
+    $MAIN=unserialize(base64_decode($_GET["syslog"]),array("allowed_classes"=>false));
     $PROTO_P=null;
 
     foreach ($MAIN as $val=>$key){
@@ -149,7 +148,8 @@ function strongswan_syslog(){
     }
 
     $search="$date.*?$mainline";
-    $cmd="$grep -iE '$search' /var/log/charon.log |$tail -n $max >/usr/share/artica-postfix/ressources/logs/web/charon.syslog 2>&1";
+    // Pentest 2026-11-04 : motif et nombre de lignes de la requete quotes (injection shell root).
+    $cmd="$grep -iE ".fw_shell_quote($search)." /var/log/charon.log |$tail -n ".(intval($max)>0?intval($max):200)." >/usr/share/artica-postfix/ressources/logs/web/charon.syslog 2>&1";
     writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
@@ -162,19 +162,6 @@ function refresh_sessions(){
     shell_exec($cmd);
 
 }
-function tunnel_statuall(){
-    $unix=new unix();
-    exec("ipsec statusall 2>&1 |grep uptime", $output, $return_var);
-    file_put_contents("/etc/artica-postfix/settings/Daemons/ipsec_statusall",$output);
-}
-
-function tunnel_status(){
-    $unix=new unix();
-    $tname= $_GET['tunnel'];
-    exec("ipsec status $tname 2>&1  | grep up", $output, $return_var);
-    file_put_contents("/etc/artica-postfix/settings/Daemons/ipsec_status_$tname",$output);
-}
-
 function build_tunnels(){
     $GLOBALS["PROGRESS_FILE"]=PROGRESS_DIR."/strongswan.build.progress";
     $GLOBALS["LOGSFILES"]=PROGRESS_DIR."/strongswan.build.log";
@@ -213,7 +200,8 @@ function auth_file_remove(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --unlink-auth-file {$_GET["fid"]} >/dev/null 2>&1 &");
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --unlink-auth-file ".fw_shell_quote($_GET["fid"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
 }
 
@@ -221,7 +209,8 @@ function cert_file_remove(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --unlink-cert-file {$_GET["name"]} >/dev/null 2>&1 &");
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --unlink-cert-file ".fw_shell_quote($_GET["name"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
 }
 
@@ -238,7 +227,8 @@ function build_cert(){
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --build-cert {$_GET["cert-name"]} {$_GET["cn"]} {$_GET["id"]}  >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --build-cert ".fw_shell_quote($_GET["cert-name"])." ".fw_shell_quote($_GET["cn"])." ".fw_shell_quote($_GET["id"])."  >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 }
@@ -247,7 +237,8 @@ function conf_file_remove(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
     $php5=$unix->LOCATE_PHP5_BIN();
-    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --unlink-conf-file {$_GET["fid"]} >/dev/null 2>&1 &");
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd=trim("$nohup $php5 /usr/share/artica-postfix/exec.strongswan.php --unlink-conf-file ".fw_shell_quote($_GET["fid"])." >/dev/null 2>&1 &");
     shell_exec($cmd);
 }
 

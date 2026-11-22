@@ -2,7 +2,13 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
+// Pentest 2026-11-04 : l'ID du site (code-js/import-js/import-popup/code-popup/serviceid) etait recopie sans encodage dans la page (XSS).
+foreach(array("code-js","import-js","import-popup","code-popup","serviceid") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}
+}
 if(isset($_GET["import-js"])){import_js();exit;}
 if(isset($_GET["import-popup"])){import_popup();exit;}
 if(isset($_GET["file-uploaded"])){import_uploaded();exit;}
@@ -226,13 +232,7 @@ function isHarmpID():bool{
 
     return true;
 }
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
+
 function rule_enable():bool{
     $UserAgent=$_GET["pattern-enable"];
     $serviceid=intval($_GET["serviceid"]);
@@ -475,13 +475,14 @@ function popup_table2():bool{
     $search=$_GET["search"];
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{path}</th>
         	<th nowrap>{redirect_to_the_specified_link}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
@@ -543,19 +544,18 @@ function popup_table2():bool{
 
     $code_text=$tpl->td_href("{http_status_code} $Code",null,"Loadjs('$page?code-js=$serviceid&function=$function&function2=$function2')");
     $html[]="<tr id='$md'>
-				<td width=50%>$Src</td>
-				<td width=50%>$Dest ($code_text)</td>
+				<td>$Src</td>
+				<td>$Dest ($code_text)</td>
 				<td style='width:1%' nowrap>$enable</td>
 				<td style='width:1%' nowrap>$delete</td>
 				</tr>";
 
     }
 
-        $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('useragent-nginx-bulkredirs$serviceid','$page?top-buttons=$serviceid&function=$function&function2=$function2');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
         }

@@ -44,18 +44,16 @@ En général, ce paramètre ne doit être désactivé que sur un BDC.</domain ma
 <enable_disable_samba>Activer ou D&eacute;sactiver le service partage</enable_disable_samba>
 <enable_disable_samba_text>Eteindre ou d&eacute;marrer le service de partage r&eacute;seau fournit par Samba</enable_disable_samba_text>
 <enable_Editposix>Extension ldapsam/Editposix</enable_Editposix>
-<enable_Editposix_text>The ldapsam:editposix extension is based on the ldapsam:trusted optimization.[br]
-The ldapsam:trusted optimization has been developed as a performance optimization for server that uses ldap as user and group account storage.[br]
-</enable_Editposix_text>
+<enable_Editposix_text>L'extension ldapsam:editposix repose sur l'optimisation ldapsam:trusted.[br]
+L'optimisation ldapsam:trusted a &#233;t&#233; d&#233;velopp&#233;e comme optimisation des performances pour les serveurs qui utilisent ldap comme stockage des comptes d'utilisateurs et de groupes.[br]</enable_Editposix_text>
 <find>Chercher...</find>
 <give_folder_name>Donner votre nouveau nom de dossier</give_folder_name>
 <how_to_scan>Comment scanner ?</how_to_scan>
 <Ichecker>Activer la technologie iChecker</Ichecker>
 <kantivirus_protect>Protection Antivirus</kantivirus_protect>
-<kav4samba_about>Kaspersky Anti-Virus for Samba Server is designed to protect file storage areas on Samba Servers,
-which emulate Windows file servers under the Linux operating system.[br]
-Thus, Windows-based users within a heterogeneous network are provided with safe and transparent access to data stored on Linux file servers.[br]
-Kaspersky Anti-Virus is easily integrated with the Samba Server and does not require the Samba Server or parts of the operating system to be re-compiled.</kav4samba_about>
+<kav4samba_about>Kaspersky Anti-Virus for Samba Server est con&#231;u pour prot&#233;ger les zones de stockage de fichiers sur les serveurs Samba, qui &#233;mulent des serveurs de fichiers Windows sous le syst&#232;me d'exploitation Linux.[br]
+Ainsi, les utilisateurs Windows au sein d'un r&#233;seau h&#233;t&#233;rog&#232;ne b&#233;n&#233;ficient d'un acc&#232;s s&#251;r et transparent aux donn&#233;es stock&#233;es sur les serveurs de fichiers Linux.[br]
+Kaspersky Anti-Virus s'int&#232;gre facilement au serveur Samba et ne n&#233;cessite pas de recompiler le serveur Samba ou des parties du syst&#232;me d'exploitation.</kav4samba_about>
 <kavsamba_licence_text>Envoyez le fichier  *.key pour Kaspersky Samba serveur  afin de mettre &agrave; jour la licence</kavsamba_licence_text>
 <kav_events>&Eacute;v&egrave;nements</kav_events>
 <local master>Ma&icirc;tre local</local master>

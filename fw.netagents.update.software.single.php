@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 include_once dirname(__FILE__) . '/ressources/class.sockets.inc';
 include_once dirname(__FILE__) . '/ressources/class.netagent.artica.inc';
@@ -15,7 +17,7 @@ function js():bool{
     $tpl = new template_admin();
     $users=new usersMenus();
 
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_can_push($users)){
         return $tpl->js_error("{no_privileges}");
     }
     $id=intval($_GET["id"]);
@@ -80,7 +82,7 @@ function table():bool{
 
     $html=array();
     $colSpan=$multiKey ? 7 : 6;
-    $html[]="<table class='table table-stripped' data-page-size='100' data-paging='true'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     if($multiKey){ $html[]="<th data-sortable=true data-type='text'>{software}</th>"; }
@@ -110,7 +112,7 @@ function table():bool{
             }
         }
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $sizeHuman=FormatBytes($size/1024);
         $dateFormatted="";
@@ -122,7 +124,7 @@ function table():bool{
         $fEnc=urlencode($filename);
         $lpEnc=urlencode($localPath);
         $pushJs="Loadjs('$page?push-js=yes&id=$id&soft=$soft&debver=$debver&f=$fEnc&lp=$lpEnc')";
-        $btn=$tpl->button_inline("{upgrade}",$pushJs,ico_cd,"AsArticaMetaAdmin",0,"btn-primary");
+        $btn=$tpl->button_inline("{upgrade}",$pushJs,ico_cd,"AsMetaAdmin",0,"btn-primary");
 
         $html[]="<tr class='$TRCLASS'>";
         if($multiKey){ $html[]="<td nowrap><strong>{".htmlspecialchars($name)."}</strong></td>"; }
@@ -143,12 +145,12 @@ function table():bool{
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
     $html[]="<script>";
     $html[]="NoSpinner();";
     $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
     return true;
 }
 
@@ -188,6 +190,7 @@ function push_js(){
 function push_install(){
     header("content-type: application/x-javascript");
     $tpl=new template_admin();
+    if(!meta_can_push()){$tpl->js_error("{ERROR_NO_PRIVS}");return false;}
     $id=intval($_POST["id"]);
     $f=$_POST["f"];
     $lp=$_POST["lp"];

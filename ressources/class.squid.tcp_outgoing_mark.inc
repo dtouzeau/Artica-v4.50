@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class tcp_outgoing_mark{
 	
@@ -45,8 +46,10 @@ class tcp_outgoing_mark{
 			return;
 		}
 		
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$results=$q->QUERY_SQL("SELECT * FROM tcp_outgoing_mark WHERE enabled=1 ORDER BY zorder");
+		// acls.db is API-only — enabled tcp_outgoing_mark rules via the acls backend.
+		$raw=acls_api_get("/proxy/tcp-outgoing-mark");
+		$results=array();
+		if(is_array($raw)){foreach($raw as $rr){if(!is_array($rr)){continue;}if(intval($rr["enabled"]??0)!=1){continue;}$results[]=array("ID"=>intval($rr["id"]??0),"rulename"=>(string)($rr["ruleName"]??""),"mark"=>(string)($rr["mark"]??""));}}
 		$squid_acls_groups=new squid_acls_groups();
 
 		foreach ($results as $index=>$ligne){

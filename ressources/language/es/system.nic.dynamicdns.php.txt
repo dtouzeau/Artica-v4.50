@@ -1,19 +1,18 @@
-<add_dynamic_dns>Add Dynamic DNS Rule</add_dynamic_dns>
-<add_dynamic_dns_text>if you have an account for dyndns.org, freedns.afraid.org, zoneedit.com, no-ip.com, add a rule to update services</add_dynamic_dns_text>
+<add_dynamic_dns>A&#241;adir regla de DNS din&#225;mico</add_dynamic_dns>
+<add_dynamic_dns_text>Si tiene una cuenta para dyndns.org, freedns.afraid.org, zoneedit.com, no-ip.com, a&#241;ada una regla para actualizar los servicios</add_dynamic_dns_text>
 <daemonstatus1>Estado del daemon</daemonstatus1>
-<dns_host>DNS Host</dns_host>
-<dns_hosts>DNS Hosts</dns_hosts>
-<dynamic_dns>Dynamic DNS Client Settings</dynamic_dns>
-<dynamic_dns_text>
-This section manage INADYN that is a dynamic DNS client.[br]
-it maintains the IP address of a host name.[br]
-It periodically checks whether the IP address stored by the DNS server is the real current address of the machine that is running artica.</dynamic_dns_text>
-<dynhosts>Add a dynamic DNS host</dynhosts>
-<give_username_password>Give Username and password</give_username_password>
-<inadyn_stopped>inadyn daemon is stopped or not configured yet</inadyn_stopped>
-<infouri_text>[br]If you want an account for a dynamic dns service, visit this web site:</infouri_text>
-<pool_time>Update every minutes/hours</pool_time>
-<rules_list>Dynamic DNS rules</rules_list>
+<dns_host>Host DNS</dns_host>
+<dns_hosts>Hosts DNS</dns_hosts>
+<dynamic_dns>Configuraci&#243;n del cliente de DNS din&#225;mico</dynamic_dns>
+<dynamic_dns_text>Esta secci&#243;n gestiona INADYN, que es un cliente de DNS din&#225;mico.[br]
+Mantiene la direcci&#243;n IP de un nombre de host.[br]
+Comprueba peri&#243;dicamente si la direcci&#243;n IP almacenada por el servidor DNS es la direcci&#243;n actual real de la m&#225;quina que ejecuta artica.</dynamic_dns_text>
+<dynhosts>A&#241;adir un host de DNS din&#225;mico</dynhosts>
+<give_username_password>Indique nombre de usuario y contrase&#241;a</give_username_password>
+<inadyn_stopped>El daemon inadyn est&#225; detenido o a&#250;n no configurado</inadyn_stopped>
+<infouri_text>[br]Si desea una cuenta para un servicio de DNS din&#225;mico, visite este sitio web:</infouri_text>
+<pool_time>Actualizar cada minutos/horas</pool_time>
+<rules_list>Reglas de DNS din&#225;mico</rules_list>
 <running>En funcionamiento</running>
-<select_service>Select the dynamic DNS service</select_service>
+<select_service>Seleccionar el servicio de DNS din&#225;mico</select_service>
 <update_frequency>Frecuencia de actualizaci%C3%B3n</update_frequency>

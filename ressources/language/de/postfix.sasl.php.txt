@@ -1,4 +1,4 @@
-<fill_database>Fill database</fill_database>
-<fill_database_text>Add servers in this database that require SMTP Authentification in order to allow PostFix to pass trought these servers</fill_database_text>
-<warning_no_sasl_database>[b]Warning...[/b][br]You have enabled SASL in postfix.[br]Currently there is no servers/username/password added into database.[br]
-To prevent PostFix errors, please, fill this database has soon as possible</warning_no_sasl_database>
+<fill_database>Datenbank f&#252;llen</fill_database>
+<fill_database_text>F&#252;gen Sie in dieser Datenbank Server hinzu, die eine SMTP-Authentifizierung erfordern, damit Postfix diese Server passieren kann</fill_database_text>
+<warning_no_sasl_database>[b]Warnung...[/b][br]Sie haben SASL in Postfix aktiviert.[br]Derzeit sind keine Server/Benutzernamen/Passw&#246;rter in der Datenbank hinzugef&#252;gt.[br]
+Um Postfix-Fehler zu vermeiden, f&#252;llen Sie diese Datenbank bitte so bald wie m&#246;glich</warning_no_sasl_database>

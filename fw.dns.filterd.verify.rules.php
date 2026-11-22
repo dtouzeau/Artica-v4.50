@@ -54,29 +54,16 @@ function test(){
 	$_SESSION["UFDBT"]["WWW"]=$www;
 	if($user==null){$user="-";}
 	if($ipaddr==null){$ipaddr="-";}
-	$UfdbIP=null;
-	
-	$dnsfiltersocks=new dnsfiltersocks();
-	$UfdbListenPort=intval($dnsfiltersocks->GET_INFO("UfdbListenPort"));
-	$UfdbListenInterface=trim($dnsfiltersocks->GET_INFO("UfdbListenInterface"));
-	if($UfdbListenPort==0){$UfdbListenPort=3979;}
-	if($UfdbListenInterface==null){$UfdbListenInterface="lo";}
-	if($UfdbListenInterface=="lo"){$UfdbIP="127.0.0.1";}
-
-	if($UfdbIP==null){
-		$nic=new system_nic($UfdbListenInterface);
-		$UfdbIP=$nic->IPADDR;
-		
+	// articarest /dnsfilterd/verify : ufdbgclient sur le port de dnsfilterd, sans
+	// shell (remplace framework/squid.php?ufdbclient, entree disparue).
+	$json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/dnsfilterd/verify/".rawurlencode($ipaddr)."/".rawurlencode($www)));
+	if(!is_object($json) || !isset($json->Status) || !$json->Status){
+		$error=(is_object($json) && isset($json->Error))?$json->Error:"articarest: ".json_last_error_msg();
+		$_SESSION["UFDB_TESTS_TRUE"]=true;
+		$_SESSION["UFDB_TESTS_RESULTS"]="<H1>".htmlspecialchars($error)."</H1>";
+		return;
 	}
-	$address="-S 127.0.0.1 -p $UfdbListenPort ";
-	
-	
-	
-
-	$cmdline="$address $www $ipaddr -";
-	$cmdline=urlencode(base64_encode($cmdline));
-	$sock=new sockets();
-	$datas=base64_decode($sock->getFrameWork("squid.php?ufdbclient=$cmdline"));
+	$datas=(string)$json->Info;
 
 	if(preg_match("#^http.*#", $www)){
 		$url_www=parse_url($www);

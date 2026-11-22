@@ -1,30 +1,29 @@
-<about_usb>This section helps you to play with usb storage devices, you can plug devices connect them and un-connect them with this interface[br]
-When click on an item you can delegate one usb device has the usb auto-backup device[br]
-This means that when you plug you device on the computer, artica will mount it automatically and perform backup feature.[br]
-If you leave this device permanently, the backup operation will be perform every 2 hours</about_usb>
-<automount>Auto-connect</automount>
-<automount_explain>Automatically connect this device when you plug it on the system</automount_explain>
-<automount_explain_text>This operation will automatically connect the device into /automounts directory when it is plugged on the system.[br]
-the linking operation will be automatic when the system wants to access it.</automount_explain_text>
-<auto_folder>Directory name point</auto_folder>
-<click_to_edit>Click to edit...</click_to_edit>
+<about_usb>Ta sekcja pomaga w obs&#322;udze urz&#261;dze&#324; pami&#281;ci masowej USB, mo&#380;esz pod&#322;&#261;cza&#263; urz&#261;dzenia, &#322;&#261;czy&#263; je i roz&#322;&#261;cza&#263; za pomoc&#261; tego interfejsu[br]Po klikni&#281;ciu elementu mo&#380;esz wyznaczy&#263; jedno urz&#261;dzenie USB jako urz&#261;dzenie automatycznej kopii zapasowej USB[br]Oznacza to, &#380;e po pod&#322;&#261;czeniu urz&#261;dzenia do komputera Artica automatycznie je zamontuje i wykona funkcj&#281; kopii zapasowej.[br]Je&#347;li pozostawisz to urz&#261;dzenie na sta&#322;e, operacja tworzenia kopii zapasowej b&#281;dzie wykonywana co 2 godziny</about_usb>
+<automount>Automatyczne &#322;&#261;czenie</automount>
+<automount_explain>Automatycznie pod&#322;&#261;czaj to urz&#261;dzenie po pod&#322;&#261;czeniu go do systemu</automount_explain>
+<automount_explain_text>Ta operacja automatycznie pod&#322;&#261;czy urz&#261;dzenie do katalogu /automounts po pod&#322;&#261;czeniu go do systemu.[br]
+operacja &#322;&#261;czenia b&#281;dzie automatyczna, gdy system zechce uzyska&#263; do niego dost&#281;p.</automount_explain_text>
+<auto_folder>Nazwa katalogu</auto_folder>
+<click_to_edit>Kliknij, aby edytowa&#263;...</click_to_edit>
 <connected>Pod%C5%82%C4%85czony</connected>
-<dismount_text>[b]Disconnect this key[/b][br]Destroy the pointer to this usb storage in order to physically remove it from the computer</dismount_text>
-<error_understand_fs>Unable to understand filesystem type</error_understand_fs>
-<file_system>File system</file_system>
-<formatdevice>Format this device</formatdevice>
-<format_warning>Are you sure to perform this operation,all datas will be erased...</format_warning>
-<local>local</local>
-<make_autobackup>Auto-backup device</make_autobackup>
-<manufacturer>manufacturer</manufacturer>
+<dismount_text>[b]Od&#322;&#261;cz ten klucz[/b][br]zniszcz wska&#378;nik do tej pami&#281;ci USB, aby fizycznie usun&#261;&#263; j&#261; z komputera</dismount_text>
+<error_understand_fs>Nie mo&#380;na rozpozna&#263; typu systemu plik&#243;w</error_understand_fs>
+<file_system>System plik&#243;w</file_system>
+<formatdevice>Sformatuj to urz&#261;dzenie</formatdevice>
+<format_warning>Czy na pewno chcesz wykona&#263; t&#281; operacj&#281;? Wszystkie dane zostan&#261; usuni&#281;te...</format_warning>
+<local>lokalny</local>
+<make_autobackup>Urz&#261;dzenie automatycznej kopii zapasowej</make_autobackup>
+<manufacturer>Producent</manufacturer>
 <model>Model</model>
-<mounted_on>mounted on</mounted_on>
-<mount_text>[b]Connect this key[/b][br]create a pointer to this usb storage in order to access it</mount_text>
-<not_applicable>Not applicable</not_applicable>
-<plugged>plugged</plugged>
+<mounted_on>Zamontowany na</mounted_on>
+<mount_text>[b]Pod&#322;&#261;cz ten klucz[/b][br]utw&#243;rz wska&#378;nik do tej pami&#281;ci USB, aby uzyska&#263; do niej dost&#281;p</mount_text>
+<not_applicable>Nie dotyczy</not_applicable>
+<plugged>pod&#322;&#261;czony</plugged>
 <speed>Pr%C4%99dko%C5%9B%C4%87</speed>
 <system>System</system>
-<umake_autobackup>Remove Auto-backup</umake_autobackup>
-<vendor>Vendor</vendor>
-<warnautoback>You choose that this device will be an auto-backup device.\nThis meens that when you plug this device on this computer,\nArtica will backup automatically mandatories datas on this device</warnautoback>
-<warnautobackremove>This device will be disconnected has an auto-backup device\nContinue?</warnautobackremove>
+<umake_autobackup>Usu&#324; automatyczn&#261; kopi&#281; zapasow&#261;</umake_autobackup>
+<vendor>Dostawca</vendor>
+<warnautoback>Wybra&#322;e&#347;, &#380;e to urz&#261;dzenie b&#281;dzie urz&#261;dzeniem automatycznej kopii zapasowej.
+Oznacza to, &#380;e po pod&#322;&#261;czeniu tego urz&#261;dzenia do tego komputera Artica automatycznie wykona kopi&#281; zapasow&#261; obowi&#261;zkowych danych na tym urz&#261;dzeniu</warnautoback>
+<warnautobackremove>To urz&#261;dzenie zostanie od&#322;&#261;czone jako urz&#261;dzenie automatycznej kopii zapasowej
+Kontynuowa&#263;?</warnautobackremove>

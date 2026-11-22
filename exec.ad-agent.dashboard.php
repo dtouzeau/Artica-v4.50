@@ -269,29 +269,8 @@ function parse(){
     $f=array();
 
     // -----------------------------------------------------------------------------------------------------
-    // Calcul des caches en cours.
-
-    $SquidCacheLevel=$sock->GET_INFO("SquidCacheLevel");
-    if(!is_numeric($SquidCacheLevel)){$SquidCacheLevel=3;}
-
-    if($SquidCacheLevel==0){
-        @file_put_contents("{$GLOBALS["BASEDIR"]}/COUNT_DE_CACHES",0);
-    }
-
-    build_progress("{refresh_dashboard_values}",52);
-    $q=new mysql();
-    $sql="SELECT cache_size,cache_type FROM squid_caches_center WHERE remove=0";
-    $xsize=0;
-    $results=$q->QUERY_SQL($sql,"artica_backup");
-    while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
-        $cache_size=$ligne["cache_size"];
-        $cache_type=$ligne["cache_type"];
-        if($cache_type=="Cachenull"){continue;}
-        $xsize=$xsize+$cache_size;
-    }
-
-    if($GLOBALS["VERBOSE"]){echo "COUNT_DE_CACHES: {$xsize}MB\n";}
-    @file_put_contents("{$GLOBALS["BASEDIR"]}/COUNT_DE_CACHES",$xsize);
+    // COUNT_DE_CACHES removed: it summed squid_caches_center from a MySQL
+    // database that no longer exists, and nothing read the file.
 
 
     if($GLOBALS["PROGRESS"]){

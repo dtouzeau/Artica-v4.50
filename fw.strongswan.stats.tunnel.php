@@ -2,6 +2,11 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Include INCONDITIONNEL de premier niveau (CLAUDE.md, awc-* regle 1):
+// glisse dans le bootstrap if(!class_exists("sockets")) il ne s'executerait
+// jamais et la page mourrait sur awc_table_style() indefinie. // Service Pack 9
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["template"])){template();exit;}
 if(isset($_GET["vertical-timeline"])){vertical_timeline();exit;}
@@ -71,85 +76,77 @@ function members_table(){
 
 //    $sql="SELECT SUM(bytes_in) as bytes_in, SUM(bytes_out) as bytes_out, SUM(packets_in) as packets_in, SUM(packets_out) as packets_out, username,local_vip,remote_host, date_trunc('hour',zdate) as zdate FROM strongswan_stats  WHERE
 //    conn_name='$tunnel' AND zdate > '$strtime' and zdate < '$strtoTime' GROUP by date_trunc('hour',zdate),username,local_vip,remote_host  ORDER BY zdate";
+    // Pentest 2026-11-04 : tunnel (GET) etait concatene dans la requete.
     $sql="SELECT * FROM strongswan_stats  WHERE 
-    conn_name='$tunnel' AND zdate > '$strtime' and zdate < '$strtoTime' ORDER BY zdate";
+    conn_name='".pg_escape_string2($tunnel)."' AND zdate > '$strtime' and zdate < '$strtoTime' ORDER BY zdate";
 
     $results=$q->QUERY_SQL($sql);
 
     if(!$q->ok){echo $tpl->div_error($q->mysql_error_html());}
 
     $t=time();
-    $html[]="
-    <H2>{members}: {tunnel} <strong>$tunnel</strong> {from} ".$tpl->time_to_date($time1,true)." {to} ". $tpl->time_to_date($time2,true)."</H2>
-<table id='table-$t' class=\"footable table table-stripped\" 
-    data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{member}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{vips}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{remote_host}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{mb_in}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{mb_out}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{packets_in}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{packets_out}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    $td1=$tpl->table_td1prc_Left();
-    $TRCLASS=null;
-    while ($ligne = pg_fetch_assoc($results)) {
-        if ($TRCLASS == "footable-odd ") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd ";
-        }
+    $html[]="<H2>{members}: {tunnel} <strong>".htmlspecialchars($tunnel)."</strong> {from} "
+        .$tpl->time_to_date($time1,true)." {to} ".$tpl->time_to_date($time2,true)."</H2>";
 
-        $vips = $ligne["local_vip"];
-        $username = $ligne["username"];
-        $remote_host = $ligne["remote_host"];
-        $zdate=$ligne["zdate"];
+    $rows=array();
+    while($ligne=pg_fetch_assoc($results)){
+        $vips=(string)$ligne["local_vip"];
+        $username=(string)$ligne["username"];
+        $remote_host=(string)$ligne["remote_host"];
+        $zdate=(string)$ligne["zdate"];
+        $bytes_in=FormatBytes($ligne["bytes_in"]/1024);
+        $bytes_out=FormatBytes($ligne["bytes_out"]/1024);
 
-        $bytes_in = FormatBytes($ligne["bytes_in"] / 1024);
-        $bytes_out = FormatBytes($ligne["bytes_out"] / 1024);
-        $packets_in = $ligne["packets_in"];
-        $packets_out = $ligne["packets_out"] ;
-        //$macenc = urlencode($mac);
-        $remote_host = $tpl->td_href($remote_host, "{statistics}", "Loadjs('fw.strongswan.stats.members.php?field=remote_host&value=$remote_host')");
-        $vips = $tpl->td_href($vips, "{statistics}", "Loadjs('fw.strongswan.stats.members.php?field=local_vip&value=$vips')");
-        $username = $tpl->td_href($username, "{statistics}", "Loadjs('fw.strongswan.stats.members.php?field=username&value=$username')");
+        // urlencode sur les valeurs qui partent dans une URL de Loadjs: une
+        // adresse ou un nom d'utilisateur portant un & ou un espace tronquait
+        // silencieusement le parametre suivant.
+        $lnkHost=$tpl->td_href($remote_host,"{statistics}",
+            "Loadjs('fw.strongswan.stats.members.php?field=remote_host&value=".urlencode($remote_host)."')");
+        $lnkVips=$tpl->td_href($vips,"{statistics}",
+            "Loadjs('fw.strongswan.stats.members.php?field=local_vip&value=".urlencode($vips)."')");
+        $lnkUser=$tpl->td_href($username,"{statistics}",
+            "Loadjs('fw.strongswan.stats.members.php?field=username&value=".urlencode($username)."')");
 
-
-        $html[] = "<tr style='vertical-align:middle' class='$TRCLASS'>";
-        $html[] = "<td $td1>$zdate</td>";
-        $html[] = "<td $td1>$username</td>";
-        $html[] = "<td $td1>$vips</td>";
-        $html[] = "<td $td1>$remote_host</td>";
-        $html[] = "<td $td1>$bytes_in</td>";
-        $html[] = "<td $td1>$bytes_out</td>";
-        $html[] = "<td $td1>$packets_in</td>";
-        $html[] = "<td $td1>$packets_out</td>";
-        $html[] = "</tr>";
+        $named=(trim($username)!=="");
+        $h ="<tr>";
+        $h.="<td><div class='awc-ident'>";
+        $h.="<span class='awc-ico".($named?"":" awc-ico-off")."'><i class='fas fa-user'></i></span>";
+        $h.="<span><span class='awc-name".($named?"":" awc-name-off")."'>".($named?$lnkUser:"{unknown}")."</span>";
+        $h.="<div class='awc-meta'>".htmlspecialchars($zdate)."</div></span></div></td>";
+        $h.="<td class='awc-mono'>$lnkVips</td>";
+        $h.="<td class='awc-mono'>$lnkHost</td>";
+        $h.="<td class='center awc-mono'>$bytes_in</td>";
+        $h.="<td class='center awc-mono'>$bytes_out</td>";
+        $h.="<td class='center awc-mono'>".intval($ligne["packets_in"])."</td>";
+        $h.="<td class='center awc-mono'>".intval($ligne["packets_out"])."</td>";
+        $h.="</tr>";
+        $rows[]=$h;
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{member}</th>";
+    $html[]="<th nowrap>{vips}</th>";
+    $html[]="<th nowrap>{remote_host}</th>";
+    $html[]="<th class='center' nowrap>{mb_in}</th>";
+    $html[]="<th class='center' nowrap>{mb_out}</th>";
+    $html[]="<th class='center' nowrap>{packets_in}</th>";
+    $html[]="<th class='center' nowrap>{packets_out}</th>";
+    $html[]="</tr></thead><tbody id='sswst-rows'>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='7'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span>"
+           ."<span class='awc-pg' id='sswst-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) }); 
-</script>";
-
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>"
+        .awc_pager_js(50,"sswst-rows","sswst-pager");
 }
 
 
@@ -237,7 +234,8 @@ function vertical_timeline(){
     //BYTES IN / OUT
 //    $sql = "SELECT SUM(bytes_out) as bytes_out, SUM(bytes_in) as bytes_in, $SQL_DATE as zdate FROM strongswan_stats WHERE conn_name='$tunnel' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
 
-    $sql="select sum(bytes_in) as bytes_in, sum(bytes_out) as bytes_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,conn_name ORDER BY spi_in, zdate,conn_name) x where conn_name='$tunnel' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
+    // Pentest 2026-11-04 : tunnel (GET) etait concatene dans la requete.
+    $sql="select sum(bytes_in) as bytes_in, sum(bytes_out) as bytes_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,conn_name ORDER BY spi_in, zdate,conn_name) x where conn_name='".pg_escape_string2($tunnel)."' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
@@ -285,7 +283,8 @@ function vertical_timeline(){
     echo $highcharts->BuildChart();
     //PACKETS IN / OUT
 //    $sql = "SELECT SUM(packets_in) as packets_in, SUM(packets_out) as packets_out, $SQL_DATE as zdate FROM strongswan_stats WHERE conn_name='$tunnel' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
-    $sql="select SUM(packets_in) as packets_in, SUM(packets_out) as packets_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(packets_in) as packets_in, MAX(packets_out) as packets_out, zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,conn_name ORDER BY spi_in, zdate,conn_name) x where conn_name='$tunnel' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
+    // Pentest 2026-11-04 : tunnel (GET) etait concatene dans la requete.
+    $sql="select SUM(packets_in) as packets_in, SUM(packets_out) as packets_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(packets_in) as packets_in, MAX(packets_out) as packets_out, zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate,conn_name ORDER BY spi_in, zdate,conn_name) x where conn_name='".pg_escape_string2($tunnel)."' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
@@ -360,7 +359,8 @@ function top_vips(){
 //    $sql="SELECT SUM(bytes_in + bytes_out) as size,local_vip FROM strongswan_stats  WHERE
 //    conn_name='$tunnel' AND
 //    zdate >'$strtime' and zdate < '$strtoTime' GROUP by local_vip ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,local_vip from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, local_vip,zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, local_vip,zdate,conn_name ORDER BY spi_in, local_vip) x where  conn_name='$tunnel' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY local_vip ORDER BY size DESC LIMIT 15 ";
+    // Pentest 2026-11-04 : tunnel (GET) etait concatene dans la requete.
+    $sql="select SUM(bytes_in + bytes_out) as size,local_vip from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, local_vip,zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, local_vip,zdate,conn_name ORDER BY spi_in, local_vip) x where  conn_name='".pg_escape_string2($tunnel)."' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY local_vip ORDER BY size DESC LIMIT 15 ";
 
     $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
@@ -420,7 +420,8 @@ function top_remote_hosts(){
 //    $sql="SELECT SUM(bytes_in + bytes_out) as size,remote_host FROM strongswan_stats  WHERE
 //    conn_name='$tunnel' AND
 //    zdate >'$strtime' and zdate < '$strtoTime' GROUP by remote_host ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,remote_host from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, remote_host,zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, remote_host,zdate,conn_name ORDER BY spi_in, remote_host) x where  conn_name='$tunnel' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY remote_host ORDER BY size DESC LIMIT 15 ";
+    // Pentest 2026-11-04 : tunnel (GET) etait concatene dans la requete.
+    $sql="select SUM(bytes_in + bytes_out) as size,remote_host from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, remote_host,zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, remote_host,zdate,conn_name ORDER BY spi_in, remote_host) x where  conn_name='".pg_escape_string2($tunnel)."' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY remote_host ORDER BY size DESC LIMIT 15 ";
     $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
@@ -479,7 +480,8 @@ function top_users(){
 //    $sql="SELECT SUM(bytes_in + bytes_out) as size,username FROM strongswan_stats  WHERE
 //    conn_name='$tunnel' AND
 //    zdate >'$strtime' and zdate < '$strtoTime' GROUP by username ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,username from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, username,zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, username,zdate,conn_name ORDER BY spi_in, username) x where  conn_name='$tunnel' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY username ORDER BY size DESC LIMIT 15 ";
+    // Pentest 2026-11-04 : tunnel (GET) etait concatene dans la requete.
+    $sql="select SUM(bytes_in + bytes_out) as size,username from (SELECT distinct on (spi_in) spi_in, MAX(bytes_out) as bytes_out, MAX(bytes_in) as bytes_in, username,zdate,conn_name FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, username,zdate,conn_name ORDER BY spi_in, username) x where  conn_name='".pg_escape_string2($tunnel)."' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP BY username ORDER BY size DESC LIMIT 15 ";
 
     $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
@@ -527,7 +529,7 @@ function top_users_table(){
     $html[]="<th>{username}</th>";
     $html[]="<th>{size}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["users-table"]));
+    $table=unserialize(base64_decode($_GET["users-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$sizeM) {
         $h=explode("|",$site);
         $t=array();
@@ -556,7 +558,7 @@ function top_vips_table(){
     $html[]="<th>{vips}</th>";
     $html[]="<th>{size}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["vips-table"]));
+    $table=unserialize(base64_decode($_GET["vips-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$sizeM) {
 
         $sizeM=FormatBytes($sizeM*1024);
@@ -582,7 +584,7 @@ function top_remote_hosts_table(){
     $html[]="<th>{remote_hosts}</th>";
     $html[]="<th>{size}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["remote-hosts-table"]));
+    $table=unserialize(base64_decode($_GET["remote-hosts-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$sizeM) {
 
         $sizeM=FormatBytes($sizeM*1024);

@@ -1,19 +1,19 @@
-<ADD_NEW_DEPLOY_TASK>Add a new deploy task</ADD_NEW_DEPLOY_TASK>
-<ADD_NEW_DEPLOY_TASK_TEXT>Add a new task that will perform remote installation to this computer</ADD_NEW_DEPLOY_TASK_TEXT>
-<ADD_NEW_SOFTWARE>Add a new software</ADD_NEW_SOFTWARE>
-<ADD_NEW_SOFTWARE_TEXT>Create a new entry in order to perform deployment on target remote computers</ADD_NEW_SOFTWARE_TEXT>
-<APP_WINEXE_NOT_INSTALLED>Windows remote execution is not installed</APP_WINEXE_NOT_INSTALLED>
-<APP_WINEXE_NOT_INSTALLED_TEXT>if Windows remote execution is not installed you are not be able to perform remote softwares deployment trough Artica[br]
-Click on this icon to perform Windows remote execution installation</APP_WINEXE_NOT_INSTALLED_TEXT>
+<ADD_NEW_DEPLOY_TASK>A&#241;adir una nueva tarea de despliegue</ADD_NEW_DEPLOY_TASK>
+<ADD_NEW_DEPLOY_TASK_TEXT>A&#241;ada una nueva tarea que realizar&#225; la instalaci&#243;n remota en este equipo</ADD_NEW_DEPLOY_TASK_TEXT>
+<ADD_NEW_SOFTWARE>A&#241;adir un nuevo software</ADD_NEW_SOFTWARE>
+<ADD_NEW_SOFTWARE_TEXT>Cree una nueva entrada para realizar el despliegue en equipos remotos de destino</ADD_NEW_SOFTWARE_TEXT>
+<APP_WINEXE_NOT_INSTALLED>La ejecuci&#243;n remota de Windows no est&#225; instalada</APP_WINEXE_NOT_INSTALLED>
+<APP_WINEXE_NOT_INSTALLED_TEXT>Si la ejecuci&#243;n remota de Windows no est&#225; instalada, no podr&#225; realizar el despliegue remoto de software a trav&#233;s de Artica[br]
+Haga clic en este icono para realizar la instalaci&#243;n de la ejecuci&#243;n remota de Windows</APP_WINEXE_NOT_INSTALLED_TEXT>
 <commandline>L%C3%ADnea de comandos</commandline>
-<ExecuteAfter>Execute after</ExecuteAfter>
-<MinutesToWait>Max minutes processing</MinutesToWait>
-<package>Package</package>
+<ExecuteAfter>Ejecutar despu&#233;s de</ExecuteAfter>
+<MinutesToWait>Minutos m&#225;ximos de procesamiento</MinutesToWait>
+<package>Paquete</package>
 <refresh>Actualizar</refresh>
-<remote_install>Remote install</remote_install>
-<remote_install_text>Create tasks in order to perform remote installations</remote_install_text>
-<resfresh_software_list>Refresh softwares list</resfresh_software_list>
-<resfresh_tasks_list>Refresh install tasks list</resfresh_tasks_list>
+<remote_install>Instalaci&#243;n remota</remote_install>
+<remote_install_text>Crear tareas para realizar instalaciones remotas</remote_install_text>
+<resfresh_software_list>Actualizar la lista de software</resfresh_software_list>
+<resfresh_tasks_list>Actualizar la lista de tareas de instalaci&#243;n</resfresh_tasks_list>
 <restart_task>Reiniciar la tarea</restart_task>
-<restart_task_text>Retry task execution another time</restart_task_text>
-<runas>Run as</runas>
+<restart_task_text>Reintentar la ejecuci&#243;n de la tarea en otro momento</restart_task_text>
+<runas>Ejecutar como</runas>

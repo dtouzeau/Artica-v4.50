@@ -1,14 +1,10 @@
 <?php
+// stamp 01/11/2026
+// Post SP10 - 13/10/2026
 
 include_once(dirname(__FILE__)."/frame.class.inc"); 
 include_once(dirname(__FILE__)."/class.unix.inc");
 
-if(isset($_GET["install"])){install();exit;}
-if(isset($_GET["uninstall"])){uninstall();exit;}
-if(isset($_GET["msktutils-renew-schedule"])){msktutils_renew_schedule();exit;}
-
-if(isset($_GET["ntlm-progress"])){ntlm_join();exit;}
-if(isset($_GET["kdestroy"])){kdestroy();exit;}
 if(isset($_GET["ntlm-kerberos"])){krenew_ntlm();exit;}
 if(isset($_GET["winbindd-events"])){winbindd_events();exit;}
 if(isset($_GET["restart-smb"])){restart_smb();exit;}
@@ -35,31 +31,7 @@ function restart_smb(){
 
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
-die("DIE " .__FILE__." Line: ".__LINE__);
-function ntlm_join(){
-    $ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/ntlm.join.progress";
-    $ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/ntlm.join.log";
-    @unlink($ARRAY["PROGRESS_FILE"]);
-    @unlink($ARRAY["LOG_FILE"]);
-    @touch($ARRAY["PROGRESS_FILE"]);
-    @touch($ARRAY["LOG_FILE"]);
-    @chmod($ARRAY["PROGRESS_FILE"],0777);
-    @chmod($ARRAY["LOG_FILE"],0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.nltm.connect.php >{$ARRAY["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd ,__FUNCTION__,__FILE__,__LINE__);
-    shell_exec($cmd);
-
-}
-
-
-function kdestroy(){
-    $unix=new unix();
-    $kdestroy=$unix->find_program("kdestroy");
-    $unix->go_exec_out($kdestroy);
-}
+die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 function krenew_ntlm(){
     $unix=new unix();
     $unix->framework_execute("exec.nltm.connect.php --krb5-renew",

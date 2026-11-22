@@ -1,11 +1,11 @@
-<changeClock>To Change the clock, set the time the time exactly as shown below</changeClock>
-<change_clock_tooltip>If you want to change the system clock[br]Click on this Link..</change_clock_tooltip>
-<clocks>Clocks</clocks>
-<clocks_text>Your computer has two timepieces; a battery-backed one that is always running as the ``hardware'', ``BIOS'', or ``CMOS'' clock,
-and another that is maintained by the operating system currently running on your computer as the ``system'' clock.[br]
-The hardware clock is generally only used to set the system clock when your operating system boots,
-and then from that point until you reboot or turn off your system, the system clock is the one used to keep track of time.</clocks_text>
-<convert_clock_tooltip>Set the hardware clock from the system clock</convert_clock_tooltip>
-<hardware_clock>Hardware clock</hardware_clock>
-<system_clock>System clock</system_clock>
-<wrong_date>The date given didn't match the requested format</wrong_date>
+<changeClock>Per cambiare l'orologio, imposta l'ora esattamente come mostrato di seguito</changeClock>
+<change_clock_tooltip>Se vuoi cambiare l'orologio di sistema[br]Fai clic su questo link..</change_clock_tooltip>
+<clocks>Orologi</clocks>
+<clocks_text>Il tuo computer ha due dispositivi per il tempo; uno alimentato a batteria che &#232; sempre in funzione, chiamato orologio ``hardware'', ``BIOS'' o ``CMOS'',
+e un altro mantenuto dal sistema operativo attualmente in esecuzione sul tuo computer, chiamato orologio di ``sistema''.[br]
+L'orologio hardware &#232; generalmente usato solo per impostare l'orologio di sistema all'avvio del sistema operativo,
+e da quel momento, fino al riavvio o allo spegnimento del sistema, l'orologio di sistema &#232; quello usato per tenere traccia del tempo.</clocks_text>
+<convert_clock_tooltip>Imposta l'orologio hardware dall'orologio di sistema</convert_clock_tooltip>
+<hardware_clock>Orologio hardware</hardware_clock>
+<system_clock>Orologio di sistema</system_clock>
+<wrong_date>La data fornita non corrisponde al formato richiesto</wrong_date>

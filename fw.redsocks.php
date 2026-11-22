@@ -378,10 +378,11 @@ function service_wizard_save(){
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$service_type=$_POST["redsocks_family"];
 
-	$servicename=$q->sqlite_escape_string2($_POST["servicename"]);
+	$servicename=$_POST["servicename"];
 	$listen_port=rand(1024,65535);
 
-	$q->QUERY_SQL("INSERT INTO `redsocks` (redsocks_family,servicename,redsocks_port) VALUES ('$service_type','$servicename','$listen_port')");
+	// Pentest 2026-11-04 : redsocks_family (POST) etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("INSERT INTO `redsocks` (redsocks_family,servicename,redsocks_port) VALUES (?,?,?)",array($service_type,$servicename,$listen_port));
 	if(!$q->ok){echo $q->mysql_error;return;}
 
 	$_SESSION["WIZARD_REDSOCKS_LAST_ID"]=$q->last_id;
@@ -396,7 +397,8 @@ function service_tabs(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$sock=new sockets();
-	$ID=$_GET["service-tabs"];
+	// Pentest 2026-11-04 : service-tabs etait recopie sans encodage dans la page (XSS).
+	$ID=intval($_GET["service-tabs"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$ligne=$q->mysqli_fetch_array("SELECT * FROM `redsocks` WHERE ID=$ID");
 	$array[$ligne["servicename"]]="$page?service-parameters=$ID";
@@ -412,7 +414,8 @@ function service_parameters(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$sock=new sockets();
-	$ID=$_GET["service-parameters"];
+	// Pentest 2026-11-04 : service-parameters etait recopie sans encodage dans la page (XSS).
+	$ID=intval($_GET["service-parameters"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$ligne=$q->mysqli_fetch_array("SELECT * FROM `redsocks` WHERE ID=$ID");	
 	$servicename=$ligne["servicename"];
@@ -445,20 +448,24 @@ function service_parameters_save(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$ID=$_POST["service-id"];
+	$ID=intval($_POST["service-id"]);
 	
+	// Pentest 2026-11-04 : les champs du formulaire (POST) etaient concatenes dans la requete.
 	$sql="UPDATE redsocks SET
-	redsocks_interface='{$_POST["redsocks_interface"]}',
-	redsocks_port='{$_POST["redsocks_port"]}',
-	target_type='{$_POST["target_type"]}',
-	target_ip='{$_POST["target_ip"]}',
-	target_port='{$_POST["target_port"]}',
-	transparentmethod='{$_POST["transparentmethod"]}',
-	target_ip='{$_POST["target_ip"]}',
-	target_port='{$_POST["target_port"]}' WHERE ID=$ID";
+	redsocks_interface=?,
+	redsocks_port=?,
+	target_type=?,
+	target_ip=?,
+	target_port=?,
+	transparentmethod=? WHERE ID=?";
+	$binds=array();
+	foreach(array("redsocks_interface","redsocks_port","target_type","target_ip","target_port","transparentmethod") as $field){
+		$binds[]=isset($_POST[$field])?$_POST[$field]:"";
+	}
+	$binds[]=$ID;
 	
 	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$q->QUERY_SQL($sql);
+	$q->QUERY_SQL_PARAMS($sql,$binds);
 	if(!$q->ok){echo $q->mysql_error;}
 			
 			

@@ -1,16 +1,16 @@
-<BAD_SCORE>Bad Score</BAD_SCORE>
-<DNSBL_settings>DNSBL RHSBL settings</DNSBL_settings>
-<DNSBL_settings_text>Set the list and score of DNS Black list servers</DNSBL_settings_text>
-<DNSERRMSG>DNS Error Message text</DNSERRMSG>
-<GOOD_SCORE>Good score</GOOD_SCORE>
-<MAINTENANCE_LEVEL>After that many policy requests the cache checks for configuration file changes</MAINTENANCE_LEVEL>
-<MAXDNSBLHITS>RBLs servers match Number to reject</MAXDNSBLHITS>
-<MAXDNSBLMSG>Max DNSBL Error text</MAXDNSBLMSG>
-<MAXDNSBLSCORE>DNSBLs score is ABOVE this value will reject immediately</MAXDNSBLSCORE>
-<MAXDNSERRMSG>Max DNS Error text</MAXDNSERRMSG>
-<MAXIDLECACHE>After that many seconds of being idle the cache checks for configuration file changes</MAXIDLECACHE>
-<MAX_PROC>Process limit on how many processes policyd-weight will spawn</MAX_PROC>
-<MIN_PROC>Minimum childs which are kept alive in idle times</MIN_PROC>
-<PolicydDaemonNotifs>Set Errors text to SMTP Sender server  when Policy Server reject messages</PolicydDaemonNotifs>
-<REJECTMSG>Reject Message text</REJECTMSG>
-<SOMAXCONN>Maximum connections which policyd-weight accepts</SOMAXCONN>
+<BAD_SCORE>Mala puntuaci&#243;n</BAD_SCORE>
+<DNSBL_settings>Configuraci&#243;n de DNSBL RHSBL</DNSBL_settings>
+<DNSBL_settings_text>Establecer la lista y la puntuaci&#243;n de los servidores de lista negra DNS</DNSBL_settings_text>
+<DNSERRMSG>Texto del mensaje de error de DNS</DNSERRMSG>
+<GOOD_SCORE>Buena puntuaci&#243;n</GOOD_SCORE>
+<MAINTENANCE_LEVEL>Despu&#233;s de esas solicitudes de pol&#237;tica, la cach&#233; comprueba si hay cambios en el archivo de configuraci&#243;n</MAINTENANCE_LEVEL>
+<MAXDNSBLHITS>N&#250;mero de coincidencias de servidores RBL para rechazar</MAXDNSBLHITS>
+<MAXDNSBLMSG>Texto de error m&#225;ximo de DNSBL</MAXDNSBLMSG>
+<MAXDNSBLSCORE>Si la puntuaci&#243;n de DNSBL est&#225; POR ENCIMA de este valor, se rechazar&#225; inmediatamente</MAXDNSBLSCORE>
+<MAXDNSERRMSG>Texto de error m&#225;ximo de DNS</MAXDNSERRMSG>
+<MAXIDLECACHE>Despu&#233;s de esos segundos de inactividad, la cach&#233; comprueba si hay cambios en el archivo de configuraci&#243;n</MAXIDLECACHE>
+<MAX_PROC>L&#237;mite de procesos sobre cu&#225;ntos procesos lanzar&#225; policyd-weight</MAX_PROC>
+<MIN_PROC>Procesos hijos m&#237;nimos que se mantienen activos en tiempos de inactividad</MIN_PROC>
+<PolicydDaemonNotifs>Establecer el texto de errores para el servidor SMTP emisor cuando el servidor de pol&#237;ticas rechaza mensajes</PolicydDaemonNotifs>
+<REJECTMSG>Texto del mensaje de rechazo</REJECTMSG>
+<SOMAXCONN>Conexiones m&#225;ximas que acepta policyd-weight</SOMAXCONN>

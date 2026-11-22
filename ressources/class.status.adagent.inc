@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 
 
 function adagent_pid(){
@@ -175,7 +176,7 @@ function ADAgentCronStatistics(){
 
 }
 function ADAgentCronStatistics_run(){
-    if(!is_file("/etc/artica-postfix/settings/Daemons/adagentStatsMonthQueue")){return;}
+    if(!artica_setting_exists("adagentStatsMonthQueue")){return;}
     $SquidStatsMonthQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("adagentStatsMonthQueue"));
     if($SquidStatsMonthQueue==0){return;}
     if(system_is_overloaded()){return;}
@@ -191,7 +192,7 @@ function ADAgentCronStatistics_run(){
 function ADAgentCronStatistics_year_run(){
 
     $cmd="{$GLOBALS["NICE"]}{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.ad-agent.stats.compress.php --compress-year >/dev/null 2>&1 &";
-    if(!is_file("/etc/artica-postfix/settings/Daemons/adagentStatsYearQueue")){return;}
+    if(!artica_setting_exists("adagentStatsYearQueue")){return;}
     $HaproxyStatsYearQueue=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("adagentStatsYearQueue"));
     if($HaproxyStatsYearQueue==0){return;}
     if(system_is_overloaded()){return;}

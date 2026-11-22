@@ -1,1 +1,1 @@
-<Inbox>Inbox</Inbox>
+<Inbox>Caixa de entrada</Inbox>

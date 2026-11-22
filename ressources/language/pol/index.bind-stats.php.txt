@@ -1,8 +1,8 @@
 <failure>Awaria</failure>
-<failure_text>The number of queries which resulted in a failure response other than those above</failure_text>
-<recursion>recursion</recursion>
-<recursion_text>The number of queries which caused the server to perform recursion in order to find the final answer</recursion_text>
-<success_text>The number of successful queries made to the server or zone. A successful query is defined as query which returns a NOERROR response other than a referral response</success_text>
-<sum>Sum</sum>
-<sum_text>The sum of all queries</sum_text>
-<_text>All statistics</_text>
+<failure_text>Liczba zapyta&#324;, kt&#243;re zako&#324;czy&#322;y si&#281; odpowiedzi&#261; o niepowodzeniu inn&#261; ni&#380; powy&#380;sze</failure_text>
+<recursion>rekursja</recursion>
+<recursion_text>Liczba zapyta&#324;, kt&#243;re spowodowa&#322;y wykonanie rekursji przez serwer w celu znalezienia ostatecznej odpowiedzi</recursion_text>
+<success_text>Liczba udanych zapyta&#324; do serwera lub strefy. Udane zapytanie jest zdefiniowane jako zapytanie zwracaj&#261;ce odpowied&#378; NOERROR inn&#261; ni&#380; odpowied&#378; odsy&#322;aj&#261;ca</success_text>
+<sum>Suma</sum>
+<sum_text>Suma wszystkich zapyta&#324;</sum_text>
+<_text>Wszystkie statystyki</_text>

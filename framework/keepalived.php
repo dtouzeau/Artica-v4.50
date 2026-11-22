@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 //SP119
 include_once(dirname(__FILE__) . "/frame.class.inc");
 include_once(dirname(__FILE__) . "/class.unix.inc");
@@ -25,14 +26,6 @@ if (isset($_GET["status"])) {
 }
 if (isset($_GET["restart"])) {
     restart();
-    exit;
-}
-if (isset($_GET["start"])) {
-    start();
-    exit;
-}
-if (isset($_GET["stop"])) {
-    stop();
     exit;
 }
 if (isset($_GET["reconfigure"])) {
@@ -217,42 +210,6 @@ function restart()
     shell_exec($cmd);
 }
 
-function start()
-{
-    $GLOBALS["CACHEFILE"] = "/usr/share/artica-postfix/ressources/logs/web/keepalived.progress";
-    $GLOBALS["LOGSFILES"] = "/usr/share/artica-postfix/ressources/logs/web/keepalived.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"], 0777);
-    @chmod($GLOBALS["LOGSFILES"], 0777);
-    $unix = new unix();
-    $php5 = $unix->LOCATE_PHP5_BIN();
-    $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --start >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-function stop()
-{
-    $GLOBALS["CACHEFILE"] = "/usr/share/artica-postfix/ressources/logs/web/keepalived.progress";
-    $GLOBALS["LOGSFILES"] = "/usr/share/artica-postfix/ressources/logs/web/keepalived.log";
-    @unlink($GLOBALS["CACHEFILE"]);
-    @unlink($GLOBALS["LOGSFILES"]);
-    @touch($GLOBALS["CACHEFILE"]);
-    @touch($GLOBALS["LOGSFILES"]);
-    @chmod($GLOBALS["CACHEFILE"], 0777);
-    @chmod($GLOBALS["LOGSFILES"], 0777);
-    $unix = new unix();
-    $php5 = $unix->LOCATE_PHP5_BIN();
-    $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --stop >{$GLOBALS["LOGSFILES"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
 function reconfigure()
 {
     $GLOBALS["CACHEFILE"] = "/usr/share/artica-postfix/ressources/logs/web/keepalived.progress";
@@ -281,7 +238,7 @@ function getLogs()
     $unix = new unix();
     $grep = $unix->find_program("grep");
     $tail = $unix->find_program("tail");
-    $MAIN = unserialize(base64_decode($_GET["syslog"]));
+    $MAIN = unserialize(base64_decode($_GET["syslog"]),array("allowed_classes"=>false));
     $PROTO_P = null;
 
     foreach ($MAIN as $val => $key) {
@@ -325,7 +282,8 @@ function getLogs()
     }
 
     $search = "$date.*?$mainline";
-    $cmd = "$grep -iE '$search' /var/log/keepalived.log |$tail -n $max >/usr/share/artica-postfix/ressources/logs/web/keepalived.syslog 2>&1";
+    // Pentest 2026-11-04 : motif et nombre de lignes de la requete quotes (injection shell root).
+    $cmd = "$grep -iE ".fw_shell_quote($search)." /var/log/keepalived.log |$tail -n ".(intval($max)>0?intval($max):200)." >/usr/share/artica-postfix/ressources/logs/web/keepalived.syslog 2>&1";
     writelogs_framework("$cmd", __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 
@@ -369,7 +327,8 @@ function sync_nodes()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --sync-nodes {$_GET["id"]} {$_GET["secondary_node_id"]}>{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --sync-nodes ".fw_shell_quote($_GET["id"])." ".fw_shell_quote($_GET["secondary_node_id"]).">{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -387,7 +346,8 @@ function setup_nodes()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --setup-nodes {$_GET["data"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --setup-nodes ".fw_shell_quote($_GET["data"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -405,7 +365,8 @@ function nodes_delete_vips()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete-vips {$_GET["primary_node_id"]} {$_GET["synckey"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete-vips ".fw_shell_quote($_GET["primary_node_id"])." ".fw_shell_quote($_GET["synckey"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -423,7 +384,8 @@ function nodes_delete_services()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete-services {$_GET["primary_node_id"]} {$_GET["synckey"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete-services ".fw_shell_quote($_GET["primary_node_id"])." ".fw_shell_quote($_GET["synckey"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -441,7 +403,8 @@ function nodes_delete_tracks()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete-tracks {$_GET["primary_node_id"]} {$_GET["synckey"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete-tracks ".fw_shell_quote($_GET["primary_node_id"])." ".fw_shell_quote($_GET["synckey"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -459,7 +422,8 @@ function nodes_delete()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete {$_GET["primary_node_id"]} {$_GET["secondary_node_id"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --node-delete ".fw_shell_quote($_GET["primary_node_id"])." ".fw_shell_quote($_GET["secondary_node_id"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -477,7 +441,8 @@ function action_delete_nodes_vips()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes-vips {$_GET["data"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes-vips ".fw_shell_quote($_GET["data"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -495,7 +460,8 @@ function action_delete_nodes_services()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes-services {$_GET["data"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes-services ".fw_shell_quote($_GET["data"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -514,7 +480,8 @@ function action_delete_nodes_tracks()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes-tracks {$_GET["data"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes-tracks ".fw_shell_quote($_GET["data"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -532,7 +499,8 @@ function action_delete_nodes()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes {$_GET["data"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --action-delete-nodes ".fw_shell_quote($_GET["data"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -550,7 +518,8 @@ function primary_node_delete()
     $unix = new unix();
     $php5 = $unix->LOCATE_PHP5_BIN();
     $nohup = $unix->find_program("nohup");
-    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --delete-primary_node {$_GET["primary_node_id"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";
+    // Pentest 2026-11-04 : valeurs de requete quotees (injection shell root).
+    $cmd = "$nohup $php5 /usr/share/artica-postfix/exec.keepalived.php --delete-primary_node ".fw_shell_quote($_GET["primary_node_id"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }

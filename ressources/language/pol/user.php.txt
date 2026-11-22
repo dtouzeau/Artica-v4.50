@@ -1,2 +1,2 @@
-<available_websites>Other web sites available</available_websites>
-<user_events_emails_query_text>Query mails events, and display mails passed trough the mail server</user_events_emails_query_text>
+<available_websites>Inne dost&#281;pne witryny</available_websites>
+<user_events_emails_query_text>Zapytaj o zdarzenia e-mail i wy&#347;wietl wiadomo&#347;ci, kt&#243;re przesz&#322;y przez serwer pocztowy</user_events_emails_query_text>

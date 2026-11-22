@@ -1,11 +1,12 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!defined("LkdPTEQ")) {
 	define("LkdPTEQ", base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2EvLkdPTEQ="));
 }
 if(function_exists("date_default_timezone_set") and function_exists("date_default_timezone_get")){@date_default_timezone_set(@date_default_timezone_get());}
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(!isset($GLOBALS["ARTICALOGDIR"])){
 		$GLOBALS["ARTICALOGDIR"]=null;
-		if(is_file("/etc/artica-postfix/settings/Daemons/ArticaLogDir")){
+		if(artica_setting_exists("ArticaLogDir")){
 			$GLOBALS["ARTICALOGDIR"]=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaLogDir");
 		}
 		if($GLOBALS["ARTICALOGDIR"]==null){ 
@@ -94,6 +95,11 @@ function VERBOSE($text,$line=0,$forceFunc=""):bool{
 	if(strlen($forceFunc)>2){
 		$func=$forceFunc;
 	}
+	// Pentest 2026-11-04 : avec ?verbose=1, les messages de debug (qui citent
+	// souvent $_GET ou des lignes de base) etaient recopies en HTML brut (XSS).
+	$text=htmlspecialchars((string)$text,ENT_QUOTES,"ISO-8859-1");
+	$func=htmlspecialchars((string)$func,ENT_QUOTES,"ISO-8859-1");
+	$file=htmlspecialchars((string)$file,ENT_QUOTES,"ISO-8859-1");
 	echo "<div style='font-size:14px;font-weight:bold;background-color:white;color:black'><span style=color:red>$date&nbsp;$func:</span>&nbsp;$text&nbsp;<small>($file)</small></div>\n";
 	return true;
 }

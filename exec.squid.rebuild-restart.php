@@ -61,7 +61,7 @@ function startx(){
     system("$php /usr/share/artica-postfix/exec.convert-to-sqlite.php");
     build_progress("{reconfiguring}....",15);
     if(is_file("/etc/squid3/squid.conf")){@unlink("/etc/squid3/squid.conf");}
-	system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+	system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 	build_progress("{restarting_service}....",50);
 	system("/usr/sbin/artica-phpfpm-service -restart-proxy");
 	

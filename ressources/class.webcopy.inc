@@ -15,9 +15,12 @@ class webcopy{
 
     }
     public function WebCopyOriginalHostName():string{
-        $q      = new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $ligne=$q->mysqli_fetch_array("SELECT enforceuri FROM httrack_sites WHERE ID=$this->WebCopyID");
-        $enforceuri=$ligne["enforceuri"];
+        $ID=intval($this->WebCopyID);
+        if($ID==0){return "";}
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/httrack_sites/ID/$ID");
+        $data=json_decode($resp,true);
+        if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"]) || count($data["rows"])==0){return "";}
+        $enforceuri=isset($data["rows"][0]["enforceuri"]) ? $data["rows"][0]["enforceuri"] : "";
         if($enforceuri==null){return "";}
         $url=parse_url($enforceuri);
         if(!isset($url["host"])){return "";}

@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 if(!isset($GLOBALS["BASE_ROOT"])){$GLOBALS["BASE_ROOT"]="/usr/share/artica-postfix";}
 include_once(dirname(__FILE__)."/class.os.system.inc");
 
@@ -44,11 +45,11 @@ class squid_auto_tasks{
 	
 	private function execute(){
 		$DisableStats=0;
-		if(!is_file("/etc/artica-postfix/settings/Daemons/EnableProxyCompressor")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableProxyCompressor", 0);}
-		if(!is_file("/etc/artica-postfix/settings/Daemons/EnableKerbAuth")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableKerbAuth", 0);}
-		if(!is_file("/etc/artica-postfix/settings/Daemons/SquidLogRotateFreq")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogRotateFreq", 1440);}
-		if(!is_file("/etc/artica-postfix/settings/Daemons/SquidCacheLevel")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidCacheLevel", 3);}
-		if(!is_file("/etc/artica-postfix/settings/Daemons/EnableSS5")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSS5", 0);}
+		if(!artica_setting_exists("EnableProxyCompressor")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableProxyCompressor", 0);}
+		if(!artica_setting_exists("EnableKerbAuth")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableKerbAuth", 0);}
+		if(!artica_setting_exists("SquidLogRotateFreq")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidLogRotateFreq", 1440);}
+		if(!artica_setting_exists("SquidCacheLevel")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidCacheLevel", 3);}
+		if(!artica_setting_exists("EnableSS5")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableSS5", 0);}
         $prefixcmd=$GLOBALS["nohup"]." {$GLOBALS["NICE"]}".$GLOBALS["CLASS_UNIX"]->LOCATE_PHP5_BIN()." ";
 		$DisableArticaProxyStatistics=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableArticaProxyStatistics");
 		if(!is_numeric($DisableArticaProxyStatistics)){$DisableArticaProxyStatistics=0;}
@@ -112,25 +113,13 @@ class squid_auto_tasks{
 	}
 		
 //**********************************************************************************************************************		
-		//Regénères les états de l'interface ( toutes les 10mn)	
-		$TimeFile="/etc/artica-postfix/pids/SQUID_ALL_STATUS.time";
-		$CacheSchedules=$GLOBALS["CLASS_UNIX"]->file_time_min($TimeFile);
-		_statussquid("exec.squid.watchdog.php --all-status {$CacheSchedules}Mn/10");
-		if($CacheSchedules>20){
-			@unlink($TimeFile);
-			@file_put_contents($TimeFile, time());
-			$cmd=trim($prefixcmd."/usr/share/artica-postfix/exec.squid.watchdog.php --all-status >/dev/null 2>&1 &");
-			if($GLOBALS["VERBOSE"]){echo "$cmd\n";}
-			$this->shell_exec2($cmd);
-		}
+		// Supprime : exec.squid.watchdog.php --all-status, porte dans articarest
+		// (squid.LegacyWatchdog et squid.CIcapClients, toutes les 5 minutes).
 
 //************************************************************************************************************
 
-        if(!is_file("/etc/cron.d/squid-storedir-5mn")){
-            $GLOBALS["CLASS_UNIX"]->Popuplate_cron_make("squid-storedir-5mn","*/5 * * * *","exec.squid.php.storedir.php");
-            shell_exec("/etc/init.d/cron reload");
-
-        }
+        // squid-storedir-5mn: exec.squid.php.storedir.php is ported to articarest
+        // (squid.RefreshCacheCounters, every 5 minutes); the daemon retires the cron.
 
 		$system_is_overloaded=system_is_overloaded();
 		if($system_is_overloaded){
@@ -143,16 +132,8 @@ class squid_auto_tasks{
 		
 
 			
-		    if(is_file("/etc/init.d/c-icap")) {
-                $CacheSchedules = $GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/pids/exec.c-icap.php.purge.time");
-                if ($CacheSchedules > 20) {
-                    $cmd = trim($prefixcmd . "/usr/share/artica-postfix/exec.c-icap.php --purge --schedule >/dev/null 2>&1 &");
-                    if ($GLOBALS["VERBOSE"]) {
-                        echo "$cmd\n";
-                    }
-                    $this->shell_exec2($cmd);
-                }
-            }
+		    // Purge des dossiers temporaires de c-icap : planifiee par articarest
+		    // (Squidcicap.ScheduledPurge, toutes les 20 min), exec.c-icap.php supprime.
 		
 		
 		    if(is_file("/etc/init.d/ufdb")) {
@@ -176,67 +157,69 @@ class squid_auto_tasks{
 		
 		
 		
-			$CacheSchedules=$GLOBALS["CLASS_UNIX"]->file_time_min("/usr/share/artica-postfix/ressources/logs/squid.compilation.params");
-			if($CacheSchedules>1280){
-				$cmd=trim($prefixcmd."/usr/share/artica-postfix/exec.squid.php --compilation-params >/dev/null 2>&1 &");
-				if($GLOBALS["VERBOSE"]){echo "$cmd\n";}
-				$this->shell_exec2($cmd);
-			}
 		
 			
 		
 
-			$CacheSchedules=$GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/pids/exec.squid.php.build_schedules_tests.time");
+			// Moteur porte dans le daemon Go (module SystemTasks):
+			// `exec.squid.php --build-schedules-test` n'existe plus. Un drapeau
+			// inconnu passe a un exec.*.php ne leve aucune erreur -- PHP tombe
+			// dans la voie par defaut du script -- d'ou l'appel REST.
+			//
+			// Le fichier d'horodatage etait ecrit par build_schedules_tests()
+			// elle-meme; personne ne l'ecrit plus, et file_time_min() rend
+			// 10000 sur un fichier absent (framework/class.unix.inc:6018 --
+			// c'est file_time_SEC qui rend 100000, l. 6031). Sans l'ecriture
+			// ci-dessous le garde-fou des 10 minutes serait toujours vrai
+			// (10000 > 10) et la route serait appelee a chaque passage.
+			$StampSchedules="/etc/artica-postfix/pids/exec.squid.php.build_schedules_tests.time";
+			$CacheSchedules=$GLOBALS["CLASS_UNIX"]->file_time_min($StampSchedules);
             $this->AutomaticToSyslog("exec.squid.php.build_schedules_tests.time = {$CacheSchedules}Mn");
 
 			if($CacheSchedules>10){
-				$cmd=trim($prefixcmd."/usr/share/artica-postfix/exec.squid.php --build-schedules-test >/dev/null 2>&1 &");
-				if($GLOBALS["VERBOSE"]){echo "$cmd\n";}
-				$this->shell_exec2($cmd);
+				@file_put_contents($StampSchedules, time());
+				$this->events("REST_API /proxy/schedule/apply",__CLASS__."/".__FUNCTION__,__LINE__);
+				$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/schedule/apply");
 			}
 
 		
 
 		
-			$CacheSchedules=$GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/CACHES_SQUID_SCHEDULE");
-            $this->AutomaticToSyslog("CACHES_SQUID_SCHEDULE = {$CacheSchedules}Mn");
-			if($CacheSchedules>1440){
-				$cmd=trim($prefixcmd."/usr/share/artica-postfix/exec.squid.php --build-schedules >/dev/null 2>&1 &");
-				@unlink("/etc/artica-postfix/CACHES_SQUID_SCHEDULE");
-				@file_put_contents("/etc/artica-postfix/CACHES_SQUID_SCHEDULE", time());
-				$this->shell_exec2($cmd);
-			}
-				
+			// Un second garde-fou, journalier celui-la, appelait ICI la MEME
+			// route /proxy/schedule/apply sur l'horodatage
+			// /etc/artica-postfix/CACHES_SQUID_SCHEDULE (>1440 mn). Retire:
+			// les deux blocs sont sequentiels dans cette methode et le
+			// premier a le seuil le PLUS BAS, donc il a deja appele la route
+			// dans les dix minutes precedentes chaque fois que le second
+			// aurait pu le faire -- il ne pouvait plus rien garder. Il ne
+			// portait pas non plus d'appel different depuis que
+			// `exec.squid.php --build-schedules` a disparu. Le fichier
+			// CACHES_SQUID_SCHEDULE n'avait aucun autre lecteur dans les deux
+			// depots (verifie); il reste sur les appliances deja deployees,
+			// simplement plus rafraichi.
 
 
-			if(is_file("/usr/share/artica-postfix/exec.kerbauth.php")){
-				if($EnableKerbAuth==1){
-					$time=$GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/pids/exec.kerbauth.php.1");
-					if($time>30){
-						$this->shell_exec2(trim($prefixcmd."/usr/share/artica-postfix/exec.kerbauth.php --klist >/dev/null 2>&1 &"));
-						$this->shell_exec2(trim($prefixcmd."/usr/share/artica-postfix/exec.kerbauth.php --winbinddpriv >/dev/null 2>&1 &"));
-						@unlink("/etc/artica-postfix/pids/exec.kerbauth.php.1");
-						@touch("/etc/artica-postfix/pids/exec.kerbauth.php.1");
-					}
+
+			// exec.kerbauth.php a ete supprime : --klist (kinit avec le compte
+			// d'administration AD) et --winbinddpriv (droits sur /var/lib/samba)
+			// sont desormais servis par le daemon. Le garde-fou de 30 minutes est
+			// conserve, il n'appartient pas au daemon.
+			if($EnableKerbAuth==1){
+				$time=$GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/pids/kerberos.hourly.time");
+				if($time>30){
+					$GLOBALS["CLASS_SOCKETS"]->REST_API("/mktutils/kinit");
+					$GLOBALS["CLASS_SOCKETS"]->REST_API("/winbindd/privileges");
+					@unlink("/etc/artica-postfix/pids/kerberos.hourly.time");
+					@touch("/etc/artica-postfix/pids/kerberos.hourly.time");
 				}
 			}
 
 
 
 
-		$time=$GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/pids/exec.clean.logs.php.squidClean.time");
-        $this->AutomaticToSyslog("exec.clean.logs.php.squidClean.time = {$CacheSchedules}Mn");
-		if($time>15){
-			$this->shell_exec2(trim($prefixcmd."/usr/share/artica-postfix/exec.clean.logs.php --squid >/dev/null 2>&1 &"));
-		}
-		
-		
-		
-		
-		if(!is_file("/etc/artica-postfix/SQUID_TEMPLATE_DONE")){
-			squid_admin_mysql(1, "SQUID_TEMPLATE_DONE: No such file, launch build template action...", null,__FILE__,__LINE__);
-			$this->shell_exec2(trim($prefixcmd."/usr/share/artica-postfix/exec.squid.php --tpl-save >/dev/null 2>&1 &"));
-		}
+		// ex `exec.clean.logs.php --squid` : articarest logrotate.SquidCleanTask,
+		// anti-rejeu de 15 min cote daemon.
+		$GLOBALS["CLASS_SOCKETS"]->REST_API("/logrotate/squid-clean");
 	}
 	
 	

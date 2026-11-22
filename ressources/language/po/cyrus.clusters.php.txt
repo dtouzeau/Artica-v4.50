@@ -1,32 +1,26 @@
-<already_a_master>This server is already a "master"</already_a_master>
-<already_a_murder_frontend>The remote server is a Cyrus IMAP Aggregator frontend, this is not compatible.</already_a_murder_frontend>
+<already_a_master>Este servidor j&#225; &#233; um &quot;master&quot;</already_a_master>
+<already_a_murder_frontend>O servidor remoto &#233; um frontend agregador Cyrus IMAP, isto n&#227;o &#233; compat&#237;vel.</already_a_murder_frontend>
 <CyrusClusterID_TEXT>[b]Universally Unique Identifiers (UUIDs)[/b][br]
-[b]Set a unique number of your structure between 1 to 255[/b]
-Designed to enable UUIDs for messages.[br]
- Use of UUIDs improves efficiency by eliminating the synchronization of messages which 
- the "replica" has already received from the "master". 
- </CyrusClusterID_TEXT>
-<CYRUS_AS_REPLICA_EXPLAIN>This server has been set has a replica server.[br]To disable this feature, 
- you need to send order trough the master server to disable this replica</CYRUS_AS_REPLICA_EXPLAIN>
-<CYRUS_CLUSTER>Mailboxes Clustering</CYRUS_CLUSTER>
-<CYRUS_CLUSTER_EXPLAIN>The Cyrus replication engine is designed to replicate the mailstore on standalone 
-Cyrus servers or "backend" servers in a Cyrus Murder to provide a high-availability environment.</CYRUS_CLUSTER_EXPLAIN>
-<CYRUS_CLUSTER_TEXT>Build a Cyrus-imapd cluster backend to not loosing your mailboxes datas</CYRUS_CLUSTER_TEXT>
-<DISABLE_REPLICA>Disable this replica</DISABLE_REPLICA>
-<DISABLE_REPLICA_TEXT>Send order to this replica to disable clustering</DISABLE_REPLICA_TEXT>
-<ENABLE_CYRUS_CLUSTER_MASTER>Enable this server has the master</ENABLE_CYRUS_CLUSTER_MASTER>
-<ENABLE_CYRUS_CLUSTER_MASTER_TEXT>If you turn to green this feature, 
-this server will be the "master" server[br]It able to order to other server to be a "replica" and replicate your mailboxes
-it is intended that this structure is an active-passive solution
-</ENABLE_CYRUS_CLUSTER_MASTER_TEXT>
+[b]Defina um n&#250;mero &#250;nico da sua estrutura entre 1 e 255[/b]
+Concebido para ativar UUIDs para mensagens.[br]
+ O uso de UUIDs melhora a efici&#234;ncia eliminando a sincroniza&#231;&#227;o de mensagens que a &quot;replica&quot; j&#225; recebeu do &quot;master&quot;.</CyrusClusterID_TEXT>
+<CYRUS_AS_REPLICA_EXPLAIN>Este servidor foi definido como servidor de r&#233;plica.[br]Para desativar esta funcionalidade, precisa de enviar uma ordem atrav&#233;s do servidor mestre para desativar esta r&#233;plica</CYRUS_AS_REPLICA_EXPLAIN>
+<CYRUS_CLUSTER>Clustering de caixas de correio</CYRUS_CLUSTER>
+<CYRUS_CLUSTER_EXPLAIN>O motor de replica&#231;&#227;o do Cyrus foi concebido para replicar o mailstore em servidores Cyrus aut&#243;nomos ou servidores &quot;backend&quot; num Cyrus Murder para fornecer um ambiente de alta disponibilidade.</CYRUS_CLUSTER_EXPLAIN>
+<CYRUS_CLUSTER_TEXT>Construir um backend de cluster Cyrus-imapd para n&#227;o perder os dados das suas caixas de correio</CYRUS_CLUSTER_TEXT>
+<DISABLE_REPLICA>Desativar esta r&#233;plica</DISABLE_REPLICA>
+<DISABLE_REPLICA_TEXT>Enviar ordem a esta r&#233;plica para desativar o clustering</DISABLE_REPLICA_TEXT>
+<ENABLE_CYRUS_CLUSTER_MASTER>Ativar este servidor como mestre</ENABLE_CYRUS_CLUSTER_MASTER>
+<ENABLE_CYRUS_CLUSTER_MASTER_TEXT>Se colocar esta funcionalidade a verde, este servidor ser&#225; o servidor &quot;master&quot;[br]Pode ordenar a outros servidores que sejam uma &quot;replica&quot; e repliquem as suas caixas de correio
+pretende-se que esta estrutura seja uma solu&#231;&#227;o ativo-passivo</ENABLE_CYRUS_CLUSTER_MASTER_TEXT>
 <listen_cluster_port>Ouvir porto Cluster</listen_cluster_port>
-<master_server_cluster>Master cluster server name</master_server_cluster>
-<NO_NOTIFY_REPLICA_NO_ADRESS_SPECIFIED>Unable to notify replica, replica address is not set</NO_NOTIFY_REPLICA_NO_ADRESS_SPECIFIED>
-<REPLICATE_YOUR_MAILBOXES>Manual mailboxes replication</REPLICATE_YOUR_MAILBOXES>
-<REPLICATE_YOUR_MAILBOXES_TEXT>by default this operations is automatic. This will chock the replication mode</REPLICATE_YOUR_MAILBOXES_TEXT>
-<replica_ip>Replica hostname or IP</replica_ip>
-<replica_master_ip>Name/IP of this server</replica_master_ip>
-<SET_REPLICA_SERVER>Set your replica server</SET_REPLICA_SERVER>
-<SET_REPLICA_SERVER_EXPLAIN>This operation will notify remote Artica server to set the Cyrus mailbox engine to be a "replica"</SET_REPLICA_SERVER_EXPLAIN>
-<SET_REPLICA_SERVER_TEXT>The "replica" server is able to listen and accept synchonization messages from the master server</SET_REPLICA_SERVER_TEXT>
-<sync_tools_not_compiled>The sync_client and sync_server are not installed, please check the Setup Control Center in order to upgrade cyrus-imap to the newest version and enable this feature.</sync_tools_not_compiled>
+<master_server_cluster>Nome do servidor do cluster mestre</master_server_cluster>
+<NO_NOTIFY_REPLICA_NO_ADRESS_SPECIFIED>N&#227;o &#233; poss&#237;vel notificar a r&#233;plica, o endere&#231;o da r&#233;plica n&#227;o est&#225; definido</NO_NOTIFY_REPLICA_NO_ADRESS_SPECIFIED>
+<REPLICATE_YOUR_MAILBOXES>Replica&#231;&#227;o manual de caixas de correio</REPLICATE_YOUR_MAILBOXES>
+<REPLICATE_YOUR_MAILBOXES_TEXT>Por predefini&#231;&#227;o esta opera&#231;&#227;o &#233; autom&#225;tica. Isto bloqueia o modo de replica&#231;&#227;o</REPLICATE_YOUR_MAILBOXES_TEXT>
+<replica_ip>Nome de anfitri&#227;o ou IP da r&#233;plica</replica_ip>
+<replica_master_ip>Nome/IP deste servidor</replica_master_ip>
+<SET_REPLICA_SERVER>Definir o seu servidor de r&#233;plica</SET_REPLICA_SERVER>
+<SET_REPLICA_SERVER_EXPLAIN>Esta opera&#231;&#227;o notificar&#225; o servidor Artica remoto para definir o motor de caixa de correio Cyrus como &quot;replica&quot;</SET_REPLICA_SERVER_EXPLAIN>
+<SET_REPLICA_SERVER_TEXT>O servidor &quot;replica&quot; pode escutar e aceitar as mensagens de sincroniza&#231;&#227;o do servidor mestre</SET_REPLICA_SERVER_TEXT>
+<sync_tools_not_compiled>O sync_client e o sync_server n&#227;o est&#227;o instalados, verifique o Setup Control Center</sync_tools_not_compiled>

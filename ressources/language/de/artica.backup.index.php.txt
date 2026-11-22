@@ -1,68 +1,63 @@
 <about>Alle Informationen werden in 2 Datenbanken gespeichert, die von Artica verwendet werden [br].
 LDAP wird f%C3%BCr alle Einstellungen und Konten verwendet. Mysql wird f%C3%BCr Ereignisse und produktbezogene Daten verwendet, die MySQL verwenden.
 Artica sollte diese Einstellungen sichern, um sie bei einem Serverabsturz wiederherstellen zu k%C3%B6nnen.</about>
-<add_folder>Add a new folder</add_folder>
-<add_has_backup>Add this disk has a backup storage disk</add_has_backup>
-<add_share_folder>Add a new remote share folder</add_share_folder>
-<add_share_folder_text>Give the remote parameters in order to help artica connect to he remode smb chare folder..</add_share_folder_text>
-<archives_files>files archive(s)</archives_files>
-<ArticaBackupMaxTimeToLiveInDay>Max Days a container live</ArticaBackupMaxTimeToLiveInDay>
-<available_disks>available disks</available_disks>
-<backup_now>Backup now</backup_now>
-<backup_now_text>Perform a new backup now</backup_now_text>
-<backup_path>Backup path</backup_path>
+<add_folder>Einen neuen Ordner hinzuf&#252;gen</add_folder>
+<add_has_backup>Diese Festplatte als Sicherungsspeicherfestplatte hinzuf&#252;gen</add_has_backup>
+<add_share_folder>Einen neuen freigegebenen Remote-Ordner hinzuf&#252;gen</add_share_folder>
+<add_share_folder_text>Geben Sie die Remote-Parameter an, um Artica zu helfen, sich mit dem freigegebenen SMB-Remote-Ordner zu verbinden..</add_share_folder_text>
+<archives_files>Dateiarchiv(e)</archives_files>
+<ArticaBackupMaxTimeToLiveInDay>Maximale Lebensdauer eines Containers in Tagen</ArticaBackupMaxTimeToLiveInDay>
+<available_disks>verf&#252;gbare Festplatten</available_disks>
+<backup_now>Jetzt sichern</backup_now>
+<backup_now_text>Jetzt eine neue Sicherung durchf&#252;hren</backup_now_text>
+<backup_path>Sicherungspfad</backup_path>
 <backup_time>T%C3%A4gliches Backup um</backup_time>
-<browse_dar>Browse your DAR conteners..</browse_dar>
-<browse_dar_text>This section will help you to find and restore files backup in your contener.[br]Use the search field in order to find files you want to restore or to get status</browse_dar_text>
-<close_windows>All backup operations are executed... You can close windows now</close_windows>
-<compile_rules_ok>Saving settings OK...</compile_rules_ok>
-<connect_as>Connect as</connect_as>
-<connect_share>Connect this remode share folder</connect_share>
-<dar_is_not_installed>DAR is not installed !</dar_is_not_installed>
-<dar_is_not_installed_text>Disk Archive (DAR) application is not installed on your system.[br]This feature cannot be running on you system[br]
-Please install "dar" application using your favorite repository manager (or using artica repository manager)[br]Before using this feature...</dar_is_not_installed_text>
-<database_files_number>Number of files stored</database_files_number>
+<browse_dar>Durchsuchen Sie Ihre DAR-Container..</browse_dar>
+<browse_dar_text>Dieser Abschnitt hilft Ihnen, in Ihrem Container gesicherte Dateien zu finden und wiederherzustellen.[br]Verwenden Sie das Suchfeld, um Dateien zu finden, die Sie wiederherstellen m&#246;chten, oder um den Status abzurufen</browse_dar_text>
+<close_windows>Alle Sicherungsvorg&#228;nge werden ausgef&#252;hrt... Sie k&#246;nnen das Fenster jetzt schlie&#223;en</close_windows>
+<compile_rules_ok>Einstellungen werden gespeichert OK...</compile_rules_ok>
+<connect_as>Verbinden als</connect_as>
+<connect_share>Diesen freigegebenen Remote-Ordner verbinden</connect_share>
+<dar_is_not_installed>DAR ist nicht installiert!</dar_is_not_installed>
+<dar_is_not_installed_text>Die Anwendung Disk Archive (DAR) ist nicht auf Ihrem System installiert.[br]Diese Funktion kann auf Ihrem System nicht ausgef&#252;hrt werden[br]
+Bitte installieren Sie die Anwendung &quot;dar&quot; mit Ihrem bevorzugten Repository-Manager (oder mit dem Artica-Repository-Manager)[br]Bevor Sie diese Funktion verwenden...</dar_is_not_installed_text>
+<database_files_number>Anzahl der gespeicherten Dateien</database_files_number>
 <database_number>Datenbank</database_number>
-<disk_add_caption>This disk is added into possible backup storage.
-if this disk is plugged,
-artica will export automatically backups storages on this disk (include samba shared folders too).
-Do you Confirm this behavior ?
-</disk_add_caption>
-<disk_retranslation>Retranslation disk</disk_retranslation>
-<disk_retranslation_text>This feature allows you to backup more datas to an internal/external hard drive.[br]
-When standard backup is performed and if the external hard drive is plugged,[br]
-artica will duplicate standard backup and all mandatories datas to this storage (include samba shared directories, mailboxes and so on...).[br]
-Use this section to select your hard drive and target folder and all will be automatically performed.[br]
-plugg your disk before and select it, it will be discovered automatically</disk_retranslation_text>
-<enable_artica_backup>Enable Artica Backup features</enable_artica_backup>
+<disk_add_caption>Diese Festplatte wird zum m&#246;glichen Sicherungsspeicher hinzugef&#252;gt.
+Wenn diese Festplatte angeschlossen ist,
+exportiert Artica automatisch die Sicherungsspeicher auf diese Festplatte (einschlie&#223;lich Samba-Freigabeordner).
+Best&#228;tigen Sie dieses Verhalten?</disk_add_caption>
+<disk_retranslation>Retranslation-Festplatte</disk_retranslation>
+<disk_retranslation_text>Mit dieser Funktion k&#246;nnen Sie mehr Daten auf eine interne/externe Festplatte sichern.[br]
+Wenn die Standardsicherung durchgef&#252;hrt wird und die externe Festplatte angeschlossen ist,[br]
+verdoppelt Artica die Standardsicherung und alle erforderlichen Daten auf diesen Speicher (einschlie&#223;lich Samba-Freigabeverzeichnisse, Postf&#228;cher usw.).[br]
+Verwenden Sie diesen Abschnitt, um Ihre Festplatte und den Zielordner auszuw&#228;hlen, und alles wird automatisch durchgef&#252;hrt.[br]
+Schlie&#223;en Sie Ihre Festplatte vorher an und w&#228;hlen Sie sie aus, sie wird automatisch erkannt</disk_retranslation_text>
+<enable_artica_backup>Artica-Backup-Funktionen aktivieren</enable_artica_backup>
 <evry_day_at>Jeden Tag um</evry_day_at>
-<folder_size>Folder size</folder_size>
-<howto_restore>
-Schedule task is stored in [b]/etc/cron.d/artica.cron.backups[/b][br]
-[H5]Restoring:[/H5]
-To restore a backup container, execute by command-line [br]
-[b]artica-ldap --restore (file path)[b][br]
-artica-ldap is located in /usr/share/artica-postfix</howto_restore>
-<info>info</info>
-<perform_restore>Perform restore process</perform_restore>
-<personal_folders>Personal folders</personal_folders>
-<restore_all_database>Restore all files of the database that store this file</restore_all_database>
-<restore_all_database_text>This operation will help you restoring all files stored in your selected file container,
-browse your server in order to specify wich folder will store restored files.</restore_all_database_text>
-<restore_full_database>Restore a full container</restore_full_database>
-<restore_single_file>Restore aonly this selected file</restore_single_file>
-<saved_date>Saved date</saved_date>
-<selected_disks>Selected disks</selected_disks>
-<select_this_disk>Select this disk has a backup disk</select_this_disk>
-<shares_list>Target remote folders list</shares_list>
-<share_folder>Share folder</share_folder>
-<share_retranslation>Retranslation shares</share_retranslation>
-<share_retranslation_text>This feature allows you to backup all datas in remote server using a share directory.
-All datas will be backuped on incremental mode.So you can retreive all files version time.[br]
-This feature running artica-backup-share tool. it send notifications if task is succeed or not
-
-</share_retranslation_text>
-<storage_list>Storage containers list</storage_list>
-<success_sendcommand>Send order to artica OK....</success_sendcommand>
-<target_restore_folder>Target restore folder</target_restore_folder>
-<usb_device_id>Source external device ID</usb_device_id>
+<folder_size>Ordnergr&#246;&#223;e</folder_size>
+<howto_restore>Die geplante Aufgabe ist in [b]/etc/cron.d/artica.cron.backups[/b] gespeichert[br]
+[H5]Wiederherstellung:[/H5]
+Um einen Sicherungscontainer wiederherzustellen, f&#252;hren Sie per Befehlszeile aus [br]
+[b]artica-ldap --restore (Dateipfad)[b][br]
+artica-ldap befindet sich in /usr/share/artica-postfix</howto_restore>
+<info>Info</info>
+<perform_restore>Wiederherstellungsvorgang durchf&#252;hren</perform_restore>
+<personal_folders>Pers&#246;nliche Ordner</personal_folders>
+<restore_all_database>Alle Dateien der Datenbank wiederherstellen, die diese Datei speichert</restore_all_database>
+<restore_all_database_text>Dieser Vorgang hilft Ihnen, alle in Ihrem ausgew&#228;hlten Dateicontainer gespeicherten Dateien wiederherzustellen; durchsuchen Sie Ihren Server, um anzugeben, welcher Ordner die wiederhergestellten Dateien speichern soll.</restore_all_database_text>
+<restore_full_database>Einen vollst&#228;ndigen Container wiederherstellen</restore_full_database>
+<restore_single_file>Nur diese ausgew&#228;hlte Datei wiederherstellen</restore_single_file>
+<saved_date>Speicherdatum</saved_date>
+<selected_disks>Ausgew&#228;hlte Festplatten</selected_disks>
+<select_this_disk>Diese Festplatte als Sicherungsfestplatte ausw&#228;hlen</select_this_disk>
+<shares_list>Liste der Remote-Zielordner</shares_list>
+<share_folder>Ordner freigeben</share_folder>
+<share_retranslation>Retranslation-Freigaben</share_retranslation>
+<share_retranslation_text>Mit dieser Funktion k&#246;nnen Sie alle Daten auf einem Remote-Server mithilfe eines freigegebenen Verzeichnisses sichern.
+Alle Daten werden im inkrementellen Modus gesichert, sodass Sie alle Dateiversionen jederzeit abrufen k&#246;nnen.[br]
+Diese Funktion f&#252;hrt das Tool artica-backup-share aus. Es sendet Benachrichtigungen, ob die Aufgabe erfolgreich war oder nicht</share_retranslation_text>
+<storage_list>Liste der Speichercontainer</storage_list>
+<success_sendcommand>Befehl an Artica gesendet OK....</success_sendcommand>
+<target_restore_folder>Zielordner f&#252;r Wiederherstellung</target_restore_folder>
+<usb_device_id>Quell-ID des externen Ger&#228;ts</usb_device_id>

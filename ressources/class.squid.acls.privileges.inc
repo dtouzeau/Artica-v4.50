@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class squid_acls_privileges{
 	private $EnableKerbAuth=0;
@@ -56,14 +57,10 @@ class squid_acls_privileges{
 	
 	private function search_member(){
 		
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$sql="SELECT gpid FROM webfilter_aclsdynamic_rights WHERE `type`=2 AND `pattern`='{$_SESSION["uid"]}'";
-		$results=$q->QUERY_SQL($sql);
-		if(count($results)==0){return;}
-		foreach ($results as $index=>$ligne){
-			$this->Groupsid[$ligne["gpid"]]=$ligne["gpid"];
-			
-		}
+		// acls.db is API-only — delegated-ACL gpids for this uid via the acls backend.
+		$gpids=acls_api_get("/proxy/acls/sqlite/aclsdynamic/gpids?type=2&pattern=".urlencode($_SESSION["uid"]));
+		if(!is_array($gpids)){return;}
+		foreach ($gpids as $gid){$gid=intval($gid); if($gid>0){$this->Groupsid[$gid]=$gid;}}
 		
 	}
 	
@@ -73,16 +70,11 @@ class squid_acls_privileges{
 		$groups=$this->ActiveDirectoryGroupsOfMember();
 		if(count($groups)==0){return;}
 		
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+		// acls.db is API-only — delegated-ACL gpids per AD group DN via the acls backend.
 		while (list ($dn, $groupname) = each ($groups) ){
-			$dn=mysql_escape_string2($dn);
-			$results=$q->QUERY_SQL("SELECT gpid FROM webfilter_aclsdynamic_rights WHERE `type`=1 AND `pattern`='$dn'");
-			if(count($results)==0){continue;}
-			foreach ($results as $index=>$ligne){
-				$this->Groupsid[$ligne["gpid"]]=$ligne["gpid"];
-					
-			}
-			
+			$gpids=acls_api_get("/proxy/acls/sqlite/aclsdynamic/gpids?type=1&pattern=".urlencode($dn));
+			if(!is_array($gpids)){continue;}
+			foreach ($gpids as $gid){$gid=intval($gid); if($gid>0){$this->Groupsid[$gid]=$gid;}}
 		}
 	}
 	
@@ -93,17 +85,13 @@ class squid_acls_privileges{
 		if($GLOBALS["VERBOSE"]){echo "<span style='color:blue'>LDAP - Groups_list() = ".count($groups)."<br></span>";}
 		
 		if(count($groups)==0){return;}
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
+		// acls.db is API-only — delegated-ACL gpids per LDAP group via the acls backend.
 		while (list ($guid, $groupname) = each ($groups) ){
-			
+
 			if($GLOBALS["VERBOSE"]){echo "<span style='color:blue'>MySQL loop = $guid<br></span>";}
-			$results=$q->QUERY_SQL("SELECT gpid FROM webfilter_aclsdynamic_rights WHERE `type`=3 AND `pattern`='$guid'");
-			if(count($results)==0){continue;}
-			foreach($results as $index=>$ligne){
-				$this->Groupsid[$ligne["gpid"]]=$ligne["gpid"];
-					
-			}
-			
+			$gpids=acls_api_get("/proxy/acls/sqlite/aclsdynamic/gpids?type=3&pattern=".urlencode($guid));
+			if(!is_array($gpids)){continue;}
+			foreach ($gpids as $gid){$gid=intval($gid); if($gid>0){$this->Groupsid[$gid]=$gid;}}
 		}
 	}
 	

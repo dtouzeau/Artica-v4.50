@@ -1,62 +1,54 @@
-<available_components>Available components saved</available_components>
-<available_products_to_be_updated>Available products to add & update</available_products_to_be_updated>
-<components>Components</components>
-<http_engine>HTTP service</http_engine>
-<proxy_settings>Proxy settings</proxy_settings>
-<RetranslatorCronMinutes>Get Kaspersky Pattern databases each</RetranslatorCronMinutes>
-<RetranslatorEnabled>Enable get Kaspersky Pattern databases</RetranslatorEnabled>
-<RetranslatorHttpdEnabled>Enable HTTP service</RetranslatorHttpdEnabled>
-<RetranslatorHttpdPort>HTTP service listen port</RetranslatorHttpdPort>
-<RetranslatorProxyAddress>Specifies a proxy to be used for downloads</RetranslatorProxyAddress>
-<RetranslatorRegionSettings>Preferred servers list region</RetranslatorRegionSettings>
-<RetranslatorReportLevel>Defines how detailed the report entries should be</RetranslatorReportLevel>
-<RetranslatorReportLevel_text>
-Detail levels are:[br]
+<available_components>Componentes dispon&#237;veis salvos</available_components>
+<available_products_to_be_updated>Produtos dispon&#237;veis para adicionar e atualizar</available_products_to_be_updated>
+<components>Componentes</components>
+<http_engine>Servi&#231;o HTTP</http_engine>
+<proxy_settings>Configura&#231;&#245;es do proxy</proxy_settings>
+<RetranslatorCronMinutes>Obter os bancos de dados de padr&#245;es Kaspersky a cada</RetranslatorCronMinutes>
+<RetranslatorEnabled>Ativar a obten&#231;&#227;o dos bancos de dados de padr&#245;es Kaspersky</RetranslatorEnabled>
+<RetranslatorHttpdEnabled>Ativar o servi&#231;o HTTP</RetranslatorHttpdEnabled>
+<RetranslatorHttpdPort>Porta de escuta do servi&#231;o HTTP</RetranslatorHttpdPort>
+<RetranslatorProxyAddress>Especifica um proxy a usar para os downloads</RetranslatorProxyAddress>
+<RetranslatorRegionSettings>Regi&#227;o da lista de servidores preferidos</RetranslatorRegionSettings>
+<RetranslatorReportLevel>Define qu&#227;o detalhadas devem ser as entradas do relat&#243;rio</RetranslatorReportLevel>
+<RetranslatorReportLevel_text>Os n&#237;veis de detalhe s&#227;o:[br]
 [ul][br]
-[li][b]0[/b]- Report only fatal errors. Only the errors, which result in program[br]
-   termination, or failure to start, are reported; for example, if a[br]
-   component failed to load a license file. Fatal errors have the 'F'[br]
-   mark in the log file.[br][/li]
-[li][b]1[/b]- Report all errors. Reports not only fatal errors, but also any error,[br]
-   which affects program behavior, but not causing the component to[br]
-   terminate. Non-fatal errors have the 'E' mark in the log file.[br][/li]
-[li][b]2[/b]- Report all errors and warnings. Also reports important information,[br]
-   which affects the component productivity, or may affect component ability[br]
-   to work in future; for example, if the license is about to be expired.[br]
-   Warnings have the 'W' mark in the log file.[br][/li]
-[li][b]3[/b]- Report everything above, including the important information about the[br]
-   component life cycle. This includes information about the component startup[br]
-   and shutdown, the expiration date of the license, the last update date and so.[br]
-   Informational messages have the 'I' mark in the log file.[br][/li]
-[li][b]4[/b]- Report everything above, including the information about the current[br]
-   component activity.  Activity messages have the 'A' mark in the log file.[br]
-   Note that the total amount of activity information may be quite large.[br][/li]
-[li][b]9[/b]- Report everything above, including the debugging information. Please use[br]
-   this level if you are reporting bugs in the product. Do not forget to turn[br]
-   it off afterwords. Debug messages have 'D' mark in the log file.[/li]
-[/ul]
-</RetranslatorReportLevel_text>
-<RetranslatorUpdateServerUrl>Specific source</RetranslatorUpdateServerUrl>
-<RetranslatorUpdateServerUrl_text>
-Specifies a custom URL from where to download the updates.[br]
-[br]URL ca be:
+[li][b]0[/b]- Relatar apenas erros fatais. Apenas os erros que resultam na[br]
+   termina&#231;&#227;o do programa, ou falha ao iniciar, s&#227;o relatados; por exemplo, se um[br]
+   componente falhou ao carregar um arquivo de licen&#231;a. Os erros fatais t&#234;m a marca 'F'[br]
+   no arquivo de log.[br][/li]
+[li][b]1[/b]- Relatar todos os erros. Relata n&#227;o apenas erros fatais, mas tamb&#233;m qualquer erro[br]
+   que afete o comportamento do programa, sem fazer o componente terminar. Os erros n&#227;o fatais t&#234;m a marca 'E' no arquivo de log.[br][/li]
+[li][b]2[/b]- Relatar todos os erros e avisos. Tamb&#233;m relata informa&#231;&#245;es importantes,[br]
+   que afetam a produtividade do componente ou podem afetar a capacidade do componente[br]
+   de funcionar no futuro; por exemplo, se a licen&#231;a est&#225; prestes a expirar.[br]
+   Os avisos t&#234;m a marca 'W' no arquivo de log.[br][/li]
+[li][b]3[/b]- Relatar tudo acima, incluindo as informa&#231;&#245;es importantes sobre o[br]
+   ciclo de vida do componente. Isto inclui informa&#231;&#245;es sobre a inicializa&#231;&#227;o e o encerramento do componente,[br]
+   a data de expira&#231;&#227;o da licen&#231;a, a &#250;ltima data de atualiza&#231;&#227;o e assim por diante.[br]
+   As mensagens informativas t&#234;m a marca 'I' no arquivo de log.[br][/li]
+[li][b]4[/b]- Relatar tudo acima, incluindo as informa&#231;&#245;es sobre a atividade atual[br]
+   do componente. As mensagens de atividade t&#234;m a marca 'A' no arquivo de log.[br]
+   Note que a quantidade total de informa&#231;&#245;es de atividade pode ser bastante grande.[br][/li]
+[li][b]9[/b]- Relatar tudo acima, incluindo as informa&#231;&#245;es de depura&#231;&#227;o. Use[br]
+   este n&#237;vel se voc&#234; estiver relatando bugs no produto. N&#227;o se esque&#231;a de desativ&#225;-lo[br]
+   depois. As mensagens de depura&#231;&#227;o t&#234;m a marca 'D' no arquivo de log.[/li]
+[/ul]</RetranslatorReportLevel_text>
+<RetranslatorUpdateServerUrl>Fonte espec&#237;fica</RetranslatorUpdateServerUrl>
+<RetranslatorUpdateServerUrl_text>Especifica um URL personalizado de onde baixar as atualiza&#231;&#245;es.[br]
+[br]O URL pode ser:
 [ul]
-[li]http://location/ - to use HTTP protocol;[/li]
-[li]ftp://location/  - to use FTP protocol;[/li]
-[li]/local/path      - to use a local path.[/li]
-[/ul]
-</RetranslatorUpdateServerUrl_text>
-<RetranslatorUseProxy>Work only through the proxy</RetranslatorUseProxy>
-<RetranslatorUseUpdateServerUrl>Use a specific source</RetranslatorUseUpdateServerUrl>
-<RetranslatorUseUpdateServerUrlOnly>Use only this source</RetranslatorUseUpdateServerUrlOnly>
-<RetranslatorUseUpdateServerUrlOnly_text>If used, but the update fails, the updater continues by trying the servers in its default list.[br]
-If this setting is set to "yes" (the (value assumed if not otherwise specified),[br]
-keepup2date will not fall-back if is not usable, and stop trying other servers.
-</RetranslatorUseUpdateServerUrlOnly_text>
-<RetranslatorUseUpdateServerUrl_text>
-perform an update from the specified Url.[br] If that fails, then it uses the default list of servers
-</RetranslatorUseUpdateServerUrl_text>
-<retranslator_engine>Kaspersky Retranslator Engine</retranslator_engine>
-<sources_settings>Sources settings</sources_settings>
-<Update_sites_info>Update sites info</Update_sites_info>
-<Update_sites_info_title>Update sites info (URL and regions)</Update_sites_info_title>
+[li]http://location/ - para usar o protocolo HTTP;[/li]
+[li]ftp://location/ - para usar o protocolo FTP;[/li]
+[li]/local/path - para usar um caminho local.[/li]
+[/ul]</RetranslatorUpdateServerUrl_text>
+<RetranslatorUseProxy>Trabalhar apenas atrav&#233;s do proxy</RetranslatorUseProxy>
+<RetranslatorUseUpdateServerUrl>Usar uma fonte espec&#237;fica</RetranslatorUseUpdateServerUrl>
+<RetranslatorUseUpdateServerUrlOnly>Usar apenas esta fonte</RetranslatorUseUpdateServerUrlOnly>
+<RetranslatorUseUpdateServerUrlOnly_text>Se usado, mas a atualiza&#231;&#227;o falhar, o atualizador continua tentando os servidores na sua lista padr&#227;o.[br]
+Se esta configura&#231;&#227;o estiver definida como &quot;yes&quot; (o valor assumido se n&#227;o for especificado de outra forma),[br]
+o keepup2date n&#227;o far&#225; fallback se n&#227;o for utiliz&#225;vel e parar&#225; de tentar outros servidores.</RetranslatorUseUpdateServerUrlOnly_text>
+<RetranslatorUseUpdateServerUrl_text>Realizar uma atualiza&#231;&#227;o a partir do URL especificado.[br] Se falhar, usa a lista padr&#227;o de servidores</RetranslatorUseUpdateServerUrl_text>
+<retranslator_engine>Motor Retranslator do Kaspersky</retranslator_engine>
+<sources_settings>Configura&#231;&#245;es das fontes</sources_settings>
+<Update_sites_info>Atualizar informa&#231;&#245;es dos sites</Update_sites_info>
+<Update_sites_info_title>Atualizar as informa&#231;&#245;es dos sites (URL e regi&#245;es)</Update_sites_info_title>

@@ -1,26 +1,26 @@
-<battery>Battery</battery>
+<battery>Batteria</battery>
 <cpu>C.P.U</cpu>
-<cpufreq>CPU Frequency</cpufreq>
-<df>Disks space</df>
-<disk>disk</disk>
+<cpufreq>Frequenza CPU</cpufreq>
+<df>Spazio dei dischi</df>
+<disk>disco</disk>
 <dns>Quesiti DNS</dns>
-<enable_collected_daemon>Enable Collectd daemon</enable_collected_daemon>
-<entropy>Entropy</entropy>
-<hddtemp>Hard Drive temperature</hddtemp>
+<enable_collected_daemon>Abilita il daemon Collectd</enable_collected_daemon>
+<entropy>Entropia</entropy>
+<hddtemp>Temperatura del disco rigido</hddtemp>
 <interface>Interfaccia di rete</interface>
-<irq>Interrups</irq>
+<irq>Interrupt</irq>
 <load>Media di carico</load>
-<mysql>Mysql database</mysql>
-<netlink>Network link</netlink>
+<mysql>Database Mysql</mysql>
+<netlink>Collegamento di rete</netlink>
 <ntpd>Network Time Daemon</ntpd>
 <plugin>Servizio</plugin>
-<show_graph>View graph</show_graph>
-<span_plugin_instance_text>Instance:</span_plugin_instance_text>
-<span_type_instance_text>Graph Type:</span_type_instance_text>
-<swap>Memory swap</swap>
-<tcpconns>TCP Connections</tcpconns>
-<thermal>Thermal</thermal>
-<vmem>Virtual memory page</vmem>
-<wireless>Wireless Network</wireless>
+<show_graph>Visualizza grafico</show_graph>
+<span_plugin_instance_text>Istanza:</span_plugin_instance_text>
+<span_type_instance_text>Tipo di grafico:</span_type_instance_text>
+<swap>Swap di memoria</swap>
+<tcpconns>Connessioni TCP</tcpconns>
+<thermal>Termico</thermal>
+<vmem>Pagina di memoria virtuale</vmem>
+<wireless>Rete wireless</wireless>
 <zoom_in>Zoom +</zoom_in>
 <zoom_out>Zoom -</zoom_out>

@@ -2,6 +2,9 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Include INCONDITIONNEL de premier niveau (CLAUDE.md, awc-* regle 1). // Service Pack 9
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+
 if(isset($_GET["query"])){query();exit;}
 if(isset($_GET["query-js"])){query_js();exit;}
 if(isset($_GET["query-popup"])){query_popup();exit;}
@@ -138,483 +141,414 @@ function query_save(){
 
 }
 
+/**
+ * Mise en page des statistiques: une carte par theme, le tableau de detail a
+ * gauche et le graphique a droite.
+ *
+ * L'ancienne version imbriquait deux <table style='width:100%'> pour tenir la
+ * colonne -- une mise en page en tableau, qui ne se replie pas et impose une
+ * hauteur fixe de 600px a chaque graphique. Ici, flexbox: sous 1100px la carte
+ * passe en une colonne, et la hauteur du graphique est fixee par SswChart()
+ * (un conteneur a hauteur explicite + responsive/maintainAspectRatio:false,
+ * seule combinaison qui laisse Chart.js se redimensionner sans s'effondrer).
+ */
+function ssw_stats_css():string{
+    if(isset($GLOBALS["SSW_STATS_CSS_DONE"])){return "";}
+    $GLOBALS["SSW_STATS_CSS_DONE"]=true;
+    return "<style>
+.sswst{margin:10px 0}
+.sswst-card{background:#fff;border:1px solid #bcc9c6;border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.sswst-row{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.sswst-side{flex:0 0 300px;min-width:260px;max-width:100%}
+.sswst-main{flex:1 1 480px;min-width:320px}
+.sswst-duo{display:flex;gap:14px;flex-wrap:wrap}
+.sswst-duo>div{flex:1 1 420px;min-width:300px;background:#fff;border:1px solid #bcc9c6;border-radius:12px;padding:14px 16px}
+.sswst-wait{text-align:center;padding:24px 0;opacity:.65}
+@media(max-width:1100px){.sswst-side{flex:1 1 100%}}
+</style>";
+}
+
 function template(){
     $t=time();
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $imgwait="<img src='/img/Eclipse-0.9s-120px.gif'>";
+    $imgwait="<div class='sswst-wait'><img src='/img/Eclipse-0.9s-120px.gif' alt=''></div>";
 
+    // [cle, div du graphique, div du tableau, action Loadjs]
+    $blocks=array(
+        array("top-tunnels","top-tunnels-table","top-tunnels"),
+        array("top-vips","top-vips-table","top-vips"),
+        array("top-members","top-members-table","top-members"),
+        array("top-remote-hosts","top-remote-hosts-table","top-remote-hosts"),
+    );
 
-    $html[]="<table style='width:100%'>";
-        $html[] = "<tr>";
-        $html[] = "<td style='width:50%;vertical-align:top'><div id='vertical-timeline-bytes-$t'>$imgwait</div></td>";
-        $html[] = "<td style='width:50%;vertical-align:top'><div id='vertical-timeline-packets-$t'>$imgwait</div></td>";
-    $html[]="</tr>";
+    $html=array();
+    $html[]="<div class='sswst'>";
+    $html[]="<div class='sswst-duo'>";
+    $html[]="<div id='vertical-timeline-bytes-$t'>$imgwait</div>";
+    $html[]="<div id='vertical-timeline-packets-$t'>$imgwait</div>";
+    $html[]="</div>";
 
-    $html[]="</table>";
+    foreach($blocks as $b){
+        list($chart,$table,$action)=$b;
+        $html[]="<div class='sswst-card'><div class='sswst-row'>";
+        $html[]="<div class='sswst-side'><div id='$table-$t'>$imgwait</div></div>";
+        $html[]="<div class='sswst-main'><div id='$chart-$t'>$imgwait</div></div>";
+        $html[]="</div></div>";
+    }
+    $html[]="</div>";
 
+    // Les appels sont serialises: quatre agregations imbriquees lancees d'un
+    // coup sur la meme base saturent le pool de connexions PostgreSQL, et le
+    // navigateur n'affiche alors rien pendant plusieurs secondes. Chaque
+    // graphique demarre le suivant.
+    $js=array();
+    $js[]="Loadjs('$page?vertical-timeline=yes&id=$t');";
+    foreach($blocks as $b){
+        list($chart,$table,$action)=$b;
+        $js[]="Loadjs('$page?$action=yes&id=$chart-$t&suffix=$t');";
+    }
 
-
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top' width='2%' nowrap><div id='top-tunnels-table-$t'>$imgwait</div></td>";
-    $html[]="<td style='vertical-align:top'><div id='top-tunnels-$t' style='height:600px;width:100%'>$imgwait</div></td>";
-    $html[]="</tr>";
-
-
-    $html[]="<tr>";
-    $html[]="<td colspan=2><hr></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top' width='2%' nowrap><div id='top-vips-table-$t'>$imgwait</div></td>";
-    $html[]="<td style='vertical-align:top'><div id='top-vips-$t' style='height:600px;width:100%'>$imgwait</div></td>";
-    $html[]="</tr>";
-
-
-    $html[]="<tr>";
-    $html[]="<td colspan=2><hr></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top' width='2%' nowrap><div id='top-members-table-$t'>$imgwait</div></td>";
-    $html[]="<td style='vertical-align:top'><div id='top-members-$t' style='height:600px;width:100%'>$imgwait</div></td>";
-    $html[]="</tr>";
-
-
-
-
-    $html[]="<tr>";
-    $html[]="<td colspan=2><hr></td>";
-    $html[]="</tr>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top;width: 250px;display: inline-block;white-space: nowrap;' width='2%' nowrap><div id='top-remote-hosts-table-$t'>$imgwait</div></td>";
-    $html[]="<td style='vertical-align:top'><div id='top-remote-hosts-$t' style='height:600px;width:100%'>$imgwait</div></td>";
-    $html[]="</tr>";
-
-
-
-
-    $html[]="</table>";
-
-    $html[]="<script>";
-    $html[]="Loadjs('$page?vertical-timeline=yes&id=$t');";
-    $html[]="Loadjs('$page?top-tunnels=yes&id=top-tunnels-$t&suffix=$t');";
-    $html[]="Loadjs('$page?top-members=yes&id=top-members-$t&suffix=$t');";
-    $html[]="Loadjs('$page?top-vips=yes&id=top-vips-$t&suffix=$t');";
-    $html[]="Loadjs('$page?top-remote-hosts=yes&id=top-remote-hosts-$t&suffix=$t');";
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
-
-
+    // Feuille de style concatenee HORS _ENGINE_parse_body: son moteur lit
+    // chaque corps de regle CSS comme un {token} (CLAUDE.md).
+    echo ssw_stats_css()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".@implode("\n",$js)."</script>";
 }
 
-function top_tunnels(){
+// ────────────────────────────────────────────────────────────────────────────
+// Graphiques: Chart.js 4.x (angular/js/plugins/chartJs/Chart.min.4.5.1.js),
+// en remplacement de Highcharts.
+//
+// Ces fragments sont servis a Loadjs(), donc evalues comme du JavaScript: on ne
+// peut pas y glisser une balise <script src>. Le chargeur ci-dessous s'en
+// charge et rappelle le code une fois la bibliotheque prete -- il fonctionne
+// que le shell l'ait deja chargee (c'est le cas, class.template-admin.inc)
+// ou non, et un simple "if(typeof Chart==='undefined')return;" aurait au
+// contraire saute le graphique en silence.
+//
+// SswChart() DETRUIT le graphique precedent du meme conteneur avant d'en creer
+// un autre: sans cela, chaque rafraichissement laisse une instance Chart
+// accrochee a un canvas detache -- une fuite qui survit a tous les
+// rafraichissements suivants -- et deux graphiques se superposent sur le meme
+// identifiant.
+// ────────────────────────────────────────────────────────────────────────────
+function ssw_chart_boot():string{
+    if(isset($GLOBALS["SSW_CHART_BOOT_DONE"])){return "";}
+    $GLOBALS["SSW_CHART_BOOT_DONE"]=true;
+    return "
+if(typeof window.SswChart!=='function'){
+ window.SswEnsureChart=function(cb){
+  if(typeof Chart!=='undefined'){cb();return;}
+  var s=document.createElement('script');
+  s.src='angular/js/plugins/chartJs/Chart.min.4.5.1.js';
+  s.onload=function(){cb();};
+  document.head.appendChild(s);
+ };
+ window.SswChart=function(divid,height,config,unit){
+  window.SswEnsureChart(function(){
+   var d=document.getElementById(divid); if(!d){return;}
+   if(d.__sswChart){try{d.__sswChart.destroy();}catch(e){}}
+   d.innerHTML=\"<div style='position:relative;height:\"+height+\"px;width:100%'><canvas></canvas></div>\";
+   var cv=d.getElementsByTagName('canvas')[0]; if(!cv){return;}
+   if(unit){
+    config.options=config.options||{};
+    config.options.plugins=config.options.plugins||{};
+    config.options.plugins.tooltip={callbacks:{label:function(c){
+      var v=c.parsed; if(v!==null && typeof v==='object'){v=v.y;}
+      return ' '+c.dataset.label+': '+v+' '+unit;
+    }}};
+   }
+   d.__sswChart=new Chart(cv.getContext('2d'),config);
+  });
+ };
+}
+";
+}
+
+// Palette stable: la meme serie garde la meme couleur d'un rafraichissement a
+// l'autre, ce qu'une couleur tiree au hasard ne garantit pas.
+function ssw_palette():array{
+    return array("#006a62","#26a69a","#0284c7","#005447","#d97706","#dc2626",
+                 "#0891b2","#65a30d","#db2777","#475569","#b45309","#1d4ed8",
+                 "#059669","#005447","#e11d48");
+}
+
+/**
+ * Les quatre « top 15 » ne different que par la colonne de regroupement, le
+ * titre et le tableau de detail qu'ils rafraichissent. Ils etaient quatre
+ * copies de 45 lignes: une divergence sur l'une (le graphique des hotes
+ * distants portait le titre {vips_top}) ne se voyait nulle part.
+ *
+ * $column est choisi par l'appelant dans une liste FERMEE, jamais par la
+ * requete: il entre dans le SQL par interpolation.
+ */
+function ssw_top_chart($column,$titleToken,$tableDiv,$tableAction){
+    $allowed=array("conn_name","username","local_vip","remote_host");
+    if(!in_array($column,$allowed,true)){return;}
     $page=CurrentPageName();
-    $t=$_GET["suffix"];
+    $t=preg_replace('/[^0-9]/','',(string)($_GET["suffix"] ?? ""));
+    $divid=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
+    if($divid===""){return;}
     $tpl=new template_admin();
     $q=new postgres_sql();
     BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["IPPSEC_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
+
     $time1=strtotime("{$_SESSION["IPPSEC_DAY"]["FROM"]} {$_SESSION["IPPSEC_DAY"]["FROMH"]}:00");
     $time2=strtotime("{$_SESSION["IPPSEC_DAY"]["TO"]} {$_SESSION["IPPSEC_DAY"]["TOH"]}:00");
     $strtime=date("Y-m-d H:i:s",$time1);
     $strtoTime=date("Y-m-d H:i:s",$time2);
 
-    //$sql="SELECT SUM(bytes_in + bytes_out) as size,conn_name FROM strongswan_stats WHERE  zdate >'$strtime' and zdate < '$strtoTime'  GROUP BY conn_name ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,conn_name from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, conn_name,zdate FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in,conn_name,zdate ORDER BY spi_in,conn_name) x where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY conn_name ORDER BY size DESC LIMIT 15";
-echo $sql;
+    $sql="select SUM(bytes_in + bytes_out) as size,$column from (SELECT distinct on (spi_in) spi_in,"
+        ." MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, $column,zdate FROM strongswan_stats"
+        ." where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in,$column,zdate"
+        ." ORDER BY spi_in,$column) x where zdate >'$strtime' and zdate < '$strtoTime'"
+        ." GROUP BY $column ORDER BY size DESC LIMIT 15";
 
-
-    $q->QUERY_SQL($sql);
+    // UNE seule execution: la version d'origine appelait QUERY_SQL() deux fois
+    // et jetait le premier resultat -- cette agregation imbriquee etait donc
+    // payee deux fois a chaque affichage.
     $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
-        $PieData2[$ligne["conn_name"]]=array($size,$ligne["conn_name"]);
-        $PieData[$ligne["conn_name"]]=$size;
+    if(!$q->ok){
+        // Le message PostgreSQL nomme des tables et des colonnes: journal, pas
+        // ecran. Et le SQL n'est plus echo'e dans la reponse -- il n'y tenait
+        // que par accident (l'echo precedent n'ayant pas de saut de ligne, la
+        // requete se retrouvait a l'interieur d'un commentaire JavaScript).
+        if(function_exists("writelogs")){writelogs("strongswan_stats: $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);}
+        $tpl->js_error("{error}");
+        return;
     }
 
-    $encoded=base64_encode(serialize($PieData2));
+    // Accumulateurs initialises AVANT la boucle: sans lignes, serialize() et
+    // json_encode() recevaient des variables inexistantes.
+    $labels=array();
+    $values=array();
+    $PieData2=array();
+    while($ligne=pg_fetch_assoc($results)){
+        $name=trim((string)$ligne[$column]);
+        if($name===""){$name=$tpl->_ENGINE_parse_body("{unknown}");}
+        $size=round(floatval($ligne["size"])/1024/1024);
+        $labels[]=$name;
+        $values[]=$size;
+        $PieData2[$name]=$size;
+    }
+    // JSON et non serialize(): la charge utile repart dans l'URL et sera relue
+    // cote tableau. json_decode() ne peut instancier aucun objet, unserialize()
+    // si -- c'est la classe de faille CVE-2024-2054 sur ce produit.
+    $encoded=base64_encode(json_encode($PieData2));
 
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->PieDatas=$PieData;
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle = "{APP_STRONGSWAN_TOP_TUNNELS_BY_TRAFFIC_FLOW}";
-    $highcharts->TitleFontSize = "14px";
-    $highcharts->Title=$highcharts->PiePlotTitle;
-    echo $highcharts->BuildChart();
+    $colors=array();
+    $pal=ssw_palette();
+    for($i=0;$i<count($labels);$i++){$colors[]=$pal[$i % count($pal)];}
 
-    echo "LoadAjax('top-tunnels-table-$t','$page?tunnels-table=$encoded');";
+    $title=$tpl->_ENGINE_parse_body($titleToken);
+    $cfg=array(
+        "type"=>"doughnut",
+        "data"=>array("labels"=>$labels,"datasets"=>array(array(
+            "label"=>"MB","data"=>$values,"backgroundColor"=>$colors,
+            "borderColor"=>"#ffffff","borderWidth"=>2))),
+        "options"=>array(
+            "responsive"=>true,"maintainAspectRatio"=>false,"cutout"=>"55%",
+            "plugins"=>array(
+                "title"=>array("display"=>true,"text"=>$title,
+                    "font"=>array("size"=>14,"weight"=>"600"),"color"=>"#0f172a",
+                    "padding"=>array("bottom"=>14)),
+                "legend"=>array("position"=>"right",
+                    "labels"=>array("boxWidth"=>12,"boxHeight"=>12,"padding"=>10,
+                        "font"=>array("size"=>12),"color"=>"#334155")))));
 
-
+    echo ssw_chart_boot()
+        ."SswChart(".json_encode($divid).",420,".json_encode($cfg).",'MB');\n"
+        ."LoadAjax('$tableDiv-$t','$page?$tableAction=$encoded');";
 }
 
-//PIE CHART MEMBERS
-function top_members(){
-    $page=CurrentPageName();
-    $t=$_GET["suffix"];
+function top_tunnels(){      ssw_top_chart("conn_name","{APP_STRONGSWAN_TOP_TUNNELS_BY_TRAFFIC_FLOW}","top-tunnels-table","tunnels-table"); }
+function top_members(){      ssw_top_chart("username","{username_top}","top-members-table","members-table"); }
+function top_vips(){         ssw_top_chart("local_vip","{vips_top}","top-vips-table","vips-table"); }
+// Le titre etait {vips_top}, copie du graphique precedent: ce graphique-ci
+// porte sur les hotes DISTANTS.
+function top_remote_hosts(){ ssw_top_chart("remote_host","{remote_hosts_top}","top-remote-hosts-table","remote-hosts-table"); }
+/**
+ * Tableau de detail accompagnant un graphique « top 15 ».
+ *
+ * SECURITE: la charge utile transite en base64 dans l'URL et etait relue par
+ * unserialize(). unserialize() sur une donnee qui passe par le navigateur est
+ * une deserialisation PHP non fiable -- la classe de faille qui a deja touche
+ * ce produit (CVE-2024-2054). json_decode() ne peut instancier aucun objet et
+ * rend exactement le meme service ici.
+ *
+ * Format: {"<nom>": <taille en Mo>}. L'ancien {"<nom>": [taille, nom]}
+ * repetait le nom en valeur alors qu'il etait deja la cle.
+ */
+function ssw_top_table($getparam,$labelToken,$linkjs){
     $tpl=new template_admin();
-    $q=new postgres_sql();
-    BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["IPPSEC_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
-    $time1=strtotime("{$_SESSION["IPPSEC_DAY"]["FROM"]} {$_SESSION["IPPSEC_DAY"]["FROMH"]}:00");
-    $time2=strtotime("{$_SESSION["IPPSEC_DAY"]["TO"]} {$_SESSION["IPPSEC_DAY"]["TOH"]}:00");
-    $strtime=date("Y-m-d H:i:s",$time1);
-    $strtoTime=date("Y-m-d H:i:s",$time2);
+    $raw=(string)($_GET[$getparam] ?? "");
+    $table=json_decode(base64_decode($raw),true);
+    if(!is_array($table)){$table=array();}
 
-    //$sql="SELECT SUM(bytes_in + bytes_out) as size,username FROM strongswan_stats WHERE  zdate >'$strtime' and zdate < '$strtoTime'  GROUP BY username ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,username from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, username,zdate FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in,username,zdate ORDER BY spi_in,username) x where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY username ORDER BY size DESC LIMIT 15";
-
-    $q->QUERY_SQL($sql);
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
-        $PieData2[$ligne["username"]]=array($size,$ligne["username"]);
-        $PieData[$ligne["username"]]=$size;
+    $rows=array();
+    foreach($table as $name=>$size){
+        if(is_array($size)){$size=isset($size[0])?$size[0]:0;}   // ancien format
+        $name=(string)$name;
+        // urlencode: un nom de tunnel ou un identifiant portant un espace ou un
+        // & tronquait le parametre suivant de l'URL de detail.
+        $js=str_replace("%VALUE%",urlencode($name),$linkjs);
+        $rows[]="<tr>"
+            ."<td><div class='awc-ident'>"
+            ."<span class='awc-ico'><i class='fas fa-chart-pie'></i></span>"
+            ."<span class='awc-name'>".$tpl->td_href(htmlspecialchars($name),null,$js)."</span>"
+            ."</div></td>"
+            ."<td class='center awc-mono'>".FormatBytes(floatval($size)*1024)."</td>"
+            ."</tr>";
     }
 
-    $encoded=base64_encode(serialize($PieData2));
-
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->PieDatas=$PieData;
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle = "{username_top}";
-    $highcharts->TitleFontSize = "14px";
-    $highcharts->Title=$highcharts->PiePlotTitle;
-    echo $highcharts->BuildChart();
-
-    echo "LoadAjax('top-members-table-$t','$page?members-table=$encoded');";
-
-}
-//TABLE MEMBERS
-function members_table(){
-    $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
-    $html[]="<tr>";
-    $html[]="<th>{member}</th>";
-    $html[]="<th>{APP_STRONGSWAN_IN_OUT_MB}</th>";
-    $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["members-table"]));
-    foreach ( $table as $site=>$array) {
-        $sizeM=$array[0];
-
-        $link=$tpl->td_href($site,null,"Loadjs('fw.strongswan.stats.members.php?field=username&value=".urlencode($site)."')");
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$link</strong></td>";
-        $html[]="<td>".FormatBytes($sizeM*1024)."</td>";
-        $html[]="</tr>";
-
+    $html=array();
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>$labelToken</th>";
+    $html[]="<th class='center' nowrap>{APP_STRONGSWAN_IN_OUT_MB}</th>";
+    $html[]="</tr></thead><tbody>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="</tbody></table></div></div></div>";
+
+    // Feuille de style HORS _ENGINE_parse_body (ses accolades CSS seraient
+    // lues comme des jetons), et ICON_SCRIPTS_COMPILE() plutot que la
+    // propriete d'instance ICON_SCRIPTS.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
 }
 
-//PIE CHART VIPS
-function top_vips(){
-    $page=CurrentPageName();
-    $t=$_GET["suffix"];
+function members_table(){      ssw_top_table("members-table","{member}","Loadjs('fw.strongswan.stats.members.php?field=username&value=%VALUE%')"); }
+function vips_table(){         ssw_top_table("vips-table","{vips}","Loadjs('fw.strongswan.stats.members.php?field=local_vip&value=%VALUE%')"); }
+function remote_hosts_table(){ ssw_top_table("remote-hosts-table","{remote_hosts}","Loadjs('fw.strongswan.stats.members.php?field=remote_host&value=%VALUE%')"); }
+function tunnels_table(){      ssw_top_table("tunnels-table","{tunnel}","Loadjs('fw.strongswan.stats.tunnel.php?tunnel=%VALUE%')"); }
+function ssw_timeline_chart($divid,$title,$labels,$series,$unit,$yTitle){
     $tpl=new template_admin();
-    $q=new postgres_sql();
-    BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["IPPSEC_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
-    $time1=strtotime("{$_SESSION["IPPSEC_DAY"]["FROM"]} {$_SESSION["IPPSEC_DAY"]["FROMH"]}:00");
-    $time2=strtotime("{$_SESSION["IPPSEC_DAY"]["TO"]} {$_SESSION["IPPSEC_DAY"]["TOH"]}:00");
-    $strtime=date("Y-m-d H:i:s",$time1);
-    $strtoTime=date("Y-m-d H:i:s",$time2);
-
-    //$sql="SELECT SUM(bytes_in + bytes_out) as size,local_vip FROM strongswan_stats WHERE  zdate >'$strtime' and zdate < '$strtoTime'  GROUP BY local_vip ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,local_vip from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, local_vip,zdate FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in,local_vip,zdate ORDER BY spi_in,local_vip) x where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY local_vip ORDER BY size DESC LIMIT 15";
-    $q->QUERY_SQL($sql);
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
-        $PieData2[$ligne["local_vip"]]=array($size,$ligne["local_vip"]);
-        $PieData[$ligne["local_vip"]]=$size;
+    $pal=ssw_palette();
+    $datasets=array();
+    $i=0;
+    foreach($series as $name=>$values){
+        $c=$pal[$i % count($pal)];
+        $datasets[]=array(
+            "label"=>$name,"data"=>array_values($values),
+            "borderColor"=>$c,"backgroundColor"=>$c,
+            "borderWidth"=>2,"pointRadius"=>0,"pointHoverRadius"=>4,
+            "tension"=>0.25,"fill"=>false);
+        $i++;
     }
-
-    $encoded=base64_encode(serialize($PieData2));
-
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->PieDatas=$PieData;
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle = "{vips_top}";
-    $highcharts->TitleFontSize = "14px";
-    $highcharts->Title=$highcharts->PiePlotTitle;
-    echo $highcharts->BuildChart();
-
-    echo "LoadAjax('top-vips-table-$t','$page?vips-table=$encoded');";
-
-}
-//TABLE VIPS
-function vips_table(){
-    $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
-    $html[]="<tr>";
-    $html[]="<th>{vips}</th>";
-    $html[]="<th>{APP_STRONGSWAN_IN_OUT_MB}</th>";
-    $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["vips-table"]));
-    foreach ( $table as $site=>$array) {
-        $sizeM=$array[0];
-
-        $link=$tpl->td_href($site,null,"Loadjs('fw.strongswan.stats.members.php?field=local_vip&value=".urlencode($site)."')");
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$link</strong></td>";
-        $html[]="<td>".FormatBytes($sizeM*1024)."</td>";
-        $html[]="</tr>";
-
-    }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
-}
-//PIE CHART REMOTE HOSTS
-function top_remote_hosts(){
-    $page=CurrentPageName();
-    $t=$_GET["suffix"];
-    $tpl=new template_admin();
-    $q=new postgres_sql();
-    BUILD_DEFAULT_DATA();
-    $DIFF_MIN=$_SESSION["IPPSEC_DAY"]["DIFF_MIN"];
-    $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
-    $time1=strtotime("{$_SESSION["IPPSEC_DAY"]["FROM"]} {$_SESSION["IPPSEC_DAY"]["FROMH"]}:00");
-    $time2=strtotime("{$_SESSION["IPPSEC_DAY"]["TO"]} {$_SESSION["IPPSEC_DAY"]["TOH"]}:00");
-    $strtime=date("Y-m-d H:i:s",$time1);
-    $strtoTime=date("Y-m-d H:i:s",$time2);
-
-    //$sql="SELECT SUM(bytes_in + bytes_out) as size,remote_host FROM strongswan_stats WHERE  zdate >'$strtime' and zdate < '$strtoTime'  GROUP BY remote_host ORDER BY size DESC LIMIT 15";
-    $sql="select SUM(bytes_in + bytes_out) as size,remote_host from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, remote_host,zdate FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in,remote_host,zdate ORDER BY spi_in,remote_host) x where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY remote_host ORDER BY size DESC LIMIT 15";
-
-    $q->QUERY_SQL($sql);
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        $size = $ligne["size"];
-        $size = $size / 1024;
-        $size = $size / 1024;
-        $size = round($size);
-        $PieData2[$ligne["remote_host"]]=array($size,$ligne["remote_host"]);
-        $PieData[$ligne["remote_host"]]=$size;
-    }
-
-    $encoded=base64_encode(serialize($PieData2));
-
-    $highcharts=new highcharts();
-    $highcharts->container=$_GET["id"];
-    $highcharts->PieDatas=$PieData;
-    $highcharts->ChartType="pie";
-    $highcharts->PiePlotTitle = "{vips_top}";
-    $highcharts->TitleFontSize = "14px";
-    $highcharts->Title=$highcharts->PiePlotTitle;
-    echo $highcharts->BuildChart();
-
-    echo "LoadAjax('top-remote-hosts-table-$t','$page?remote-hosts-table=$encoded');";
-
-}
-//TABLE VIPS
-function remote_hosts_table(){
-    $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
-    $html[]="<tr>";
-    $html[]="<th>{remote_hosts}</th>";
-    $html[]="<th>{APP_STRONGSWAN_IN_OUT_MB}</th>";
-    $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["remote-hosts-table"]));
-    foreach ( $table as $site=>$array) {
-        $sizeM=$array[0];
-
-        $link=$tpl->td_href($site,null,"Loadjs('fw.strongswan.stats.members.php?field=remote_host&value=".urlencode($site)."')");
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$link</strong></td>";
-        $html[]="<td>".FormatBytes($sizeM*1024)."</td>";
-        $html[]="</tr>";
-
-    }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
-}
-
-//TABLE TUNNELS
-function tunnels_table(){
-    $tpl=new template_admin();
-    $html[]="<table style='width:100%' class='table'>";
-    $html[]="<tr>";
-    $html[]="<th>{tunnel}</th>";
-    $html[]="<th>{APP_STRONGSWAN_IN_OUT_MB}</th>";
-    $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["tunnels-table"]));
-    foreach ( $table as $site=>$array) {
-        $sizeM=$array[0];
-        $tunnel=$array[1];
-
-        $link=$tpl->td_href("$site",null,"Loadjs('fw.strongswan.stats.tunnel.php?tunnel=$tunnel')");
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$link</strong></td>";
-        $html[]="<td>".FormatBytes($sizeM*1024)."</td>";
-        $html[]="</tr>";
-
-    }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $cfg=array(
+        "type"=>"line",
+        "data"=>array("labels"=>$labels,"datasets"=>$datasets),
+        "options"=>array(
+            "responsive"=>true,"maintainAspectRatio"=>false,
+            "interaction"=>array("mode"=>"index","intersect"=>false),
+            "plugins"=>array(
+                "title"=>array("display"=>true,"text"=>$tpl->_ENGINE_parse_body($title),
+                    "font"=>array("size"=>14,"weight"=>"600"),"color"=>"#0f172a",
+                    "padding"=>array("bottom"=>12)),
+                "legend"=>array("position"=>"top","align"=>"end",
+                    "labels"=>array("boxWidth"=>12,"boxHeight"=>12,"usePointStyle"=>true,
+                        "font"=>array("size"=>12),"color"=>"#334155"))),
+            "scales"=>array(
+                // Pas de type sur X: Chart.js retombe sur l'axe categorie.
+                "x"=>array("grid"=>array("display"=>false),
+                    "ticks"=>array("maxRotation"=>0,"autoSkip"=>true,"maxTicksLimit"=>12,
+                        "font"=>array("size"=>11),"color"=>"#64748b")),
+                "y"=>array("beginAtZero"=>true,
+                    // $yTitle peut etre un jeton ({packets}): il faut le resoudre AVANT
+                    // json_encode, sinon les accolades partent telles quelles dans
+                    // le graphique -- _ENGINE_parse_body ne passe jamais sur ce JSON.
+                    "title"=>array("display"=>true,"text"=>$tpl->_ENGINE_parse_body($yTitle),"color"=>"#64748b"),
+                    "grid"=>array("color"=>"rgba(188,201,198,.35)"),
+                    "ticks"=>array("font"=>array("size"=>11),"color"=>"#64748b")))));
+    return ssw_chart_boot()."SswChart(".json_encode($divid).",300,".json_encode($cfg).",".json_encode($unit).");\n";
 }
 
 function vertical_time_line(){
     $tpl=new template_admin();
     $q=new postgres_sql();
     BUILD_DEFAULT_DATA();
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
+    if($id===""){return;}
     $DIFF_MIN=$_SESSION["IPPSEC_DAY"]["DIFF_MIN"];
     $DIFF_HOURS=$DIFF_MIN/60;
-    echo "// DIFF: $DIFF_MIN hours";
     $time1=strtotime("{$_SESSION["IPPSEC_DAY"]["FROM"]} {$_SESSION["IPPSEC_DAY"]["FROMH"]}:00");
     $time2=strtotime("{$_SESSION["IPPSEC_DAY"]["TO"]} {$_SESSION["IPPSEC_DAY"]["TOH"]}:00");
     $strtime=date("Y-m-d H:i:s",$time1);
     $strtoTime=date("Y-m-d H:i:s",$time2);
+
     $UNIT="{each_10minutes}";
     $SQL_DATE="zdate";
+    if($DIFF_HOURS>6){ $UNIT="{hourly}"; $SQL_DATE="date_part('hour', zdate)"; }
+    if($DIFF_HOURS>24){ $UNIT="{daily}"; $SQL_DATE="date_part('day', zdate)"; }
 
+    // Le libelle de l'axe depend du meme palier que la requete: une seule
+    // fonction pour les deux graphiques, sinon les deux echelles peuvent
+    // diverger a la prochaine retouche.
+    $dayWord=$tpl->_ENGINE_parse_body("{day}");
+    $mklabel=function($raw) use($DIFF_HOURS,$dayWord){
+        if($DIFF_HOURS>24){ return $dayWord." ".$raw; }
+        if($DIFF_HOURS>6){ return $raw."h"; }
+        $st=strtotime((string)$raw);
+        return ($st!==false && $st>0)?date("H:i",$st):(string)$raw;
+    };
 
+    $stimeFrom=$tpl->time_to_date($time1);
+    $stimeTo=$tpl->time_to_date($time2);
+    $out="";
 
-    if($DIFF_HOURS>6){
-        $UNIT="{hourly}";
-        $SQL_DATE="date_part('hour', zdate)";
+    // ── Trafic (MB) ─────────────────────────────────────────────────────────
+    $sql="select sum(bytes_in) as bytes_in, sum(bytes_out) as bytes_out, $SQL_DATE as zdate from"
+        ." (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, zdate"
+        ." FROM strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime'"
+        ." GROUP BY spi_in, zdate ORDER BY spi_in, zdate) x"
+        ." where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
+    $results=$q->QUERY_SQL($sql);
+    if(!$q->ok){
+        if(function_exists("writelogs")){writelogs("strongswan_stats bytes: $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);}
+        $tpl->js_error("{error}");
+        return;
     }
-
-    if($DIFF_HOURS>24) {
-        $UNIT = "{daily}";
-        $SQL_DATE = "date_part('day', zdate)";
+    // Accumulateurs initialises avant la boucle (plancher PHP 8).
+    $xdata=array(); $mb_in=array(); $mb_out=array();
+    while($ligne=pg_fetch_assoc($results)){
+        $xdata[]=$mklabel($ligne["zdate"]);
+        $mb_in[]=round(floatval($ligne["bytes_in"])/1024/1024);
+        $mb_out[]=round(floatval($ligne["bytes_out"])/1024/1024);
     }
-        //BUILD BYTES GRAPH
-//        $sql = "SELECT SUM(bytes_out) as bytes_out, SUM(bytes_in) as bytes_in,$SQL_DATE as zdate FROM strongswan_stats WHERE zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
-    $sql="select sum(bytes_in) as bytes_in, sum(bytes_out) as bytes_out, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(bytes_in) as bytes_in, MAX(bytes_out) as bytes_out, zdate FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate ORDER BY spi_in, zdate) x where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
+    $title="{APP_STRONGSWAN_ALL_TUNNELS} - {APP_STRONGSWAN_TRAFFIC_FLOW} (MB) - $stimeFrom - $stimeTo $UNIT";
+    $out.=ssw_timeline_chart("vertical-timeline-bytes-$id",$title,$xdata,
+        array("In"=>$mb_in,"Out"=>$mb_out),"MB","MB");
 
-        echo $sql."\n";
-        $results = $q->QUERY_SQL($sql);
-        if (!$q->ok) {
-            $tpl->js_mysql_alert($q->mysql_error);
-            return;
-        }
+    // ── Paquets ─────────────────────────────────────────────────────────────
+    $sql="select sum(packets_out) as packets_out, sum(packets_in) as packets_in, $SQL_DATE as zdate from"
+        ." (SELECT distinct on (spi_in) spi_in, MAX(packets_out) as packets_out, MAX(packets_in) as packets_in, zdate"
+        ." FROM strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime'"
+        ." GROUP BY spi_in, zdate ORDER BY spi_in, zdate) x"
+        ." where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
+    $results=$q->QUERY_SQL($sql);
+    if(!$q->ok){
+        if(function_exists("writelogs")){writelogs("strongswan_stats packets: $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);}
+        echo $out; $tpl->js_error("{error}");
+        return;
+    }
+    $xdata_pk=array(); $pk_in=array(); $pk_out=array();
+    while($ligne=pg_fetch_assoc($results)){
+        $xdata_pk[]=$mklabel($ligne["zdate"]);
+        $pk_in[]=intval($ligne["packets_in"]);
+        $pk_out[]=intval($ligne["packets_out"]);
+    }
+    $title="{APP_STRONGSWAN_ALL_TUNNELS} - {APP_STRONGSWAN_PACKETS_FLOW} - $stimeFrom - $stimeTo $UNIT";
+    $out.=ssw_timeline_chart("vertical-timeline-packets-$id",$title,$xdata_pk,
+        array("In"=>$pk_in,"Out"=>$pk_out),"","{packets}");
 
-        while ($ligne = pg_fetch_assoc($results)) {
-            $bytes_out = $ligne["bytes_out"];
-            $bytes_out = $bytes_out / 1024;
-            $bytes_out = $bytes_out / 1024;
-            $bytes_out = round($bytes_out);
-            $bytes_in = $ligne["bytes_in"];
-            $bytes_in = $bytes_in / 1024;
-            $bytes_in = $bytes_in / 1024;
-            $bytes_in = round($bytes_in);
-            echo "// {$ligne["zdate"]}\n";
-            $stime = strtotime($ligne["zdate"]);
-            $datetext = date("H:i", $stime);
-            if ($DIFF_HOURS > 6) {
-                $datetext = "{$ligne["zdate"]}h";
-            }
-            if ($DIFF_HOURS > 24) {
-                $datetext = $tpl->_ENGINE_parse_body("{day}") . " {$ligne["zdate"]}";
-            }
-            $xdata[] = $datetext;
-            $mb_in[] = $bytes_in;
-            $mb_out[] = $bytes_out;
-            //$conn_name = $ligne["conn_name"];
-        }
-
-        $stimeFrom = $tpl->time_to_date($time1);
-        $stimeTo = $tpl->time_to_date($time2);
-        $title = "{APP_STRONGSWAN_ALL_TUNNELS} - {APP_STRONGSWAN_TRAFFIC_FLOW} (MB) - $stimeFrom - $stimeTo {$UNIT}";
-        $timetext = $_GET["interval"];
-        $highcharts = new highcharts();
-        $highcharts->container = 'vertical-timeline-bytes-'.$_GET["id"];
-        $highcharts->xAxis = $xdata;
-        $highcharts->Title = $title;
-        $highcharts->TitleFontSize = "14px";
-        $highcharts->AxisFontsize = "12px";
-        $highcharts->yAxisTtitle = "MB";
-        $highcharts->xAxis_labels = true;
-        $highcharts->LegendSuffix = "MB";
-        $highcharts->ChartType = "line";
-        $highcharts->xAxisTtitle = $timetext;
-        $highcharts->datas = array('In ' => $mb_in, 'Out' => $mb_out);
-        echo $highcharts->BuildChart();
-        //$f[]="Loadjs('$page?chart2=$xtime');";
-
-
-        //echo @implode("\n", $f);
-        //BUILD PACKETD GRAPH
-        //$sql = "SELECT SUM(packets_out) as packets_out, SUM(packets_in) as packets_in,$SQL_DATE as zdate FROM strongswan_stats WHERE zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
-    $sql="select sum(packets_out) as packets_out, sum(packets_in) as packets_in, $SQL_DATE as zdate from (SELECT distinct on (spi_in) spi_in, MAX(packets_out) as packets_out, MAX(packets_in) as packets_in, zdate FROM  strongswan_stats where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY spi_in, zdate ORDER BY spi_in, zdate) x where zdate >'$strtime' and zdate < '$strtoTime' GROUP BY $SQL_DATE ORDER BY $SQL_DATE";
-        $results = $q->QUERY_SQL($sql);
-        if (!$q->ok) {
-            $tpl->js_mysql_alert($q->mysql_error);
-            return;
-        }
-        while ($ligne = pg_fetch_assoc($results)) {
-            $packets_out = $ligne["packets_out"];
-            $packets_in = $ligne["packets_in"];
-            echo "// {$ligne["zdate"]}\n";
-            $stime = strtotime($ligne["zdate"]);
-            $datetext = date("H:i", $stime);
-            if ($DIFF_HOURS > 6) {
-                $datetext = "{$ligne["zdate"]}h";
-            }
-            if ($DIFF_HOURS > 24) {
-                $datetext = $tpl->_ENGINE_parse_body("{day}") . " {$ligne["zdate"]}";
-            }
-            $xdata_pk[] = $datetext;
-            $pk_in[] = $packets_in;
-            $pk_out[] = $packets_out;
-            //$conn_name = $ligne["conn_name"];
-        }
-
-        $stimeFrom = $tpl->time_to_date($time1);
-        $stimeTo = $tpl->time_to_date($time2);
-        $title = "{APP_STRONGSWAN_ALL_TUNNELS} - {APP_STRONGSWAN_PACKETS_FLOW} - $stimeFrom - $stimeTo {$UNIT}";
-        $timetext = $_GET["interval"];
-        $highcharts = new highcharts();
-        $highcharts->container = 'vertical-timeline-packets-'.$_GET["id"];
-        $highcharts->xAxis = $xdata_pk;
-        $highcharts->Title = $title;
-        $highcharts->TitleFontSize = "14px";
-        $highcharts->AxisFontsize = "12px";
-        $highcharts->yAxisTtitle = "Packets";
-        $highcharts->xAxis_labels = true;
-        $highcharts->LegendSuffix = " Packets";
-        $highcharts->ChartType = "line";
-        $highcharts->xAxisTtitle = $timetext;
-        $highcharts->datas = array('In' => $pk_in,'Out' => $pk_out);
-        echo $highcharts->BuildChart();
-
-
-
+    echo $out;
 }
-
-
 
 function page(){
     $tpl=new template_admin();
@@ -688,19 +622,24 @@ function query(){
     }
 
     $TITLES[]="(".distanceOfTimeInWords(strtotime($date1),strtotime($date2)).")";
+    // Pentest 2026-11-04 : les dates, membre, IP, MAC et limite (saisis dans le formulaire, gardes en
+    // session) etaient concatenes dans la requete.
+    $date1=pg_escape_string2($date1);
+    $date2=pg_escape_string2($date2);
+    $WHEREU="";$WHEREI="";$WHEREM="";$WHERES="";
 
 
     if($_SESSION["IPPSEC_DAY"]["USER"]<>null){
         $TITLES[]="{and} {member} {$_SESSION["IPPSEC_DAY"]["USER"]}";
-        $WHEREU=" AND username='{$_SESSION["IPPSEC_DAY"]["USER"]}'";
+        $WHEREU=" AND username='".pg_escape_string2($_SESSION["IPPSEC_DAY"]["USER"])."'";
     }
     if($_SESSION["IPPSEC_DAY"]["IP"]<>null){
         $TITLES[]="{and} {ipaddr} {$_SESSION["IPPSEC_DAY"]["IP"]}";
-        $WHEREI=" AND ipaddr='{$_SESSION["IPPSEC_DAY"]["IP"]}'";
+        $WHEREI=" AND ipaddr='".pg_escape_string2($_SESSION["IPPSEC_DAY"]["IP"])."'";
     }
     if($_SESSION["IPPSEC_DAY"]["MAC"]<>null){
         $TITLES[]="{and} {MAC} {$_SESSION["IPPSEC_DAY"]["MAC"]}";
-        $WHEREM=" AND mac='{$_SESSION["IPPSEC_DAY"]["MAC"]}'";
+        $WHEREM=" AND mac='".pg_escape_string2($_SESSION["IPPSEC_DAY"]["MAC"])."'";
     }
     if( intval($_SESSION["IPPSEC_DAY"]["SIZE"])>0){
         $size_q=round(intval( $_SESSION["IPPSEC_DAY"]["SIZE"])*1024);
@@ -722,7 +661,7 @@ function query(){
     statscom_websites.siteid=$TABLE_SELECTED.siteid AND
     $TABLE_SELECTED.zdate >='$date1' AND  $TABLE_SELECTED.zdate <= '$date2'{$WHEREU}{$WHEREI}{$WHEREM}
     GROUP BY $TABLE_SELECTED.zdate,$TABLE_SELECTED.username,$TABLE_SELECTED.ipaddr,$TABLE_SELECTED.mac,statscom_websites.sitename, statscom_websites.category ORDER BY $TABLE_SELECTED.zdate
-    LIMIT {$_SESSION["IPPSEC_DAY"]["LIMIT"]}";
+    LIMIT ".intval($_SESSION["IPPSEC_DAY"]["LIMIT"]);
 
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){
@@ -731,40 +670,17 @@ function query(){
         return;
     }
 
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" 
-    data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{sitename}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{member}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{MAC}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{size}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{hits}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-    $td1=$tpl->table_td1prc_Left();
-    $tdfree=$tpl->table_tdfree();
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        if ($TRCLASS == "footable-odd ") {
-            $TRCLASS = null;
-        } else {
-            $TRCLASS = "footable-odd ";
-        }
+    $rows=array();
+    while($ligne=pg_fetch_assoc($results)){
         $hits=$tpl->FormatNumber($ligne["hits"]);
         $size=FormatBytes($ligne["size"]/1024);
-        $date=$ligne["zdate"];
-        $sitename=$ligne["sitename"];
+        $date=(string)$ligne["zdate"];
+        $sitename=(string)$ligne["sitename"];
         $category_id=$ligne["category"];
         $category=$catz->CategoryIntToStr($category_id);
-        $ipaddr=$ligne["ipaddr"];
-        $username=$ligne["username"];
-        $mac=$ligne["mac"];
+        $ipaddr=(string)$ligne["ipaddr"];
+        $username=(string)$ligne["username"];
+        $mac=(string)$ligne["mac"];
 
         $params=array();
         $params[]="username=".urlencode($username);
@@ -774,42 +690,52 @@ function query(){
         $params[]="ipaddr=".urlencode($ipaddr);
         $params[]="date1=".urlencode($date1);
         $params[]="date2=".urlencode($date2);
-
         $parm=@implode("&",$params);
 
-        $category=$tpl->td_href($category,"{statistics}","Loadjs('fw.statscom.category.php?data=yes&$params')");
+        // $params (le TABLEAU) etait interpole ici au lieu de $parm (la chaine
+        // assemblee juste au-dessus): l'URL recevait litteralement "Array", si
+        // bien que le detail par categorie n'a jamais recu un seul de ses sept
+        // parametres. Notice PHP cote serveur, lien mort cote operateur.
+        $catLink=$tpl->td_href($category,"{statistics}","Loadjs('fw.statscom.category.php?data=yes&$parm')");
 
-
-        $html[]="<tr style='vertical-align:middle' class='$TRCLASS'>";
-        $html[]="<td $td1>$date</td>";
-        $html[]="<td $tdfree>$sitename</td>";
-        $html[]="<td $td1>$category</td>";
-        $html[]="<td $td1>$username</td>";
-        $html[]="<td $td1>$mac</td>";
-        $html[]="<td $td1>$ipaddr</td>";
-        $html[]="<td $td1>$size</td>";
-        $html[]="<td $td1>$hits</td>";
-        $html[]="</tr>";
-
-
+        $named=(trim($username)!=="");
+        $h ="<tr>";
+        $h.="<td><div class='awc-ident'>";
+        $h.="<span class='awc-ico'><i class='fas fa-globe'></i></span>";
+        $h.="<span><span class='awc-name'>".htmlspecialchars($sitename)."</span>";
+        $h.="<div class='awc-meta'>".htmlspecialchars($date)."</div></span></div></td>";
+        $h.="<td>$catLink</td>";
+        $h.="<td class='awc-mono'>".($named?htmlspecialchars($username):"<span class='awc-none'>{unknown}</span>")."</td>";
+        $h.="<td class='awc-mono'>".htmlspecialchars($mac)."</td>";
+        $h.="<td class='awc-mono'>".htmlspecialchars($ipaddr)."</td>";
+        $h.="<td class='center awc-mono'>$size</td>";
+        $h.="<td class='center awc-mono'>$hits</td>";
+        $h.="</tr>";
+        $rows[]=$h;
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{sitename}</th>";
+    $html[]="<th nowrap>{category}</th>";
+    $html[]="<th nowrap>{member}</th>";
+    $html[]="<th nowrap>{MAC}</th>";
+    $html[]="<th nowrap>{ipaddr}</th>";
+    $html[]="<th class='center' nowrap>{size}</th>";
+    $html[]="<th class='center' nowrap>{hits}</th>";
+    $html[]="</tr></thead><tbody id='sswz-rows'>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='7'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span>"
+           ."<span class='awc-pg' id='sswz-pager'></span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-<script> 
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) }); 
-</script>";
-
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>"
+        .awc_pager_js(50,"sswz-rows","sswz-pager");
 }

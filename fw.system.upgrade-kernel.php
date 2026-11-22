@@ -5,7 +5,6 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["popup"])){popup();exit;}
-if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 
 js();
 

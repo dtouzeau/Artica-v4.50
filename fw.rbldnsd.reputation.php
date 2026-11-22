@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 //$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
@@ -39,9 +40,10 @@ function table(){
 }
 
 function delete(){
+	// Pentest 2026-11-04 : pattern etait concatene dans la requete.
 	$pattern=$_GET["delete"];
 	$q=new postgres_sql();
-	$q->QUERY_SQL("DELETE FROM rbl_emails WHERE pattern='$pattern'");
+	$q->QUERY_SQL("DELETE FROM rbl_emails WHERE pattern='".pg_escape_string2($pattern)."'");
 	echo "$('#{$_GET["md"]}').remove()\n";
 }
 
@@ -49,31 +51,32 @@ function delete(){
 function blacklist_js(){
 	$tpl=new template_admin();
 	$ipaddr=$_GET["blk-js"];
+	// Pentest 2026-11-04 : ipaddr/description (PTR) etait concatene dans la requete.
 	$description=gethostbyaddr($ipaddr);
 	$md=$_GET["md"];
 
 	$date=date("Y-m-d H:i:s");
 	$q=new postgres_sql();
 
-	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_blacklists WHERE ipaddr='$ipaddr'");
+	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_blacklists WHERE ipaddr='".pg_escape_string2($ipaddr)."'");
 	if($ligne["ipaddr"]<>null){
 		echo "$('#{$md}').remove();\n";
-		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='$ipaddr'");
+		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='".pg_escape_string2($ipaddr)."'");
 		$tpl->js_display_results("Already blacklisted");
 		return;
 	}
-	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_whitelists WHERE ipaddr='$ipaddr'");
+	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_whitelists WHERE ipaddr='".pg_escape_string2($ipaddr)."'");
 	if($ligne["ipaddr"]<>null){
 		echo "$('#{$md}').remove();\n";
-		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='$ipaddr'");
+		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='".pg_escape_string2($ipaddr)."'");
 		$tpl->js_display_results("Already Whitelisted");
 		return;
 	}
 
-	$q->QUERY_SQL("INSERT INTO rbl_blacklists (ipaddr,description,zDate) VALUES ('$ipaddr','$description','$date')");
+	$q->QUERY_SQL("INSERT INTO rbl_blacklists (ipaddr,description,zDate) VALUES ('".pg_escape_string2($ipaddr)."','".pg_escape_string2($description)."','$date')");
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
-	$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE ipaddr='$ipaddr'");
+	$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE ipaddr='".pg_escape_string2($ipaddr)."'");
 
 
 	$AbuseIPApiKey=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("AbuseIPApiKey");
@@ -102,31 +105,32 @@ function blacklist_js(){
 function whitelist_js(){
 	$tpl=new template_admin();
 	$ipaddr=$_GET["whl-js"];
+	// Pentest 2026-11-04 : ipaddr/description (PTR) etait concatene dans la requete.
 	$description=gethostbyaddr($ipaddr);
 	$md=$_GET["md"];
 
 	$date=date("Y-m-d H:i:s");
 	$q=new postgres_sql();
 
-	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_blacklists WHERE ipaddr='$ipaddr'");
+	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_blacklists WHERE ipaddr='".pg_escape_string2($ipaddr)."'");
 	if($ligne["ipaddr"]<>null){
 		echo "$('#{$md}').remove();\n";
-		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='$ipaddr'");
+		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='".pg_escape_string2($ipaddr)."'");
 		$tpl->js_display_results("Already blacklisted");
 		return;
 	}
-	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_whitelists WHERE ipaddr='$ipaddr'");
+	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM rbl_whitelists WHERE ipaddr='".pg_escape_string2($ipaddr)."'");
 	if($ligne["ipaddr"]<>null){
 		echo "$('#{$md}').remove();\n";
-		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='$ipaddr'");
+		$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE  ipaddr='".pg_escape_string2($ipaddr)."'");
 		$tpl->js_display_results("Already Whitelisted");
 		return;
 	}
 
-	$q->QUERY_SQL("INSERT INTO rbl_whitelists (ipaddr,description,zDate) VALUES ('$ipaddr','$description','$date')");
+	$q->QUERY_SQL("INSERT INTO rbl_whitelists (ipaddr,description,zDate) VALUES ('".pg_escape_string2($ipaddr)."','".pg_escape_string2($description)."','$date')");
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
-	$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE ipaddr='$ipaddr'");
+	$q->QUERY_SQL("UPDATE ip_reputation SET isUnknown=0 WHERE ipaddr='".pg_escape_string2($ipaddr)."'");
 	echo "$('#{$md}').remove();\n";
 
 
@@ -159,6 +163,7 @@ function pattern_popup(){
 	$page=CurrentPageName();
 	$q=new postgres_sql();
 	$pattern=$_GET["pattern-popup"];
+	// Pentest 2026-11-04 : pattern etait concatene dans la requete.
 	$uid=$_SESSION["uid"];
 	if($uid==-100){$uid="Manager";}
 	$jsafter="BootstrapDialog1.close();{$_GET["function"]}()";
@@ -170,7 +175,7 @@ function pattern_popup(){
 	}else{
 		$bt="{apply}";
 		$form[]=$tpl->field_pattern("pattern", "{address}", null,true);
-		$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM rbl_emails WHERE pattern='$pattern'"));
+		$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM rbl_emails WHERE pattern='".pg_escape_string2($pattern)."'"));
 		$description=$ligne["description"];
 		$title=$pattern." - {$ligne["zdate"]}";
 	}
@@ -182,12 +187,13 @@ function pattern_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	$ipclass=new IP();
+	// Pentest 2026-11-04 : pattern/description etait concatene dans la requete.
 	$pattern=strtolower($_POST["pattern"]);
 	$description=$_POST["description"];
 	$date=date("Y-m-d H:i:s");
 	$q=new postgres_sql();
 
-	$q->QUERY_SQL("INSERT INTO rbl_emails (pattern,description,zDate) VALUES ('$pattern','$description','$date') ON CONFLICT DO NOTHING");
+	$q->QUERY_SQL("INSERT INTO rbl_emails (pattern,description,zDate) VALUES ('".pg_escape_string2($pattern)."','".pg_escape_string2($description)."','$date') ON CONFLICT DO NOTHING");
 	if(!$q->ok){echo "$pattern: $q->mysql_error";}
 
 
@@ -218,7 +224,7 @@ function search(){
 	$ARRAY["CMD"]="rbldnsd.php?compile=yes";
 	$ARRAY["TITLE"]="{APP_RBLDNSD} {compile_rules}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-rbldnsd-restart')";
+	$jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-rbldnsd-restart')";
 	
 	
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style=''>";
@@ -287,17 +293,23 @@ function search(){
 		if($hostname=="None"){$hostname=null;}
 		if($hostname==null){
 			$hostname=gethostbyaddr($ipaddr);
-			echo "<strong>{{$hostname}}</strong><br>";
-			$q->QUERY_SQL("UPDATE ip_reputation SET hostname='$hostname' WHERE ipaddr='$ipaddr'");
+			// Pentest 2026-11-04 : nom PTR (donnee externe, choisi par le proprietaire de l'IP) affiche sans encodage (XSS stockee).
+			echo "<strong>{".req_html($hostname)."}</strong><br>";
+			// Pentest 2026-11-04 : hostname (PTR) etait concatene dans la requete.
+			$q->QUERY_SQL("UPDATE ip_reputation SET hostname='".pg_escape_string2($hostname)."' WHERE ipaddr='".pg_escape_string2($ipaddr)."'");
 		}
 		$count_of_blacklists=$ligne["count_of_blacklists"];
 
 
+		// Pentest 2026-11-04 : IP / nom PTR (donnee externe) affiches sans encodage (XSS stockee).
+		$ipaddrU=req_url($ipaddr);
+		$ipaddrH=req_html($ipaddr);
+		$hostnameH=req_html($hostname);
 		$blacklist_button=$tpl->button_autnonome("{blacklist}",
-			"Loadjs('$page?blk-js=$ipaddr&md=$md')","fas fa-ban","AsDnsAdministrator",0,"btn-danger");
+			"Loadjs('$page?blk-js=$ipaddrU&md=$md')","fas fa-ban","AsDnsAdministrator",0,"btn-danger");
 
 		$whitelist_button=$tpl->button_autnonome("{whitelist}",
-			"Loadjs('$page?whl-js=$ipaddr&md=$md')","fas fa-check-circle","AsDnsAdministrator",0,"btn-primary");
+			"Loadjs('$page?whl-js=$ipaddrU&md=$md')","fas fa-check-circle","AsDnsAdministrator",0,"btn-primary");
 
 
 		$zDate=strtotime($ligne["zdate"]);
@@ -309,8 +321,8 @@ function search(){
 		$html[]="<td style='width:1%' nowrap>{$time}</td>";
 		$html[]="<td style='width:1%' nowrap>{$NOTE[$email_reputation]}</td>";
 		$html[]="<td style='width:1%' nowrap>{$count_of_blacklists}</td>";
-		$html[]="<td style='width:1%' nowrap><span class='$class_text'>$ipaddr</span></td>";
-		$html[]="<td style='width:99%' nowrap><span class='$class_text'>$hostname</span></td>";
+		$html[]="<td style='width:1%' nowrap><span class='$class_text'>$ipaddrH</span></td>";
+		$html[]="<td style='width:99%' nowrap><span class='$class_text'>$hostnameH</span></td>";
 		$html[]="<td style='width:1%' class='center' nowrap>$blacklist_button</td>";
 		$html[]="<td style='width:1%' class='center' nowrap>$whitelist_button</td>";
 		$html[]="</tr>";

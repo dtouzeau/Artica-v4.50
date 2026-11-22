@@ -655,7 +655,7 @@ class system_nic{
 		       '$this->AntiDDOS',$this->mirror,'$this->mirrorgateway')";
 		if($this->ucarp_vid==0){$this->ucarp_vid=3;}
 		if($this->ucarp_advbase==0){$this->ucarp_advbase=2;}
-		if($this->metric==0){$this->metric=$this->lastmetric();exit;}
+		if($this->metric==0){$this->metric=$this->lastmetric();}
 		if(!is_numeric($this->ucarp_master)){$this->ucarp_master=0;}
 		if(!is_numeric($this->ucarp_enabled)){$this->ucarp_enabled=0;}
 		$this->eth=trim($this->eth);
@@ -688,6 +688,10 @@ class system_nic{
             admin_tracks("Modify Interface $this->eth SPAN port from $this->UseSPANORG to $this->UseSPAN");
         }
 		
+		// Les colonnes pare-feu (isFW, firewall_*, denydhcp, AntiDDOS,
+		// xtIpv4options) ne sont plus écrites ici : le daemon en est le seul
+		// écrivain (PUT /firewall/config/nics/{iface}/firewall). Les réécrire
+		// depuis ce cache écrasait le réglage d'une autre page.
 		$sql_upd="UPDATE `nics` SET 
 		`NICNAME`='".mysql_escape_string2($this->NICNAME)."',
 		`netzone`='$this->netzone',
@@ -716,9 +720,7 @@ class system_nic{
 		`Bridged`='$this->Bridged',
 		`BridgedTo`='$this->BridgedTo',
 		`defaultroute`='$this->defaultroute',
-		`denydhcp`='$this->denydhcp',
 		`watchdog`='".$this->watchdog."',
-		`isFW`='$this->isFW',
 		`isFWAcceptNet`='$this->isFWAcceptNet',
 		`isFWAcceptArtica`='$this->isFWAcceptArtica',
 		`isFWLogBlocked`='$this->isFWLogBlocked',
@@ -726,12 +728,7 @@ class system_nic{
 		`SourceBasedRouting`='$this->SourceBasedRouting',
 		`QOSMAX`='$this->QOSMAX',
 		`QOS`='$this->QOS',
-		`firewall_policy`='$this->firewall_policy',
-		`firewall_ping`='$this->firewall_ping',
-		`firewall_behavior`='$this->firewall_behavior',
-		`firewall_masquerade`='$this->firewall_masquerade',
 		`DenyCountries`='$this->DenyCountries',
-		`firewall_artica`='$this->firewall_artica',
 		`FireQOS`='$this->FireQOS',
 		`InputSpeed`='$this->InputSpeed',
 		`OutputSpeed`='$this->OutputSpeed',
@@ -754,10 +751,8 @@ class system_nic{
 		`parprouted_cf`='$parprouted_cf',
 		`parprouted`='$this->parprouted',
 		`ospf_enable`='$this->ospf_enable',
-		`AntiDDOS`='$this->AntiDDOS',
 		`mirror`='$this->mirror',
 		`txqueuelen`='$this->txqueuelen',
-		`xtIpv4options`='$this->xtIpv4options',
 		`mirrorgateway`='$this->mirrorgateway'
 		 WHERE `Interface`='$this->eth'";
 		$sumcontrol=md5($sql_upd);
@@ -811,7 +806,6 @@ class system_nic{
         }
         $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/network/reset/cache");
         $q->QUERY_SQL("UPDATE nics SET sumcontrol='$sumcontrol' WHERE `Interface`='$this->eth'");
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("network.php?crc32=yes");
 		return true;
 		
 		

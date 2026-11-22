@@ -1,24 +1,22 @@
-<KAVAPPMAIL_INTRO>This wizard will help you to set first settings in order to make your server in production mode</KAVAPPMAIL_INTRO>
-<welcome_kaspersky_mail_appliance>Welcome on Artica For Kaspersky Mail Appliance</welcome_kaspersky_mail_appliance>
-<wizardCompileButton>Build your settings</wizardCompileButton>
-<wizardCompileButton_text>Check your settings.[br]If settings are correct, click on "build your settings" in 
-order to make them in production mode and start to use your server</wizardCompileButton_text>
-<WIZARD_COMPILE>Build your settings</WIZARD_COMPILE>
-<WIZARD_COMPILE_EXPLAIN>Check your settings.[br]If settings are correct, click on "build your settings" in 
-order to make them in production mode and start to use your server</WIZARD_COMPILE_EXPLAIN>
-<WIZARD_FIRST_ORG>Your organization</WIZARD_FIRST_ORG>
-<WIZARD_FIRST_ORG_EXPLAIN>An organization is an entity that store users,groups, SMTP domains and specific features.[br]
-It should be your company name or any term you want to define an users area.
-Give on the field below the name of your organization</WIZARD_FIRST_ORG_EXPLAIN>
-<WIZARD_FIRST_ROUTED_DOMAIN>Your SMTP Domain and first routing</WIZARD_FIRST_ROUTED_DOMAIN>
-<WIZARD_FIRST_ROUTED_DOMAIN_EXPLAIN>The goal of this server is to receive mails from Internet,
-reject spam and viruses and forward messages to your Mailbox server.[br]
-Give in the first field the SMTP domain of your company and in the second field the IP address of your MailBox server.
-</WIZARD_FIRST_ROUTED_DOMAIN_EXPLAIN>
-<WIZARD_INTERNAL_SMTP_NETWORK>Your Internal Network</WIZARD_INTERNAL_SMTP_NETWORK>
-<WIZARD_INTERNAL_SMTP_NETWORK_EXPLAIN>If you want to use this server to send mails to Internet, you need to specify your users network.[br]
-In this case, the server will be able to detect outgoing/incoming mails.[br]
-Give in the field the first IP address of your network slash the CDIR of the Network Mask.[br]
-Example : 192.168.1.0/24, 10.10.10.0/16 ...[br]
-You can specify a single IP address if your Mailbox server is the only one computer able to send mail to this server.
-</WIZARD_INTERNAL_SMTP_NETWORK_EXPLAIN>
+<KAVAPPMAIL_INTRO>Este assistente ajudar&#225; voc&#234; a definir as primeiras configura&#231;&#245;es para colocar o seu servidor em modo de produ&#231;&#227;o</KAVAPPMAIL_INTRO>
+<welcome_kaspersky_mail_appliance>Bem-vindo ao Artica para Kaspersky Mail Appliance</welcome_kaspersky_mail_appliance>
+<wizardCompileButton>Criar as suas configura&#231;&#245;es</wizardCompileButton>
+<wizardCompileButton_text>Verifique as suas configura&#231;&#245;es.[br]Se as configura&#231;&#245;es estiverem corretas, clique em &quot;criar as suas configura&#231;&#245;es&quot;
+para coloc&#225;-las em modo de produ&#231;&#227;o e come&#231;ar a usar o seu servidor</wizardCompileButton_text>
+<WIZARD_COMPILE>Criar as suas configura&#231;&#245;es</WIZARD_COMPILE>
+<WIZARD_COMPILE_EXPLAIN>Verifique as suas configura&#231;&#245;es.[br]Se as configura&#231;&#245;es estiverem corretas, clique em &quot;criar as suas configura&#231;&#245;es&quot;
+para coloc&#225;-las em modo de produ&#231;&#227;o e come&#231;ar a usar o seu servidor</WIZARD_COMPILE_EXPLAIN>
+<WIZARD_FIRST_ORG>A sua organiza&#231;&#227;o</WIZARD_FIRST_ORG>
+<WIZARD_FIRST_ORG_EXPLAIN>Uma organiza&#231;&#227;o &#233; uma entidade que armazena usu&#225;rios, grupos, dom&#237;nios SMTP e recursos espec&#237;ficos.[br]
+Deve ser o nome da sua empresa ou qualquer termo com que voc&#234; queira definir uma &#225;rea de usu&#225;rios.
+Indique no campo abaixo o nome da sua organiza&#231;&#227;o</WIZARD_FIRST_ORG_EXPLAIN>
+<WIZARD_FIRST_ROUTED_DOMAIN>O seu dom&#237;nio SMTP e primeiro roteamento</WIZARD_FIRST_ROUTED_DOMAIN>
+<WIZARD_FIRST_ROUTED_DOMAIN_EXPLAIN>O objetivo deste servidor &#233; receber e-mails da Internet,
+rejeitar spam e v&#237;rus e encaminhar mensagens para o seu servidor de caixas de correio.[br]
+Indique no primeiro campo o dom&#237;nio SMTP da sua empresa e no segundo campo o endere&#231;o IP do seu servidor de caixas de correio.</WIZARD_FIRST_ROUTED_DOMAIN_EXPLAIN>
+<WIZARD_INTERNAL_SMTP_NETWORK>A sua rede interna</WIZARD_INTERNAL_SMTP_NETWORK>
+<WIZARD_INTERNAL_SMTP_NETWORK_EXPLAIN>Se voc&#234; quiser usar este servidor para enviar e-mails para a Internet, precisa especificar a rede dos seus usu&#225;rios.[br]
+Neste caso, o servidor poder&#225; detectar e-mails de sa&#237;da/entrada.[br]
+Indique no campo o primeiro endere&#231;o IP da sua rede seguido do CIDR da m&#225;scara de rede.[br]
+Exemplo: 192.168.1.0/24, 10.10.10.0/16 ...[br]
+Voc&#234; pode especificar um &#250;nico endere&#231;o IP se o seu servidor de caixas de correio for o &#250;nico computador capaz de enviar e-mail para este servidor.</WIZARD_INTERNAL_SMTP_NETWORK_EXPLAIN>

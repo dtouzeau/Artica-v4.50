@@ -4,14 +4,16 @@ $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
+// Pentest 2026-11-04 : t/eth/delete/enable-signature/enable-firewall etaient recopies sans encodage dans la page (XSS).
+foreach(array("t","enable-signature","enable-firewall") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}
+}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
+if(isset($_GET["delete"])){$_GET["delete"]=preg_replace('/[^A-Za-z0-9_.-]/','',(string)$_GET["delete"]);}
 if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["enable-signature"])){enable_signature();exit;}
 if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["delete"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 page();
 
 function delete_js(){
@@ -103,7 +105,7 @@ function page(){
 	if($_SESSION["IDSFW_SEARCH"]==null){$_SESSION["IDSFW_SEARCH"]="today src * dstport >-1 limit 500";}
 
     $html=$tpl->page_header("{IDS} {firewall_rules}",
-        "fab fa-free-code-camp","{ids_firewall_rules_explain}",
+        "fa-solid fa-block-brick-fire","{ids_firewall_rules_explain}",
         "$page?main=yes","firewall-ids","progress-suricata-restart",true,"table-loader");
 
 
@@ -188,7 +190,8 @@ function table(){
 			
 		if($signature>0){
 			if(!isset($DESCZ[$ligne["signature"]])){
-				$ligne2=pg_fetch_assoc($q->QUERY_SQL("SELECT description FROM suricata_sig WHERE signature='{$ligne["signature"]}'"));
+				// Pentest 2026-11-04 : signature (relue en base) etait concatenee dans la requete.
+				$ligne2=pg_fetch_assoc($q->QUERY_SQL_PARAMS("SELECT description FROM suricata_sig WHERE signature=$1",array($ligne["signature"])));
 				if(!$q->ok){$DESCZ[$ligne["signature"]]=$q->mysql_error;}else{
 				$DESCZ[$ligne["signature"]]=$ligne2["description"];
 				}
@@ -231,9 +234,11 @@ function enable(){
 	
 	$filename=$_POST["filename"];
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM suricata_rules_packages WHERE rulefile='$filename'");
-	$enabled=intval($ligne["enabled"]);
+	// Pentest 2026-11-04 : filename (POST) etait concatene dans la requete.
+	$rows=$q->QUERY_SQL_PARAMS("SELECT enabled FROM suricata_rules_packages WHERE rulefile=?",array($filename));
+	$ligne=(is_array($rows) && isset($rows[0]))?$rows[0]:array();
+	$enabled=intval($ligne["enabled"] ?? 0);
 	if($enabled==0){$enabled=1;}else{$enabled=0;}
-	$q->QUERY_SQL("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile='$filename'","artica_backup");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_rules_packages SET `enabled`=? WHERE rulefile=?",array($enabled,$filename));
 	if(!$q->ok){echo $q->mysql_error;}
 }

@@ -1,10 +1,15 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
-if(isset($_GET["table"])){features();exit;}
+// Noeud de ferme HaCluster : le compte Kerberos est recopie depuis le LB.
+include_once(dirname(__FILE__)."/ressources/class.hacluster.node.inc");
+hacluster_node_ad_gate(array("KerberosUsername"),array("file-uploaded"));
+if(isset($_GET["table"])){echo hacluster_node_ad_banner();features();exit;}
 if(isset($_POST["KerberosUsername"])){Save();exit;}
 if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 page();
@@ -46,6 +51,7 @@ function page(){
 
 function features(){
     $td_style=null;
+    $td_content=array();
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$users=new usersMenus();
@@ -92,8 +98,9 @@ function features(){
 
     if($UseNativeKerberosAuth==1) {
         $td_style=" style='width:400px'";
-        $ARRAY=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerberosTicketInfo"));
-        $expire=distanceOfTimeInWords(time(),$ARRAY["STOP"]);
+        $ARRAY=unserialize(strval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerberosTicketInfo")));
+        if(!is_array($ARRAY)){$ARRAY=array();}
+        $expire=distanceOfTimeInWords(time(),intval($ARRAY["STOP"] ?? time()));
         if(!isset($ARRAY["DEFAULT_PRINCPAL"])) {
             $td_content[] = $tpl->widget_rouge("{error}", "Kerberos Ticket");
         }else {
@@ -178,7 +185,7 @@ $IP=new IP();
     $ipaddr=$GLOBALS["CLASS_SOCKETS"]->gethostbyname($kerberosActiveDirectoryHost);
     $ldap_port=389;
     if(!$IP->isValid($ipaddr)){
-        echo "jserror:".$tpl->_ENGINE_parse_body("{CURLE_COULDNT_RESOLVE_HOST} $kerberosActiveDirectoryHost");
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body("{CURLE_COULDNT_RESOLVE_HOST} $kerberosActiveDirectoryHost"));
         return;
     }
 
@@ -190,7 +197,7 @@ $IP=new IP();
     if(!$ldap_connection){
         $DIAG[]="{Connection_Failed_to_connect_to_DC} ldap://$ldapserver:$ldap_port";
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror:".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG)));
         @ldap_close();
         return false;
     }
@@ -202,7 +209,7 @@ $IP=new IP();
         $DIAG[]="{login_Failed_to_connect_to_DC} $KerberosUsername";
         $DIAG[]=ldap_err2str(ldap_errno($ldap_connection));
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+        echo $tpl->post_error(@implode("<br>", $DIAG));
         return false;
     }
 
@@ -235,10 +242,12 @@ $IP=new IP();
 }
 
 function file_uploaded(){
+    if(!fw_progress_page_priv("AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $file=$_GET["file-uploaded"];
+    $file=fw_progress_upload_name($_GET["file-uploaded"] ?? "");   // REST segment, see fw_progress_upload_name
+    if($file===""){return fw_progress_bad_value("file-uploaded");}
 
     $jsrestart=$tpl->framework_buildjs(
         "/kerberos/keytab/install/$file",

@@ -51,8 +51,9 @@ function popup(){
         if(!preg_match("#(.+?)\s+\[([0-9]+)\]\s+exec\.nightly\.php:\s+(.+)#",$line,$re)){continue;}
         $c++;
         $date=strtotime($re[1]);
-        $pid=$re[2];
-        $event=$re[3];
+        // Pentest 2026-11-04 : ligne de journal de mise a jour (donnee externe) affiche sans encodage (XSS stockee).
+        $pid=req_html($re[2]);
+        $event=req_html($re[3]);
         $zdate=$tpl->time_to_date($date,true);
         $class="text-primary";
         if(preg_match("#UP TO DATE#",$event)) {

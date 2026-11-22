@@ -1,25 +1,25 @@
-<AV_SCAN_PARAMETERS>Scan parameters</AV_SCAN_PARAMETERS>
-<AV_SCAN_PARAMETERS_TEXT>Define how to scan this computer</AV_SCAN_PARAMETERS_TEXT>
-<cure>Cure</cure>
-<f0>Detect Only</f0>
-<f1>Cure/skip</f1>
-<f2>Cure failed delete/skip</f2>
-<f3>Cure failed delete all</f3>
+<AV_SCAN_PARAMETERS>Parametri di scansione</AV_SCAN_PARAMETERS>
+<AV_SCAN_PARAMETERS_TEXT>Definisci come scansionare questo computer</AV_SCAN_PARAMETERS_TEXT>
+<cure>Cura</cure>
+<f0>Solo rilevamento</f0>
+<f1>Cura/salta</f1>
+<f2>Cura fallita, elimina/salta</f2>
+<f3>Cura fallita, elimina tutto</f3>
 <f4>Eliminare tutti</f4>
-<Heuristic>Enable heuristic scanner</Heuristic>
-<i0>Just scan for virus presence; do not modify the files.</i0>
-<i1>Cure infected objects; if disinfection fails - skip it.</i1>
-<i2>Cure infected objects; if disinfection fails and the object is a simple one - delete it; if the infected object is inside a container - skip it.</i2>
-<i3>Cure infected objects; if disinfection fails and the object is a simple one - delete it; if the infected object is inside a container - delete the whole container.</i3>
-<i4>Delete infected objects and containers.</i4>
-<MailBases>e-mail databases</MailBases>
-<MailPlain>Plain text messages</MailPlain>
-<Recursion>Recursion scanning</Recursion>
-<SCAN_ARCHIVES>Archives files</SCAN_ARCHIVES>
-<SCAN_PACKED>Scan packed files</SCAN_PACKED>
-<SelfExtArchives>Self-Extracting files</SelfExtArchives>
-<shares_access>Shares access</shares_access>
-<shares_access_text>Set the username/password allowing to connect to the target computer</shares_access_text>
-<START_SCAN_COMPUTER>Perfom scanning</START_SCAN_COMPUTER>
-<START_SCAN_COMPUTER_TEXT>Launch the scan on targeted computer and try to discover some viruses</START_SCAN_COMPUTER_TEXT>
-<SUCCESS_LAUNCH_SCAN_PC>The order has been successfully sent to the daemon to perform a background scan of this computer</SUCCESS_LAUNCH_SCAN_PC>
+<Heuristic>Abilita lo scanner euristico</Heuristic>
+<i0>Cerca solo la presenza di virus; non modificare i file.</i0>
+<i1>Cura gli oggetti infetti; se la disinfezione fallisce - saltalo.</i1>
+<i2>Cura gli oggetti infetti; se la disinfezione fallisce e l'oggetto &#232; semplice - eliminalo; se l'oggetto infetto &#232; all'interno di un contenitore - saltalo.</i2>
+<i3>Cura gli oggetti infetti; se la disinfezione fallisce e l'oggetto &#232; semplice - eliminalo; se l'oggetto infetto &#232; all'interno di un contenitore - elimina l'intero contenitore.</i3>
+<i4>Elimina gli oggetti infetti e i contenitori.</i4>
+<MailBases>Database delle email</MailBases>
+<MailPlain>Messaggi in testo semplice</MailPlain>
+<Recursion>Scansione ricorsiva</Recursion>
+<SCAN_ARCHIVES>File di archivio</SCAN_ARCHIVES>
+<SCAN_PACKED>Scansiona file compressi</SCAN_PACKED>
+<SelfExtArchives>File autoestraenti</SelfExtArchives>
+<shares_access>Accesso alle condivisioni</shares_access>
+<shares_access_text>Imposta il nome utente/la password che consente di connettersi al computer di destinazione</shares_access_text>
+<START_SCAN_COMPUTER>Esegui scansione</START_SCAN_COMPUTER>
+<START_SCAN_COMPUTER_TEXT>Avvia la scansione sul computer di destinazione e prova a scoprire eventuali virus</START_SCAN_COMPUTER_TEXT>
+<SUCCESS_LAUNCH_SCAN_PC>L'ordine &#232; stato inviato con successo al daemon per eseguire una scansione in background di questo computer</SUCCESS_LAUNCH_SCAN_PC>

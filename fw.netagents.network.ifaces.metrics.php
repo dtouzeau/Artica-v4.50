@@ -12,7 +12,7 @@
 include_once(dirname(__FILE__).'/ressources/class.template-admin.inc');
 if(!isset($GLOBALS["CLASS_SOCKETS"])){$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();
-if(!$users->AsSystemAdministrator){exit();}
+if(!meta_node_admin($users)){exit();}
 
 if(isset($_GET["netif-js"]))           {js();                exit;}
 if(isset($_GET["tabs"]))               {tabs();              exit;}
@@ -227,11 +227,12 @@ function charts():void{
 
     if($maxBw>1024){
         $unit="MB/s";
-        $rx_bw=array_map(fn($v)=>round($v/1024,2),$rx_bw);
-        $tx_bw=array_map(fn($v)=>round($v/1024,2),$tx_bw);
+        // Plancher PHP 7.3: pas de fonction flechee (elle casse tout le fichier).
+        $rx_bw=array_map(function($v){ return round($v/1024,2); },$rx_bw);
+        $tx_bw=array_map(function($v){ return round($v/1024,2); },$tx_bw);
         if(!empty($rx_bw_max)){
-            $rx_bw_max=array_map(fn($v)=>round($v/1024,2),$rx_bw_max);
-            $tx_bw_max=array_map(fn($v)=>round($v/1024,2),$tx_bw_max);
+            $rx_bw_max=array_map(function($v){ return round($v/1024,2); },$rx_bw_max);
+            $tx_bw_max=array_map(function($v){ return round($v/1024,2); },$tx_bw_max);
         }
     }
 
@@ -255,8 +256,12 @@ function build_charts(
     $t=time();
 
     // JSON encode with controlled float precision (avoid 50-digit php serialize_precision floats)
-    $fmtF=fn(array $a,int $d=2):string=>'['.implode(',',array_map(fn($v)=>sprintf("%.".$d."f",$v),$a)).']';
-    $fmtI=fn(array $a):string=>'['.implode(',',array_map('intval',$a)).']';
+    // La closure interne capture $d explicitement: contrairement a une fonction
+    // flechee, une closure n'herite pas de la portee englobante.
+    $fmtF=function(array $a,int $d=2){
+        return '['.implode(',',array_map(function($v) use($d){ return sprintf("%.".$d."f",$v); },$a)).']';
+    };
+    $fmtI=function(array $a){ return '['.implode(',',array_map('intval',$a)).']'; };
     $labelsJs=json_encode($labels);
     $rxBwJs=$fmtF($rx_bw);
     $txBwJs=$fmtF($tx_bw);
@@ -303,7 +308,7 @@ function build_charts(
     $h[]="</div></div></div></div></div>";
 
     // ── Chart.js script ──
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[]="";
     $h[]="<script>";
 
     // Shared options

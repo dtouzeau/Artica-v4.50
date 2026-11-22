@@ -1,26 +1,24 @@
-<add_alias>Add new original email</add_alias>
-<add_alias_text>Add your original email from your ISP and fetchmail rules</add_alias_text>
-<click_on_add>Click on add button</click_on_add>
+<add_alias>Neue urspr&#252;ngliche E-Mail hinzuf&#252;gen</add_alias>
+<add_alias_text>F&#252;gen Sie Ihre urspr&#252;ngliche E-Mail Ihres ISP und Fetchmail-Regeln hinzu</add_alias_text>
+<click_on_add>Auf die Schaltfl&#228;che &#8222;Hinzuf&#252;gen&#8220; klicken</click_on_add>
 <fetchmail_add_rule>Neues Konto</fetchmail_add_rule>
-<fetchmail_add_rule_text>Add new fetched account and receive mails into your mailbox</fetchmail_add_rule_text>
-<fetchmail_aliases>Fetchmail aliases</fetchmail_aliases>
-<fetchmail_aliases_ask>Give the email address fetched by your rule (eg you@gmail.com or you@hotmail.com...)</fetchmail_aliases_ask>
-<fetchmail_aliases_text>
-During receiving mails from fetchmail operation, the mail server engine keep the original recipient address forwarded to your account.[br]
-For example, if you fetch mail from gmail account and your original address is user@gmail.com, the email address "user@gmail.com" is not translated to your local email address.[br]
-All mails saved in backup or saved in quarantine area are indexed by the original recipient.[br]
-[b]If you not fill this section, you will not be able to query correctly your quarantine/backup area[/b]. 
-</fetchmail_aliases_text>
-<fetchmail_modify_rules>Storage accounts</fetchmail_modify_rules>
-<fetchmail_modify_rules_text>Display and edit current accounts</fetchmail_modify_rules_text>
-<fetch_delete_rule_confirm>Confirm deletion of this rule ?</fetch_delete_rule_confirm>
-<GET_RIGHT_ISP_SETTINGS>Find settings</GET_RIGHT_ISP_SETTINGS>
-<GET_RIGHT_ISP_SETTINGS_TEXT>Define settings with your ISP name</GET_RIGHT_ISP_SETTINGS_TEXT>
-<messaging_accounts>Messaging accounts</messaging_accounts>
-<not_delete_messages>Don't delete messages</not_delete_messages>
-<no_fetchmail_aliases>No fetchmail aliases</no_fetchmail_aliases>
-<no_fetchmail_aliases_intro>If you want to receive quarantine reports and others features, you need to add your original emails addresses</no_fetchmail_aliases_intro>
+<fetchmail_add_rule_text>Neues abgerufenes Konto hinzuf&#252;gen und E-Mails in Ihr Postfach empfangen</fetchmail_add_rule_text>
+<fetchmail_aliases>Fetchmail-Aliase</fetchmail_aliases>
+<fetchmail_aliases_ask>Geben Sie die von Ihrer Regel abgerufene E-Mail-Adresse an (z. B. you@gmail.com oder you@hotmail.com...)</fetchmail_aliases_ask>
+<fetchmail_aliases_text>Beim Empfang von E-Mails &#252;ber fetchmail beh&#228;lt die Mailserver-Engine die urspr&#252;ngliche Empf&#228;ngeradresse bei, die an Ihr Konto weitergeleitet wird.[br]
+Wenn Sie beispielsweise E-Mails von einem Gmail-Konto abrufen und Ihre urspr&#252;ngliche Adresse user@gmail.com lautet, wird die E-Mail-Adresse &quot;user@gmail.com&quot; nicht in Ihre lokale E-Mail-Adresse &#252;bersetzt.[br]
+Alle in der Sicherung oder im Quarant&#228;nebereich gespeicherten E-Mails werden nach dem urspr&#252;nglichen Empf&#228;nger indiziert.[br]
+[b]Wenn Sie diesen Bereich nicht ausf&#252;llen, k&#246;nnen Sie Ihren Quarant&#228;ne-/Sicherungsbereich nicht korrekt abfragen[/b].</fetchmail_aliases_text>
+<fetchmail_modify_rules>Speicherkonten</fetchmail_modify_rules>
+<fetchmail_modify_rules_text>Aktuelle Konten anzeigen und bearbeiten</fetchmail_modify_rules_text>
+<fetch_delete_rule_confirm>L&#246;schen dieser Regel best&#228;tigen?</fetch_delete_rule_confirm>
+<GET_RIGHT_ISP_SETTINGS>Einstellungen finden</GET_RIGHT_ISP_SETTINGS>
+<GET_RIGHT_ISP_SETTINGS_TEXT>Einstellungen mit dem Namen Ihres ISP festlegen</GET_RIGHT_ISP_SETTINGS_TEXT>
+<messaging_accounts>Messaging-Konten</messaging_accounts>
+<not_delete_messages>Nachrichten nicht l&#246;schen</not_delete_messages>
+<no_fetchmail_aliases>Keine Fetchmail-Aliase</no_fetchmail_aliases>
+<no_fetchmail_aliases_intro>Wenn Sie Quarant&#228;neberichte und andere Funktionen erhalten m&#246;chten, m&#252;ssen Sie Ihre urspr&#252;nglichen E-Mail-Adressen hinzuf&#252;gen</no_fetchmail_aliases_intro>
 <proto>Protokoll</proto>
-<server_information>Server information</server_information>
-<session_information>Session information</session_information>
-<wizard_intro>This wizard will help to create or edit accounts in order to fetch your emails from other mail servers</wizard_intro>
+<server_information>Serverinformationen</server_information>
+<session_information>Sitzungsinformationen</session_information>
+<wizard_intro>Dieser Assistent hilft Ihnen, Konten zu erstellen oder zu bearbeiten, um Ihre E-Mails von anderen Mailservern abzurufen</wizard_intro>

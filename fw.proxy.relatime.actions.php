@@ -1,10 +1,15 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 include_once(dirname(__FILE__)."/ressources/class.logfile_daemon.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.familysites.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
 include_once(dirname(__FILE__)."/ressources/class.ufdbguard-tools.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
+// awc_table_style(): feuille de style partagee des tableaux et cartes d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
 if(isset($_GET["check-results"])){check_domain_results();exit;}
 if(isset($_GET["check"])){check_domain();exit;}
@@ -101,10 +106,18 @@ function isRfc1918(string $ip): bool {
 
 function check_domain():bool
 {
+    if(!fw_progress_page_priv("AsProxyMonitor")){return false;}   // task link signed for this session: built only for whom may run it
 
     $tpl = new template_admin();
     $page = CurrentPageName();
-    $domain = $_GET["urlsrc"];
+    // The troubleshooting tab (tabs()) triggers this via ?check=<domain>&urlsrc=<fullurl>.
+    // urlsrc carries the FULL url (scheme/path) when the caller has it — parsed below;
+    // but the blocked-requests list no longer always passes it, leaving urlsrc empty and
+    // producing a request to "/analyze/website/nohup/" with NO domain → the daemon 404s
+    // ("did you use the Correct version of the Web API service?"). Fall back to `check`,
+    // which reliably holds the host, so troubleshooting works whether or not urlsrc is set.
+    $domain = isset($_GET["urlsrc"]) ? trim($_GET["urlsrc"]) : "";
+    if(strlen($domain) < 1){ $domain = trim($_GET["check"]); }
     $domainEncoded=urlencode($domain);
     $domainmd = md5($domain);
 
@@ -120,7 +133,10 @@ function check_domain():bool
         $domainEncoded=urlencode($domain);
 
     }
-
+    // Placed as one path segment of the route below. The daemon (articarest
+    // QueryTests.go:65-68) splits it on ":" into host and port: only a host name or IPv4
+    // address with an optional port can work. An IPv6 literal ("[::1]:3128") is refused.
+    if(fw_progress_restseg($domain)==="" || !preg_match('/^[A-Za-z0-9._-]{1,253}(:[0-9]{1,5})?$/',$domain)){return fw_progress_bad_value("domain");}
 
     $js = $tpl->framework_buildjs(
         "/analyze/website/nohup/$domain",
@@ -140,37 +156,55 @@ function check_domain():bool
 }
 function check_domain_results():bool{
 
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("QueryTest"));
     $tpl = new template_admin();
+    $raw=(string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("QueryTest");
+    $json=json_decode($raw);
 
+    // Le bouton lance l'analyse en nohup PUIS charge ce fragment: tant que le
+    // daemon n'a pas ecrit QueryTest, GET_INFO rend une chaine vide et
+    // json_decode NULL. Toute la suite lisait alors $json->... sur ce NULL --
+    // count($json->proxy_dns) etait une TypeError FATALE en PHP 8, ce qui
+    // laissait la fenetre vide sans la moindre explication.
+    if(!is_object($json)){
+        if(trim($raw)===""){
+            echo $tpl->_ENGINE_parse_body($tpl->div_info("{please_wait}"));
+        }else{
+            echo $tpl->_ENGINE_parse_body($tpl->div_error("{unknown_error}"));
+        }
+        return false;
+    }
 
     $tpl->table_form_section("{DNS_checking}");
-    if($json->domain_test){
-        $tpl->table_form_field_text("{public_ip_addr}",$json->domain_record,ico_nic);
+    if(!empty($json->domain_test)){
+        $tpl->table_form_field_text("{public_ip_addr}",$json->domain_record ?? "",ico_nic);
     }else{
         $tpl->table_form_field_text("{public_ip_addr}","{none}",ico_nic,true);
     }
-    if(count($json->proxy_dns)>0){
+    // Chacune des trois listes du rapport est OPTIONNELLE: elle manque tant que
+    // l'etape correspondante n'a pas ete franchie. count() sur la cle absente
+    // etait fatal; is_array() la traite comme vide.
+    if(is_array($json->proxy_dns ?? null)){
         foreach ($json->proxy_dns as $dns_record){
-            if(!$dns_record->dns_success){
-                $tpl->table_form_field_text("Proxy DNS $dns_record->dnsname","$dns_record->dns_error ",ico_nic,true);
+            if(!is_object($dns_record)){continue;}
+            if(empty($dns_record->dns_success)){
+                $tpl->table_form_field_text("Proxy DNS ".($dns_record->dnsname ?? ""),($dns_record->dns_error ?? "")." ",ico_nic,true);
             }else{
-                $tpl->table_form_field_text("Proxy DNS $dns_record->dnsname","$dns_record->dns_result ",ico_nic);
+                $tpl->table_form_field_text("Proxy DNS ".($dns_record->dnsname ?? ""),($dns_record->dns_result ?? "")." ",ico_nic);
             }
         }
     }
 
 
-    if($json->telnet){
-        $tpl->table_form_field_text("Telnet",$json->proto."&nbsp;<i class='".ico_arrow_right."'></i>&nbsp;".$json->port,ico_nic);
+    if(!empty($json->telnet)){
+        $tpl->table_form_field_text("Telnet",($json->proto ?? "")."&nbsp;<i class='".ico_arrow_right."'></i>&nbsp;".($json->port ?? ""),ico_nic);
     }else{
-        $tpl->table_form_field_text("Telnet",$json->telnet_error,ico_nic,true);
+        $tpl->table_form_field_text("Telnet",$json->telnet_error ?? "",ico_nic,true);
     }
 
-    $tpl->table_form_section("{direct_to_internet}",$json->query_url);
-    if($json->direct_http){
-        $tpl->table_form_field_text("{success}","{error_code}: $json->direct_http_err_code",ico_proto,false);
-        if (count($json->direct_http_response_headers)>0){
+    $tpl->table_form_section("{direct_to_internet}",$json->query_url ?? "");
+    if(!empty($json->direct_http)){
+        $tpl->table_form_field_text("{success}","{error_code}: ".($json->direct_http_err_code ?? ""),ico_proto,false);
+        if (is_array($json->direct_http_response_headers ?? null)){
             foreach ($json->direct_http_response_headers as $http_response_header){
                 if( preg_match("#^(.+?):\s+(.+)$#", $http_response_header,$tb) ){
                     $content=htmlspecialchars($tb[2]);
@@ -181,16 +215,16 @@ function check_domain_results():bool{
 
         }
     }else{
-        $tpl->table_form_field_text("{failed}","{error_code}: $json->direct_http_err_code",ico_proto,true);
+        $tpl->table_form_field_text("{failed}","{error_code}: ".($json->direct_http_err_code ?? ""),ico_proto,true);
     }
 
-    if($json->proxy_enable){
-        $tpl->table_form_section("{UseProxy}",$json->proxy_url ."&nbsp;<i class='".ico_arrow_right."'></i>&nbsp;".$json->query_url);
-        if($json->proxy_error){
-            $tpl->table_form_field_text("{failed}",$json->proxy_error_str,ico_server,true);
+    if(!empty($json->proxy_enable)){
+        $tpl->table_form_section("{UseProxy}",($json->proxy_url ?? "")."&nbsp;<i class='".ico_arrow_right."'></i>&nbsp;".($json->query_url ?? ""));
+        if(!empty($json->proxy_error)){
+            $tpl->table_form_field_text("{failed}",$json->proxy_error_str ?? "",ico_server,true);
         }else{
-            $tpl->table_form_field_text("{success}","{error_code}: $json->proxy_response_code",ico_proto,false);
-            if (count($json->proxy_response_headers)>0){
+            $tpl->table_form_field_text("{success}","{error_code}: ".($json->proxy_response_code ?? ""),ico_proto,false);
+            if (is_array($json->proxy_response_headers ?? null)){
                 foreach ($json->proxy_response_headers as $http_response_header){
                     if( preg_match("#^(.+?):\s+(.+)$#", $http_response_header,$tb) ) {
                         $error=false;
@@ -225,7 +259,8 @@ function site_blacklist(){
     }
 
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $q->QUERY_SQL("INSERT OR IGNORE INTO `deny_websites` (`items`) VALUES ('$domain')");
+    // Pentest 2026-11-04 : domain etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("INSERT OR IGNORE INTO `deny_websites` (`items`) VALUES (?)",array($domain));
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
     admin_tracks("Added $domain to Global Proxy Blacklist");
@@ -262,17 +297,24 @@ function site_whitelist(){
         $lib->saveKey("isWhite:$line", true, 300);
     }
 
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM acls_whitelist WHERE pattern='$domain' AND ztype='$ztype'");
-    if(intval($ligne["ID"])>0){
-        echo "dialogInstance1.close();\n";
-        return false;
+    // Check if the entry already exists
+    $wl_list = acls_api_get("/proxy/acls-whitelist");
+    if(is_array($wl_list)){
+        foreach($wl_list as $wl_item){
+            if(($wl_item["pattern"] ?? "") == $domain && ($wl_item["ztype"] ?? "") == $ztype){
+                echo "dialogInstance1.close();\n";
+                return false;
+            }
+        }
     }
 
-    $f="('$zDate','$ztype','$domain',1,'$description')";
-    $q->QUERY_SQL("INSERT OR IGNORE INTO acls_whitelist (zdate,ztype,pattern,enabled,description) VALUES $f");
-    if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return false;}
+    [$ok,$data] = acls_api_send("POST","/proxy/acls-whitelist",[
+        "pattern"     => $domain,
+        "description" => $description,
+        "zDate"       => $zDate,
+        "ztype"       => $ztype,
+    ]);
+    if(!$ok){$tpl->js_mysql_alert($data);return false;}
 
     admin_tracks("Added $ztype:$domain to Global Proxy Whitelist");
 
@@ -291,17 +333,12 @@ function site_cache(){
     header("content-type: application/x-javascript");
     $www=$_GET["cache"];
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $IP=new IP();
     $ztype=0;
     if($IP->isIPAddressOrRange($www)){$ztype=1;}
 
-    if(!$q->FIELD_EXISTS("deny_cache_domains","ztype")){
-        $q->QUERY_SQL("ALTER TABLE deny_cache_domains ADD ztype INTEGER NOT NULL DEFAULT 0");
-    }
-
-    $q->QUERY_SQL("INSERT OR IGNORE INTO deny_cache_domains (items,ztype) VALUES ('{$www}','$ztype')");
-    if(!$q->ok){echo $q->mysql_error;return;}
+    [$ok,$data] = acls_api_send("POST","/proxy/deny-cache",["domain"=>$www,"ztype"=>(string)$ztype]);
+    if(!$ok){echo htmlspecialchars($data);return;}
 
     $jsrestart=$tpl->framework_buildjs("/proxy/acls/denycache",
         "squid.nocache.progress",
@@ -392,177 +429,159 @@ function popup(){
 
     }
 
+    // Les deux listes d'actions etaient des <table class='table table-hover'>
+    // de MISE EN PAGE: chaque ligne portait un libelle, une explication et un
+    // bouton -- aucune donnee tabulaire. Elles sont rendues en cartes.
+    // categories_descriptions() etait par ailleurs recharge une fois par liste:
+    // deux lectures completes de la table des categories par affichage.
+    $category_text=rta_category_label($category_id,$from);
+
     if($familysite<>$domain){
-        $html[]="<H1>$familysite_title</H1>";
-        $html[]="<table class='table table-hover'><thead></thead><tbody>";
+        $rows=array();
 
         if(!$from) {
-                if ($category_id == 0) {
-                    $category_text = "{unknown}";
-                }
-                $catz = new mysql_catz(true);
-                $categories_descriptions = $catz->categories_descriptions();
-                if (!isset($categories_descriptions[$category_id]["categoryname"])) {
-                    $category_text = "{unknown}";
-                }
-                if ($category_text == null) {
-                    $category_text = $categories_descriptions[$category_id]["categoryname"];
-                }
-                $smain["website"] = $familysite;
-                $smain["category-id"] = $category_id;
-                $xmain = base64_encode(serialize($smain));
-                $js = "s_PopUpFull('http://articatech.net/categorization.php?report=$xmain',1024,768,'$familysite');";
-                $html[] = "<tr>";
-                $html[] = "<td><strong>$category_text</strong><br><small>{miscategory_explain}</small></td>";
-                $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{report_category}", $js,
-                        "fa fa-question", "AsProxyMonitor", 180, "btn-primary") . "</td>";
-                $html[] = "</tr>";
-
-
+            $rows[]=rta_report_category_row($tpl,$familysite,$category_id,$category_text);
         }
 
         if($SQUIDACLsEnabled==1){
-            $html[]="<tr>";
-            $html[]="<td><strong>{WAF_LEFT}</strong><br><small>{add_to_acl_object}</small></td>";
-            $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.acl.add.php?type=$acl_type&value=$familysite_encode')",
-                    "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
-            $html[]="</tr>";
+            $rows[]=rta_acl_object_row($tpl,$acl_type,$familysite_encode);
         }
 
+        $rows[]=rta_categorize_row($tpl,$acl_type,$familysite_encode);
+        $rows[]=rta_whitelist_row($tpl,$page,$familysite_encode,$extension,$ip->isValid($domain));
+        $rows[]=rta_blacklist_row($tpl,$page,$familysite_encode,$extension,$ip->isValid($domain));
+        $rows[]=rta_nocache_row($tpl,$page,$familysite_encode);
 
-        $html[]="<tr>";
-        $html[]="<td><strong>{categorize}</strong><br><small>{add_to_personal_category}</small></td>";
-        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.category.add.php?type=$acl_type&value=$familysite_encode')",
-                    "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
-        $html[]="</tr>";
-
-
-
-
-        $blacktitle="{blacklist_this_website}";
-        $whitetitle="{whitelist_this_website}";
-        if($ip->isValid($domain)){
-            $blacktitle="{blacklist_this_address}";
-            $whitetitle="{whitelist_this_address}";
-        }
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$whitetitle</strong><br><small>{whitelist_this_website_explain}</small></td>";
-        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}",
-                "Loadjs('$page?wbl=$familysite_encode$extension')", "fas fa-thumbs-up","AsProxyMonitor",180)."</td>";
-        $html[]="</tr>";
-
-        $html[]="<tr>";
-        $html[]="<td><strong>$blacktitle</strong><br><small>{blacklist_this_website_explain}</small></td>";
-        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?black=$familysite_encode$extension')",
-                "fas fa-thumbs-down","AsProxyMonitor",180,"btn-danger")."</td>";
-        $html[]="</tr>";
-
-
-         $html[]="<tr>";
-         $html[]="<td><strong>{do_not_cache}</strong><br><small>{do_not_cache_this_web_site_explain}</small></td>";
-            $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?cache=$familysite_encode')",
-                    "fas fa-database","AsProxyMonitor",180,"btn-warning")."</td>";
-            $html[]="</tr>";
-
-
-
-
-        $html[]="</tbody></table><hr>";
+        $html[]=rta_actions_card($familysite_title,$rows);
 
     }
 
 
-    $html[]="<H1>$domain_title</H1>";
-    $category_text=null;
-    $html[]="<table class='table table-hover'><thead></thead><tbody>";
-
-    $blacktitle="{blacklist_this_website}";
-    $whitetitle="{whitelist_this_website}";
-    if($ip->isValid($domain)){
-        $blacktitle="{blacklist_this_address}";
-        $whitetitle="{whitelist_this_address}";
-    }
+    $rows=array();
 
     if($EnableUfdbGuard==1){
         $bypass_webfilter_explain=$tpl->_ENGINE_parse_body("{bypass_webfilter_explain}");
-        $bypass_webfilter_explain=str_replace("%s",$domain,$bypass_webfilter_explain);
-        $html[]="<tr>";
-        $html[]="<td><strong>{bypass_webfilter}</strong><br><small>$bypass_webfilter_explain</small></td>";
-        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('$page?bypasswebf=$domain_encode')",
-                "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
-        $html[]="</tr>";
-
+        $bypass_webfilter_explain=str_replace("%s",htmlspecialchars($domain),$bypass_webfilter_explain);
+        $rows[]=rta_action_row("{bypass_webfilter}",$bypass_webfilter_explain,
+            $tpl->button_autnonome("{select}","Loadjs('$page?bypasswebf=$domain_encode')",
+                "fa fa-shield","AsProxyMonitor",180,"btn-warning"));
     }
 
     if(!$from) {
-            if ($category_id == 0) {
-                $category_text = "{unknown}";
-            }
-            $catz = new mysql_catz(true);
-            $categories_descriptions = $catz->categories_descriptions();
-            if (!isset($categories_descriptions[$category_id]["categoryname"])) {
-                $category_text = "{unknown}";
-            }
-            if ($category_text == null) {
-                $category_text = $categories_descriptions[$category_id]["categoryname"];
-            }
-            $smain["website"] = $domain;
-            $smain["category-id"] = $category_id;
-            $xmain = base64_encode(serialize($smain));
-            $js = "s_PopUpFull('http://articatech.net/categorization.php?report=$xmain',1024,768,'$domain');";
-            $html[] = "<tr>";
-            $html[] = "<td><strong>$category_text</strong><br><small>{miscategory_explain}</small></td>";
-            $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{report_category}", $js,
-                    "fa fa-question", "AsProxyMonitor", 180, "btn-primary") . "</td>";
-            $html[] = "</tr>";
-
-
+        $rows[]=rta_report_category_row($tpl,$domain,$category_id,$category_text);
     }
     if($SQUIDACLsEnabled==1){
-        $html[]="<tr>";
-        $html[]="<td><strong>{WAF_LEFT}</strong><br><small>{add_to_acl_object}</small></td>";
-        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.acl.add.php?type=$acl_type&value=$domain_encode')",
-                "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
-        $html[]="</tr>";
+        $rows[]=rta_acl_object_row($tpl,$acl_type,$domain_encode);
     }
 
     if($EnablePersonalCategories==1){
-        $html[]="<tr>";
-        $html[]="<td><strong>{categorize}</strong><br><small>{add_to_personal_category}</small></td>";
-        $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{select}", "Loadjs('fw.proxy.category.add.php?type=$acl_type&value=$domain_encode')",
-                "fa fa-shield","AsProxyMonitor",180,"btn-warning")."</td>";
-        $html[]="</tr>";
-
-
+        $rows[]=rta_categorize_row($tpl,$acl_type,$domain_encode);
     }
 
-
-    $html[]="<tr>";
-    $html[]="<td><strong>$whitetitle</strong><br><small>{whitelist_this_website_explain}</small></td>";
-    $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}",
-            "Loadjs('$page?wbl=$domain_encode$extension')", "fas fa-thumbs-up","AsProxyMonitor",180)."</td>";
-    $html[]="</tr>";
-
-    $html[]="<tr>";
-    $html[]="<td><strong>$blacktitle</strong><br><small>{blacklist_this_website_explain}</small></td>";
-    $html[]="<td style='width:1%' nowrap>".$tpl->button_autnonome("{apply}", "Loadjs('$page?black=$domain_encode$extension')",
-            "fas fa-thumbs-down","AsProxyMonitor",180,"btn-danger")."</td>";
-    $html[]="</tr>";
+    $rows[]=rta_whitelist_row($tpl,$page,$domain_encode,$extension,$ip->isValid($domain));
+    $rows[]=rta_blacklist_row($tpl,$page,$domain_encode,$extension,$ip->isValid($domain));
 
     if(!$from) {
         if ($SquidCachesProxyEnabled == 1) {
-            $html[] = "<tr>";
-            $html[] = "<td><strong>{do_not_cache}</strong><br><small>{do_not_cache_this_web_site_explain}</small></td>";
-            $html[] = "<td style='width:1%' nowrap>" . $tpl->button_autnonome("{apply}", "Loadjs('$page?cache=$domain_encode')",
-                    "fas fa-database", "AsProxyMonitor", 180, "btn-warning") . "</td>";
-            $html[] = "</tr>";
-
-
+            $rows[]=rta_nocache_row($tpl,$page,$domain_encode);
         }
     }
-    $html[]="</tbody></table>";
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $html[]=rta_actions_card($domain_title,$rows);
+    // La feuille est concatenee AVANT l'analyse mais hors de la chaine analysee:
+    // la regex #{(.+?)}# de _ENGINE_parse_body prendrait chaque corps de regle
+    // CSS pour un {token}.
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html));
 
 }
 
+/**
+ * Une carte de liste d'actions (ancien <table class='table table-hover'>).
+ */
+function rta_actions_card($title,$rows):string{
+    $h ="<h1>".htmlspecialchars($title)."</h1>";
+    $h.="<div class='awc-wrap'><div class='awc-card'>";
+    $h.=@implode("\n",$rows);
+    $h.="</div></div>";
+    return $h;
+}
+
+/**
+ * Une action proposee sur le domaine: libelle, explication, bouton.
+ * Onze lignes repetaient exactement ce motif dans deux tableaux.
+ */
+function rta_action_row($title,$explain,$button):string{
+    $h ="<div class='awc-ident' style='justify-content:space-between;padding:14px 20px;"
+       ."border-top:1px solid rgba(188,201,198,.3)'>";
+    $h.="<span><span class='awc-name'>$title</span>";
+    $h.="<div class='awc-meta'>$explain</div></span>";
+    $h.="<span class='awc-nowrap'>$button</span>";
+    $h.="</div>";
+    return $h;
+}
+
+/**
+ * Libelle de la categorie courante.
+ * L'ancienne version testait $category_text avant toute affectation dans le
+ * premier des deux blocs (avertissement PHP 8), et rechargeait
+ * categories_descriptions() une fois par bloc.
+ */
+function rta_category_label($category_id,$from):string{
+    if($from){return "{unknown}";}
+    $category_id=intval($category_id);
+    if($category_id==0){return "{unknown}";}
+    $catz=new mysql_catz(true);
+    $descriptions=$catz->categories_descriptions();
+    if(!isset($descriptions[$category_id]["categoryname"])){return "{unknown}";}
+    return (string)$descriptions[$category_id]["categoryname"];
+}
+
+function rta_report_category_row($tpl,$website,$category_id,$category_text):string{
+    $smain=array("website"=>$website,"category-id"=>$category_id);
+    $xmain=base64_encode(serialize($smain));
+    // Le nom du site partait BRUT dans le titre de la fenetre s_PopUpFull, or
+    // il vient de l'URL (?dom=...). Ce texte finit dans une chaine JavaScript,
+    // elle-meme dans un attribut OnClick="...".
+    //
+    // L'ORDRE COMPTE et htmlspecialchars() SEUL NE SUFFIT PAS: le navigateur
+    // decode les entites de l'attribut AVANT d'analyser le JavaScript, donc une
+    // apostrophe ecrite &#039; redevient une apostrophe et referme la chaine.
+    // addslashes() d'abord (l'apostrophe devient \'), htmlspecialchars ensuite
+    // pour proteger l'attribut -- en ENT_COMPAT, qui laisse l'apostrophe et
+    // donc l'antislash operant.
+    $sitejs=htmlspecialchars(addslashes($website),ENT_COMPAT);
+    $js="s_PopUpFull('http://articatech.net/categorization.php?report=$xmain',1024,768,'$sitejs');";
+    return rta_action_row(htmlspecialchars($category_text),"{miscategory_explain}",
+        $tpl->button_autnonome("{report_category}",$js,"fa fa-question","AsProxyMonitor",180,"btn-primary"));
+}
+
+function rta_acl_object_row($tpl,$acl_type,$value_encode):string{
+    return rta_action_row("{WAF_LEFT}","{add_to_acl_object}",
+        $tpl->button_autnonome("{select}","Loadjs('fw.proxy.acl.add.php?type=$acl_type&value=$value_encode')",
+            "fa fa-shield","AsProxyMonitor",180,"btn-warning"));
+}
+
+function rta_categorize_row($tpl,$acl_type,$value_encode):string{
+    return rta_action_row("{categorize}","{add_to_personal_category}",
+        $tpl->button_autnonome("{select}","Loadjs('fw.proxy.category.add.php?type=$acl_type&value=$value_encode')",
+            "fa fa-shield","AsProxyMonitor",180,"btn-warning"));
+}
+
+function rta_whitelist_row($tpl,$page,$value_encode,$extension,$isIp):string{
+    return rta_action_row($isIp?"{whitelist_this_address}":"{whitelist_this_website}",
+        "{whitelist_this_website_explain}",
+        $tpl->button_autnonome("{apply}","Loadjs('$page?wbl=$value_encode$extension')",
+            "fas fa-thumbs-up","AsProxyMonitor",180));
+}
+
+function rta_blacklist_row($tpl,$page,$value_encode,$extension,$isIp):string{
+    return rta_action_row($isIp?"{blacklist_this_address}":"{blacklist_this_website}",
+        "{blacklist_this_website_explain}",
+        $tpl->button_autnonome("{apply}","Loadjs('$page?black=$value_encode$extension')",
+            "fas fa-thumbs-down","AsProxyMonitor",180,"btn-danger"));
+}
+
+function rta_nocache_row($tpl,$page,$value_encode):string{
+    return rta_action_row("{do_not_cache}","{do_not_cache_this_web_site_explain}",
+        $tpl->button_autnonome("{apply}","Loadjs('$page?cache=$value_encode')",
+            ico_database,"AsProxyMonitor",180,"btn-warning"));
+}

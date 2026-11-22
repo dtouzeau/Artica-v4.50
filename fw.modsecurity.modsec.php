@@ -11,8 +11,6 @@ if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["search-reports"])){search_reports();exit;}
 if(isset($_GET["report-path-js"])){report_path_js();exit;}
 if(isset($_GET["report-path-popup"])){report_path_popup();exit;}
-if(isset($_GET["button"])){button_white();exit;}
-if(isset($_GET["whitelist-js"])){whitelist_js();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["events"])){section_events();exit;}
 if(isset($_GET["reports"])){section_reports();exit;}
@@ -30,13 +28,14 @@ function zoom_js(){
 }
 function zoom(){
 
-    $data=unserialize(base64_decode($_GET["data"]));
+    $data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
     $html[]="<div class=ibox-content>";
     $html[]="<table class='table table table-bordered'>";
+    // Pentest 2026-11-04 : champs du journal ModSecurity (donnee externe) affiche sans encodage (XSS stockee).
     foreach ($data as $key=>$val){
         $html[]="<tr>
-		<td class=text-capitalize>$key:</td>
-		<td><strong>$val</strong></td>
+		<td class=text-capitalize>".req_html($key).":</td>
+		<td><strong>".req_html($val)."</strong></td>
 		</tr>";
 
     }
@@ -224,7 +223,8 @@ function search_reports(){
         $md=md5($line);
         if(!preg_match("#^(.+?)\s+([0-9]+)\s+(.+?)\s+(.+?)\[([0-9]+)\]:\s+(.+)#",$line,$re)){
             $html[]="<tr id='$md'>";
-            $html[]="<td colspan=$colspan><span class='text-danger'>$line</span></td>";
+            // Pentest 2026-11-04 : ligne du journal (donnee externe) affiche sans encodage (XSS stockee).
+            $html[]="<td colspan=$colspan><span class='text-danger'>".req_html($line)."</span></td>";
             $html[]="</tr>";
             continue;
         }
@@ -246,7 +246,7 @@ function search_reports(){
         if(isset($severity_icon[$sArray["severity"]])){
             $severity=$severity_icon[$sArray["severity"]];
         }else{
-            $severity=$sArray["severity"];
+            $severity=req_html($sArray["severity"]);
         }
 
         $srcdomain=$domain;
@@ -289,6 +289,8 @@ function search_reports(){
         }
         $content_zoom=base64_encode(serialize($arrayZoom));
         $domainid=$tpl->NGINX_HOSTNAME_TO_ID($domain);
+        // Pentest 2026-11-04 : domaine/methode/requete/phase (donnee externe) affiche sans encodage (XSS stockee).
+        $domain=req_html($srcdomain);
 
         if($domainid>0) {
             $jsdomain   = "Loadjs('fw.nginx.sites.modsecurity.php?serviceid=$domainid')";
@@ -315,10 +317,10 @@ function search_reports(){
         $html[]="<tr id='$md'>
 				<td style='color:$color' style='width:1%' nowrap>$date</td>
 				<td style='color:$color' style='width:1%' nowrap>$severity - #$ruleid</td>
-				<td style='color:$color' style='width:1%' nowrap>$phase</td>
-				<td style='color:$color' style='width:1%' nowrap>$domain <strong>($method)</strong></span></td>
+				<td style='color:$color' style='width:1%' nowrap>".req_html($phase)."</td>
+				<td style='color:$color' style='width:1%' nowrap>$domain <strong>(".req_html($method).")</strong></span></td>
 				<td style='color:$color' style='width:1%' nowrap>$srcip</span></td>
-                <td style='color:$color' width=99% nowrap>$query$rule_explain_text</span></td>
+                <td style='color:$color' width=99% nowrap>".req_html($query)."$rule_explain_text</span></td>
                 <td style='color:$color'style='width:1%;' nowrap class='center'>$allow</span></td>                      
                 </tr>";
 
@@ -386,7 +388,8 @@ function search(){
         if(!preg_match("#^(.+?)\s+(.+?)\s+(.+?)\s+\[(.+?)\]\s+\"(.+?)\"\s+([0-9]+)\s+([0-9]+)\s+(.+?)\s+\"(.+?)\"\s+([0-9]+)\s+(.+?)\s+(.+?)\s+([0-9]+)\s+([0-9\.]+)\s+md5:(.+?)$#",$line,$re)){
             $md=md5($line);
             $html[]="<tr id='$md'>";
-            $html[]="<td colspan=$colspan>$line</td>";
+            // Pentest 2026-11-04 : ligne du journal d'acces (donnee externe) affiche sans encodage (XSS stockee).
+            $html[]="<td colspan=$colspan>".req_html($line)."</td>";
             $html[]="</tr>";
             continue;
         }
@@ -481,8 +484,8 @@ function search(){
 				<td style='color:$color' style='width:1%' nowrap>$domain</span></td>
 				<td style='color:$color' style='width:1%' nowrap>$srcip</span></td>
                 <td style='color:$color' style='width:1%' nowrap>$HTTP_CODE</td>
-                <td style='color:$color' style='width:1%' nowrap>$proto</td>
-                <td style='color:$color' width=99% nowrap>$query</span></td>
+                <td style='color:$color' style='width:1%' nowrap>".str_replace("&amp;nbsp;","&nbsp;",req_html($proto))."</td>
+                <td style='color:$color' width=99% nowrap>".req_html($query)."</span></td>
                 <td style='color:$color' style='width:1%' nowrap>$size</span></td>
                 <td style='color:$color' style='width:1%' nowrap>$allow</span></td>                      
                 </tr>";
@@ -521,7 +524,9 @@ function zexplode_line($line){
 function official_rules($ruleid){
     if(isset($GLOBALS["official_rules"][$ruleid])){return $GLOBALS["official_rules"][$ruleid];}
     $q=new lib_sqlite("/home/artica/SQLITE/modsecurity_rules.db");
-    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM rules WHERE ID=$ruleid");
+    // Pentest 2026-11-04 : ruleid (lu dans le journal ModSecurity) etait concatene dans la requete.
+    $ruleidSQL=intval($ruleid);
+    $ligne=$q->mysqli_fetch_array("SELECT rulename FROM rules WHERE ID=$ruleidSQL");
     if($ligne["rulename"]<>null){
         $GLOBALS["official_rules"][$ruleid]=$ligne["rulename"];
         return $GLOBALS["official_rules"][$ruleid];

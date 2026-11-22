@@ -1,17 +1,14 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
-if(isset($_POST["SnortRulesCode"])){Save_gen();exit;}
 if(isset($_GET["fail2ban-status"])){fail2ban_status();exit;}
 if(isset($_GET["main"])){main();exit;}
-if(isset($_GET["pf-ring-infos"])){pf_ring_infos();exit;}
-if(isset($_GET["pf-ring-popup"])){pf_ring_popup();exit;}
 if(isset($_GET["reconfigure-js"])){reconfigure_js();exit;}
 if(isset($_GET["restart-js"])){restart_js();exit;}
 if(isset($_GET["reconfigure-js"])){reconfigure_js();exit;}
-if(isset($_GET["reconfigure-popup"])){reconfigure_popup();exit;}
 if(isset($_GET["restart-popup"])){restart_popup();exit;}
 page();
 
@@ -36,7 +33,7 @@ function reconfigure_array(){
 	$ARRAY["TITLE"]="{reconfigure_service} {APP_FAIL2BAN}";
 	$ARRAY["AFTER"]="LoadAjax('table-fail2ban-dashboard','$page?main=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-fail2ban-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-fail2ban-restart')";
 
 	
 }
@@ -48,7 +45,7 @@ function restart_array(){
 	$ARRAY["TITLE"]="{restart_service} {APP_FAIL2BAN}";
     $ARRAY["AFTER"]="LoadAjax('table-fail2ban-dashboard','$page?main=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-fail2ban-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-fail2ban-restart')";
 
 }
 

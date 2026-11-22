@@ -1,5 +1,5 @@
 <?php
-if(!isset($_GET["template"])){die("DIE " .__FILE__." Line: ".__LINE__);}
+if(!isset($_GET["template"])){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 
 $template=$_GET["template"];
 $page=$_GET["page"];
@@ -47,7 +47,13 @@ $css[]="background:-moz-linear-gradient(center top , #F1F1F1 0px, #FFFFFF 45px) 
  -moz-box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
  -webkit-box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
-}";		
-		
-		
+}";
+
+
+/* NOTE: .fa-kaspersky / .fa-kaspersky-color were MOVED to angular.css.php (next to .fa-decisionip).
+   This file (css.php) is DEAD CODE — its <link> is commented out in class.page.builder.inc (~line 78),
+   so nothing defined here reaches the browser. The stylesheet the real app shell actually <link>s is
+   /angular.css.php. Do not re-add icon CSS here; add it to angular.css.php. */
+
+
 echo @implode("\n", $css);

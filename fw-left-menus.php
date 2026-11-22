@@ -7,6 +7,11 @@ if(!isset($GLOBALS["CLASS_SOCKETS"])){
     }
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
+// Batch-fetch every GET_INFO key the left-menu render (page + class.user +
+// class.left-menus) will touch — one /getinfos POST replaces ~160 per-key
+// cURL round-trips. See ressources/prefetch-left-menus.inc for the list.
+include_once(dirname(__FILE__)."/ressources/prefetch-left-menus.inc");
+__prefetchLeftMenuSettings($GLOBALS["CLASS_SOCKETS"]);
 $tpl=new template_admin();
 if(!$tpl->xPrivs()){die();}
 
@@ -86,7 +91,12 @@ function xgen(){
 
     $f[]="<input type='hidden' id='fw-left-menus-uri' value='$page?none=yes".@implode("&", $tt)."'>";
 
-    $content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.index.php?content=yes";
+
+    $content_page="{$HTTP_X_ARTICA_SUBFOLDER}index";
+
+    if($users->AsArticaAdministrator OR $users->AsSystemAdministrator OR $users->AsDebianSystem){
+        $content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.index.php?content=yes";
+    }
 
     if(isset($_GET["dynacls"])){
         $content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.dynacls.php?content=yes";
@@ -98,6 +108,12 @@ function xgen(){
 
     if(isset($_GET["choose-proxy"])){$content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.proxy.php?content=yes";}
 
+    // Compte qui n'a que AsMetaAdmin (administrateur de tenants Artica Meta, spec 2026-11-13
+    // 5.10.6) : son tableau de bord est celui d'Artica Meta, pas celui de l'appliance (qui nomme
+    // les noeuds et services de tous les clients).
+    $MetaAdminOnly=$users->isMetaAdminOnly();
+    if($MetaAdminOnly){$content_page="{$HTTP_X_ARTICA_SUBFOLDER}fw.netagents.php?home=yes";}
+
 
     $f[]="<nav class=\"navbar-default navbar-static-side\" role=\"navigation\">";
     $f[]="        <div class=\"sidebar-collapse\">";
@@ -105,7 +121,7 @@ function xgen(){
     $f[]="                <li class=\"nav-header\">";
     $f[]="                    <div class=\"dropdown profile-element\">";
     $f[]="                            <a data-toggle=\"dropdown\" class=\"dropdown-toggle\" href=\"#\">";
-    $f[]="                            <span class=\"clear\"> <span class=\"block m-t-xs\"> <strong class=\"font-bold\">{$name}</strong>";
+    $f[]="                            <span class=\"clear\"> <span class=\"block m-t-xs\"> <strong class=\"font-bold\">$name</strong>";
     $f[]="                             </span> <span class=\"text-muted text-xs block\">$right <b class=\"caret\"></b></span> </span> </a>";
     $f[]="                            <ul class=\"dropdown-menu animated fadeInRight m-t-xs\">";
     $f[]="                                <li><a href=\"javascript:blur();\" OnClick=\"LoadAjaxSilent('MainContent','fw.account.php');\">{myaccount}</a></li>";
@@ -116,12 +132,27 @@ function xgen(){
     $f[]="                    </div>";
     $f[]="                </li>";
 
-
+    $jsContent="MenuRoot( $(this),'$content_page');";
+    if(strpos($content_page,"?")==0){
+        $jsContent="document.location.href='$content_page';";
+    }
+    
 
     $f[]="                <li class=\"active\" id='left-menu'>";
-    $f[]="                    <a href='#' OnClick=\"MenuRoot( $(this),'$content_page');\">
+    $f[]="                    <a href='#' OnClick=\"$jsContent;\">
 		<i class=\"far fa-columns\"></i> <span class=\"nav-label\">{dashboard}</span></a>";
     $f[]="                </li>";
+
+    // Compte AsMetaAdmin seul : AUCUN autre menu de l'appliance (systeme, reseau, services,
+    // journaux, evenements systeme, notifications...), seulement le menu Artica Meta.
+    if($MetaAdminOnly){
+        $f[]="<!-- META ADMIN ONLY: appliance menus hidden -->";
+        if(method_exists($leftmenus,"NetworkAgents")) {
+            $f[] = $leftmenus->NetworkAgents();
+        }
+        xgen_close($f);
+        return;
+    }
 
     $IsWizardExecuted=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IsWizardExecuted"));
     $f[]="<!-- IsWizardExecuted ===  $IsWizardExecuted -->";
@@ -148,14 +179,11 @@ function xgen(){
         if($users->AsSystemAdministrator) {
             if(!$users->AsDockerWeb) {
                 $f[] = $tpl->LeftMenu(
-                    array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.treesize.php",
+                    array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.disks.php",
                     "ICO" => "fa-hdd", "TEXT" => "{your_hard_disks}",
                     "LEVEL3" => array("ID" => "fw-left-menus-hds",
                     "PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw-left-menus-hds.php"))
                 );
-
-
-
 
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.memory.config.php", "ICO" => "fad fa-memory", "TEXT" => "{memory_info}"));
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.swap.php", "ICO" => "fa-hdd", "TEXT" => "{swap_label}"));
@@ -171,15 +199,52 @@ function xgen(){
 
             $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.monit.php", "ICO" => "fas fa-dog", "TEXT" => "{watchdog}"));
 
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "fw.system.cisbenchmark.php",
+                    "ICO" => ico_shield,
+                    "TEXT" => "{security}",
+                    "LEVEL3" => array(
+                        "ID" => "fw-left-menus-security",
+                        "PAGE" => "fw-left-menus-security.php")
+                )
+            );
+
             if($EnableWazhuCLient==0){
                 if(!$users->AsDockerWeb) {
-                    $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.fsm.php", "ICO" => "fa-solid fa-folder-magnifying-glass", "TEXT" => "{APP_ARTICAFSMON}"));
+                   // $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.fsm.php", "ICO" => "fa-solid fa-folder-magnifying-glass", "TEXT" => "{APP_ARTICAFSMON}"));
+                   // $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.fsm.php", "ICO" => "fa-solid fa-folder-magnifying-glass", "TEXT" => "{APP_ARTICAFSMON}"));
                 }
             }
         }
 
 
 
+
+        // Artica AI console: shown when the daemon is installed and the session holds an AI
+        // privilege (same mapping as the pages' ArticaAI::guard(), not only system admins).
+        include_once(dirname(__FILE__)."/ressources/class.artica-ai.ui.inc");
+        // Not installed yet: the entry alone, leading to the install page.
+        // Patch AI
+        // An AI appliance serves the model: the Artica AI client is removed
+        // there and cannot be installed back (spec FR-041).
+        if(ai_menu_visible() && intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLocalIA"))!=1 && intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LocalIAClientRemoved"))!=1){
+            $aiMenu=array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.ai.status.php",
+                    "ICO" => "fas fa-robot",
+                    "TEXT" => "{ai_console}");
+            if(ai_installed()){
+                $aiMenu["LEVEL3"]=array(
+                        "ID" => "fw-left-menus-artica-ai",
+                        "PAGE" => "fw-left-menus-artica-ai.php");
+            }
+            $f[] = $tpl->LeftMenu($aiMenu);
+        }
+
+        // AI appliance (local inference server): the page installs it, so the
+        // entry is shown to system administrators whether or not it is installed.
+        if($users->AsSystemAdministrator){
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.ai-appliance.php",
+                    "ICO" => "fas fa-microchip", "TEXT" => "{ai_appliance}"));
+        }
 
         if($users->AsSystemAdministrator){
             if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ISCSI_CLIENT_INSTALLED"))==1){
@@ -226,22 +291,7 @@ function xgen(){
 
 
 
-        if($users->AsAnAdministratorGeneric){
-            $PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
-            $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
-            if($PowerDNSEnableClusterMaster==1){
-//<i class="fas fa-clone"></i>
-                $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.cluster.master.php",
-                        "ICO"=>"fas fa-clone","TEXT"=>"Cluster ({master_mode})"));
-            }
-            if($PowerDNSEnableClusterSlave==1){
-//<i class="fas fa-clone"></i>
-                $f[]=$tpl->LeftMenu(
-                    array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.system.cluster.client.php",
-                        "ICO"=>"fas fa-clone","TEXT"=>"Cluster ({slave_mode})"));
-            }
-        }
+
         
 
         if($users->AsSystemAdministrator){
@@ -270,6 +320,10 @@ function xgen(){
                                 "ICO" => ico_terminal, "TEXT" => "{APP_SSHPROXY}"));
 
                 }
+                // Ecoute mTLS d'articarest : consoles Windows et tunnel ssh-mtls.
+                $f[] = $tpl->LeftMenu(
+                    array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.mtlsclient.php",
+                        "ICO" => ico_certificate, "TEXT" => "{mtlsclient_title}"));
             }
         }
 
@@ -354,7 +408,11 @@ function xgen(){
         }
 
 
-        $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}fw.license.php","ICO"=>"fa-key","TEXT"=>"{license2}"));
+        // A pagina da licenca depende do modelo que a maquina usa. Uma entrada e
+        // nao duas: ter as duas visiveis era convidar o cliente a tratar a
+        // licenca no ecra que nao manda nada nesta maquina.
+        $lic_page=$sock->USE_LICENSE_V2()?"fw.licensev2.php":"fw.license.php";
+        $f[]=$tpl->LeftMenu(array("PAGE"=>"{$HTTP_X_ARTICA_SUBFOLDER}$lic_page","ICO"=>"fa-key","TEXT"=>"{license2}"));
 
         if($users->AsAnAdministratorGeneric) {
             if(!$users->AsDockerWeb) {
@@ -388,12 +446,12 @@ function xgen(){
 
     }
     $EnableLinkBalancer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableLinkBalancer"));
-    $EnablenDPI=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablenDPI"));
+
     if(!$users->AsDockerWeb) {
         if($users->AsAnAdministratorGeneric OR $users->AsFirewallManager){
         $f[]="<!-- NETWORK START -->";
         $f[]="                <li id='left-menu'>";
-        $f[]="                    <a href='#' ><i class=\"fa fa-sitemap\"></i> <span class=\"nav-label\">{network}</span> </a>";
+        $f[]="                    <a href='#' OnClick=\"MenuRoot( $(this),'{$HTTP_X_ARTICA_SUBFOLDER}fw.network.map.php');\"><i class=\"fa fa-sitemap\"></i> <span class=\"nav-label\">{network}</span> </a>";
         $f[]="                    <ul class='nav nav-second-level'>";
         $SYSTEMD_NETWORK_ENABLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMD_NETWORK_INSTALLED"));
         $SYSTEMD_NETWORK_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMD_NETWORK_INSTALLED"));
@@ -417,6 +475,14 @@ function xgen(){
             $f[] = $tpl->LeftMenu(
                 array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.network.interfaces.php",
                     "ICO" => "far fa-exchange", "TEXT" => "{interfaces}"));
+        if($users->AsSystemAdministrator) {
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.network.map.php",
+                    "ICO" => "fas fa-diagram-project", "TEXT" => "{network_map}"));
+            $f[] = $tpl->LeftMenu(
+                array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.network.l2switch.php",
+                    "ICO" => "fas fa-network-wired", "TEXT" => "{l2sw_menu}"));
+        }
 
         $APP_OPENVSWITCH_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_OPENVSWITCH_INSTALLED"));
         $OpenVswitchEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVswitchEnable"));
@@ -455,6 +521,9 @@ function xgen(){
         }
 
         if($users->AsSystemAdministrator) {
+                $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.ipv6gw.php",
+                    "ICO" => "fas fa-random",
+                    "TEXT" => "{ipv6_gateway}"));
                 $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.network.routing.php",
                     "ICO" => "fa-road",
                     "TEXT" => "{routing_rules}"));
@@ -547,7 +616,6 @@ function xgen(){
     $f[]=$leftmenus->Siege();
     $f[]=$leftmenus->FireCracker();
     $f[]=$leftmenus->reverse_proxys();
-    $f[]=$leftmenus->FireQOS();
 
 
     if(method_exists($leftmenus,"DWAgent")) {
@@ -578,6 +646,7 @@ function xgen(){
     $f[]=$leftmenus->ProFTPD();
     $f[]=$leftmenus->OpenVPN();
     $f[]=$leftmenus->TailScale();
+    $f[]=$leftmenus->WireGuard();
     if(method_exists($leftmenus,"Strongswan")) {
         $f[] = $leftmenus->Strongswan();
     }else{
@@ -594,6 +663,7 @@ function xgen(){
 
     if($EnablePostfix==1){
         $f[]=$leftmenus->Messaging();
+        $f[]=$leftmenus->CYRUS();
     }
     if(method_exists($leftmenus,"ImapBox")) {
         $f[] = $leftmenus->ImapBox();
@@ -607,10 +677,8 @@ function xgen(){
     }
     $f[]=$leftmenus->PulseReverse();
 
-    //KEEPALIVED
-    $f[] = $leftmenus->keepalived();
-    $f[] = $leftmenus->keepalived_slave();
-    //END KEEPALIVED
+    $f[]=$leftmenus->FailOverOrCluster();
+
 
     $f[] = "<!-- LEFT MENU PROXY START SQUIDEnable=$SQUIDEnable -->";
     if($SQUIDEnable==1) {
@@ -620,7 +688,6 @@ function xgen(){
     if(method_exists($leftmenus,"hotspot")) {
         $f[]=$leftmenus->hotspot();
     }
-
     $f[]=$leftmenus->ProxyPac();
     $f[]=$leftmenus->WanProxy();
     $f[]=$leftmenus->ZipProxy();
@@ -632,13 +699,12 @@ function xgen(){
     }else{
         $f[] = "<!-- KSRN property doesn't exists -->";
     }
-
-
     $f[]=$leftmenus->YourCategories();
     $f[]=$leftmenus->ufdbcat();
     $f[]=$leftmenus->C_ICAP_SERVICE();
     $f[]=$leftmenus->nginx();
     $f[]=$leftmenus->WebFirewall();
+    $f[]=$leftmenus->SIEM();
     $f[]=$leftmenus->statitics();
     $f[]=$leftmenus->Databases();
 
@@ -749,12 +815,21 @@ function xgen(){
                         "ICO" => ico_eye, "TEXT" => "{sandbox_connector}"));
             }
         }
+        // Artica Sandbox appliance: analysis latency and guest occupancy (admin socket of artica-sandbox).
+        if ($users->AsSystemAdministrator && file_exists("/run/artica-sandbox/admin.sock")) {
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.sandbox.performance.php",
+                    "ICO" => "fas fa-gauge-high", "TEXT" => "{sandbox_performance}"));
+        }
 
         // -----------------------------------------------------------------------
         $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.system.tailer.php", "ICO" => ico_eye, "TEXT" => "{viewer}"));
-        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.kernel.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:{kernel}"));
-        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.syslog.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:Syslogd"));
-        $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.php.logs.php", "ICO" => "fab fa-php", "TEXT" => "{events}:PHP"));
+        // Ces trois pages exigent AsFirewallManager (pose aussi par SystemAdmin()) : les
+        // montrer a un simple AsProxyMonitor ouvrait une page blanche (exit() en tete).
+        if ($users->AsFirewallManager) {
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.kernel.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:{kernel}"));
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.syslog.logs.php", "ICO" => ico_eye, "TEXT" => "{events}:Syslogd"));
+            $f[] = $tpl->LeftMenu(array("PAGE" => "{$HTTP_X_ARTICA_SUBFOLDER}fw.php.logs.php", "ICO" => "fab fa-php", "TEXT" => "{events}:PHP"));
+        }
 
         $f[]="					 </ul>";
         $f[]="                </li>";
@@ -764,6 +839,12 @@ function xgen(){
 
 
     $f[]="<!-- LOGS_CENTER END  -->";
+    xgen_close($f);
+}
+
+// Fin commune du menu (fermeture, script metisMenu/MenuRoot) : partagee avec la branche du
+// compte AsMetaAdmin seul.
+function xgen_close($f){
     $f[]="<!-- LEFT MENU END  -->";
     $f[]="";
     $f[]="        </div>";
@@ -782,14 +863,17 @@ function xgen(){
     $f[]="\t\t$( '#'+thirdLevelid  ).slideDown( 'slow');";
     $f[]="\t}";
     $f[]="}";
-    $f[]="$('.nav').find('*').each(";
-    $f[]="\t\tfunction(index,currentElement) {";
-    $f[]="\t\t\tif($( this ).attr('id')=='left-menu'){";
-    $f[]="\t\t\t\t$( this ).removeClass( \"active\" );";
-    $f[]="\t\t\t}";
-    $f[]="\t\t}";
-    $f[]=");";
-    $f[]="me.parent('li').addClass( 'active' );";
+    // Surbrillance de l'entrée de la page affichée : une seule à la fois.
+    // Seul le <li> de la feuille est touché : sur ses parents, 'active' est l'état
+    // déplié géré par metisMenu.
+    // Une racine qui porte un sous-menu (Réseau → carte) n'est jamais touchée :
+    // metisMenu ouvre ou ferme selon 'active', et ce onclick passe avant lui.
+    $f[]="var li=me.parent('li');";
+    $f[]="if(li.children('ul').length===0){";
+    $f[]="if(window.MenuRootLi && window.MenuRootLi[0]!==li[0]){ window.MenuRootLi.removeClass('active'); }";
+    $f[]="li.addClass('active');";
+    $f[]="window.MenuRootLi=li;";
+    $f[]="}";
     $f[]="LoadAjaxSilent('MainContent',page);";
     $f[]="";
     $f[]="}";

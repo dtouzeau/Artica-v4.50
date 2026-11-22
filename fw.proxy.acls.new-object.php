@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["popup"])){popup();exit;}
 
@@ -14,7 +16,7 @@ function build_params():string{
     if(!isset($_GET["firewall"])){$firewall=0;}else{$firewall=intval($_GET["firewall"]);}
     if(!isset($_GET["TableLink"])){$TableLink=null;}else{$TableLink=trim($_GET["TableLink"]);}
     if(!isset($_GET["function"])){$function=null;}else{$function=trim($_GET["function"]);}
-    $fastacls=intval($_GET["fastacls"]);
+    $fastacls=intval($_GET["fastacls"] ?? 0);
     return "&ProxyPac=$ProxyPac&DnsDist=$DnsDist&firewall=$firewall&TableLink=$TableLink&fastacls=$fastacls&function=$function";
 }
 
@@ -22,7 +24,8 @@ function js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $build_params=build_params();
-    $tpl->js_dialog4("{new_object}", "$page?popup=yes&id={$_GET["id"]}$build_params");
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
+    $tpl->js_dialog4("{new_object}", "$page?popup=yes&id=$id$build_params");
 }
 
 
@@ -30,7 +33,7 @@ function popup(){
     $dnsfw=false;
     $Smtp=0;
     $SSLERROR=0;
-    $fastacls=intval($_GET["fastacls"]);
+    $fastacls=intval($_GET["fastacls"] ?? 0);
     $IDS=0;
     if(!isset($_GET["DnsDist"])){$DnsDist=0;}else{$DnsDist=intval($_GET["DnsDist"]);}
     if(!isset($_GET["ProxyPac"])){$ProxyPac=0;}else{$ProxyPac=$_GET["ProxyPac"];}
@@ -46,14 +49,17 @@ function popup(){
     if($LockActiveDirectoryToKerberos==1){$EnableKerbAuth=1;}
     if($EnableArticaAuthenticationAgent==1){$EnableKerbAuth=1;}
 
+    // Sept comparaisons sur une cle qui peut ne pas exister: autant
+    // d'avertissements "Undefined array key" par ouverture de la modale.
+    $TableLink=(string)($_GET["TableLink"] ?? "");
     $acl_allowdeny=false;
-    if($_GET["TableLink"]=="webfilters_sqacllinks"){$acl_allowdeny=true;}
-    if($_GET["TableLink"]=="dnsfw_acls_link"){$dnsfw=true;}
-    if($_GET["TableLink"]=="dnsdist_sqacllinks"){$DnsDist=1;}
-    if($_GET["TableLink"]=="wpad_sources_link"){$ProxyPac=1;}
-    if($_GET["TableLink"]=="postfix_sqacllinks"){$Smtp=1;}
-    if($_GET["TableLink"]=="sslproxy_cert_error_sqacllinks"){$SSLERROR=1;}
-    if($_GET["TableLink"]=="suricata_sqacllinks"){$IDS=1;}
+    if($TableLink=="webfilters_sqacllinks"){$acl_allowdeny=true;}
+    if($TableLink=="dnsfw_acls_link"){$dnsfw=true;}
+    if($TableLink=="dnsdist_sqacllinks"){$DnsDist=1;}
+    if($TableLink=="wpad_sources_link"){$ProxyPac=1;}
+    if($TableLink=="postfix_sqacllinks"){$Smtp=1;}
+    if($TableLink=="sslproxy_cert_error_sqacllinks"){$SSLERROR=1;}
+    if($TableLink=="suricata_sqacllinks"){$IDS=1;}
 
 
     $js=array();
@@ -61,18 +67,31 @@ function popup(){
     $qProxy=new mysql_squid_builder(true);
     $proxy_object=$tpl->_ENGINE_parse_body("{proxy_objects}");
     $description=$tpl->_ENGINE_parse_body("{description}");
+    // Quatre colonnes -- icone, libelle, description, bouton -- pour une liste de
+    // choix: l'icone et le libelle designent la MEME chose et la description est
+    // le sous-titre du libelle. Deux colonnes suffisent: l'objet, et le choix.
     $html=array();
-    $html[]="<table id='table-wizardnew-objects' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+
+    // Recherche cote navigateur: la liste des types d'objets depasse la
+    // trentaine d'entrees et se lit mal dans une modale. awc_filter_js()
+    // compare le texte de la ligne entiere -- donc le libelle, la methode
+    // squid ET son explication, tous rendus en sous-titre par
+    // newobject_row(). Emis en fin de fonction, APRES le pager.
+    $html[]=awc_search_bar("aclsnewobjec-search","{search}");
+
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>$proxy_object</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$description</th>";
-    $html[]="<th data-sortable=false></th>";
+    $html[]="<th>$proxy_object</th>";
+    $html[]="<th>&nbsp;</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
-    $id=$_GET["id"];
+    $html[]="<tbody id='aclsnewobjec-rows'>";
+    // $id est le nom du champ a remplir cote appelant; il partait BRUT dans
+    // getElementById('...'), donc dans du JavaScript execute. Un ?id= forge
+    // suffisait a injecter du code dans la session de l'administrateur.
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
     reset($qProxy->acl_GroupType);
 
     if($SSLERROR==0) {
@@ -95,7 +114,9 @@ function popup(){
         }
     }
     if($IDS==1){
-        unset($qProxy->acl_GroupType);
+        // unset() sur une propriete DECLAREE la supprime de l'objet: la
+        // reaffectation qui suit en recree une dynamique, depreciee en PHP 8.2.
+        $qProxy->acl_GroupType=array();
         foreach ($qProxy->acl_GroupType_IDS as $num=>$value){
             $qProxy->acl_GroupType[$num]=$value;
         }
@@ -178,8 +199,8 @@ function popup(){
             }
         }
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $choose="<button class='btn btn-primary btn-xs' type='button' OnClick=\"$funct();\">$select</button>";
+        $TRCLASS=null;
+        $choose="<button class='awc-btn' type='button' OnClick=\"$funct();\">$select</button>";
 
         $js[]="
 		function $funct(){
@@ -188,37 +209,60 @@ function popup(){
 			}";
 
         if(isset($dnsdist_acls_errors[$num])){
-            $choose="<button class='btn btn-default btn-xs' type='button' OnClick=\"blur();\">{unavailable}</button>";
+            $choose="<button class='awc-btn' style='background:#263238' type='button' OnClick=\"blur();\">{unavailable}</button>";
             $explain="$explain<br><strong class='text-danger'>$dnsdist_acls_errors[$num]</strong>";
         }
 
-        $html[]="<tr class='$TRCLASS' id='$num'>";
-        $html[]="<td class=\"center\"><i class='fa {$qProxy->acl_GroupTypeIcon[$num]}'></i></td>";
-        $html[]="<td nowrap>$line</span></td>";
-        $html[]="<td><strong>$method&nbsp;$num</strong><div><small>$explain</small></div></td>";
-        $html[]="<td class=center>$choose</center></span></td>";
-        $html[]="</tr>";
+        // Les trois cellules d'origine fermaient un </span> jamais ouvert, et la
+        // derniere fermait en plus un </center> absent.
+        $ico=$qProxy->acl_GroupTypeIcon[$num] ?? "fa-cube";
+        $html[]=newobject_row($num,$line,$ico,$method,$explain,$choose);
 
 
     }
 
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    if(count($js)==0){
+        $html[]="<tr><td colspan='2' class='awc-empty'>{no_data}</td></tr>";
+    }
+    $html[]="</tbody></table></div>";
+	// count($js) EST le nombre de lignes: newobject_row() et $js[] sont
+	// alimentes ensemble a chaque tour, sans exception -- c'est deja
+	// l'hypothese du test "count($js)==0" ci-dessus.
+	$html[]="<div class='awc-foot'><span>".$tpl->FormatNumber(count($js))." {objects}</span>"
+	       ."<span class='awc-pg' id='aclsnewobjec-pager'></span></div>";
+	$html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    // Le bloc <script> est concatene APRES l'analyse. Il declare une fonction
+    // par ligne du tableau: la regex #{(.+?)}# de _ENGINE_parse_body prenait
+    // chaque corps de fonction pour un jeton et lancait autant de recherches
+    // memcached qu'il y a de types d'objets.
+    $script="<script>NoSpinner();\n".@implode("\n",$js)."\n</script>";
 
-    $html[]="<script>";
-    $html[]="NoSpinner();\n".@implode("\n",$js)."";
+    // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+    // Et le filtre APRES le pager, qui lui passe la main par tb.__awcRedraw.
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .$script
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"aclsnewobjec-rows","aclsnewobjec-pager")
+	    .awc_filter_js("aclsnewobjec-search","aclsnewobjec-rows","aclsnewobjec-pager");
 
-    $html[]="$(document).ready(function() { $('#table-wizardnew-objects').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-</script>";
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+}
 
+/**
+ * Un type d'objet ACL propose au choix.
+ * La methode squid ($num) et son explication descendent en sous-titre du
+ * libelle: elles le decrivent, elles ne se comparent pas d'une ligne a l'autre.
+ */
+function newobject_row($num,$line,$ico,$method,$explain,$choose):string{
+    $h ="<tr id='".htmlspecialchars((string)$num)."'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fa $ico'></i></span>";
+    $h.="<div><div class='awc-name'>$line</div>";
+    $h.="<div class='awc-meta'><strong>$method&nbsp;".htmlspecialchars((string)$num)."</strong>";
+    if(trim((string)$explain)!==""){$h.="<br>$explain";}
+    $h.="</div></div></div></td>";
+    $h.="<td><div class='awc-acts' style='opacity:1'>$choose</div></td>";
+    $h.="</tr>";
+    return $h;
 }

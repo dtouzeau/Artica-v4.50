@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DNS Records CRUD for Unbound on a single remote agent.
  * Operates on the `records` array of the full UnboundConfig JSON blob.
@@ -10,7 +12,7 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 if (!isset($GLOBALS["CLASS_SOCKETS"])) { $GLOBALS["CLASS_SOCKETS"] = new sockets(); }
 $users = new usersMenus();
-if (!$users->AsSystemAdministrator) { exit(); }
+if (!meta_node_admin($users)) { exit(); }
 
 if(isset($_GET["delete-js"])){rec_delete_js();exit;}
 if (isset($_GET["rec-add-js"]))  { rec_add_js();  exit; }
@@ -120,7 +122,7 @@ function records_list(): void {
     }
 
     $h[] = "<div id='rec-result-$id' style='margin-bottom:10px'></div>";
-    $h[] = "<table id='table-$t' class='table table-striped' data-page-size='50'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "<thead><tr>";
     $h[] = "  <th data-sortable='true' data-type='text' nowrap>{record}</th>";
     $h[] = "  <th data-sortable='true' data-type='text' nowrap>{type}</th>";
@@ -133,7 +135,7 @@ function records_list(): void {
 
     $TRCLASS = null;
     foreach ($records as $i => $rec) {
-        if ($TRCLASS === "footable-odd") { $TRCLASS = null; } else { $TRCLASS = "footable-odd"; }
+        $TRCLASS=null;
 
         $name    = htmlspecialchars($rec->name ?? '');
         $type    = htmlspecialchars($rec->type ?? '');
@@ -149,8 +151,8 @@ function records_list(): void {
 
         $editJs   = "Loadjs('$page?rec-edit-js=$id&rec_id=$i')";
         $md=md5(serialize($rec));
-        $editBtn  = $tpl->icon_edit_field($editJs, "AsSystemAdministrator");
-        $delBtn   = $tpl->icon_delete("Loadjs('$page?delete-js=$id&rec_id=$i&md=$md')", "AsSystemAdministrator");
+        $editBtn  = $tpl->icon_edit_field($editJs, "AsMetaAdmin");
+        $delBtn   = $tpl->icon_delete("Loadjs('$page?delete-js=$id&rec_id=$i&md=$md')", "AsMetaAdmin");
 
         $h[] = "<tr class='$TRCLASS' id='$md'>";
         $h[] = "  <td><strong>$name</strong></td>";
@@ -164,12 +166,12 @@ function records_list(): void {
     }
     $h[] = "</tbody>";
     $h[] = "<tfoot><tr><td colspan='7'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $h[] = "</table>";
+    $h[] = "</table></div></div></div>";
     $h[] = "<script>NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS);
     $h[] = "LoadAjaxSilent('unbound-records-buttons-$id','$page?rec-buttons=yes&id=$id&function=$function')";
     $h[] = "</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 
 // ── Form ─────────────────────────────────────────────────────────────────────

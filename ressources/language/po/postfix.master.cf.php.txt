@@ -1,37 +1,37 @@
-<AddOptionService_text>Give the option to add on this service, do not forget to use "-o" if needed</AddOptionService_text>
-<add_postfix_service>Add a new postfix service</add_postfix_service>
+<AddOptionService_text>Indique a op&#231;&#227;o a adicionar a este servi&#231;o, n&#227;o se esque&#231;a de usar &quot;-o&quot; se necess&#225;rio</AddOptionService_text>
+<add_postfix_service>Adicionar um novo servi&#231;o postfix</add_postfix_service>
 <CHROOT>Chroot</CHROOT>
-<CHROOT_TEXT>(default yes) Whether or not the service  runs  chrooted
-to the mail queue directory (pathname is controlled by the queue_directory  configuration  variable in the main.cf file)</CHROOT_TEXT>
+<CHROOT_TEXT>(predefinido yes) Se o servi&#231;o &#233; ou n&#227;o executado em chroot no diret&#243;rio da fila de correio
+(o pathname &#233; controlado pela vari&#225;vel de configura&#231;&#227;o queue_directory no ficheiro main.cf)</CHROOT_TEXT>
 <COMMAND>Encomenda</COMMAND>
-<ENABLE_SMTPS>Enable SMTP SSL (smtps)</ENABLE_SMTPS>
+<ENABLE_SMTPS>Ativar SMTP SSL (smtps)</ENABLE_SMTPS>
 <generated_config>Ficheiro de configuraç%C3£o</generated_config>
-<MAXPROC>Process limit</MAXPROC>
+<MAXPROC>Limite de processos</MAXPROC>
 <MAXPROC_TEXT>O n%C3%BAmero m%C3¡ximo de processos que podem executar este serviço simultaneamente [br].
 Especifique 0 para sem limite de contagem de processos [br].
 [i]NOTA: Alguns serviços Postfix devem ser configurados como um serviço de processo %C3%BAnico (por exemplo, qmgr) e alguns serviços devem ser configurados
 sem limite de processo (por exemplo, limpeza).[br]Estes limites n%C3£o devem ser alterados.</MAXPROC_TEXT>
 <OPTIONS>Opç%C3µes</OPTIONS>
 <PRIVATE>Privado</PRIVATE>
-<PRIVATE_TEXT>Whether or not access is  restricted  to  the  mail system.
-[br]Internet  (type  inet)  services can't be private</PRIVATE_TEXT>
-<rebuild_configuration>Rebuild to default config</rebuild_configuration>
-<services_table>Services Table</services_table>
-<service_anvil>Session count and request rate control</service_anvil>
+<PRIVATE_TEXT>Se o acesso est&#225; ou n&#227;o restrito ao sistema de correio.
+[br]Os servi&#231;os de Internet (tipo inet) n&#227;o podem ser privados</PRIVATE_TEXT>
+<rebuild_configuration>Reconstruir para a configura&#231;&#227;o predefinida</rebuild_configuration>
+<services_table>Tabela de servi&#231;os</services_table>
+<service_anvil>Controlo de contagem de sess&#245;es e taxa de pedidos</service_anvil>
 <service_anvil_text>O servidor Postfix anvil mantém estat%C3%ADsticas sobre a contagem de ligaç%C3µes de clientes ou taxas de pedidos de clientes [br].
 Esta informaç%C3£o pode ser utilizada para defender contra clientes que martelam um servidor com demasiadas sess%C3µes simultâneas,
 ou com demasiados pedidos sucessivos dentro de um intervalo de tempo configur%C3¡vel[br].
 Este servidor foi concebido para funcionar sob controlo do servidor mestre Postfix.</service_anvil_text>
-<service_bounce>Delivery status reports</service_bounce>
+<service_bounce>Relat&#243;rios de estado de entrega</service_bounce>
 <service_bounce_text>O daemon de ressalto mantém ficheiros de registo por mensagem com informaç%C3£o do estado da entrega [br].
 Cada ficheiro de registo tem o nome do ficheiro da fila a que corresponde, e é mantido numa subdirectoria da fila com o nome do serviço em
 o ficheiro master.cf (ou bounce, deferir ou traçar)[br].
 Este programa espera ser executado pelo gestor do processo principal</service_bounce_text>
-<service_cleanup>Canonicalize and enqueue Postfix message</service_cleanup>
-<service_cleanup_text>The cleanup daemon processes inbound mail, inserts it into the incoming mail queue, and informs the queue manager of its arrival</service_cleanup_text>
-<service_defer>Delivery status reports (defer)</service_defer>
+<service_cleanup>Canonizar e enfileirar a mensagem do Postfix</service_cleanup>
+<service_cleanup_text>O daemon cleanup processa o correio recebido, insere-o na fila de correio incoming e informa o gestor de filas da sua chegada</service_cleanup_text>
+<service_defer>Relat&#243;rios de estado de entrega (defer)</service_defer>
 <service_defer_text> </service_defer_text>
-<service_discard>Discard mail delivery agent</service_discard>
+<service_discard>Agente de entrega de descarte de correio</service_discard>
 <service_discard_text>O agente de entregas Postfix processa os pedidos de entrega do gestor da fila [br].
 Cada pedido especifica um ficheiro de fila, um endereço de remetente, um nome de dom%C3%ADnio ou de anfitri%C3£o que é tratado como o motivo para descartar o correio,
 e informaç%C3£o do destinat%C3¡rio [br].
@@ -40,22 +40,21 @@ Este programa espera ser executado pelo gestor do processo principal [br].
 O agente de entrega finge entregar todos os destinat%C3¡rios no pedido de entrega,
 regista o dom%C3%ADnio &quot;next-hop&quot; ou informaç%C3£o do anfitri%C3£o como raz%C3£o para descartar o correio, actualiza o ficheiro da fila e marca os destinat%C3¡rios como
 O relat%C3%B3rio de estado da entrega é enviado para o daemon de rastreio, conforme apropriado.</service_discard_text>
-<service_error>Error/retry mail delivery agent</service_error>
-<service_error_text>he  Postfix error delivery agent processes delivery requests from the queue manager.[br]
-Each request specifies a queue file, a sender address, the reason for non-delivery (specified as the next-hop destination), and recipient information.[br]
-The reason may be prefixed with an RFC 3463-compatible detail code; if none is specified a default 4.0.0 or 5.0.0 code is used instead.[br]
-This program expects to be run from the master process manager.</service_error_text>
-<service_flush>Fast flush server</service_flush>
-<service_flush_text>The  flush  server  maintains  a record of deferred mail by destination.[br]
-This information is used to improve the performance of the SMTP ETRN request, and of its command-line equivalent, "sendmail -qR" or "postqueue -f".[br]
-This program expects to be run from the master(8) process manager.</service_flush_text>
-<service_lmtp>LMTP client</service_lmtp>
-<service_lmtp_text>
-The  Postfix  LMTP  client  implements the LMTP mail delivery protocols.[br]
-It processes message delivery requests from the queue manager.[br]
-Each request specifies a queue file, a sender address, a domain or host to deliver to, and recipient information.[br]
-This program expects to be run from the master process manager</service_lmtp_text>
-<service_local>Local mail delivery</service_local>
+<service_error>Agente de entrega de correio de erro/repeti&#231;&#227;o</service_error>
+<service_error_text>O agente de entrega error do Postfix processa os pedidos de entrega do gestor de filas.[br]
+Cada pedido especifica um ficheiro de fila, um endere&#231;o de remetente, o motivo da n&#227;o entrega (especificado como destino next-hop) e informa&#231;&#245;es do destinat&#225;rio.[br]
+O motivo pode ser precedido por um c&#243;digo de detalhe compat&#237;vel com RFC 3463; se nenhum for especificado, &#233; usado um c&#243;digo predefinido 4.0.0 ou 5.0.0 em vez disso.[br]
+Este programa espera ser executado a partir do gestor de processos master.</service_error_text>
+<service_flush>Servidor de flush r&#225;pido</service_flush>
+<service_flush_text>O servidor flush mant&#233;m um registo do correio adiado por destino.[br]
+Esta informa&#231;&#227;o &#233; usada para melhorar o desempenho do pedido SMTP ETRN e do seu equivalente de linha de comandos, &quot;sendmail -qR&quot; ou &quot;postqueue -f&quot;.[br]
+Este programa espera ser executado a partir do gestor de processos master(8).</service_flush_text>
+<service_lmtp>Cliente LMTP</service_lmtp>
+<service_lmtp_text>O cliente LMTP do Postfix implementa os protocolos de entrega de correio LMTP.[br]
+Processa os pedidos de entrega de mensagens do gestor de filas.[br]
+Cada pedido especifica um ficheiro de fila, um endere&#231;o de remetente, um dom&#237;nio ou host para entregar e informa&#231;&#245;es do destinat&#225;rio.[br]
+Este programa espera ser executado a partir do gestor de processos master</service_lmtp_text>
+<service_local>Entrega de correio local</service_local>
 <service_local_text>O daemon local processa os pedidos de entrega do gestor da fila Postfix para entregar o correio aos destinat%C3¡rios locais [br].
 Cada pedido de entrega especifica um ficheiro de fila de espera, um endereço de remetente, um dom%C3%ADnio ou anfitri%C3£o para entregar, e um ou
 mais destinat%C3¡rios.[br]
@@ -63,74 +62,69 @@ Este programa espera ser executado pelo gestor do processo principal [br].
 O daemon local actualiza os ficheiros de fila e marca os destinat%C3¡rios como acabados, ou informa o gestor da fila que a entrega deve ser tentada novamente numa altura posterior [br].
 Os relat%C3%B3rios de estado da entrega s%C3£o enviados para o daemon de salto, adiamento ou rastreio, conforme o caso.</service_local_text>
 <service_maildrop>maildrop</service_maildrop>
-<service_maildrop_maildrop_text>maildrop service</service_maildrop_maildrop_text>
+<service_maildrop_maildrop_text>servi&#231;o maildrop</service_maildrop_maildrop_text>
 <service_new>Novo serviço</service_new>
-<service_pickup>Local mail pickup</service_pickup>
-<service_pickup_text>The  pickup  daemon  waits  for  hints  that new mail has been dropped into the maildrop directory,
-and feeds it into the cleanup daemon.  Ill-formatted files are deleted without notifying the originator.[br]This program expects to be run from the master process manager
-</service_pickup_text>
-<service_proxymap>Lookup table proxy server</service_proxymap>
-<service_proxymap_text>The proxymap server provides read-only table lookup service to Postfix processes.[br]
-The purpose of the service is:[br]
-[ul][li]To  overcome  chroot restrictions.[br]
-For example, a chrooted SMTP server needs access to the system passwd file in order to reject mail for non-existent local addresses,
-but it is not practical to maintain a copy of the passwd file in the chroot jail.[/li]
-[li]To consolidate the number of open lookup tables by sharing one open table among multiple processes.[br]
-For example, making mysql connections from every Postfix daemon process results in "too many connections" errors.[/li]
-[/ul]The total number of connections is limited by the number of proxymap server processes.</service_proxymap_text>
-<service_qmgr>Queue manager</service_qmgr>
-<service_qmgr_text> The  qmgr daemon awaits the arrival of incoming mail and arranges for its delivery via Postfix delivery processes.[br]
-The actual mail routing strategy is delegated to the trivial-rewrite daemon.[br]
-This program expects to be run from the master process manager</service_qmgr_text>
+<service_pickup>Recolha de correio local</service_pickup>
+<service_pickup_text>O daemon pickup aguarda indica&#231;&#245;es de que novo correio foi depositado no diret&#243;rio maildrop,
+e alimenta-o ao daemon cleanup. Os ficheiros mal formatados s&#227;o eliminados sem notificar o originador.[br]Este programa espera ser executado a partir do gestor de processos master</service_pickup_text>
+<service_proxymap>Servidor proxy de tabelas de lookup</service_proxymap>
+<service_proxymap_text>O servidor proxymap fornece um servi&#231;o de lookup de tabelas s&#243; de leitura aos processos do Postfix.[br]
+O objetivo do servi&#231;o &#233;:[br]
+[ul][li]Superar as restri&#231;&#245;es chroot.[br]
+Por exemplo, um servidor SMTP em chroot precisa de acesso ao ficheiro passwd do sistema para rejeitar correio para endere&#231;os locais inexistentes,
+mas n&#227;o &#233; pr&#225;tico manter uma c&#243;pia do ficheiro passwd na jail chroot.[/li]
+[li]Consolidar o n&#250;mero de tabelas de lookup abertas partilhando uma tabela aberta entre v&#225;rios processos.[br]
+Por exemplo, fazer conex&#245;es mysql a partir de cada processo daemon do Postfix resulta em erros &quot;too many connections&quot;.[/li]
+[/ul]O n&#250;mero total de conex&#245;es &#233; limitado pelo n&#250;mero de processos do servidor proxymap.</service_proxymap_text>
+<service_qmgr>Gestor de filas</service_qmgr>
+<service_qmgr_text>O daemon qmgr aguarda a chegada de correio recebido e organiza a sua entrega atrav&#233;s dos processos de entrega do Postfix.[br]
+A estrat&#233;gia real de roteamento de correio &#233; delegada ao daemon trivial-rewrite.[br]
+Este programa espera ser executado a partir do gestor de processos master</service_qmgr_text>
 <service_relay>relay</service_relay>
 <service_relay_text>relay</service_relay_text>
-<service_retry>Retry</service_retry>
-<service_retry_text>Retry service</service_retry_text>
-<service_rewrite>Rewrite</service_rewrite>
-<service_rewrite_text>used to rewrite mails</service_rewrite_text>
-<service_scache>Shared connection cache server</service_scache>
-<service_scache_text>The scache server maintains a shared multi-connection cache.[br]
-This information can be used by, for example, Postfix SMTP clients or other Postfix delivery agents.[br]
-The connection cache is organized into logical destination names, physical endpoint names, and connections.[br]
-As a specific example, logical SMTP destinations specify (transport, domain, port), and physical SMTP endpoints specify (transport, IP address, port).[br]
-An SMTP connection may be saved after a successful mail transaction.[br]
-In the general case, one logical destination may refer to zero or more physical endpoints, one physical endpoint may be referenced by zero or more logical destinations,
-and one endpoint may refer to zero or more connections.</service_scache_text>
-<service_showq>List the Postfix mail queue</service_showq>
-<service_showq_text>The showq daemon reports the Postfix mail queue status.[br]
-It is the program that emulates the sendmail "mailq" command.[br]
-The showq daemon can also be run in stand-alone mode by the superuser.[br]
-This mode of operation is used to emulate the "mailq" command while the Postfix mail system is down</service_showq_text>
+<service_retry>Repetir</service_retry>
+<service_retry_text>Servi&#231;o de repeti&#231;&#227;o</service_retry_text>
+<service_rewrite>Reescrever</service_rewrite>
+<service_rewrite_text>usado para reescrever emails</service_rewrite_text>
+<service_scache>Servidor de cache de conex&#245;es partilhado</service_scache>
+<service_scache_text>O servidor scache mantém uma cache partilhada de m%C3%BAltiplas ligaç%C3µes.[br]
+Estas informaç%C3µes podem ser utilizadas, por exemplo, por clientes SMTP do Postfix ou por outros agentes de entrega do Postfix.[br]
+A cache de ligaç%C3µes est%C3¡ organizada em nomes de destinos l%C3%B3gicos, nomes de endpoints f%C3%ADsicos e ligaç%C3µes.[br]
+Como exemplo espec%C3%ADfico, os destinos SMTP l%C3%B3gicos especificam transporte, dom%C3%ADnio e porta, enquanto os endpoints SMTP f%C3%ADsicos especificam transporte, endereço IP e porta.[br]
+Uma ligaç%C3£o SMTP pode ser guardada ap%C3%B3s uma transaç%C3£o de correio bem-sucedida.[br]
+De forma geral, um destino l%C3%B3gico pode referenciar zero ou mais endpoints f%C3%ADsicos, um endpoint f%C3%ADsico pode ser referenciado por zero ou mais destinos l%C3%B3gicos, e um endpoint pode referenciar zero ou mais ligaç%C3µes.</service_scache_text>
+<service_showq>Listar a fila de correio do Postfix</service_showq>
+<service_showq_text>O daemon showq reporta o estado da fila de correio do Postfix.[br]
+&#201; o programa que emula o comando &quot;mailq&quot; do sendmail.[br]
+O daemon showq tamb&#233;m pode ser executado em modo aut&#243;nomo pelo superutilizador.[br]
+Este modo de opera&#231;&#227;o &#233; usado para emular o comando &quot;mailq&quot; enquanto o sistema de correio Postfix est&#225; em baixo</service_showq_text>
 <service_smtp>Cliente SMTP</service_smtp>
-<service_smtp_text>The  Postfix  SMTP  client  implements the SMTP mail delivery protocols.[br]
-It processes message delivery requests from the queue manager.[br]
-Each request specifies a queue file, a sender address, a domain or host to deliver to, and recipient information.[br]
-This program expects to be run from the master process manager</service_smtp_text>
-<service_tlsmgr>TLS session cache manager</service_tlsmgr>
-<service_tlsmgr_text>he tlsmgr manages the Postfix TLS session caches.[br]
-It stores and retrieves cache entries on request by smtpd and smtp processes, and periodically removes entries that have expired</service_tlsmgr_text>
-<service_trace>Delivery status reports (trace)</service_trace>
+<service_smtp_text>O cliente SMTP do Postfix implementa os protocolos de entrega de correio SMTP.[br]
+Processa os pedidos de entrega de mensagens do gestor de filas.[br]
+Cada pedido especifica um ficheiro de fila, um endere&#231;o de remetente, um dom&#237;nio ou host para entregar e informa&#231;&#245;es do destinat&#225;rio.[br]
+Este programa espera ser executado a partir do gestor de processos master</service_smtp_text>
+<service_tlsmgr>Gestor da cache de sess&#245;es TLS</service_tlsmgr>
+<service_tlsmgr_text>O tlsmgr gere as caches de sess&#227;o TLS do Postfix.[br]
+Armazena e recupera entradas de cache a pedido dos processos smtpd e smtp e remove periodicamente as entradas expiradas</service_tlsmgr_text>
+<service_trace>Relat&#243;rios de estado de entrega (trace)</service_trace>
 <service_trace_text> </service_trace_text>
 <SERVICE_TYPE>Serviço</SERVICE_TYPE>
 <service_verify>Servidor de verificaç%C3£o de endereço</service_verify>
-<service_verify_text>The verify address verification server maintains a record of what recipient addresses are known to be deliverable or undeliverable.</service_verify_text>
-<service_virtual>Virtual domain mail delivery agent</service_virtual>
+<service_verify_text>O servidor de verifica&#231;&#227;o de endere&#231;os verify mant&#233;m um registo de quais endere&#231;os de destinat&#225;rio s&#227;o conhecidos como entreg&#225;veis ou n&#227;o entreg&#225;veis.</service_verify_text>
+<service_virtual>Agente de entrega de correio de dom&#237;nio virtual</service_virtual>
 <service_virtual_text>O agente de entrega virtual é concebido para serviços de alojamento de correio virtual [br].
 Originalmente baseado no agente local de entrega Postfix, este agente procura os destinat%C3¡rios com mapas do seu endereço completo de destinat%C3¡rio, em vez disso
 de usar o ficheiro de palavra-passe unix codificado apenas na parte local do endereço [br].
 Este agente de entregas apenas entrega correio [br].
 Outras caracter%C3%ADsticas tais como o reencaminhamento de correio, notificaç%C3µes fora do escrit%C3%B3rio, etc., devem ser configuradas através de mapas virtual_alias ou através de mecanismos de pesquisa semelhantes.</service_virtual_text>
-<SMTPS_TEXT>This section allows you to enable SMTPs (usually running on 465 port).[br]
-If you enable this feature, the master configuration file with smtps service will be added.[br]
-If you disable this feature, the master configuration file with smtps service will be deleted.[br]
-</SMTPS_TEXT>
-<UNIPRIV>Unprivileged</UNIPRIV>
-<UNIPRIV_TEXT>(default yes) Whether the service runs with root privileges or as the  owner of
-the Postfix system (the owner name is controlled by the mail_owner configuration variablein the main.cf file).</UNIPRIV_TEXT>
-<WAKEUP>Wake up time</WAKEUP>
-<WAKEUP_TEXT>
-(default: 0)   Automatically  wake  up the named service after the specified number of seconds. The wake up is  implemented
-by  connecting to the service and sending a wake up request.
-A ? at the  end  of  the  wake-up time  field requests that no wake up events be sent before the first time a service is used.
-Specify 0 for no automatic wake up.[br]The pickup, qmgr and flush daemons require a wake up timer
-</WAKEUP_TEXT>
+<SMTPS_TEXT>Esta sec&#231;&#227;o permite-lhe ativar o SMTPs (normalmente em execu&#231;&#227;o na porta 465).[br]
+Se ativar esta funcionalidade, o ficheiro de configura&#231;&#227;o master com o servi&#231;o smtps ser&#225; adicionado.[br]
+Se desativar esta funcionalidade, o ficheiro de configura&#231;&#227;o master com o servi&#231;o smtps ser&#225; eliminado.[br]</SMTPS_TEXT>
+<UNIPRIV>Sem privil&#233;gios</UNIPRIV>
+<UNIPRIV_TEXT>(predefinido yes) Se o servi&#231;o &#233; executado com privil&#233;gios de root ou como propriet&#225;rio do
+sistema Postfix (o nome do propriet&#225;rio &#233; controlado pela vari&#225;vel de configura&#231;&#227;o mail_owner no ficheiro main.cf).</UNIPRIV_TEXT>
+<WAKEUP>Tempo de despertar</WAKEUP>
+<WAKEUP_TEXT>(predefinido: 0) Acorda automaticamente o servi&#231;o indicado ap&#243;s o n&#250;mero de segundos especificado. O despertar &#233; implementado
+conectando-se ao servi&#231;o e enviando um pedido de despertar.
+Um ? no fim do campo de tempo de despertar solicita que nenhum evento de despertar seja enviado antes da primeira utiliza&#231;&#227;o de um servi&#231;o.
+Especifique 0 para n&#227;o haver despertar autom&#225;tico.[br]Os daemons pickup, qmgr e flush requerem um temporizador de despertar</WAKEUP_TEXT>

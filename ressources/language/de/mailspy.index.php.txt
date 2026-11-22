@@ -1,2 +1,2 @@
-<realtime_events>Realtime emails received</realtime_events>
+<realtime_events>Echtzeit-E-Mails empfangen</realtime_events>
 <reports>Berichte</reports>

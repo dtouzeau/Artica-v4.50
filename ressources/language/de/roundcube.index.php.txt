@@ -1,53 +1,47 @@
-<about_roundcube_engine>Define here settings about the lighttpd engine will serve RoundCube Webmail website</about_roundcube_engine>
-<additional_message_headers>Add additional headers for outgoing messages</additional_message_headers>
-<APP_ROUNDCUBE3_PLUGINS_EXPLAIN>RoundCube Generation 3 offer new plugins generation.[br]Select in this list plugins you want to enable in the RoundCube front-end</APP_ROUNDCUBE3_PLUGINS_EXPLAIN>
-<archive>Move messages to a (user selectable) archive folder</archive>
-<artica_ldap_addr>Artica plugin: Add connection with the personal LDAP addressbook</artica_ldap_addr>
-<auto_create_user>Automatically create a new RoundCube user when log-in the first time</auto_create_user>
-<conf>Script configuration</conf>
-<confirm_rebuild>Warning, you select rebuild tables,all datas will be erased ...</confirm_rebuild>
-<database_attachments>database backed storage for temporary attachment file handling</database_attachments>
-<database_status>Tables status</database_status>
-<debug_level>System error reporting</debug_level>
-<debug_logger>Enhanced logging for debugging purposes</debug_logger>
-<default_host>The IMAP server</default_host>
-<emoticons>Replace emoticons in plain text message body with real icons</emoticons>
-<enable_caching>Cache mailbox data</enable_caching>
-<example_addressbook>addressbook example</example_addressbook>
-<filesystem_attachments>
- This is a core plugin which provides basic, filesystem based attachment temporary file handling.[br]This includes storing
-attachments of messages currently being composed, writing attachments
-to disk when drafts with attachments are re-opened and writing
-attachments to disk for inline display in current html compositions.
-</filesystem_attachments>
-<flag_for_deletion>Flag the message for deletion (No Trash)</flag_for_deletion>
-<flag_for_deletion_text>When a Trash folder is not present and a message is deleted, flag the message for deletion rather than deleting it immediately.[br] Setting this to 
-false causes deleted messages to be permanantly removed if there is no Trash folder</flag_for_deletion_text>
-<https_port>HTTPS Listen port</https_port>
-<http_authentication>HTTP Basic Authentication</http_authentication>
-<lighttp_max_load_per_proc>Maximum number of waiting processes on average per process before a new process is spawned</lighttp_max_load_per_proc>
-<lighttp_max_proc>The upper limit of the processes to start</lighttp_max_proc>
-<lighttp_min_proc>Sets the minimum processes to start</lighttp_min_proc>
-<locale_string>The default locale setting</locale_string>
-<managesieve>filters in Thunderbird's style</managesieve>
-<markasjunk>mark the selected message as Junk and move it to the Junk folder</markasjunk>
-<mysql>Mysql settings</mysql>
-<new_user_dialog>Present identities settings dialog to new users</new_user_dialog>
-<PHP_FCGI_CHILDREN>The number of php-cgi processes per lightppd processes</PHP_FCGI_CHILDREN>
+<about_roundcube_engine>Definieren Sie hier Einstellungen f&#252;r die lighttpd-Engine, die die RoundCube-Webmail-Website bereitstellt</about_roundcube_engine>
+<additional_message_headers>Zus&#228;tzliche Header f&#252;r ausgehende Nachrichten hinzuf&#252;gen</additional_message_headers>
+<APP_ROUNDCUBE3_PLUGINS_EXPLAIN>RoundCube Generation 3 bietet eine neue Plugin-Generation.[br]W&#228;hlen Sie in dieser Liste die Plugins aus, die Sie im RoundCube-Frontend aktivieren m&#246;chten</APP_ROUNDCUBE3_PLUGINS_EXPLAIN>
+<archive>Nachrichten in einen (vom Benutzer w&#228;hlbaren) Archivordner verschieben</archive>
+<artica_ldap_addr>Artica-Plugin: Verbindung mit dem pers&#246;nlichen LDAP-Adressbuch hinzuf&#252;gen</artica_ldap_addr>
+<auto_create_user>Automatisch einen neuen RoundCube-Benutzer erstellen, wenn er sich zum ersten Mal anmeldet</auto_create_user>
+<conf>Skriptkonfiguration</conf>
+<confirm_rebuild>Warnung, Sie haben das Neuerstellen der Tabellen ausgew&#228;hlt, alle Daten werden gel&#246;scht ...</confirm_rebuild>
+<database_attachments>Datenbankgest&#252;tzter Speicher f&#252;r die tempor&#228;re Anhang-Dateiverwaltung</database_attachments>
+<database_status>Tabellenstatus</database_status>
+<debug_level>Systemfehlerberichterstattung</debug_level>
+<debug_logger>Erweiterte Protokollierung zu Debugging-Zwecken</debug_logger>
+<default_host>Der IMAP-Server</default_host>
+<emoticons>Emoticons im Klartext-Nachrichtentext durch echte Symbole ersetzen</emoticons>
+<enable_caching>Postfachdaten zwischenspeichern</enable_caching>
+<example_addressbook>Adressbuch-Beispiel</example_addressbook>
+<filesystem_attachments>Dies ist ein Kern-Plugin, das die grundlegende, dateisystembasierte tempor&#228;re Dateiverwaltung von Anh&#228;ngen bereitstellt.[br]Dies umfasst das Speichern von Anh&#228;ngen derzeit verfasster Nachrichten, das Schreiben von Anh&#228;ngen auf die Festplatte beim erneuten &#214;ffnen von Entw&#252;rfen mit Anh&#228;ngen und das Schreiben von Anh&#228;ngen auf die Festplatte f&#252;r die Inline-Anzeige in aktuellen HTML-Kompositionen.</filesystem_attachments>
+<flag_for_deletion>Die Nachricht zum L&#246;schen markieren (kein Papierkorb)</flag_for_deletion>
+<flag_for_deletion_text>Wenn kein Papierkorb-Ordner vorhanden ist und eine Nachricht gel&#246;scht wird, die Nachricht zum L&#246;schen markieren, anstatt sie sofort zu l&#246;schen.[br] Wenn dies auf false gesetzt wird, werden gel&#246;schte Nachrichten endg&#252;ltig entfernt, wenn kein Papierkorb-Ordner vorhanden ist</flag_for_deletion_text>
+<https_port>HTTPS-Lausch-Port</https_port>
+<http_authentication>HTTP-Basisauthentifizierung</http_authentication>
+<lighttp_max_load_per_proc>Maximale Anzahl wartender Prozesse im Durchschnitt pro Prozess, bevor ein neuer gestartet wird</lighttp_max_load_per_proc>
+<lighttp_max_proc>Die obere Grenze der zu startenden Prozesse</lighttp_max_proc>
+<lighttp_min_proc>Legt die minimal zu startenden Prozesse fest</lighttp_min_proc>
+<locale_string>Die Standard-Locale-Einstellung</locale_string>
+<managesieve>Filter im Thunderbird-Stil</managesieve>
+<markasjunk>Die ausgew&#228;hlte Nachricht als Junk markieren und in den Junk-Ordner verschieben</markasjunk>
+<mysql>Mysql-Einstellungen</mysql>
+<new_user_dialog>Neuen Benutzern den Dialog f&#252;r Identit&#228;tseinstellungen anzeigen</new_user_dialog>
+<PHP_FCGI_CHILDREN>Die Anzahl der php-cgi-Prozesse pro lighttpd-Prozess</PHP_FCGI_CHILDREN>
 <PHP_FCGI_MAX_REQUESTS>Max. Abfragen vor dem Neustart eines Kindprozesses</PHP_FCGI_MAX_REQUESTS>
-<product_name>Pages title</product_name>
+<product_name>Seitentitel</product_name>
 <rebuild>Neu aufbauen</rebuild>
-<rlogs>RoundCube events</rlogs>
-<RoundCubeHTTPEngineEnabled>Enable Dedicated Web site</RoundCubeHTTPEngineEnabled>
-<RoundCubePath>RoundCube base path</RoundCubePath>
-<roundcube_ldap_directory>Access to LDAP Internal Addresses book</roundcube_ldap_directory>
-<roundcube_mysql_sources>Mysql scripts source path</roundcube_mysql_sources>
-<roundcube_web_folder>Web directory path</roundcube_web_folder>
-<show_additional_headers>Show additional message headers</show_additional_headers>
-<sieverules>filters in Thunderbird's style (advanced mode)</sieverules>
-<skip_deleted>Hide Deleted messages</skip_deleted>
-<squirrelmail_usercopy>Copy a new users identity and settings from a nearby Squirrelmail installation</squirrelmail_usercopy>
-<subscriptions_option>Enable or disable the use of imap subscriptions</subscriptions_option>
-<userinfo>Display account information</userinfo>
-<user_link>Artica menu link to RoundCube</user_link>
-<vcard_attachments>Detect VCard attachments and show a button to add them to address book</vcard_attachments>
+<rlogs>RoundCube-Ereignisse</rlogs>
+<RoundCubeHTTPEngineEnabled>Dedizierte Website aktivieren</RoundCubeHTTPEngineEnabled>
+<RoundCubePath>RoundCube-Basispfad</RoundCubePath>
+<roundcube_ldap_directory>Zugriff auf das interne LDAP-Adressbuch</roundcube_ldap_directory>
+<roundcube_mysql_sources>Quellpfad der MySQL-Skripte</roundcube_mysql_sources>
+<roundcube_web_folder>Web-Verzeichnispfad</roundcube_web_folder>
+<show_additional_headers>Zus&#228;tzliche Nachrichten-Header anzeigen</show_additional_headers>
+<sieverules>Filter im Thunderbird-Stil (erweiterter Modus)</sieverules>
+<skip_deleted>Gel&#246;schte Nachrichten ausblenden</skip_deleted>
+<squirrelmail_usercopy>Identit&#228;t und Einstellungen eines neuen Benutzers aus einer nahegelegenen Squirrelmail-Installation kopieren</squirrelmail_usercopy>
+<subscriptions_option>Die Verwendung von IMAP-Abonnements aktivieren oder deaktivieren</subscriptions_option>
+<userinfo>Kontoinformationen anzeigen</userinfo>
+<user_link>Artica-Men&#252;link zu RoundCube</user_link>
+<vcard_attachments>VCard-Anh&#228;nge erkennen und eine Schaltfl&#228;che zum Hinzuf&#252;gen zum Adressbuch anzeigen</vcard_attachments>

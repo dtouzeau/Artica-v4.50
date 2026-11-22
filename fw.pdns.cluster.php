@@ -53,7 +53,7 @@ function Save(){
 	if($_POST["PowerDNSEnableClusterMaster"]==1){
 		
 		if(trim($_POST["PowerDNSClusterPassword"])==null){
-			echo "jserror:".$tpl->_ENGINE_parse_body("{password_cannot_be_null}");
+			echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body("{password_cannot_be_null}"));
 			return;
 		}
 
@@ -91,13 +91,13 @@ function Save(){
 			$error=curl_errno($ch);
 			if($error>0){
 				$text=curl_error($ch);
-				echo "jserror:".$tpl->_ENGINE_parse_body("{error} $error $text");
+				echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body("{error} $error $text"));
 				$sock->SET_INFO("PowerDNSEnableClusterSlave", 0);
 				return;
 			}
 			
 			if($CURLINFO_HTTP_CODE>200){
-				echo "jserror:".$tpl->_ENGINE_parse_body("https://$PowerDNSClusterMasterAddress:$PowerDNSClusterMasterPort<br>{error} $CURLINFO_HTTP_CODE");
+				echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body("https://$PowerDNSClusterMasterAddress:$PowerDNSClusterMasterPort<br>{error} $CURLINFO_HTTP_CODE"));
 				$sock->SET_INFO("PowerDNSEnableClusterSlave", 0);
 				return;
 			}
@@ -105,7 +105,7 @@ function Save(){
 
 			$ARRAY=unserialize(base64_decode($data));
 			if(!isset($ARRAY["SERIAL"])){
-				echo "jserror:Decrypt data failed!";
+				echo (new template_admin())->post_error("Decrypt data failed!");
 				$sock->SET_INFO("PowerDNSEnableClusterSlave", 0);
 			}
 			

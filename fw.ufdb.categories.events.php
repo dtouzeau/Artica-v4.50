@@ -1,7 +1,10 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.ipinfo.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $users=new usersMenus();
 if(!$users->AsDnsAdministrator){exit();}
@@ -20,15 +23,9 @@ function form(){
 function search(){
     $tpl        = new template_admin();
     $MAIN       = $tpl->format_search_protocol($_GET["search"]);
-    $line       = base64_encode(serialize($MAIN));
-    $tfile      = PROGRESS_DIR."/webfiltering-categories.log";
-    $pat        = PROGRESS_DIR."/webfiltering-categories.pattern";
-
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("categories.php?search-in-logs=$line");
-    $data=explode("\n",@file_get_contents($tfile));
-    krsort($data);
+    $data       = $tpl->logfile_search("webfiltering-categories",$MAIN);
     $html[]="
-<table class=\"table table-hover\">
+<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th style='width:1%' nowrap>{date}</th>
@@ -57,16 +54,17 @@ function search(){
     foreach ($data as $line){
 
         if(!preg_match("#^(.*?)\s+([0-9]+)\s+([0-9:]+)\s+.*?\[([0-9]+)\]:\s+(.+)#",$line,$re)){
-            echo "<span style='color:red'>$line</span><br>";
+            // Pentest 2026-11-04 : ligne de journal (donnee externe) affiche sans encodage (XSS stockee).
+            echo "<span style='color:red'>".req_html($line)."</span><br>";
             continue;
         }
 
         $class=null;
-        $Month=$re[1];
+        $Month=req_html($re[1]);
         $Day=$re[2];
         $time=$re[3];
         $pid=$re[4];
-        $event=$re[5];
+        $event=req_html($re[5]);
         $function=null;
         $MOD="DEFAULT";
 
@@ -174,8 +172,7 @@ function search(){
 
     }
 
-    $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents($pat)."</i></div>";
+    $html[]="</tbody></table></div></div></div>";
     $TINY_ARRAY["TITLE"]="{your_categories}: {events}";
     $TINY_ARRAY["ICO"]=ico_eye;
     $TINY_ARRAY["EXPL"]="{personal_categories_explain}";
@@ -183,7 +180,7 @@ function search(){
     $TINY_ARRAY["BUTTONS"]=null;
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
     $html[]="<script>$jstiny</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 }
 
 

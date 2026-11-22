@@ -1,5 +1,10 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.tcpip.inc");
 include_once(dirname(__FILE__)."/ressources/class.mime.parser.inc");
 include_once(dirname(__FILE__)."/ressources/class.imap.rfc822_addresses.inc");
@@ -26,13 +31,15 @@ function js(){
 function report_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["report-js"];
+	// Pentest 2026-11-04 : report-js etait concatene dans la requete.
+	$ID=intval($_GET["report-js"]);
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
 	$ligne=$q->mysqli_fetch_array("SELECT subject FROM amavisd_tests WHERE ID=$ID");
 	$title=$ligne["subject"];
 	$tpl->js_dialog7($title, "$page?report-popup=$ID",900);
 }
 function report_popup(){
+    if(!fw_progress_page_priv("AsPostfixAdministrator|AsSystemAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ID=$_GET["report-popup"];
@@ -45,7 +52,7 @@ function report_popup(){
 	$bytes=strlen($spamassassin_results);
 	$tbl=explode("\n",$spamassassin_results);
 	if(is_array($tbl)){
-		while (list ($index, $line) = each ($tbl) ){
+		foreach ($tbl as $index=>$line){
 			$line=trim($line);
 			if($line==null){continue;}
 			$fontsize=10;
@@ -65,7 +72,8 @@ function report_popup(){
 				
 	
 				
-			$line=htmlentities($line);
+			// Pentest 2026-11-04 : resultat SpamAssassin (message analyse, donnee externe) : req_html, octets Latin-1 apres utf8_decode().
+			$line=req_html($line);
 			$line=str_replace("\t","&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",$line);
 			$line=str_replace(" ","&nbsp;",$line);
 			$content=$content."<div style='margin-top:5px;color:$fontcolor;font-weight:$fontweight'><code style='font-size:{$fontsize}px'>$line</code></div>\n";
@@ -87,13 +95,14 @@ function report_popup(){
 	$ARRAY["TITLE"]="{analyze_message}";
 	$ARRAY["AFTER"]="LoadAjax('spamssass-table-abalyze','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="dialogInstance7.close();Loadjs('fw.progress.php?content=$prgress&mainid=spamssass-table-progress')";
+	$jsrestart="dialogInstance7.close();Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=spamssass-table-progress')";
 	$btn=$tpl->button_autnonome("{rescan}", $jsrestart, "fas fa-retweet-alt");
 	
 	
+	// Pentest 2026-11-04 : subject (message analyse, donnee externe) affiche sans encodage (XSS stockee).
 	$html="
 	<div style='float:right'>$btn</div>
-	<H2>{$ligne["subject"]} $bytes</H2>
+	<H2>".req_html($ligne["subject"])." $bytes</H2>
 	$content";
 	
 	echo $tpl->_ENGINE_parse_body($html);	
@@ -104,9 +113,11 @@ function report_popup(){
 function report_delete(){
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
-	$q->QUERY_SQL("DELETE FROM amavisd_tests WHERE ID='{$_GET["delete-js"]}'");
+	// Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+	$ID=intval($_GET["delete-js"]);
+	$q->QUERY_SQL("DELETE FROM amavisd_tests WHERE ID='$ID'");
 	if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
-	echo "$('#{$_GET["md"]}').remove();";
+	echo "$('#".req_js($_GET["md"])."').remove();";
 }
 
 function popup(){
@@ -127,7 +138,8 @@ function new_message_js(){
 function message_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$id=$_GET["message-js"];
+	// Pentest 2026-11-04 : message-js etait concatene dans la requete.
+	$id=intval($_GET["message-js"]);
 	$sql="SELECT subject FROM amavisd_tests WHERE ID=$id";
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
 	$ligne=$q->mysqli_fetch_array($sql);
@@ -137,7 +149,8 @@ function message_js(){
 function new_message_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["new-message-popup"];
+	// Pentest 2026-11-04 : new-message-popup etait concatene dans la requete.
+	$ID=intval($_GET["new-message-popup"]);
 	
 	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/spamassassin.analyze.progress";
 	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/spamassassin.analyze.logs";
@@ -145,7 +158,7 @@ function new_message_popup(){
 	$ARRAY["TITLE"]="{analyze_message}";
 	$ARRAY["AFTER"]="LoadAjax('spamssass-table-abalyze','$page?table=yes')";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=spamssass-table-progress')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=spamssass-table-progress')";
 	
 	$source_message_explain=$tpl->_ENGINE_parse_body("{source_message_explain}");
 	$btn="{apply}";
@@ -186,7 +199,7 @@ function new_message_save(){
 	$parameters['SkipBody']=1;
 	$decoded=array();
 	$mime->Decode($parameters, $decoded);
-	$subject=$q->sqlite_escape_string2($decoded[0]["Headers"]["subject:"]);
+	$subject=(string)$decoded[0]["Headers"]["subject:"];
 	$Date=strtotime($decoded[0]["Headers"]["Date:"]);
 	$sender=$decoded[0]["Headers"]["from:"];
 	$recipients=$decoded[0]["Headers"]["to:"];
@@ -197,8 +210,9 @@ function new_message_save(){
 	if(preg_match("#<(.+?)>#", $recipients,$re)){$recipients=$re[1];}
 	if($Date==0){$Date=time();}
 $saved_date=date("Y-m-d H:i:s",$Date);
-	$q->QUERY_SQL("INSERT INTO amavisd_tests (sender,recipients,message,saved_date,subject)
-		VALUES ('$sender','$recipients','$message','$saved_date','$subject')");
+	// Pentest 2026-11-04 : from/to du message soumis etaient concatenes dans la requete.
+	$q->QUERY_SQL_PARAMS("INSERT INTO amavisd_tests (sender,recipients,message,saved_date,subject)
+		VALUES (?,?,?,?,?)",array((string)$sender,(string)$recipients,$message,$saved_date,$subject));
 	if(!$q->ok){echo $q->mysql_error;return;}
 	
 }
@@ -216,7 +230,7 @@ function table(){
 	$ARRAY["TITLE"]="{analyze_message}";
 	$ARRAY["AFTER"]="LoadAjax('spamssass-table-abalyze','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&spamssass-table-progress')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&spamssass-table-progress')";
 	
 	$q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `amavisd_tests` (
 			  `ID` INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -239,26 +253,19 @@ function table(){
 			<i class='fa fa-plus'></i> {new_message} </label>
 			</div>");
 	
-	$TRCLASS=null;
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:0px'>";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{sender}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{recipients}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{subject}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{report}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{status}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{delete}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{subject}</th>";
+	$html[]="<th class='center'>{status}</th>";
+	$html[]="<th>{date}</th>";
+	$html[]="<th style='text-align:right'>{actions}</th>";
+	$html[]="</tr></thead><tbody id='pfxsa-rows'>";
 	
 	$results=$q->QUERY_SQL("SELECT * FROM amavisd_tests ORDER BY ID DESC");
 	
 	
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$md=md5(serialize($ligne));
 		$ID=$ligne["ID"];
 		$saved_date=strtotime($ligne["saved_date"]);
@@ -270,7 +277,7 @@ function table(){
 		$ARRAY["TITLE"]="{analyze_message}";
 		$ARRAY["AFTER"]="BootstrapDialog1.close();";
 		$prgress=base64_encode(serialize($ARRAY));
-		$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=spamssass-table-progress')";
+		$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=spamssass-table-progress')";
 		
 		
 		
@@ -282,47 +289,57 @@ function table(){
 		
 		if($ligne["subject"]==null){$ligne["subject"]="{subject}:{unknown}";}
 		$recp=explode(",",$ligne["recipients"]);
-		$rcpt_text=@implode($recp,"<br>");
+		$rcpt_text=@implode("<br>",$recp);
 		
 		if($ligne["finish"]==1){
 				$report=$tpl->icon_excel("Loadjs('$page?report-js=$ID')");
 				$status="100%";
 		}
 		
-		if($ligne["subject"]<>null){
-			$subj=$ligne["subject"];
-			$subj_length=strlen($subj);
-			if($subj_length>20){$subj=substr($subj, 0,17)."...";}
-			$subj=$tpl->td_href($subj,$ligne["subject"],$js);
-		}
-		
 		$delete=$tpl->icon_delete("Loadjs('$page?delete-js=$ID&md=$md')");
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:1%' nowrap>".$tpl->td_href($date,"{view}",$js)."</td>";
-		$html[]="<td style='width:1%' nowrap>{$ligne["sender"]}</td>";
-		$html[]="<td style='width:1%' nowrap>{$rcpt_text}</td>";
-		$html[]="<td>$subj</td>";
-		$html[]="<td style='width:1%' class='center' nowrap>$report</center></td>";
-		$html[]="<td style='width:1%' class='center' nowrap>$status</center></td>";
-		$html[]="<td style='width:1%' class='center' nowrap>$delete</center></td>";
-		$html[]="</tr>";
+		// Le sujet etait tronque a 20 caracteres pour tenir dans une colonne
+		// etroite: en colonne d'identite il tient en entier.
+		$html[]=pfxsa_row($md,$js,(string)$ligne["subject"],(string)$ligne["sender"],$rcpt_text,$date,$status,$report.$delete,intval($ligne["finish"]));
 	}
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	
-	echo $tpl->_ENGINE_parse_body($html);	
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span class='awc-pg' id='pfxsa-pager'></span>";
+	$html[]="</div></div></div>";
+	$html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.awc_pager_js(50,"pfxsa-rows","pfxsa-pager");	
 	
 	
+}
+
+
+/**
+ * Un message soumis a l'analyse: sujet en identite, expediteur et destinataires
+ * en sous-titre. Sujet et adresses viennent du message analyse -- donc d'un tiers:
+ * ils etaient rendus BRUTS sur une page dont le but est justement d'inspecter du
+ * courrier suspect.
+ */
+function pfxsa_row($md,$js,$subject,$sender,$rcpt_text,$date,$status,$actions,$finished):string{
+    $subject=trim($subject);
+    $rcpts=trim(strip_tags(str_replace("<br>",", ",$rcpt_text)));
+
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='".($finished?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-envelope-open-text'></i></span>";
+    $h.="<span><span class='awc-name'><a href=\"javascript:blur();\" title='{view}' OnClick=\"$js\">"
+        .($subject===""?"{subject}: {unknown}":htmlspecialchars($subject))."</a></span>";
+    $meta=array();
+    if(trim($sender)!==""){$meta[]=htmlspecialchars(trim($sender));}
+    if($rcpts!==""){$meta[]="&rarr; ".htmlspecialchars($rcpts);}
+    if(count($meta)>0){$h.="<div class='awc-meta'>".@implode(" ",$meta)."</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='center'>".($finished
+        ?"<span class='awc-badge awc-badge-on'>100%</span>"
+        :"<span class='awc-badge awc-badge-off'>&mdash;</span>")."</td>";
+    $h.="<td class='awc-mono'>".htmlspecialchars($date)."</td>";
+    $h.="<td><div class='awc-acts'>$actions</div></td>";
+    $h.="</tr>";
+    return $h;
 }

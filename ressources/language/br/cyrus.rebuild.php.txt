@@ -1,2 +1,2 @@
-<REBUILD_CYRUS>Rebuild Cyrus configuration</REBUILD_CYRUS>
-<REBUILD_CYRUS_TEXT>Rewrite global parameters of your Mailbox server and restart services.</REBUILD_CYRUS_TEXT>
+<REBUILD_CYRUS>Reconstruir a configura&#231;&#227;o do Cyrus</REBUILD_CYRUS>
+<REBUILD_CYRUS_TEXT>Reescrever os par&#226;metros globais do seu servidor de caixas de correio e reiniciar os servi&#231;os.</REBUILD_CYRUS_TEXT>

@@ -27,6 +27,11 @@ function stats_page():bool{
     $page=CurrentPageName();
     $time=$_GET["period"];
     $tpl=new template_admin();
+    // Load Chart.js synchronously here so that by the time the AJAX-
+    // delivered chart payloads from Loadjs() arrive and eval, the global
+    // `Chart` constructor is already defined. Same path the rest of the
+    // Artica firewall pages use (fw.conntrackd.php, fw.dns.dnsdist.graphs.php).
+    $html[]="";
     $html[]="<table style='width:100%'>";
     $html[]="<tr>";
     $html[]="<td colspan='2' style='text-align:center;'>";
@@ -60,43 +65,81 @@ function courbe_threats(){
     $zFiles["week"]="WeeklyBlackHits.array";
     $zFiles["month"]="MonthlyBlackHits.array";
 
-
-
     $FilePath="/usr/share/artica-postfix/ressources/logs/nfqueue/$zFiles[$time]";
     if(!is_file($FilePath)){
         return "";
     }
     $script_tz = date_default_timezone_get();
     $data=unserialize(file_get_contents($FilePath));
-    $xdata=array();
-    $ydata=array();
+    if(!is_array($data) || count($data)==0){
+        // Render an empty-state placeholder rather than leaving the div
+        // blank — keeps the layout from collapsing on first deploy.
+        echo "document.getElementById('line-courbe').innerHTML='<div style=\"padding:30px;text-align:center;color:#999;\">{no_data}</div>';";
+        return true;
+    }
+
+    // Sort chronologically so the line chart x-axis is monotonic.
+    ksort($data);
+
+    $labels=array();
+    $values=array();
     foreach($data as $k=>$v){
         $date = new DateTime($k, new DateTimeZone('UTC'));
         $date->setTimezone(new DateTimeZone($script_tz));
-        $k = $date->format('d H:00');
-
-        if($time=="today" or $time=="yesterday"){
-            $k = $date->format('H:i');
+        if($time=="today" || $time=="yesterday"){
+            $labels[] = $date->format('H:i');
+        } else {
+            $labels[] = $date->format('d H:00');
         }
-        $xdata[]=$k;
-        $ydata[]=$v;
+        $values[] = (int)$v;
     }
 
-    $title="{threats} {{$time}}";
-    $timetext=$time;
-    $highcharts=new highcharts();
-    $highcharts->container="line-courbe";
-    $highcharts->xAxis=$xdata;
-    $highcharts->Title=$title;
-    $highcharts->TitleFontSize="14px";
-    $highcharts->AxisFontsize="12px";
-    $highcharts->yAxisTtitle="{threats}";
-    $highcharts->xAxis_labels=true;
+    $tpl=new template_admin();
+    $titleJS=$tpl->javascript_parse_text("{threats}");
+    // No need for json_encode of label strings — they're produced by
+    // PHP date(), so they're guaranteed safe characters.
+    $labelsJS = "['" . implode("','", $labels) . "']";
+    $valuesJS = "[" . implode(",", $values) . "]";
+    $uid = "ipfeeds-line-" . uniqid();
 
-    $highcharts->LegendSuffix="{days}";
-    $highcharts->xAxisTtitle=$timetext;
-    $highcharts->datas=array("{threats}"=>$ydata);
-    echo $highcharts->BuildChart();
+    $js = <<<JS
+(function(){
+    var c = document.getElementById('line-courbe');
+    if (!c) return;
+    c.innerHTML = "<div style='position:relative;height:280px'><canvas id='$uid'></canvas></div>";
+    new Chart(document.getElementById('$uid'), {
+        type: 'line',
+        data: {
+            labels: $labelsJS,
+            datasets: [{
+                label: '$titleJS',
+                data: $valuesJS,
+                borderColor: 'rgb(54,162,235)',
+                backgroundColor: 'rgba(54,162,235,0.15)',
+                tension: 0.3,
+                fill: true,
+                borderWidth: 2,
+                pointRadius: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {mode:'index', intersect:false},
+            plugins: {
+                legend: {position:'bottom', labels:{usePointStyle:true, padding:12}},
+                title:  {display:true, text:'$titleJS'}
+            },
+            scales: {
+                y: {beginAtZero:true, title:{display:true, text:'$titleJS'}},
+                x: {ticks:{maxRotation:45, autoSkip:true, maxTicksLimit:24}}
+            }
+        }
+    });
+})();
+JS;
+
+    echo $tpl->_ENGINE_parse_body($js);
     return true;
 }
 
@@ -108,19 +151,17 @@ function pie_categories():bool{
     $zFiles["week"]="weeklyCategories.array";
     $zFiles["month"]="monthlyCategories.array";
 
-
     $FilePath="/usr/share/artica-postfix/ressources/logs/nfqueue/$zFiles[$time]";
     if(!is_file($FilePath)){
         return false;
     }
     $PieData=unserialize(file_get_contents($FilePath));
-    $highcharts = new highcharts();
-    $highcharts->container ="pie-categories";
-    $highcharts->PieDatas = $PieData;
-    $highcharts->ChartType = "pie";
-    $highcharts->PiePlotTitle = "";
-    $highcharts->Title = $tpl->_ENGINE_parse_body("{top_categories}/{block}");
-    echo $highcharts->BuildChart();
+    if(!is_array($PieData) || count($PieData)==0){
+        echo "document.getElementById('pie-categories').innerHTML='<div style=\"padding:30px;text-align:center;color:#999;\">{no_data}</div>';";
+        return true;
+    }
+
+    echo _ipfeeds_pie_chart($PieData, "pie-categories", $tpl->javascript_parse_text("{top_categories}/{block}"));
     return true;
 }
 function pie_ipaddrs():bool{
@@ -136,14 +177,72 @@ function pie_ipaddrs():bool{
         return false;
     }
     $PieData=unserialize(file_get_contents($FilePath));
-    $highcharts = new highcharts();
-    $highcharts->container ="pie-ips";
-    $highcharts->PieDatas = $PieData;
-    $highcharts->ChartType = "pie";
-    $highcharts->PiePlotTitle = "";
-    $highcharts->Title = $tpl->_ENGINE_parse_body("{top_sources}/{block}");
-    echo $highcharts->BuildChart();
+    if(!is_array($PieData) || count($PieData)==0){
+        echo "document.getElementById('pie-ips').innerHTML='<div style=\"padding:30px;text-align:center;color:#999;\">{no_data}</div>';";
+        return true;
+    }
+
+    echo _ipfeeds_pie_chart($PieData, "pie-ips", $tpl->javascript_parse_text("{top_sources}/{block}"));
     return true;
+}
+
+// _ipfeeds_pie_chart returns the JS payload that replaces a container div
+// with a Chart.js doughnut. Shared by pie_categories and pie_ipaddrs since
+// the only difference is the data and labels — keeping them DRY.
+//
+// Top 10 entries are charted; everything else folded into "Other" so the
+// legend stays readable when there are dozens of categories or hundreds of
+// source IPs.
+function _ipfeeds_pie_chart(array $data, string $containerId, string $title):string{
+    arsort($data);
+    $top = array_slice($data, 0, 10, true);
+    $rest = array_slice($data, 10, null, true);
+    if (count($rest) > 0) {
+        $top['Other'] = array_sum($rest);
+    }
+
+    // Build labels JS: addslashes on each so quotes in keys (rare but
+    // possible for unusual category names) don't break the literal.
+    $labelLits = array();
+    foreach (array_keys($top) as $lbl) {
+        // Pentest 2026-11-04 : libelle externe dans un litteral JS, addslashes insuffisant (XSS stockee).
+        $labelLits[] = "'" . req_js($lbl) . "'";
+    }
+    $labelsJS = "[" . implode(",", $labelLits) . "]";
+    $valuesJS = "[" . implode(",", array_map('intval', array_values($top))) . "]";
+
+    // Palette mirrors the one in fw.conntrackd.php so charts feel
+    // visually consistent across the firewall section.
+    $colors = "['#3498db','#e74c3c','#2ecc71','#f39c12','#9b59b6',"
+            . "'#1abc9c','#e67e22','#34495e','#95a5a6','#16a085','#bdc3c7']";
+    $uid = preg_replace('/[^a-z0-9]/i','-',$containerId) . "-" . uniqid();
+
+    return <<<JS
+(function(){
+    var c = document.getElementById('$containerId');
+    if (!c) return;
+    c.innerHTML = "<div style='position:relative;height:300px'><canvas id='$uid'></canvas></div>";
+    new Chart(document.getElementById('$uid'), {
+        type: 'doughnut',
+        data: {
+            labels: $labelsJS,
+            datasets: [{
+                data: $valuesJS,
+                backgroundColor: $colors,
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {position: 'right', labels: {usePointStyle: true, padding: 8, boxWidth: 12}},
+                title:  {display: true, text: '$title'}
+            }
+        }
+    });
+})();
+JS;
 }
 function pie_categories_list():bool{
     $t=time();
@@ -174,6 +273,8 @@ function pie_categories_list():bool{
         $ico=ico_books;
         $v=$tpl->FormatNumber($v);
         $html[]="<tr class='$TRCLASS' id='$md'>";
+        // Pentest 2026-11-04 : categorie / IP source (donnee externe) affichee sans encodage (XSS stockee).
+        $k=req_html($k);
         $html[]="<td style='width:99%' nowrap><i class=\"$ico\"></i>&nbsp;<strong>$k</strong></td>";
         $html[]="<td style='width:1%' nowrap>$v</td>";
         $html[]="</tr>";
@@ -224,6 +325,8 @@ function pie_ips_list():bool{
         $ico=ico_computer;
         $v=$tpl->FormatNumber($v);
         $html[]="<tr class='$TRCLASS' id='$md'>";
+        // Pentest 2026-11-04 : categorie / IP source (donnee externe) affichee sans encodage (XSS stockee).
+        $k=req_html($k);
         $html[]="<td style='width:99%' nowrap><i class=\"$ico\"></i>&nbsp;<strong>$k</strong></td>";
         $html[]="<td style='width:1%' nowrap>$v</td>";
         $html[]="</tr>";

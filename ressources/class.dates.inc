@@ -33,7 +33,8 @@
 			);
 		protected $mois = array(
 			'FR' => array(1=>"Janvier",2=>"Fevrier",3=>"Mars",4=>"Avril",5=>"Mai",6=>"Juin",7=>"Juillet",8=>"Aout",9=>"Septembre",10=>"Octobre",11=>"Novembre",12=>"Decembre"),
-			'EN' => array(1=>"January",2=>"February",3=>"March",4=>"April",5=>"May",6=>"June",7=>"July",8=>"August",9=>"September",10=>"October",11=>"November",12=>"December")
+			'EN' => array(1=>"January",2=>"February",3=>"March",4=>"April",5=>"May",6=>"June",7=>"July",8=>"August",
+                9=>"September",10=>"October",11=>"November",12=>"December")
 			);
 		protected $moisC = array(
 			'FR' => array(1=>"Janv.",2=>"Fevr.",3=>"Mars",4=>"Avr.",5=>"Mai",6=>"Juin",7=>"Juil.",8=>"Aout",9=>"Sept.",10=>"Oct.",11=>"Nov.",12=>"Dec."),

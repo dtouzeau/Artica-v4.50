@@ -1,2 +1,2 @@
-<APP_DEVICE_CONTROL>Device Control center</APP_DEVICE_CONTROL>
-<APP_DEVICE_CONTROL_TEXT>Manage devices and control links with you server</APP_DEVICE_CONTROL_TEXT>
+<APP_DEVICE_CONTROL>Centro de controlo de dispositivos</APP_DEVICE_CONTROL>
+<APP_DEVICE_CONTROL_TEXT>Fa&#231;a a gest&#227;o dos dispositivos e controle as liga&#231;&#245;es com o seu servidor</APP_DEVICE_CONTROL_TEXT>

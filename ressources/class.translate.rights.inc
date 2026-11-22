@@ -29,6 +29,7 @@ class TranslateRights{
 			$f['AllowEmailing']=true;
 			$f['AsQuarantineAdministrator']=true;
 			$f['AsDnsAdministrator']=true;
+            $f['AsDnsMonitor']=true;
 			$f['AsSambaAdministrator']=true;
 			$f['AllowEditOuSecurity']=true;
 			$f['AllowChangeAntiSpamSettings']=true;
@@ -54,6 +55,19 @@ class TranslateRights{
 			$f['AsSquidPersonalCategories']=true;
             $f['AsDockerAdmin']=true;
             $f['AsDockerReverse']=true;
+            // Spec 005 (artica-docker): Docker sub-privileges. Without them here
+            // ParseRights() drops the keys the group Docker tab saves.
+            foreach (array("AsDockerView","AsDockerContainerView","AsDockerContainerCreate",
+                "AsDockerContainerStart","AsDockerContainerStop","AsDockerContainerRestart",
+                "AsDockerContainerKill","AsDockerContainerEdit","AsDockerContainerRemove",
+                "AsDockerContainerConsole","AsDockerContainerLogs","AsDockerContainerPrivileged",
+                "AsDockerContainerHostMount","AsDockerMetricsView","AsDockerImageView",
+                "AsDockerImageSearch","AsDockerImagePull","AsDockerImageBuild","AsDockerImageTag",
+                "AsDockerImageRemove","AsDockerImageForceRemove","AsDockerImagePrune","AsDockerImageScan",
+                "AsDockerVolumeView","AsDockerVolumeRemove","AsDockerNetworkView",
+                "AsDockerNetworkEdit","AsDockerEventsView","AsDockerStackView","AsDockerStackDeploy",
+                "AsDockerStackEdit","AsDockerStackControl","AsDockerStackRemove",
+                "AsDockerStackSecrets","AsDockerDiskQuotaRead","AsDockerDiskQuotaCreate","AsDockerDiskQuotaResize","AsDockerDiskQuotaDelete","AsDockerDiskQuotaAdmin","AsDockerRuntimeView") as $dk){ $f[$dk]=true; }
             $f['AsCategories']=true;
 
 			
@@ -74,6 +88,9 @@ class TranslateRights{
 			$f['AsProxyMonitor']=true;
 			$f["AsSystemWebMaster"]=true;
 			$f["AsArticaMetaAdmin"]=true;
+			// Administrateur Artica Meta de tenants (clients) : perimetre resolu a la connexion.
+			// N'implique AUCUN autre droit (contrairement a AsArticaMetaAdmin plus bas).
+			$f["AsMetaAdmin"]=true;
 			return $f;		
 	}
 	
@@ -257,6 +274,7 @@ class TranslateRights{
 			$this->FINAL_PRIVS["AsSquidAdministrator"]=true;
 			$this->FINAL_PRIVS["AsSambaAdministrator"]=true;
 			$this->FINAL_PRIVS["AsDnsAdministrator"]=true;
+            $this->FINAL_PRIVS["AsDnsMonitor"]=true;
 			$this->FINAL_PRIVS["AsQuarantineAdministrator"]=true;
 			$this->FINAL_PRIVS["AllowDansGuardianBanned"]=true;
 			$this->FINAL_PRIVS["AllowChangeAntiSpamSettings"]=true;
@@ -313,6 +331,7 @@ class TranslateRights{
 			$this->FINAL_PRIVS["AsAnAdministratorGeneric"]=true;
 			$this->FINAL_PRIVS["AsSambaAdministrator"]=true;
 			$this->FINAL_PRIVS["AsDnsAdministrator"]=true;
+            $this->FINAL_PRIVS["AsDnsMonitor"]=true;
 			$this->FINAL_PRIVS["AsVirtualBoxManager"]=true;
 			$this->FINAL_PRIVS["OverWriteRestrictedDomains"]=true;
 			$this->FINAL_PRIVS["AsWebMaster"]=true;
@@ -354,6 +373,7 @@ class TranslateRights{
 			$this->FINAL_PRIVS["AllowEditAliases"]=true;
 		}
 		if($this->FINAL_PRIVS["AsDnsAdministrator"]==true){
+            $this->FINAL_PRIVS["AsDnsMonitor"]=true;
 			$this->FINAL_PRIVS["AsOrgAdmin"]=true;
 			$this->FINAL_PRIVS["AllowAddGroup"]=true;
 			$this->FINAL_PRIVS["AsOrgDNSAdmin"]=true;

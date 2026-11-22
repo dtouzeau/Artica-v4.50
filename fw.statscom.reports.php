@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 
 $GLOBALS["TASKS_TYPE"][0]="{APP_PROXY}: {yesterday_report}";
 $GLOBALS["TASKS_TYPE"][1]="{APP_PROXY}: {daily_report}";
@@ -15,9 +18,9 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.tasks.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
-if(isset($_POST["smtp_auth_enabled"])){smtp_auth_save();exit;}
-if(isset($_GET["smtp-auth-js"])){smtp_auth_js();exit;}
-if(isset($_GET["smtp-auth-popup"])){smtp_auth_popup();exit;}
+// Pentest 2026-11-04 : ForceTaskType/ForceType/ID/enable-task-js/run-task-js/delete-task-js/remove/execute etaient recopies sans encodage dans la page (XSS).
+foreach(array("ForceTaskType","ForceType","ID","enable-task-js","run-task-js","delete-task-js") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=intval($_GET[$xssk]);}}
+foreach(array("ID","remove","execute","TaskType") as $xssk){if(isset($_POST[$xssk])){$_POST[$xssk]=intval($_POST[$xssk]);}}
 if(isset($_GET["main"])){main();exit;}
 if(isset($_GET["AddNewSchedule-js"])){schedule_js();exit;}
 if(isset($_GET["AddNewSchedule-popup"])){schedule_popup();exit;}
@@ -101,7 +104,8 @@ function sub_page(){
 
 function schedule_enable(){
     header("content-type: application/x-javascript");
-    $ID=$_GET["enable-task-js"];
+    // Pentest 2026-11-04 : enable-task-js etait concatene dans la requete.
+    $ID=intval($_GET["enable-task-js"]);
     $q=new lib_sqlite("/home/artica/SQLITE/sys_schedules.db");
     $ligne=$q->mysqli_fetch_array("SELECT enabled FROM pdf_reports WHERE ID=$ID");
     $enabled=$ligne["enabled"];
@@ -113,7 +117,8 @@ function schedule_enable(){
 
 }
 function schedule_run_task_js(){
-    $ID=$_GET["run-task-js"];
+    // Pentest 2026-11-04 : run-task-js etait concatene dans la requete.
+    $ID=intval($_GET["run-task-js"]);
     $tasks=new system_tasks();
     $q=new lib_sqlite("/home/artica/SQLITE/sys_schedules.db");
     $tpl=new template_admin();
@@ -132,7 +137,8 @@ function schedule_execute(){
 
 
 function schedule_delete_js(){
-    $ID=$_GET["delete-task-js"];
+    // Pentest 2026-11-04 : delete-task-js etait concatene dans la requete.
+    $ID=intval($_GET["delete-task-js"]);
     $tasks=new system_tasks();
     $q=new lib_sqlite("/home/artica/SQLITE/sys_schedules.db");
     $tpl=new template_admin();
@@ -144,7 +150,7 @@ function schedule_delete_js(){
 }
 function schedule_remove(){
     $q=new lib_sqlite("/home/artica/SQLITE/sys_schedules.db");
-    $ID=$_POST["remove"];
+    $ID=intval($_POST["remove"]);
     $ligne=$q->mysqli_fetch_array("SELECT * FROM pdf_reports WHERE ID=$ID");
     admin_tracks("Deleting PDF report schedule {$ID}: {$ligne["subject"]}");
     $q->QUERY_SQL("DELETE FROM pdf_reports WHERE ID=$ID");
@@ -178,7 +184,8 @@ function schedule_popup(){
     }
     if(!isset($_GET["ForceType"])){$_GET["ForceType"]=0;}
     if(!is_numeric($_GET["ForceType"])){$_GET["ForceType"]=0;}
-    $ID=$_GET["ID"];
+    // Pentest 2026-11-04 : ID etait concatene dans la requete.
+    $ID=intval($_GET["ID"]);
     $titleplus=null;
     $jsafter="dialogInstance1.close();LoadAjax('table-pdf-reports-task-loader','$page?main=yes&ForceTaskType={$_GET["ForceTaskType"]}');";
     if($ID>0){
@@ -239,29 +246,32 @@ function schedule_save(){
     $defaultdesc=replace_accents($info);
     if($_POST["TimeDescription"]==null){$_POST["TimeDescription"]=$defaultdesc ." : {$_POST["TimeText"]}";}
 
-    $_POST["TimeDescription"]=mysql_escape_string2($_POST["TimeDescription"]);
+    // Pentest 2026-11-04 : TimeText, recipients, subject et TimeDescription etaient concatenes dans la requete.
     $subject=$_POST["subject"];
     $recipients=$_POST["recipients"];
+    $TaskTypeInt=intval($_POST["TaskType"]);
+    $SaveID=intval($_POST["ID"]);
+    $params=array((string)$_POST["TimeDescription"],(string)$_POST["TimeText"],(string)$recipients,(string)$subject);
 
 
     $sql="INSERT INTO pdf_reports (TimeDescription,TimeText,TaskType,enabled,recipients,subject)
-	VALUES('{$_POST["TimeDescription"]}','{$_POST["TimeText"]}','{$_POST["TaskType"]}',1,'$recipients','$subject')";
+	VALUES(?,?,'$TaskTypeInt',1,?,?)";
 
-    if($_POST["ID"]>0){
+    if($SaveID>0){
         $sql="UPDATE pdf_reports SET
-	TimeDescription='{$_POST["TimeDescription"]}',
-			TimeText='{$_POST["TimeText"]}',
-			TaskType='{$_POST["TaskType"]}',
-			recipients='$recipients',
-			subject='$subject'
-			WHERE ID={$_POST["ID"]}
+	TimeDescription=?,
+			TimeText=?,
+			TaskType='$TaskTypeInt',
+			recipients=?,
+			subject=?
+			WHERE ID=$SaveID
 				";
 
     }
 
 
     if(!$q->TABLE_EXISTS("pdf_reports")){
-        $sql="CREATE TABLE IF NOT EXISTS `pdf_reports` (
+        $sqlCreate="CREATE TABLE IF NOT EXISTS `pdf_reports` (
 		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
 		`TimeText` VARCHAR( 128 ),
 		`TimeDescription` VARCHAR( 128 ),
@@ -269,11 +279,11 @@ function schedule_save(){
 		`recipients` TEXT,
 		`subject` TEXT,
 		`enabled` INTEGER )";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+        $q->QUERY_SQL($sqlCreate);
+        if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
     }
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+    $q->QUERY_SQL_PARAMS($sql,$params);
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
 
     admin_tracks("Saving PDF report schedule {$_POST["ID"]}: {$_POST["subject"]}");
 
@@ -303,7 +313,7 @@ function main(){
     $ARRAY["CMD"]="statscom.php?schedules=yes";
     $ARRAY["TITLE"]="{apply_all_schedules}";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-firehol-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-firehol-restart')";
 
 
     $schedules=new system_tasks();
@@ -347,7 +357,8 @@ function main(){
 
 
     if(intval($_GET["ForceTaskType"])>0){
-        $FORCE_FILTER="WHERE TaskType='{$_GET["ForceTaskType"]}'";
+        // Pentest 2026-11-04 : ForceTaskType etait concatene dans la requete.
+        $FORCE_FILTER="WHERE TaskType='".intval($_GET["ForceTaskType"])."'";
     }
 
     $sql="SELECT *  FROM $table $FORCE_FILTER";
@@ -370,7 +381,7 @@ function main(){
         $ARRAY["CMD"]="statscom.php?schedule={$ligne['ID']}";
         $ARRAY["TITLE"]="{building_schedule}";
         $prgress=base64_encode(serialize($ARRAY));
-        $jsSend="Loadjs('fw.progress.php?content=$prgress&mainid=progress-firehol-restart')";
+        $jsSend="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-firehol-restart')";
 
         $ligne["TaskType"]=$tpl->_ENGINE_parse_body($GLOBALS["TASKS_TYPE"][$ligne["TaskType"]]);
         $TimeDescription=$ligne["TimeDescription"];
@@ -380,7 +391,8 @@ function main(){
         $enable=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-task-js={$ligne['ID']}&ForceTaskType={$_GET["ForceTaskType"]}')",$md,"AsSystemAdministrator");
 
         $delete=$tpl->icon_delete("Loadjs('$page?delete-task-js={$ligne['ID']}&ForceTaskType={$_GET["ForceTaskType"]}')","AsSystemAdministrator");
-        $explainTXT=$ligne["subject"];
+        // Pentest 2026-11-04 : sujet/destinataires du rapport (donnee externe) affiche sans encodage (XSS stockee).
+        $explainTXT=req_html($ligne["subject"]);
 
         if($TaskType==7){
             $explainTXT=$explainTXT."<br><small>{synchronize_data_stats}</small>";
@@ -399,7 +411,7 @@ function main(){
 
 
         $ligne["TaskType"]=utf8_encode($ligne["TaskType"]);
-        $ligne["recipients"]=str_replace(";",",",$ligne["recipients"]);
+        $ligne["recipients"]=str_replace(";",",",req_html($ligne["recipients"]));
         $ligne["recipients"]=str_replace(",","<br>",$ligne["recipients"]);
 
         $download=$tpl->icon_download_artica($local_path);

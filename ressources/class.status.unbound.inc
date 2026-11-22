@@ -56,7 +56,9 @@ function unbound(){
         if(!$CORP_LICENSE){
             squid_admin_mysql(0,"{APP_UNBOUND} {disable} {APP_DNS_FIREWALL} {license_error}",
                 null,__FILE__,__LINE__);
-            shell_exec2("$cmdprf/exec.unbound.php --uninstall-firewall  >/dev/null 2>&1 &");
+            // articarest's configurator disables the DNS firewall without a Corporate
+            // license (was exec.unbound.php --uninstall-firewall).
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/reconfigure");
         }
     }
 
@@ -84,12 +86,11 @@ function unbound(){
 
 
     if(!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)){
-        if(!$GLOBALS["DISABLE_WATCHDOG"]){
-            $ServerRunSince=$GLOBALS["CLASS_UNIX"]->ServerRunSince();
-            if($ServerRunSince>3){squid_admin_mysql(0, "DNS Cache service {stopped} [{action}={start}]", null,__FILE__,__LINE__);}
-            $nohup=$GLOBALS["CLASS_UNIX"]->find_program("nohup");
-            shell_exec2("$nohup /etc/init.d/unbound start >/dev/null 2>&1 &");
-        }
+        // No restart and no alert from here: the articarest daemon owns the
+        // unbound watchdog (unbound.Status(true) + monit). This second executor
+        // restarted a service paused on purpose (/run/unbound.paused) and raised
+        // a critical "stopped" notification every 2-3 minutes (192.168.3.241,
+        // 2026-10-02).
         $l[]="running=0\ninstalled=1";
         $l[]="";
 
@@ -99,14 +100,6 @@ function unbound(){
     $l[]=GetMemoriesOf($master_pid,"APP_UNBOUND");
     $l[]="";
 
-    $EnableUnboundBlackLists=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableUnboundBlackLists"));
-    if($EnableUnboundBlackLists==1){
-        $time=$GLOBALS["CLASS_UNIX"]->file_time_min("/etc/artica-postfix/pids/exec.unbound.blacklists_download.time");
-        if($time>384){
-            shell_exec2("$cmdprf/exec.unbound.php --blacklists-download  >/dev/null 2>&1 &");
-        }
-
-    }
     $RESTART_CRON=false;
     if($EnableDNSFirewall==1){
         if(!is_file("/etc/cron.d/dns-firewall-stats")) {
@@ -124,16 +117,10 @@ function unbound(){
         UNIX_RESTART_CRON();
     }
 
-    $unbound_control=$GLOBALS["CLASS_UNIX"]->find_program("unbound-control");
-    if(is_file($unbound_control)){
-        $ftime=PROGRESS_DIR."/unbound.control.stats";
-        $time=$GLOBALS["CLASS_UNIX"]->file_time_min($ftime);
-        if($time>10){
-            if(is_file($ftime)){@unlink($ftime);}
-            $cmd="$unbound_control -c /etc/unbound/unbound.conf stats >$ftime 2>&1";
-            shell_exec($cmd);
-        }
-    }
+    // unbound.control.stats is written by the daemon (GET /unbound/control/stats,
+    // `unbound-control stats_noreset`), called by the pages that read it. The
+    // `stats` this block ran every 10 min RESET unbound's counters at each read,
+    // which skewed the 5-min UnboundMetrics deltas: removed.
 
     $EnableDNSRootInts=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSRootInts"));
     if($EnableDNSRootInts==1){

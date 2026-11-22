@@ -109,8 +109,22 @@ function check_ad_rest():bool{
 
 
     $master_pid = ad_rest_pid();
-    $unix->ToSyslog("Starting REST API service ($MONIT_WATCHDOG not found)",false,"watchdog-of-watchdog");
     if($unix->process_exists($master_pid)){return true;}
+
+    // Le message ci-dessous etait emis AVANT ce test, et son texte etait recopie
+    // du bloc precedent (« $MONIT_WATCHDOG not found ») : a ce stade les trois
+    // is_file() plus haut ont TOUS ete franchis, donc ce fichier EXISTE. La ligne
+    // partait donc a chaque passage -- toutes les 3 minutes, 1273 lignes dans un
+    // seul bundle -- pour annoncer un demarrage qui n'avait pas lieu, en accusant
+    // un fichier present.
+    //
+    // Le cout n'est pas le volume, c'est le diagnostic : sur s30-proxyweb00
+    // (2026-09-14), cette ligne tombait a la seconde ou articarest mourait en
+    // boucle, et elle a fait chercher la panne du cote d'un monitrc manquant qui
+    // n'a jamais manque. Un message de journal appartient a la branche qui agit,
+    // et doit nommer la condition REELLEMENT testee -- ici le PID cherche, qui
+    // vaut 0 quand aucune des quatre methodes de ad_rest_pid() n'a abouti.
+    $unix->ToSyslog("Starting REST API service (no running daemon found, ad_rest_pid=$master_pid)",false,"watchdog-of-watchdog");
     squid_admin_mysql(0,"REST API service not started [action=start]",null,__FILE__,__LINE__);
     shell_exec("/etc/init.d/artica-ad-rest start");
     return true;

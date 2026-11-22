@@ -37,16 +37,17 @@ class squid_certificate{
     }
 
     private function build_secure_proxy(){
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $sql="SELECT certid,srca,crt FROM subcertificates WHERE ID=$this->subcertificate";
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $sub=$cdb->subGetById(intval($this->subcertificate));
+        if(!is_object($sub)){return null;}
         @mkdir("/etc/squid3",0755,true);
         @mkdir("/etc/squid3/ssl",0755,true);
         @mkdir("/etc/squid3/ssl/secure",0755,true);
 
-        $ligne=$q->mysqli_fetch_array($sql);
-        $certid=intval($ligne["certid"]);
-        $certificateData=base64_decode($ligne["crt"]);
-        $KeyData=base64_decode($ligne["srca"]);
+        $certid=intval($sub->certid ?? 0);
+        $certificateData=base64_decode((string)($sub->crt ?? ""));
+        $KeyData=base64_decode((string)($sub->srca ?? ""));
 
 
 
@@ -58,10 +59,9 @@ class squid_certificate{
 
         //$certid
 
-
-        $sql="SELECT privkey,crt FROM sslcertificates WHERE ID='$certid'";
-        $ligne=$q->mysqli_fetch_array($sql);
-        @file_put_contents($CaPath,$ligne["crt"]);
+        $main=$cdb->getById($certid);
+        $crtMain=is_object($main)?(string)($main->crt ?? ""):"";
+        @file_put_contents($CaPath,$crtMain);
 
         $cmds[]="cert=$certificatepath";
         $cmds[]="key=$keypath";
@@ -142,21 +142,20 @@ class squid_certificate{
         $keyout="/etc/squid3/ssl/$certificate_filename.dyn";
         $this->key_out=$keyout;
 
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $sql="SELECT `UsePrivKeyCrt`,`SquidCert`,`crt`,`privkey`,`Squidkey`,`bundle` FROM sslcertificates WHERE CommonName='$commname'";
-        $ligne=$q->mysqli_fetch_array($sql);
-
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $row=$cdb->getByCommonName($commname);
+        if(!is_object($row)){
+            $GLOBALS["BuildSquidCertificate"][]="# CommonName = $commname SQL ERROR (".__LINE__.")";
+            $this->BuildSquidCertificateCRTD_LOGS[]="# REST ERROR!!! [".__LINE__."]";
+            $GLOBALS["BuildSquidCertificate"][]="#". str_replace("\n", " ", $cdb->lastError);
+            $row=(object)[];
+        }
+        $ligne=(array)$row;
         if(!isset($ligne["UsePrivKeyCrt"])){$ligne["UsePrivKeyCrt"]=0;}
         if(!isset($ligne["bundle"])){$ligne["bundle"]=null;}
         if(!isset($ligne["privkey"])){$ligne["privkey"]=null;}
         if(!isset($ligne["crt"])){$ligne["crt"]=null;}
-
-
-        if(!$q->ok){
-            $GLOBALS["BuildSquidCertificate"][]="# CommonName = $commname SQL ERROR (".__LINE__.")";
-            $this->BuildSquidCertificateCRTD_LOGS[]="# MySQL ERROR!!! [".__LINE__."]";
-            $GLOBALS["BuildSquidCertificate"][]="#". str_replace("\n", " ", $q->mysql_error);
-        }
         $this->BuildSquidCertificateCRTD_LOGS[]="# Key out = $keyout  [".__LINE__."]";
         $this->BuildSquidCertificateCRTD_LOGS[]="# CommonName = $commname UsePrivKeyCrt={$ligne["UsePrivKeyCrt"]} [".__LINE__."]";
 
@@ -187,14 +186,15 @@ class squid_certificate{
 
         if(intval($ligne["UsePrivKeyCrt"])==0){
             $GLOBALS["BuildSquidCertificate"][]="UsePrivKeyCrt = 0 [".__LINE__."]";
-            $sql="SELECT `UsePrivKeyCrt`,`easyrsa`,`SquidCert`,`Squidkey`,`crt`,`privkey`,`srca` FROM sslcertificates WHERE CommonName='$commname'";
-            if($GLOBALS["VERBOSE"]){echo  "Starting......: ".date("H:i:s")." [SSL]: $sql\n";}
-            $ligne=$q->mysqli_fetch_array($sql);
-            if(!$q->ok){
-                $GLOBALS["BuildSquidCertificate"][]="# $sql [error]";
-                $GLOBALS["BuildSquidCertificate"][]="#". str_replace("\n", " ", $q->mysql_error);
-                echo $q->mysql_error."\n";
+            if($GLOBALS["VERBOSE"]){echo  "Starting......: ".date("H:i:s")." [SSL]: reloading $commname\n";}
+            $row=$cdb->getByCommonName($commname);
+            if(!is_object($row)){
+                $GLOBALS["BuildSquidCertificate"][]="# reload $commname [error]";
+                $GLOBALS["BuildSquidCertificate"][]="#". str_replace("\n", " ", $cdb->lastError);
+                echo $cdb->lastError."\n";
+                $row=(object)[];
             }
+            $ligne=(array)$row;
             $privatekey=str_replace("\\n", "\n", $ligne["srca"]);
             $SquidCert=$ligne["SquidCert"];
             $strlen=strlen($SquidCert);
@@ -364,15 +364,16 @@ class squid_certificate{
         $cert_token="cert";
         $key_token="key";
         if($cache_peer){$cert_token="sslcert";$key_token="sslkey";}
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
         if(!class_exists("unix")){include_once("/usr/share/artica-postfix/framework/class.unix.inc");}$unix=new unix();
 
 
         $certificate_filename=md5($commname);
         $this->LOGS[]="# Certificate $commname File name: $certificate_filename";
 
-        $sql="SELECT `UsePrivKeyCrt`,`crt`,`privkey`,`SquidCert`,`Squidkey`,`bundle` FROM sslcertificates WHERE CommonName='$commname'";
-        $ligne=$q->mysqli_fetch_array($sql);
+        $row=$cdb->getByCommonName($commname);
+        $ligne=is_object($row)?(array)$row:array();
 
         if($ligne["UsePrivKeyCrt"]==1){
             @file_put_contents("/etc/squid3/$certificate_filename.pem", $ligne["crt"]);
@@ -403,11 +404,12 @@ class squid_certificate{
 
 
 
-        if(!$q->ok){
-            $this->LOGS[]="# MySQL error L.".__LINE__;
-            echo "Starting......: ".date("H:i:s")." [SSL] :: $commname = $q->mysql_error\n";}
+        if($cdb->lastError!==""){
+            $this->LOGS[]="# REST error L.".__LINE__;
+            echo "Starting......: ".date("H:i:s")." [SSL] :: $commname = $cdb->lastError\n";
+        }
 
-        if(strlen($ligne["SquidCert"])==0){
+        if(strlen($ligne["SquidCert"] ?? "")==0){
 
             if(strlen($ligne["crt"])>10){
                 $ligne["SquidCert"]=$ligne["crt"];
@@ -472,9 +474,8 @@ class squid_certificate{
 
         @mkdir("/etc/squid3/ssl",0755,true);
         if(!is_file("/etc/squid3/ssl/cacert.pem")){
-            if(!class_exists("unix")){include_once("/usr/share/artica-postfix/framework/class.unix.inc");}$unix=new unix();
             echo "$prefixOut invoke to create a faked Self-signed certificate\n";
-            shell_exec($unix->LOCATE_PHP5_BIN()." /usr/share/artica-postfix/exec.squid.php --certificate");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/certificate/default");
         }
 
         $CertToken="cert=/etc/squid3/ssl/cacert.pem";

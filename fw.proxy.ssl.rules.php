@@ -1,6 +1,11 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// Verrou Artica Meta (politique sslproxy) : regles Meta et reglages tenus en lecture seule
+include_once(dirname(__FILE__)."/ressources/class.sslproxy.meta.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
@@ -21,6 +26,7 @@ if(isset($_GET["default-js"])){default_js();exit;}
 if(isset($_GET["default-popup"])){default_popup();exit;}
 if(isset($_POST["ProxyDefaultUncryptSSL"])){ProxyDefaultUncryptSSL_save();exit;}
 if(isset($_GET["filltable"])){filltable();exit;}
+if(isset($_GET["AllowSquidWhitelistsSSL-js"])){AllowSquidWhitelistsSSL_js();exit;}
 
 page();
 
@@ -29,8 +35,8 @@ function page(){
 	$page=CurrentPageName();
 	$tpl=new templates();
 
-	
-	
+
+
 	if(isset($_GET["main-page"])){
 
             $html=$tpl->page_header("{ssl_protocol}&nbsp;&raquo;&nbsp;{PROXY_ACLS}"
@@ -50,17 +56,17 @@ function page(){
     }
 
 
-	
+
 
 	if(isset($_GET["main-page"])){
 		$tpl=new template_admin(null,$html);
 		echo $tpl->build_firewall();
 		return;
 	}
-	
+
 	$tpl=new templates();
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 function filltable(){
@@ -68,12 +74,18 @@ function filltable(){
     $tpl=new template_admin();
     $uncrypt_ssl=$tpl->javascript_parse_text("{uncrypt_websites}");
     $trust_ssl=$tpl->javascript_parse_text("{trust_ssl}");
-    $ID=$_GET["filltable"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM ssl_rules WHERE ID='$ID'");
-    $crypt=$ligne["crypt"];
-    $enabled=intval($ligne["enabled"]);
-    if($crypt==1 OR ($ligne["trust"]==1)){$ACCESSEnabled=1;}
+    $ID=intval($_GET["filltable"]);
+
+    $data = acls_api_get("/proxy/ssl-rules/$ID");
+    if(!is_array($data)){
+        header("content-type: application/x-javascript");
+        echo "// ssl-rules get failed for ID=$ID\n";
+        return;
+    }
+    $crypt   = intval($data["crypt"] ?? 0);
+    $enabled = intval($data["enabled"] ?? 0);
+
+    if($crypt==1 OR intval($data["trust"] ?? 0)==1){$ACCESSEnabled=1;}
     $squid_acls_groups=new squid_acls_groups();
     $objects=$squid_acls_groups->getobjectsNameFromAclrule($ID,null,"sslrules_sqacllinks");
     $and_text=$tpl->javascript_parse_text(" {and} ");
@@ -91,7 +103,7 @@ function filltable(){
         $TTEXT[]="<strong>{do_not_encrypt_websites}</strong>";
     }
 
-    if($ligne["trust"]==1){
+    if(intval($data["trust"] ?? 0)==1){
         $TTEXT[]="<strong>$trust_ssl</strong>";
         $ACCESSEnabled=1;
     }
@@ -100,7 +112,7 @@ function filltable(){
     $please_specify_an_object=$tpl->_ENGINE_parse_body("{please_specify_an_object}");
 
     if(count($objects)>0) {
-        $explain=$squid_acls_groups->ACL_MULTIPLE_EXPLAIN($ligne['ID'],$ACCESSEnabled,0,"sslrules_sqacllinks")." {then} ".@implode($and_text, $TTEXT);
+        $explain=$squid_acls_groups->ACL_MULTIPLE_EXPLAIN($ID,$ACCESSEnabled,0,"sslrules_sqacllinks")." {then} ".@implode($and_text, $TTEXT);
 
     }else{
         $explain="<div class=text-danger'>$please_specify_an_object</div>";
@@ -114,32 +126,41 @@ function filltable(){
 
 function rule_delete_js(){
 	header("content-type: application/x-javascript");
-	$ID=$_GET["rule-delete-js"];
+	$ID=intval($_GET["rule-delete-js"]);
 	$md="acl-$ID";
+	if(sslproxy_meta_row("ssl_rules",$ID)){echo "alert(".json_encode(sslproxy_meta_text()).");";return;}
 	if(!rule_delete($ID)){return;}
 	echo "$('#$md').remove();";
-	
-	
+
+
 }
 function rule_enable(){
     $page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 	$tpl=new template_admin();
     $ID=intval($_GET["enable-js"]);
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM ssl_rules WHERE ID='$ID'");
-	$enabled_src=intval($ligne["enabled"]);
-	if($enabled_src==0){
-		$js="$( \"#acl-{$_GET["enable-js"]}\" ).removeClass( \"text-muted\" );";
-		$enabled=1;
-	}else{
-	    $js="$( \"#acl-{$_GET["enable-js"]}\" ).addClass( \"text-muted\" );";
-		$enabled=0;
-	}
-	
-	$q->QUERY_SQL("UPDATE ssl_rules SET enabled='$enabled' WHERE ID='{$_GET["enable-js"]}'");
+    if(sslproxy_meta_row("ssl_rules",$ID)){sslproxy_meta_refuse_js();return;}
 
+    $data = acls_api_get("/proxy/ssl-rules/$ID");
+    if(!is_array($data)){
+        header("content-type: application/x-javascript");
+        echo "// ssl-rules get failed for ID=$ID\n";
+        return;
+    }
+    $enabled_src = intval($data["enabled"] ?? 0);
+    $enabled = ($enabled_src == 0) ? 1 : 0;
 
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
+    if($enabled_src==0){
+        $js="$( \"#acl-$ID\" ).removeClass( \"text-muted\" );";
+    }else{
+        $js="$( \"#acl-$ID\" ).addClass( \"text-muted\" );";
+    }
+
+    list($ok, $err) = acls_api_send("PUT", "/proxy/ssl-rules/$ID", ["enabled" => $enabled]);
+    if(!$ok){
+        header("content-type: application/x-javascript");
+        echo "alert('".$tpl->javascript_parse_text($err)."');\n";
+        return;
+    }
 
     header("content-type: application/x-javascript");
 	echo "// ID = $ID, src=$enabled_src, enabled =$enabled\n";
@@ -151,14 +172,15 @@ function rule_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ID=intval(trim($_GET["rule-id-js"]));
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT aclname FROM webfilters_sqacls WHERE ID='$ID'");
-	$tpl->js_dialog("{rule}: $ID {$ligne["aclname"]}","$page?rule-tabs=$ID");
+
+    $data = acls_api_get("/proxy/acls/sqlite/rule/$ID");
+    $aclname = is_array($data) ? ($data["aclname"] ?? "") : "";
+	$tpl->js_dialog("{rule}: $ID $aclname","$page?rule-tabs=$ID");
 }
 function default_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $tpl->js_dialog("{default}","$page?default-popup=yes");
+    $tpl->js_dialog2("{default}","$page?default-popup=yes",650);
 
 }
 
@@ -172,60 +194,76 @@ function rule_tabs(){
 	$RefreshTable=base64_encode("LoadAjax('table-acls-ssl-rules','$page?table=yes');");
 	$array["{proxy_objects}"]="fw.proxy.acls.objects.php?rule-id=$ID&TableLink=sslrules_sqacllinks&RefreshTable=$RefreshTable";
 	echo $tpl->tabs_default($array);
-	
+
 }
-function default_popup(){
+function default_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
 
     $ProxyDefaultUncryptSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ProxyDefaultUncryptSSL"));
-    $jsafter="LoadAjax('table-acls-ssl-rules','$page?table=yes');BootstrapDialog1.close();";
-    $form[]=$tpl->field_hidden("default", "yes");
-    $form[]=$tpl->field_checkbox("ProxyDefaultUncryptSSL","{uncrypt_ssl}",$ProxyDefaultUncryptSSL,false,"{uncrypt_ssl_explain}");
-    $html=$tpl->form_outside("{default}", @implode("\n", $form),null,"{apply}",$jsafter,"AsSquidAdministrator");
-    echo $tpl->_ENGINE_parse_body($html);
+    $jsafter="LoadAjax('table-acls-ssl-rules','$page?table=yes');dialogInstance2.close();";
+    if(sslproxy_meta_key_held("ProxyDefaultUncryptSSL")){
+        $state=$ProxyDefaultUncryptSSL==1?"{uncrypt_ssl}":"{do_not_encrypt_websites}";
+        echo $tpl->_ENGINE_parse_body(sslproxy_meta_banner($tpl,"","{sslproxy_meta_settings_explain}")
+            ."<p><strong>{default_rule2}:</strong> $state</p>");
+        return true;
+    }
+
+
+    echo $tpl->_ENGINE_parse_body($tpl->BigCircleCheckbox(
+        "ProxyDefaultUncryptSSL|default:yes",
+        "{default_rule2}: {uncrypt_ssl}","{uncrypt_ssl_explain}",$ProxyDefaultUncryptSSL,$jsafter));
+    return true;
 
 }
-function ProxyDefaultUncryptSSL_save(){
+function ProxyDefaultUncryptSSL_save():bool{
+    if(sslproxy_meta_key_held("ProxyDefaultUncryptSSL")){return sslproxy_meta_refuse_text();}
     $sock=new sockets();
     $sock->SET_INFO("ProxyDefaultUncryptSSL",$_POST["ProxyDefaultUncryptSSL"]);
-
+    return admin_tracks("Proxy: Set to uncrypt default ssl sites to {$_POST["ProxyDefaultUncryptSSL"]}");
 }
 
 function rule_settings(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$ID=$_GET["rule-settings"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM ssl_rules WHERE ID='{$ID}'");
+	$ID=intval($_GET["rule-settings"]);
 
-	
-	$form[]=$tpl->field_hidden("ID", "{$ID}");
-	$form[]=$tpl->field_checkbox("enabled","{enabled}",$ligne["enabled"],true);
-	$form[]=$tpl->field_checkbox("crypt","{uncrypt_ssl}",$ligne["crypt"],false,"{uncrypt_ssl_explain}");
-	$form[]=$tpl->field_checkbox("trust","{trust_ssl}",$ligne["trust"],false,"{trust_ssl_explain}");
-	$form[]=$tpl->field_text("description", "{rule_name}", $ligne["description"],true);
+    $data = acls_api_get("/proxy/ssl-rules/$ID");
+    if(!is_array($data)){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{error}"));
+        return;
+    }
+
+	$metaBanner="";
+	if(sslproxy_meta_row("ssl_rules",$ID)){
+		sslproxy_meta_lock_form($tpl);
+		$metaBanner="<div class='alert alert-info' style='margin:10px 0'><i class='fa-solid fa-lock'></i>&nbsp;{sslproxy_meta_row_locked}</div>";
+	}
+	$form[]=$tpl->field_hidden("ID", $ID);
+	$form[]=$tpl->field_checkbox("enabled","{enabled}",intval($data["enabled"] ?? 0),true);
+	$form[]=$tpl->field_checkbox("crypt","{uncrypt_ssl}",intval($data["crypt"] ?? 0),false,"{uncrypt_ssl_explain}");
+	$form[]=$tpl->field_checkbox("trust","{trust_ssl}",intval($data["trust"] ?? 0),false,"{trust_ssl_explain}");
+	$form[]=$tpl->field_text("description", "{rule_name}", $data["description"] ?? "",true);
 	$jsafter="LoadAjax('table-acls-ssl-rules','$page?table=yes');";
-	
-	$html=$tpl->form_outside("{rule} {$ligne["description"]}", @implode("\n", $form),null,"{apply}",$jsafter,"AsSquidAdministrator");
+
+	$html=$metaBanner.$tpl->form_outside("{rule} ".htmlspecialchars($data["description"] ?? ""), @implode("\n", $form),null,"{apply}",$jsafter,"AsSquidAdministrator");
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 function rule_save(){
-	$ID=$_POST["ID"];
+	$ID=intval($_POST["ID"]);
 	unset($_POST["ID"]);
-    $edit_fields=array();
-	$_POST["description"]=sqlite_escape_string2(url_decode_special_tool($_POST["description"]));
-	foreach ($_POST as $key=>$val){
-		$add_fields[]="`$key`";
-		$add_values[]="'$val'";
-		$edit_fields[]="`$key`='$val'";
-	}
-	$sql="UPDATE ssl_rules SET ".@implode(",", $edit_fields)." WHERE ID='$ID'";
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error;}
+	if(sslproxy_meta_row("ssl_rules",$ID)){sslproxy_meta_refuse_post();return;}
+
+    $body = [];
+    $body["description"] = url_decode_special_tool($_POST["description"] ?? "");
+    $body["enabled"]     = intval($_POST["enabled"] ?? 0);
+    $body["crypt"]       = intval($_POST["crypt"] ?? 0);
+    $body["trust"]       = intval($_POST["trust"] ?? 0);
+
+    list($ok, $err) = acls_api_send("PUT", "/proxy/ssl-rules/$ID", $body);
+    if(!$ok){ echo htmlspecialchars($err); }
 }
 
 function new_rule_js(){
@@ -238,72 +276,50 @@ function new_rule_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 
-	
+
 	$form[]=$tpl->field_hidden("newrule", "yes");
 	$form[]=$tpl->field_hidden("enabled","1");
-	
+
 	$form[]=$tpl->field_checkbox("crypt","{uncrypt_ssl}",1,false,"{uncrypt_ssl_explain}");
 	$form[]=$tpl->field_checkbox("trust","{trust_ssl}",0,false,"{trust_ssl_explain}");
 	$form[]=$tpl->field_text("description", "{rule_name}", null,true);
 	$jsafter="LoadAjax('table-acls-ssl-rules','$page?table=yes');BootstrapDialog1.close();";
-	
+
 	$html=$tpl->form_outside("{new_rule}", @implode("\n", $form),null,"{add}",$jsafter,"AsSquidAdministrator");
 	echo $tpl->_ENGINE_parse_body($html);
-	
+
 }
 
 
 
 function rule_move(){
 	$tpl=new template_admin();
-	$ID=$_GET["acl-rule-move"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$sql="SELECT zOrder FROM ssl_rules WHERE `ID`='$ID'";
-	$ligne=$q->mysqli_fetch_array($sql);
-	if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-	$xORDER_ORG=intval($ligne["zOrder"]);
-	$xORDER=$xORDER_ORG;
-	
-	
-	if($_GET["acl-rule-dir"]==1){$xORDER=$xORDER_ORG-1;}
-	if($_GET["acl-rule-dir"]==0){$xORDER=$xORDER_ORG+1;}
-	if($xORDER<0){$xORDER=0;}
-	$sql="UPDATE ssl_rules SET zOrder=$xORDER WHERE `ID`='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	if($GLOBALS["VERBOSE"]){echo "$sql\n";}
+	$ID=intval($_GET["acl-rule-move"]);
+	$dir=intval($_GET["acl-rule-dir"]);
+    if(sslproxy_meta_row("ssl_rules",$ID)){sslproxy_meta_refuse_js();return;}
 
-	if($_GET["acl-rule-dir"]==1){
-		$xORDER2=$xORDER+1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE ssl_rules SET zOrder=$xORDER2 WHERE `ID`<>'$ID' AND zOrder=$xORDER";
-		$q->QUERY_SQL($sql);
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-	if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-	}
-	if($_GET["acl-rule-dir"]==0){
-		$xORDER2=$xORDER-1;
-		if($xORDER2<0){$xORDER2=0;}
-		$sql="UPDATE ssl_rules SET zOrder=$xORDER2 WHERE `ID`<>'{$_GET["acl-rule-move"]}' AND zOrder=$xORDER";
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
-		if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-	}
-
-	$c=0;
-	$sql="SELECT ID FROM ssl_rules ORDER BY zOrder";
-	$results = $q->QUERY_SQL($sql);
-
-	foreach($results as $index=>$ligne) {
-		$q->QUERY_SQL("UPDATE ssl_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}");
-		if($GLOBALS["VERBOSE"]){echo "UPDATE ssl_rules SET zOrder=$c WHERE `ID`={$ligne["ID"]}\n";}
-		$c++;
-	}
-
-
+    list($ok, $err) = acls_api_send("PUT", "/proxy/ssl-rules/$ID/move", ["dir" => $dir]);
+    if(!$ok){
+        header("content-type: application/x-javascript");
+        echo "alert('".$tpl->javascript_parse_text($err)."');";
+        return;
+    }
+    if($GLOBALS["VERBOSE"]){ echo "// rule_move ID=$ID dir=$dir OK\n"; }
 }
+function AllowSquidWhitelistsSSL_js():bool{
+    if(sslproxy_meta_key_held("AllowSquidWhitelistsSSL")){return sslproxy_meta_refuse_js();}
+    $AllowSquidWhitelistsSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidWhitelistsSSL"));
+    if($AllowSquidWhitelistsSSL==0) {
+        $AllowSquidWhitelistsSSL=1;
+    }else{
+        $AllowSquidWhitelistsSSL=0;
+    }
 
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("AllowSquidWhitelistsSSL",$AllowSquidWhitelistsSSL);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/ssl/build");
+    header("content-type: application/x-javascript");
+    return admin_tracks("Set SSL decrypt Whitelist Rules to $AllowSquidWhitelistsSSL");
+}
 
 function table(){
 	$tpl=new template_admin();
@@ -318,28 +334,29 @@ function table(){
     "LoadAjax('table-acls-ssl-rules','$page?table=yes');");
 
 
-	$html[]=$tpl->_ENGINE_parse_body("		
-	<table id='table-ssl-proxy-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
+	$html[]=sslproxy_meta_banner($tpl,"ssl_rules");
+	$html[]=$tpl->_ENGINE_parse_body("
+	<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>");
 	$html[]="<thead>";
 	$html[]="<tr>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text' style='width:1%'>{status}</th>";
-	$html[]="<th data-sortable=false class='text-capitalize' data-type='text' style='width:1%'>{type}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{rulename}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize center'>{enabled}</th>";
-    $html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
-	$html[]="<th data-sortable=false></th>";
+    $html[]="<th>{status}</th>";
+	$html[]="<th>{type}</th>";
+	$html[]="<th class='awc-nowrap'>{rulename}</th>";
+	$html[]="<th>{description}</th>";
+	$html[]="<th class='center'>{enabled}</th>";
+    $html[]="<th></th>";
+	$html[]="<th></th>";
+	$html[]="<th></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-	$jsAfter="LoadAjax('table-firewall-rules','$page?table=yes&eth={$_GET["eth"]}');";
-	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
+	$html[]="<tbody id='sslrules-rows'>";
+
 	$squid_acls_groups=new squid_acls_groups();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	
-	$results=$q->QUERY_SQL("SELECT * FROM ssl_rules ORDER BY zOrder");
+
+    $raw = $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/ssl-rules");
+    $resp = json_decode($raw, true);
+    $results = (is_array($resp) && !empty($resp["success"]) && is_array($resp["data"])) ? $resp["data"] : [];
+
 	$TRCLASS=null;
 	$acls=new squid_acls_groups();
 	$uncrypt_ssl=$tpl->javascript_parse_text("{uncrypt_websites}");
@@ -363,15 +380,34 @@ function table(){
     }
 
 	$td1=$tpl->table_td1prc();
+    $TRCLASS=null;
+    $AllowSquidWhitelistsSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("AllowSquidWhitelistsSSL"));
+    $inprod="<span class='label label-primary'>{active2}</span>";
+    $ssl_img="<span class='label'>{do_not_encrypt_websites}</span>";
+
+    if($AllowSquidWhitelistsSSL==0) {
+        $inprod = "<span class='label'>{inactive2}</span>";
+    }
+    $html[]="<tr class='$TRCLASS' id='acl-a1'>";
+    $html[]="<td $td1>$inprod</td>";
+    $html[]="<td $td1><span id='ssl-rule-icon-a1'>$ssl_img</span></td>";
+    $html[]="<td style='text-align:left' nowrap>{whitelist}</td>";
+    $html[]="<td style='vertical-align:middle'><span id='ssl-rule-text-a1'>{AllowSquidWhitelistsSSL}</span></td>";
+    $html[]="<td $td1>".$tpl->icon_check($AllowSquidWhitelistsSSL,"Loadjs('$page?AllowSquidWhitelistsSSL-js=yes')",null,sslproxy_meta_sec(sslproxy_meta_key_held("AllowSquidWhitelistsSSL")))."</td>";
+    $html[]="<td $td1></center></td>";
+    $html[]="<td $td1></td>";
+    $html[]="</tr>";
+
+
 
 	foreach($results as $index=>$ligne) {
 
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$ACCESSEnabled=0;
-		$crypt=$ligne["crypt"];
-		$enabled=intval($ligne["enabled"]);
-		$ID=$ligne["ID"];
-		$rulename=$tpl->utf8_encode($ligne["description"]);
+		$crypt    = intval($ligne["crypt"] ?? 0);
+		$enabled  = intval($ligne["enabled"] ?? 0);
+		$ID       = intval($ligne["id"] ?? 0);
+		$rulename = $tpl->utf8_encode($ligne["description"] ?? "");
 		$please_specify_an_object=$tpl->_ENGINE_parse_body("{please_specify_an_object}");
         $inprod="<span class='label'>{inactive2}</span>";
 
@@ -389,38 +425,40 @@ function table(){
 
 			$TTEXT[]="<strong>{do_not_encrypt_websites}</strong>";
 		}
-		
-		if($ligne["trust"]==1){
+
+		if(intval($ligne["trust"] ?? 0)==1){
 			$TTEXT[]="<strong>$trust_ssl</strong>";
 			$ACCESSEnabled=1;
 		}
-			
-			
+
+
 		$objects=$squid_acls_groups->getobjectsNameFromAclrule($ID,null,"sslrules_sqacllinks");
-			
+
 		if(count($objects)>0){
-			$explain=$acls->ACL_MULTIPLE_EXPLAIN($ligne['ID'],$ACCESSEnabled,0,"sslrules_sqacllinks")." {then} ".@implode($and_text, $TTEXT);
+			$explain=$acls->ACL_MULTIPLE_EXPLAIN($ID,$ACCESSEnabled,0,"sslrules_sqacllinks")." {then} ".@implode($and_text, $TTEXT);
         }else{
 
 			$explain="<div class=text-danger'>$please_specify_an_object</div>";
 		}
-		
+
 		$ssl_img=icon_status($crypt,$enabled,$objects);
         if($ssl_img==null){$ssl_img=$tpl->icon_nothing();}
-		
-		
-		$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')");
+
+
+		$isMeta=sslproxy_meta_row("ssl_rules",$ID);
+		$wsec=sslproxy_meta_sec($isMeta);
+		$delete=$tpl->icon_delete("Loadjs('$page?rule-delete-js=$ID')",$wsec);
 		$js="Loadjs('$page?rule-id-js=$ID')";
-	    $up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');");
-		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');");
+	    $up=$tpl->icon_up("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=1');",$wsec);
+		$down=$tpl->icon_down("Loadjs('$page?acl-rule-move=$ID&acl-rule-dir=0');",$wsec);
         $rulename=$tpl->utf8_decode($rulename);
-		
+
 		$html[]="<tr class='$TRCLASS' id='acl-$ID'>";
 		$html[]="<td $td1>$inprod</td>";
 		$html[]="<td $td1><span id='ssl-rule-icon-$ID'>$ssl_img</span></td>";
-		$html[]="<td style='text-align:left' nowrap>". $tpl->td_href($rulename,"{click_to_edit}",$js)."</td>";
+		$html[]="<td style='text-align:left' nowrap>". $tpl->td_href($rulename,$isMeta?"{view}":"{click_to_edit}",$js).sslproxy_meta_badge("ssl_rules",$ID)."</td>";
 		$html[]="<td style='vertical-align:middle'><span id='ssl-rule-text-$ID'>$explain</span></td>";
-		$html[]="<td $td1>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')")."</td>";
+		$html[]="<td $td1>".$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enable-js=$ID')",null,$wsec)."</td>";
 		$html[]="<td $td1>$up&nbsp;&nbsp;$down</center></td>";
 		$html[]="<td $td1>$delete</td>";
 		$html[]="</tr>";
@@ -447,8 +485,8 @@ function table(){
         $explain="{for_everyone} {then} {uncrypt_websites}";
     }
 
-	
-	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+
+	$TRCLASS=null;
 	$html[]="<tr style='vertical-align:middle' class='$TRCLASS' id='acl-0'>";
     $html[]="    <td $td1><span class='label $labelPrimary'>$labelDefault</span></td>";
 	$html[]="    <td $td1>$ssl_img</td>";
@@ -458,19 +496,12 @@ function table(){
 	$html[]="    <td $td1>".$tpl->icon_nothing()."</td>";
 	$html[]="    <td $td1>".$tpl->icon_nothing()."</td>";
 	$html[]="</tr>";
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
 
-    $btn="	
+	$html[]="</tbody>";
+	$html[]="";
+	$html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='sslrules-pager'></span></div></div></div>";
+
+    $btn="
 	<div class=\"btn-group\" data-toggle=\"buttons\">
     	<label class=\"btn btn btn-primary\" OnClick=\"$add\"><i class='fa fa-plus'></i> {new_rule} </label>
         <label class=\"btn btn btn-info\" OnClick=\"$jsrestart\"><i class='fa fa-save'></i> {apply_rules} </label>
@@ -487,13 +518,14 @@ function table(){
 
 
 	$html[]="
-<script> 
+<script>
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-ssl-proxy-rules').footable({ \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) }); 
 $jstiny
 </script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"sslrules-rows","sslrules-pager");
 }
 
 function icon_status($crypt=0,$enabled=0,$objects=array()){
@@ -522,28 +554,18 @@ function icon_status($crypt=0,$enabled=0,$objects=array()){
 
 function new_rule_save(){
 	unset($_POST["newrule"]);
-	$_POST["description"]=sqlite_escape_string2(url_decode_special_tool($_POST["description"]));
-    $add_fields[]="`zDate`";
-    $add_values[]="'".date("Y-m-d H:i:s")."'";
+    $body = [];
+    $body["description"] = url_decode_special_tool($_POST["description"] ?? "");
+    $body["enabled"]     = intval($_POST["enabled"] ?? 1);
+    $body["crypt"]       = intval($_POST["crypt"] ?? 0);
+    $body["trust"]       = intval($_POST["trust"] ?? 0);
 
-	foreach ($_POST as $key=>$val){
-	
-		$add_fields[]="`$key`";
-		$add_values[]="'$val'";
-		$edit_fields[]="`$key`='$val'";
-	
-	
-	}
-	$sql="INSERT INTO ssl_rules (".@implode(",", $add_fields).") VALUES (".@implode(",", $add_values).")";
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error."<hr>$sql";}
-
+    list($ok, $err) = acls_api_send("POST", "/proxy/ssl-rules", $body);
+    if(!$ok){ echo htmlspecialchars($err); }
 }
 
 function rule_delete($ID){
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$q->QUERY_SQL("DELETE FROM ssl_rules WHERE ID='$ID'");
-	return true;
+    $ID=intval($ID);
+    list($ok, $err) = acls_api_send("DELETE", "/proxy/ssl-rules/$ID");
+    return $ok;
 }
-

@@ -61,7 +61,7 @@ function wizard_ula($tpl,$page,$eth){
     $html[]="<div style='margin:20px 0;padding:15px;background:#f8f9fa;border-radius:6px;border:1px solid #e7eaec'>";
     $html[]="<div style='text-align:center;margin-bottom:12px;font-size:13px;color:#676a6c'>";
     $html[]="<strong>ULA {structure}</strong>: ";
-    $html[]="<span style='font-family:monospace;font-size:14px'>";
+    $html[]="<span style='font-size:14px'>";
     $html[]="<span style='color:#1ab394'>fd</span>";
     $html[]="<span style='color:#1c84c6' id='wz-global-preview'>XX:XXXX:XXXX</span>";
     $html[]=" : ";
@@ -74,7 +74,7 @@ function wizard_ula($tpl,$page,$eth){
 
     // Full address preview
     $html[]="<div style='text-align:center;padding:10px;background:#fff;border-radius:4px;border:1px solid #e7eaec'>";
-    $html[]="<span style='font-family:monospace;font-size:18px;font-weight:bold' id='wz-full-preview'>...</span>";
+    $html[]="<span style='font-size:18px;font-weight:bold' id='wz-full-preview'>...</span>";
     $html[]="</div>";
     $html[]="</div>";
 
@@ -94,7 +94,7 @@ function wizard_ula($tpl,$page,$eth){
     // Subnet ID row
     $html[]="<tr>";
     $html[]="<td style='vertical-align:middle'><span class='badge' style='background:#ab7df6;color:#fff'>Subnet ID</span> (16-bit)</td>";
-    $html[]="<td><input type='text' id='wz-subnet' class='form-control' style='font-family:monospace;width:120px' maxlength='4' value='0000' placeholder='0000-ffff'></td>";
+    $html[]="<td><input type='text' id='wz-subnet' class='form-control' style='width:120px' maxlength='4' value='0000' placeholder='0000-ffff'></td>";
     $html[]="</tr>";
 
     // Host part row
@@ -200,7 +200,7 @@ function wizard_linklocal($tpl,$page,$eth){
     $html[]="<div style='margin:20px 0;padding:15px;background:#f8f9fa;border-radius:6px;border:1px solid #e7eaec'>";
     $html[]="<div style='text-align:center;margin-bottom:8px;font-size:13px;color:#676a6c'>";
     $html[]="<strong>Link-Local {structure}</strong>: ";
-    $html[]="<span style='font-family:monospace;font-size:14px'>";
+    $html[]="<span style='font-size:14px'>";
     $html[]="<span style='color:#1ab394'>fe80::</span>";
     $html[]="<span style='color:#1c84c6'>{EUI-64 from MAC}</span>";
     $html[]=" / 64</span>";
@@ -210,14 +210,14 @@ function wizard_linklocal($tpl,$page,$eth){
     if($mac!=""){
         $html[]="<div style='text-align:center;margin-bottom:8px'>";
         $html[]="<span class='badge' style='background:#676a6c;color:#fff'>MAC</span> ";
-        $html[]="<span style='font-family:monospace;font-size:14px'>".htmlspecialchars($mac)."</span>";
+        $html[]="<span style='font-size:14px'>".htmlspecialchars($mac)."</span>";
         $html[]="</div>";
     }
 
     // Generated address display
     $html[]="<div style='text-align:center;padding:12px;background:#fff;border-radius:4px;border:1px solid #e7eaec'>";
-    $html[]="<span style='font-family:monospace;font-size:20px;font-weight:bold;color:#1ab394' id='wz-ll-addr'>".htmlspecialchars($linkLocal)."</span>";
-    $html[]="<span style='font-family:monospace;font-size:16px;color:#999'> / 64</span>";
+    $html[]="<span style='font-size:20px;font-weight:bold;color:#1ab394' id='wz-ll-addr'>".htmlspecialchars($linkLocal)."</span>";
+    $html[]="<span style='font-size:16px;color:#999'> / 64</span>";
     $html[]="</div>";
     $html[]="</div>";
 
@@ -262,8 +262,8 @@ function wizard_gua($tpl,$page,$eth){
     $html[]="<div style='margin:20px 0;padding:15px;background:#f8f9fa;border-radius:6px;border:1px solid #e7eaec'>";
     $html[]="<div style='text-align:center;margin-bottom:12px;font-size:13px;color:#676a6c'>";
     $html[]="<strong>GUA {structure}</strong>: ";
-    $html[]="<span style='font-family:monospace;font-size:14px'>";
-    $html[]="<span style='color:#1c84c6'>{ISP prefix}</span>";
+    $html[]="<span style='font-size:14px'>";
+    $html[]="<span style='color:#1c84c6'>{isp_prefix}</span>";
     $html[]=" : ";
     $html[]="<span style='color:#ab7df6' id='wz-gua-subnet-preview'>YYYY</span>";
     $html[]=" : ";
@@ -273,7 +273,7 @@ function wizard_gua($tpl,$page,$eth){
     $html[]="</div>";
     // Full preview
     $html[]="<div style='text-align:center;padding:10px;background:#fff;border-radius:4px;border:1px solid #e7eaec'>";
-    $html[]="<span style='font-family:monospace;font-size:18px;font-weight:bold' id='wz-gua-full-preview'>...</span>";
+    $html[]="<span style='font-size:18px;font-weight:bold' id='wz-gua-full-preview'>...</span>";
     $html[]="</div>";
     $html[]="</div>";
 
@@ -282,7 +282,7 @@ function wizard_gua($tpl,$page,$eth){
 
     // ISP prefix
     $html[]="<tr>";
-    $html[]="<td style='width:180px;vertical-align:middle'><span class='badge' style='background:#1c84c6;color:#fff'>{ISP prefix}</span></td>";
+    $html[]="<td style='width:180px;vertical-align:middle'><span class='badge' style='background:#1c84c6;color:#fff'>{isp_prefix}</span></td>";
     $html[]="<td><div class='input-group'>";
     $html[]="<input type='text' id='wz-gua-prefix-input' class='form-control' style='font-family:monospace' placeholder='2001:db8:abcd' value=''>";
     $html[]="<span class='input-group-addon'>::</span>";
@@ -294,7 +294,7 @@ function wizard_gua($tpl,$page,$eth){
     // Subnet ID
     $html[]="<tr>";
     $html[]="<td style='vertical-align:middle'><span class='badge' style='background:#ab7df6;color:#fff'>Subnet ID</span></td>";
-    $html[]="<td><input type='text' id='wz-gua-subnet' class='form-control' style='font-family:monospace;width:120px' maxlength='4' value='0001' placeholder='0000-ffff'></td>";
+    $html[]="<td><input type='text' id='wz-gua-subnet' class='form-control' style='width:120px' maxlength='4' value='0001' placeholder='0000-ffff'></td>";
     $html[]="</tr>";
 
     // Host part
@@ -488,7 +488,8 @@ function table():bool{
 
     // DB-configured addresses
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-    $results=$q->QUERY_SQL("SELECT * FROM nics_ipv6 WHERE nic='".addslashes($eth)."'");
+    // Pentest 2026-11-04 : table (nom d'interface) etait concatene dans la requete (addslashes n'echappe pas pour SQLite).
+    $results=$q->QUERY_SQL_PARAMS("SELECT * FROM nics_ipv6 WHERE nic=?",array(strval($eth)));
     foreach ($results as $index=>$ligne) {
         if ($TRCLASS == "footable-odd") { $TRCLASS = null; } else { $TRCLASS = "footable-odd"; }
         $ipaddr=$ligne["ipaddr"];

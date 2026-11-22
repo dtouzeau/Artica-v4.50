@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["clients-list"])){clients_list();exit;}
 if(isset($_GET["search"])){search();exit;}
@@ -11,6 +13,10 @@ if(isset($_GET["certificate-view-js"])){certificate_view_js();exit;}
 if(isset($_GET["certificate-view-popup"])){certificate_view_popup();exit;}
 if(isset($_GET["button-page"])){button_page();exit;}
 if(isset($_GET["clients-list"])){clients_list();exit;}
+
+
+
+
 page();
 
 function page(){
@@ -38,15 +44,12 @@ function certificate_view_js(){
     $ID=intval($_GET["certificate-view-js"]);
     $client=null;
     if(isset($_GET["client"])){$client="&client=yes";}
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
     if(isset($_GET["client"])){
-        $ligne=$q->mysqli_fetch_array("SELECT ClientName FROM nginx_clients_certs WHERE ID=$ID");
-        $CertificateName = $ligne["ClientName"];
-
-    }else {
-        $ligne = $q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID=$ID");
-        $CertificateName = $ligne["CertificateName"];
-
+        $ligne=fetch_client_cert_by_id($ID);
+        $CertificateName=isset($ligne["ClientName"])?$ligne["ClientName"]:"#$ID";
+    }else{
+        $ligne=fetch_server_cert_by_id($ID);
+        $CertificateName=isset($ligne["CertificateName"])?$ligne["CertificateName"]:"#$ID";
     }
     $tpl->js_dialog7("{view}: $CertificateName","$page?certificate-view-popup=$ID$client",950);
 }
@@ -54,7 +57,7 @@ function certificate_view_js(){
 function button_page():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $html_bts[]="<p>{generate_x509_client_explain}</p>";
 
     $topbuttons[]=array("Loadjs('fw.nginx.sites.ServerCertificate.php?client-certificate-server-generate=0&function=$function');",
@@ -70,8 +73,9 @@ function button_page():bool{
 }
 function certificate_view_popup_table($array):string{
     $html2[]="<table style='width:100%'>";
+    // Pentest 2026-11-04 : champs du certificat client (donnee externe) affiche sans encodage (XSS stockee).
     foreach ($array as $a=>$b) {
-        if (is_array($b)) {$b=certificate_view_popup_table($b);}
+        if (is_array($b)) {$b=certificate_view_popup_table($b);}else{$b=req_html($b);}
         if(is_numeric($a)){
             $html2[] = "<tr>";
             $html2[] = "<td style='width:99%;padding-left: 10px;vertical-align: top' nowrap colspan='2'><span class='font-bold'>$b</span></td>";
@@ -107,7 +111,7 @@ function certificate_view_popup_table($array):string{
 
 
         $html2[] = "<tr>";
-        $html2[] = "<td style='width:1%;vertical-align:top;padding-top: 5px'><strong>$a:</strong></td>";
+        $html2[] = "<td style='width:1%;vertical-align:top;padding-top: 5px'><strong>".req_html($a).":</strong></td>";
         $html2[] = "<td style='width:99%;padding-left: 10px;padding-top: 5px' nowrap>$b</td>";
         $html2[] = "</tr>";
     }
@@ -117,28 +121,25 @@ function certificate_view_popup_table($array):string{
 function certificate_view_popup(){
     $tpl=new template_admin();
     $ID=intval($_GET["certificate-view-popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
 
     if(isset($_GET["client"])){
-        $ligne=$q->mysqli_fetch_array("SELECT ClientName,user_crt FROM nginx_clients_certs WHERE ID=$ID");
-        $ca_crt = base64_decode($ligne["user_crt"]);
-    }else {
-        $ligne = $q->mysqli_fetch_array("SELECT CertificateName,ca_crt FROM nginx_servers_certs WHERE ID=$ID");
-        $ca_crt = base64_decode($ligne["ca_crt"]);
+        $ligne=fetch_client_cert_by_id($ID);
+        $ca_crt=base64_decode(isset($ligne["user_crt"])?$ligne["user_crt"]:"");
+    }else{
+        $ligne=fetch_server_cert_by_id($ID);
+        $ca_crt=base64_decode(isset($ligne["ca_crt"])?$ligne["ca_crt"]:"");
     }
     $t=time();
     $array=openssl_x509_parse($ca_crt);
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{type}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{value}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-    $TRCLASS=null;
+    // Vue de detail cle/valeur: awc-kv-k aligne la colonne de cles.
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th class='awc-kv-k'>{type}</th>";
+    $html[]="<th>{value}</th>";
+    $html[]="</tr></thead><tbody>";
+    $tt1=array();
     foreach ($array as $key=>$val){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         if(strtolower($key)=="hash"){continue;}
         if(strtolower($key)=="version"){continue;}
         if(strtolower($key)==strtolower("serialNumberHex")){continue;}
@@ -158,26 +159,26 @@ function certificate_view_popup(){
 
 
         if(strtolower($key)=="purposes"){
-            if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-            $html[]="<tr class='$TRCLASS' id='Purposes'>";
-            $html[]="<td style='width:1%;vertical-align: top !important;text-transform: capitalize'><strong>$key</strong>:</td>";
+            $html[]="<tr id='Purposes'>";
+            $html[]="<td class='awc-kv-k' style='vertical-align:top'>".htmlspecialchars((string)$key)."</td>";
             foreach ($val as $index=>$val2){
                 foreach ($val2 as $index=>$val3) {
                     if (is_numeric($val3)) {
                         continue;
                     }
                     if(strlen($val3)==1){continue;}
-                    $tt1[] = "<label class='label label-default'>$val3</label>";
+                    $tt1[] = "<span class='awc-tag'>".htmlspecialchars((string)$val3)."</span>";
                 }
 
             }
-            $html[]="<td style='width:99%;padding-left: 10px;' nowrap><span class='font-bold'>".@implode(" ",$tt1)."</span></td>";
+            $html[]="<td><span class='font-bold'>".@implode(" ",$tt1)."</span></td>";
             $html[]="</tr>";
             continue;
         }
 
 
-        if(is_array($val)){$val=certificate_view_popup_table($val);}
+        // Pentest 2026-11-04 : champs du certificat client (donnee externe) affiche sans encodage (XSS stockee).
+        if(is_array($val)){$val=certificate_view_popup_table($val);}else{$val=req_html($val);}
         $md=md5($val);
 
 
@@ -185,27 +186,18 @@ function certificate_view_popup(){
         if($key=="validFrom_time_t"){$val="$val (".$tpl->time_to_date($val).")"; }
         if($key=="validTo_time_t"){$val="$val (".$tpl->time_to_date($val).")"; }
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%;vertical-align: top !important;text-transform: capitalize'>$key:</td>";
-        $html[]="<td style='width:99%;padding-left: 10px;' nowrap><span class='font-bold'>$val</span></td>";
-        $html[]="</tr>";
+        $html[]="<tr id='$md'>"
+            ."<td class='awc-kv-k' style='vertical-align:top'>".htmlspecialchars((string)$key)."</td>"
+            ."<td><span class='font-bold'>$val</span></td></tr>";
 
     }
 
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="";
-    $html[]="<script>";
-    $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false },";
-    $html[]="\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    // L'ancien pied fermait un </tfoot> JAMAIS OUVERT, n'emettait aucun
+    // </tbody>, et donnait colspan='3' a un tableau de DEUX colonnes.
+    $html[]="</tbody></table></div></div></div>";
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
 }
 
 
@@ -213,23 +205,21 @@ function delete_server(){
     $tpl=new template_admin();
     $ID=intval($_GET["delete-server"]);
     $md=$_GET["md"];
-    $function=$_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $ligne=$q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID=$ID");
-    $CertificateName=$ligne["CertificateName"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
+    $ligne=fetch_server_cert_by_id($ID);
+    $CertificateName=isset($ligne["CertificateName"])?$ligne["CertificateName"]:"#$ID";
     $tpl->js_confirm_delete($CertificateName,"delete-server",$ID,"$('#$md').remove();$function();");
 }
 function delete_server_perform(){
-    $ID=$_POST["delete-server"];
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
+    $ID=intval($_POST["delete-server"]);
+    $ligne=fetch_server_cert_by_id($ID);
+    $CertificateName=isset($ligne["CertificateName"])?$ligne["CertificateName"]:"#$ID";
 
-    $ligne=$q->mysqli_fetch_array("SELECT CertificateName FROM nginx_servers_certs WHERE ID=$ID");
-    $CertificateName=$ligne["CertificateName"];
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", array("action"=>"delete","table"=>"nginx_clients_certs","where"=>array("certid"=>"$ID")));
 
-    $results=$q->QUERY_SQL("SELECT serviceid FROM service_parameters WHERE zkey='ssl_client_certificate' AND zvalue='$ID'");
-    foreach ($results as $index=>$ligne){
-        $sockngix=new socksngix($ligne["serviceid"]);
+    // Disable client-cert auth on every site that referenced this CA.
+    foreach(fetch_service_ids_with_param("ssl_client_certificate",$ID) as $serviceid){
+        $sockngix=new socksngix($serviceid);
         $sockngix->SET_INFO("EnableClientCertificate",0);
         $sockngix->SET_INFO("ssl_client_certificate",0);
     }
@@ -239,22 +229,9 @@ function delete_server_perform(){
 
 function search():bool{
     $page=CurrentPageName();
-    $q=new lib_sqlite(NginxGetDB());
-
-    $sql="CREATE TABLE IF NOT EXISTS `nginx_clients_certs` (
-	`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-	`certid` INTEGER,
-	`ClientName` text,
-	`levelenc` INTEGER NOT NULL DEFAULT 4096,
-	`user_key` text,
-	`user_crt` text,
-	`user_pfx` text
-	 )";
-    $q->QUERY_SQL($sql);
-
-
+    // Daemon owns the schema (nginx_clients_certs is created in nginxsites.FixTables).
     $tpl=new template_admin();
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $search=$_GET["search"];
     if($search=="*"){
         $search="";
@@ -266,75 +243,109 @@ function search():bool{
 
     $searchEncoded=urlencode($search);
 
-    $html[]="<table id='table-websites-main' class=\"table table-stripped\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{type}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{CertificateName}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{websites}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{created}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{expire}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // L'ancien en-tete declarait CINQ colonnes pour des lignes de SEPT cellules:
+    // les deux colonnes d'actions n'avaient aucun intitule et tout le tableau
+    // etait decale de deux crans.
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{CertificateName}</th>";
+    $html[]="<th>{websites}</th>";
+    $html[]="<th class='center'>{created}</th>";
+    $html[]="<th class='center'>{expire}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
+    $html[]="</tr></thead><tbody>";
 
     $icon_server='<i class="fad fa-server"></i>';
 
     $scripts=array();
     $TRCLASS=null;
 
-    $sql="SELECT ID FROM nginx_servers_certs ORDER BY CertificateName LIMIT 150";
-    if($search<>null){
-
-
-        $sql="SELECT nginx_servers_certs.ID FROM nginx_servers_certs,nginx_clients_certs
-        WHERE nginx_clients_certs.certid=nginx_servers_certs.ID
-        AND ( (nginx_servers_certs.CertificateName LIKE '%$search%' ) OR (nginx_clients_certs.ClientName LIKE '%$search%' ) ) LIMIT 150";
+    // Build the candidate set of server-cert IDs. With a search term, the
+    // legacy SQL did a JOIN: a server cert matches if its name matches OR if
+    // any of its client certs' names match. /nginx-db/query has no JOIN; we
+    // emulate by pulling both lists and computing the union in PHP.
+    $needle=strtolower(str_replace("%","",strval($search)));
+    $serverCerts=fetch_server_certs_all();
+    $MAIN=array();
+    if(strlen($needle)>0){
+        foreach($serverCerts as $sr){
+            $sid=isset($sr["ID"])?intval($sr["ID"]):0;
+            $name=isset($sr["CertificateName"])?strtolower($sr["CertificateName"]):"";
+            if($sid>0 && strpos($name,$needle)!==false){
+                $MAIN[$sid]=true;
+            }
+        }
+        // Also match server certs whose client certs contain the needle.
+        $cliResp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/nginx_clients_certs");
+        $cliData=json_decode($cliResp,true);
+        if(is_array($cliData) && !empty($cliData["Status"]) && isset($cliData["rows"])){
+            foreach($cliData["rows"] as $cr){
+                $cn=isset($cr["ClientName"])?strtolower($cr["ClientName"]):"";
+                if(strpos($cn,$needle)===false){continue;}
+                $cid=isset($cr["certid"])?intval($cr["certid"]):0;
+                if($cid>0){$MAIN[$cid]=true;}
+            }
+        }
+    }else{
+        foreach($serverCerts as $sr){
+            $sid=isset($sr["ID"])?intval($sr["ID"]):0;
+            if($sid>0){$MAIN[$sid]=true;}
+        }
     }
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error."<hr>$sql");
+    if(count($MAIN)>150){$MAIN=array_slice($MAIN,0,150,true);}
+
+    // Index server certs by ID so the loop below can look up rows without
+    // another round-trip per certificate.
+    $serverCertById=array();
+    foreach($serverCerts as $sr){
+        $sid=isset($sr["ID"])?intval($sr["ID"]):0;
+        if($sid>0){$serverCertById[$sid]=$sr;}
     }
-
-    foreach ($results as $index=>$ligne){
-
-        $MAIN[$ligne["ID"]]=true;
-    }
-
 
     foreach ($MAIN as $ID=>$none){
         $color=null;
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_servers_certs WHERE ID=$ID");
-        $CertificateName=$ligne["CertificateName"];
+        $ligne=isset($serverCertById[$ID])?$serverCertById[$ID]:fetch_server_cert_by_id($ID);
+        $CertificateName=isset($ligne["CertificateName"])?$ligne["CertificateName"]:"#$ID";
         $md=md5(serialize($ligne));
         $ID=$ligne["ID"];
-        $ssl_array=openssl_x509_parse(base64_decode($ligne["ca_crt"]));
-        $validTo_time_t=$tpl->time_to_date($ssl_array["validTo_time_t"]);
-        $validFrom_time_t=$tpl->time_to_date($ssl_array["validFrom_time_t"]);
-        $distanceOfTimeInWords=distanceOfTimeInWords(time(),$ssl_array["validTo_time_t"]);
-        $SERVERS_ID[]="( OR certid=$ID )";
+        // openssl_x509_parse() rend FALSE sur un certificat illisible: indexer
+        // FALSE emet un avertissement en PHP 8 pour chacune des trois lectures.
+        $ssl_array=openssl_x509_parse(base64_decode((string)($ligne["ca_crt"] ?? "")));
+        if(!is_array($ssl_array)){$ssl_array=array();}
+        $notAfter=intval($ssl_array["validTo_time_t"] ?? 0);
+        $validTo_time_t=$notAfter>0?$tpl->time_to_date($notAfter):"-";
+        $validFrom_time_t=intval($ssl_array["validFrom_time_t"] ?? 0)>0
+            ?$tpl->time_to_date(intval($ssl_array["validFrom_time_t"])):"-";
+        $distanceOfTimeInWords=$notAfter>0?distanceOfTimeInWords(time(),$notAfter):"";
+        // $SERVERS_ID[]="( OR certid=$ID )" etait construit ici -- un fragment SQL
+        // debutant par OR -- et n'etait relu NULLE PART.
         $delete=$tpl->icon_delete("Loadjs('$page?delete-server=$ID&md=$md&function=$function')","AsWebMaster");
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 
         $CertificateName=$tpl->td_href($CertificateName,"{view}","Loadjs('$page?certificate-view-js=$ID')");
         $icon_add=$tpl->icon_add("Loadjs('fw.nginx.sites.ServerCertificate.php?client-certificate-create-js=$ID&function=$function')","AsWebMaster");
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%'>$icon_server</td>";
-        $html[]="<td style='width:1%' nowrap><span style='$color'><H2>$CertificateName</H2></span></td>";
         $websites=GetSitesNames($ID);
         if(strlen($websites)>4){
             $delete="&nbsp;";
         }
-        $html[]="<td style='width:70%'><span style='$color'>$websites</span></td>";
-        $html[]="<td style='width:1%' nowrap=''>$validFrom_time_t</td>";
-        $html[]="<td style='width:1%' nowrap=''>$validTo_time_t <small>($distanceOfTimeInWords)</small></td>";
-        $html[]="<td style='width:1%'>$icon_add</td>";
-        $html[]="<td style='width:1%'>$delete</td>";
-        $html[]="</tr>";
-        $html[]="<tr style='background-color: white' id=clients-2'$md'>";
-        $html[]="<td colspan=7><div id='ClientsForCert$ID' style='margin-left:30px;border:1px solid #dbd8d8;border-radius: 10px;background-color: white;padding-top:10px'></div></td>";
-        $html[]="</tr>";
+        // Un <H2> etait imbrique DANS une cellule, nowrap='' portait une valeur
+        // vide, et l'identifiant de la sous-ligne s'ecrivait id=clients-2'$md'
+        // -- non quote, puis une apostrophe egaree.
+        $html[]="<tr id='$md'>"
+            ."<td><div class='awc-ident'>"
+            ."<span class='awc-ico'><i class='fad fa-server'></i></span>"
+            ."<span class='awc-name'>$CertificateName</span>"
+            ."</div></td>"
+            ."<td>$websites</td>"
+            ."<td class='center awc-nowrap awc-mono'>$validFrom_time_t</td>"
+            ."<td class='center awc-nowrap awc-mono'>$validTo_time_t"
+            .($distanceOfTimeInWords!==""?"<div class='awc-meta'>$distanceOfTimeInWords</div>":"")."</td>"
+            ."<td><div class='awc-acts'>$icon_add$delete</div></td>"
+            ."</tr>";
+        $html[]="<tr id='clients-2-$md'>"
+            ."<td colspan='5'><div id='ClientsForCert$ID' style='margin-left:30px;border:1px solid #bcc9c6;"
+            ."border-radius:10px;background:#fff;padding-top:10px'></div></td>"
+            ."</tr>";
         $scripts[]="LoadAjaxSilent('ClientsForCert$ID','$page?clients-list=$ID&function=$function&search=$searchEncoded&trclass=$TRCLASS');";
     }
 
@@ -342,27 +353,20 @@ function search():bool{
 
 
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    // Le colspan du pied s'ecrivait colspan=10' -- non quote, avec une
+    // apostrophe fermante orpheline -- pour un tableau de cinq colonnes.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($MAIN)."</span></div>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan=10'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="";
-    $html[]="<script>";
-    $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="LoadAjaxSilent('button-page','$page?button-page=yes&function=$function');";
-    $html[]=@implode("\n",$scripts);
-    $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n"
+        ."LoadAjaxSilent('button-page','$page?button-page=yes&function=$function');\n"
+        .@implode("\n",$scripts)."\n</script>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
     return true;
 }
 function clients_list():bool{
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $search=$_GET["search"];
     $CertID=intval($_GET["clients-list"]);
     if($CertID==0){return true;}
@@ -370,44 +374,45 @@ function clients_list():bool{
     if(isset($_GET["serviceid"])) {
         $serviceid = intval($_GET["serviceid"]);
     }
-    $q=new lib_sqlite(NginxGetDB());
     $tpl=new template_admin();
     $icon_user='<i class="fas fa-user-lock"></i>';
     $TRCLASS=$_GET["trclass"];
 
-    $sql="SELECT * FROM nginx_clients_certs WHERE certid='$CertID' ORDER BY ClientName";
-    if($search<>null){
-        $sql="SELECT * FROM nginx_clients_certs WHERE ClientName LIKE '%$search%' AND certid='$CertID' ORDER BY ClientName LIMIT 150";
-    }
     $btn=null;
     if($serviceid>0) {
         $add = "Loadjs('fw.nginx.sites.ServerCertificate.php?client-certificate-create-js=$CertID&serviceid=$serviceid&function=$function');";
         $topbuttons[] = array($add, ico_plus, "{create_client_certificate}");
         $btn = $tpl->th_buttons($topbuttons);
     }
-    $results=$q->QUERY_SQL($sql);
-    if(count($results)==0){
-        $sql="SELECT * FROM nginx_clients_certs WHERE certid='$CertID' ORDER BY ClientName";
-        $results=$q->QUERY_SQL($sql);
+
+    // Pull all client certs for this CA, then PHP-side filter by ClientName.
+    // If the filter matches nothing, fall back to the unfiltered list (matches
+    // the original behaviour: "show me everything when search is empty").
+    $allRows=fetch_client_certs_for_cert($CertID);
+    $needle=strtolower(str_replace("%","",strval($search)));
+    if(strlen($needle)>0){
+        $results=array_values(array_filter($allRows,function($r) use($needle){
+            $n=isset($r["ClientName"])?strtolower($r["ClientName"]):"";
+            return strpos($n,$needle)!==false;
+        }));
+        if(count($results)>150){$results=array_slice($results,0,150);}
+        if(count($results)==0){$results=$allRows;}
+    }else{
+        $results=$allRows;
     }
 
 
     $html[]=$btn;
-    $html[]="<table id='table-websites-$CertID' class=\"table table-stripped\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{type}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{CertificateName}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{created}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{expire}</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false>PFX</th>";
-    $html[]="<th data-sortable=false>PEM</th>";
-    $html[]="<th data-sortable=false>TXT</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // Les trois telechargements (PFX / PEM / TXT) occupaient trois colonnes
+    // distinctes; ils tiennent dans la colonne d'actions, avec leur intitule en
+    // infobulle.
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{CertificateName}</th>";
+    $html[]="<th class='center'>{created}</th>";
+    $html[]="<th class='center'>{expire}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
+    $html[]="</tr></thead><tbody>";
 
 
     foreach ($results as $index=>$ligne){
@@ -416,48 +421,47 @@ function clients_list():bool{
         $md=md5("CLIENT".serialize($ligne));
         $ID=$ligne["ID"];
         $delete=$tpl->icon_delete("Loadjs('fw.nginx.sites.ServerCertificate.php?client-certificate-delete-js=$ID&md=$md&function=$function')","AsWebMaster");
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $icon_add=null;
         $icon_download=$tpl->icon_download("window.location.href='fw.nginx.sites.ServerCertificate.php?pfx=$ID'","AsWebMaster");
         $icon_download_pem=$tpl->icon_download("window.location.href='fw.nginx.sites.ServerCertificate.php?pfx=$ID&pem=yes'","AsWebMaster");
         $icon_download_txt=$tpl->icon_download("window.location.href='fw.nginx.sites.ServerCertificate.php?pfx=$ID&txt=yes'","AsWebMaster");
 
-        $ssl_array=openssl_x509_parse(base64_decode($ligne["user_crt"]));
-        $validTo_time_t=$tpl->time_to_date($ssl_array["validTo_time_t"]);
-        $validFrom_time_t=$tpl->time_to_date($ssl_array["validFrom_time_t"]);
-        $distanceOfTimeInWords=distanceOfTimeInWords(time(),$ssl_array["validTo_time_t"]);
+        // openssl_x509_parse() rend FALSE sur un certificat illisible.
+        $ssl_array=openssl_x509_parse(base64_decode((string)($ligne["user_crt"] ?? "")));
+        if(!is_array($ssl_array)){$ssl_array=array();}
+        $notAfter=intval($ssl_array["validTo_time_t"] ?? 0);
+        $validTo_time_t=$notAfter>0?$tpl->time_to_date($notAfter):"-";
+        $validFrom_time_t=intval($ssl_array["validFrom_time_t"] ?? 0)>0
+            ?$tpl->time_to_date(intval($ssl_array["validFrom_time_t"])):"-";
+        $distanceOfTimeInWords=$notAfter>0?distanceOfTimeInWords(time(),$notAfter):"";
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%'>$icon_user</td>";
-        $html[]="<td style='width:99%' nowrap><span style='$color'>$CertificateName</span></td>";
-        $html[]="<td style='width:1%' nowrap=''>$validFrom_time_t</td>";
-        $html[]="<td style='width:1%' nowrap=''>$validTo_time_t <small>($distanceOfTimeInWords)</small></td>";
-
-        $html[]="<td style='width:1%'>$icon_add</td>";
-        $html[]="<td style='width:1%'>$icon_download</td>";
-        $html[]="<td style='width:1%'>$icon_download_pem</td>";
-        $html[]="<td style='width:1%'>$icon_download_txt</td>";
-        $html[]="<td style='width:1%'>$delete</td>";
-        $html[]="</tr>";
+        $html[]="<tr id='$md'>"
+            ."<td><div class='awc-ident'>"
+            ."<span class='awc-ico'>$icon_user</span>"
+            ."<span class='awc-name'>".htmlspecialchars((string)$CertificateName)."</span>"
+            ."</div></td>"
+            ."<td class='center awc-nowrap awc-mono'>$validFrom_time_t</td>"
+            ."<td class='center awc-nowrap awc-mono'>$validTo_time_t"
+            .($distanceOfTimeInWords!==""?"<div class='awc-meta'>$distanceOfTimeInWords</div>":"")."</td>"
+            ."<td><div class='awc-acts'>$icon_download$icon_download_pem$icon_download_txt$delete</div></td>"
+            ."</tr>";
     }
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
-return true;
+    // Ni </tbody> ni pied: seul </table> fermait ce tableau.
+    $html[]="</tbody></table></div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
+    return true;
 
 }
 function GetSitesNames($certid):string{
     $tpl=new template_admin();
-    $q=new lib_sqlite(NginxGetDB());
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     if(isset($GLOBALS["CertClientSitesNames"][$certid])){
         return $GLOBALS["CertClientSitesNames"][$certid];
     }
 
-    $results=$q->QUERY_SQL("SELECT serviceid FROM service_parameters WHERE zkey='ssl_client_certificate' AND zvalue=$certid");
     $tt=array();
-    foreach ($results as $index=>$ligne){
-        $serviceid=intval($ligne["serviceid"]);
-        if($serviceid==0){continue;}
+    foreach (fetch_service_ids_with_param("ssl_client_certificate",$certid) as $serviceid){
         $servicename=get_servicename($serviceid);
         $tt[]=$tpl->td_href($servicename,"","Loadjs('fw.nginx.sites.ServerCertificate.php?client-certificate-js=$serviceid&function=$function')");
     }
@@ -467,30 +471,8 @@ function GetSitesNames($certid):string{
         return $GLOBALS["CertClientSitesNames"][$certid];}
     $GLOBALS["CertClientSitesNames"][$certid]= @implode(", ",$tt);
     return $GLOBALS["CertClientSitesNames"][$certid];
-
 }
 
-function HarmpID():int{
-    if(!isset($_SESSION["HARMPID"])){return 0;}
-    if(intval($_SESSION["HARMPID"])==0){
-        return 0;
-    }
-    return intval($_SESSION["HARMPID"]);
-}
-
-function isHarmpID():bool{
-    $HarmpID=HarmpID();
-    if($HarmpID==0){return false;}
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
 function get_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}

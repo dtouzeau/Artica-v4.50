@@ -1,51 +1,47 @@
-<add_sub_folder>Create a new sub-folder </add_sub_folder>
-<apply_config_pureftpd>Save your users parameters into virtual FTP server database</apply_config_pureftpd>
-<APP_PUREFTPD_TEXT>Pure-FTPd is a free (BSD), secure, production-quality and standard-conformant FTP server. </APP_PUREFTPD_TEXT>
-<APP_SAMBA_TEXT>Samba is an Open Source/Free Software suite that provides seamless file and print services to SMB/CIFS clients</APP_SAMBA_TEXT>
-<browse_computers>Browse computers</browse_computers>
-<current_connections>Current connections</current_connections>
-<current_connections_text>Display informations about who is connected and what happens on the FTP flow</current_connections_text>
-<delete_share>Unshare This Folder</delete_share>
-<del_folder_name>Are you sure to delete this folder ??</del_folder_name>
-<del_sub_folder>Delete this folder</del_sub_folder>
-<enable_roaming>Enable Roaming profiles</enable_roaming>
-<enable_roaming_text>If you turn this feature to green, the server will be turn to PDC mode and allow Windows client 
-to push/retreive local datas from this server from any computer join to this domain</enable_roaming_text>
-<FOLDER_IS_SHARED>This folder is already shared, users can access it in smb mode</FOLDER_IS_SHARED>
-<ftp_share>FTP Shares</ftp_share>
-<give_computer_nameip>Give the computer name or computer IP address</give_computer_nameip>
-<give_folder_name>Give here the name of the new folder you want to create.
-was based on </give_folder_name>
-<mount_name>mount name</mount_name>
-<net_share>Windows Networking share</net_share>
-<NFS_CLIENT_ADD>Connect to a NFS remote directory</NFS_CLIENT_ADD>
-<NFS_CLIENT_ADD_TEXT>Add the remote directory into Auto-connect service database. This to automatically link the remote service when try to access it</NFS_CLIENT_ADD_TEXT>
-<NFS_CLIENT_HOWTO>Click on the icon on the left pan in order to set NFS parameters in order to mount a local directory to the targeted server</NFS_CLIENT_HOWTO>
-<NTconfig>XP/2000 Policies</NTconfig>
-<NTconfig_howto>Push your Windows NT policy (*.pol) in order to make it in production mode</NTconfig_howto>
-<NTconfig_howto_title>How to create a .pol file ?</NTconfig_howto_title>
-<NTconfig_howto_title_text>Click on this icon in order to see how to create policies for your windows XP clients</NTconfig_howto_title_text>
-<NTconfig_text>Save your users policies (only if samba is set has PDC mode)</NTconfig_text>
-<privileges_settings>Shared properties and privileges; Define users privileges and folder behavior</privileges_settings>
-<roaming_profiles>Roaming profiles</roaming_profiles>
-<roaming_profiles_text>Roaming Allows a user with a computer joined to a Windows Server domain to log on to any computer on the same network and access 
-their local files and settings
-</roaming_profiles_text>
-<samba_audit>View Samba statistics</samba_audit>
-<samba_audit_text>Get events of your share directories and perform analysis</samba_audit_text>
-<selected_folder>Selected folder</selected_folder>
-<select_disk>Select the Hard Drive first</select_disk>
-<select_this_folder>Select this folder</select_this_folder>
-<SHARE_FOLDER>Share a folder</SHARE_FOLDER>
-<SHARE_FOLDER_TEXT>Share a folder on this system.[br]Browse your hard drives and point a directory to share</SHARE_FOLDER_TEXT>
-<share_this>Share This folder</share_this>
-<share_this_NFS>Share this folder using Linux NFS</share_this_NFS>
-<share_this_NFS_explain>You are ready to share this folder with NFS protocol.[br]Add a computer to give him access to this folder by using the add computer button[br]NFS protocol is used for Unix based computer[br]
-Sun's NFS protocol provides transparent remote access to shared file systems across networks. The NFS protocol is designed to be machine, operating system, 
-network architecture, and transport protocol independent.</share_this_NFS_explain>
-<unshare_this>Unshare this folder ? All shared privileges and properties will be definitively deleted</unshare_this>
-<usb_share>USB Sharing</usb_share>
-<usb_share_explain>This section allow you to "share" devices activated with "Auto-Connect" feature.[br]
-Click on a row of this list to share the device trough Windows share system.[br]
-If there is no data in this list, it means that you have no "Auto-Connect" device enabled</usb_share_explain>
-<usb_share_text>Detect your usb devices and share them in your network automatically</usb_share_text>
+<add_sub_folder>Utw&#243;rz nowy podfolder</add_sub_folder>
+<apply_config_pureftpd>Zapisz parametry u&#380;ytkownik&#243;w w bazie danych wirtualnego serwera FTP</apply_config_pureftpd>
+<APP_PUREFTPD_TEXT>Pure-FTPd to darmowy (BSD), bezpieczny, o jako&#347;ci produkcyjnej i zgodny ze standardami serwer FTP.</APP_PUREFTPD_TEXT>
+<APP_SAMBA_TEXT>Samba to pakiet oprogramowania Open Source/wolnego, kt&#243;ry zapewnia bezproblemowe us&#322;ugi plik&#243;w i druku dla klient&#243;w SMB/CIFS</APP_SAMBA_TEXT>
+<browse_computers>Przegl&#261;daj komputery</browse_computers>
+<current_connections>Bie&#380;&#261;ce po&#322;&#261;czenia</current_connections>
+<current_connections_text>Wy&#347;wietl informacje o tym, kto jest po&#322;&#261;czony i co dzieje si&#281; w przep&#322;ywie FTP</current_connections_text>
+<delete_share>Cofnij udost&#281;pnianie tego folderu</delete_share>
+<del_folder_name>Czy na pewno chcesz usun&#261;&#263; ten folder??</del_folder_name>
+<del_sub_folder>Usu&#324; ten folder</del_sub_folder>
+<enable_roaming>W&#322;&#261;cz profile mobilne</enable_roaming>
+<enable_roaming_text>Je&#347;li ustawisz t&#281; funkcj&#281; na zielono, serwer przejdzie w tryb PDC i pozwoli klientom Windows wysy&#322;a&#263;/pobiera&#263; lokalne dane z tego serwera z dowolnego komputera przy&#322;&#261;czonego do tej domeny</enable_roaming_text>
+<FOLDER_IS_SHARED>Ten folder jest ju&#380; udost&#281;pniony, u&#380;ytkownicy mog&#261; uzyska&#263; do niego dost&#281;p w trybie smb</FOLDER_IS_SHARED>
+<ftp_share>Udost&#281;pnienia FTP</ftp_share>
+<give_computer_nameip>Podaj nazw&#281; komputera lub adres IP komputera</give_computer_nameip>
+<give_folder_name>Podaj tutaj nazw&#281; nowego folderu, kt&#243;ry chcesz utworzy&#263;.
+by&#322;a oparta na</give_folder_name>
+<mount_name>Nazwa montowania</mount_name>
+<net_share>Udost&#281;pnianie sieciowe Windows</net_share>
+<NFS_CLIENT_ADD>Po&#322;&#261;cz z zdalnym katalogiem NFS</NFS_CLIENT_ADD>
+<NFS_CLIENT_ADD_TEXT>Dodaj zdalny katalog do bazy danych us&#322;ugi Auto-connect. Ma to na celu automatyczne po&#322;&#261;czenie zdalnej us&#322;ugi przy pr&#243;bie uzyskania do niej dost&#281;pu</NFS_CLIENT_ADD_TEXT>
+<NFS_CLIENT_HOWTO>Kliknij ikon&#281; w lewym panelu, aby ustawi&#263; parametry NFS w celu zamontowania lokalnego katalogu na docelowym serwerze</NFS_CLIENT_HOWTO>
+<NTconfig>Zasady XP/2000</NTconfig>
+<NTconfig_howto>Prze&#347;lij swoj&#261; zasad&#281; Windows NT (*.pol), aby wprowadzi&#263; j&#261; w tryb produkcyjny</NTconfig_howto>
+<NTconfig_howto_title>Jak utworzy&#263; plik .pol?</NTconfig_howto_title>
+<NTconfig_howto_title_text>Kliknij t&#281; ikon&#281;, aby zobaczy&#263;, jak tworzy&#263; zasady dla klient&#243;w Windows XP</NTconfig_howto_title_text>
+<NTconfig_text>Zapisz swoje zasady u&#380;ytkownik&#243;w (tylko je&#347;li samba jest ustawiona w trybie PDC)</NTconfig_text>
+<privileges_settings>W&#322;a&#347;ciwo&#347;ci i uprawnienia udost&#281;pniania; Zdefiniuj uprawnienia u&#380;ytkownik&#243;w i zachowanie folderu</privileges_settings>
+<roaming_profiles>Profile mobilne</roaming_profiles>
+<roaming_profiles_text>Roaming umo&#380;liwia u&#380;ytkownikowi z komputerem przy&#322;&#261;czonym do domeny Windows Server logowanie si&#281; na dowolnym komputerze w tej samej sieci i dost&#281;p do swoich lokalnych plik&#243;w i ustawie&#324;</roaming_profiles_text>
+<samba_audit>Wy&#347;wietl statystyki Samba</samba_audit>
+<samba_audit_text>Pobierz zdarzenia katalog&#243;w udost&#281;pnionych i przeprowad&#378; analiz&#281;</samba_audit_text>
+<selected_folder>Wybrany folder</selected_folder>
+<select_disk>Najpierw wybierz dysk twardy</select_disk>
+<select_this_folder>Wybierz ten folder</select_this_folder>
+<SHARE_FOLDER>Udost&#281;pnij folder</SHARE_FOLDER>
+<SHARE_FOLDER_TEXT>Udost&#281;pnij folder w tym systemie.[br]Przegl&#261;daj swoje dyski twarde i wska&#380; katalog do udost&#281;pnienia</SHARE_FOLDER_TEXT>
+<share_this>Udost&#281;pnij ten folder</share_this>
+<share_this_NFS>Udost&#281;pnij ten folder za pomoc&#261; Linux NFS</share_this_NFS>
+<share_this_NFS_explain>Jeste&#347; gotowy, aby udost&#281;pni&#263; ten folder za pomoc&#261; protoko&#322;u NFS.[br]Dodaj komputer, aby da&#263; mu dost&#281;p do tego folderu, u&#380;ywaj&#261;c przycisku dodaj komputer[br]Protok&#243;&#322; NFS jest u&#380;ywany dla komputer&#243;w opartych na Unix[br]
+Protok&#243;&#322; NFS firmy Sun zapewnia przejrzysty zdalny dost&#281;p do udost&#281;pnionych system&#243;w plik&#243;w w sieciach. Protok&#243;&#322; NFS zosta&#322; zaprojektowany tak, aby by&#263; niezale&#380;nym od maszyny, systemu operacyjnego, architektury sieci i protoko&#322;u transportowego.</share_this_NFS_explain>
+<unshare_this>Cofn&#261;&#263; udost&#281;pnianie tego folderu? Wszystkie uprawnienia i w&#322;a&#347;ciwo&#347;ci udost&#281;pniania zostan&#261; trwale usuni&#281;te</unshare_this>
+<usb_share>Udost&#281;pnianie USB</usb_share>
+<usb_share_explain>Ta sekcja umo&#380;liwia &quot;udost&#281;pnianie&quot; urz&#261;dze&#324; aktywowanych funkcj&#261; &quot;Auto-Connect&quot;.[br]
+Kliknij wiersz tej listy, aby udost&#281;pni&#263; urz&#261;dzenie przez system udost&#281;pniania Windows.[br]
+Je&#347;li na tej li&#347;cie nie ma danych, oznacza to, &#380;e nie masz w&#322;&#261;czonego &#380;adnego urz&#261;dzenia &quot;Auto-Connect&quot;</usb_share_explain>
+<usb_share_text>Wykryj swoje urz&#261;dzenia USB i automatycznie udost&#281;pnij je w sieci</usb_share_text>

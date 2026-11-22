@@ -8,6 +8,8 @@
  */
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_GET["service-js"])){service_js();exit;}
 if(isset($_GET["popup-main"])){popup_main();exit;}
@@ -133,7 +135,9 @@ function popup_table():bool{
 
 function top_buttons():bool{
     $serviceid=intval($_GET["top-buttons"]);
-    $function=$_GET["function"] ?? "";
+    // SECURITE: $function repart dans des attributs OnClick et dans des appels
+    // JavaScript "$function();". search_block ne genere que "ss<time>".
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
     $svc=get_service_config($serviceid);
@@ -174,7 +178,9 @@ function popup_table2():bool{
     $serviceid=intval($_GET["popup-table2"]);
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
-    $function=$_GET["function"] ?? "";
+    // SECURITE: $function repart dans des attributs OnClick et dans des appels
+    // JavaScript "$function();". search_block ne genere que "ss<time>".
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $search=trim($_GET["search"] ?? "");
 
     $svc=get_service_config($serviceid);
@@ -190,17 +196,13 @@ function popup_table2():bool{
     $html[]="<strong>ASNs:</strong> <span class='badge' style='background:#ed5565;color:#fff;font-size:14px'>".count($asns)."</span>";
     $html[]="</div>";
 
-    $tableid=time();
-    $html[]="<table class='table table-hover' id='$tableid'>";
-    $html[]="<thead><tr>";
-    $html[]="<th nowrap>ASN</th>";
-    $html[]="<th nowrap>{description}</th>";
-    $html[]="<th nowrap>{country}</th>";
-    $html[]="<th style='width:1%' nowrap>{delete}</th>";
-    $html[]="</tr></thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>ASN</th>";
+    $html[]="<th class='center'>{country}</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
+    $html[]="</tr></thead><tbody>";
 
-    $TRCLASS=null;
     foreach($asns as $asn){
         $asn=trim($asn);
         if($asn==""){continue;}
@@ -214,29 +216,38 @@ function popup_table2():bool{
             }
         }
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-        $info=lookup_asn_info($asn);
-        $name=htmlspecialchars($info["name"]);
-        $country=htmlspecialchars($info["country"]);
-        $md="asn-".md5($asn);
-
-        $delete=$tpl->icon_delete("Loadjs('$page?asn-remove=$asn&serviceid=$serviceid')","AsWebMaster");
-
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td nowrap><strong>AS$asn</strong></td>";
-        $html[]="<td>$name</td>";
-        $html[]="<td nowrap>$country</td>";
-        $html[]="<td style='width:1%' nowrap>$delete</td>";
-        $html[]="</tr>";
+        $html[]=asn_blocked_row($tpl,$page,$serviceid,$asn);
     }
 
-    $html[]="</tbody></table>";
+    $html[]="</tbody></table></div></div></div>";
     $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
     $html[]="LoadAjax('flood-asn-buttons-$serviceid','$page?top-buttons=$serviceid&function=$function');";
     $html[]="</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
     return true;
+}
+
+/**
+ * Un ASN bloque.
+ * L'ASN partait BRUT dans l'URL du Loadjs de suppression: un numero d'AS n'est
+ * qu'une suite de chiffres, on la force.
+ * La description prend place en sous-titre, comme partout ailleurs.
+ */
+function asn_blocked_row($tpl,$page,$serviceid,$asn):string{
+    $info=lookup_asn_info($asn);
+    $num=preg_replace('/[^0-9]/','',(string)$asn);
+    $delete=$tpl->icon_delete("Loadjs('$page?asn-remove=$num&serviceid=".intval($serviceid)."')","AsWebMaster");
+
+    $h ="<tr id='asn-".md5((string)$asn)."'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-network-wired'></i></span>";
+    $h.="<span><div class='awc-name awc-mono'>AS".htmlspecialchars($num)."</div>";
+    $h.="<div class='awc-meta'>".htmlspecialchars((string)$info["name"])."</div></span>";
+    $h.="</div></td>";
+    $h.="<td class='center awc-nowrap'>".htmlspecialchars((string)$info["country"])."</td>";
+    $h.="<td><div class='awc-acts'>$delete</div></td>";
+    $h.="</tr>";
+    return $h;
 }
 
 function format_ttl(int $seconds):string{
@@ -271,7 +282,7 @@ function asn_remove():bool{
 
 function asn_add_js():bool{
     $serviceid=intval($_GET["serviceid"]);
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
     return $tpl->js_dialog5("{add} ASN","$page?asn-add-popup=$serviceid&function=$function");
@@ -281,7 +292,7 @@ function asn_add_popup():bool{
     $serviceid=intval($_GET["asn-add-popup"]);
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $html=array();
     $html[]="<div style='margin-bottom:15px'>";
     $html[]=$tpl->div_info("{flood_block_asn_add_explain}");
@@ -339,7 +350,7 @@ function asn_add_save():bool{
 
 function asn_helper():bool{
     $serviceid=intval($_GET["serviceid"]);
-    $function=$_GET["function"];
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)($_GET["function"] ?? ""));
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
 
@@ -366,15 +377,14 @@ function asn_helper():bool{
     $html[]="<i class='fas fa-chart-bar'></i> <strong>{realtime} ASN {statistics}</strong> &mdash; $elapsedMin min";
     $html[]="</div>";
 
-    $html[]="<table class='table table-hover table-condensed' style='font-size:12px'>";
-    $html[]="<thead><tr>";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
     $html[]="<th>ASN</th>";
-    $html[]="<th>{description}</th>";
-    $html[]="<th>{country}</th>";
-    $html[]="<th style='text-align:right'>{requests}</th>";
-    $html[]="<th style='text-align:right'>IPs</th>";
-    $html[]="<th style='text-align:right'>4xx</th>";
-    $html[]="<th style='width:1%' nowrap>&nbsp;</th>";
+    $html[]="<th class='center'>{country}</th>";
+    $html[]="<th class='center'>{requests}</th>";
+    $html[]="<th class='center'>IPs</th>";
+    $html[]="<th class='center'>4xx</th>";
+    $html[]="<th class='center'>&nbsp;</th>";
     $html[]="</tr></thead><tbody>";
 
     $count=0;
@@ -395,41 +405,64 @@ function asn_helper():bool{
         }
 
         $info=lookup_asn_info($asn);
-        $name=htmlspecialchars($info["name"]);
-        $country=htmlspecialchars($info["country"]);
 
-        $isBlocked=isset($blockedMap[$asn]);
-        $asnDisplay="<strong>AS$asn</strong>";
-
-        if($isBlocked){
-            $btn="<span class='label' style='background:#ed5565;color:#fff'>{blocked}</span>";
-        }else{
-            $btn="<button class='btn btn-xs btn-primary' ";
-            $btn.="onclick=\"$.post('$page',{'asn-add-save':'$asn','serviceid':'$serviceid'},function(){";
-            $btn.="LoadAjax('asn-helper-$serviceid','$page?asn-helper=yes&serviceid=$serviceid&function=$function');$function();";
-            $btn.="});\">";
-            $btn.="<i class='fas fa-plus'></i> {add}</button>";
-        }
-
-        $errorStyle=($errors4xx>100)?"color:#ed5565;font-weight:bold":"";
-
-        $html[]="<tr>";
-        $html[]="<td nowrap>$asnDisplay</td>";
-        $html[]="<td>$name</td>";
-        $html[]="<td nowrap>$country</td>";
-        $html[]="<td style='text-align:right'>".number_format($total)."</td>";
-        $html[]="<td style='text-align:right'>".number_format($ips)."</td>";
-        $html[]="<td style='text-align:right;$errorStyle'>".number_format($errors4xx)."</td>";
-        $html[]="<td style='width:1%' nowrap>$btn</td>";
-        $html[]="</tr>";
+        $html[]=asn_helper_row($page,$serviceid,$function,$asn,$info,
+            intval($total),intval($ips),$errors4xx,isset($blockedMap[$asn]));
 
         $count++;
         if($count>=30){break;}
     }
 
-    $html[]="</tbody></table>";
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    $html[]="</tbody></table></div>";
+    // Le classement etait tronque a 30 entrees SANS RIEN EN DIRE: un tableau
+    // partiel se lit comme un tableau complet.
+    $total_asns=count($asns);
+    $foot=($total_asns>$count)?"{showing} $count / $total_asns":"{showing} $count";
+    $html[]="<div class='awc-foot'><span>$foot</span></div>";
+    $html[]="</div></div>";
+
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$html));
     return true;
+}
+
+/**
+ * Un ASN du classement temps reel, avec son bouton de blocage.
+ * L'ASN partait BRUT dans une chaine JavaScript ($.post({'asn-add-save':'$asn'}))
+ * et le seuil des 4xx passait par un style inline que le survol du tableau ne
+ * pouvait pas surcharger.
+ */
+function asn_helper_row($page,$serviceid,$function,$asn,array $info,$total,$ips,$errors4xx,$isBlocked):string{
+    $num=preg_replace('/[^0-9]/','',(string)$asn);
+    $serviceid=intval($serviceid);
+
+    if($isBlocked){
+        $btn="<span class='awc-badge' style='background:#ba1a1a'>{blocked}</span>";
+    }else{
+        $js="$.post('$page',{'asn-add-save':'$num','serviceid':'$serviceid'},function(){"
+           ."LoadAjax('asn-helper-$serviceid','$page?asn-helper=yes&serviceid=$serviceid&function=$function');"
+           // "{$" ouvre une interpolation complexe en PHP: on coupe le litteral
+           // pour que l'accolade et la variable ne se touchent pas.
+           ."if(typeof $function==='function')"."{".$function."();}});";
+        $btn="<a href=\"javascript:blur();\" class='awc-btn' style='padding:3px 8px;font-size:11px' "
+            ."onclick=\"$js\"><i class='fas fa-plus'></i> {add}</a>";
+    }
+    $errCell=($errors4xx>100)
+        ? "<span class='awc-badge' style='background:#ba1a1a'>".number_format($errors4xx)."</span>"
+        : number_format($errors4xx);
+
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-network-wired'></i></span>";
+    $h.="<span><div class='awc-name awc-mono'>AS".htmlspecialchars($num)."</div>";
+    $h.="<div class='awc-meta'>".htmlspecialchars((string)$info["name"])."</div></span>";
+    $h.="</div></td>";
+    $h.="<td class='center awc-nowrap'>".htmlspecialchars((string)$info["country"])."</td>";
+    $h.="<td class='center awc-nowrap awc-mono'>".number_format($total)."</td>";
+    $h.="<td class='center awc-nowrap awc-mono'>".number_format($ips)."</td>";
+    $h.="<td class='center awc-nowrap'>$errCell</td>";
+    $h.="<td class='center awc-nowrap'>$btn</td>";
+    $h.="</tr>";
+    return $h;
 }
 
 // ==================== TTL Configuration ====================

@@ -8,7 +8,6 @@ if(isset($_POST["DIRECTORY"])){rule_save();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["status"])){status();exit;}
 if(isset($_GET["status2"])){status2();exit;}
-if(isset($_POST["StrictModes"])){save_config();exit;}
 if(isset($_GET["fsm-status-line"])){status_line();exit;}
 if(isset($_GET["rules-start"])){rules_start();exit;}
 if(isset($_GET["table"])){rules_table();exit;}
@@ -141,7 +140,7 @@ function enable_schedule(){
     header("content-type: application/x-javascript");
     $reload="LoadAjaxSilent('table-loader-fsm-status','$page?status2=yes')";
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArticaFSMonSchedule",1);
-    $jsaction=$tpl->framework_buildjs("fsm.php?build=yes",
+    $jsaction=$tpl->framework_buildjs("/fsm/build",
         "fsm.progress",
         "fsm.log","progress-fsm-restart",$reload);
     echo $jsaction;
@@ -153,7 +152,7 @@ function disable_schedule(){
     header("content-type: application/x-javascript");
     $reload="LoadAjaxSilent('table-loader-fsm-status','$page?status2=yes')";
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArticaFSMonSchedule",0);
-    $jsaction=$tpl->framework_buildjs("fsm.php?build=yes",
+    $jsaction=$tpl->framework_buildjs("/fsm/build",
         "fsm.progress",
         "fsm.log","progress-fsm-restart",$reload);
     echo $jsaction;
@@ -166,7 +165,7 @@ function enable_wordpress_monitor(){
     header("content-type: application/x-javascript");
     $reload="LoadAjaxSilent('table-loader-fsm-status','$page?status2=yes')";
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArticaFSMonWordpress",1);
-    $jsaction=$tpl->framework_buildjs("fsm.php?restart=yes",
+    $jsaction=$tpl->framework_buildjs("/fsm/restart",
         "fsm.progress",
         "fsm.log","progress-fsm-restart",$reload);
     echo $jsaction;
@@ -179,7 +178,7 @@ function disable_wordpress_monitor(){
     header("content-type: application/x-javascript");
     $reload="LoadAjaxSilent('table-loader-fsm-status','$page?status2=yes')";
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ArticaFSMonWordpress",0);
-    $jsaction=$tpl->framework_buildjs("fsm.php?restart=yes",
+    $jsaction=$tpl->framework_buildjs("/fsm/restart",
         "fsm.progress",
         "fsm.log","progress-fsm-restart",$reload);
     echo $jsaction;
@@ -199,7 +198,7 @@ function rules_table(){
     $t                  = time();
     $tpl                = new template_admin();
     $page               = CurrentPageName();
-    $jsrestart=$tpl->framework_buildjs("fsm.php?restart=yes",
+    $jsrestart=$tpl->framework_buildjs("/fsm/restart",
         "fsm.progress",
         "fsm.log","progress-fsm-restart");
 
@@ -384,13 +383,13 @@ function status2(){
 	$tpl->CLUSTER_CLI=True;
 
     $reload="LoadAjaxSilent('table-loader-fsm-status','$page?status2=yes')";
-    $jsrestart=$tpl->framework_buildjs("fsm.php?restart=yes",
+    $jsrestart=$tpl->framework_buildjs("/fsm/restart",
         "fsm.progress",
         "fsm.log","progress-fsm-restart",$reload);
 
 
 	if($ArticaFSMon==0) {
-        $jsaction=$tpl->framework_buildjs("fsm.php?install=yes",
+        $jsaction=$tpl->framework_buildjs("/fsm/install",
             "fsm.progress",
             "fsm.log","progress-fsm-restart",$reload);
 
@@ -399,16 +398,17 @@ function status2(){
 
         $ServiceStatus=$tpl->widget_grey("{APP_ARTICAFSMON}","{not_installed}");
     }else{
-        $status_file=PROGRESS_DIR."/APP_ARTICAFSMON.status";
-        $ini                    = new Bs_IniHandler($status_file);
-        $jsaction=$tpl->framework_buildjs("fsm.php?uninstall=yes",
+        // articarest /fsm/status rend le bloc ini (section APP_ARTICAFSMON).
+        $ini=new Bs_IniHandler();
+        $fjson=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/fsm/status"));
+        if(is_object($fjson) && isset($fjson->Info)){$ini->loadString((string)$fjson->Info);}
+        $jsaction=$tpl->framework_buildjs("/fsm/uninstall",
             "fsm.progress",
             "fsm.log","progress-fsm-restart",$reload);
 
 
         $btn_install = $tpl->button_autnonome("{uninstall}",$jsaction,
             ico_cd, "AsSystemAdministrator", 335,"btn-danger");
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork('fsm.php?status=yes');
         $ServiceStatus=$tpl->SERVICE_STATUS($ini, "APP_ARTICAFSMON",$jsrestart);
     }
 	
@@ -435,13 +435,10 @@ function status2(){
 function events_service_search(){
         $tpl        = new template_admin();
         $MAIN       = $tpl->format_search_protocol($_GET["search"],false,false,false,true);
-        $line       = base64_encode(serialize($MAIN));
-        $tfile      = PROGRESS_DIR."/fsm.events.syslog";
-        $pat        = PROGRESS_DIR."/fsm.events.pattern";
-
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("fsm.php?events=$line");
-        $data=explode("\n",@file_get_contents($tfile));
-        krsort($data);
+        // articarest /system/logfile/search/fsm-events : lignes les plus recentes d'abord.
+        $logerror="";
+        $data=$tpl->logfile_search("fsm-events",$MAIN,true,250,$logerror);
+        if($logerror<>""){echo $tpl->div_error($logerror);return;}
         $html[]="
 <table class=\"table table-hover\">
 	<thead>
@@ -471,7 +468,6 @@ function events_service_search(){
         }
 
         $html[]="</tbody></table>";
-        $html[]="<div><i>".@file_get_contents($pat)."</i></div>";
         $TINY_ARRAY["TITLE"]="{APP_ARTICAFSMON}: {service_events}";
         $TINY_ARRAY["ICO"]=ico_eye;
         $TINY_ARRAY["EXPL"]="{APP_ARTICAFSMON_EXPLAIN}";
@@ -487,13 +483,10 @@ function events_service_search(){
 function events_detected_search(){
     $tpl        = new template_admin();
     $MAIN       = $tpl->format_search_protocol($_GET["search"]);
-    $line       = base64_encode(serialize($MAIN));
-    $tfile      = PROGRESS_DIR."/fsm.threats.syslog";
-    $pat        = PROGRESS_DIR."/fsm.threats.pattern";
-
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("fsm.php?threats=$line");
-    $data=explode("\n",@file_get_contents($tfile));
-    krsort($data);
+    // articarest /system/logfile/search/fsm-threats : lignes les plus recentes d'abord.
+    $logerror="";
+    $data=$tpl->logfile_search("fsm-threats",$MAIN,true,250,$logerror);
+    if($logerror<>""){echo $tpl->div_error($logerror);return;}
     $html[]="
 <table class=\"table table-hover\">
 	<thead>
@@ -543,7 +536,6 @@ function events_detected_search(){
     }
 
     $html[]="</tbody></table>";
-    $html[]="<div><i>".@file_get_contents($pat)."</i></div>";
     $TINY_ARRAY["TITLE"]="{APP_ARTICAFSMON}: {detected}";
     $TINY_ARRAY["ICO"]=ico_eye;
     $TINY_ARRAY["EXPL"]="{APP_ARTICAFSMON_EXPLAIN}";

@@ -1,6 +1,8 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["verbose"])){
@@ -18,10 +20,13 @@ try{
     die();
 }
 
+// Pentest 2026-11-04 : remove/start-schedule/edit etaient recopies sans encodage dans la page (XSS) et concatenes dans la requete.
+// Ce sont des ID de bons (entiers).
+foreach(array("remove","start-schedule","edit") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
+if(isset($_POST["start-schedule"])){$_POST["start-schedule"]=intval($_POST["start-schedule"]);}
 try{
     if(isset($_POST["HotSpotRedirectUI"])){Save();exit;}
     if(isset($_GET["table"])){table();exit;}
-    if(isset($_GET["tabs"])){tabs();exit;}
     if(isset($_GET["uncheck"])){uncheck();exit;}
     if(isset($_GET["remove"])){remove();exit;}
     if(isset($_POST["remove"])){remove_perform();exit;}
@@ -50,19 +55,33 @@ function remove(){
     $tpl=new template_admin();
     $tpl->js_confirm_delete("{remove} $ID","remove",$ID,"$('#$md').remove();");
 }
-function remove_perform():bool{
-    $ID=$_POST["remove"];
-    $q=new lib_sqlite("/home/squid/hotspot/database.db");
+// A voucher serves several devices: one session per device, keyed
+// voucher<ID>-<device>, plus the bare voucher<ID> of older sessions.
+function voucher_sessions_where(int $ID):string{
+    return "(sessionkey='voucher$ID' OR sessionkey LIKE 'voucher$ID-%')";
+}
+function voucher_forget_devices($q,int $ID):string{
     $memcached=new lib_memcached();
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM sessions WHERE sessionkey='voucher$ID'");
-    $macaddress=$ligne["macaddress"];
-    $ipaddr=$ligne["ipaddr"];
-    $memcached->Delkey("MICROHOTSPOT:$ipaddr");
-    if($macaddress<>null){$memcached->Delkey("MICROHOTSPOT:$macaddress");}
-    $q->QUERY_SQL("DELETE FROM sessions WHERE sessionkey='voucher$ID'");
+    $devices=array();
+    $results=$q->QUERY_SQL("SELECT macaddress,ipaddr FROM sessions WHERE ".voucher_sessions_where($ID));
+    if(!is_array($results)){return "";}
+    foreach($results as $ligne){
+        $macaddress=$ligne["macaddress"];
+        $ipaddr=$ligne["ipaddr"];
+        if($ipaddr<>null){$memcached->Delkey("MICROHOTSPOT:$ipaddr");}
+        if($macaddress<>null){$memcached->Delkey("MICROHOTSPOT:$macaddress");}
+        $devices[]="$macaddress/$ipaddr";
+    }
+    return implode(", ",$devices);
+}
+function remove_perform():bool{
+    $ID=intval($_POST["remove"]);
+    $q=new lib_sqlite("/home/squid/hotspot/database.db");
+    $devices=voucher_forget_devices($q,$ID);
+    $q->QUERY_SQL("DELETE FROM sessions WHERE ".voucher_sessions_where($ID));
     $q->QUERY_SQL("DELETE FROM vouchers WHERE ID=$ID");
     if(!$q->ok){echo $q->mysql_error;return false;}
-    return admin_tracks("Remove Voucher HotSpot session $macaddress/$ipaddr");
+    return admin_tracks("Remove Voucher HotSpot $ID sessions $devices");
 }
 
 function start_schedule():bool{
@@ -136,18 +155,20 @@ function edit_save():bool{
     if(!isset($_POST["password"])){$_POST["password"]=null;}
     if($ID==0){
         $date=time();
+        // Pentest 2026-11-04 : member, password et ttl etaient concatenes dans la requete.
         $sql="INSERT OR IGNORE INTO vouchers (created,member,password,ttl,expire,enabled) 
-      VALUES ('$date','{$_POST["member"]}','{$_POST["password"]}','{$_POST["ttl"]}','0','1')";
-        $q->QUERY_SQL($sql);
+      VALUES (?,?,?,?,'0','1')";
+        $q->QUERY_SQL_PARAMS($sql,array((string)$date,(string)$_POST["member"],(string)$_POST["password"],(string)$_POST["ttl"]));
         if(!$q->ok){echo $q->mysql_error;}
         return false;
     }
 
+    // Pentest 2026-11-04 : member, password et ttl etaient concatenes dans la requete.
     $sql="UPDATE vouchers SET 
-        member='{$_POST["member"]}',
-        password='{$_POST["password"]}',
-        ttl='{$_POST["ttl"]}' WHERE ID=$ID";
-    $q->QUERY_SQL($sql);
+        member=?,
+        password=?,
+        ttl=? WHERE ID=$ID";
+    $q->QUERY_SQL_PARAMS($sql,array((string)$_POST["member"],(string)$_POST["password"],(string)$_POST["ttl"]));
     if(!$q->ok){echo $q->mysql_error;}
     return true;
 
@@ -178,7 +199,8 @@ function delete_all_perform():bool{
         if ($macaddress <> null) {
             $memcached->Delkey("MICROHOTSPOT:$macaddress");
         }
-        $q->QUERY_SQL("DELETE FROM sessions WHERE sessionkey='$sessionkey'");
+        // Pentest 2026-11-04 : sessionkey (lu en base) etait concatene dans la requete.
+        $q->QUERY_SQL_PARAMS("DELETE FROM sessions WHERE sessionkey=?",array((string)$sessionkey));
         if (!$q->ok) {
             echo $q->mysql_error;
         }
@@ -228,7 +250,8 @@ function import_save():bool{
         $line=str_replace(";",",",$line);
         if(strpos($line,",")==0){continue;}
         $TF=explode(",",$line);
-        $member=$TF[0];
+        // Pentest 2026-11-04 : member (fichier importe) etait concatene dans la requete.
+        $member=$q->sqlite_escape_string2($TF[0]);
         $password=$q->sqlite_escape_string2($TF[1]);
         $ttl=intval($TF[2]);
         if($ttl==0){continue;}
@@ -245,11 +268,8 @@ function import_save():bool{
 
 function uncheck():bool{
 
-    $ID=$_GET["uncheck"];
+    $ID=intval($_GET["uncheck"]);
     $q=new lib_sqlite("/home/squid/hotspot/database.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM sessions WHERE sessionkey='voucher$ID'");
-    $macaddress=$ligne["macaddress"];
-    $ipaddr=$ligne["ipaddr"];
 
     $ligne=$q->mysqli_fetch_array("SELECT enabled FROM vouchers WHERE ID='$ID'");
     $enabled=$ligne["enabled"];
@@ -257,15 +277,10 @@ function uncheck():bool{
     $newenabled=0;
     if($enabled==1){$newenabled=0;}else{$newenabled=1;}
     $q->QUERY_SQL("UPDATE vouchers SET enabled=$newenabled WHERE ID='$ID'");
-    $memcached=new lib_memcached();
+    $devices="";
+    if($newenabled==0){$devices=voucher_forget_devices($q,$ID);}
 
-
-    if($newenabled==0){
-        if($macaddress<>null){$memcached->Delkey("MICROHOTSPOT:$macaddress");}
-        if($ipaddr<>null){$memcached->Delkey("MICROHOTSPOT:$ipaddr");}
-    }
-
-    return admin_tracks("Modify HotSpot session $ID/$macaddress/$ipaddr enabled=$enabled");
+    return admin_tracks("Modify HotSpot voucher $ID $devices enabled=$newenabled");
 
 }
 
@@ -314,19 +329,20 @@ function table():bool{
     $btns[]="<label class=\"btn btn btn-danger\" OnClick=\"$delete_all\"><i class='fa fa-trash'></i> {delete_all}</label>";
     $btns[]="</div>";
 
-    $html[]="<table id='table-hotspot-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+	    ."<table class='awc-tbl'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{created}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' >{vouchers_rooms}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' >&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' nowrap>{ttl}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{expire}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize'>{enabled}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize'>{delete}</th>";
+    $html[]="<th>{created}</th>";
+    $html[]="<th>{vouchers_rooms}</th>";
+    $html[]="<th>&nbsp;</th>";
+    $html[]="<th class='awc-nowrap'>{ttl}</th>";
+    $html[]="<th>{expire}</th>";
+    $html[]="<th>{enabled}</th>";
+    $html[]="<th>{delete}</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='hotspotvouch-rows'>";
 
     $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `vouchers` (
 			`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -349,7 +365,8 @@ function table():bool{
         }else{
             $search = "%".$_GET["search"]."%";
         }
-        $results = $q->QUERY_SQL("SELECT * FROM vouchers WHERE member LIKE '$search' ORDER BY member LIMIT 150");
+        // Pentest 2026-11-04 : search etait concatene dans la requete.
+        $results = $q->QUERY_SQL_PARAMS("SELECT * FROM vouchers WHERE member LIKE ? ORDER BY member LIMIT 150",array($search));
     }
     if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return false;}
     $TRCLASS=null;
@@ -381,7 +398,7 @@ function table():bool{
         $ttl=$ttl*60;
         $distancettl=distanceOfTimeInWords(time(),time()+$ttl);
         $js="Loadjs('$page?start-schedule=$ID');";
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $html[]="<tr class='$TRCLASS' id='$md'>";
         $html[]="<td style='width:1%' nowrap>".$tpl->time_to_date($ligne["created"],true)."</td>";
         $html[]="<td width=99%>".$tpl->td_href("$member",null,"Loadjs('$page?edit=$ID')")." $tooltip</td>";
@@ -389,23 +406,17 @@ function table():bool{
         $html[]="<td style='width:1%' nowrap>".$distancettl."</td>";
         $html[]="<td style='width:1%' nowrap>".$expire_text."</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>".$tpl->icon_check($enabled,
-                "Loadjs('$page?uncheck=$ID')","AsHotSpotManager")."</td>";
+                "Loadjs('$page?uncheck=$ID')",null,"AsHotSpotManager")."</td>";
         $html[]="<td style='width:1%;' nowrap class='center'>".$tpl->icon_delete("Loadjs('$page?remove=$ID&md=$md')",
                 "AsHotSpotManager")."</center></td>";
         $html[]="</tr>";
 
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='7'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='hotspotvouch-pager'></span></div>";
+	$html[]="</div></div>";
 
 
     $HotSpotAuthentVoucher=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HotSpotAuthentVoucher"));
@@ -433,7 +444,9 @@ function table():bool{
 	</script>";
 
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"hotspotvouch-rows","hotspotvouch-pager");
     return true;
 }
 

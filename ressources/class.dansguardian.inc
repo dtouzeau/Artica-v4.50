@@ -40,64 +40,17 @@ class dansguardian{
 			
 	}
 	
-	public function ContentScannerMustEnabled(){
-		if($this->enable_clamav<>1){
-			writelogs("enable_clamav is disabled FAILED",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-			return false;
-		}	
-			$users=new usersMenus();
-			if(!$users->CLAMD_INSTALLED){
-				writelogs("Clamav is not installed",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-				return false;
-			}
-			
-			if($users->MEM_TOTAL_INSTALLEE<716800){
-				writelogs("$users->MEM_TOTAL_INSTALLEE<716800",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-				return false;
-			}
-			return true;
-			
-		
-	}
+
 	
 	
 	public function ContentScanners(){
-		if($this->ContentScannerMustEnabled()){
-			$conf=$conf ."contentscanner = '/etc/dansguardian/contentscanners/clamdscan.conf'\n";
-			$conf=$conf ."contentscannertimeout = 60\n";
-			$conf=$conf ."contentscanexceptions = off\n";
-			return $conf;
-		}
 	}
 						
 	
 	function LoadRules(){
-		$sql="SELECT RuleID,RuleName,RuleOrder FROM dansguardian_rules ORDER BY RuleID";
-		$q=new mysql();
-		$results=$q->QUERY_SQL($sql,"artica_backup");
-		while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
-			$this->RulesList[$ligne["RuleID"]]=$ligne["RuleName"];
-			$this->Master_rules_index[$ligne["RuleID"]]=$ligne["RuleName"];
-		}
-		if(count($this->RulesList)==0){
-			$RuleText=addslashes($this->BuildConfig());
-			$sql="INSERT INTO dansguardian_rules(RuleName,RuleOrder,RuleText) VALUES('Default Rule',0,'$RuleText');";
-			$q->QUERY_SQL($sql,"artica_backup");
-			$this->RulesList[0]="Default Rule";
-			$this->Master_rules_index[0]=$ligne["Default Rule"];
-		}
-		
+
 	}
-	
-	function RulesNumber(){
-		$sql="SELECT COUNT(RuleID) as tcount FROM dansguardian_rules";
-		$q=new mysql();
-		$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,"artica_backup"));
-		if($ligne["tcount"]==null){$ligne["tcount"]=0;}
-		return $ligne["tcount"];
-	}
-	
-	
+
 		
 	function GetMyLocalIP(){
 		$net=new networking();
@@ -111,24 +64,6 @@ class dansguardian{
 	}
 		
 	function SaveSettings(){
-		$conf=$this->BuildConfig();	
-		$rules=new dansguardian_rules($this->hostname,1);
-		$this->events('Saving settings...');
-		$sock=new sockets();
-		$sock->SET_INFO("DansGuardianEnableClamav",$this->Master_array["enable_clamav"]);
-		$sock->SET_INFO("DansGuardianEnableUserArticaIP",$this->DansGuardianEnableUserArticaIP);
-		$sock->SET_INFO("DansGuardianEnableUserFrontEnd",$this->Master_array["DansGuardianEnableUserFrontEnd"]);
-		$sql="UPDATE dansguardian_rules SET RuleText='".addslashes($conf)."' WHERE RuleID=1";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){echo $q->mysql_error;return false;}
-		
-		
-		$upd["FilterGroupListConf"][0]=$rules->BuildMembersList();		
-		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?reload-dansguardian=yes");
-		return true;
-
 		}
 		
 		
@@ -139,282 +74,15 @@ class dansguardian{
 		
 		
 	}
-	
-	function DefinedCategoryWeightedPhraseListLoad(){
-		$q=new mysql();
-		$sql="SELECT pattern FROM dansguardian_files WHERE filename='weightedphraselist' AND userdefined=1";
-		$results=$q->QUERY_SQL($sql,"artica_backup");
-		while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
-			$this->UserCategoryWeightedPhraseList[trim($ligne["pattern"])]=trim($ligne["pattern"]);
-		}
-		if(!is_array($this->UserCategoryWeightedPhraseList)){return array();}
-		return $this->UserCategoryWeightedPhraseList;
-	}
 
-	function DefinedCategoryWeightedPhraseListAdd($categoryName){
-		$categoryName=strtolower($categoryName);
-		$sql="INSERT INTO dansguardian_files(RuleID,filename,pattern,userdefined)
-			VALUE(0,'weightedphraselist','$categoryName','1');";
-			$q=new mysql();
-			$q->QUERY_SQL($sql,"artica_backup");
-			$this->UserCategoryBlackList[$categoryName]=$categoryName;		
-			$this->UserCategoryWeightedPhraseList[$categoryName]=$categoryName;
-			$sock=new sockets();
-			$sock->getFrameWork("cmd.php?reload-dansguardian=yes");				
-		
-	}	
-	
-	
-	function DefinedCategoryBlackListLoad(){
-		$q=new mysql();
-		$sql="SELECT pattern FROM dansguardian_files WHERE filename='bannedsitelist' AND userdefined=1";
-		$results=$q->QUERY_SQL($sql,"artica_backup");
-		while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
-			$this->UserCategoryBlackList[$ligne["pattern"]]=$ligne["pattern"];
-		}
-		if(!is_array($this->UserCategoryBlackList)){return array();}
-		return $this->UserCategoryBlackList;
-	}
-	
-	function DefinedCategoryBlackListAdd($categoryName){
-			$categoryName=strtolower($categoryName);
-			$sql="INSERT INTO dansguardian_files(RuleID,filename,pattern,userdefined)
-			VALUE(0,'bannedsitelist','$categoryName','1');";
-			$q=new mysql();
-			$q->QUERY_SQL($sql,"artica_backup");
-			$this->UserCategoryBlackList[$categoryName]=$categoryName;
-			$sock=new sockets();
-			$sock->getFrameWork("cmd.php?reload-dansguardian=yes");				
-		
-		}
-	
-
-	
-	
-	
-	function DefinedCategoryWeightedPhraseListDeleteRule($ID){
-			$sql="DELETE FROM dansguardian_weightedphraselist WHERE ID=$ID";
-			$q=new mysql();
-			$q->QUERY_SQL($sql,"artica_backup");
-			$sock=new sockets();
-			$sock->getFrameWork("cmd.php?reload-dansguardian=yes");					
-		}
-	
-	function DefinedCategoryWeightedPhraseListAddRule($category,$words,$score){
-		
-		if(strpos($words,",")>0){
-			$arraywords=explode(",",$words);
-			while (list ($num, $w) = each ($arraywords) ){
-				$ws[]="<$w>";
-			}
-			
-			$words=implode(",",$ws);
-		}else{
-			$words="<$words>";
-		}
-		
-		if(!is_numeric($score)){$score=0;}
-		$pattern="$words<$score>";
-		$sql="INSERT INTO dansguardian_weightedphraselist (category_name,pattern) VALUES('$category','$pattern');";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?reload-dansguardian=yes");			
-		
-		}
-	
-	
-
-	
-	function DefinedCategoryBlackListAddRule($category,$website){
-		$sql="INSERT INTO dansguardian_categories (category_name,pattern)  VALUES('$category','$website')";		
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?reload-dansguardian=yes");			
-		
-	}
-	
-	function DefinedCategoryBlackListDelRule($ID){
-		$sql="DELETE FROM dansguardian_categories WHERE ID=$ID";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");	
-		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?reload-dansguardian=yes");		
-		
-	}	
-	
-	
-	function delete_rule($ruleIndex){
-			writelogs("Delete rule id = $ruleIndex",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-		
-			if($ruleIndex==1){return null;}
-			$sql="DELETE FROM dansguardian_rules WHERE RuleID=$ruleIndex";
-			$q=new mysql();
-			$q->QUERY_SQL($sql,"artica_backup");
-			if(!$q->ok){
-				writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-			}
-			
-			$sql="DELETE FROM dansguardian_groups WHERE RuleID=$ruleIndex";
-			$q->QUERY_SQL($sql,"artica_backup");
-			if(!$q->ok){
-				writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-			}			
-			
-			$sock=new sockets();
-			$sock->getFrameWork("cmd.php?reload-dansguardian=yes");
-		}
-		
-	
-		
-
-		
-		
-		private function IpAuthNumber(){
-			$sql="SELECT COUNT(ID) as tcount FROM dansguardian_ipgroups";
-			$q=new mysql();
-			$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,"artica_backup"));
-			if($ligne["tcount"]==null){$ligne["tcount"]=0;}
-			return $ligne["tcount"];
-		}
-		
-
-		
-	private function events($text){
-		if(posix_getuid()<>0){return null;}
-		$pid=getmypid();
-		$logFile=$_GET["LOGFILE"];
-		$size=filesize($logFile);
-		if($size>1000000){unlink($logFile);}
-		$f = @fopen($logFile, 'a');
-		if($_GET["debug"]){echo "$pid $text\n";}
-		@fwrite($f, "$pid $text\n");
-		@fclose($f);	
-		}		
-		
 
 	function BuildConfig(){}
 			
 			private function LoadMasterRule(){
-				$sql="SELECT RuleText FROM dansguardian_rules WHERE RuleID=1";
-				$q=new mysql();
-				$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,"artica_backup"));
-				$this->Main_rule=$ligne["RuleText"];
-				$this->ParseConfig();
-				$this->BuildDefaults();
 			}
 			
-			private function ParseConfig(){
-				
-				$tb=explode("\n",$this->Main_rule);
-				writelogs("Rule $this->ruleindex store ". strlen($this->Main_rule). " bytes length (line ".__LINE__.")",__CLASS__.'/'.__FUNCTION__,__FILE__);
-				writelogs("This config has ".count($tb)." lines :".__LINE__,__CLASS__.'/'.__FUNCTION__,__FILE__);
-				while (list ($num, $val) = each ($tb) ){
-					if(preg_match('#(.+?)[=\s]+(.+)#',$val,$re)){
-						$re[2]=str_replace("'","",$re[2]);
-						$this->Master_array[trim($re[1])]=trim($re[2]);
-					}
-				
-				}
-		
-				
-				
-			}
-	
-
-	
 
 
-	private function BuildDefaults(){
-				$this->_defaults=array("reportinglevel"=>"3",
-							"languagedir"=>"/etc/dansguardian/languages",
-							"language"=>"ukenglish",
-							"loglevel"=>"2",
-							"logexceptionhits"=>"2",
-							"logfileformat"=>"1",
-							"loglocation"=>"/var/log/dansguardian/access.log",
-							"statlocation"=>"/var/log/dansguardian/stats.log",
-							"filterip =",
-							"filterport"=>"8080",
-							"proxyip"=>"127.0.0.1",
-							"proxyport"=>"3128",
-							"accessdeniedaddress"=>"http://YOURSERVER.YOURDOMAIN/cgi-bin/dansguardian.pl",
-							"nonstandarddelimiter"=>"on",
-							"usecustombannedimage"=>"on",
-							"custombannedimagefile"=>"/etc/dansguardian/transparent1x1.gif",
-							"filtergroups"=>"1",
-							"filtergroupslist"=>"/etc/dansguardian/filtergroupslist",
-							"bannediplist"=>"/etc/dansguardian/bannediplist",
-							"exceptioniplist"=>"/etc/dansguardian/exceptioniplist",
-							"showweightedfound"=>"on",
-							"weightedphrasemode"=>"2",
-							"urlcachenumber"=>"1000",
-							"urlcacheage"=>"900",
-							"scancleancache"=>"on",
-							"phrasefiltermode"=>"2",
-							"preservecase"=>"0",
-							"hexdecodecontent"=>"off",
-							"forcequicksearch"=>"off",
-							"reverseaddresslookups"=>"off",
-							"reverseclientiplookups"=>"off",
-							"logclienthostnames"=>"off",
-							"createlistcachefiles"=>"on",
-							"maxuploadsize"=>"-1",
-							"maxcontentfiltersize"=>"256",
-							"maxcontentramcachescansize"=>"2000",
-							"maxcontentfilecachescansize"=>"20000",
-							"filecachedir"=>"/tmp",
-							"deletedownloadedtempfiles"=>"on",
-							"initialtrickledelay"=>"20",
-							"trickledelay"=>"10",
-							"downloadmanager"=>"/etc/dansguardian/downloadmanagers/fancy.conf",
-							"downloadmanager"=>"/etc/dansguardian/downloadmanagers/default.conf",
-							"contentscannertimeout"=>"60",
-							"contentscanexceptions"=>"off",
-							"recheckreplacedurls"=>"off",
-							"forwardedfor"=>"on",
-							"usexforwardedfor"=>"on",
-							"logconnectionhandlingerrors"=>"on",
-							"logchildprocesshandling"=>"off",
-							"maxchildren"=>"120",
-							"minchildren"=>"8",
-							"minsparechildren"=>"4",
-							"preforkchildren"=>"6",
-							"maxsparechildren"=>"32",
-							"maxagechildren"=>"500",
-							"maxips"=>"0",
-							"ipcfilename"=>"/tmp/.dguardianipc",
-							"urlipcfilename"=>"/tmp/.dguardianurlipc",
-							"ipipcfilename"=>"/tmp/.dguardianipipc",
-							"pidfilename"=>"/var/run/dansguardian.pid",
-							"nodaemon"=>"off",
-							"nologger"=>"off",
-							"logadblocks"=>"off",
-							"loguseragent"=>"off",
-							"daemonuser"=>"squid",
-							"daemongroup"=>"squid",
-							"softrestart"=>"off");
-							
-				reset($this->_defaults);
-				while (list ($num, $val) = each ($this->_defaults) ){
-					if(trim($this->Master_array[$num])==null){
-						//writelogs("Building default values:: [$num]=$val",__CLASS__ . '/' . __FUNCTION__,__FILE__);
-						$this->Master_array[$num]=$val;}
-					}							
-	
-					}
-					
-		function AddRule($rulename){
-			$u=new user(null);
-			$rulename=$u->stripAccents($rulename);
-			$rulename=str_replace(";",".",$rulename);
-			$q=new mysql();
-			$RuleText=addslashes($this->BuildConfig());
-			$sql="INSERT INTO dansguardian_rules(RuleName,RuleOrder,RuleText) VALUES('$rulename',0,'$RuleText');";
-			$q->QUERY_SQL($sql,"artica_backup");	
-		}
-		
 		
 }
 
@@ -971,7 +639,7 @@ class dansguardian_rules{
 	
 	function __construct($hostname=null,$RuleID=0){
 		
-		$this->CategoriesTableCache();
+
 		
 		ksort($this->array_weighted_phrases_lists);
 		//ksort($this->array_blacksites);
@@ -1008,7 +676,7 @@ class dansguardian_rules{
 		
 		include_once(dirname(__FILE__)."/class.mysql.squid.builder.php");
 		$q=new mysql_squid_builder();
-		if($q->COUNT_ROWS("webfilters_categories_caches")==0){$this->CategoriesTableCache();}
+
 		$sql="SELECT description,categorykey FROM webfilters_categories_caches ORDER BY categorykey";
 		$results=$q->QUERY_SQL($sql);
 		
@@ -1016,7 +684,6 @@ class dansguardian_rules{
 			if(preg_match("#does.*?exist#", $q->mysql_error)){
 				$q->create_webfilters_categories_caches();
 				$results=$q->QUERY_SQL($sql);
-				$create_webfilters_categories_caches=" after webfilters_categories_caches created...<br>";
 			}
 		}
 		
@@ -1033,57 +700,7 @@ class dansguardian_rules{
 		return $array;
 	}
 	
-	function CleanCategoryCaches(){
-		$this->LoadBlackListes(true);
-		
-	}
-	
-	
-	function LoadBlackListesGroups(){
-		$data=$this->get_cachedItems(__FUNCTION__);
-		if($data<>null){return unserialize($data);}
-		include_once(dirname(__FILE__)."/class.mysql.squid.builder.php");
-		$q=new mysql_squid_builder();
-		if($q->COUNT_ROWS("webfilters_categories_caches")==0){$this->CategoriesTableCache();}
-		$sql="SELECT master_category FROM webfilters_categories_caches GROUP BY master_category ORDER BY master_category";
-		$results=$q->QUERY_SQL($sql);
-		
-		if(!$q->ok){
-			if(preg_match("#does.*?exist#", $q->mysql_error)){
-				$q->create_webfilters_categories_caches();
-				$results=$q->QUERY_SQL($sql);
-				$create_webfilters_categories_caches=" after webfilters_categories_caches created...<br>";
-			}
-		}		
-		
-		while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
-			$array[$ligne["master_category"]]=$ligne["master_category"];
-		}
-		$this->set_cachedItems(__FUNCTION__,serialize($array));
-		return $array;
-	}	
-	
-	function CategoriesTableCache(){
-		if($GLOBALS["AS_ROOT"]){return;}
-		include_once(dirname(__FILE__)."/class.categories.inc");
-		$q=new categories();
-		$q->initialize();
 
-	}
-	
-	
-	function hash_RulesList(){
-		$q=new mysql();
-		$sql="SELECT RuleID,RuleName FROM dansguardian_rules ORDER BY RuleName";
-		$results=$q->QUERY_SQL($sql,"artica_backup");
-		while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
-			if($ligne["RuleID"]<2){continue;}
-			$hash[$ligne["RuleID"]]=$ligne["RuleName"];
-		}
-		
-		return $hash;
-	}
-		
 	private function LoadMainRule(){
 		$q=new mysql();
 		$sql="SELECT RuleText FROM dansguardian_rules WHERE RuleID=$this->ruleindex";
@@ -1106,7 +723,7 @@ class dansguardian_rules{
 			writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);
 			return false;
 		}
-		$sock=new sockets();
+
 		$this->RestartFilters();
 		
 		return true;
@@ -1115,132 +732,12 @@ class dansguardian_rules{
 	
 	
 	function ParseMainConfig(){
-		$tb=explode("\n",$this->Main_rule);
-			writelogs("Rule $this->ruleindex store ". strlen($this->Main_rule). " bytes length (line ".__LINE__.")",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			writelogs("This config has ".count($tb)." lines :".__LINE__,__CLASS__.'/'.__FUNCTION__,__FILE__);
-			while (list ($num, $val) = each ($tb) ){
-				if(preg_match('#(.+?)[=\s]+(.+)#',$val,$re)){
-					$re[2]=str_replace("'","",$re[2]);
-					$this->Main_array[trim($re[1])]=trim($re[2]);
-				}
-				
-			}
-		
-		
 	}
-	
-	function AddCategory($category,$ruleindex){
-		$sql="INSERT INTO dansguardian_files (RuleID,filename,infos,pattern,enabled) VALUES('$ruleindex','bannedsitelist','$info','$category','1');";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		$sock=new sockets();
-		$this->RestartFilters();
-	}
-	
-	function AddPersonalCategory($category,$ruleindex){
-		$sql="INSERT INTO dansguardian_personal_categories(RuleID,category,category_type) 
-		VALUES('$ruleindex','$category','enabled');";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		$sock=new sockets();
-		$this->RestartFilters();				
-	}	
-	
-	function DelPersonalCategory($index){
-		if(is_numeric($index)){
-			writelogs("Delete content id $index",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			$sql="DELETE FROM dansguardian_personal_categories WHERE ID=$index";
-			$q=new mysql();
-			$q->QUERY_SQL($sql,"artica_backup");
-			if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		}else{
-			$sql="DELETE FROM dansguardian_personal_categories WHERE category='$index'";
-			$q=new mysql();
-			$q->QUERY_SQL($sql,"artica_backup");
-			
-			
-			$q=new mysql_squid_builder();
-			$q->QUERY_SQL("DELETE FROM personal_categories WHERE `category`='$index'");
-			if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-			
-		}	
-		$sock=new sockets();
-		$this->RestartFilters();				
-		
-	}
-	
-	function AddPersonalWebSiteOnCategory($WebsiteToAdd,$category,$ruleindex){
-	$sql="INSERT INTO dansguardian_personal_categories(RuleID,category,category_type,pattern) 
-		VALUES('$ruleindex','$category','data','$WebsiteToAdd');";
-		$q=new mysql_squid_builder();
-		$q->QUERY_SQL($sql,"artica_backup");	
-			
-		if(!$q->ok){
-			echo $q->mysql_error;
-			writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			return;
-		}
-		$sock=new sockets();
-		$this->RestartFilters();
 
-		
-		if(preg_match("#www\.(.+?)$#i",$WebsiteToAdd,$re)){$WebsiteToAdd=$re[1];}
-		$md5=md5($www.$category);
-		$uuid=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
-		$sql="INSERT INTO dansguardian_community_categories (zmd5,zDate,category,pattern,uuid) VALUES('$md5',NOW(),'$category','$www','$uuid')";
-		$q=new mysql_squid_builder();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?export-community-categories=yes");	
-			
-		
-		
-	}
-	
-	function DeletePersonalCategoryWebSite($ID){
-		writelogs("Delete content id $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_personal_categories WHERE ID=$ID";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		$sock=new sockets();
-		$this->RestartFilters();
-	}	
-	
-	
-	function AddIpToFilter($pattern,$ruleindex){
-		$sql="INSERT INTO dansguardian_ipgroups (pattern,RuleID) VALUES('$pattern','$ruleindex')";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return false;}
-		$this->RestartFilters();
-		return true;	
-		}
-	
-	function DelIpToFilter($ID){
-		if(!is_numeric($ID)){
-			writelogs("Not a numeric $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			return;}
-		writelogs("Delete content id $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_ipgroups WHERE ID=$ID";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		$this->RestartFilters();	
-	}
-	
-	
-
-	
-	
 	public function RestartFilters(){
 		$sock=new sockets();
-		$enable_cicap=$sock->GET_INFO('CicapEnabled');
 		$enable_squidguard=$sock->GET_INFO('squidGuardEnabled');
-		$DansGuardianEnabled=$sock->GET_INFO('DansGuardianEnabled');
+
 		
 		$EnableWebProxyStatsAppliance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWebProxyStatsAppliance"));
 		$EnableRemoteStatisticsAppliance=$sock->GET_INFO("EnableRemoteStatisticsAppliance");
@@ -1257,16 +754,9 @@ class dansguardian_rules{
 		$EnableUfdbGuard=intval($sock->EnableUfdbGuard());
 		if(!is_numeric($UfdbEnabledCentral)){$UfdbEnabledCentral=1;}
 		if($EnableRemoteStatisticsAppliance==1){
-			$enable_cicap=$AntivirusEnabledCentral;
-			$EnableUfdbGuard=$UfdbEnabledCentral;
+		$EnableUfdbGuard=$UfdbEnabledCentral;
 			
 		}
-		
-	
-		
-		
-		writelogs("EnableWebProxyStatsAppliance=$EnableWebProxyStatsAppliance",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		
 		if($EnableWebProxyStatsAppliance==1){
 			$GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/compile");
 			return;
@@ -1275,107 +765,37 @@ class dansguardian_rules{
 		$users=new usersMenus();
 		if($users->C_ICAP_INSTALLED){
 			if($enable_squidguard==1){
-				$sock->getFrameWork("cmd.php?cicap-restart=yes");
+				$GLOBALS["CLASS_SOCKETS"]->REST_API("/cicap/restart");
 				return;
 			}
 		}
 		
-		if($users->DANSGUARDIAN_INSTALLED){
-			if($DansGuardianEnabled==1){
-				$sock->getFrameWork("cmd.php?reload-dansguardian=yes");
-				return;
-			}
-		}
-		
-		if($users->SQUIDGUARD_INSTALLED){
-			if($enable_squidguard==1){
-				$sock->getFrameWork("cmd.php?reload-dansguardian=yes");
-				return;
-			}
-		}
-		
+		// Les branches DansGuardian et SquidGuard rechargeaient leur filtre via
+		// framework/cmd.php?reload-dansguardian, dont la fonction n'existe plus.
+		// Toutes deux etaient de toute facon inatteignables: DANSGUARDIAN_INSTALLED
+		// et SQUIDGUARD_INSTALLED sont declares false dans usersMenus et ne sont
+		// jamais remis a true -- les deux produits ont quitte l'appliance. Leur
+		// suppression ne change donc aucun flux: le "return" qu'elles portaient
+		// n'a jamais pu s'executer.
+
 		if($users->APP_UFDBGUARD_INSTALLED){
 			if($EnableUfdbGuard==1){
-				$sock->getFrameWork("cmd.php?reload-ufdbguard=yes");
+				// Passait par framework/cmd.php?reload-ufdbguard, dont la fonction
+				// reload_ufdbguard() n'existe plus: contrairement aux branches
+				// DansGuardian et SquidGuard ci-dessus, CELLE-CI est atteignable
+				// (APP_UFDBGUARD_INSTALLED est bien mis a true), donc le filtre
+				// n'etait plus recharge du tout apres un changement de regle.
+				// /ufdb/recompile est le chemin utilise par les pages fw.ufdb.*:
+				// il enchaine construction puis rechargement, rend la main tout de
+				// suite et fusionne les demandes concurrentes cote daemon.
+				$GLOBALS["CLASS_SOCKETS"]->REST_API("/ufdb/recompile");
 				return;
 			}
 		}
 		
 		
 	}
-	
 
-	
-
-	
-	
-	function AddCategory_phrase_weight($category,$ruleindex){
-		$sql="INSERT INTO dansguardian_files (RuleID,filename,infos,pattern,enabled) VALUES('$ruleindex','weightedphraselist','$info','$category','1');";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		$this->RestartFilters();	
-		}
-
-	
-	function AddCategory_phrase_banned($category,$ruleindex){
-		$sql="INSERT INTO dansguardian_files (RuleID,filename,infos,pattern,enabled) VALUES('$ruleindex','bannedphraselist','$info','$category','1');";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		$this->RestartFilters();		
-		}	
-	
-	
-	function DelCategory($ruleindex,$cat_index){
-		writelogs("Delete content id $index",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$cat_index'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);return;}
-		$this->RestartFilters();	
-		}
-	
-	function DelCategory_phrase_weight($ID){
-		writelogs("Delete content id $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$ID'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}		
-		}
-		
-	function DelCategory_phrase_banned($ID){
-		writelogs("Delete content id $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$ID'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}
-		}	
-
-	
-
-	
-	
-	function LoadIpGroup($ruleindex){
-		$ldap=new clladp();
-		$dn="cn=$ruleindex,cn=dansguardian,cn=artica,$ldap->suffix";
-		if(!$ldap->ExistsDN($dn)){return array();}
-		$res=@ldap_read($ldap->ldap_connection,$dn,"(objectClass=DansGuardianRules)",array('DansGuardianFilterIPGroup'));
-		
-			if($res){
-						$hash=ldap_get_entries($ldap->ldap_connection,$res);
-						
-						for($i=0;$i<$hash[0][strtolower('DansGuardianFilterIPGroup')]["count"];$i++){
-							if(trim($hash[0][strtolower('DansGuardianFilterIPGroup')][$i])<>null){
-							$results[$i]=$hash[0][strtolower('DansGuardianFilterIPGroup')][$i];}
-						}
-				}else{writelogs("no DansGuardianFilterIPGroup $dn",__CLASS__.'/'.__FUNCTION__,__FILE__);return array();}
-				
-		return $results;		
-	}
-	
-	
-	
 	function LoadOtherRules($ruleindex){
 		$sql="SELECT COUNT(ID) AS Tcount FROM dansguardian_files WHERE filename='bannedextensionlist' AND RuleID=$ruleindex";
 		$q=new mysql();
@@ -1415,36 +835,9 @@ class dansguardian_rules{
 			writelogs("$sql",__CLASS__.'/'.__FUNCTION__,__FILE__);
 			return;
 		}
-		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?reload-dansguardian=yes");			
 		}
 		
-	function Add_exceptionsitelist($ruleindex,$www){
-		//exceptionsitelist
-		$www=str_replace("http://",'',$www);
-		$www=str_replace("https://",'',$www);
-		$www=str_replace("ftp://",'',$www);
-		$www=str_replace("ftps://",'',$www);
-		$www=str_replace("www.",'',$www);
-		$slashpos=strpos($www,'/');
-		if($slashpos>0){$www=substr($www,0,$slashpos);}
-		
-		$q=new mysql();
-		$sql="SELECT ID FROM dansguardian_files WHERE pattern='$www' AND filename='exceptionsitelist' AND RuleID='$ruleindex'";
-		$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,'artica_backup'));
-		if($ligne["ID"]>0){
-			return true;
-		}
-		
-		$sql="INSERT INTO dansguardian_files (RuleID,filename,infos,pattern,enabled) VALUES('$ruleindex','exceptionsitelist','$www','$www','1');";
-		
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}
-		$sock=new sockets();
-		$this->RestartFilters();	
-		
-		
-		}
+
 		
 	function Add_bannedextensionlist($ruleindex,$extension,$info,$enabled){
 		if(substr($extension,0,1)<>'.'){$extension='.'.$extension;}
@@ -1454,106 +847,8 @@ class dansguardian_rules{
 		$q=new mysql();
 		$q->QUERY_SQL($sql,"artica_backup");		
 		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}
-		$sock=new sockets();
-		$sock->getFrameWork("cmd.php?reload-dansguardian=yes");			
 		}
-		
-	function Add_ExeptionFileSiteList($ruleindex,$pattern,$info,$enabled){
-		$pattern=str_replace("http://",'',$pattern);
-		$pattern=str_replace("https://",'',$pattern);
-		$pattern=str_replace("ftp://",'',$pattern);
-		$pattern=str_replace("ftps://",'',$pattern);
-		$pattern=str_replace("www.",'',$pattern);
-		
-		$q=new mysql();
-		$sql="SELECT ID FROM dansguardian_files WHERE pattern='$www' AND filename='exceptionfilesitelist' AND RuleID='$ruleindex'";
-		$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,'artica_backup'));
-		if($ligne["ID"]>0){
-			return true;
-		}		
-		
-		$sql="INSERT INTO dansguardian_files (RuleID,filename,infos,pattern,enabled) VALUES('$ruleindex','exceptionfilesitelist','$info','$pattern','$enabled');";
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		$sock=new sockets();
-		$this->RestartFilters();				
-		}	
 
-	function Add_exceptioniplist($pattern,$info,$uid=null,$enabled=1){
-	
-		$q=new mysql();
-		$sql="SELECT ID FROM dansguardian_files WHERE pattern='$pattern' AND filename='exceptioniplist' AND RuleID='1'";
-		$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,'artica_backup'));
-		if($ligne["ID"]>0){
-			return true;
-		}		
-		
-		$sql="INSERT INTO dansguardian_files (RuleID,filename,infos,pattern,uid,enabled) VALUES('1','exceptioniplist','$info','$pattern','$uid','$enabled');";
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){
-			writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			$this->error=$q->mysql_error;
-			return false;
-		}	
-		$sock=new sockets();
-		$sock->getFrameWork("squid.php?build-smooth=yes");	
-		$this->RestartFilters();
-		return true;				
-		}
-	function Add_bannediplist($pattern,$info,$uid,$enabled=1){
-		if(!preg_match("#[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+#",$pattern)){
-			$this->error="$pattern: Wrong value";
-			return false;
-		}
-		$q=new mysql();
-		$sql="SELECT ID FROM dansguardian_files WHERE pattern='$pattern' AND filename='bannediplist' AND RuleID='1'";
-		$ligne=@mysqli_fetch_array($q->QUERY_SQL($sql,'artica_backup'));
-		if($ligne["ID"]>0){return true;}		
-		
-		$sql="INSERT INTO dansguardian_files (RuleID,filename,infos,pattern,enabled,uid) VALUES('1','bannediplist','$info','$pattern','$enabled','$uid');";
-		$q->QUERY_SQL($sql,"artica_backup");		
-		if(!$q->ok){
-			writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			$this->error=$q->mysql_error;
-			return false;
-		}	
-		$sock=new sockets();
-		$this->RestartFilters();
-		$sock->getFrameWork("squid.php?build-smooth=yes");	
-		return true;				
-		}	
-		
-	function Del_bannediplist($ruleindex,$index){
-		writelogs("Delete content id $index",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$index'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		if(!$q->ok){
-			writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			$this->error=$q->mysql_error;
-			return false;
-		}			
-		$sock=new sockets();
-		$sock->getFrameWork("squid.php?build-smooth=yes");	
-		$this->RestartFilters();	
-		}					
-
-	function Del_exceptioniplist($ruleindex,$index){
-		writelogs("Delete content id $index",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$index'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		if(!$q->ok){
-			writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);
-			$this->error=$q->mysql_error;
-			return false;
-		}			
-		$sock=new sockets();
-		$sock->getFrameWork("squid.php?build-smooth=yes");	
-		$this->RestartFilters();
-		}		
 		
 		
 		
@@ -1563,187 +858,85 @@ class dansguardian_rules{
 		$q->QUERY_SQL($sql,"artica_backup");		
 		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
 		$sock=new sockets();
-		$this->RestartFilters();				
-		}		
-		
-	function DelBannedExtensionList($ruleindex,$index){
-		writelogs("Delete content id $index",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$index'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		$sock=new sockets();
-		$this->RestartFilters();			
-	}
-	
-	function DelBannedMimeTypeList($ruleindex,$index){
-		writelogs("Delete content id $index",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$index'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		$sock=new sockets();
-		$this->RestartFilters();						
-	}	
-		
-	function DelExceptionsitelist($ID){
-		writelogs("Delete content id $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$ID'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		$sock=new sockets();
-		$this->RestartFilters();					
-	}
+		$this->RestartFilters();
+		}
 
-	function DelExeptionFileSiteList($ID){
-		writelogs("Delete content id $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$ID'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-	}
 
-	function Edit_bannedregexpurllist_enabled($ID,$enabled=1){
-		writelogs("enable=$enabled rule id $ID",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="UPDATE `dansguardian_files` SET `enabled`=\"$enabled\" WHERE ID=$ID";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error\n\n$sql\n\n",__CLASS__.'/'.__FUNCTION__,__FILE__);}
-		$sock=new sockets();
-		$this->RestartFilters();				
-		}
-		
-	function Edit_bannedregexpurllist($ID,$pattern,$info,$enabled=null){
-		$pattern=stripslashes($pattern);
-		$pattern=str_replace("\n","",$pattern);
-		$pattern=str_replace("\r","",$pattern);
-		$info=addslashes($info);
-		$sql="UPDATE `dansguardian_files` SET `pattern`=\"$pattern\",infos='$info' WHERE ID=$ID";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error\n\n$sql\n\n",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		$sock=new sockets();
-		$this->RestartFilters();			
-		}
-		
-function Edit_bannedextensionlist($ID,$enabled=null){
-		
-		$sql="UPDATE dansguardian_files SET enabled='$enabled' WHERE ID=$ID";
-		writelogs($sql,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs($q->mysql_error,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);}
-		$sock=new sockets();
-		$this->RestartFilters();							
-		}
-		
-function Edit_ExeptionFileSiteList($ID,$enabled=null){
-		$sql="UPDATE dansguardian_files SET enabled='$enabled' WHERE ID=$ID";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		$sock=new sockets();
-		$this->RestartFilters();					
-		}		
 
-function Edit_bannedMimeTypelist($ID,$enabled=null){
-		$sql="UPDATE dansguardian_files SET enabled='$enabled' WHERE ID=$ID";
-		writelogs("$sql",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){
-			writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-		}
-		$sock=new sockets();
-		$this->RestartFilters();			
-		}		
-		
-function DelBannedregexpurllist($ruleindex,$listindex){
-		writelogs("Delete rule number $listindex in group $ruleindex Enabled={$rules["enabled"]}",__CLASS__.'/'.__FUNCTION__,__FILE__);
-		$sql="DELETE FROM dansguardian_files WHERE ID='$listindex'";
-		$q=new mysql();
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){writelogs("$q->mysql_error",__CLASS__.'/'.__FUNCTION__,__FILE__);}	
-		$sock=new sockets();
-		$this->RestartFilters();					
-		
-		}
-		
-		
 	private function Default_Build_BannedExtensionList($ruleindex){
 		$arr=$this->array_bannedextensionlist;
 		while (list ($num, $val) = each ($arr) ){
 			$this->Add_bannedextensionlist($ruleindex,$num,$val,1);
-			
+
 		}
-		
+
 	}
-	
+
 	private function Default_Build_BannedMimeTypeList($ruleindex){
 		$arr=$this->array_default_mimetype;
 		while (list ($num, $val) = each ($arr) ){
 			$this->Add_bannedmimetype($ruleindex,$val,$val,1);
 		}
-		
-	}	
-		
+
+	}
+
 	private function Default_Build_bannedregexpurllist($ruleindex){
 		 $this->Add_bannedregexpurllist($ruleindex,
 		 '(^|[-\?+=&/_])(big|cyber|hard|huge|mega|small|soft|super|tiny)?(anal|babe|bharath|boob|breast|busen|busty|clit|cum|cunt|dick|fetish|fuck|hooter|lez|lust|naked|nude|oral|orgy|porn|porno|pupper|pussy|rotten|sex|shit|smutpump|teen|tit|topp?les|xxx)s?([-\?+=&/_]|$)',
 		 'Pornography, Modelling and Adult Sites These have been taken from www.squidguard.org',
 		 0);
-		 
-		 
+
+
 		 $this->Add_bannedregexpurllist(
 		 $ruleindex,
 		 '(^|[\?+=&/])(girls|babes|toples)([\?+=&/]|$)',
 		 'Pornography, Modelling and Adult Sites These have been taken from www.squidguard.org',0);
-		 
+
 		 $this->Add_bannedregexpurllist(
 		 $ruleindex,
 		 '(^|[-\?+=&/_])(big|cyber|hard|huge|mega|small|soft|super|tiny|bare|naked|nude|anal|oral|topp?les|sex|phone){1,}.*(anal|babe|bharath|boob|breast|busen|busty|clit|cum|cunt|dick|fetish|fuck|girl|hooter|lez|lust|naked|nude|oral|orgy|penis|porn|porno|pupper|pussy|rotten|sex|shit|smutpump|teen|tit|topp?les|xxx)s?([-\?+=&/_]|$)
 (^|[-\?+=&/_])(anal|babe|bharath|boob|breast|busen|busty|clit|cum|cunt|dick|fetish|fuck|girl|hooter|lez|lust|naked|nude|oral|orgy|penis|porn|porno|pupper|pussy|rotten|sex|shit|smutpump|teen|tit|topp?les|xxx){1,}.*(big|cyber|hard|huge|mega|small|soft|super|tiny|bare|naked|nude|anal|oral|topp?les|sex){1,}([-\?+=&/_]|$)',
 		'Pornography, Modelling and Adult Sites Philip Pearce 9/11/2004'
 		,1);
-		 
-		 		 
+
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(^|[-\?+=&/_])(anal|babe|bharath|boob|breast|busen|busty|clit|cum|cunt|dick|fetish|fuck|girl|hooter|lez|lust|naked|nude|oral|orgy|penis|porn|porno|pupper|pussy|rotten|sex|shit|smutpump|teen|tit|topp?les|xxx){1,}.*(big|cyber|hard|huge|mega|small|soft|super|tiny|bare|naked|nude|anal|oral|topp?les|sex){1,}([-\?+=&/_]|$)',
 				'Pornography, Modelling and Adult Sites Philip Pearce 9/11/2004'
-				,1);			
-				
+				,1);
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(adultsight|adultsite|adultsonly|adultweb|blowjob|bondage|centerfold|cumshot|cyberlust|cybercore|hardcore|masturbat)',
 				 'HardCore phrases'
 				,1);
-		
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(bangbros|pussylip|playmate|pornstar|sexdream|showgirl|softcore|striptease)',
 				 'HardCore phrases'
 				,1);
-		
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(incest|obscene|pedophil|pedofil)',
 				 'SoftCore phrases - more likely to overblock - possibly on news sites'
 				,0);
-		
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(male|m[ae]n|boy|girl|beaut|agen[ct]|glam){1,}.*(model|talent)',
 				 'Photo Modeling - supplied by David Burkholder'
-				,0);	
-				
+				,0);
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(sex|fuck|boob|cunt|fetish|tits|anal|hooter|asses|shemale|submission|porn|xxx|busty|knockers|slut|nude|naked|pussy){1,}.*(\.jpg|\.wmv|\.mpg|\.mpeg|\.gif|\.mov)',
 				 'Block explicit media files (images and video)'
-				,1);	
-				
-				
+				,1);
+
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(girls|babes|bikini|model){1,}.*(\.jpg|\.wmv|\.mpg|\.mpeg|\.gif|\.mov)',
@@ -1754,27 +947,27 @@ function DelBannedregexpurllist($ruleindex,$listindex){
 				 $ruleindex,
 				 '(naturism|naturist|nude|nudist|nudism|nekkid|nakt|naakt)',
 				 'Block Naturism and Nudist sites'
-				,0);	
+				,0);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(^|[\?+=&/])(.*\.google\..*/.*\?.*safe=off)([\?+=&/]|$)',
 				 'Block unfiltered options on various search engines'
-				,0);								
+				,0);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(^|[\?+=&/])(.*\.alltheweb.com/customize\?.*copt_offensive=off)([\?+=&/]|$)',
 				 'Block unfiltered options on various search engines'
-				,0);				
-				
+				,0);
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(yahoo.com\/image\/)',
 				 'Block images and video on altavista, alltheweb, yahoo etc - as they are anonomised'
-				,0);	
-				
-				
+				,0);
+
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(yimg.com\/image\/)',
@@ -1797,7 +990,7 @@ function DelBannedregexpurllist($ruleindex,$listindex){
 				 $ruleindex,
 				 '(images.google){1,}.*(\.jpg|\.wmv|\.mpg|\.mpeg|\.gif|\.mov)',
 				 'Block images and video on google'
-				,0);	
+				,0);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
@@ -1811,7 +1004,7 @@ function DelBannedregexpurllist($ruleindex,$listindex){
 				 '(google.com\/ThumbnailServer)',
 				 'Block images and video on google (Thumbnail)'
 				,0);
-				
+
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
@@ -1829,13 +1022,13 @@ function DelBannedregexpurllist($ruleindex,$listindex){
 				 $ruleindex,
 				 '(anonymizer|proxify|megaproxy)',
 				 'Block websites containing proxy lists'
-				,1);	
+				,1);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(casino|bet(ting|s)|lott(ery|o)|gam(e[rs]|ing|bl(e|ing))|sweepstake|poker)',
 				 'Gambling - supplied by David Burkholder'
-				,0);	
+				,0);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
@@ -1853,13 +1046,13 @@ function DelBannedregexpurllist($ruleindex,$listindex){
 				 $ruleindex,
 				 '(news(watch|pap|cast)|herald|sentinel|courier|gazet|tribune|chronicle|daily|ning)news)',
 				 'News sites - supplied by David Burkholder (2)'
-				,0);	
+				,0);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(meet|hook|mailord|latin|(asi|mexic|dominic|russi|kore|colombi|balk)an|brazil|filip|french|chinese|ukrain|thai|tour|foreign|date){1,}.*(dar?[lt]ing|(sing|coup)le|m[ae]n|girl|boy|guy|mat(e|ing)|l[ou]ve?|partner|meet)',
 				 'Dating Sites - supplied by David Burkholder (1)'
-				,0);	
+				,0);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
@@ -1877,158 +1070,53 @@ function DelBannedregexpurllist($ruleindex,$listindex){
 				 $ruleindex,
 				 '(free|phone|mobile){1,}.*(love|music|movie|dvd|video|stuff|site|arcade|wallpaper|mp3)',
 				 'Free stuff - supplied by David Burkholder (1)'
-				,0);							
+				,0);
 
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '((ring|real)tone)',
 				 'Free stuff - supplied by David Burkholder (2)'
 				,0);
-				
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(rock|pop|jazz|rap|punk){1,}.*(cult|roll|geek|drum|music|history|band)',
 				 'Music - supplied by David Burkholder'
-				,0);						
-				
+				,0);
+
 		$this->Add_bannedregexpurllist(
 				 $ruleindex,
 				 '(Variants/AVTest)',
 				 'his is part of the URL for the dansguardian.org sample virus archive.You probably don\'t want to go there unintentionally'
-				,1);				
+				,1);
 
-				
-						
-		
+
+
+
 		}
-		
+
 	function BuildBranch(){}
-	
+
 	private function BuildDefaults(){
 		if($this->Main_array["groupmode"]==null){$this->Main_array["groupmode"]=1;}
 		if($this->Main_array["naughtynesslimit"]==null){$this->Main_array["naughtynesslimit"]=50;}
 		if($this->Main_array["categorydisplaythreshold"]==null){$this->Main_array["categorydisplaythreshold"]=0;}
 		if($this->Main_array["embeddedurlweight"]==null){$this->Main_array["embeddedurlweight"]=0;}
 		if($this->Main_array["deepurlanalysis"]==null){$this->Main_array["deepurlanalysis"]="off";}
-		
-		
+
+
 	}
-		
-		
+
+
 	function BuildMainRule(){
-		$folder_name="group_{$this->ruleindex}";
-		$this->BuildDefaults();
-		$dansguardian=new dansguardian();
 
-		$conf=$conf."groupmode = {$this->Main_array["groupmode"]}\n";
-		$conf=$conf."groupname = {$this->Main_array["groupname"]}\n";
-		$conf=$conf."bannedphraselist = '/etc/dansguardian/$folder_name/bannedphraselist'\n";
-		$conf=$conf."weightedphraselist = '/etc/dansguardian/$folder_name/weightedphraselist'\n";
-		$conf=$conf."exceptionphraselist = '/etc/dansguardian/$folder_name/exceptionphraselist'\n";
-		$conf=$conf."bannedsitelist = '/etc/dansguardian/$folder_name/bannedsitelist'\n";
-		$conf=$conf."greysitelist = '/etc/dansguardian/$folder_name/greysitelist'\n";
-		$conf=$conf."exceptionsitelist = '/etc/dansguardian/$folder_name/exceptionsitelist'\n";
-		$conf=$conf."bannedurllist = '/etc/dansguardian/$folder_name/bannedurllist'\n";
-		$conf=$conf."greyurllist = '/etc/dansguardian/$folder_name/greyurllist'\n";
-		$conf=$conf."exceptionurllist = '/etc/dansguardian/$folder_name/exceptionurllist'\n";
-		$conf=$conf."exceptionregexpurllist = '/etc/dansguardian/$folder_name/exceptionregexpurllist'\n";
-		$conf=$conf."bannedregexpurllist = '/etc/dansguardian/$folder_name/bannedregexpurllist'\n";
-		$conf=$conf."bannedregexpheaderlist = '/etc/dansguardian/$folder_name/bannedregexpheaderlist'\n";
-		$conf=$conf."picsfile = '/etc/dansguardian/$folder_name/pics'\n";
-		$conf=$conf."contentregexplist = '/etc/dansguardian/$folder_name/contentregexplist'\n";
-		$conf=$conf."urlregexplist = '/etc/dansguardian/$folder_name/urlregexplist'\n";	
-		
-		$conf=$conf."#blockdownloads = off\n";	
-		$conf=$conf."exceptionextensionlist = '/etc/dansguardian/exceptionextensionlist'\n";	
-		$conf=$conf."exceptionmimetypelist = '/etc/dansguardian/exceptionmimetypelist'\n";
-		
-		$conf=$conf."exceptionfilesitelist = '/etc/dansguardian/$folder_name/exceptionfilesitelist'\n";
-		$conf=$conf."exceptionfileurllist = '/etc/dansguardian/$folder_name/exceptionfileurllist'\n";
-		
-		$conf=$conf."bannedextensionlist = '/etc/dansguardian/$folder_name/bannedextensionlist'\n";
-		$conf=$conf."bannedmimetypelist = '/etc/dansguardian/$folder_name/bannedmimetypelist'\n";	
 
-		$conf=$conf."#logsitelist = '/etc/dansguardian/logsitelist'\n";
-		$conf=$conf."#logurllist = '/etc/dansguardian/logurllist'\n";
-		$conf=$conf."#logregexpurllist = '/etc/dansguardian/logregexpurllist'\n";	
-		$conf=$conf."headerregexplist = '/etc/dansguardian/headerregexplist'\n";	
-		$conf=$conf."#bannedregexpheaderlist = '/etc/dansguardian/bannedregexpheaderlist'\n";	
-
-		$conf=$conf."naughtynesslimit = {$this->Main_array["naughtynesslimit"]}\n";
-		$conf=$conf."categorydisplaythreshold = {$this->Main_array["categorydisplaythreshold"]}\n";
-		$conf=$conf."embeddedurlweight = {$this->Main_array["embeddedurlweight"]}\n";
-		$conf=$conf."enablepics = off\n";
-		$conf=$conf."bypass = 0\n";	
-		$conf=$conf."bypasskey = ''\n";
-
-		$conf=$conf."\n#AV/ICAP\n";
-		$conf=$conf.$dansguardian->ContentScanners();
-		$conf=$conf."infectionbypass = 0\n";
-		$conf=$conf."infectionbypasskey = ''\n";		
-		$conf=$conf."contentscannertimeout = 60\n";
-		$conf=$conf."disablecontentscan = off\n";
-		$conf=$conf."\n";
-		$conf=$conf."deepurlanalysis = {$this->Main_array["deepurlanalysis"]}\n";
-		$conf=$conf."reportinglevel = 3\n";
-		$conf=$conf."#accessdeniedaddress = 'http://YOURSERVER.YOURDOMAIN/cgi-bin/dansguardian.pl'\n";
-		$conf=$conf."#htmltemplate = 'custom.html'\n";
-		
-
-		
-		return $conf;
 	}
-	
-	public function SaveRule(){
-		$this->SaveRuleID();
-	}
-	
-	
-	function BuildMembersList(){
-		$dans=new dansguardian($this->hostname);
-		
-		$conf=$conf . "# Filter Groups List file for DansGuardian\n";
-		$conf=$conf . "#\tGenerated on " . date("Y-m-d H:i:s")."\n";
-		$conf=$conf . "#\n";
-		$conf=$conf . "# Format is <user>=filter<1-9> where 1-9 are the groups\n";
-		$conf=$conf . "#\n";
-		$conf=$conf . "# Eg:\n";
-		$conf=$conf . "# daniel=filter2\n";
-		$conf=$conf . "#\n";
-		$conf=$conf . "# This file is only of use if you have more than 1 filter group\n";
-		$conf=$conf . "#\n\n";
-				
-		
-		$rule_array=$dans->Master_rules_index;
-		
-		$pattern="(&(objectClass=posixGroup)(objectClass=ArticaSettings)(ArticaDansGuardianGroupRuleEnabled=*))";
-		$filter=array("ArticaDansGuardianGroupRuleEnabled","memberUid");
-		$ldap=new clladp();
-		$sr =@ldap_search($ldap->ldap_connection,$ldap->suffix,$pattern,$filter);
-		if(!$sr){return $conf;}
-		
-		
-		$hash = ldap_get_entries($ldap->ldap_connection,$sr);
-		
-		for($i=0;$i<$hash["count"];$i++){
-			$ruleindex=$hash[$i]["articadansguardiangroupruleenabled"][0];
-			
-			if($ruleindex>0){
-				$rulename="filter{$ruleindex}";
-				$conf=$conf ."\n######################################################\n";
-				for($t=0;$t<$hash[$i]["memberuid"]["count"];$t++){
-					$member=$hash[$i]["memberuid"][$t];
-					if(preg_match('#(.+?);#',$rule_array[$ruleindex],$re)){
-						$rulelog=$re[1];
-					}else{$rulelog=$rule_array[$ruleindex];}
-					if(substr($member,strlen($member)-1,1)=='$'){continue;}
-					$conf=$conf ."$member=$rulename\t# $member using rule $rulelog\n";
-					
-				}
-				
-			}
-			
-		}
-	return $conf;}
+
+
+
+
+
 	
 	
 	
@@ -2037,22 +1125,6 @@ function DelBannedregexpurllist($ruleindex,$listindex){
 	
 }
 
-function IsPersonalCategoriesRights(){
-	if(IsDansGuardianrights()){return true;}
-	$users=new usersMenus();
-	if($users->AsSquidPersonalCategories){return true;}
-	
-	return true;
-}
-
-
-function IsDansGuardianrights(){
-	$users=new usersMenus();
-	if($users->AsArticaMetaAdmin){return true;}
-	if(!$users->AsDansGuardianGroupRule){return false;}else{return true;}
-	if(!$users->AsSquidAdministrator){return false;}
-	return true;
-}
 
 
 

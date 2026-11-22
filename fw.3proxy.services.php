@@ -1,6 +1,8 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.3proxy.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
 $GLOBALS["ZTYPES"][100]="{proxypr}";
@@ -42,68 +44,33 @@ function service_wizard_lastid(){
 
 function service_move(){
     header("content-type: application/x-javascript");
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
     $tpl=new template_admin();
-    $dir=$_GET["dir"];
+    // Pentest 2026-11-04 : dir etait recopie sans encodage dans la page (XSS) : un saut de ligne sortait du commentaire JavaScript.
+    $dir=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["dir"] ?? ""));
     $ID=intval($_GET["id"]);
-    $ligne=$q->mysqli_fetch_array("SELECT zorder,servicename FROM `3proxy_services` WHERE ID='$ID'");
-    if(!$q->ok){$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "alert('$q->mysql_error');";return;}
-
-    $zorder=intval($ligne["zorder"]);
-    $CurOrder=$zorder;
-    echo "// {$ligne["servicename"]} [$ID] Current order = $zorder\n";
-
-    if($dir=="up"){
-        $zorder=$zorder-1;
-        if($zorder<0){$zorder=0;}
-    }
-    else{
-        $zorder=$zorder+1;
-    }
-    echo "//$ID --> {$ligne["servicename"]} New order = $zorder\n";
-
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $q->QUERY_SQL("UPDATE `3proxy_services` SET zorder='$zorder' WHERE ID='$ID'");
-    if(!$q->ok){$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "alert('$q->mysql_error');";return;}
-
-    $q->QUERY_SQL("UPDATE `3proxy_services` SET zorder='$CurOrder' WHERE zorder='$zorder' AND ID<>'$ID'");
-
-
-
-
-    $c=0;
-    $results=$q->QUERY_SQL("SELECT ID,servicename,zorder FROM `3proxy_services` ORDER BY zorder");
-    foreach($results as $indedx=>$ligne){
-        $ID=$ligne["ID"];
-        echo "// {$ligne["servicename"]} ($ID) New order = $c was {$ligne["zorder"]}\n";
-        $q->QUERY_SQL("UPDATE `3proxy_services` SET zorder='$c' WHERE ID='$ID'");
-        if(!$q->ok){$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "alert('$q->mysql_error');";return;}
-        $c++;
-    }
+    // Le decalage + la renumerotation complete des zorder sont faits par le
+    // daemon (une seule transaction, plus de boucle d'UPDATE cote console).
+    $e=uproxy_error(uproxy_service_move($ID,$dir));
+    if($e!=""){$tpl->js_error($e);return;}
+    echo "// service $ID moved $dir\n";
 }
 
 function service_delete_js(){
     $md=$_GET["md"];
     $ID=intval($_GET["service-delete"]);
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM `3proxy_services` WHERE ID=$ID");
+    $ligne=uproxy_service($ID);
     $servicename=$ligne["servicename"];
     $tpl->js_confirm_delete($servicename, "service-delete", $ID,"$('#$md').remove()");
 
 }
 function service_delete():bool{
     $ID=intval($_POST["service-delete"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $q->QUERY_SQL("DELETE FROM `3proxy_services` WHERE ID='$ID'");
-    if(!$q->ok){echo $q->mysql_error;}
-
-    $q->QUERY_SQL("DELETE FROM `3proxy_acls_rules` WHERE serviceid='$ID'");
-    if(!$q->ok){echo $q->mysql_error;}
-
-
-    $q->QUERY_SQL("DELETE FROM `3proxy_acls_parent` WHERE serviceid=$ID");
-    if(!$q->ok){echo $q->mysql_error;}
+    $tpl=new template_admin();
+    // Le daemon supprime aussi les regles et les proxys parents du service :
+    // sans cette cascade ils restaient orphelins et compiles dans 3proxy.cfg.
+    $e=uproxy_error(uproxy_service_delete($ID));
+    if($e!=""){echo $tpl->post_error($e);return false;}
 
     return admin_tracks("Remove Universal proxy service #$ID");
 
@@ -111,11 +78,9 @@ function service_delete():bool{
 
 function service_enable():bool{
     $ID=intval($_GET["service-enable"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $ligne=$q->mysqli_fetch_array("SELECT enabled FROM `3proxy_services` WHERE ID=$ID");
-    $enable=intval($ligne["enabled"]);
-    if($enable==1){$enable=0;}else{$enable=1;}
-    $q->QUERY_SQL("UPDATE `3proxy_services` SET `enabled`=$enable WHERE ID=$ID");
+    $answer=uproxy_service_enable($ID);
+    if(uproxy_error($answer)!=""){return false;}
+    $enable=isset($answer["Enabled"])?intval($answer["Enabled"]):0;
     return admin_tracks("Enable/disable Universal proxy service #$ID enable=$enable");
 }
 
@@ -128,8 +93,7 @@ function service_js():bool{
         return $tpl->js_dialog1("{new_service}", "$page?service-wizard=0",900);
 
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM `3proxy_services` WHERE ID=$ID");
+    $ligne=uproxy_service($ID);
     $servicename=$ligne["servicename"];
     $listen_port=$ligne["listen_port"];
     $listen_interface=$ligne["listen_interface"];
@@ -166,16 +130,18 @@ function service_wizard(){
 function service_wizard_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
     $service_type=$_POST["ztype"];
-
-    $servicename=$q->sqlite_escape_string2($_POST["servicename"]);
+    $servicename=$_POST["servicename"];
     $listen_port=rand(1024,65535);
 
-    $q->QUERY_SQL("INSERT INTO `3proxy_services` (service_type,servicename,listen_port) VALUES ('$service_type','$servicename','$listen_port')");
-    if(!$q->ok){echo $q->mysql_error;return;}
+    $answer=uproxy_service_save(0,array(
+        "service_type"=>$service_type,
+        "servicename"=>$servicename,
+        "listen_port"=>$listen_port));
+    $e=uproxy_error($answer);
+    if($e!=""){echo $tpl->post_error($e);return;}
 
-    $_SESSION["WIZARD_3PROXY_LAST_ID"]=$q->last_id;
+    $_SESSION["WIZARD_3PROXY_LAST_ID"]=intval($answer["ID"]);
 
 
 }
@@ -190,7 +156,6 @@ function service_popup():bool{
     $tpl=new template_admin();
     $FIREHOLE=false;
     $ID=intval($_GET["service-popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
     $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
     if($FireHolEnable==1){$FIREHOLE=true;}
     $EnableRedSocks=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRedSocks"));
@@ -200,7 +165,7 @@ function service_popup():bool{
     $ligne["servicename"]=$tpl->_ENGINE_parse_body("{new_service}");
     $bt="{add}";
 
-    if($ID>0){$ligne=$q->mysqli_fetch_array("SELECT * FROM `3proxy_services` WHERE ID=$ID");$bt="{apply}";}
+    if($ID>0){$ligne=uproxy_service($ID);$bt="{apply}";}
     if(intval($ligne["maxconn"])==0){$ligne["maxconn"]=100;}
 
     $tpl->field_hidden("service-id", $ID);
@@ -217,7 +182,8 @@ function service_popup():bool{
     $form[]=$tpl->field_numeric("maxconn","{max_connections}",$ligne["maxconn"]);
 
 
-    $options=unserialize(base64_decode($ligne["options"]));
+    // Options deja decodees par le daemon (tableau PHP serialise + base64).
+    $options=isset($ligne["Options"])&&is_array($ligne["Options"])?$ligne["Options"]:array();
 
     if(!isset($HOWTO[$ligne["service_type"]])){
         $HOWTO[$ligne["service_type"]]=$GLOBALS["ZTYPES_EXPLAIN"][$ligne["service_type"]];
@@ -303,19 +269,16 @@ function service_popup():bool{
 function service_save():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 
     $tpl->CLEAN_POST();
     $ID=intval($_POST["service-id"]);
     unset($_POST["service-id"]);
 
+    // Les cles ci-dessous ne sont pas des colonnes : elles vivent dans le
+    // tableau `options` (serialise PHP + base64 en base). Le daemon fusionne
+    // ce tableau avec l'existant, la page n'envoie donc que ce qu'elle edite.
+    $options=array();
 
-
-    if($ID>0){
-        $ligne=$q->mysqli_fetch_array("SELECT options FROM `3proxy_services` WHERE ID=$ID");
-        $options=unserialize(base64_decode($ligne["options"]));
-
-    }
     if(isset($_POST["logdump_enabled"])){
         $options["logdump_enabled"]=intval($_POST["logdump_enabled"]);
         unset($_POST["logdump_enabled"]);
@@ -331,7 +294,6 @@ function service_save():bool{
             $_POST["logdump_val"]="16 16";
         }
         $options["logdump_val"]=$_POST["logdump_val"];
-
         unset($_POST["logdump_val"]);
     }
     if(isset($_POST["default_destination"])){
@@ -355,31 +317,14 @@ function service_save():bool{
         unset($_POST["DNS2"]);
         unset($_POST["DNS3"]);
         unset($_POST["DNS4"]);
-
     }
 
-    if($_POST["redsocks"]==1){$_POST["transparent"]=1;}
+    // Ce qui reste est envoye tel quel : le daemon n'accepte que les colonnes
+    // de sa liste blanche et refuse les autres, il n'y a donc plus de requete
+    // construite a partir des noms de champs du formulaire.
+    $e=uproxy_error(uproxy_service_save($ID,$_POST,$options));
+    if($e!=""){echo $tpl->post_error($e);return false;}
 
-
-
-
-
-    $_POST["options"]=base64_encode(serialize($options));
-
-    foreach ($_POST as $key=>$value){
-        $value=$q->sqlite_escape_string2($value);
-        $ADD1[]="`$key`";
-        $ADD2[]="'$value'";
-        $EDIT[]="`$key`='$value'";
-    }
-
-    if($ID==0){
-        $q->QUERY_SQL("INSERT INTO `3proxy_services`(".@implode(",", $ADD1).") VALUES (".@implode(",", $ADD2).")");
-    }else{
-        $q->QUERY_SQL("UPDATE `3proxy_services` SET ".@implode(",", $EDIT)." WHERE ID=$ID");
-    }
-
-    if(!$q->ok){echo $q->mysql_error;return false;}
     return admin_tracks_post("Save Universal proxy service parameters");
 
 }
@@ -415,10 +360,7 @@ function table(){
     $TRCLASS=null;
     $t=time();
 
-    $q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-    $sql="SELECT * FROM `3proxy_services` ORDER BY zorder";
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
+    $results=uproxy_services();
 
     $jsrestart=$tpl->framework_buildjs("/3proxy/restart",
         "3proxy.progress",
@@ -433,59 +375,56 @@ function table(){
     $topbuttons[] = array($jsrestart, ico_save, "{apply_parameters}");
 
 
-    $html[]="<table id='table-$t' class=\"table table-stripped\" style='margin-top:10px' data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{service_name}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{port}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' style='width:1%'>{transparent}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' style='width:1%'>ACLS</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' style='width:1%'>{enable}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' style='width:1%'>{move}</th>";
-    $html[]="<th data-sortable=false style='width:1%'>{delete}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{service_name}</th>";
+    $html[]="<th>{port}</th>";
+    $html[]="<th class='center'>{enable}</th>";
+    $html[]="<th style='text-align:right'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='awc-rows-$t'>";
 
+    if(count($results)==0){
+        $html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $ID=$ligne["ID"];
         $md=md5(serialize($ligne));
         $servicename=$ligne["servicename"];
         $transparent=$ligne["transparent"];
+        $enabled=intval($ligne["enabled"]);
         $service_type=$GLOBALS["ZTYPES"][$ligne["service_type"]];
-        $transparent_icon=$tpl->icon_nothing();
         $EXPLAIN=EXPLAIN_THIS($ligne);
-
 
         $up=$tpl->icon_up("Loadjs('$page?service-move=yes&id={$ligne["ID"]}&dir=up')","AsFirewallManager");
         $down=$tpl->icon_down("Loadjs('$page?service-move=yes&id={$ligne["ID"]}&dir=down')","AsFirewallManager");
+        if(intval($ligne["zorder"])==0){$up="&nbsp;&nbsp;";}
 
-        if(intval($ligne["zorder"])==0){$up=null;}
-
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td><strong>". $tpl->td_href($servicename,null,"Loadjs('$page?service-js={$ligne['ID']}')")."</strong>";
-        $html[]="<br><small>$service_type</small></td>";
-        $html[]="<td>$EXPLAIN</td>";
-
+        $acts=array();
         if($transparent==1){
-            $transparent_icon=$tpl->icon_parameters("Loadjs('fw.3proxy.transparent.php?ruleid=$ID')");
+            $acts[]=$tpl->icon_parameters("Loadjs('fw.3proxy.transparent.php?ruleid=$ID')");
         }
+        $acts[]=$tpl->icon_parameters("Loadjs('fw.3proxy.acls.php?ruleid=$ID')");
+        $acts[]=$up;
+        $acts[]=$down;
+        $acts[]=$tpl->icon_delete("Loadjs('$page?service-delete={$ligne['ID']}&md=$md')","AsFirewallManager");
 
-        $html[]="<td style='width:1%' class='center' nowrap>$transparent_icon</center></td>";
-        $html[]="<td style='width:1%' class='center' nowrap>". $tpl->icon_parameters("Loadjs('fw.3proxy.acls.php?ruleid=$ID')")."</center></td>";
-        $html[]="<td style='width:1%' class='center' nowrap>". $tpl->icon_check($ligne["enabled"],"Loadjs('$page?service-enable=$ID')",null,"AsFirewallManager")."</center></td>";
-        $html[]="<td style='width:1%' nowrap>$up&nbsp;$down</td>";
-        $html[]="<td style='width:1%' class='center' nowrap>". $tpl->icon_delete("Loadjs('$page?service-delete={$ligne['ID']}&md=$md')","AsFirewallManager")."</center></td>";
+        $html[]="<tr id='$md'>";
+        $html[]="<td><div class='awc-ident'>".
+            "<span class='awc-ico".($enabled?"":" awc-ico-off")."'><i class='fas fa-diagram-project'></i></span>".
+            "<span><span class='awc-name".($enabled?"":" awc-name-off")."'>".
+            "<a href=\"javascript:blur();\" onclick=\"Loadjs('$page?service-js={$ligne['ID']}')\">".htmlspecialchars((string)$servicename)."</a>".
+            "</span><div class='awc-meta'>$service_type</div></span></div></td>";
+        $html[]="<td class='awc-mono'><small>$EXPLAIN</small></td>";
+        $html[]="<td class='center'>".$tpl->icon_check($enabled,"Loadjs('$page?service-enable=$ID')",null,"AsFirewallManager")."</td>";
+        $html[]="<td><div class='awc-acts'>".@implode("&nbsp;",$acts)."</div></td>";
         $html[]="</tr>";
-
     }
 
-
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>".count($results)." {items}</span>";
+    $html[]="<span class='awc-pg' id='awc-pager-$t'></span>";
+    $html[]="</div></div></div>";
 
     $PrivoxyVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_3PROXY_VERSION");
     $TINY_ARRAY["TITLE"]="{APP_3PROXY} v$PrivoxyVersion &raquo;&raquo; {services}";
@@ -494,15 +433,8 @@ function table(){
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-
-    $html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$headsjs
-</script>";
-
-
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    $trailjs="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$headsjs\n</script>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n", $html)).$trailjs.awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"awc-rows-$t","awc-pager-$t");
 
 }
 

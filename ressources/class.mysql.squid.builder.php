@@ -15,7 +15,6 @@ include_once(dirname(__FILE__).'/class.users.menus.inc');
 if(function_exists("debug_mem")){debug_mem();}
 include_once(dirname(__FILE__).'/class.mysql.inc');
 if(function_exists("debug_mem")){debug_mem();}
-include_once(dirname(__FILE__)."/class.mysql.blackboxes.inc");
 if(function_exists("debug_mem")){debug_mem();}
 include_once(dirname(__FILE__)."/class.mysql.catz.inc");
 if(function_exists("debug_mem")){debug_mem();}
@@ -50,13 +49,9 @@ class mysql_squid_builder{
     public $ProxyUseArticaDB=0;
     public $UseStandardMysql=false;
     public $EnableSargGenerator=0;
-    public $tasks_array=array();
-    public $tasks_explain_array=array();
     public $tasks_remote_appliance=array();
     public $CACHE_AGES=array();
     public $CACHES_RULES_TYPES=array();
-    public $tasks_processes=array();
-    public $tasks_disabled=array();
     public $last_id;
     public $acl_GroupType=array();
     public $acl_GroupType_fast=array();
@@ -493,6 +488,7 @@ class mysql_squid_builder{
         $this->acl_GroupType_iptables["fwgeo"]="{countries}";
         $this->acl_GroupType_iptables["localnet"]="{local_network}";
         $this->acl_GroupType_iptables["dnsdynamic"]="{dnsdynamic}";
+        $this->acl_GroupType_iptables["fqdn"]="{fw_fqdn_object}";
 
 
         if($EnablenDPI==1){
@@ -521,6 +517,7 @@ class mysql_squid_builder{
         }
         $this->acl_GroupType_Firewall_in["fwgeo"]="{countries}";
         $this->acl_GroupType_Firewall_in["localnet"]="{local_network}";
+        $this->acl_GroupType_Firewall_in["fqdn"]="{fw_fqdn_object}";
 
 
         $this->acl_GroupType_Firewall_out["dst"]="{dst}";
@@ -533,6 +530,7 @@ class mysql_squid_builder{
         $this->acl_GroupType_Firewall_out["youtube"]="YouTube - {macro}";
         $this->acl_GroupType_Firewall_out["google"]="Google - {macro}";
         $this->acl_GroupType_Firewall_out["localnet"]="{local_network}";
+        $this->acl_GroupType_Firewall_out["fqdn"]="{fw_fqdn_object}";
 
 
         $this->acl_GroupType_Firewall_port["port"]="{destination_port}";
@@ -707,8 +705,13 @@ class mysql_squid_builder{
         $this->CATEGORY_LICENSES["hospitals"]=true;
         $this->CATEGORY_LICENSES["tattooing"]=true;
         $this->CATEGORY_LICENSES["yahoo"]=true;
-        $this->fill_task_array();
-        $this->fill_tasks_disabled();
+        // Le catalogue des taches planifiees (libelles, explications, scripts,
+        // types desactives) est desormais servi par le daemon
+        // (GET /proxy/tasks/types, module SystemTasks). fill_task_array() et
+        // fill_tasks_disabled() sont retirees: plus aucun lecteur cote PHP, et
+        // les remplacer par un chargement paresseux aurait pose un
+        // aller-retour HTTP dans le constructeur d'une classe instanciee dans
+        // 149 fichiers.
 
 
     }
@@ -719,7 +722,10 @@ class mysql_squid_builder{
         $dateT=date("{l} {F} d",$xtime);
         if($time){$dateT=date("{l} {F} d H:i:s",$xtime);}
         if($tpl->language=="fr"){$dateT=date("{l} d {F} ",$xtime);if($time){$dateT=date("{l} d {F} H:i:s",$xtime);}}
-        return $tpl->_ENGINE_parse_body($dateT);
+        // Texte brut UTF-8, pas du HTML: les tokens de mois fr portent leurs accents
+        // en entites (Ao&ucirc;t), qu'un htmlspecialchars() appelant reechapperait.
+        // Meme contrat que templates::time_to_date().
+        return html_entity_decode($tpl->_ENGINE_parse_body($dateT),ENT_QUOTES,"UTF-8");
 
     }
 
@@ -870,395 +876,7 @@ class mysql_squid_builder{
         return true;
     }
 
-    private function fill_tasks_disabled(){
-        $users=new usersMenus();
-        $DisableArticaProxyStatistics=$this->DisableArticaProxyStatistics;
-        if($this->EnableRemoteSyslogStatsAppliance==1){$this->DisableLocalStatisticsTasks=1;}
-        if($this->DisableLocalStatisticsTasks==1){$DisableArticaProxyStatistics=1;}
-        $sock=new sockets();
-        $DisableCategoriesDatabasesUpdates=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableCategoriesDatabasesUpdates"));
-        $SQUIDEnable=$sock->GET_INFO("SQUIDEnable");
-        if(!is_numeric($SQUIDEnable)){$SQUIDEnable=1;}
-        $SquidPerformance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidPerformance"));
 
-
-        $this->tasks_disabled[7]=true;
-        $this->tasks_disabled[8]=true;
-        $this->tasks_disabled[14]=true;
-        $this->tasks_disabled[37]=true;
-        $this->tasks_disabled[38]=true;
-        $this->tasks_disabled[41]=true;
-        $this->tasks_disabled[42]=true;
-        $this->tasks_disabled[47]=true;
-        $this->tasks_disabled[53]=true;
-        $this->tasks_disabled[21]=true;
-
-        if($GLOBALS["VERBOSE"]){
-            if(isset($this->acl_GroupType["categories"])){
-                $this->VERBOSE("acl_GroupType[categories] = TRUE",__LINE__);
-            }
-        }
-
-        if($SquidPerformance>1){$this->DisableArticaProxyStatistics=1;}
-
-        if($SquidPerformance>2){
-            $this->tasks_disabled[41]=true;
-            $this->tasks_disabled[37]=true;
-            $this->tasks_disabled[46]=true;
-        }
-
-        if($SquidPerformance>1){
-            $this->tasks_disabled[17]=true;
-        }
-
-        $MEMORY=$users->MEM_TOTAL_INSTALLEE;
-
-        if($MEMORY<624288){
-            $users->PROXYTINY_APPLIANCE=true;
-            $this->DisableArticaProxyStatistics=1;
-            $DisableArticaProxyStatistics=1;
-            $this->tasks_disabled[31]=true;
-            $this->tasks_disabled[38]=true;
-            $this->tasks_disabled[52]=true;
-            $this->tasks_disabled[51]=true;
-            $this->tasks_disabled[53]=true;
-        }
-
-        if($DisableCategoriesDatabasesUpdates==1){
-            $this->tasks_disabled[2]=true;
-        }
-
-
-        if($SQUIDEnable==0){
-            $users->PROXYTINY_APPLIANCE=true;
-            $this->DisableArticaProxyStatistics=1;
-            $DisableArticaProxyStatistics=1;
-            $this->EnableSargGenerator=0;
-            $this->tasks_disabled[31]=true;
-            $this->tasks_disabled[38]=true;
-            $this->tasks_disabled[52]=true;
-            $this->tasks_disabled[51]=true;
-            $this->tasks_disabled[53]=true;
-        }
-
-
-
-        if($users->PROXYTINY_APPLIANCE){
-            $this->tasks_disabled[8]=true;
-            $this->tasks_disabled[31]=true;
-            $this->tasks_disabled[42]=true;
-            $this->tasks_disabled[44]=true;
-            $this->tasks_disabled[47]=true;
-            $this->tasks_disabled[49]=true;
-            $this->tasks_disabled[50]=true;
-            $this->tasks_disabled[53]=true;
-            $this->DisableArticaProxyStatistics=1;
-        }
-
-        if($this->SquidActHasReverse==1){
-            $this->tasks_disabled[2]=true;
-            $this->tasks_disabled[3]=true;
-            $this->tasks_disabled[8]=true;
-            $this->tasks_disabled[18]=true;
-            $this->tasks_disabled[42]=true;
-            $this->tasks_disabled[29]=true;
-            $this->tasks_disabled[23]=true;
-            $this->tasks_disabled[49]=true;
-            $this->tasks_disabled[50]=true;
-
-        }
-
-        if($this->DisableArticaProxyStatistics==1){
-            $this->tasks_disabled[38]=true;
-            $this->tasks_disabled[37]=true;
-            $this->tasks_disabled[49]=true;
-            $this->tasks_disabled[50]=true;
-            $this->tasks_disabled[53]=true;
-        }
-
-
-        if($DisableArticaProxyStatistics==1){
-            $this->tasks_disabled[15]=true;
-            $this->tasks_disabled[16]=true;
-            $this->tasks_disabled[9]=true;
-            $this->tasks_disabled[10]=true;
-            $this->tasks_disabled[11]=true;
-            $this->tasks_disabled[6]=true;
-            $this->tasks_disabled[7]=true;
-            $this->tasks_disabled[2]=true;
-            $this->tasks_disabled[23]=true;
-            $this->tasks_disabled[25]=true;
-            $this->tasks_disabled[14]=true;
-            $this->tasks_disabled[3]=true;
-            $this->tasks_disabled[28]=true;
-            $this->tasks_disabled[29]=true;
-            $this->tasks_disabled[34]=true;
-            $this->tasks_disabled[36]=true;
-            $this->tasks_disabled[40]=true;
-            $this->tasks_disabled[43]=true;
-            $this->tasks_disabled[44]=true;
-            $this->tasks_disabled[47]=true;
-            $this->tasks_disabled[49]=true;
-            $this->tasks_disabled[50]=true;
-            $this->tasks_disabled[53]=true;
-        }
-
-        if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){
-            $this->tasks_disabled[20]=true;
-            $this->tasks_disabled[30]=true;
-            $this->tasks_disabled[44]=true;
-        }
-
-        if($this->EnableSargGenerator==0){
-            $this->tasks_disabled[26]=true;
-            $this->tasks_disabled[27]=true;
-
-        }
-
-
-        $this->tasks_disabled[6]=true;
-        $this->tasks_disabled[2]=true;
-        $this->tasks_disabled[8]=true;
-        $this->tasks_disabled[9]=true;
-        $this->tasks_disabled[10]=true;
-        $this->tasks_disabled[11]=true;
-        $this->tasks_disabled[15]=true;
-        $this->tasks_disabled[16]=true;
-        $this->tasks_disabled[21]=true;
-        $this->tasks_disabled[23]=true;
-        $this->tasks_disabled[25]=true;
-        $this->tasks_disabled[28]=true;
-        $this->tasks_disabled[34]=true;
-        $this->tasks_disabled[36]=true;
-        $this->tasks_disabled[40]=true;
-        $this->tasks_disabled[42]=true;
-        $this->tasks_disabled[44]=true;
-        $this->tasks_disabled[49]=true;
-        $this->tasks_disabled[50]=true;
-        $this->tasks_disabled[53]=true;
-        $this->tasks_disabled[37]=true;
-        $this->tasks_disabled[46]=true;
-
-
-
-
-
-    }
-
-    private function fill_task_array(){
-
-        $this->tasks_array[0]="{select}";
-        $this->tasks_array[1]="{databases_ufdbupdate}";
-
-        $this->tasks_array[3]="{databases_compilation}";
-        $this->tasks_array[4]="{restart_proxy_service}";
-
-        $this->tasks_array[6]="{verify_urls_databases}";
-        $this->tasks_array[7]="{build_hours_tables}";
-        $this->tasks_array[8]="{update_tlse}";
-        $this->tasks_array[9]="{rebuild_visited_sites}";
-        $this->tasks_array[10]="{recategorize_schedule}";
-        $this->tasks_array[11]="{build_month_tables}";
-        $this->tasks_array[12]="{update_kaspersky_databases}";
-        $this->tasks_array[13]="{launch_UpdateUtility}";
-        $this->tasks_array[14]="{optimize_database}";
-        $this->tasks_array[15]="{hourly_cache_performances}";
-        $this->tasks_array[16]="{build_daily_visited_websites}";
-        $this->tasks_array[18]="{backup_categories}";
-        $this->tasks_array[19]="{build_crypted_tables_catz}";
-        $this->tasks_array[20]="{compile_ufdb_repos}";
-        //$this->tasks_array[21]="{importadmembers}";
-        $this->tasks_array[22]="{synchronize_webfilter_rules}";
-        $this->tasks_array[23]="{repair_categories}";
-        $this->tasks_array[24]="{clean_cloud_datacenters}";
-        $this->tasks_array[25]="{build_blocked_week_statistics}";
-        $this->tasks_array[26]="{sarg_build_daily_stats}";
-        $this->tasks_array[27]="{sarg_build_hourly_stats}";
-        $this->tasks_array[28]="{thumbnail_parse}";
-        $this->tasks_array[29]="{malware_uri}";
-        $this->tasks_array[30]="{update_precompiled_ufdb}";
-        $this->tasks_array[31]="{parse_squid_logs_queue}";
-        $this->tasks_array[32]="{parse_squid_framework}";
-        $this->tasks_array[33]="{squid_logrotate_perform}";
-        $this->tasks_array[34]="{squid_week_stats}";
-        $this->tasks_array[35]="{squid_backup_stats}";
-        $this->tasks_array[36]="{members_stats}";
-        //$this->tasks_array[37]="{squid_tail_injector}";
-        $this->tasks_array[38]="{web_injector}";
-        $this->tasks_array[39]="{reconfigure_proxy_task}";
-        $this->tasks_array[40]="{hourly_bandwidth_users}";
-        $this->tasks_array[41]="{squid_rrd}";
-        $this->tasks_array[42]="{compile_tlse_database}";
-        $this->tasks_array[43]="{squid_check_lost_tables}";
-        $this->tasks_array[44]="{build_reports}";
-        $this->tasks_array[45]="{rebuild_caches}";
-        //$this->tasks_array[46]="{fill_squid_client_table}";
-        $this->tasks_array[47]="{squid_logs_purge}";
-        $this->tasks_array[48]="{squid_logs_restore}";
-        $this->tasks_array[49]="{statistics_per_users}";
-        $this->tasks_array[50]="{categorize_tables}";
-        $this->tasks_array[51]="{restart_ufdb}";
-        $this->tasks_array[52]="{proxy_status}";
-        $this->tasks_array[53]="{build_proxy_statistics}";
-        $this->tasks_array[54]="{perfom_proxy_log_rotation}";
-        //$this->tasks_array[56]="{sarg_daily}";
-        $this->tasks_array[57]="{reload_webfiltering_service}";
-        $this->tasks_array[58]="{proxy_performances}";
-        $this->tasks_array[59]="{static_activedirectory_group_task}";
-        $this->tasks_array[60]="{local_realtime_statistics}";
-        $this->tasks_array[61]="{clean_databases}";
-        $this->tasks_array[62]="{ActiveDirectoryRefreshCNX}";
-        $this->tasks_array[63]="{restart_webfiltering_http_service}";
-        $this->tasks_array[64]="{reload_proxy_service}";
-        $this->tasks_array[65]="{restart_icap_service}";
-
-
-
-        $this->tasks_explain_array[1]="{databases_ufdbupdate_explain}";
-        $this->tasks_explain_array[2]="{instant_update_explain}";
-        $this->tasks_explain_array[3]="{databases_compilation_explain}";
-        $this->tasks_explain_array[4]="{restart_proxy_service_explain}";
-        $this->tasks_explain_array[6]="{verify_urls_databases_explain}";
-        $this->tasks_explain_array[7]="{build_hours_tables_explain}";
-        $this->tasks_explain_array[8]="{update_tlse_explain}";
-        $this->tasks_explain_array[9]="{rebuild_visited_sites_explain}";
-        $this->tasks_explain_array[10]="{www_recategorize_explain}";
-        $this->tasks_explain_array[11]="{build_month_tables_explain}";
-        $this->tasks_explain_array[12]="{update_kaspersky_databases_explain}";
-        $this->tasks_explain_array[13]="{launch_UpdateUtility_explain}";
-        $this->tasks_explain_array[14]="{squid_optimize_database_explain}";
-        $this->tasks_explain_array[15]="{hourly_cache_performances_explain}";
-        $this->tasks_explain_array[16]="{build_daily_visited_websites_explain}";
-        $this->tasks_explain_array[18]="{backup_categories_explain}";
-        $this->tasks_explain_array[19]="{build_crypted_tables_catz_explain}";
-        $this->tasks_explain_array[20]="{compile_ufdb_repos_explain}";
-        //$this->tasks_explain_array[21]="{importadmembers_explain}";
-        $this->tasks_explain_array[22]="{synchronize_webfilter_rules_text}";
-        $this->tasks_explain_array[23]="{repair_categories_explain}";
-        $this->tasks_explain_array[24]="{clean_cloud_datacenters_explain}";
-        $this->tasks_explain_array[25]="{build_blocked_week_statistics_explain}";
-        $this->tasks_explain_array[26]="{sarg_build_daily_stats_explain}";
-        $this->tasks_explain_array[27]="{sarg_build_daily_stats_explain}";
-        $this->tasks_explain_array[28]="{thumbnail_parse_explain}";
-        $this->tasks_explain_array[29]="{malware_uri_explain}";
-        $this->tasks_explain_array[30]="{update_precompiled_ufdb_explain}";
-        $this->tasks_explain_array[31]="{parse_squid_logs_queue_explain}";
-        $this->tasks_explain_array[32]="{parse_squid_framework_explain}";
-        $this->tasks_explain_array[33]="{squid_logrotate_perform_explain}";
-        $this->tasks_explain_array[34]="{squid_week_stats_explain}";
-        $this->tasks_explain_array[35]="{squid_backup_stats_explain}";
-        $this->tasks_explain_array[36]="{members_stats_explain}";
-        //$this->tasks_explain_array[37]="{squid_tail_injector_explain}";
-        $this->tasks_explain_array[38]="{web_injector_explain}";
-        $this->tasks_explain_array[39]="{reconfigure_proxy_task_explain}";
-        $this->tasks_explain_array[40]="{hourly_bandwidth_users_explain}";
-        $this->tasks_explain_array[41]="{squid_rrd_explain}";
-        $this->tasks_explain_array[42]="{compile_tlse_database_explain}";
-        $this->tasks_explain_array[43]="{squid_check_lost_tables_explain}";
-        $this->tasks_explain_array[44]="{build_reports_explain}";
-        $this->tasks_explain_array[45]="{rebuild_caches_explain}";
-        //$this->tasks_explain_array[46]="{fill_squid_client_table_explain}";
-        $this->tasks_explain_array[47]="{squid_logs_purge_explain}";
-        $this->tasks_explain_array[48]="{squid_logs_restore_explain}";
-        $this->tasks_explain_array[49]="{statistics_per_users_explain}";
-        $this->tasks_explain_array[50]="{categorize_tables_explain}";
-        $this->tasks_explain_array[51]="{restart_ufdb_explain}";
-        $this->tasks_explain_array[52]="{proxy_status_explain}";
-        //$this->tasks_explain_array[53]="{build_proxy_statistics_explain}";
-        $this->tasks_explain_array[54]="{perfom_proxy_log_rotation_explain}";
-        //$this->tasks_explain_array[56]="{sarg_daily_explain}";
-        $this->tasks_explain_array[57]="{reload_webfiltering_service}";
-        $this->tasks_explain_array[58]="{proxy_performances_task_explain}";
-        $this->tasks_explain_array[59]="{static_activedirectory_group_task_explain}";
-        $this->tasks_explain_array[60]="{local_realtime_statistics_explain}";
-        $this->tasks_explain_array[61]="{clean_databases_explain}";
-        //$this->tasks_explain_array[62]="{ActiveDirectoryRefreshCNX_explain}";
-        $this->tasks_explain_array[62]="{restart_webfiltering_http_service_explain}";
-        $this->tasks_explain_array[64]="{reload_proxy_service_explain}";
-        $this->tasks_explain_array[65]="{restart_icap_service_explain}";
-
-        $this->tasks_processes[1]="/usr/sbin/artica-phpfpm-service -categories-update";
-        $this->tasks_processes[3]="/usr/sbin/artica-phpfpm-service -categories-compile-all";
-        $this->tasks_processes[4]="/usr/sbin/artica-phpfpm-service -restart-proxy-schedule";
-
-        $this->tasks_processes[6]="exec.squid.blacklists.php --inject";
-        $this->tasks_processes[7]="exec.squid.stats.php --scan-hours";
-        //$this->tasks_processes[8]="exec.update.squid.tlse.php";
-
-
-       // $this->tasks_processes[12]="exec.keepup2date.php --update";
-       // $this->tasks_processes[13]="exec.keepup2date.php --UpdateUtility";
-        $this->tasks_processes[14]="exec.squid.stats.php --optimize";
-        $this->tasks_processes[18]="exec.squid.cloud.compile.php --backup-catz";
-        $this->tasks_processes[19]="exec.squid.cloud.compile.php --v2";
-        $this->tasks_processes[20]="exec.squid.cloud.compile.php --ufdb";
-        //$this->tasks_processes[21]="exec.adusers.php";
-        $this->tasks_processes[22]="/usr/sbin/artica-phpfpm-service -rest-api /ufdb/compile";
-        //$this->tasks_processes[24]="exec.cleancloudcatz.php --all";
-        //$this->tasks_processes[29]="exec.squid.updateuris.malware.php --www";
-        $this->tasks_processes[30]="/usr/sbin/artica-phpfpm-service -categories-update";
-        //$this->tasks_processes[31]="exec.dansguardian.injector.php";
-        $this->tasks_processes[32]="exec.squid.framework.php";
-        $this->tasks_processes[35]="exec.squid.dbback.php";
-
-        //$this->tasks_processes[38]="exec.dansguardian.injector.php";
-        $this->tasks_processes[39]="exec.squid.php --build --force";
-        $this->tasks_processes[41]="exec.squid-rrd.php";
-        //$this->tasks_processes[42]="exec.update.squid.tlse.php --compile";
-
-        $this->tasks_processes[45]="exec.squid.rebuild.caches.php";
-
-        $this->tasks_processes[47]="exec.squidlogs.purge.php";
-        $this->tasks_processes[48]="exec.squidlogs.restore.php --restore-all";
-        $this->tasks_processes[51]="/usr/sbin/artica-phpfpm-service -rest-api /ufdb/restart";
-        $this->tasks_processes[52]="exec.status.php --all-squid";
-        //$this->tasks_processes[53]="exec.squid.stats.central.php";
-        $this->tasks_processes[57]="/usr/sbin/artica-phpfpm-service -rest-api /ufdb/reload";
-        $this->tasks_processes[58]="exec.squid.squeezer.php";
-        $this->tasks_processes[59]="exec.squid.static.ad.groups.php";
-        $this->tasks_processes[60]="exec.squid.run.schedules.php";
-        $this->tasks_processes[61]="exec.clean.postgres.php";
-        $this->tasks_processes[62]="exec.squid.KerbRefresh.php";
-        $this->tasks_processes[64]="exec.squid.reload.php";
-        $this->tasks_processes[65]="exec.c-icap.php --restart-schedule";
-
-        $this->tasks_remote_appliance["51"]=true;
-        $this->tasks_remote_appliance["50"]=true;
-        $this->tasks_remote_appliance["53"]=true;
-        $this->tasks_remote_appliance["54"]=true;
-        $this->tasks_remote_appliance["49"]=true;
-        $this->tasks_remote_appliance["46"]=true;
-        $this->tasks_remote_appliance["44"]=true;
-        $this->tasks_remote_appliance["43"]=true;
-        $this->tasks_remote_appliance["42"]=true;
-        $this->tasks_remote_appliance["40"]=true;
-        $this->tasks_remote_appliance["36"]=true;
-        $this->tasks_remote_appliance["34"]=true;
-        $this->tasks_remote_appliance["30"]=true;
-        $this->tasks_remote_appliance["29"]=true;
-        $this->tasks_remote_appliance["28"]=true;
-        $this->tasks_remote_appliance["27"]=true;
-        $this->tasks_remote_appliance["26"]=true;
-        $this->tasks_remote_appliance["25"]=true;
-        $this->tasks_remote_appliance["23"]=true;
-        $this->tasks_remote_appliance["22"]=true;
-        $this->tasks_remote_appliance["14"]=true;
-        $this->tasks_remote_appliance["15"]=true;
-        $this->tasks_remote_appliance["16"]=true;
-        $this->tasks_remote_appliance["13"]=true;
-        $this->tasks_remote_appliance["12"]=true;
-        $this->tasks_remote_appliance["9"]=true;
-        $this->tasks_remote_appliance["10"]=true;
-        $this->tasks_remote_appliance["11"]=true;
-        $this->tasks_remote_appliance["8"]=true;
-        $this->tasks_remote_appliance["7"]=true;
-        $this->tasks_remote_appliance["6"]=true;
-        $this->tasks_remote_appliance["3"]=true;
-        $this->tasks_remote_appliance["2"]=true;
-        $this->tasks_remote_appliance["1"]=true;
-
-
-    }
 
 
 
@@ -1324,134 +942,6 @@ class mysql_squid_builder{
     }
 
 
-    public function CheckDefaultSchedules($ouput=false){
-        $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-        if(!$q->TABLE_EXISTS("webfilters_schedules")){
-            $sql="CREATE TABLE IF NOT EXISTS `webfilters_schedules` (`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-                `TimeText` VARCHAR( 128 ) NOT NULL ,`TimeDescription` VARCHAR( 128 ) ,`TaskType` INTEGER ,`Params` TEXT,
-                `enabled` INTEGER)";
-            $q->QUERY_SQL($sql);
-        }
-
-        $update=false;
-        $array[6]=array("TimeText"=>"20,40,59 * * * *","TimeDescription"=>"each 20mn");
-        $array[8]=array("TimeText"=>"30 5,10,15,20 * * *","TimeDescription"=>"each 5 hours");
-        $array[9]=array("TimeText"=>"0 3 * * *","TimeDescription"=>"each day at 03:00");
-        $array[10]=array("TimeText"=>"0 5 * * *","TimeDescription"=>"each day at 05:00");
-        $array[11]=array("TimeText"=>"0 1 * * *","TimeDescription"=>"each day at 01:00");
-        $array[25]=array("TimeText"=>"30 2 * * *","TimeDescription"=>"each day at 02:30");
-        $array[2]=array("TimeText"=>"0 * * * *","TimeDescription"=>"Each hour");
-        $array[3]=array("TimeText"=>"0 3 * * *","TimeDescription"=>"each day at 03:00");
-
-        $array[15]=array("TimeText"=>"0 * * * *","TimeDescription"=>"Calculate cache performance each hour");
-        $array[16]=array("TimeText"=>"30 5,10,15,20 * * *","TimeDescription"=>"each 5 hours");
-        $array[21]=array("TimeText"=>"0 2,4,6,8,10,12,14,16,18,20,22 * * *","TimeDescription"=>"Check AD server each 2H");
-
-        $array[28]=array("TimeText"=>"10,20,30,40,50 * * * *","TimeDescription"=>"check thumbnails queue each 10mn");
-        $array[29]=array("TimeText"=>"30 6 * * *","TimeDescription"=>"Update infected uris Each day at 06h30");
-        $array[30]=array("TimeText"=>"30 4 * * *","TimeDescription"=>"Update precompiled databases Each day at 04h30");
-        $array[31]=array("TimeText"=>"0,5,10,15,20,25,30,35,40,45,50,55 * * * *","TimeDescription"=>"Check queue requests each 5mn");
-
-
-        $array[37]=array("TimeText"=>"* * * * *","TimeDescription"=>"Inject into Mysql each minute");
-        $array[38]=array("TimeText"=>"* * * * *","TimeDescription"=>"Inject into Mysql each minute");
-        $array[40]=array("TimeText"=>"10 * * * *","TimeDescription"=>"Each hour +10mn");
-        $array[42]=array("TimeText"=>"30 4 * * *","TimeDescription"=>"Compile Toulouse databases tables Each day at 04h30");
-        $array[43]=array("TimeText"=>"30 3 * * *","TimeDescription"=>"Lost tables Each day at 03h30");
-        $array[46]=array("TimeText"=>"7,22,37,52 * * * *","TimeDescription"=>"each 15mn");
-        $array[47]=array("TimeText"=>"30 2 * * *","TimeDescription"=>"Daily Purge Statistics at 2h30");
-        $array[51]=array("TimeText"=>"30 5 * * *","TimeDescription"=>"Restart Web Filtering service each day at 05h30");
-        $array[52]=array("TimeText"=>"0,5,10,15,20,25,30,35,40,45,50,55 * * * *","TimeDescription"=>"Generate Proxy status each 5mn");
-        $array[53]=array("TimeText"=>"0 1 * * *","TimeDescription"=>"Generate Statistics, each day at 01h00");
-        //$array[56]=array("TimeText"=>"59 23 * * *","TimeDescription"=>"each day at 23:59");
-        $array[57]=array("TimeText"=>"30 3 * * *","TimeDescription"=>"each day at 03:30");
-        $array[60]=array("TimeText"=>"0,6,11,16,21,26,31,36,41,46,51,56 * * * *","TimeDescription"=>"each 5 minutes");
-        $array[61]=array("TimeText"=>"30 4 * * *","TimeDescription"=>"each day at 04:30");
-
-        $this->tasks_disabled[6]=true;
-        $this->tasks_disabled[2]=true;
-        $this->tasks_disabled[9]=true;
-        $this->tasks_disabled[10]=true;
-        $this->tasks_disabled[11]=true;
-        $this->tasks_disabled[15]=true;
-        $this->tasks_disabled[16]=true;
-        $this->tasks_disabled[17]=true;
-        $this->tasks_disabled[23]=true;
-        $this->tasks_disabled[25]=true;
-        $this->tasks_disabled[28]=true;
-        $this->tasks_disabled[32]=true;
-        $this->tasks_disabled[34]=true;
-        $this->tasks_disabled[36]=true;
-        $this->tasks_disabled[40]=true;
-        $this->tasks_disabled[43]=true;
-        $this->tasks_disabled[44]=true;
-        $this->tasks_disabled[49]=true;
-        $this->tasks_disabled[50]=true;
-        $this->tasks_disabled[55]=true;
-        $this->tasks_disabled[56]=true;
-        $this->tasks_disabled[63]=true;
-
-        $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
-        $users=new usersMenus();
-
-
-        if($SQUIDEnable==0){
-            $this->tasks_disabled[52]=true;
-            $this->tasks_disabled[17]=true;
-        }
-        unset($this->tasks_disabled[1]);
-        foreach ($this->tasks_disabled as $TaskType=>$content){
-            if($TaskType==3){ if($users->CORP_LICENSE){continue;} }
-            if($ouput){echo "Remove Task Type: $TaskType\n";}
-            if($TaskType==1){continue;}
-            $q->QUERY_SQL("DELETE FROM webfilters_schedules WHERE TaskType=$TaskType");
-        }
-
-
-        foreach ($array as $TaskType=>$content){
-
-            if($GLOBALS["VERBOSE"]){echo "<strong style='color:blue'>$TaskType</strong>\n";}
-
-            if(isset($this->tasks_disabled[$TaskType])){
-                if($this->tasks_disabled[$TaskType]){
-                    if($GLOBALS["VERBOSE"]){echo "<strong style='color:#d32d2d'>$TaskType tasks_disabled</strong>\n";}
-                    continue;
-                }
-            }
-
-
-            $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_schedules WHERE TaskType=$TaskType");
-            if(!$q->ok){
-                continue;
-            }
-            if(!isset($ligne["ID"])){
-                continue;
-            }
-
-            if($ligne["ID"]>0){
-                if($GLOBALS["VERBOSE"]){echo "<strong style='color:#d32d2d'>$TaskType Already saved as {$ligne["ID"]}</strong>\n";}
-                continue;
-            }
-
-            $sql="INSERT OR IGNORE INTO webfilters_schedules (TimeDescription,TimeText,TaskType,enabled) 
-					VALUES('{$content["TimeDescription"]}','{$content["TimeText"]}','$TaskType',1)";
-
-            if(function_exists("squid_admin_mysql")){
-                squid_admin_mysql(2, "Task type $TaskType is not added into scheduler [add it]", "{$content["TimeDescription"]} / {$content["TimeText"]}",__FILE__,__LINE__);
-            }
-
-            $q->QUERY_SQL($sql);
-            if(!$q->ok){
-                squid_admin_mysql(1, "Task type $TaskType MySQL error", "$sql\n$q->mysql_error\n",__FILE__,__LINE__);
-                continue;
-            }
-            $update=true;
-        }
-
-        if($update){$sock=new sockets();$sock->getFrameWork("squid.php?build-schedules=yes");}
-
-
-    }
 
     FUNCTION DELETE_TABLE($table){
         if(!function_exists("mysqli_connect")){return 0;}
@@ -2203,15 +1693,8 @@ class mysql_squid_builder{
             $sql=str_replace("\t", " ", $sql);
             $sql=str_replace("  ", " ", $sql);
             $this->ToSyslog($sql);
-            if(preg_match("#Table\s+'(.+?)'.*?is marked as crashed#", $des,$re)){
-                if(class_exists("sockets")){
-                    $sock=new sockets();
-                    $ARRAY["DB"]=$database;
-                    $ARRAY["TABLE"]=$re[1];
-                    $data=urlencode(base64_encode(serialize($ARRAY)));
-                    $sock->getFrameWork("squid.php?mysql-crash=$data");
-                }
-            }
+            // framework/squid.php?mysql-crash lancait exec.mysqld.crash.php, script
+            // disparu : la table marquee « crashed » n'etait deja plus reparee.
 
 
             if($GLOBALS["VERBOSE"]){echo "$LOGPRF $mysql_unbuffered_query_log/".__LINE__." [FAILED] N.$errnum DESC:$des $called\n";}

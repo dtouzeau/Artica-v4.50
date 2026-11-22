@@ -2,19 +2,33 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
+// awc_table_style()/awc_pager_js(): kit des tableaux d'entites. Include au
+// PREMIER NIVEAU obligatoire -- glisse dans un bloc conditionnel il ne
+// s'executerait jamais et la page mourrait sur « Call to undefined function ».
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.hacluster-bbr.inc");
+include_once(dirname(__FILE__)."/ressources/class.hacluster.meta.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["refreshimage"])){refresh_image();exit;}
 if(isset($_GET["remote-categories-service"])){remote_categories_service_js();exit;}
 if(isset($_GET["remote-categories-service-popup"])){remote_categories_service_popup();exit;}
+if(isset($_POST["ServerPersistentConnections"])){section_keepalive_save();exit;}
+if(isset($_POST["ClientPersistentConnections"])){section_keepalive_save();exit;}
+if(isset($_POST["AgentDynamicWeight"])){section_dynweight_save();exit;}
+if(isset($_POST["HaClusterBBRManaged"])){section_bbr_save();exit;}
+if(isset($_POST["HaClusterBBREnable"])){section_bbr_save();exit;}
+if(isset($_GET["section-bbr-js"])){section_bbr_js();exit;}
+if(isset($_GET["section-bbr-popup"])){section_bbr_popup();exit;}
+if(isset($_GET["section-bbr-inner"])){echo section_bbr_inner();exit;}
 if(isset($_POST["HaClusterUseRemoteCategoriesService"])){remote_categories_service_save();exit;}
 if(isset($_POST["HaClusterUseCentralErrorPage"])){section_errorpage_save();exit;}
 if(isset($_POST["HaClusterDeployArticaUpdates"])){SaveParams();exit;}
 if(isset($_POST["HaClusterAsAD"])){SaveParams();exit;}
 if(isset($_POST["HaClusterUseHaClient"])){SaveParams();exit;}
 if(isset($_POST["HaClusterUseAddr"])){SaveParams();exit;}
-if(isset($_POST["HaClusterUseLBAsDNS"])){SaveParams();exit;}
-if(isset($_POST["HaClusterServeDNS"])){SaveParams();exit;}
+if(isset($_POST["HaClusterUseLBAsDNS"])){SaveParamsGeneral();exit;}
+if(isset($_POST["HaClusterServeDNS"])){SaveParamsGeneral();exit;}
 if(isset($_POST["HaClusterSquidNameServer1"])){SaveParams();exit;}
 if(isset($_POST["HaClusterSquidNameServer2"])){SaveParams();exit;}
 if(isset($_POST["HaClusterSquidNameServer3"])){SaveParams();exit;}
@@ -23,6 +37,8 @@ if(isset($_POST["DNS1"])){SaveParams();exit;}
 if(isset($_POST["DNS2"])){SaveParams();exit;}
 if(isset($_POST["DOMAINS1"])){SaveParams();exit;}
 if(isset($_POST["DOMAINS2"])){SaveParams();exit;}
+if(isset($_POST["HaClusterEnableITChart"])){section_itcharter_save();exit;}
+if(isset($_POST["HaClusterReplicateACLs"])){section_replicacls_save();exit;}
 if(isset($_POST["HaClusterProxyUseOwnDNS"])){SaveParams();exit;}
 if(isset($_POST["HaClusterProxyUseBackendDNSDIST"])){SaveParams();exit;}
 if(isset($_POST["HaClusterEnableProxyProtocol"])){SaveParams();exit;}
@@ -43,6 +59,8 @@ if(isset($_GET["hacluster-table-status-top"])){status_top();exit;}
 if(isset($_GET["hacluster-table-status-center"])){status_center();exit;}
 if(isset($_GET["parameters"])){parameters();exit;}
 if(isset($_GET["parameters-table"])){parameters_table();exit;}
+if(isset($_GET["hacp-reset-js"])){hacp_reset_js();exit;}
+if(isset($_POST["hacp-reset-cert"])){hacp_reset_perform();exit;}
 if(isset($_GET["maxconns-js"])){maxconns_js();exit;}
 if(isset($_GET["maxconns-popup"])){maxconns_popup();exit;}
 if(isset($_POST["HaClusterMaxConn"])){maxconns_save();exit;}
@@ -54,8 +72,20 @@ if(isset($_POST["HaClusterTimeDebug"])){restart_debug_save();exit;}
 if(isset($_GET["restart-debug-step2"])){restart_debug_step2();exit;}
 
 
+if(isset($_GET["section-keepalive-js"])){section_keepalive_js();exit;}
+if(isset($_GET["section-keepalive-popup"])){section_keepalive_popup();exit;}
+if(isset($_GET["section-dynweight-js"])){section_dynweight_js();exit;}
+if(isset($_GET["section-dynweight-popup"])){section_dynweight_popup();exit;}
+
+
 if(isset($_GET["section-errorpage-js"])){section_errorpage_js();exit;}
 if(isset($_GET["section-errorpage-popup"])){section_errorpage_popup();exit;}
+
+if(isset($_GET["section-itcharter-js"])){section_itcharter_js();exit;}
+if(isset($_GET["section-itcharter-popup"])){section_itcharter_popup();exit;}
+
+if(isset($_GET["section-replicacls-js"])){section_replicacls_js();exit;}
+if(isset($_GET["section-replicacls-popup"])){section_replicacls_popup();exit;}
 
 if(isset($_GET["section-limit-access-js"])){section_limit_access_js();exit;}
 if(isset($_GET["section-limit-access-popup"])){section_limit_access_popup();exit;}
@@ -91,6 +121,8 @@ if(isset($_GET["section-haclient-popup"])){section_haclient_popup();exit;}
 
 if(isset($_GET["section-dns-js"])){section_dns_js();exit;}
 if(isset($_GET["section-dns-general"])){section_dns_general();exit;}
+if(isset($_GET["section-dns-general2"])){section_dns_general2();exit;}
+
 if(isset($_GET["section-dns-popup"])){section_dns_popup();exit;}
 if(isset($_GET["section-dns-tabs"])){section_dns_tabs();exit;}
 if(isset($_GET["section-dns-proxy-start"])){section_dns_proxy_start();exit;}
@@ -103,7 +135,6 @@ if(isset($_GET["section-logs-js"])){section_logs_js();exit;}
 if(isset($_GET["section-logs-popup"])){section_logs_popup();exit;}
 
 if(isset($_GET["graphs"])){status_graphs();exit;}
-if(isset($_GET["graphs-render"])){status_graphs_render();exit;}
 page();
 
 
@@ -136,6 +167,7 @@ function maxconns_js():bool{
 }
 function maxconns_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterMaxConn"),$tpl);
     $HaClusterMaxConn=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterMaxConn");
     $form[]=$tpl->field_numeric("HaClusterMaxConn","{maxconn}",$HaClusterMaxConn,"{haproxy_maxconn}");
     $jsafter[]="dialogInstance2.close();";
@@ -143,6 +175,7 @@ function maxconns_popup():bool{
     return true;
 }
 function maxconns_save():bool{
+    if(hacluster_meta_gate("post")){return false;}
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterMaxConn",$_POST["HaClusterMaxConn"]);
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/maxconns");
     return admin_tracks("Enforce HaCluster to {$_POST["HaClusterMaxConn"]} Max connections number");
@@ -214,10 +247,32 @@ function section_limit_access_js():bool{
     $page=CurrentPageName();
     return $tpl->js_dialog2("{enable_limit_access}","$page?section-limit-access-popup=yes",650);
 }
+function section_itcharter_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog2("{APP_ITCHARTER}","$page?section-itcharter-popup=yes",650);
+}
+function section_replicacls_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog2("{acls_replication}","$page?section-replicacls-popup=yes",650);
+}
+
+
 function section_errorpage_js():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     return $tpl->js_dialog2("{error_page_service}","$page?section-errorpage-popup=yes",650);
+}
+function section_keepalive_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog2("{persistent_connections}","$page?section-keepalive-popup=yes",650);
+}
+function section_dynweight_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    return $tpl->js_dialog2("{hacluster_dynamic_weight}","$page?section-dynweight-popup=yes",650);
 }
 function section_ipaddr_js():bool{
     $tpl=new template_admin();
@@ -313,7 +368,6 @@ return admin_tracks("Adding IP restriction {$_POST['section-limit-access-add']} 
 function section_limit_access_table():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $t=time();
     $HaClusterLimitAccesses=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterLimitAccesses"));
     if(!$HaClusterLimitAccesses){
         $ACLREST[] = "192.168.0.0/16";
@@ -325,267 +379,52 @@ function section_limit_access_table():bool{
     }
 
     $topbuttons[] = array("Loadjs('$page?section-limit-access-add=yes')",ico_plus,"{new_entry}");
-    $iconet="<i class='".ico_networks."'></i>&nbsp;";
+    $iconet="<i class='".ico_networks."'></i>";
     $html[]=$tpl->table_buttons($topbuttons);
-    $html[]="<table id='table-$t' class=\"table table-hover\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+           ."<table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
-    $html[]="<th class='text-capitalize'>{items}</center></th>";
-    $html[]="<th class='text-capitalize center'>DEL</th>";
+    $html[]="<th>{items}</th>";
+    $html[]="<th class='center'>DEL</th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='hclim-rows'>";
     $TRCLASS=null;
         foreach ($HaClusterLimitAccesses as $address){
-            if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+            // .awc-tbl separe les lignes par une bordure et gere le survol:
+            // le zebrage manuel n'a plus lieu d'etre.
+            $TRCLASS=null;
             $md=md5(serialize($address));
             $item=$address;
             $itemEncode=urlencode($item);
             $delete=$tpl->icon_delete("Loadjs('$page?section-limit-access-delete=$itemEncode&md=$md')");
 
+            // L'id de la ligne est la cible de $('#$md').remove() dans
+            // section_limit_access_delete(): le perdre laisserait la ligne
+            // supprimee visible jusqu'au rechargement suivant.
             $html[]="<tr class='$TRCLASS' id='$md'>";
-            $html[]="<td>$iconet<strong>$item</strong></td>";
-            $html[]="<td style='vertical-align:middle;width:1%'>$delete</td>";
+            $html[]="<td><div class='awc-ident'><span class='awc-ico'>$iconet</span>"
+                   ."<span class='awc-name'>$item</span></div></td>";
+            $html[]="<td style='width:1%'><div class='awc-acts'>$delete</div></td>";
             $html[]="</tr>";
         }
 
     $html[]="</tbody>";
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='hclim-pager'></span></div></div></div>";
+    $html[]="<script>NoSpinner();</script>";
+
+    // Le pager se concatene APRES le parse: la regex #{(.+?)}# du moteur de
+    // traduction lirait chaque bloc {...} de son JS comme un {token}.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"hclim-rows","hclim-pager");
     return true;
 
 }
 
 
-function status_center():bool{
-    $page=CurrentPageName();
-    $tpl=new template_admin();
-    $array=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM hacluster_backends WHERE enabled=1");
-    $CountOfBackend=$ligne["tcount"];
-
-    if ($CountOfBackend==0){
-        echo "<div style='margin:20px'>".$tpl->_ENGINE_parse_body($tpl->div_warning("<p style='margin-left:20px;font-size:16px'>{haclutserno_nodes}</p>")."</div>");
-        return true;
-    }
-    $periods[]="hourly";
-    $periods[]="day";
-    $periods[]="yesterday";
-    $periods[]="week";
-    $periods[]="month";
-    $periods[]="year";
-    foreach ($periods as $pp){
-        $array["{statistics}: {{$pp}}"]="$page?graphs=$pp";
-    }
-
-    echo $tpl->tabs_default($array);
-    return true;
-}
-function status_graphs():bool{
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $pp=$_GET["graphs"];
-    $h=array();
-
-    // Time range buttons
-    $ranges=array("hourly"=>"{hourly}","day"=>"{day}","yesterday"=>"{yesterday}","week"=>"{week}","month"=>"{month}","year"=>"{year}");
-    $h[]="<div style='margin:10px 0 15px'>";
-    $h[]="  <div class='btn-group' id='hc-range-btns'>";
-    foreach($ranges as $key=>$label){
-        $active=($key===$pp)?' active':'';
-        $h[]="    <button class='btn btn-sm btn-default$active' onclick=\"HcRange('$key',this)\">$label</button>";
-    }
-    $h[]="  </div>";
-    $h[]="  <button class='btn btn-sm btn-primary' style='margin-left:10px' onclick=\"HcRefresh();\">";
-    $h[]="    <i class='fas fa-sync-alt'></i> {refresh}</button>";
-    $h[]="</div>";
-
-    // Current latency widget
-    $currentJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/latency/current"));
-    $currentMetJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/metrics/current"));
-    $latMs='—'; $latColor='#676a6c'; $curConns='—'; $curQueries='—'; $curBw='—';
-    if(is_object($currentJson) && !empty($currentJson->success) && is_object($currentJson->data)){
-        $ms=floatval($currentJson->data->latency_ms);
-        $latMs=sprintf('%.0f',$ms);
-        if($ms<100) $latColor='#1ab394';
-        elseif($ms<500) $latColor='#f8ac59';
-        else $latColor='#ed5565';
-    }
-    if(is_object($currentMetJson) && !empty($currentMetJson->success) && is_object($currentMetJson->data)){
-        $curConns=intval($currentMetJson->data->connections);
-        $curQueries=intval($currentMetJson->data->queries);
-        $curBw=intval($currentMetJson->data->bandwidth_mb);
-    }
-
-    $h[]="<div class='row' style='margin-bottom:15px'>";
-    $h[]="<div class='col-md-3 col-sm-6'><div style='background:$latColor;color:#fff;padding:12px 15px;border-radius:4px;text-align:center'>";
-    $h[]="<div style='font-size:24px;font-weight:700'>$latMs ms</div>";
-    $h[]="<div style='font-size:11px'><i class='fas fa-tachometer-alt'></i> {latency}</div></div></div>";
-    $h[]=_hcsw('#1c84c6','fas fa-plug','{connections}',$curConns);
-    $h[]=_hcsw('#34495e','fas fa-exchange-alt','{queries}',$curQueries);
-    $h[]=_hcsw('#f8ac59','fas fa-download','{bandwidth} (MB)',$curBw);
-    $h[]="</div>";
-
-    // Chart containers
-    $h[]="<div id='hc-charts-area'></div>";
-
-    // JS
-    $h[]="<script>";
-    $h[]="var _hcPeriod='$pp';";
-    $h[]="function HcRange(p,btn){";
-    $h[]="  _hcPeriod=p;";
-    $h[]="  \$('#hc-range-btns .btn').removeClass('active');";
-    $h[]="  \$(btn).addClass('active');";
-    $h[]="  HcRefresh();";
-    $h[]="};";
-    $h[]="function HcRefresh(){";
-    $h[]="  LoadAjax('hc-charts-area','$page?graphs-render=yes&period='+_hcPeriod);";
-    $h[]="};";
-    $h[]="HcRefresh();";
-    $h[]="</script>";
-
-    echo $tpl->_ENGINE_parse_body(implode("\n",$h));
-    return true;
-}
-
-function _hcsw($bg,$ico,$label,$val){
-    $val=htmlspecialchars((string)$val);
-    return "<div class='col-md-3 col-sm-6'><div style='background:$bg;color:#fff;padding:12px 15px;border-radius:4px;text-align:center'>"
-        ."<div style='font-size:24px;font-weight:700'>$val</div>"
-        ."<div style='font-size:11px'><i class='$ico'></i> $label</div></div></div>";
-}
-function _period_to_hours($period):int{
-    $map=array("hourly"=>1,"day"=>24,"yesterday"=>48,"week"=>168,"month"=>720,"year"=>2160);
-    return isset($map[$period]) ? $map[$period] : 24;
-}
-
-function _ts_format($hours){
-    if($hours>168) return 'M d';
-    if($hours>48) return 'M d H:i';
-    return 'H:i';
-}
-function status_graphs_render():bool{
-    $tpl=new template_admin();
-    $period=trim($_GET["period"] ?? 'day');
-    $hours=_period_to_hours($period);
-    $fmt=_ts_format($hours);
-
-    $h=array();
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
-
-    // ── Latency chart ──
-    $latJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/latency?hours=$hours"));
-    if(is_object($latJson) && !empty($latJson->success) && is_object($latJson->data)){
-        $pts=(array)($latJson->data->points ?? array());
-        $res=$latJson->data->resolution ?? 'raw';
-        $hasMinMax=($res!=='raw');
-        if(!empty($pts)){
-            $labels=array(); $avgV=array(); $minV=array(); $maxV=array();
-            foreach($pts as $p){
-                $labels[]=date($fmt,$p->ts);
-                $avgV[]=sprintf('%.2f',$p->latency_ms);
-                if($hasMinMax){
-                    $minV[]=sprintf('%.2f',$p->min_ms ?? 0);
-                    $maxV[]=sprintf('%.2f',$p->max_ms ?? 0);
-                }
-            }
-            $labelsJS="['".implode("','",$labels)."']";
-            $avgJS='['.implode(',',$avgV).']';
-
-            $ds=array();
-            if($hasMinMax){
-                $maxJS='['.implode(',',$maxV).']';
-                $minJS='['.implode(',',$minV).']';
-                $ds[]="{label:'Max',data:$maxJS,borderColor:'rgba(231,76,60,0.4)',borderDash:[5,3],pointRadius:0,tension:0.3,fill:false,borderWidth:1.5}";
-                $ds[]="{label:'Min',data:$minJS,borderColor:'rgba(39,174,96,0.4)',borderDash:[5,3],pointRadius:0,tension:0.3,fill:false,borderWidth:1.5}";
-            }
-            $pr=($res==='raw')?'1':'2';
-            $ds[]="{label:'{latency} (ms)',data:$avgJS,borderColor:'rgb(54,162,235)',backgroundColor:'rgba(54,162,235,0.08)',pointRadius:$pr,tension:0.3,fill:true,borderWidth:2}";
-            $dsJS='['.implode(',',$ds).']';
-            $uid='lat-'.uniqid();
-            $h[]=_hc_panel('fas fa-tachometer-alt','{latency}',$res,$uid,$labelsJS,$dsJS,'ms');
-        }
-    }
-
-    // ── Metrics charts (connections, queries, bandwidth) ──
-    $metJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/metrics?hours=$hours"));
-    if(is_object($metJson) && !empty($metJson->success) && is_object($metJson->data)){
-        $pts=(array)($metJson->data->points ?? array());
-        $res=$metJson->data->resolution ?? 'raw';
-        $hasMax=($res!=='raw');
-        if(!empty($pts)){
-            $labels=array(); $connV=array(); $connMax=array();
-            $qryV=array(); $qryMax=array();
-            $bwV=array(); $bwMax=array();
-            foreach($pts as $p){
-                $labels[]=date($fmt,$p->ts);
-                $connV[]=sprintf('%.1f',$p->connections ?? 0);
-                $qryV[]=sprintf('%.1f',$p->queries ?? 0);
-                $bwV[]=sprintf('%.1f',$p->bandwidth_mb ?? 0);
-                if($hasMax){
-                    $connMax[]=sprintf('%.0f',$p->max_connections ?? 0);
-                    $qryMax[]=sprintf('%.0f',$p->max_queries ?? 0);
-                    $bwMax[]=sprintf('%.0f',$p->max_bandwidth_mb ?? 0);
-                }
-            }
-            $labelsJS="['".implode("','",$labels)."']";
-            $pr=($res==='raw')?'1':'2';
-
-            // Connections
-            $h[]=_hc_metric_chart('fas fa-plug','{connections}',$res,$labelsJS,
-                $connV,$connMax,$hasMax,'rgb(75,192,192)','rgba(75,192,192,0.08)','{connections}',$pr,'conn');
-
-            // Queries
-            $h[]=_hc_metric_chart('fas fa-exchange-alt','{queries}',$res,$labelsJS,
-                $qryV,$qryMax,$hasMax,'rgb(54,162,235)','rgba(54,162,235,0.08)','{queries}',$pr,'qry');
-
-            // Bandwidth
-            $h[]=_hc_metric_chart('fas fa-download','{bandwidth} (MB)',$res,$labelsJS,
-                $bwV,$bwMax,$hasMax,'rgb(255,159,64)','rgba(255,159,64,0.08)','MB',$pr,'bw');
-        }
-    }
-
-    if(count($h)<=1){
-        $h[]=$tpl->div_info("{no_data}");
-    }
-    $h[]="<script>NoSpinner();</script>";
-    echo $tpl->_ENGINE_parse_body(implode("\n",$h));
-    return true;
-}
-
-function _hc_metric_chart($icon,$title,$res,$labelsJS,$avgArr,$maxArr,$hasMax,$color,$bgColor,$yLabel,$pr,$prefix){
-    $avgJS='['.implode(',',$avgArr).']';
-    $ds=array();
-    if($hasMax && !empty($maxArr)){
-        $maxJS='['.implode(',',$maxArr).']';
-        $maxColor=str_replace('rgb(','rgba(',$color);
-        $maxColor=str_replace(')',',0.35)',$maxColor);
-        $ds[]="{label:'$title (peak)',data:$maxJS,borderColor:'$maxColor',borderDash:[5,3],pointRadius:0,tension:0.3,fill:false,borderWidth:1.5}";
-    }
-    $ds[]="{label:'$title',data:$avgJS,borderColor:'$color',backgroundColor:'$bgColor',pointRadius:$pr,tension:0.3,fill:true,borderWidth:2}";
-    $dsJS='['.implode(',',$ds).']';
-    $uid=$prefix.'-'.uniqid();
-    return _hc_panel($icon,$title,$res,$uid,$labelsJS,$dsJS,$yLabel);
-}
-
-function _hc_panel($icon,$title,$res,$uid,$labelsJS,$dsJS,$yLabel){
-    $h=array();
-    $h[]="<div class='ibox'><div class='ibox-title'><h5><i class='$icon'></i>&nbsp; $title</h5>";
-    $h[]="<div class='ibox-tools'><span class='badge' style='background:#676a6c;color:#fff'>$res</span></div></div>";
-    $h[]="<div class='ibox-content'>";
-    $h[]="<div style='position:relative;height:280px'><canvas id='$uid'></canvas></div>";
-    $h[]="</div></div>";
-    $h[]="<script>";
-    $h[]="new Chart(document.getElementById('$uid'),{type:'line',";
-    $h[]="data:{labels:$labelsJS,datasets:$dsJS},";
-    $h[]="options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},";
-    $h[]="plugins:{legend:{position:'bottom',labels:{usePointStyle:true,padding:15}}},";
-    $h[]="scales:{x:{ticks:{maxRotation:45,autoSkip:true,maxTicksLimit:24}},";
-    $h[]="y:{beginAtZero:true,title:{display:true,text:'$yLabel'}}}}});";
-    $h[]="</script>";
-    return implode("\n",$h);
-}
 function refresh_image(){
     // Legacy — no longer used with Chart.js, kept as no-op for compatibility
     header("content-type: application/x-javascript");
@@ -650,17 +489,18 @@ function table(){
     $jsRefres=$tpl->RefreshInterval_js("hacluster-table-status-left",$page,"hacluster-table-status-left=yes");
 
 
-    $html[]="<table style='width:100%;margin-top:20px'>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top;width:350px'>";
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:10px;margin-top:20px'>";
+    // hacluster-table-status-left est le SENTINELLE de RefreshInterval_js()
+    // ci-dessus: ArticaRefresh.tick() detruit son minuteur -- sans un mot et
+    // avant la premiere requete -- si cet id manque du DOM.
+    $html[]="<div style='flex:0 0 350px;max-width:100%'>";
     $html[]="<div id='hacluster-table-status-left'></div>";
-    $html[]="</td>";
-    $html[]="<td style='vertical-align:top;width:99%;padding-left:10px'>";
+    $html[]="</div>";
+    $html[]="<div style='flex:1 1 420px;min-width:0'>";
     $html[]="<div id='hacluster-table-status-top'></div>";
     $html[]="<div id='hacluster-table-status-center'></div>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    $html[]="</div>";
+    $html[]="</div>";
     $html[]="<script>";
     $html[]= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
     $html[]=$jsRefres;
@@ -669,239 +509,6 @@ function table(){
     echo $tpl->_ENGINE_parse_body($html);
 }
 
-function widget_certificate():string{
-    $tpl=new template_admin();
-    $ClusterServiceCertificate=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterServiceCertificate");
-    if(strlen($ClusterServiceCertificate)<3){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_certificate,"{certificate}", "{missing}"));
-    }
-    $q=new lib_sqlite("/home/artica/SQLITE/certificates.db",true);
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM sslcertificates WHERE CommonName='$ClusterServiceCertificate'");
-    if(!$q->ok){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_certificate,$q->mysql_error, "SQL Error"));
-    }
-    if(!isset($ligne["ID"])){
-        $ligne["ID"]=0;
-    }
-
-
-
-    if(intval($ligne["ID"])>0) {
-        return "";
-    }
-
-    $btn = array();
-    $btn[0]["margin"] = 0;
-    $btn[0]["name"] = "{create_certificate}";
-    $btn[0]["icon"] = ico_run;
-    $btn[0]["js"] = CreateCertifJs();
-
-    return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_certificate,"{certificate}", "{missing}",$btn));
-
-
-}
-function widget_backends($json):string{
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $HaClusterUseAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseAddr");
-    if(strlen($HaClusterUseAddr)<3){
-        $btn = array();
-        $btn[0]["margin"] = 0;
-        $btn[0]["name"] = "{modify}";
-        $btn[0]["icon"] = ico_nic;
-        $btn[0]["js"] = "Loadjs('$page?section-ipaddr-js=yes')";
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_server,"{MISSING_PARAMETER}", "{server_address}",$btn));
-    }
-
-    $widget=widget_certificate();
-    if(strlen($widget)>3){
-        return $widget;
-    }
-    if(!$json->status){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_bug,$json->Error, "{error}"));
-    }
-
-    if(!property_exists($json,"TotalBytesOut")) {
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_server,"{status}", "{error}"));
-
-    }
-    $bb=0;
-    $bf=0;
-    if(property_exists($json,"Backends")){
-
-        foreach ($json->Backends as $Backend=>$class) {
-            if(!preg_match("#^proxy([0-9]+)#",$Backend)){
-                VERBOSE("SKIP $Backend..",__LINE__);
-                continue;
-            }
-            $srv_op_state=$class->srv_op_state;
-            VERBOSE("FOUND $Backend state=$srv_op_state",__LINE__);
-            if($srv_op_state<>2){
-                $bf++;
-                continue;
-            }
-            $bb++;
-
-        }
-    }
-
-    $HaClusterInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
-    $HaClusterPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterPort"));
-    $from="$HaClusterInterface:$HaClusterPort&nbsp;<i class='".ico_arrow_right."'></i>&nbsp;";
-    $Sum=$bf+$bb;
-    $px=20;
-
-    if($bb>9){
-        $px=17;
-    }
-
-    if($bb>9 && $Sum>9){
-        $px=16;
-    }
-
-    $ss="style='font-size:{$px}px;color:white'";
-
-
-    if($bb==0){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("yellow-bg",ico_server,"{backends}", 0));
-    }
-    if($bf==0){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("navy-bg",ico_server,"{backends}", "<small $ss>$from$bb</small>"));
-    }
-
-    return $tpl->_ENGINE_parse_body($tpl->widget_style1("yellow-bg",ico_server,"{backends}", "<small $ss>$from$bb/$Sum</small>"));
-
-
-}
-function widget_mbout($json):string{
-    $tpl=new template_admin();
-    if(!property_exists($json,"TotalBytesOut")) {
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_weight,"{mb_out}", "{error}"));
-    }
-    if($json->TotalBytesOut==0){
-        return  $tpl->_ENGINE_parse_body($tpl->widget_style1("gray-bg",ico_weight,"{mb_out}", 0));
-    }
-
-    $TotalBytesOut=FormatBytes($json->TotalBytesOut/1024);
-    return  $tpl->_ENGINE_parse_body($tpl->widget_style1("blue-bg",ico_weight,"{mb_out}", $TotalBytesOut));
-}
-function widget_latency():string{
-    $tpl=new template_admin();
-    $HACLUSTER_LATENCY_MS=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HACLUSTER_LATENCY_MS");
-    $bg="navy-bg";
-
-    if(intval($HACLUSTER_LATENCY_MS)>200){
-        $bg="lazur-bg";
-    }
-
-    if(intval($HACLUSTER_LATENCY_MS)>500){
-        $bg="yellow-bg";
-    }
-    if(intval($HACLUSTER_LATENCY_MS)>1200){
-        $bg="red-bg";
-    }
-    return $tpl->_ENGINE_parse_body($tpl->widget_style1($bg,ico_timeout,"{latency}",
-        "{$HACLUSTER_LATENCY_MS}ms"));
-}
-function widget_connections($json):string{
-    $tpl=new template_admin();
-    $page=CurrentPageName();
-    $btn = array();
-    $btn[0]["name"] = "{modify}";
-    $btn[0]["icon"] = ico_params;
-    $btn[0]["js"] = "Loadjs('$page?maxconns-js=yes')";
-
-    $jsonStats=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/stats"));
-    if(property_exists($jsonStats, "Stats")) {
-        foreach ($jsonStats->Stats as $stat) {
-            $svname=$stat->svname;
-            if($svname<>"FRONTEND"){
-                continue;
-            }
-            $pxname=$stat->pxname;
-            if($pxname<>"hacluster"){
-                continue;
-            }
-            echo "<!-- Frontend:$pxname -->\n";
-
-            if(!property_exists($stat, "slim")) {
-                var_dump($stat);
-                echo "<!-- Frontend:slim Not found -->\n";
-                continue;
-            }
-            $Maxconn=$tpl->FormatNumber($stat->slim);
-            $prc=round(($stat->scur/$stat->slim)*100,2);
-            if($prc>95){
-                return $tpl->_ENGINE_parse_body($tpl->widget_style1("bg-red",ico_clouds,"{connections} $prc%", $tpl->FormatNumber($stat->scur)."/$Maxconn",$btn));
-            }
-            if($prc>90){
-                return $tpl->_ENGINE_parse_body($tpl->widget_style1("yellow-bg",ico_clouds,"{connections} $prc%", $tpl->FormatNumber($stat->scur)."/$Maxconn",$btn));
-            }
-
-            return $tpl->_ENGINE_parse_body($tpl->widget_style1("blue-bg",ico_clouds,"{connections} $prc%", $tpl->FormatNumber($stat->scur)."/$Maxconn",$btn));
-        }
-    }
-    echo "// Not found\n";
-
-    if(!property_exists($json,"Maxconn")) {
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("red-bg",ico_clouds,"{connections}", "{error}"));
-    }
-    if($json->CurrConns==0){
-        return  $tpl->_ENGINE_parse_body($tpl->widget_style1("gray-bg",ico_clouds,"{connections}", 0,$btn));
-    }
-    $Maxconn=$tpl->FormatNumber($json->Maxconn);
-    $prc=round(($json->CurrConns/$json->Maxconn)*100,2);
-    if($prc>95){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("bg-red",ico_clouds,"{connections} $prc%", $tpl->FormatNumber($json->CurrConns)."/$Maxconn",$btn));
-    }
-    if($prc>90){
-        return $tpl->_ENGINE_parse_body($tpl->widget_style1("yellow-bg",ico_clouds,"{connections} $prc%", $tpl->FormatNumber($json->CurrConns)."/$Maxconn",$btn));
-    }
-
-    return $tpl->_ENGINE_parse_body($tpl->widget_style1("blue-bg",ico_clouds,"{connections} $prc%", $tpl->FormatNumber($json->CurrConns)."/$Maxconn",$btn));
-
-}
-
-function status_top():bool{
-    $tpl=new template_admin();
-    $page=currentPageName();
-
-    $HaClusterInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
-    if(strlen($HaClusterInterface)<3) {
-        $button="<div style='text-align:right;margin:10px'>".
-            $tpl->button_autnonome("{listen_interface}","Loadjs('$page?section-listen-js=yes')",ico_nic,"",0,"btn-warning",256)."</div>";
-        $explain = $tpl->div_warning("{listen_interface}||{lb_select_nic}$button");
-        echo $tpl->_ENGINE_parse_body($explain);
-        return true;
-    }
-
-    //
-
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/info"));
-    $stylePad="vertical-align:top;width:25%;padding-left:5px";
-    $widget_backends=widget_backends($json);
-    $widget_mbout=widget_mbout($json);
-    $widget_connections=widget_connections($json);
-
-    $widget_latency=widget_latency();
-    $html[]="<div id='checkCurStatus'></div>";
-    $html[]="<table style='width:100%;margin-top:-7px'>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align:top;width:25%'>$widget_backends</td>";
-    $html[]="<td style='$stylePad'>$widget_latency</td>";
-    $html[]="<td style='$stylePad'>$widget_mbout</td>";
-    $html[]="<td style='$stylePad'>$widget_connections</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-    $html[]="<script>";
-    $html[]="LoadAjaxSilent('checkCurStatus','fw.hacluster.backends.php?checkCurStatus=yes');";
-    $html[]="</script>";
-
-    //
-echo @implode("", $html);
-
-    return true;
-}
 function top_buttons():array{
     $tpl=new template_admin();
 
@@ -1047,525 +654,891 @@ function parameters():bool{
     echo "</script>";
     return true;
 }
-function parameters_haclusterTimeouts($tpl){
-    $page=CurrentPageName();
-    for($i=3;$i<24;$i++){
-        $reload[$i]="{each} $i {hours}";
-
-    }
-    $reload[999]="{never}";
-    $HaClusterTimeOutConnect=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTimeOutConnect"));
-    $HaClusterSeverTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSeverTimeout"));
-    $HaClusterClientTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClientTimeout"));
-    $HaClusterReloadEach=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterReloadEach"));
-    $HaClusterCheckInt=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterCheckInt"));
-    $HaClusterCheckFall=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterCheckFall"));
-    $HaClusterCheckRise=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterCheckRise"));
-    if($HaClusterCheckInt==0){$HaClusterCheckInt=10;}
-    if($HaClusterCheckInt<5){$HaClusterCheckInt=5;}
-    if($HaClusterCheckFall==0){$HaClusterCheckFall=5;}
-    if($HaClusterCheckRise==0){$HaClusterCheckRise=2;}
-    $reload_t=null;
-    if($HaClusterReloadEach<>999){
-        $reload_t="{reload_service} $reload[$HaClusterReloadEach], ";
-    }
-
-    $restart_if_needed="";
-    $HaClusterCheckRestart=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterCheckRestart"));
-
-    $HaClusterEnableWatchDog=1;
-    $HaClusterDisableWatchDog=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDisableWatchDog"));
-    if($HaClusterDisableWatchDog==1){
-        $HaClusterEnableWatchDog=0;
-    }
-    $HaClusterEnableWatchDogT="";
-    if($HaClusterCheckRestart==1){
-        $restart_if_needed=" {restart_if_needed}, ";
-    }
-    if($HaClusterEnableWatchDog==1){
-        $HaClusterEnableWatchDogT="{verify_the_full_chain}, ";
-    }
-
-    $tpl->table_form_field_js("Loadjs('$page?section-health-js=yes')","AsSquidAdministrator");
-    $tpl->table_form_field_text("{health_checks_small}","$HaClusterEnableWatchDogT$reload_t$restart_if_needed{check_interval} $HaClusterCheckInt {seconds}, {fall} $HaClusterCheckFall {attempts}, {rise} $HaClusterCheckRise {attempts}",ico_watchdog);
-
-
-    $tpl->table_form_field_js("Loadjs('$page?section-timeout-js=yes')","AsSquidAdministrator");
-    $tpl->table_form_field_text("{timeouts}","{connect_timeout} $HaClusterTimeOutConnect {seconds}, {server_timeout} $HaClusterSeverTimeout {seconds}, {client_timeout} $HaClusterClientTimeout {seconds}",ico_timeout);
-
-    return $tpl;
-}
-function parameters_ClusterService($tpl){
-    $page=CurrentPageName();
-    $ClusterServicePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterServicePort"));
-    if($ClusterServicePort==0){$ClusterServicePort="58787";}
-    $ClusterServiceInterface=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterServiceInterface");
-
-    if($ClusterServiceInterface==null){
-        $ClusterServiceInterface="{all}";
-    }
-
-    $ClusterServiceCertificate=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterServiceCertificate");
-
-
-    $tpl->table_form_field_js("Loadjs('fw.system.cluster.master.php?interface-js=yes')");
-    if (strlen($ClusterServiceCertificate) > 3) {
-        $tpl->table_form_field_text("{listen} {agents}", "<span style='text-transform:none'>https://$ClusterServiceInterface:$ClusterServicePort</span>", ico_interface);
-
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM sslcertificates WHERE CommonName='$ClusterServiceCertificate'");
-        if(!isset($ligne['ID'])){$ligne['ID']=0;}
-        $CertID=intval($ligne['ID']);
-
-        if($CertID==0){
-            $CreateCertifJs=CreateCertifJs();
-            $tpl->table_form_field_js($CreateCertifJs);
-            $tpl->table_form_field_button("{create_certificate}","{create_certificate}",ico_certificate);
-        }
-        $ligne=$q->mysqli_fetch_array("SELECT count(*) as tcount FROM subcertificates WHERE certid='$CertID'");
-
-
-        $tpl->table_form_field_js("Loadjs('fw.certificates-center.php?certificate-js=$ClusterServiceCertificate&ID=$CertID')");
-        $tpl->table_form_field_text("{server_certificate}", "$ClusterServiceCertificate", ico_ssl);
-        $Count=$ligne['tcount'];
-        $tpl->table_form_field_js("Loadjs('fw.certificates-center.php?subcertificates-js=$CertID&OnlyClient=yes&NoPass=yes')");
-        if($Count==0) {
-            $tpl->table_form_field_bool("{client_certificates}", "$Count", ico_ssl);
-        }else{
-            $tpl->table_form_field_text("{client_certificates}", "$Count", ico_ssl);
-        }
-
-
-
-        $resetjs=$tpl->framework_buildjs("/hacluster/server/resetcert",
-            "reset-master-certificate.progress","reset-master-certificate.log",
-            "progress-hacluster-restart",
-            "if(document.getElementById('hacluster-parameters'){LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');}"
-        );
-        $tpl->table_form_field_js($resetjs);
-        $tpl->table_form_field_button("{reset} {certificate}","{reset}",ico_certificate);
-
-
-    } else {
-        $tpl->table_form_field_js("Loadjs('$page?interface-js=yes')");
-        $tpl->table_form_field_text("{listen}", "<span style='text-transform:none'>{no_certificate}</span>", ico_interface);
-    }
-
-    return $tpl;
-}
 function CreateCertifJs():string{
     $tpl=new template_admin();
     $page=CurrentPageName();
     return $tpl->framework_buildjs("/cluster/server/create/certificate",
         "artica.cluster.progress", "artica.cluster.log",
         "progress-hacluster-restart",
-        "if(document.getElementById('hacluster-parameters'){LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');}"
+        "if(document.getElementById('hacluster-parameters')){LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');}"
     );
 }
-function parameters_table():bool{
-
+function section_keepalive_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("ServerPersistentConnections","ClientPersistentConnections"),$tpl);
     $page=CurrentPageName();
-    $HaClusterInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
-    $HaClusterPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterPort"));
-    $HaClusterBalance=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterBalance");
-    $HaClusterProto=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProto");
-    if($HaClusterPort==0){$HaClusterPort=3128;}
-    if($HaClusterProto==null){$HaClusterProto="tcp";}
-
-    $HaClusterDeployArticaUpdates=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDeployArticaUpdates"));
-
-
-    $HaClusterAsAD=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAsAD"));
-    $HaClusterWorkers=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterWorkers"));
-    $HaClusterMaxConn=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterMaxConn"));
-    $HaClusterTHreads=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTHreads"));
-
-    $HaClusterTimeOutConnect=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTimeOutConnect"));
-    $HaClusterSeverTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSeverTimeout"));
-    $HaClusterClientTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClientTimeout"));
-
-    $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
-
-    if(!isset($HaClusterGBConfig["HaClusterDisableProxyProtocol"])){
-        $HaClusterGBConfig["HaClusterDisableProxyProtocol"]=0;
+    $HaClusterDisableClientPersistentConnections=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDisableClientPersistentConnections");
+    $HaClusterDisableServerPersistentConnections=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDisableServerPersistentConnections");
+    $ClientPersistentConnections=1;
+    $ServerPersistentConnections=1;
+    if($HaClusterDisableClientPersistentConnections==1){
+        $ClientPersistentConnections=0;
     }
-    if(!isset($HaClusterGBConfig["HaClusterRemoveRealtimeLogs"])){
-        $HaClusterGBConfig["HaClusterRemoveRealtimeLogs"]=0;
+    if($HaClusterDisableServerPersistentConnections==1){
+        $ServerPersistentConnections=0;
     }
-    if(!isset($HaClusterGBConfig["HaClusterDecryptSSL"])){
-        $HaClusterGBConfig["HaClusterDecryptSSL"]=0;
-    }
-    if(!isset($HaClusterGBConfig["HaClusterUseLBAsDNS"])){
-        $HaClusterGBConfig["HaClusterUseLBAsDNS"]=0;
-    }
+    $html[]=$tpl->BigCircleCheckbox("ClientPersistentConnections","{client_persistent_connections}",
+        "{client_persistent_connections_explain}",
+        $ClientPersistentConnections,"LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');");
+    $html[]=$tpl->BigCircleCheckbox("ServerPersistentConnections",
+        "{server_persistent_connections}",
+        "{server_persistent_connections_explain}",
+        $ServerPersistentConnections,"LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');");
 
-
-    $HaClusterDisableProxyProtocol=intval($HaClusterGBConfig["HaClusterDisableProxyProtocol"]);
-    $HaClusterRemoveRealtimeLogs=intval($HaClusterGBConfig["HaClusterRemoveRealtimeLogs"]);
-    $HaClusterUseHaClient=intval($HaClusterGBConfig["HaClusterUseHaClient"]);
-    $HaClusterClientMaxLoad=intval($HaClusterGBConfig["HaClusterClientMaxLoad"]);
-    $HaClusterClientMaxLoadPeriod=intval($HaClusterGBConfig["HaClusterClientMaxLoadPeriod"]);
-    $HaClusterClientMoniCPU=intval($HaClusterGBConfig["HaClusterClientMoniCPU"]);
-
-    if($HaClusterClientMaxLoad==0){$HaClusterClientMaxLoad=3;}
-    if($HaClusterDisableProxyProtocol==0){
-        $HaClusterEnableProxyProtocol=1;
-    }else{
-        $HaClusterEnableProxyProtocol=0;
-    }
-
-    if($HaClusterTimeOutConnect==0){$HaClusterTimeOutConnect=10;}
-    if($HaClusterSeverTimeout==0){$HaClusterSeverTimeout=30;}
-    if($HaClusterClientTimeout==0){$HaClusterClientTimeout=300;}
-
-    if($HaClusterMaxConn<2000){$HaClusterMaxConn=2000;}
-
-    if($HaClusterWorkers==0){$HaClusterWorkers=1;}
-    if($HaClusterTHreads==0){$HaClusterTHreads=1;}
-    $HaProto["tcp"]="TCP/IP";
-    $HaProto["http"]="HTTP";
-
-    $algo["source"]="{strict-hashed-ip}";
-    $algo["roundrobin"]="{round-robin}";
-    $algo["leastconn"]="{leastconn}";
-    if($HaClusterInterface==null){$HaClusterInterface="{all}";}
-    if($HaClusterBalance==null){$HaClusterBalance="leastconn";}
-
-
-
-    $tpl->table_form_section("{APP_PARENTLB}: {service_options}");
-    $tpl->table_form_field_js("Loadjs('$page?section-listen-js=yes')","AsSquidAdministrator");
-    $tpl->table_form_field_text("{listen} {browser}","$HaProto[$HaClusterProto],&nbsp;$HaClusterInterface:$HaClusterPort $algo[$HaClusterBalance]",ico_interface);
-
-    $tpl=parameters_ClusterService($tpl);
-
-    $tpl->table_form_field_js("Loadjs('$page?section-performance-js=yes')","AsSquidAdministrator");
-    $tpl->table_form_field_text("{performance}","{maxconn}: $HaClusterMaxConn, {SquidCpuNumber}: $HaClusterWorkers, {ThreadsPerChild}: $HaClusterTHreads",ico_performance);
-
-    $tpl=parameters_limit_access($tpl);
-    $tpl=parameters_haclusterTimeouts($tpl);
-
-
-    $tpl->table_form_field_js("Loadjs('$page?section-pproto-js=yes')","AsSquidAdministrator");
-    $tpl->table_form_field_bool("{proxy_protocol}",$HaClusterEnableProxyProtocol,ico_networks);
-
-    $HaClusterTransParentMode=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransParentMode"));
-
-    $tpl->table_form_field_js("Loadjs('fw.hacluster.transparent.php?params-js=yes')","AsSquidAdministrator");
-    if($HaClusterTransParentMode==0){
-        $tpl->table_form_field_bool("{transparent_mode}",0,ico_sensor);
-    }else{
-        $HaClusterTransParentMasquerade=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransParentMasquerade"));
-        $HaClusterTransParentCertif=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransParentCertif"));
-        $HaClusterTransParentDebug=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTransParentDebug"));
-        $tr=array();
-        if($HaClusterTransParentMasquerade==1){
-            $tr[]="{masquerading}";
-        }
-        if(strlen($HaClusterTransParentCertif)>1){
-            $tr[]="{certificate} $HaClusterTransParentCertif";
-        }
-        if($HaClusterTransParentDebug==1){
-            $tr[]="<span class='text-danger'>{debug}</span>";
-        }
-        if(count($tr)>0){
-            $tpl->table_form_field_text("{transparent_mode}","<small>".@implode(", ",$tr)."</small>",ico_sensor);
-        }
-    }
-
-    $tpl->table_form_field_js("Loadjs('$page?section-simuad-js=yes')","AsSquidAdministrator");
-    if($HaClusterAsAD==0) {
-        $tpl->table_form_field_bool("{simulate_the_active_directory}", $HaClusterAsAD, ico_microsoft);
-    }else{
-        $HaClusterAsADIface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAsADIface"));
-        if(strlen($HaClusterAsADIface)<2){
-            $HaClusterAsADIface="{all}";
-        }
-        $tpl->table_form_field_text("{simulate_the_active_directory}","{active2} {interface} $HaClusterAsADIface",ico_microsoft);
-    }
-
-    $tpl->table_form_section("{CentralizedBackendsSettings}");
-
-    $HaClusterUseAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseAddr");
-    $tpl->table_form_field_js("Loadjs('$page?section-ipaddr-js=yes')","AsSquidAdministrator");
-    if(strlen($HaClusterUseAddr)<5){
-        $tpl->table_form_field_text("{lbIP}","{missing}",ico_interface,true);
-    }else{
-        $tpl->table_form_field_text("{lbIP}",$HaClusterUseAddr,ico_interface);
-    }
-
-    $tpl->table_form_field_js("Loadjs('$page?section-haclient-js=yes')","AsSquidAdministrator");
-    if($HaClusterUseHaClient==0){
-        $tpl->table_form_field_bool("{APP_HACLUSTER_CLIENT}",0,ico_watchdog);
-
-    }else{
-        if($HaClusterClientMoniCPU==1){
-            $ha[]="{monitor_cpu_usage}";
-        }
-
-        $periods[0]="{realtime}";
-        $periods[5]="5 {minutes}";
-        $periods[15]="15 {minutes}";
-
-        $ha[]="{Max_Load} $HaClusterClientMaxLoad";
-        $ha[]="{period} $periods[$HaClusterClientMaxLoadPeriod]";
-        $tpl->table_form_field_text("{APP_HACLUSTER_CLIENT}",@implode(", ",$ha),ico_watchdog);
-    }
-
-
-    $tpl->table_form_field_js("Loadjs('$page?section-ssl-js=yes')","AsSquidAdministrator");
-    if($HaClusterGBConfig["HaClusterDecryptSSL"]==0){
-        $tpl->table_form_field_bool("{activate_ssl_on_http_port}",0,ico_ssl);
-    }else{
-        if(intval($HaClusterGBConfig["sslcrtd_program_dbsize"])==0){$HaClusterGBConfig["sslcrtd_program_dbsize"]=8;}
-        $tpl->table_form_field_text("{activate_ssl_on_http_port}","{proxy_certificate}: {$HaClusterGBConfig["HaClusterCertif"]}, {sslcrtd_program_dbsize} {$HaClusterGBConfig["sslcrtd_program_dbsize"]} MB",ico_interface);
-    }
-    $tpl=parameters_categories_service($tpl);
-    $tpl=parameters_dns($tpl);
-    $tpl=parameters_error_page($tpl);
-    $tpl->table_form_section("{access_logs}/{log_retention}");
-
-
-
-    $tpl->table_form_field_js("Loadjs('fw.proxy.rotate.php?main-logsink-js=yes')");
-    $LogSinkClient = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinkClient"));
-    if ($LogSinkClient == 0) {
-        $tpl->table_form_field_info("{logs_sink}", "{inactive2}", ico_forward);
-
-    } else {
-        $proto = "udp";
-        $LogSinkClientPort = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinkClientPort"));
-        $LogSinkClientServer = trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinClientServer"));
-        $LogSinkClientTCP = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LogSinkClientTCP"));
-        if ($LogSinkClientTCP == 1) {
-            $proto = "tcp";
-        }
-        $tpl->table_form_field_info("{logs_sink}", "$proto://$LogSinkClientServer:$LogSinkClientPort", ico_forward);
-    }
-
-
-
-
-$tpl->table_form_field_js("Loadjs('$page?section-logs-js=yes')","AsSquidAdministrator");
-    $tpl->table_form_field_bool("{disable_realtime_backends}",$HaClusterRemoveRealtimeLogs,ico_eye);
-    $tpl=parameters_logs($tpl);
-
-    echo $tpl->table_form_compile();
+    echo $tpl->_ENGINE_parse_body($html);
     return true;
 }
-function parameters_logs($tpl){
 
-    $page=CurrentPageName();
-
-
-    $HaClusterRemoveLogsEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterRemoveLogsEnabled"));
-    $HaClusterRemoveLogsSize=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterRemoveLogsSize"));
-    $HaClusterRemoteSyslogEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterRemoteSyslogEnabled"));
-    $HaClusterRemoteUseTCPPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterRemoteUseTCPPort"));
-    $HaClusterRemoteSyslogPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterRemoteSyslogPort"));
-    $HaClusterRemoteSyslogAddr=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterRemoteSyslogAddr"));
-    if($HaClusterRemoteSyslogPort==0){$HaClusterRemoteSyslogPort=514;}
-    if($HaClusterRemoveLogsSize==0){$HaClusterRemoveLogsSize=500;}
-
-    $tpl->table_form_field_js("Loadjs('fw.hacluster.logs.php?js=yes')","AsSquidAdministrator");
-    if ($HaClusterRemoveLogsEnabled==0){
-        if($HaClusterRemoteSyslogEnabled==0){
-            $tpl->table_form_field_text("{log_retention}","{use_default}",ico_eye);
-            return $tpl;
-        }
-        if($HaClusterRemoteSyslogEnabled==1){
-            $tpl->table_form_field_text("{log_retention}","{use_default}/$HaClusterRemoteSyslogAddr:$HaClusterRemoteSyslogPort",ico_eye);
-            return $tpl;
-        }
-    }
-    if ($HaClusterRemoveLogsEnabled==1){
-        if($HaClusterRemoteSyslogEnabled==0){
-            $tpl->table_form_field_text("{log_retention}","{remove_local_access_events} ({$HaClusterRemoveLogsSize}MB)",ico_eye);
-            return $tpl;
-        }
-
-        if($HaClusterRemoteSyslogEnabled==1){
-            $tpl->table_form_field_text("{log_retention}","{remove_local_access_events} ({$HaClusterRemoveLogsSize}MB)/$HaClusterRemoteSyslogAddr:$HaClusterRemoteSyslogPort",ico_eye);
-            return $tpl;
-        }
-
-    }
-    return $tpl;
+/** Repli seulement (route REST injoignable) : activation permise si le facteur d'echelle
+ *  recopie par articarest (HaClusterWeightScaleActive, copie d'affichage) vaut 10. */
+function hacluster_dynweight_can_enable(int $scaleActive):bool{
+    return $scaleActive==10;
 }
-function parameters_categories_service($tpl){
-    $page=CurrentPageName();
-    $tpl->table_form_field_js("Loadjs('$page?remote-categories-service=yes')","AsSquidAdministrator");
-
-    $HaClusterUseRemoteCategoriesService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseRemoteCategoriesService"));
-
-    if($HaClusterUseRemoteCategoriesService==0){
-        $tpl->table_form_field_bool("{use_remote_categories_services}",0,ico_database);
-        return $tpl;
-    }
-
-
-    $RemoteCategoriesServiceSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceSSL"));
-
-    $RemoteCategoriesServicePort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServicePort"));
-
-    $RemoteCategoriesServiceAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceAddr");
-    $proto="http";
-    if($RemoteCategoriesServiceSSL==1){
-        $proto="https";
-    }
-    $tpl->table_form_field_text("{use_remote_categories_services}","$proto://$RemoteCategoriesServiceAddr:$RemoteCategoriesServicePort",ico_database);
-    return $tpl;
+/** Etat du poids gradue lu par la route d'articarest (GET /hacluster/dynamicweight), qui lit le
+ *  HAProxy en service. null si l'appel echoue ou si le JSON est invalide. */
+function hacluster_dynweight_state():?array{
+    $j=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/dynamicweight"),true);
+    if(!is_array($j) || empty($j["status"])){return null;}
+    if(!array_key_exists("enabled",$j) || !array_key_exists("can_enable",$j)){return null;}
+    return $j;
 }
-function parameters_limit_access($tpl){
+function section_dynweight_popup():bool{
+    $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("AgentDynamicWeight"),$tpl);
     $page=CurrentPageName();
-    $tpl->table_form_field_js("Loadjs('$page?section-limit-access-js=yes')","AsSquidAdministrator");
-
-    $HaClusterLimitAccesses=json_decode($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterLimitAccesses"));
-    if(!$HaClusterLimitAccesses){
-        $ACLREST[] = "192.168.0.0/16";
-        $ACLREST[] = "10.0.0.0/8";
-        $ACLREST[] = "172.16.0.0/12";
-
-        $H=json_encode($ACLREST);
-        $HaClusterLimitAccesses=json_decode($H);
+    $st=hacluster_dynweight_state();
+    if($st!==null){
+        $current=intval($st["enabled"])==1?1:0;
+        $canEnable=!empty($st["can_enable"]);
+        $partialIgnored=!empty($st["partial_weights_ignored"]);
+        $metaHeld=!empty($st["meta_held"]);
+        $reason=trim((string)($st["reason"] ?? ""));
+    }else{
+        // Repli : comportement d'avant (lecture des reglages).
+        $current=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAgentDynamicWeight"))==1?1:0;
+        $scale=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterWeightScaleActive"));
+        $balance=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterBalance"));
+        $canEnable=hacluster_dynweight_can_enable($scale);
+        $partialIgnored=($balance=="roundrobin");
+        $metaHeld=false;
+        $reason="";
     }
-    if(count($HaClusterLimitAccesses)==0){
-        $tpl->table_form_field_bool("{limit_access}",0,ico_firewall);
-        return $tpl;
+    if(!$canEnable && $current!=1){
+        $html[]=$tpl->div_warning("{hacluster_dynamic_weight_needs_scale}");
     }
-    $tpl->table_form_field_text("{limit_access}",count($HaClusterLimitAccesses)." {items}",ico_firewall);
-    return $tpl;
+    if(!$canEnable && $reason!=""){
+        // Raison donnee par la route : texte anglais de demon, affiche tel quel, echappe.
+        $html[]=$tpl->div_warning(htmlspecialchars($reason,ENT_QUOTES,"UTF-8"));
+    }
+    if($partialIgnored){
+        $html[]=$tpl->div_warning("{hacluster_dynamic_weight_static_rr}");
+    }
+    // Case grisee si l'activation n'est pas permise ET que le reglage n'est pas deja actif, ou si Meta tient la cle.
+    $disabled=((!$canEnable && $current!=1) || $metaHeld || hacluster_meta_post_held("AgentDynamicWeight"));
+    $after="if(resp && String(resp).trim().length>0){alert(String(resp).trim());}"
+        ."LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');";
+    $html[]=$tpl->BigCircleCheckbox("AgentDynamicWeight","{hacluster_dynamic_weight}",
+        "{hacluster_dynamic_weight_explain}",$current,$after,"AsSquidAdministrator",$disabled);
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
 }
-function parameters_error_page($tpl){
-    $page=CurrentPageName();
-    $tpl->table_form_field_js("Loadjs('$page?section-errorpage-js=yes')","AsSquidAdministrator");
-    $HaClusterUseCentralErrorPage=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseCentralErrorPage"));
-
-    if($HaClusterUseCentralErrorPage==0){
-        $tpl->table_form_field_bool("{error_page_service}",0,ico_web_error_page);
-        return $tpl;
-    }
-    $HaClusterErrorPageHTTPPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageHTTPPort"));
-
-    $HaClusterErrorPageUseSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageUseSSL"));
-
-    $HaClusterErrorPageHTTPsPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageHTTPsPort"));
-
-    if($HaClusterErrorPageHTTPPort==0){
-        $HaClusterErrorPageHTTPPort=80;
-    }
-    if($HaClusterErrorPageHTTPsPort==0){
-        $HaClusterErrorPageHTTPsPort=443;
-    }
-
-    $HaClusterErrorPageServiceHostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageServiceHostname"));
-
-    $HaClusterErrorPageCert=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageCert"));
-
-    if(strlen($HaClusterErrorPageServiceHostname)<2){
-        $HaClusterErrorPageServiceHostname=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("myhostname"));
-    }
-    $pp=array();
-    $proto="";
-    $cert="";
-    if($HaClusterErrorPageHTTPPort>5){
-        $proto="http";
-        $pp[]=$HaClusterErrorPageHTTPPort;
-    }
-    if($HaClusterErrorPageUseSSL==1){
-        if(preg_match("#^SUB:([0-9]+)#",$HaClusterErrorPageCert,$re)){
-            $qSSL=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-            $ligneSSL=$qSSL->mysqli_fetch_array("SELECT commonName FROM subcertificates WHERE ID=$re[1]");
-            $HaClusterErrorPageCert=$ligneSSL["commonName"];
+function section_dynweight_save():bool{
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSquidAdministrator){echo $tpl->_ENGINE_parse_body("{ERROR_NO_PRIVS}");return false;}
+    if(hacluster_meta_gate("text")){return false;}
+    // Champ retire par la porte Meta (cle tenue) : ne rien ecrire.
+    if(!isset($_POST["AgentDynamicWeight"])){return false;}
+    $requested=intval($_POST["AgentDynamicWeight"])==1?1:0;
+    // La route decide sur le HAProxy en service, ecrit le reglage et pousse aux noeuds (notify/all).
+    $resp=(string)$GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/hacluster/dynamicweight",array("enabled"=>$requested));
+    $j=json_decode($resp,true);
+    if(is_array($j) && !empty($j["status"])){
+        if(!empty($j["changed"])){
+            admin_tracks(($requested==1?"Enable":"Disable")." graded weight of the proxies on the HaCluster");
         }
-
-        $proto = "https";
-        $pp=array();
-        $pp[]=$HaClusterErrorPageHTTPsPort;
-        $cert=" <small>($HaClusterErrorPageCert)</small>";
+        return true;
     }
-    $port=@implode("|",$pp);
-    $tpl->table_form_field_text("{error_page_service}","<span style='text-transform:none'>$proto://$HaClusterErrorPageServiceHostname:$port$cert</span>",ico_web_error_page);
-    return $tpl;
-
+    // Refus (409), corps refuse (400), route absente ou socket injoignable : texte affiche par $after (alert).
+    if(is_array($j) && !empty($j["error"])){
+        echo (string)$j["error"];
+        return false;
+    }
+    $raw=trim($resp);
+    echo $raw==""?$tpl->javascript_parse_text("{protocol_error}"):substr($raw,0,300);
+    return false;
 }
-function parameters_dns($tpl){
+
+function section_keepalive_save():bool{
+    if(hacluster_meta_gate("text")){return false;}
+
+
+
+    if(isset($_POST["ServerPersistentConnections"])){
+        $ServerPersistentConnections=intval($_POST["ServerPersistentConnections"]);
+        if($ServerPersistentConnections==1){
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableServerPersistentConnections",0);
+        }else{
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableServerPersistentConnections",1);
+        }
+    }
+    if(isset($_POST["ClientPersistentConnections"])) {
+        $ClientPersistentConnections=intval($_POST["ClientPersistentConnections"]);
+        if ($ClientPersistentConnections == 1) {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableClientPersistentConnections", 0);
+        } else {
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableClientPersistentConnections", 1);
+        }
+    }
+    return true;
+}
+function section_bbr_js():bool{
+    $tpl=new template_admin();
     $page=CurrentPageName();
-    $tpl->table_form_field_js("Loadjs('$page?section-dns-js=yes')","AsSquidAdministrator");
-    $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
-    $HaClusterUseLocalDNSCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseLocalDNSCache"));
-    $HaClusterServeDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS"));
-    $HaClusterProxyUseOwnDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseOwnDNS"));
-    if($HaClusterServeDNS==1){
-        $HaClusterGBConfig["HaClusterUseLBAsDNS"]=0;
+    return $tpl->js_dialog2("{tcp_bbr}","$page?section-bbr-popup=yes",650);
+}
+function section_bbr_popup():bool{
+    $tpl=new template_admin();
+    echo $tpl->_ENGINE_parse_body("<div id='bbr-cluster-popup'>".section_bbr_inner()."</div>");
+    return true;
+}
+/** JS apres enregistrement : BigCircleCheckbox ne met la reponse qu'en console,
+ *  or section_bbr_save() n'ecrit rien en cas de succes -- une reponse non vide
+ *  est un refus a montrer. */
+function section_bbr_after_js(string $reload):string{
+    return "if(resp && String(resp).trim().length>0){alert(String(resp).trim());}".$reload;
+}
+/** Tri-etat par deux cases : « Gerer » puis, seulement si gere, « Activer ». */
+function section_bbr_inner():string{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $managed=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterBBRManaged"))==1?1:0;
+    $enable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterBBREnable"))==1?1:0;
+    $after=section_bbr_after_js("LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');"
+        ."LoadAjaxSilent('bbr-cluster-popup','$page?section-bbr-inner=yes');");
+    $html=array();
+    $html[]="<div class='row'><div class='col-md-12'>".$tpl->div_explain("{tcp_bbr_explain}")."</div></div>";
+    $html[]=$tpl->BigCircleCheckbox("HaClusterBBRManaged","{tcp_bbr_manage_cluster}","{tcp_bbr_cluster_explain}",
+        $managed,$after,"AsSquidAdministrator");
+    if($managed==1){
+        $html[]=$tpl->BigCircleCheckbox("HaClusterBBREnable","{tcp_bbr_enable_cluster}","{tcp_bbr_kernel_required}",
+            $enable,$after,"AsSquidAdministrator");
+        $h="<table class='table' style='margin-top:15px'><thead><tr><th>{backend}</th><th>{status}</th></tr></thead><tbody>";
+        $lb=hacluster_bbr_lb_state(hacluster_bbr_lb_status());
+        $h.="<tr><td><strong>{this_server}</strong> (".htmlspecialchars(php_uname('n')).")</td><td>".hacluster_bbr_state_label($lb)."</td></tr>";
+        foreach(hacluster_bbr_nodes() as $n){
+            $h.="<tr><td>".htmlspecialchars($n["name"])."</td><td>".hacluster_bbr_state_label($n["state"])."</td></tr>";
+        }
+        $html[]=$h."</tbody></table>";
+        // Le LB applique en arriere-plan : relire tant qu'il est « en attente ».
+        if($lb=="pending"){
+            $html[]="<script>setTimeout(function(){if(document.getElementById('bbr-cluster-popup')){LoadAjaxSilent('bbr-cluster-popup','$page?section-bbr-inner=yes');}},4000);</script>";
+        }
     }
-    $HaClusterProxyUseBackendDNSDIST=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseBackendDNSDIST"));
+    return $tpl->_ENGINE_parse_body(@implode("\n",$html)).hacluster_meta_popup_head(array("HaClusterBBRManaged","HaClusterBBREnable"),$tpl);
+}
+/** Enregistre puis pousse tout de suite aux noeuds (notify/all est asynchrone
+ *  cote daemon) au lieu d'attendre le cycle de 2 minutes. Rien en sortie si OK. */
+function section_bbr_save():bool{
+    $tpl=new template_admin();
+    $users=new usersMenus();
+    if(!$users->AsSquidAdministrator){echo $tpl->_ENGINE_parse_body("{ERROR_NO_PRIVS}");return false;}
+    if(hacluster_meta_gate("text")){return false;}
+    foreach(array("HaClusterBBRManaged","HaClusterBBREnable") as $k){
+        if(isset($_POST[$k])){$GLOBALS["CLASS_SOCKETS"]->SET_INFO($k,intval($_POST[$k])==1?1:0);}
+    }
+    // Le LB applique lui-meme le reglage du cluster (sysctl.Build()), puis le
+    // pousse aux noeuds sans attendre le cycle de 2 minutes.
+    // nowait : sysctl.Build() depasse les 13 s du client REST, la case restait
+    // en attente puis l'application etait abandonnee cote console.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/bbr/apply?nowait=1");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+    return true;
+}
+// ---------------------------------------------------------------------------
+// Onglet "Parameters" : vue recherchable (maquette stitch_hacluster_load_balancer_console).
+// Un modele (hacp_model) calcule une fois toutes les lignes ; chaque widget est
+// une fonction. La recherche tourne dans le navigateur : chaque ligne porte les
+// libelles des champs de sa modale (data-kw), si bien que "client timeout"
+// trouve la ligne TimeOuts.
+// ---------------------------------------------------------------------------
+function hacp_h($s):string{
+    $s=htmlspecialchars((string)$s,ENT_QUOTES,"UTF-8");
+    return str_replace(array("{","}","[","]"),array("&#123;","&#125;","&#91;","&#93;"),$s);
+}
+function hacp_t(string $tok,array $args=array()):string{
+    $tpl=new template_admin();
+    $s=$tpl->_ENGINE_parse_body("{".$tok."}");
+    foreach($args as $a){
+        $p=strpos($s,"%s");
+        if($p===false){break;}
+        $s=substr_replace($s,(string)$a,$p,2);
+    }
+    return $s;
+}
+function hacp_info(string $k):string{
+    return trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO($k));
+}
+function hacp_int(string $k):int{
+    return intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO($k));
+}
+function hacp_gbconfig():array{
+    $a=@unserialize((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"),array("allowed_classes"=>false));
+    if(!is_array($a)){$a=array();}
+    foreach(array("HaClusterDisableProxyProtocol","HaClusterRemoveRealtimeLogs","HaClusterDecryptSSL",
+                "HaClusterUseLBAsDNS","HaClusterUseHaClient","HaClusterClientMaxLoad",
+                "HaClusterClientMaxLoadPeriod","HaClusterClientMoniCPU","HaClusterClientDisableCheckUrl",
+                "sslcrtd_program_dbsize") as $k){
+        if(!isset($a[$k])){$a[$k]=0;}
+    }
+    foreach(array("HaClusterCertif","DNS1","DNS2") as $k){
+        if(!isset($a[$k]) || $a[$k]===null){$a[$k]="";}
+    }
+    return $a;
+}
+function hacp_reload_js():string{
+    $page=CurrentPageName();
+    return "if(document.getElementById('hacluster-parameters')){LoadAjaxSilent('hacluster-parameters','$page?parameters-table=yes');}";
+}
+// $chips : texte deja pret (tokens bruts, valeurs passees par hacp_h).
+function hacp_row(string $id,int $sec,string $label,string $ico,string $js,$priv,string $state,array $chips,array $kw,string $attn=""):array{
+    return array("id"=>$id,"sec"=>$sec,"label"=>$label,"ico"=>$ico,"js"=>$js,"priv"=>$priv,
+        "state"=>$state,"chips"=>$chips,"kw"=>$kw,"attn"=>$attn);
+}
+function hacp_chip(string $text,bool $mono=false):array{
+    return array("t"=>$text,"m"=>$mono);
+}
 
-    if($HaClusterGBConfig["HaClusterUseLBAsDNS"]==1){
-        $tpl->table_form_field_text("{dns_servers}","{use_load_balancer_as_dns}",ico_database);
-        return $tpl;
+function hacp_model():array{
+    $page=CurrentPageName();
+    $P="AsSquidAdministrator";
+    $gb=hacp_gbconfig();
+    $rows=array();
+    $cert=array("configured"=>false,"id"=>0);
+
+    // ---------- 1. Load-balancer: Service options
+    $proto=hacp_info("HaClusterProto");
+    $protos=array("tcp"=>"TCP/IP","http"=>"HTTP");
+    if(!isset($protos[$proto])){$proto="tcp";}
+    $iface=hacp_info("HaClusterInterface");
+    $port=hacp_int("HaClusterPort");
+    if($port==0){$port=3128;}
+    $balance=hacp_info("HaClusterBalance");
+    $algo=array("source"=>"{strict-hashed-ip}","roundrobin"=>"{round-robin}","leastconn"=>"{leastconn}");
+    if(!isset($algo[$balance])){$balance="leastconn";}
+    $ifaceT=$iface==""?"*":hacp_h($iface);
+    $rows[]=hacp_row("listen",1,"{hacp_listen_browsers}",ico_interface,"Loadjs('$page?section-listen-js=yes')",$P,"val",
+        array(hacp_chip($protos[$proto]),hacp_chip("$ifaceT:$port",true),hacp_chip($algo[$balance])),
+        array("{listen_interface}","{listen_port}","{outgoing_interface}","{protocol}","{method}",
+            "{strict-hashed-ip}","{round-robin}","{leastconn}"));
+
+    // Service des agents (ClusterService)
+    $csPort=hacp_int("ClusterServicePort");
+    if($csPort==0){$csPort=58787;}
+    $csIface=hacp_info("ClusterServiceInterface");
+    $csIfaceT=$csIface==""?"*":hacp_h($csIface);
+    $csCert=hacp_info("ClusterServiceCertificate");
+    $agentsJs="Loadjs('fw.system.cluster.master.php?interface-js=yes')";
+    $agentsKw=array("{listen_interface}","{listen_port}","{certificate}");
+    if(strlen($csCert)>3){
+        $cert["configured"]=true;
+        $rows[]=hacp_row("agents",1,"{hacp_listen_agents}",ico_interface,$agentsJs,null,"val",
+            array(hacp_chip("https://$csIfaceT:$csPort",true)),$agentsKw);
+        include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        list($exists,$CertID)=$cdb->exists($csCert);
+        if(!$exists){$CertID=0;}
+        $CertID=intval($CertID);
+        $cert["id"]=$CertID;
+        $count=$CertID>0?count((array)$cdb->subList($CertID)):0;
+        $certT=hacp_h($csCert);
+        $rows[]=hacp_row("srvcert",1,"{server_certificate}",ico_ssl,
+            "Loadjs('fw.certificates-center.php?certificate-js=".rawurlencode($csCert)."&ID=$CertID')",null,"val",
+            array(hacp_chip($certT,true)),array("{certificate}","{ssl_certificate}"),
+            $CertID==0?"{hacp_attn_certgone}":"");
+        $rows[]=hacp_row("clicerts",1,"{client_certificates}",ico_ssl,
+            "Loadjs('fw.certificates-center.php?subcertificates-js=$CertID&OnlyClient=yes&NoPass=yes')",null,"val",
+            $count>0?array(hacp_chip(hacp_t("hacp_n_issued",array($count)))):array(),array("{certificate}"),
+            $count==0?"{hacp_attn_noclient}":"");
+    }else{
+        $rows[]=hacp_row("agents",1,"{hacp_listen_agents}",ico_interface,$agentsJs,null,"val",
+            array(),$agentsKw,"{hacp_attn_nocert}");
     }
 
+    $maxconn=hacp_int("HaClusterMaxConn");
+    if($maxconn<2000){$maxconn=2000;}
+    $workers=hacp_int("HaClusterWorkers");
+    if($workers==0){$workers=1;}
+    $threads=hacp_int("HaClusterTHreads");
+    if($threads==0){$threads=1;}
+    $rows[]=hacp_row("perf",1,"{performance}",ico_performance,"Loadjs('$page?section-performance-js=yes')",$P,"val",
+        array(hacp_chip("{maxconn} $maxconn"),hacp_chip("{SquidCpuNumber} $workers"),hacp_chip("{ThreadsPerChild} $threads")),
+        array("{maxconn}","{SquidCpuNumber}","{ThreadsPerChild}"));
 
-        $ff=array();
+    $acc=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterLimitAccesses"));
+    if(!is_array($acc)){$acc=array("192.168.0.0/16","10.0.0.0/8","172.16.0.0/12");}
+    $nacc=count($acc);
+    if($nacc==0){
+        $rows[]=hacp_row("access",1,"{limit_access}",ico_firewall,"Loadjs('$page?section-limit-access-js=yes')",$P,"off",
+            array(),array("{networks}","{address}"));
+    }else{
+        $rows[]=hacp_row("access",1,"{limit_access}",ico_firewall,"Loadjs('$page?section-limit-access-js=yes')",$P,"on",
+            array(hacp_chip(hacp_t("hacp_n_networks",array($nacc)))),array("{networks}","{address}"));
+    }
+
+    $rows[]=hacp_row_health();
+    $tc=hacp_int("HaClusterTimeOutConnect");
+    if($tc==0){$tc=10;}
+    $ts=hacp_int("HaClusterSeverTimeout");
+    if($ts==0){$ts=30;}
+    $tcl=hacp_int("HaClusterClientTimeout");
+    if($tcl==0){$tcl=300;}
+    $rows[]=hacp_row("timeouts",1,"{hacp_timeouts}",ico_timeout,"Loadjs('$page?section-timeout-js=yes')",$P,"val",
+        array(hacp_chip("{connect_timeout} $tc s"),hacp_chip("{server_timeout} $ts s"),hacp_chip("{client_timeout} $tcl s")),
+        array("{connect_timeout}","{server_timeout}","{client_timeout}","{hacluster_tcp_keepalives}","{timeout}"));
+
+    $pp=intval($gb["HaClusterDisableProxyProtocol"])==0;
+    $rows[]=hacp_row("pproto",1,"{proxy_protocol}",ico_networks,"Loadjs('$page?section-pproto-js=yes')",$P,$pp?"on":"off",
+        array(),array("PROXY protocol"));
+
+    $rows[]=hacp_row_transparent();
+
+    $asad=hacp_int("HaClusterAsAD");
+    $adChips=array();
+    if($asad==1){
+        $adIf=hacp_info("HaClusterAsADIface");
+        $adChips[]=hacp_chip("{interface} ".(strlen($adIf)<2?"{all}":hacp_h($adIf)));
+    }
+    $rows[]=hacp_row("simuad",1,"{simulate_the_active_directory}",ico_microsoft,"Loadjs('$page?section-simuad-js=yes')",$P,
+        $asad==1?"on":"off",$adChips,array("{listen_interface}","Active Directory","LDAP","Kerberos"));
+
+    // ---------- 2. Centralized configuration of backends
+    $lbip=hacp_info("HaClusterUseAddr");
+    if(strlen($lbip)<5){
+        $rows[]=hacp_row("lbip",2,"{lbIP}",ico_interface,"Loadjs('$page?section-ipaddr-js=yes')",$P,"val",
+            array(),array("{address}"),"{hacp_attn_notset}");
+    }else{
+        $rows[]=hacp_row("lbip",2,"{lbIP}",ico_interface,"Loadjs('$page?section-ipaddr-js=yes')",$P,"val",
+            array(hacp_chip(hacp_h($lbip),true)),array("{address}"));
+    }
+    $rows[]=hacp_row("itchart",2,"{APP_ITCHARTER}",ico_html,"Loadjs('$page?section-itcharter-js=yes')",$P,
+        hacp_int("HaClusterEnableITChart")==1?"on":"off",array(),array());
+    $rows[]=hacp_row("replacls",2,"{acls_replication}",ico_rsync,"Loadjs('$page?section-replicacls-js=yes')",$P,
+        hacp_int("HaClusterReplicateACLs")==1?"on":"off",array(),array("ACL"));
+    $rows[]=hacp_row("kacli",2,"{client_persistent_connections}",ico_timeout,"Loadjs('$page?section-keepalive-js=yes')",$P,
+        hacp_int("HaClusterDisableClientPersistentConnections")==0?"on":"off",array(),array("keep-alive"));
+    $rows[]=hacp_row("kasrv",2,"{server_persistent_connections}",ico_timeout,"Loadjs('$page?section-keepalive-js=yes')",$P,
+        hacp_int("HaClusterDisableServerPersistentConnections")==0?"on":"off",array(),array("keep-alive"));
+    $rows[]=hacp_row("bbr",2,"{tcp_bbr}",ico_speed,"Loadjs('$page?section-bbr-js=yes')",$P,"val",
+        array(hacp_chip(hacluster_bbr_summary())),array("{tcp_bbr_manage_cluster}","{tcp_bbr_enable_cluster}"));
+    $rows[]=hacp_row_haclient($gb);
+    $rows[]=hacp_row("dynweight",2,"{hacluster_dynamic_weight}",ico_weight,"Loadjs('$page?section-dynweight-js=yes')",$P,
+        hacp_int("HaClusterAgentDynamicWeight")==1?"on":"off",array(),array("{hacluster_dynamic_weight_explain}"));
+    $rows[]=hacp_row("inetcheck",2,"{lb_internet_check}",ico_health_check,"Loadjs('$page?section-haclient-js=yes')",$P,
+        hacp_int("HaClusterDisableInfraCheck")==1?"off":"on",array(),array("{lb_internet_check_disable}","{urlsTotest}"));
+
+    $sslChips=array();
+    $ssl=intval($gb["HaClusterDecryptSSL"])==1;
+    if($ssl){
+        $db=intval($gb["sslcrtd_program_dbsize"]);
+        if($db==0){$db=8;}
+        $sslChips[]=hacp_chip("{proxy_certificate}: ".hacp_h($gb["HaClusterCertif"]));
+        $sslChips[]=hacp_chip("{hacp_cert_cache} $db MB");
+    }
+    $rows[]=hacp_row("ssl",2,"{activate_ssl_on_http_port}",ico_ssl,"Loadjs('$page?section-ssl-js=yes')",$P,
+        $ssl?"on":"off",$sslChips,array("{proxy_certificate}","{sslcrtd_program_dbsize}","SSL","TLS"));
+
+    $rows[]=hacp_row_categories();
+    $rows[]=hacp_row_dns($gb);
+    $rows[]=hacp_row_errorpage();
+
+    // ---------- 3. Access logs and retention
+    $sinkChips=array();
+    $sink=hacp_int("LogSinkClient")==1;
+    if($sink){
+        $sproto=hacp_int("LogSinkClientTCP")==1?"tcp":"udp";
+        $sinkChips[]=hacp_chip("$sproto://".hacp_h(hacp_info("LogSinClientServer")).":".hacp_int("LogSinkClientPort"),true);
+    }
+    $rows[]=hacp_row("logsink",3,"{logs_sink}",ico_forward,"Loadjs('fw.proxy.rotate.php?main-logsink-js=yes')",null,
+        $sink?"on":"off",$sinkChips,array("syslog","rsyslog"));
+    $rows[]=hacp_row("rtlogs",3,"{disable_realtime_backends}",ico_eye,"Loadjs('$page?section-logs-js=yes')",$P,
+        intval($gb["HaClusterRemoveRealtimeLogs"])==1?"on":"off",array(),array("{realtime}"));
+    $rows[]=hacp_row_retention();
+
+    $attn=array();
+    foreach($rows as $r){
+        if($r["attn"]<>""){$attn[]=$r;}
+    }
+    $tpl=new template_admin();
+    return array("rows"=>$rows,"attn"=>$attn,"cert"=>$cert,"can"=>$tpl->IsSecurity($P));
+}
+
+function hacp_row_health():array{
+    $page=CurrentPageName();
+    $int=hacp_int("HaClusterCheckInt");
+    if($int==0){$int=10;}
+    if($int<5){$int=5;}
+    $fall=hacp_int("HaClusterCheckFall");
+    if($fall==0){$fall=5;}
+    $rise=hacp_int("HaClusterCheckRise");
+    if($rise==0){$rise=2;}
+    $reload=hacp_int("HaClusterReloadEach");
+    $c=array();
+    if(hacp_int("HaClusterDisableWatchDog")==0){$c[]=hacp_chip("{verify_the_full_chain}");}
+    if($reload>=3 && $reload<24){$c[]=hacp_chip(hacp_t("hacp_reload_each",array($reload)));}
+    if(hacp_int("HaClusterCheckRestart")==1){$c[]=hacp_chip("{restart_if_needed}");}
+    $c[]=hacp_chip("{check_interval} $int s");
+    $c[]=hacp_chip("{fall} $fall");
+    $c[]=hacp_chip("{rise} $rise");
+    return hacp_row("health",1,"{health_checks_small}",ico_watchdog,"Loadjs('$page?section-health-js=yes')","AsSquidAdministrator","val",
+        $c,array("{EnableWatchdog}","{check_url}","{check_interval}","{fall}","{rise}","{backends}","{reload_service}","{restart_if_needed}"));
+}
+function hacp_row_transparent():array{
+    $kw=array("{masquerading}","{certificate}","{debug}","{transparent_mode}");
+    $js="Loadjs('fw.hacluster.transparent.php?params-js=yes')";
+    if(hacp_int("HaClusterTransParentMode")==0){
+        return hacp_row("transp",1,"{transparent_mode}",ico_sensor,$js,"AsSquidAdministrator","off",array(),$kw);
+    }
+    $c=array();
+    if(hacp_int("HaClusterTransParentMasquerade")==1){$c[]=hacp_chip("{masquerading}");}
+    $crt=hacp_info("HaClusterTransParentCertif");
+    if(strlen($crt)>1){$c[]=hacp_chip("{certificate} ".hacp_h($crt));}
+    $attn=hacp_int("HaClusterTransParentDebug")==1?"{hacp_attn_debug}":"";
+    return hacp_row("transp",1,"{transparent_mode}",ico_sensor,$js,"AsSquidAdministrator","on",$c,$kw,$attn);
+}
+function hacp_row_haclient(array $gb):array{
+    $page=CurrentPageName();
+    $kw=array("{use_haclusterclient}","{Max_Load}","{monitor_cpu_usage}","{urlsTotest}","{period}");
+    $js="Loadjs('$page?section-haclient-js=yes')";
+    if(intval($gb["HaClusterUseHaClient"])==0){
+        return hacp_row("haclient",2,"{APP_HACLUSTER_CLIENT}",ico_watchdog,$js,"AsSquidAdministrator","off",array(),$kw);
+    }
+    $max=intval($gb["HaClusterClientMaxLoad"]);
+    if($max==0){$max=3;}
+    $periods=array(0=>"{realtime}",5=>"5 {minutes}",15=>"15 {minutes}");
+    $per=intval($gb["HaClusterClientMaxLoadPeriod"]);
+    $c=array();
+    if(intval($gb["HaClusterClientMoniCPU"])==1){$c[]=hacp_chip("{monitor_cpu_usage}");}
+    $c[]=hacp_chip("{Max_Load} $max");
+    if(isset($periods[$per])){$c[]=hacp_chip("{period} ".$periods[$per]);}
+    if(intval($gb["HaClusterClientDisableCheckUrl"])==1){$c[]=hacp_chip("{urlsTotestDisabled}");}
+    return hacp_row("haclient",2,"{APP_HACLUSTER_CLIENT}",ico_watchdog,$js,"AsSquidAdministrator","on",$c,$kw);
+}
+function hacp_row_categories():array{
+    $kw=array("{remote_server_port}","{use_ssl}","{debug}");
+    $js="Loadjs('".CurrentPageName()."?remote-categories-service=yes')";
+    if(hacp_int("HaClusterUseRemoteCategoriesService")==0){
+        return hacp_row("categories",2,"{use_remote_categories_services}",ico_database,$js,"AsSquidAdministrator","off",array(),$kw);
+    }
+    $proto=hacp_int("RemoteCategoriesServiceSSL")==1?"https":"http";
+    $url="$proto://".hacp_h(hacp_info("RemoteCategoriesServiceAddr")).":".hacp_int("RemoteCategoriesServicePort");
+    return hacp_row("categories",2,"{use_remote_categories_services}",ico_database,$js,"AsSquidAdministrator","on",
+        array(hacp_chip($url,true)),$kw);
+}
+function hacp_row_dns(array $gb):array{
+    $page=CurrentPageName();
+    $kw=array("{primary_dns}","{secondary_dns}","{InternalDomain}","{nameserver}","{use_load_balancer_as_dns}",
+        "{hacluster_lb_dns}","{proxy_use_its_own_dns}","{local_dns_service}");
+    $js="Loadjs('$page?section-dns-js=yes')";
+    $serve=hacp_int("HaClusterServeDNS");
+    $useLB=intval($gb["HaClusterUseLBAsDNS"]);
+    if($serve==1){$useLB=0;}
+    if($useLB==1){
+        return hacp_row("dns",2,"{dns_servers}",ico_database,$js,"AsSquidAdministrator","val",
+            array(hacp_chip("{use_load_balancer_as_dns}")),$kw);
+    }
+    $c=array();
+    $attn="";
+    if($serve==1){
+        $c[]=hacp_chip("{hacluster_lb_dns}");
+        if(count(hacluster_dns_loops_in($gb,1))>0){$attn="{hacp_attn_dnsloop}";}
+    }
+    $own=hacp_int("HaClusterProxyUseOwnDNS");
+    if($own==1 && hacp_int("HaClusterProxyUseBackendDNSDIST")==1){$c[]=hacp_chip("{use_local_dns_service}");}
+    if(hacp_int("HaClusterUseLocalDNSCache")==1){$c[]=hacp_chip("{local_dns_service}");}
+    foreach(array("DNS1","DNS2") as $k){
+        if(trim((string)$gb[$k])<>""){$c[]=hacp_chip(hacp_h($gb[$k]),true);}
+    }
+    if($own==1){
         $fa=array();
-
-        if($HaClusterServeDNS==1){
-            $ff[]="{hacluster_lb_dns}";
+        foreach(array("HaClusterSquidNameServer1","HaClusterSquidNameServer2","HaClusterSquidNameServer3") as $k){
+            $v=hacp_info($k);
+            if($v<>""){$fa[]=hacp_h($v);}
         }
-
-    if($HaClusterProxyUseOwnDNS==0){ $HaClusterProxyUseBackendDNSDIST=0; }
-
-        if($HaClusterProxyUseBackendDNSDIST==1){
-            $ff[]="<small>{use_local_dns_service}</small>";
+        if(count($fa)>0){$c[]=hacp_chip("{hacp_proxy_dns}: ".implode(", ",$fa));}
+    }
+    if(count($c)==0){$c[]=hacp_chip("{hacp_dns_default}");}
+    return hacp_row("dns",2,"{dns_servers}",ico_database,$js,"AsSquidAdministrator","val",$c,$kw,$attn);
+}
+function hacp_row_errorpage():array{
+    $kw=array("{hostname}","{listen_port}","{ssl_certificate}","{useSSL}");
+    $js="Loadjs('".CurrentPageName()."?section-errorpage-js=yes')";
+    if(hacp_int("HaClusterUseCentralErrorPage")==0){
+        return hacp_row("errpage",2,"{error_page_service}",ico_web_error_page,$js,"AsSquidAdministrator","off",array(),$kw);
+    }
+    $http=hacp_int("HaClusterErrorPageHTTPPort");
+    if($http==0){$http=80;}
+    $https=hacp_int("HaClusterErrorPageHTTPsPort");
+    if($https==0){$https=443;}
+    $host=hacp_info("HaClusterErrorPageServiceHostname");
+    if(strlen($host)<2){$host=hacp_info("myhostname");}
+    $c=array();
+    if(hacp_int("HaClusterErrorPageUseSSL")==1){
+        $crt=hacp_info("HaClusterErrorPageCert");
+        if(preg_match("#^SUB:([0-9]+)#",$crt,$re)){
+            include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+            $cdb=new CertificatesDB();
+            $sub=$cdb->subGetById(intval($re[1]));
+            $crt=is_object($sub)&&isset($sub->commonName)?(string)$sub->commonName:"";
         }
+        $c[]=hacp_chip("https://".hacp_h($host).":$https",true);
+        if($crt<>""){$c[]=hacp_chip("{certificate} ".hacp_h($crt));}
+    }else{
+        $c[]=hacp_chip("http://".hacp_h($host).":$http",true);
+    }
+    return hacp_row("errpage",2,"{error_page_service}",ico_web_error_page,$js,"AsSquidAdministrator","on",$c,$kw);
+}
+function hacp_row_retention():array{
+    $size=hacp_int("HaClusterRemoveLogsSize");
+    if($size==0){$size=500;}
+    $port=hacp_int("HaClusterRemoteSyslogPort");
+    if($port==0){$port=514;}
+    $c=array();
+    if(hacp_int("HaClusterRemoveLogsEnabled")==1){
+        $c[]=hacp_chip("{remove_local_access_events} ($size MB)");
+    }else{
+        $c[]=hacp_chip("{use_default}");
+    }
+    if(hacp_int("HaClusterRemoteSyslogEnabled")==1){
+        $c[]=hacp_chip("syslog ".hacp_h(hacp_info("HaClusterRemoteSyslogAddr")).":$port",true);
+    }
+    return hacp_row("retention",3,"{log_retention}",ico_eye,"Loadjs('fw.hacluster.logs.php?js=yes')","AsSquidAdministrator","val",
+        $c,array("{remove_local_access_events}","syslog"));
+}
 
-        if($HaClusterUseLocalDNSCache==1){
-            $ff[]="<small>{local_dns_service}</small>";
-        }
+// ---------- Widgets
+function hacp_searchbar(array $m):string{
+    $total=count($m["rows"]);
+    $na=count($m["attn"]);
+    $badge=$na>0?"<span class='hacp-fbadge'>$na</span>":"";
+    $f=array("all"=>"{hacp_f_all}","on"=>"{hacp_f_on}","off"=>"{hacp_f_off}","attn"=>"{hacp_f_attn}");
+    $chips=array();
+    foreach($f as $k=>$lbl){
+        $checked=$k=="all"?"true":"false";
+        $dot="";
+        if($k=="on"){$dot="<span class='ak-dot ak-ok'></span>";}
+        if($k=="off"){$dot="<span class='ak-dot ak-off'></span>";}
+        $extra=$k=="attn"?$badge:"";
+        $chips[]="<button type='button' role='radio' aria-checked='$checked' data-f='$k' class='hacp-fchip'>$dot$lbl$extra</button>";
+    }
+    return "<div class='hacp-bar'>
+        <div class='hacp-search'>
+            <label for='hacp-q' class='hacp-sr'>{hacp_search_label}</label>
+            <span class='hacp-qico'><i class='fas fa-magnifying-glass'></i></span>
+            <input id='hacp-q' type='search' autocomplete='off' spellcheck='false' placeholder=\"{hacp_search_ph}\">
+            <button type='button' class='hacp-clear' id='hacp-clear' aria-label=\"{hacp_clear}\" hidden><i class='fas fa-xmark'></i></button>
+            <kbd class='hacp-kbd' title=\"{hacp_kbd}\">/</kbd>
+        </div>
+        <div class='hacp-filters' role='radiogroup' aria-label=\"{hacp_filter_label}\">".implode("",$chips)."</div>
+        <div class='hacp-counter' id='hacp-counter' aria-live='polite'>".hacp_t("hacp_counter",array($total,$total))."</div>
+    </div>";
+}
+function hacp_banner(array $m):string{
+    $n=count($m["attn"]);
+    if($n==0){return "";}
+    $title=$n==1?hacp_t("hacp_attn_title1"):hacp_t("hacp_attn_title",array($n));
+    $li=array();
+    foreach($m["attn"] as $r){
+        $li[]="<li><button type='button' class='hacp-blink' OnClick=\"HacpGo('hacp-r-{$r["id"]}')\">"
+            ."<i class='fas fa-arrow-right'></i><span><b>{$r["label"]}:</b> {$r["attn"]}</span></button></li>";
+    }
+    return "<section class='hacp-banner' role='status'>
+        <span class='hacp-bico'><i class='fas fa-triangle-exclamation'></i></span>
+        <div><div class='hacp-btitle'>$title</div><ul>".implode("",$li)."</ul></div>
+    </section>";
+}
+function hacp_empty():string{
+    return "<div class='hacp-empty' id='hacp-empty' hidden>
+        <span class='hacp-eico'><i class='fas fa-filter-circle-xmark'></i></span>
+        <div class='hacp-etitle' id='hacp-etitle'></div>
+        <button type='button' class='ak-btn' id='hacp-ereset'><i class='fas fa-xmark'></i> {hacp_clear}</button>
+    </div>";
+}
+function hacp_cert_actions(array $m):string{
+    if(!$m["can"]){return "";}
+    $page=CurrentPageName();
+    $b=array();
+    if(!$m["cert"]["configured"] || $m["cert"]["id"]==0){
+        $js=str_replace('"',"'",CreateCertifJs());
+        $b[]="<button type='button' class='ak-btn' OnClick=\"$js\"><i class='fas fa-certificate'></i> {create_certificate}</button>";
+    }
+    if($m["cert"]["configured"]){
+        $b[]="<button type='button' class='ak-btn ak-btn-danger' OnClick=\"Loadjs('$page?hacp-reset-js=yes')\"><i class='fas fa-rotate'></i> {hacp_reset_cert}</button>";
+    }
+    return "<div class='hacp-pki' id='hacp-pki'>
+        <span class='hacp-pki-t'><i class='fas fa-shield-halved'></i><b>{hacp_pki}</b></span>
+        <span class='hacp-pki-b'>".implode("",$b)."</span>
+    </div>";
+}
+function hacp_pill(string $state):string{
+    if($state=="on"){return "<span class='ak-pill ak-ok'><i class='fas fa-circle-check'></i> {hacp_f_on}</span>";}
+    if($state=="off"){return "<span class='ak-pill ak-off'><i class='fas fa-circle-minus'></i> {hacp_f_off}</span>";}
+    return "";
+}
+function hacp_row_html(array $r,template_admin $tpl):string{
+    $click=$r["js"]<>"" && $tpl->IsSecurity($r["priv"]);
+    $vals=array();
+    $p=hacp_pill($r["state"]);
+    if($p<>""){$vals[]=$p;}
+    foreach($r["chips"] as $c){
+        $cls=$c["m"]?"hacp-chip hacp-mono hacp-hl":"hacp-chip hacp-hl";
+        $vals[]="<span class='$cls'>{$c["t"]}</span>";
+    }
+    if($r["attn"]<>""){
+        $vals[]="<span class='ak-pill ak-warn'><i class='fas fa-triangle-exclamation'></i> {$r["attn"]}</span>";
+    }
+    $attn=$r["attn"]<>""?"1":"0";
+    $cls="hacp-row".($r["attn"]<>""?" hacp-row-attn":"");
+    $kw=implode("|",$r["kw"]);
+    $inner="<span class='hacp-ico'><i class='{$r["ico"]}'></i></span>
+        <span class='hacp-main'>
+            <span class='hacp-lbl hacp-hl'>{$r["label"]}</span>
+            <span class='hacp-vals'>".implode("",$vals)."</span>
+            <span class='hacp-kwm' hidden></span>
+        </span>";
+    if($click){
+        return "<div class='$cls' id='hacp-r-{$r["id"]}' data-state='{$r["state"]}' data-attn='$attn' data-kw=\"$kw\">
+            <button type='button' class='hacp-btn' OnClick=\"{$r["js"]}\">$inner<span class='hacp-chev'><i class='fas fa-chevron-right'></i></span></button>
+        </div>";
+    }
+    return "<div class='$cls' id='hacp-r-{$r["id"]}' data-state='{$r["state"]}' data-attn='$attn' data-kw=\"$kw\">
+        <div class='hacp-btn hacp-ro'>$inner<span class='hacp-chev' title=\"{hacp_readonly}\"><i class='fas fa-lock'></i></span></div>
+    </div>";
+}
+function hacp_section(array $m,int $sec):string{
+    $titles=array(1=>"{APP_PARENTLB}: {service_options}",2=>"{CentralizedBackendsSettings}",3=>"{hacp_sec_logs}");
+    $icons=array(1=>"fas fa-server",2=>"fas fa-network-wired",3=>"fas fa-file-lines");
+    $tpl=new template_admin();
+    $rows=array();
+    foreach($m["rows"] as $r){
+        if($r["sec"]==$sec){$rows[]=hacp_row_html($r,$tpl);}
+    }
+    $n=count($rows);
+    $extra=$sec==1?hacp_cert_actions($m):"";
+    return "<section class='ak-card hacp-sec' data-sec='$sec'>
+        <header class='hacp-sec-h'>
+            <span class='hacp-sec-ico hacp-sec-ico$sec'><i class='{$icons[$sec]}'></i></span>
+            <h3>{$titles[$sec]}</h3>
+            <span class='hacp-sec-cnt' data-total='$n'>".hacp_t("hacp_sec_count",array($n))."</span>
+        </header>
+        $extra
+        <div class='hacp-sec-none' hidden>{hacp_sec_nomatch}</div>
+        <div class='hacp-grid'>".implode("\n",$rows)."</div>
+    </section>";
+}
+function hacp_style():string{
+    $ac=array("accent"=>"#10b981","accent_soft"=>"rgba(16,185,129,.12)");
+    if(function_exists("brand_ui_accents") && function_exists("brand_palette")){$ac=brand_ui_accents(brand_palette());}
+    $a=$ac["accent"];
+    $as=$ac["accent_soft"];
+    return "<style>
+.hacp{--hacp-bd:#e2e8f0;--hacp-tx:#0f172a;--hacp-tx2:#475569;--hacp-focus:#2563eb;color:var(--hacp-tx);font-size:13px;padding:8px 0 24px}
+.hacp-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.hacp-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:#fff;border:1px solid var(--hacp-bd);border-radius:10px;padding:10px 16px;min-height:56px;box-shadow:0 1px 2px rgba(15,23,42,.06);margin-bottom:16px}
+.hacp-search{position:relative;flex:1 1 360px;display:flex;align-items:center;min-width:280px}
+.hacp-qico{position:absolute;left:10px;width:16px;height:16px;color:#94a3b8;display:flex;align-items:center}
+.hacp-qico svg,.hacp-qico i{width:15px;height:15px}
+.hacp-search input{width:100%;height:38px;border:1px solid var(--hacp-bd);border-radius:8px;padding:0 70px 0 34px;font-size:14px;color:var(--hacp-tx);background:#f8fafc;outline:none}
+.hacp-search input:focus{border-color:var(--hacp-focus);box-shadow:0 0 0 2px rgba(37,99,235,.35);background:#fff}
+.hacp-search input::-webkit-search-cancel-button{display:none}
+.hacp-clear{position:absolute;right:38px;width:24px;height:24px;border:0;background:transparent;color:#64748b;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.hacp-clear svg{width:12px;height:12px}
+.hacp-clear:hover{background:#f1f5f9}
+.hacp-kbd{position:absolute;right:10px;font:600 12px/1 ui-monospace,monospace;color:#64748b;border:1px solid var(--hacp-bd);border-bottom-width:2px;border-radius:4px;padding:3px 6px;background:#fff}
+.hacp-filters{display:flex;gap:2px;background:#f1f5f9;border:1px solid var(--hacp-bd);border-radius:8px;padding:3px}
+.hacp-fchip{border:0;background:transparent;border-radius:6px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--hacp-tx2);cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.hacp-fchip[aria-checked=true]{background:#fff;color:var(--hacp-tx);font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.12)}
+.hacp-fchip:focus-visible,.hacp-btn:focus-visible,.hacp-blink:focus-visible,.hacp-clear:focus-visible{outline:2px solid var(--hacp-focus);outline-offset:2px}
+.hacp-fbadge{background:#fef3c7;color:#b45309;border:1px solid #fcd34d;border-radius:999px;font-size:11px;font-weight:700;padding:0 7px;line-height:18px}
+.hacp-counter{margin-left:auto;font:500 13px/1 ui-monospace,'JetBrains Mono',monospace;color:var(--hacp-tx2);white-space:nowrap}
+.hacp-counter b{color:var(--hacp-tx)}
+.hacp-banner{display:flex;gap:14px;background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #d97706;border-radius:10px;padding:14px 18px;margin-bottom:16px}
+.hacp-bico{width:34px;height:34px;flex:0 0 34px;border-radius:8px;background:#fef3c7;color:#b45309;display:flex;align-items:center;justify-content:center}
+.hacp-bico svg{width:16px;height:16px}
+.hacp-btitle{font-size:15px;font-weight:600;color:#92400e;margin:6px 0 6px}
+.hacp-banner ul{list-style:none;margin:0;padding:0}
+.hacp-banner li{margin:2px 0}
+.hacp-blink{border:0;background:transparent;padding:3px 4px;color:#92400e;cursor:pointer;display:inline-flex;gap:8px;align-items:center;text-align:left;font-size:13px;border-radius:4px}
+.hacp-blink:hover span{text-decoration:underline}
+.hacp-blink svg{width:12px;height:12px;color:#d97706}
+.hacp-empty{background:#fff;border:1px dashed #cbd5e1;border-radius:12px;padding:40px 24px;text-align:center;margin-bottom:16px}
+.hacp-eico{display:inline-flex;width:44px;height:44px;border-radius:50%;background:#f1f5f9;color:#64748b;align-items:center;justify-content:center;margin-bottom:10px}
+.hacp-eico svg{width:20px;height:20px}
+.hacp-etitle{font-size:15px;font-weight:600;margin-bottom:12px}
+.hacp-sec{padding:20px 24px 24px;margin-bottom:16px}
+.hacp-sec[hidden]{display:none}
+.hacp-sec-h{display:flex;align-items:center;gap:12px;padding-bottom:14px;margin-bottom:16px;border-bottom:1px solid #f1f5f9}
+.hacp-sec-h h3{margin:0;font-size:18px;font-weight:600;color:var(--hacp-tx);flex:1;text-transform:none}
+.hacp-sec-ico{width:36px;height:36px;flex:0 0 36px;border-radius:9px;display:flex;align-items:center;justify-content:center}
+.hacp-sec-ico svg{width:17px;height:17px}
+.hacp-sec-ico1{background:#eff6ff;color:#2563eb}.hacp-sec-ico2{background:$as;color:$a}.hacp-sec-ico3{background:#e6eeed;color:#005447}
+.hacp-sec-cnt{font:500 12px/1 ui-monospace,'JetBrains Mono',monospace;color:var(--hacp-tx2);background:#f1f5f9;border-radius:999px;padding:6px 12px;white-space:nowrap}
+.hacp-sec-none{color:#64748b;font-style:italic;padding:4px 0}
+.hacp-pki{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:#f8fafc;border:1px solid var(--hacp-bd);border-radius:8px;padding:10px 14px;margin-bottom:16px}
+.hacp-pki-t{display:flex;align-items:center;gap:8px;flex:1;color:var(--hacp-tx2)}
+.hacp-pki-t svg{width:14px;height:14px;color:#64748b}
+.hacp-pki-t b{color:var(--hacp-tx);font-weight:600}
+.hacp-pki-b{display:flex;gap:8px}
+.hacp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.hacp-grid[hidden]{display:none}
+@media (max-width:1200px){.hacp-grid{grid-template-columns:minmax(0,1fr)}}
+.hacp-row[hidden]{display:none}
+.hacp-btn{width:100%;height:100%;display:flex;align-items:flex-start;gap:14px;text-align:left;background:#fff;border:1px solid var(--hacp-bd);border-radius:8px;padding:14px 16px;min-height:64px;cursor:pointer;color:inherit;font:inherit;transition:background-color .12s,border-color .12s}
+.hacp-btn:hover{background:#f8fafc;border-color:#cbd5e1}
+.hacp-ro{cursor:default}
+.hacp-ro:hover{background:#fff;border-color:var(--hacp-bd)}
+.hacp-row-attn .hacp-btn{border-left:3px solid #d97706}
+.hacp-row.hacp-flash .hacp-btn{box-shadow:0 0 0 3px rgba(217,119,6,.45)}
+.hacp-ico{width:34px;height:34px;flex:0 0 34px;border-radius:8px;background:#f1f5f9;color:#475569;display:flex;align-items:center;justify-content:center}
+.hacp-ico svg,.hacp-ico i{width:16px;height:16px;font-size:16px}
+.hacp-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.hacp-lbl{font-size:14px;font-weight:600;color:var(--hacp-tx);line-height:20px;text-transform:none}
+.hacp-vals{display:flex;flex-wrap:wrap;gap:6px}
+.hacp-chip{display:inline-block;max-width:100%;overflow-wrap:anywhere;background:#f1f5f9;color:var(--hacp-tx2);border-radius:999px;padding:2px 10px;font-size:13px;line-height:20px;text-transform:none}
+.hacp-mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12.5px;color:#1e293b}
+.hacp-vals .ak-pill{padding:2px 10px;line-height:20px}
+.hacp-kwm{font-size:12.5px;color:#64748b}
+.hacp-kwm[hidden]{display:none}
+.hacp mark{background:#fef08a;color:inherit;font-weight:700;padding:0 1px;border-radius:2px}
+.hacp-chev{flex:0 0 16px;color:#94a3b8;align-self:center;display:flex}
+.hacp-chev svg{width:12px;height:12px}
+@media (prefers-reduced-motion:reduce){.hacp-btn{transition:none}}
+</style>";
+}
+function hacp_js():string{
+    $keys=array("counter"=>"hacp_counter","secCount"=>"hacp_sec_count","secMatch"=>"hacp_sec_match",
+        "matches"=>"hacp_matches","emptyQ"=>"hacp_empty_q","emptyF"=>"hacp_empty_f");
+    $I=array();
+    foreach($keys as $k=>$tok){$I[$k]=hacp_t($tok);}
+    $json=json_encode($I,JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP);
+    $js=<<<'JS'
+<script>
+(function(){
+var root=document.getElementById('hacp-root');if(!root){return;}
+var I=__I18N__,dec=document.createElement('textarea');
+for(var k in I){if(I.hasOwnProperty(k)){dec.innerHTML=I[k];I[k]=dec.value;}}
+var S=window.HacpState||(window.HacpState={q:'',f:'all'});
+var q=document.getElementById('hacp-q'),clr=document.getElementById('hacp-clear');
+function fmt(s,a){var i=0;return s.replace(/%s/g,function(){return a[i++];});}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function rx(t){return new RegExp('('+t.map(function(x){return x.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}).join('|')+')','gi');}
+function mark(t,re){if(!re){return esc(t);}var p=t.split(re),o='';for(var i=0;i<p.length;i++){o+=(i%2)?'<mark>'+esc(p[i])+'</mark>':esc(p[i]);}return o;}
+function orig(el){var v=el.getAttribute('data-orig');if(v===null){v=el.textContent;el.setAttribute('data-orig',v);}return v;}
+function apply(){
+  var qq=S.q.toLowerCase().replace(/^\s+|\s+$/g,''),terms=qq?qq.split(/\s+/):[],re=terms.length?rx(terms):null;
+  var active=terms.length>0||S.f!=='all',shown=0,total=0;
+  var secs=root.querySelectorAll('.hacp-sec');
+  for(var s=0;s<secs.length;s++){
+    var rows=secs[s].querySelectorAll('.hacp-row'),ns=0;
+    for(var r=0;r<rows.length;r++){
+      var row=rows[r],st=row.getAttribute('data-state'),at=row.getAttribute('data-attn')==='1';total++;
+      var okF=S.f==='all'||(S.f==='on'&&st==='on')||(S.f==='off'&&st==='off')||(S.f==='attn'&&at);
+      var hl=row.querySelectorAll('.hacp-hl'),vis='';
+      for(var h=0;h<hl.length;h++){vis+=' '+orig(hl[h]).toLowerCase();}
+      var kws=(row.getAttribute('data-kw')||'').split('|'),okQ=true,hid=[];
+      for(var t=0;t<terms.length;t++){
+        if(vis.indexOf(terms[t])>=0){continue;}
+        var f=null;for(var j=0;j<kws.length;j++){if(kws[j]&&kws[j].toLowerCase().indexOf(terms[t])>=0){f=kws[j];break;}}
+        if(f===null){okQ=false;break;}if(hid.indexOf(f)<0){hid.push(f);}
+      }
+      var show=okF&&okQ;row.hidden=!show;if(show){ns++;}
+      for(h=0;h<hl.length;h++){hl[h].innerHTML=mark(orig(hl[h]),show?re:null);}
+      var km=row.querySelector('.hacp-kwm');
+      if(show&&hid.length){km.innerHTML=esc(I.matches)+' '+hid.map(function(x){return mark(x,re);}).join(', ');km.hidden=false;}else{km.innerHTML='';km.hidden=true;}
+    }
+    var cnt=secs[s].querySelector('.hacp-sec-cnt'),tot=cnt.getAttribute('data-total');
+    cnt.textContent=active?fmt(I.secMatch,[ns,tot]):fmt(I.secCount,[tot]);
+    secs[s].querySelector('.hacp-sec-none').hidden=ns>0;
+    secs[s].querySelector('.hacp-grid').hidden=ns===0;
+    shown+=ns;
+  }
+  for(s=0;s<secs.length;s++){secs[s].hidden=(shown===0);}
+  document.getElementById('hacp-counter').innerHTML=esc(fmt(I.counter,['\u0001'+shown+'\u0002',total])).replace('\u0001','<b>').replace('\u0002','</b>');
+  var em=document.getElementById('hacp-empty');em.hidden=shown>0;
+  if(shown===0){document.getElementById('hacp-etitle').textContent=terms.length?fmt(I.emptyQ,[S.q]):I.emptyF;}
+  var pki=document.getElementById('hacp-pki');if(pki){pki.hidden=active;}
+  clr.hidden=!S.q;
+  var ch=root.querySelectorAll('.hacp-fchip');for(var c=0;c<ch.length;c++){ch[c].setAttribute('aria-checked',ch[c].getAttribute('data-f')===S.f?'true':'false');}
+}
+function reset(){S.q='';S.f='all';q.value='';apply();}
+q.value=S.q;
+q.addEventListener('input',function(){S.q=q.value;apply();});
+q.addEventListener('keydown',function(e){if(e.key==='Escape'){S.q='';q.value='';apply();}});
+clr.addEventListener('click',function(){S.q='';q.value='';apply();q.focus();});
+document.getElementById('hacp-ereset').addEventListener('click',function(){reset();q.focus();});
+var ch=root.querySelectorAll('.hacp-fchip');
+for(var c=0;c<ch.length;c++){ch[c].addEventListener('click',function(){S.f=this.getAttribute('data-f');apply();});}
+window.HacpGo=function(id){
+  var row=document.getElementById(id);if(!row){return;}
+  if(row.hidden){reset();}
+  row.scrollIntoView({block:'center',behavior:(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches)?'auto':'smooth'});
+  row.className+=' hacp-flash';setTimeout(function(){row.className=row.className.replace(' hacp-flash','');},1600);
+  var b=row.querySelector('button.hacp-btn');if(b){b.focus({preventScroll:true});}
+};
+if(!window.HacpKeyBound){
+  window.HacpKeyBound=true;
+  document.addEventListener('keydown',function(e){
+    if(e.key!=='/'||e.ctrlKey||e.metaKey||e.altKey){return;}
+    var t=e.target,tag=t&&t.tagName?t.tagName.toLowerCase():'';
+    if(tag==='input'||tag==='textarea'||tag==='select'||(t&&t.isContentEditable)){return;}
+    var x=document.getElementById('hacp-q');if(!x||!x.offsetParent){return;}
+    e.preventDefault();x.focus();
+  });
+}
+apply();
+})();
+</script>
+JS;
+    return str_replace("__I18N__",$json,$js);
+}
 
-        if(isset($HaClusterGBConfig["DNS1"])){
-            if($HaClusterGBConfig["DNS1"]<>null) {
-                $ff[] = $HaClusterGBConfig["DNS1"];
-            }
-        }
-        if(isset($HaClusterGBConfig["DNS1"])){
-            if($HaClusterGBConfig["DNS2"]<>null) {
-                $ff[] = $HaClusterGBConfig["DNS2"];
-            }
-        }
+function parameters_table():bool{
+    $tpl=new template_admin();
+    $m=hacp_model();
+    $html=array();
+    $html[]="<div class='ak hacp' id='hacp-root'>";
+    $html[]=hacp_searchbar($m);
+    $html[]=hacp_banner($m);
+    $html[]=hacp_empty();
+    $html[]=hacp_section($m,1);
+    $html[]=hacp_section($m,2);
+    $html[]=hacp_section($m,3);
+    $html[]="</div>";
+    echo hacluster_meta_banner($tpl).hacp_style().$tpl->_ENGINE_parse_body(implode("\n",$html)).hacp_js();
+    return true;
+}
 
-        $HaClusterProxyUseOwnDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterProxyUseOwnDNS"));
-        $SquidNameServer1=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSquidNameServer1");
-        $SquidNameServer2=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSquidNameServer2");
-        $SquidNameServer3=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSquidNameServer3");
-
-
-         if($HaClusterProxyUseOwnDNS==1){
-            if(strlen($SquidNameServer1)>0){
-                $fa[]=$SquidNameServer1;
-            }
-             if(strlen($SquidNameServer2)>0){
-                 $fa[]=$SquidNameServer2;
-             }
-             if(strlen($SquidNameServer3)>0){
-                 $fa[]=$SquidNameServer3;
-             }
-         }
-         if(count($fa)>0){
-             $ff[]=$tpl->_ENGINE_parse_body("<small>({proxy_use_its_own_dns}: ".@implode(",",$fa)."</small>)");
-         }
-
-        if(count($ff)==0) {
-            $tpl->table_form_field_text("{dns_servers}", "<small>{default} {or} {cluster_package}</small>", ico_database);
-            return $tpl;
-        }
-        $tpl->table_form_field_text("{dns_servers}",@implode(", ",$ff),ico_database);
-        return $tpl;
+// Reinitialisation du certificat du service des agents : confirmation, droit
+// verifie cote serveur, puis progression via le daemon.
+function hacp_reset_js():bool{
+    $tpl=new template_admin();
+    $after=$tpl->framework_buildjs("/hacluster/server/resetcert",
+        "reset-master-certificate.progress","reset-master-certificate.log",
+        "progress-hacluster-restart",hacp_reload_js());
+    return $tpl->js_dialog_confirm_action("{hacp_reset_confirm}","hacp-reset-cert","none",$after);
+}
+function hacp_reset_perform():bool{
+    $users=new usersMenus();
+    if(!$users->AsSquidAdministrator){
+        echo hacp_t("ERROR_NO_PRIVS");
+        return false;
+    }
+    admin_tracks("HaCluster: reset of the agents service certificate and all client certificates");
+    return true;
 }
 function section_performance_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterMaxConn"),$tpl);
 
     $HaClusterWorkers=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterWorkers"));
     $HaClusterMaxConn=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterMaxConn"));
@@ -1603,6 +1576,7 @@ function section_performance_popup():bool{
 }
 function section_haclient_popup():bool{
     $tpl = new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterUseHaClient","HaClusterClientDisableCheckUrl","HaClusterClientCheckUrl","HaClusterClientCheckGlobal","HaClusterClientMoniCPU","HaClusterClientMaxLoad","HaClusterClientEmergencyLoad","HaClusterClientMaxLoadPeriod","HaClusterDisableInfraCheck"),$tpl);
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
 
     if(!isset($HaClusterGBConfig["HaClusterClientCheckUrl"])){
@@ -1615,6 +1589,8 @@ function section_haclient_popup():bool{
     $HaClusterClientMoniCPU=intval($HaClusterGBConfig["HaClusterClientMoniCPU"]);
     $HaClusterClientCheckUrl=$HaClusterGBConfig["HaClusterClientCheckUrl"];
     $HaClusterClientCheckGlobal=$HaClusterGBConfig["HaClusterClientCheckGlobal"];
+    // Customer request: the agents may skip the web-site checks entirely.
+    $HaClusterClientDisableCheckUrl=intval(isset($HaClusterGBConfig["HaClusterClientDisableCheckUrl"])?$HaClusterGBConfig["HaClusterClientDisableCheckUrl"]:0);
 
     $periods[0]="{realtime}";
     $periods[5]="5 {minutes}";
@@ -1622,18 +1598,26 @@ function section_haclient_popup():bool{
     if(strlen($HaClusterClientCheckUrl)<3){
         $HaClusterClientCheckUrl="http://www.msftncsi.com/ncsi.txt\nhttp://www.msftconnecttest.com/connecttest.txt\nhttp://captive.apple.com\nhttp://edge-http.microsoft.com/captiveportal/generate_204\nhttp://www.gstatic.com/generate_204";
     }
-
     if($HaClusterClientMaxLoad==0){$HaClusterClientMaxLoad=3;}
-    $HaClusterClientEmergencyLoad=intval($HaClusterGBConfig["HaClusterClientCheckGlobal"]);
+    // Read the emergency threshold from its OWN key. It used to be prefilled from
+    // HaClusterClientCheckGlobal (a 0/1 checkbox): with that box ticked the field
+    // showed 3, and a plain "Apply" pushed load>3 as the emergency threshold to
+    // every agent — 12-core proxies dropped out of the LB every ~10 min (qce-lb, 2026-10-15).
+    $HaClusterClientEmergencyLoad=intval(isset($HaClusterGBConfig["HaClusterClientEmergencyLoad"])?$HaClusterGBConfig["HaClusterClientEmergencyLoad"]:0);
     if($HaClusterClientEmergencyLoad==0){$HaClusterClientEmergencyLoad=15;}
     if($HaClusterClientEmergencyLoad<3){$HaClusterClientEmergencyLoad=3;}
-
-
     $form[]=$tpl->field_checkbox("HaClusterUseHaClient","{use_haclusterclient}",$HaClusterUseHaClient,
         "HaClusterClientMoniCPU,HaClusterClientMaxLoad,HaClusterClientMaxLoadPeriod,HaClusterClientCheckUrl");
 
+    // Checked: the URL list and "test every URL" are greyed out (and kept).
+    $form[]=$tpl->field_checkbox_disbaleON("HaClusterClientDisableCheckUrl","{urlsTotestDisable}",$HaClusterClientDisableCheckUrl,
+        "HaClusterClientCheckUrl,HaClusterClientCheckGlobal","{urlsTotestDisable_explain}");
     $form[]=$tpl->field_textarea("HaClusterClientCheckUrl","{urlsTotest}",$HaClusterClientCheckUrl);
     $form[]=$tpl->field_checkbox("HaClusterClientCheckGlobal","{urlsTotestGlobal}",$HaClusterClientCheckGlobal);
+    // Local to this load-balancer (not pushed to the nodes): turns off its own
+    // end-to-end probe, a HEAD to articatech.net through its own listener.
+    $HaClusterDisableInfraCheck=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDisableInfraCheck"));
+    $form[]=$tpl->field_checkbox("HaClusterDisableInfraCheck","{lb_internet_check_disable}",$HaClusterDisableInfraCheck,false,"{lb_internet_check_disable_explain}");
 
     $form[]=$tpl->field_checkbox("HaClusterClientMoniCPU","{monitor_cpu_usage}",$HaClusterClientMoniCPU);
 
@@ -1667,6 +1651,7 @@ function section_dns_proxy_start():bool{
 function section_dns_proxy_popup():bool{
     $page=CurrentPageName();
     $tpl = new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterProxyUseOwnDNS","HaClusterProxyUseBackendDNSDIST","HaClusterProxyUseDNSCacheDenyPTR","HaClusterSquidNameServer1","HaClusterSquidNameServer2","HaClusterSquidNameServer3"),$tpl);
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
     $js="LoadAjaxSilent('section-dns-proxy-popup','$page?section-dns-proxy=yes');";
     $HaClusterUseLBAsDNS=intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]);
@@ -1705,6 +1690,9 @@ function section_dns_proxy_popup():bool{
             $HaClusterProxyUseDNSCacheDenyPTR,$js.form_paramsjs(true));
     }
 
+
+
+
     $form[]=$tpl->BigTextField("HaClusterSquidNameServer1","{primary_dns}","",$SquidNameServer1,
         $js.form_paramsjs(true));
     $form[]=$tpl->BigTextField("HaClusterSquidNameServer2","{secondary_dns}","",
@@ -1718,15 +1706,30 @@ function section_dns_proxy_popup():bool{
 }
 function section_dns_general():bool{
     $page=CurrentPageName();
+    echo "<div id='section-dns-general'></div>";
+    echo "<script>LoadAjaxSilent('section-dns-general','$page?section-dns-general2=yes');</script>";
+    return true;
+}
+function section_dns_general2():bool{
+    $page=CurrentPageName();
     $tpl = new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterUseLBAsDNS","HaClusterServeDNS"),$tpl);
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
     $HaClusterServeDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS"));
+    $HaClusterUseLBAsDNS=intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]);
     $form[]="<div style='margin-top:10px'>";
-    $form[]=$tpl->BigCircleCheckbox("HaClusterServeDNS","{hacluster_lb_dns}",
-        "{hacluster_use_dns_service_explain}",$HaClusterServeDNS,form_paramsjs(true));
+
     $form[]=$tpl->BigCircleCheckbox("HaClusterUseLBAsDNS","{use_load_balancer_as_dns}",
         "{use_load_balancer_as_dns_explain}",
-        intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]),form_paramsjs(true));
+        $HaClusterUseLBAsDNS,
+        "LoadAjaxSilent('section-dns-general','$page?section-dns-general2=yes');".form_paramsjs(true));
+
+    $form[]=$tpl->BigCircleCheckbox("HaClusterServeDNS",
+        "{hacluster_lb_dns}",
+        "{hacluster_use_dns_service_explain}<br>{hacluster_dns_method1}",$HaClusterServeDNS,
+        "LoadAjaxSilent('section-dns-general','$page?section-dns-general2=yes');".
+        form_paramsjs(true));
+
     $form[]="</div>";
     echo $tpl->_ENGINE_parse_body($form);
 
@@ -1735,6 +1738,7 @@ function section_dns_general():bool{
 
 function section_dns_popup():bool{
     $tpl = new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterUseLocalDNSCache","DNS1","DNS2","DOMAINS1","DOMAINS2"),$tpl);
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
 
     $HaClusterUseLBAsDNS=intval($HaClusterGBConfig["HaClusterUseLBAsDNS"]);
@@ -1744,6 +1748,10 @@ function section_dns_popup():bool{
         return true;
     }
     $form[]="<div style='margin-top:10px'>";
+    $loops=hacluster_dns_loops_in($HaClusterGBConfig,intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS")));
+    if(count($loops)>0){
+        $form[]=$tpl->div_error("{dns_servers}||".hacluster_dns_loop_text($loops));
+    }
 
 
     $HaClusterUseLocalDNSCache=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseLocalDNSCache"));
@@ -1765,6 +1773,7 @@ function section_dns_popup():bool{
 }
 function section_ssl_popup():bool{
     $tpl = new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterDecryptSSL","HaClusterCertif"),$tpl);
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
 
     $form[]=$tpl->field_checkbox("HaClusterDecryptSSL",
@@ -1782,6 +1791,7 @@ function section_ssl_popup():bool{
 }
 function section_logs_popup():bool{
     $tpl = new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterRemoveRealtimeLogs"),$tpl);
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
     $HaClusterRemoveRealtimeLogs=intval($HaClusterGBConfig["HaClusterRemoveRealtimeLogs"]);
 
@@ -1791,6 +1801,7 @@ function section_logs_popup():bool{
 }
 function section_deploy_popup():bool{
     $tpl = new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterDeployArticaUpdates"),$tpl);
     $HaClusterDeployArticaUpdates=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDeployArticaUpdates"));
 
     $form[]=$tpl->field_checkbox("HaClusterDeployArticaUpdates","{deploy_artica_updates})",$HaClusterDeployArticaUpdates);
@@ -1800,6 +1811,7 @@ function section_deploy_popup():bool{
 }
 function section_health_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterReloadEach","HaClusterEnableWatchDog","HaClusterCheckURI","HaClusterCheckInt","HaClusterCheckFall","HaClusterCheckRise"),$tpl);
     $HaClusterReloadEach=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterReloadEach"));
     $HaClusterCheckInt=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterCheckInt"));
     $HaClusterCheckFall=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterCheckFall"));
@@ -1843,6 +1855,7 @@ function section_health_popup():bool{
 }
 function section_timeout_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterTimeOutConnect","HaClusterSeverTimeout","HaClusterClientTimeout","HaClusterTCPKeepalives","HaClusterTimeOutHTTPRequest","HaClusterTimeOutHTTPKeepAlive","HaClusterTimeOutTunnel","HaClusterTimeOutClientFin","HaClusterTimeOutServerFin","HaClusterTimeOutQueue"),$tpl);
     $HaClusterTimeOutConnect=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterTimeOutConnect"));
     $HaClusterSeverTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterSeverTimeout"));
     $HaClusterClientTimeout=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClientTimeout"));
@@ -1895,12 +1908,14 @@ function section_ipaddr_popup():bool{
     $tpl=new template_admin();
     $HaClusterUseAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseAddr");
     $form[]=$tpl->field_text("HaClusterUseAddr","{address} (NAT/Masquerade)",$HaClusterUseAddr);
-    echo $tpl->form_outside(null,$form,"{nat_explain_addr}","{apply}",form_js(),"AsSquidAdministrator",true);
+    $add=";LoadAjax('hacluster-failover-flat','fw.hacluster.failover.php?hacluster-failover-flat=yes');";
+    echo $tpl->form_outside(null,$form,"{nat_explain_addr}","{apply}",form_js().$add,"AsSquidAdministrator",true);
     return true;
 }
 
 function section_listen_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterProto","HaClusterBalance","HaClusterInterface","HaClusterOutface","HaClusterPort"),$tpl);
     $HaClusterInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
     $HaClusterOutface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterOutface"));
     $HaClusterPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterPort"));
@@ -1931,6 +1946,7 @@ function section_listen_popup():bool{
 }
 function section_pproto_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterEnableProxyProtocol"),$tpl);
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
     $HaClusterDisableProxyProtocol=intval($HaClusterGBConfig["HaClusterDisableProxyProtocol"]);
 
@@ -2001,19 +2017,145 @@ function form_paramsjs($Noclose=false):string{
     return @implode(";",$f);
 
 }
+// Relais DNS de la ferme (HaClusterServeDNS=1) : le LB transmet chaque requete
+// a l'unbound :5353 des proxys, et DNS1/DNS2 ("DNS utilise par la ferme")
+// deviennent l'amont de cet unbound. Un amont egal a une IP de ce LB, ou en
+// boucle locale (le proxy lui-meme), renvoie la requete au relais : boucle
+// LB -> proxy -> LB, carre DNS rouge et tous les proxys DOWN. Meme regle que
+// HaClusterClient.FarmDNSLoops cote daemon.
+function hacluster_dns_loops(string $addr):bool{
+    $addr=trim($addr);
+    if(!filter_var($addr,FILTER_VALIDATE_IP)){return false;}
+    if(preg_match("#^127\\.#",$addr) || $addr=="::1" || $addr=="0.0.0.0" || $addr=="::"){return true;}
+    if(!function_exists("net_get_interfaces")){return false;}
+    $ifaces=net_get_interfaces();
+    if(!is_array($ifaces)){return false;}
+    foreach ($ifaces as $iface){
+        if(!isset($iface["unicast"])){continue;}
+        foreach ($iface["unicast"] as $unicast){
+            if(isset($unicast["address"]) && $unicast["address"]==$addr){return true;}
+        }
+    }
+    return false;
+}
+// Liste les DNS de la ferme qui bouclent, seulement si le relais DNS est actif.
+function hacluster_dns_loops_in($HaClusterGBConfig,int $ServeDNS):array{
+    $loops=array();
+    if($ServeDNS<>1 || !is_array($HaClusterGBConfig)){return $loops;}
+    foreach (array("DNS1","DNS2") as $key){
+        if(!isset($HaClusterGBConfig[$key])){continue;}
+        if(hacluster_dns_loops(strval($HaClusterGBConfig[$key]))){$loops[]=trim($HaClusterGBConfig[$key]);}
+    }
+    return $loops;
+}
+function hacluster_dns_loop_text(array $loops):string{
+    return "DNS loop: ".@implode(", ",$loops)." points back to this load-balancer while it relays DNS to the proxies. Use real DNS servers (Active Directory, corporate or provider DNS) for the farm, never 127.0.0.1 nor an address of the load-balancer.";
+}
+function SaveParamsGeneral(){
+    if(hacluster_meta_gate("text")){return false;}
+
+    $HaClusterServeDNSOld=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS"));
+
+    if(isset($_POST["HaClusterUseLBAsDNS"])){
+        $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
+        $HaClusterGBConfig["HaClusterUseLBAsDNS"]=$_POST["HaClusterUseLBAsDNS"];
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterGBConfig", serialize($HaClusterGBConfig));
+
+        if($_POST["HaClusterUseLBAsDNS"]==1 && !hacluster_meta_key_held("HaClusterServeDNS")){
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterServeDNS",0);
+        }
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/reconfigure");
+        return admin_tracks("Set HaCluster as DNS server for nodes to {$_POST["HaClusterUseLBAsDNS"]}");
+    }
+
+    if(isset($_POST["HaClusterServeDNS"])){
+        $HaClusterServeDNSNew=intval($_POST["HaClusterServeDNS"]);
+        if($HaClusterServeDNSOld==$HaClusterServeDNSNew){
+            return true;
+        }
+        if($HaClusterServeDNSNew==1){
+            $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
+            $loops=hacluster_dns_loops_in($HaClusterGBConfig,1);
+            if(count($loops)>0){
+                http_response_code(400);
+                echo (new template_admin())->post_error(hacluster_dns_loop_text($loops));
+                return false;
+            }
+            if(!hacluster_meta_key_held("HaClusterUseLBAsDNS")){
+            $HaClusterGBConfig["HaClusterUseLBAsDNS"]=0;
+            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterGBConfig", serialize($HaClusterGBConfig));
+            }
+
+        }
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterServeDNS",$HaClusterServeDNSNew);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/reconfigure");
+        return admin_tracks("Set HaCluster as DNS server for Client $HaClusterServeDNSNew");
+
+    }
+    return true;
+
+}
+
 function SaveParams():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST_XSS();
+    if(hacluster_meta_gate("post")){return false;}
+
+
+    if(isset($_POST["HaClusterSquidNameServer1"])){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterSquidNameServer1",$_POST["HaClusterSquidNameServer1"]);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+        return true;
+    }
+    if(isset($_POST["HaClusterSquidNameServer2"])){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterSquidNameServer2",$_POST["HaClusterSquidNameServer2"]);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+        return true;
+    }
+    if(isset($_POST["HaClusterSquidNameServer3"])){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterSquidNameServer3",$_POST["HaClusterSquidNameServer3"]);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+        return true;
+    }
+
     $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
 
-    if(isset($_POST["HaClusterEnableWatchDog"])){
-        if(intval($_POST["HaClusterEnableWatchDog"])==1){
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableWatchDog",0);
-        }else{
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableWatchDog",1);
-        }
-        unset($_POST["HaClusterEnableWatchDog"]);
+
+    // Seuls les champs envoyes sont juges : une valeur deja stockee ne doit
+    // pas bloquer la correction de l'autre.
+    $tpl_posted_dns=array();
+    if(isset($_POST["DNS1"])){$tpl_posted_dns["DNS1"]=$_POST["DNS1"];}
+    if(isset($_POST["DNS2"])){$tpl_posted_dns["DNS2"]=$_POST["DNS2"];}
+    // DNS1/DNS2 sont retires de $_POST : sans ce drapeau, le compteur $c de la
+    // boucle finale restait a 0 et HaClusterGBConfig n'etait jamais enregistre
+    // (l'onglet « DNS utilise par la ferme » ne sauvegardait rien).
+    $GBChanged=false;
+    if(isset($_POST["DNS1"])){
+        $HaClusterGBConfig["DNS1"]=$_POST["DNS1"];
+        unset($_POST["DNS1"]);
+        $GBChanged=true;
     }
+   if(isset($_POST["DNS2"])){
+       $HaClusterGBConfig["DNS2"]=$_POST["DNS2"];
+       unset($_POST["DNS2"]);
+       $GBChanged=true;
+   }
+    $ServeDNSNow=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS"));
+    $posted=array();
+    foreach (array("DNS1","DNS2") as $key){
+        if(isset($tpl_posted_dns[$key])){$posted[$key]=$tpl_posted_dns[$key];}
+    }
+    $loops=hacluster_dns_loops_in($posted,$ServeDNSNow);
+    if(count($loops)>0){
+        http_response_code(400);
+        echo $tpl->post_error(hacluster_dns_loop_text($loops));
+        return false;
+    }
+
+
+
 
     if(isset($_POST["HaClusterEnableProxyProtocol"])) {
         if ($_POST["HaClusterEnableProxyProtocol"] == 1) {
@@ -2022,13 +2164,15 @@ function SaveParams():bool{
             $_POST["HaClusterDisableProxyProtocol"] = 1;
         }
     }
-
-
+    if(isset($_POST["HaClusterDisableInfraCheck"])){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterDisableInfraCheck",intval($_POST["HaClusterDisableInfraCheck"]));
+        unset($_POST["HaClusterDisableInfraCheck"]);
+    }
     if(isset($_POST["HaClusterUseLocalDNSCache"])){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterUseLocalDNSCache",$_POST["HaClusterUseLocalDNSCache"]);
         unset($_POST["HaClusterUseLocalDNSCache"]);
-
     }
+
     if(isset($_POST["HaClusterProxyUseOwnDNS"])){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterProxyUseOwnDNS",$_POST["HaClusterProxyUseOwnDNS"]);
         unset($_POST["HaClusterProxyUseOwnDNS"]);
@@ -2041,25 +2185,15 @@ function SaveParams():bool{
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterProxyUseBackendDNSDIST",intval($_POST["HaClusterProxyUseBackendDNSDIST"]));
         unset($_POST["HaClusterProxyUseBackendDNSDIST"]);
     }
-    if(isset($_POST["HaClusterSquidNameServer1"])){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterSquidNameServer1",$_POST["HaClusterSquidNameServer1"]);
-        unset($_POST["HaClusterSquidNameServer1"]);
-    }
-    if(isset($_POST["HaClusterSquidNameServer2"])){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterSquidNameServer2",$_POST["HaClusterSquidNameServer2"]);
-        unset($_POST["HaClusterSquidNameServer2"]);
-    }
-    if(isset($_POST["HaClusterSquidNameServer3"])){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterSquidNameServer3",$_POST["HaClusterSquidNameServer3"]);
-        unset($_POST["HaClusterSquidNameServer3"]);
-    }
+
 
     if(isset($_POST["HaClusterServeDNS"])){
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterServeDNS",$_POST["HaClusterServeDNS"]);
-        if($_POST["HaClusterServeDNS"]==1){
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterServeDNS",intval($_POST["HaClusterServeDNS"]));
+        if(intval($_POST["HaClusterServeDNS"])==1 && !hacluster_meta_key_held("HaClusterUseLBAsDNS")){
             $HaClusterGBConfig["HaClusterUseLBAsDNS"]=0;
         }
         unset($_POST["HaClusterServeDNS"]);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/rebuild");
     }
 
     if(isset($_POST["HaClusterAsAD"])){
@@ -2078,8 +2212,6 @@ function SaveParams():bool{
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterUseAddr",$_POST["HaClusterUseAddr"]);
         unset($_POST["HaClusterUseAddr"]);
     }
-
-
     if(isset($_POST["HaClusterEnableProxyProtocol"])) {
         if ($_POST["HaClusterEnableProxyProtocol"] == 1) {
             $_POST["HaClusterDisableProxyProtocol"] = 0;
@@ -2087,7 +2219,6 @@ function SaveParams():bool{
             $_POST["HaClusterDisableProxyProtocol"] = 1;
         }
     }
-
     if(isset($_POST["HaClusterDecryptSSL"])) {
         if ($_POST["HaClusterDecryptSSL"] == 1) {
             if (trim($_POST["HaClusterCertif"]) == null) {
@@ -2096,14 +2227,18 @@ function SaveParams():bool{
             }
         }
     }
+    $c=0;
     foreach ($_POST as $key=>$val) {
         $HaClusterGBConfig[$key]=$val;
+        $c++;
         admin_tracks("Update HaCluster backends option $key with $val");
     }
     $tpl->SAVE_POSTs();
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterGBConfig",serialize($HaClusterGBConfig));
+    if($c>0 || $GBChanged) {
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterGBConfig", serialize($HaClusterGBConfig));
+    }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/restart");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/reconfigure");
 
     return true;
 
@@ -2120,15 +2255,61 @@ function remote_categories_service_js():bool{
     return $tpl->js_dialog2("{use_remote_categories_services}",
         "$page?remote-categories-service-popup=yes$function",550);
 }
+function section_itcharter_popup():bool{
+    $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterEnableITChart"),$tpl);
+    $HaClusterEnableITChart=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterEnableITChart"));
+    $html[]=$tpl->BigCircleCheckbox("HaClusterEnableITChart",
+        "{APP_ITCHARTER}","{APP_ITCHARTER_HACLUSTER}",$HaClusterEnableITChart,
+        "dialogInstance2.close();".form_js().";LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');");
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+function section_replicacls_popup():bool{
+    $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterReplicateACLs"),$tpl);
+    $HaClusterReplicateACLs=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterReplicateACLs"));
+    $html[]=$tpl->BigCircleCheckbox(
+        "HaClusterReplicateACLs",
+        "{acls_replication}",
+        "{acls_hacluster_replication_explain}",
+         $HaClusterReplicateACLs,
+        "dialogInstance2.close();".form_js().";LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');");
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
+}
+function section_itcharter_save():bool{
+    if(hacluster_meta_gate("text")){return false;}
+    $HaClusterEnableITChart=intval($_POST["HaClusterEnableITChart"]);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterEnableITChart",$HaClusterEnableITChart);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/check");
+
+    if($HaClusterEnableITChart==0){
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/clients/itchart/uninstall");
+    }else{
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableITChart",1);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/install");
+    }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+    return admin_tracks("Turn ITCharter From the HaCluster to {$_POST["HaClusterEnableITChart"]}");
+}
+function section_replicacls_save():bool{
+    if(hacluster_meta_gate("text")){return false;}
+    $HaClusterReplicateACLs=intval($_POST["HaClusterReplicateACLs"]);
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("HaClusterReplicateACLs",$HaClusterReplicateACLs);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
+    return admin_tracks("Turn HaCluster ACL replication to {$_POST["HaClusterReplicateACLs"]}");
+}
+
+
+
 function section_errorpage_popup():bool{
 
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterUseCentralErrorPage","HaClusterErrorPageHTTPPort","HaClusterErrorPageUseSSL","HaClusterErrorPageHTTPsPort","HaClusterErrorPageCert"),$tpl);
     $HaClusterUseCentralErrorPage=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseCentralErrorPage"));
-
     $HaClusterErrorPageHTTPPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageHTTPPort"));
-
     $HaClusterErrorPageUseSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageUseSSL"));
-
     $HaClusterErrorPageHTTPsPort=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageHTTPsPort"));
 
     if($HaClusterErrorPageHTTPPort==0){
@@ -2164,13 +2345,31 @@ function section_errorpage_popup():bool{
 function section_errorpage_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
+    if(hacluster_meta_gate("post")){return false;}
+    // Without a certificate the LB writes no weberrorssl frontend: the nodes
+    // would send every blocked user to an https port where nothing listens.
+    // A key held by Artica Meta was stripped from $_POST: judge on the stored value.
+    $UseCentral=isset($_POST["HaClusterUseCentralErrorPage"])?intval($_POST["HaClusterUseCentralErrorPage"]):intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseCentralErrorPage"));
+    $UseSSL=isset($_POST["HaClusterErrorPageUseSSL"])?intval($_POST["HaClusterErrorPageUseSSL"]):intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageUseSSL"));
+    $Cert=isset($_POST["HaClusterErrorPageCert"])?(string)$_POST["HaClusterErrorPageCert"]:(string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterErrorPageCert");
+    if($UseCentral==1 && $UseSSL==1){
+        if(strlen(trim($Cert))<3){
+            echo $tpl->post_error("{useSSL}: {select} ! {ssl_certificate}");
+            return false;
+        }
+    }
     $tpl->SAVE_POSTs();
+    // The LB must publish its frontends (weberrorhttp/weberrorssl) BEFORE the
+    // nodes start redirecting to it; otherwise they appeared only at the next
+    // 10-minute reconfigure, and blocked users got no page meanwhile.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/build");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/notify/all");
     return admin_tracks_post("Saving Section Error Page");
 }
 
 function remote_categories_service_popup():bool{
     $tpl=new template_admin();
+    echo hacluster_meta_popup_head(array("HaClusterUseRemoteCategoriesService","HaClusterUseRemoteCategoriesServiceDebug","RemoteCategoriesServiceAddr","RemoteCategoriesServicePort","RemoteCategoriesServiceSSL"),$tpl);
     $HaClusterUseRemoteCategoriesService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseRemoteCategoriesService"));
 
     $RemoteCategoriesServiceSSL=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RemoteCategoriesServiceSSL"));
@@ -2206,8 +2405,578 @@ function remote_categories_service_save():bool{
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI   = true;
     $tpl->CLEAN_POST();
+    if(hacluster_meta_gate("post")){return false;}
     $tpl->SAVE_POSTs();
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/categories/remote/service/check");
     return admin_tracks("Saving the use a remote categories service");
 
+}
+// ───────────────────────────── Tableau d'état (table=yes) ─────────────────────────────
+// Maquette : /home/claude/images/stitch_hacluster_load_balancer_status.zip
+// En haut 4 tuiles (écoute réelle, latence, trafic sortant, connexions), puis la
+// télémétrie : période, 4 cartes de synthèse sur la période, une courbe, la
+// topologie des nœuds. La première tuile montre l'adresse que HAProxy écoute
+// VRAIMENT (GET /hacluster/server/listen) : avec la bascule, c'est l'IP
+// flottante, et l'ancien « ens192:3128 » faisait croire que l'adresse de
+// l'interface servait les clients.
+
+function hcst_accents():array{
+    if(function_exists("brand_ui_accents") && function_exists("brand_palette")){
+        return brand_ui_accents(brand_palette());
+    }
+    return array("accent"=>"#10b981","accent_dark"=>"#0d9488","accent_soft"=>"rgba(16,185,129,.12)");
+}
+
+// Feuille de style émise HORS de _ENGINE_parse_body (chaque bloc {...} y serait
+// lu comme un jeton), une fois par requête.
+function hcst_style():string{
+    if(isset($GLOBALS["HCST_STYLE"])){return "";}
+    $GLOBALS["HCST_STYLE"]=true;
+    $a=hcst_accents();
+    $teal=$a["accent_dark"];
+    return "<style>
+.hcst-kpis{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+.hcst-kpi{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px 16px;box-shadow:0 1px 2px rgba(15,23,42,.04);display:flex;flex-direction:column;gap:8px;min-width:0}
+.hcst-kpi-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.hcst-kpi-label{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#334155;line-height:16px}
+.hcst-kpi-ico{width:36px;height:36px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;font-size:16px;flex:0 0 auto}
+.hcst-kpi-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#2563eb;background:#eff6ff;border-radius:8px;padding:5px 10px;text-decoration:none!important;white-space:nowrap}
+.hcst-kpi-btn:hover{background:#dbeafe}
+.hcst-kpi-value{font-size:26px;font-weight:700;color:#0f172a;line-height:32px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.hcst-kpi-addr{font-size:21px;line-height:28px;overflow-wrap:normal}
+.hcst-kpi-unit{font-size:13px;font-weight:500;color:#64748b;margin-left:4px}
+.hcst-kpi-tags{display:flex;flex-wrap:wrap;gap:6px}
+.hcst-kpi-note{font-size:12px;color:#64748b}
+.hcst-kpi-alert{font-size:12px;font-weight:600;color:#b91c1c}
+.hcst-kpi-sub{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:#64748b}
+.hcst-kpi-sub b{font-weight:600}
+.hcst-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.hcst-bar{height:4px;border-radius:4px;background:#f1f5f9;overflow:hidden;margin-top:2px}
+.hcst-bar>span{display:block;height:100%;border-radius:4px}
+.hcst-t-teal .hcst-kpi-ico{background:#ccfbf1;color:$teal}.hcst-t-teal .hcst-tone{color:$teal}.hcst-t-teal .hcst-bar>span,.hcst-t-teal .hcst-dot{background:$teal}
+.hcst-t-blue .hcst-kpi-ico{background:#dbeafe;color:#2563eb}.hcst-t-blue .hcst-tone{color:#2563eb}.hcst-t-blue .hcst-bar>span,.hcst-t-blue .hcst-dot{background:#2563eb}
+.hcst-t-amber .hcst-kpi-ico{background:#fef3c7;color:#b45309}.hcst-t-amber .hcst-tone{color:#b45309}.hcst-t-amber .hcst-bar>span,.hcst-t-amber .hcst-dot{background:#d97706}
+.hcst-t-red .hcst-kpi-ico{background:#fee2e2;color:#b91c1c}.hcst-t-red .hcst-tone{color:#b91c1c}.hcst-t-red .hcst-bar>span,.hcst-t-red .hcst-dot{background:#dc2626}
+.hcst-t-gray .hcst-kpi-ico{background:#f1f5f9;color:#64748b}.hcst-t-gray .hcst-tone{color:#64748b}.hcst-t-gray .hcst-bar>span,.hcst-t-gray .hcst-dot{background:#94a3b8}
+.hcst-card{padding:20px;margin-top:16px}
+.hcst-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding-bottom:16px;border-bottom:1px solid #f1f5f9}
+#hcst-periods{flex-wrap:wrap}#hcst-periods a{text-decoration:none!important}
+#hcst-periods a::first-letter{text-transform:uppercase}
+#hcst-periods a.on{color:$teal}
+.hcst-stats{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));margin-top:16px}
+.hcst-stat{border-radius:10px;padding:14px 16px;color:#fff;cursor:pointer;border:2px solid transparent;transition:transform .1s}
+.hcst-stat:hover{transform:translateY(-1px)}
+.hcst-stat.on{border-color:#0f172a;box-shadow:0 0 0 2px #fff inset}
+.hcst-stat-head{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;opacity:.95}
+.hcst-stat-val{font-size:26px;font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums}
+.hcst-stat-val small{font-size:14px;font-weight:500;opacity:.85;margin-left:4px}
+.hcst-stat-sub{font-size:12px;opacity:.85;margin-top:4px}
+.hcst-s-latency{background:$teal}.hcst-s-connections{background:#2563eb}.hcst-s-queries{background:#1e293b}.hcst-s-bandwidth{background:#d97706}
+.hcst-chart-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:22px 0 10px}
+.hcst-chart-title{font-size:16px;font-weight:700;color:#0f172a}
+.hcst-chart-title small{font-size:13px;font-weight:400;color:#64748b;margin-left:6px}
+.hcst-chart-btns{display:flex;gap:6px}
+.hcst-chart-btns a{border:1px solid #e2e8f0;border-radius:8px;padding:4px 12px;font-size:13px;color:#475569;text-decoration:none!important;background:#fff;white-space:nowrap}
+.hcst-chart-btns a.on{border-color:$teal;color:$teal;background:#f0fdfa;font-weight:600}
+.hcst-chart-box{position:relative;height:280px;border:1px solid #e2e8f0;border-radius:10px;padding:12px}
+.hcst-topo-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:26px 0 10px;padding-top:18px;border-top:1px solid #f1f5f9}
+.hcst-topo-title{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#334155}
+.hcst-topo-algo{font-size:13px;color:#64748b}.hcst-topo-algo b{color:#0f172a}
+.hcst-tbl{border:1px solid #e2e8f0}
+.hcst-tbl th{white-space:nowrap}
+.hcst-tbl tr:hover td{background:#fbfeff}
+.hcst-tbl .ak-pill i{font-size:7px}
+.hcst-ping-ok{color:$teal;font-weight:600}.hcst-ping-warn{color:#b45309;font-weight:600}.hcst-ping-bad{color:#b91c1c;font-weight:600}
+.hcst-edit{color:$teal;font-weight:600;text-decoration:none!important}
+.hcst-muted{color:#94a3b8}
+.hcst-empty{padding:24px;text-align:center;color:#64748b}
+@media(max-width:820px){.hcst-tbl thead{display:none}.hcst-tbl td{display:block;border-top:0;padding:4px 14px}.hcst-tbl tr{display:block;border-top:1px solid #f1f5f9;padding:8px 0}}
+</style>";
+}
+
+// Une tuile KPI. $k : label, icon, value, unit, tags (html), note, alert, left,
+// right, pct (null = pas de barre), tone (teal|blue|amber|red|gray), btn (js,label).
+function hcst_kpi(array $k):string{
+    $tone=$k["tone"] ?? "gray";
+    $h=array();
+    $h[]="<div class='hcst-kpi hcst-t-$tone'>";
+    $h[]="<div class='hcst-kpi-head'><span class='hcst-kpi-label'>{$k["label"]}</span>";
+    if(isset($k["btn"])){
+        $h[]="<a class='hcst-kpi-btn' href=\"javascript:blur();\" OnClick=\"{$k["btn"][0]}\"><i class='".ico_params."'></i>{$k["btn"][1]}</a>";
+    }else{
+        $h[]="<span class='hcst-kpi-ico'><i class='{$k["icon"]}'></i></span>";
+    }
+    $h[]="</div>";
+    $unit=isset($k["unit"])&&$k["unit"]!==""?"<span class='hcst-kpi-unit'>{$k["unit"]}</span>":"";
+    $vcls=!empty($k["addr"])?" hcst-kpi-addr":"";
+    $h[]="<div class='hcst-kpi-value$vcls'>{$k["value"]}$unit</div>";
+    if(!empty($k["tags"])){$h[]="<div class='hcst-kpi-tags'>{$k["tags"]}</div>";}
+    if(!empty($k["note"])){$h[]="<div class='hcst-kpi-note'>{$k["note"]}</div>";}
+    if(!empty($k["alert"])){$h[]="<div class='hcst-kpi-alert'><i class='fas fa-triangle-exclamation'></i>&nbsp;{$k["alert"]}</div>";}
+    if(isset($k["left"]) || isset($k["right"])){
+        $h[]="<div class='hcst-kpi-sub'><span class='hcst-tone'>".($k["left"] ?? "")."</span><span>".($k["right"] ?? "")."</span></div>";
+    }
+    if(isset($k["pct"]) && $k["pct"]!==null){
+        $pct=max(0,min(100,floatval($k["pct"])));
+        $h[]="<div class='hcst-bar'><span style='width:{$pct}%'></span></div>";
+    }
+    $h[]="</div>";
+    return implode("",$h);
+}
+
+// Les valeurs affichées viennent du daemon : jamais injectées brutes.
+function hcst_e($s):string{
+    return htmlspecialchars((string)$s,ENT_QUOTES);
+}
+
+function hcst_algo_label():string{
+    $HaClusterBalance=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterBalance"));
+    $algo=array("source"=>"{strict-hashed-ip}","roundrobin"=>"{round-robin}","leastconn"=>"{leastconn}");
+    if(!isset($algo[$HaClusterBalance])){$HaClusterBalance="leastconn";}
+    return $algo[$HaClusterBalance];
+}
+
+// État d'écoute observé ; null quand le daemon ne connaît pas encore la route.
+function hcst_listen_state(){
+    $raw=$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/listen");
+    $json=json_decode((string)$raw);
+    if(!is_object($json) || empty($json->success) || !is_object($json->data)){
+        return null;
+    }
+    return $json->data;
+}
+
+function hcst_tile_listen($json):string{
+    $page=CurrentPageName();
+    $label="{hacluster_listening}";
+    $HaClusterUseAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseAddr");
+    if(strlen($HaClusterUseAddr)<3){
+        return hcst_kpi(array("label"=>"{MISSING_PARAMETER}","icon"=>ico_server,"value"=>"{server_address}","tone"=>"red",
+            "btn"=>array("Loadjs('$page?section-ipaddr-js=yes')","{modify}")));
+    }
+    $cert=hcst_certificate_problem();
+    if($cert!==null){return $cert;}
+    if(!is_object($json) || !$json->status){
+        $err=is_object($json)?hcst_e($json->Error):"";
+        return hcst_kpi(array("label"=>$label,"icon"=>ico_bug,"value"=>"{error}","note"=>$err,"tone"=>"red"));
+    }
+
+    // Nœuds de la ferme principale : proxyN, état opérationnel 2 = UP.
+    $up=0;$total=0;
+    if(property_exists($json,"Backends") && $json->Backends){
+        foreach($json->Backends as $name=>$class){
+            if(!preg_match("#^proxy([0-9]+)$#",$name)){continue;}
+            $total++;
+            if(intval($class->srv_op_state)==2){$up++;}
+        }
+    }
+    $port=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterPort"));
+    if($port==0){$port=3128;}
+    $iface=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
+    $k=array("label"=>$label,"icon"=>ico_server,"tone"=>"teal","addr"=>true);
+
+    $ls=hcst_listen_state();
+    if($ls===null){
+        // Daemon antérieur à /hacluster/server/listen : on ne sait que la config.
+        $k["value"]=hcst_e("$iface:$port");
+    }else{
+        $listening=is_array($ls->listening)?$ls->listening:array();
+        $ifaceIP=(string)$ls->interface_ip;
+        $k["note"]="{hacluster_configured_interface}: ".hcst_e($ls->interface).($ifaceIP!=""?" (".hcst_e($ifaceIP).")":"");
+        if(count($listening)==0){
+            $k["value"]="&mdash;";
+            $k["tone"]="red";
+            $k["alert"]=$ls->running?"{hacluster_listen_none}":"{not_running}";
+        }else{
+            $k["value"]=hcst_e(implode(" · ",$listening));
+            $tags=array();
+            $fo=$ls->failover;
+            if($fo->enabled){
+                $vip=(string)$fo->floating_ip;
+                $onVIP=false;
+                foreach($listening as $addr){
+                    if($vip!="" && strpos($addr,"$vip:")===0){$onVIP=true;}
+                }
+                if($onVIP){
+                    $tags[]="<span class='ak-tag ak-ok'><i class='fas fa-location-crosshairs'></i>{floating_ip}</span>";
+                }elseif(!$fo->holds_floating_ip){
+                    $tags[]="<span class='ak-tag ak-warn'><i class='fas fa-right-left'></i>{hacluster_vip_on_peer}</span>";
+                }
+            }
+            $k["tags"]=implode("",$tags);
+            if(!$ls->match){
+                $k["tone"]="red";
+                $k["alert"]="{hacluster_listen_mismatch} ".hcst_e($ls->expected);
+            }
+        }
+    }
+
+    if($total==0){
+        $k["left"]="0 {nodes}";
+        if($k["tone"]=="teal"){$k["tone"]="amber";}
+        $k["pct"]=0;
+    }else{
+        $k["left"]="<span class='hcst-dot'></span><b>$up/$total</b> {hacluster_nodes_up}";
+        if($up<$total && $k["tone"]=="teal"){$k["tone"]="amber";}
+        $k["pct"]=round($up/$total*100);
+    }
+    $k["right"]=hcst_algo_label();
+    return hcst_kpi($k);
+}
+
+// Certificat du service de cluster absent : tuile rouge avec création.
+function hcst_certificate_problem(){
+    $ClusterServiceCertificate=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ClusterServiceCertificate");
+    if(strlen($ClusterServiceCertificate)<3){
+        return hcst_kpi(array("label"=>"{certificate}","icon"=>ico_certificate,"value"=>"{missing}","tone"=>"red",
+            "btn"=>array(CreateCertifJs(),"{create_certificate}")));
+    }
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    [$exists,$ID]=$cdb->exists($ClusterServiceCertificate);
+    if($cdb->lastError!==""){
+        return hcst_kpi(array("label"=>"{certificate}","icon"=>ico_certificate,"value"=>"{error}","note"=>hcst_e($cdb->lastError),"tone"=>"red"));
+    }
+    if($exists && $ID>0){return null;}
+    return hcst_kpi(array("label"=>"{certificate}","icon"=>ico_certificate,"value"=>"{missing}","tone"=>"red",
+        "btn"=>array(CreateCertifJs(),"{create_certificate}")));
+}
+
+function hcst_tile_latency():string{
+    $ms=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HACLUSTER_LATENCY_MS"));
+    $k=array("label"=>"{latency}","icon"=>"fas fa-clock","value"=>sprintf("%.2f",$ms),"unit"=>"ms");
+    if($ms<=200){$k["tone"]="teal";$k["left"]="{hacluster_latency_good}";$k["right"]="&lt; 200 ms";}
+    elseif($ms<=500){$k["tone"]="blue";$k["left"]="{hacluster_latency_fair}";$k["right"]="&lt; 500 ms";}
+    elseif($ms<=1200){$k["tone"]="amber";$k["left"]="{hacluster_latency_slow}";$k["right"]="&lt; 1200 ms";}
+    else{$k["tone"]="red";$k["left"]="{hacluster_latency_critical}";$k["right"]="&gt; 1200 ms";}
+    $k["pct"]=round(min($ms,1200)/1200*100);
+    return hcst_kpi($k);
+}
+
+function hcst_split_bytes(string $s):array{
+    $s=trim(strip_tags($s));
+    $p=strrpos($s," ");
+    if($p===false){return array($s,"");}
+    return array(substr($s,0,$p),substr($s,$p+1));
+}
+
+function hcst_tile_traffic($json):string{
+    $k=array("label"=>"{mb_out}","icon"=>"fas fa-arrow-right-arrow-left","tone"=>"blue","right"=>"HaCluster");
+    if(!is_object($json) || !property_exists($json,"TotalBytesOut")){
+        $k["value"]="{error}";$k["tone"]="red";
+        return hcst_kpi($k);
+    }
+    if(intval($json->TotalBytesOut)==0){
+        $k["value"]="0";$k["tone"]="gray";
+        return hcst_kpi($k);
+    }
+    list($k["value"],$k["unit"])=hcst_split_bytes(FormatBytes($json->TotalBytesOut/1024));
+    $rate=intval($json->BytesOutRate ?? 0);
+    $k["left"]="{hacluster_out_rate}: ".($rate>0?trim(strip_tags(FormatBytes($rate/1024)))."/s":"0");
+    return hcst_kpi($k);
+}
+
+function hcst_tile_connections($json):string{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $btn=array("Loadjs('$page?maxconns-js=yes')","{modify}");
+    $cur=-1;$max=0;
+    $jsonStats=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/stats"));
+    if(is_object($jsonStats) && property_exists($jsonStats,"Stats") && is_array($jsonStats->Stats)){
+        foreach($jsonStats->Stats as $stat){
+            if($stat->svname<>"FRONTEND" || $stat->pxname<>"hacluster"){continue;}
+            if(!property_exists($stat,"slim")){continue;}
+            $cur=intval($stat->scur);$max=intval($stat->slim);
+            break;
+        }
+    }
+    if($cur<0 && is_object($json) && property_exists($json,"Maxconn")){
+        $cur=intval($json->CurrConns);$max=intval($json->Maxconn);
+    }
+    if($cur<0 || $max<=0){
+        return hcst_kpi(array("label"=>"{connections}","value"=>"{error}","tone"=>"red","btn"=>$btn));
+    }
+    $prc=round($cur/$max*100,2);
+    $tone="teal";
+    if($prc>90){$tone="amber";}
+    if($prc>95){$tone="red";}
+    return hcst_kpi(array("label"=>"{connections} ($prc%)","value"=>$tpl->FormatNumber($cur),
+        "unit"=>"/ ".$tpl->FormatNumber($max)." max","tone"=>$tone,"btn"=>$btn,
+        "left"=>"{hacluster_free_capacity}: ".round(100-$prc,2)."%","pct"=>$prc));
+}
+
+function status_top():bool{
+    $tpl=new template_admin();
+    $page=currentPageName();
+
+    $HaClusterInterface=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterInterface"));
+    if(strlen($HaClusterInterface)<3) {
+        $button="<div style='text-align:right;margin:10px'>".
+            $tpl->button_autnonome("{listen_interface}","Loadjs('$page?section-listen-js=yes')",ico_nic,"",0,"btn-warning",256)."</div>";
+        echo $tpl->_ENGINE_parse_body($tpl->div_warning("{listen_interface}||{lb_select_nic}$button"));
+        return true;
+    }
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/info"));
+    $html=array();
+    $html[]="<div id='checkCurStatus'></div>";
+    $html[]="<div class='hcst-kpis'>";
+    $html[]=hcst_tile_listen($json);
+    $html[]=hcst_tile_latency();
+    $html[]=hcst_tile_traffic($json);
+    $html[]=hcst_tile_connections($json);
+    $html[]="</div>";
+    $html[]="<script>LoadAjaxSilent('checkCurStatus','fw.hacluster.backends.php?checkCurStatus=yes');</script>";
+    echo hcst_style().$tpl->_ENGINE_parse_body(implode("",$html));
+    return true;
+}
+
+function hcst_periods():array{
+    return array("hourly"=>"{hourly}","day"=>"{day}","yesterday"=>"{yesterday}","week"=>"{week}","month"=>"{month}","year"=>"{year}");
+}
+function hcst_metrics():array{
+    return array("latency","connections","queries","bandwidth");
+}
+
+// Carte de télémétrie : la barre (période + rafraîchir) est rendue une fois ;
+// le contenu (cartes, courbe, topologie) se recharge seul dans hcst-telemetry.
+function status_center():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $ligne=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM hacluster_backends WHERE enabled=1");
+    if(intval($ligne["tcount"])==0){
+        echo "<div style='margin:20px'>".$tpl->_ENGINE_parse_body($tpl->div_warning("<p style='margin-left:20px;font-size:16px'>{haclutserno_nodes}</p>")."</div>");
+        return true;
+    }
+    $h=array();
+    $h[]="<div class='ak-card hcst-card'>";
+    $h[]="<div class='hcst-toolbar'><div class='ak-seg' id='hcst-periods'>";
+    foreach(hcst_periods() as $key=>$label){
+        $on=$key=="hourly"?" on":"";
+        $h[]="<a href=\"javascript:blur();\" data-p='$key' class='ak-seg-b$on' OnClick=\"HcstPeriod('$key',this)\">$label</a>";
+    }
+    $h[]="</div>";
+    $h[]="<a class='ak-btn ak-btn-primary' href=\"javascript:blur();\" OnClick=\"HcstRefresh()\"><i class='fas fa-rotate'></i>{refresh}</a>";
+    $h[]="</div>";
+    $h[]="<div id='hcst-telemetry'></div>";
+    $h[]="</div>";
+    $js="<script>
+window._hcstPeriod='hourly';window._hcstMetric=window._hcstMetric||'latency';
+function HcstDestroy(){ if(window._hcstChart){ try{window._hcstChart.destroy();}catch(e){} window._hcstChart=null; } }
+function HcstRefresh(){ HcstDestroy(); LoadAjaxSilent('hcst-telemetry','$page?graphs='+window._hcstPeriod+'&metric='+window._hcstMetric); }
+function HcstPeriod(p,el){ window._hcstPeriod=p; $('#hcst-periods a').removeClass('on'); $(el).addClass('on'); HcstRefresh(); }
+function HcstMetric(m){ window._hcstMetric=m; HcstRefresh(); }
+HcstRefresh();
+</script>";
+    echo hcst_style().$tpl->_ENGINE_parse_body(implode("",$h)).$js;
+    return true;
+}
+
+function _period_to_hours($period):int{
+    $map=array("hourly"=>1,"day"=>24,"yesterday"=>48,"week"=>168,"month"=>720,"year"=>2160);
+    return isset($map[$period]) ? $map[$period] : 24;
+}
+
+function _ts_format($hours){
+    if($hours>168) return 'M d';
+    if($hours>48) return 'M d H:i';
+    return 'H:i';
+}
+
+// Synthèse de la période, depuis les mêmes séries que la courbe : latence
+// moyenne pondérée par les échantillons, pic de connexions, totaux de requêtes
+// et de volume (points bruts = deltas ; points agrégés = sum_*).
+function hcst_period_summary(array $lat,array $met):array{
+    $out=array("latency"=>null,"connections"=>null,"queries"=>null,"bandwidth"=>null);
+    $sum=0;$n=0;
+    foreach($lat as $p){
+        $w=isset($p->samples)?max(1,intval($p->samples)):1;
+        $sum+=floatval($p->latency_ms)*$w;$n+=$w;
+    }
+    if($n>0){$out["latency"]=$sum/$n;}
+    if(count($met)>0){
+        $peak=0;$q=0;$bw=0;
+        foreach($met as $p){
+            $peak=max($peak,floatval($p->max_connections ?? $p->connections ?? 0));
+            $q+=isset($p->sum_queries)?floatval($p->sum_queries):floatval($p->queries ?? 0)*max(1,intval($p->samples ?? 1));
+            $bw+=isset($p->sum_bandwidth_mb)?floatval($p->sum_bandwidth_mb):floatval($p->bandwidth_mb ?? 0)*max(1,intval($p->samples ?? 1));
+        }
+        $out["connections"]=$peak;$out["queries"]=$q;$out["bandwidth"]=$bw;
+    }
+    return $out;
+}
+
+function status_graphs():bool{
+    $tpl=new template_admin();
+    $period=(string)$_GET["graphs"];
+    if(!isset(hcst_periods()[$period])){$period="hourly";}
+    $metric=(string)($_GET["metric"] ?? "latency");
+    if(!in_array($metric,hcst_metrics(),true)){$metric="latency";}
+    $hours=_period_to_hours($period);
+    $fmt=_ts_format($hours);
+
+    $latJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/latency?hours=$hours"));
+    $metJson=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/metrics?hours=$hours"));
+    $latPts=array();$latRes="raw";$metPts=array();$metRes="raw";
+    if(is_object($latJson) && !empty($latJson->success) && is_object($latJson->data)){
+        $latPts=(array)($latJson->data->points ?? array());$latRes=(string)($latJson->data->resolution ?? "raw");
+    }
+    if(is_object($metJson) && !empty($metJson->success) && is_object($metJson->data)){
+        $metPts=(array)($metJson->data->points ?? array());$metRes=(string)($metJson->data->resolution ?? "raw");
+    }
+    $sum=hcst_period_summary($latPts,$metPts);
+
+    $cards=array(
+        "latency"=>array("{latency}","fas fa-bolt",$sum["latency"]===null?"&mdash;":round($sum["latency"]),"ms","{hacluster_avg_period}"),
+        "connections"=>array("{connections}","fas fa-arrow-right-arrow-left",$sum["connections"]===null?"&mdash;":$tpl->FormatNumber(round($sum["connections"])),"","{hacluster_peak_period}"),
+        "queries"=>array("{requests}","fas fa-file-lines",$sum["queries"]===null?"&mdash;":$tpl->FormatNumber(round($sum["queries"])),"","{hacluster_total_period}"),
+        "bandwidth"=>array("{bandwidth}","fas fa-download",$sum["bandwidth"]===null?"&mdash;":$tpl->FormatNumber(round($sum["bandwidth"])),"MB","{hacluster_total_period}"),
+    );
+    $h=array();
+    $h[]="<div class='hcst-stats'>";
+    foreach($cards as $key=>$c){
+        $on=$key==$metric?" on":"";
+        $unit=$c[3]!=""?"<small>{$c[3]}</small>":"";
+        $h[]="<div class='hcst-stat hcst-s-$key$on' OnClick=\"HcstMetric('$key')\">";
+        $h[]="<div class='hcst-stat-head'><span>{$c[0]}</span><i class='{$c[1]}'></i></div>";
+        $h[]="<div class='hcst-stat-val'>{$c[2]}$unit</div>";
+        $h[]="<div class='hcst-stat-sub'>{$c[4]}</div></div>";
+    }
+    $h[]="</div>";
+
+    // Série de la métrique choisie.
+    $colors=array("latency"=>hcst_accents()["accent_dark"],"connections"=>"#2563eb","queries"=>"#1e293b","bandwidth"=>"#d97706");
+    $titles=array("latency"=>"{latency} (ms)","connections"=>"{connections}","queries"=>"{requests}","bandwidth"=>"{bandwidth} (MB)");
+    $labels=array();$main=array();$peak=array();
+    $pts=$metric=="latency"?$latPts:$metPts;
+    $res=$metric=="latency"?$latRes:$metRes;
+    $field=array("latency"=>"latency_ms","connections"=>"connections","queries"=>"queries","bandwidth"=>"bandwidth_mb")[$metric];
+    $maxField=array("latency"=>"max_ms","connections"=>"max_connections","queries"=>"max_queries","bandwidth"=>"max_bandwidth_mb")[$metric];
+    foreach($pts as $p){
+        $labels[]=date($fmt,intval($p->ts));
+        $main[]=round(floatval($p->$field ?? 0),2);
+        if($res!=="raw"){$peak[]=round(floatval($p->$maxField ?? 0),2);}
+    }
+    $periodLabel=hcst_periods()[$period];
+    $h[]="<div class='hcst-chart-head'>";
+    $h[]="<div class='hcst-chart-title'><span class='hcst-dot' style='background:{$colors[$metric]}'></span>{$titles[$metric]}<small>&mdash; $periodLabel ($res)</small></div>";
+    $h[]="<div class='hcst-chart-btns'>";
+    $h[]="<a href=\"javascript:blur();\" id='hcst-mode-curve' class='on' OnClick=\"HcstMode(false)\">{hacluster_curve}</a>";
+    $h[]="<a href=\"javascript:blur();\" id='hcst-mode-raw' OnClick=\"HcstMode(true)\">{hacluster_raw}</a>";
+    $h[]="<a href=\"javascript:blur();\" title=\"{hacluster_csv}\" OnClick=\"HcstCsv()\"><i class='fas fa-download'></i></a>";
+    $h[]="</div></div>";
+    if(count($main)==0){
+        $h[]="<div class='hcst-chart-box'><div class='hcst-empty'>{no_data}</div></div>";
+    }else{
+        $h[]="<div class='hcst-chart-box'><canvas id='hcst-canvas'></canvas></div>";
+    }
+    $h[]=hcst_topology();
+
+    $chartjs="";
+    if(count($main)>0){
+        $mainName=$tpl->javascript_parse_text($titles[$metric]);
+        $peakName=$tpl->javascript_parse_text("{hacluster_peak}");
+        $data=array("labels"=>$labels,"main"=>$main,"peak"=>$peak,"color"=>$colors[$metric],
+            "mainName"=>$mainName,"peakName"=>$peakName,"file"=>"hacluster-$metric-$period.csv");
+        $chartjs="<script>
+window._hcstData=".json_encode($data).";
+function HcstEnsureChart(cb){ if(typeof Chart!=='undefined'){cb();return;} var s=document.createElement('script'); s.src='angular/js/plugins/chartJs/Chart.min.4.5.1.js'; s.onload=function(){cb();}; document.head.appendChild(s); }
+function HcstHexA(hex,a){ var n=parseInt(hex.replace('#',''),16); return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')'; }
+function HcstDraw(){
+  var c=document.getElementById('hcst-canvas'); if(!c){return;}
+  HcstDestroy();
+  var d=window._hcstData, ctx=c.getContext('2d'), g=ctx.createLinearGradient(0,0,0,260);
+  g.addColorStop(0,HcstHexA(d.color,0.25)); g.addColorStop(1,HcstHexA(d.color,0));
+  var ds=[{label:d.mainName,data:d.main,borderColor:d.color,backgroundColor:g,fill:true,tension:0.35,borderWidth:2.5,pointRadius:0,pointHoverRadius:5}];
+  if(d.peak.length){ ds.push({label:d.peakName,data:d.peak,borderColor:HcstHexA(d.color,0.45),borderDash:[5,3],fill:false,tension:0.35,borderWidth:1.5,pointRadius:0}); }
+  window._hcstChart=new Chart(c,{type:'line',data:{labels:d.labels,datasets:ds},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{display:d.peak.length>0,position:'bottom',labels:{usePointStyle:true}}},scales:{x:{grid:{display:false},ticks:{autoSkip:true,maxTicksLimit:8,color:'#94a3b8'}},y:{beginAtZero:true,grid:{color:'#f1f5f9'},ticks:{color:'#94a3b8'}}}}});
+}
+function HcstMode(raw){
+  $('#hcst-mode-curve').toggleClass('on',!raw); $('#hcst-mode-raw').toggleClass('on',raw);
+  var ch=window._hcstChart; if(!ch){return;}
+  ch.data.datasets.forEach(function(x){ x.tension=raw?0:0.35; x.pointRadius=raw?2:0; });
+  ch.update();
+}
+function HcstCsv(){
+  var d=window._hcstData; if(!d){return;}
+  var lines=['time;'+d.mainName+(d.peak.length?';'+d.peakName:'')];
+  for(var i=0;i<d.labels.length;i++){ lines.push(d.labels[i]+';'+d.main[i]+(d.peak.length?';'+d.peak[i]:'')); }
+  var a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([lines.join('\\n')],{type:'text/csv'}));
+  a.download=d.file; document.body.appendChild(a); a.click(); setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
+}
+HcstEnsureChart(HcstDraw);
+</script>";
+    }
+    echo $tpl->_ENGINE_parse_body(implode("",$h)).$chartjs."<script>NoSpinner();</script>";
+    return true;
+}
+
+// Topologie : les serveurs de la ferme principale (backend « proxys »), état
+// et durée du dernier contrôle tels que HAProxy les voit, noms depuis haproxy.db.
+function hcst_topology():string{
+    $page=CurrentPageName();
+    $rows=array();
+    $jsonStats=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/stats"));
+    if(is_object($jsonStats) && property_exists($jsonStats,"Stats") && is_array($jsonStats->Stats)){
+        foreach($jsonStats->Stats as $stat){
+            if($stat->pxname<>"proxys" || !preg_match("#^proxy([0-9]+)$#",(string)$stat->svname,$re)){continue;}
+            $rows[intval($re[1])]=$stat;
+        }
+    }
+    $names=array();
+    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $results=$q->QUERY_SQL("SELECT ID,backendname,listen_ip,listen_port FROM hacluster_backends");
+    if(is_array($results)){
+        foreach($results as $l){$names[intval($l["ID"])]=$l;}
+    }
+    ksort($rows);
+    $totalWeight=0;
+    foreach($rows as $stat){
+        if(strtoupper(substr((string)$stat->status,0,2))=="UP"){$totalWeight+=intval($stat->weight);}
+    }
+
+    $h=array();
+    $h[]="<div class='hcst-topo-head'><span class='hcst-topo-title'>{hacluster_topology} (".count($rows).")</span>";
+    $h[]="<span class='hcst-topo-algo'>{method}: <b>".hcst_algo_label()."</b></span></div>";
+    $h[]="<table class='ak-tbl hcst-tbl'><thead><tr><th>{status}</th><th style='width:99%'>{proxy_server}</th><th>{listen_port}</th><th>{weight}</th><th>{hacluster_last_check}</th><th style='text-align:right'>{actions}</th></tr></thead><tbody>";
+    if(count($rows)==0){
+        $h[]="<tr><td colspan='6'><div class='hcst-empty'>{no_data}</div></td></tr>";
+    }
+    foreach($rows as $id=>$stat){
+        $raw=is_object($stat->raw)?$stat->raw:new stdClass();
+        $status=strtoupper((string)$stat->status);
+        $backup=intval($raw->bck ?? 0)==1;
+        if($backup && strpos($status,"UP")===0){$cls="standby";$txt="{hacluster_standby}";}
+        elseif(strpos($status,"UP")===0){$cls="up";$txt="UP";}
+        elseif(strpos($status,"MAINT")===0 || strpos($status,"DRAIN")===0 || strpos($status,"NOLB")===0){$cls="maint";$txt=hcst_e($status);}
+        else{$cls="down";$txt=hcst_e($status!=""?$status:"DOWN");}
+        $addr=(string)$stat->addr;
+        $port="";
+        if(preg_match("#^(.+):([0-9]+)$#",$addr,$m)){$addr=$m[1];$port=$m[2];}
+        $name=isset($names[$id])?(string)$names[$id]["backendname"]:"proxy$id";
+        $weight=intval($stat->weight);
+        if($backup){$wtxt="{hacluster_standby}";}
+        elseif($totalWeight>0 && $cls=="up"){$wtxt="$weight <span class='hcst-muted'>(".round($weight/$totalWeight*100)."%)</span>";}
+        else{$wtxt="$weight";}
+        $dur=(string)($raw->check_duration ?? "");
+        $chk=hcst_e((string)($raw->check_status ?? ""));
+        if($dur===""){$ping="<span class='hcst-muted'>&mdash;</span>";}
+        else{
+            $d=intval($dur);
+            $pc=$d<100?"hcst-ping-ok":($d<1000?"hcst-ping-warn":"hcst-ping-bad");
+            $ping="<span class='$pc'>$d ms</span>".($chk!=""?" <span class='hcst-muted'>$chk</span>":"");
+        }
+        $js="Loadjs('fw.hacluster.backends.php?backend-js=$id');";
+        $h[]="<tr>";
+        $tone=array("up"=>"ok","down"=>"err","maint"=>"warn","standby"=>"info");
+        $h[]="<td nowrap><span class='ak-pill ak-{$tone[$cls]}'><i class='fas fa-circle'></i>$txt</span></td>";
+        $h[]="<td nowrap>".hcst_e($addr)." <span class='hcst-muted'>(".hcst_e($name).")</span></td>";
+        $h[]="<td nowrap>".hcst_e($port)."</td>";
+        $h[]="<td nowrap>$wtxt</td>";
+        $h[]="<td nowrap>$ping</td>";
+        $h[]="<td nowrap style='text-align:right'><a class='hcst-edit' href=\"javascript:blur();\" OnClick=\"$js\">{modify}</a></td>";
+        $h[]="</tr>";
+    }
+    $h[]="</tbody></table>";
+    return implode("",$h);
 }

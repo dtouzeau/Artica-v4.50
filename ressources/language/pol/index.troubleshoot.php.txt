@@ -1,10 +1,10 @@
-<export_artica_settings>Export server settings</export_artica_settings>
-<export_artica_settings_text>Export all parameters and mandatories datas</export_artica_settings_text>
-<import_artica_settings>Restore artica parameters</import_artica_settings>
-<import_artica_settings_text>Restore parameters from a previous export operation, useful to restore your server completely</import_artica_settings_text>
-<index_ldap_databases>Index LDAP Database</index_ldap_databases>
-<index_ldap_databases_text>reconstruct attributes and indexes of your LDAP database</index_ldap_databases_text>
-<rebuild_ldap_databases>Rebuild LDAP database</rebuild_ldap_databases>
-<rebuild_ldap_databases_text>Backup your LDAP database and build a new one, datas will not be lost</rebuild_ldap_databases_text>
+<export_artica_settings>Eksportuj ustawienia serwera</export_artica_settings>
+<export_artica_settings_text>Eksportuj wszystkie parametry i obowi&#261;zkowe dane</export_artica_settings_text>
+<import_artica_settings>Przywr&#243;&#263; parametry Artica</import_artica_settings>
+<import_artica_settings_text>Przywr&#243;&#263; parametry z poprzedniej operacji eksportu, przydatne do ca&#322;kowitego przywr&#243;cenia serwera</import_artica_settings_text>
+<index_ldap_databases>Indeksuj baz&#281; danych LDAP</index_ldap_databases>
+<index_ldap_databases_text>Odbuduj atrybuty i indeksy bazy danych LDAP</index_ldap_databases_text>
+<rebuild_ldap_databases>Przebuduj baz&#281; danych LDAP</rebuild_ldap_databases>
+<rebuild_ldap_databases_text>Wykonaj kopi&#281; zapasow&#261; bazy danych LDAP i utw&#243;rz now&#261;, dane nie zostan&#261; utracone</rebuild_ldap_databases_text>
 <restore_ldap_database>Przywr%C3%B3%C4%87 za pomoc%C4%85 InstantLDAPBackup</restore_ldap_database>
-<restore_ldap_database_text>You LDAP Database is backuped each hour, you can restore it by this way</restore_ldap_database_text>
+<restore_ldap_database_text>Twoja baza danych LDAP jest kopiowana co godzin&#281;, mo&#380;esz j&#261; przywr&#243;ci&#263; w ten spos&#243;b</restore_ldap_database_text>

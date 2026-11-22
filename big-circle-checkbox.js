@@ -1,20 +1,111 @@
-/* Big Circle Checkbox – On-Demand (pure JS, inline style objects) */
+/* Big Circle Checkbox – On-Demand (pure JS, inline style objects)
+ * v2 : rendu « Artica Infrastructure Light » (stitch_design_system_redesign) — carte blanche,
+ * bordure emeraude + fond teinte quand actif, cercle-radio 26px, pastille Actif/Inactif,
+ * champs blancs. API publique inchangee (renderBig*Safe, ctrl.input/setChecked/setDisabled/onSave). */
 (function () {
-    var REQUIRED_VERSION = '1.0.4';
+    var REQUIRED_VERSION = '2.0.0';
 //  card: "#111317",
 
 
+    // Jetons du design system (stitch_design_system_redesign / Artica Infrastructure Light).
+    // COLORS garde ses cles historiques : les gestionnaires focus/blur et le lien
+    // « more/less » y font reference, ils suivent donc la nouvelle palette sans etre touches.
+    const DS = {
+        card: "#ffffff", cardOn: "#f4fdf8", border: "#e2e8f0", borderOn: "#10b981",
+        accent: "#059669", text: "#0f172a", muted: "#475569", dim: "#94a3b8",
+        badgeOnBg: "#d1fae5", badgeOnText: "#065f46", badgeOnBorder: "#a7f3d0",
+        badgeOffBg: "#f1f5f9", badgeOffText: "#475569", badgeOffBorder: "#e2e8f0",
+        ring: "rgba(16,185,129,0.25)", err: "#e11d48", errBg: "#fff1f2", errText: "#9f1239",
+        okBg: "#f4fdf8", okText: "#065f46", disabledBg: "#f8fafc", chipBg: "#f1f5f9",
+        shadow: "0 1px 2px rgba(15,23,42,.04)"
+    };
     const COLORS = {
-        card: "#fdfafa",
-        text: "#171717b8",
-        muted: "#111111",
-        border: "#a9a8a8cc",
-        ring: "rgba(91,156,255,0.25)",
-        ok: "#1AB394",      // checked
-        grey: "#9aa4b2",    // unchecked
-        greyLight: "#e6e8ee",// disabled
+        card: DS.card,
+        text: DS.text,
+        muted: DS.muted,
+        border: DS.border,
+        ring: DS.ring,
+        ok: DS.accent,      // checked / valid
+        grey: "#cbd5e1",    // unchecked
+        greyLight: "#f1f5f9",// disabled
         descFontWeight: "normal"
     };
+    // Carte du design system : blanche, bordure fine, rayon 12px, ombre ambiante.
+    function dsCardStyle(extra) {
+        return Object.assign({
+            position: "relative", display: "flex", alignItems: "flex-start", gap: "16px",
+            background: DS.card, border: "1px solid " + DS.border, boxShadow: DS.shadow,
+            borderRadius: "12px", padding: "18px 20px",
+            transition: "box-shadow .2s ease, border-color .2s ease, background-color .2s ease"
+        }, extra || {});
+    }
+    // Etat de la carte : "on" = bordure emeraude 2px (simulee par un anneau, sans saut de mise en page)
+    // + fond teinte ; "off" = neutre ; "focus" ajoute l'anneau de focus.
+    function dsSetCard(wrap, on, focus) {
+        wrap.style.background = on ? DS.cardOn : DS.card;
+        wrap.style.borderColor = on ? DS.borderOn : DS.border;
+        var ring = on ? "0 0 0 1px " + DS.borderOn : DS.shadow;
+        if (focus) ring = (on ? "0 0 0 1px " + DS.borderOn + ", " : "") + "0 0 0 4px " + DS.ring;
+        wrap.style.boxShadow = ring;
+    }
+    // Pastille Actif / Inactif a droite de la carte.
+    function dsBadge(onLabel, offLabel) {
+        var b = el("span", {
+            flex: "0 0 auto", alignSelf: "flex-start", display: "inline-flex", alignItems: "center",
+            height: "22px", padding: "0 10px", borderRadius: "999px", fontSize: "12px", fontWeight: "600",
+            border: "1px solid " + DS.badgeOffBorder, background: DS.badgeOffBg, color: DS.badgeOffText,
+            whiteSpace: "nowrap", transition: "background-color .2s ease, color .2s ease, border-color .2s ease"
+        });
+        b.__on = onLabel || "Active"; b.__off = offLabel || "Inactive";
+        return b;
+    }
+    function dsSetBadge(b, on) {
+        b.textContent = on ? b.__on : b.__off;
+        b.style.background = on ? DS.badgeOnBg : DS.badgeOffBg;
+        b.style.color = on ? DS.badgeOnText : DS.badgeOffText;
+        b.style.borderColor = on ? DS.badgeOnBorder : DS.badgeOffBorder;
+    }
+    // Chip d'icone 40px a gauche des cartes « champ » (pendant du cercle de la case a cocher).
+    function dsChipStyle() {
+        return { flex: "0 0 auto", width: "40px", height: "40px", borderRadius: "8px", display: "grid",
+                 placeItems: "center", background: DS.chipBg, color: DS.muted, fontSize: "16px",
+                 transition: "background-color .2s ease, color .2s ease" };
+    }
+    function dsSetChip(chip, on) {
+        chip.style.background = on ? DS.accent : DS.chipBg;
+        chip.style.color = on ? "#ffffff" : DS.muted;
+    }
+    // Champ de saisie : blanc, bordure fine, rayon 8px ; etats valide / invalide / desactive.
+    function dsInputWrapperStyle() {
+        return { width: "100%", borderRadius: "8px", border: "1px solid " + DS.border, background: DS.card,
+                 boxShadow: "none", overflow: "hidden",
+                 transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease" };
+    }
+    function dsInputStyle(mono) {
+        var st = { width: "100%", border: "none", background: "transparent", color: DS.text, fontSize: "15px",
+                   fontWeight: "500", outline: "none", padding: "11px 14px" };
+        if (mono) st.fontFamily = "'Courier New', Courier, monospace";
+        return st;
+    }
+    // isValid : true | false | null (neutre) ; disabled prime.
+    function dsSetInput(wrapper, input, isValid, disabled) {
+        if (disabled) {
+            wrapper.style.background = DS.disabledBg; wrapper.style.borderColor = DS.border;
+            wrapper.style.boxShadow = "none"; input.style.color = DS.dim; return;
+        }
+        if (isValid === true) {
+            wrapper.style.background = DS.okBg; wrapper.style.borderColor = DS.accent;
+            wrapper.style.boxShadow = "0 0 0 1px " + DS.accent; input.style.color = DS.okText; return;
+        }
+        if (isValid === false) {
+            wrapper.style.background = DS.errBg; wrapper.style.borderColor = DS.err;
+            wrapper.style.boxShadow = "0 0 0 1px " + DS.err; input.style.color = DS.errText; return;
+        }
+        wrapper.style.background = DS.card; wrapper.style.borderColor = DS.border;
+        wrapper.style.boxShadow = "none"; input.style.color = DS.text;
+    }
+    const DS_TITLE = { fontWeight: "700", letterSpacing: "0", fontSize: "16px", lineHeight: "22px", color: DS.text };
+    const DS_DESC  = { fontSize: "14px", lineHeight: "1.6", color: DS.muted, fontWeight: "normal" };
 
     // Utility: create element with inline styles + attributes (supports { text, html })
     function el(tag, styleObj = {}, attrs = {}) {
@@ -36,22 +127,12 @@
                             descriptionHTML,
                             defaultChecked = false,
                             disabled = false,
-                            onChange
+                            onChange,
+                            activeLabel,
+                            inactiveLabel
                         } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "16px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                cursor: disabled ? "not-allowed" : "pointer",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, transform .02s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ cursor: disabled ? "not-allowed" : "pointer", userSelect: "none" }),
             hiddenInput: {
                 position: "absolute",
                 top: "0", left: "0", right: "0", bottom: "0", // overlay entire card
@@ -61,29 +142,24 @@
                 cursor: disabled ? "not-allowed" : "pointer",
                 zIndex: "1"
             },
+            // Cercle-radio 26px : coche = anneau emeraude interieur (inset) laissant un point blanc.
             circle: {
                 flex: "0 0 auto",
-                width: "64px",
-                height: "64px",
+                width: "26px",
+                height: "26px",
+                marginTop: "-2px",
                 borderRadius: "50%",
                 display: "grid",
                 placeItems: "center",
-                border: `2px solid ${COLORS.border}`,
-                background: COLORS.grey, // unchecked
+                border: "2px solid #cbd5e1",
+                background: "#ffffff",
                 boxShadow: "none",
-                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .02s ease"
+                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease"
             },
-            tick: {
-                width: "34px",
-                height: "34px",
-                opacity: "0",
-                transform: "scale(0.9)",
-                transition: "opacity .18s ease, transform .18s ease",
-                color: "#ffffff"
-            },
-            content: { display: "grid", gap: "6px", minWidth: "0" },
-            title:   { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc:    { fontSize: "16px", color: COLORS.muted, fontWeight: COLORS.descFontWeight }
+            tick: { display: "none" },
+            content: { display: "grid", gap: "8px", minWidth: "0", flex: "1" },
+            title:   DS_TITLE,
+            desc:    DS_DESC
         };
 
         const wrap  = el("label", styles.card);
@@ -119,36 +195,38 @@
         content.append(titleEl, descEl);
 
         circle.appendChild(svg);
-        wrap.append(input, circle, content);
+        const badge = dsBadge(activeLabel, inactiveLabel);
+        wrap.append(input, circle, content, badge);
 
         function applyState() {
+            var on = input.checked && !input.disabled;
             if (input.disabled) {
-                circle.style.background = COLORS.greyLight;
-                circle.style.borderColor = COLORS.greyLight;
+                circle.style.background = DS.disabledBg;
+                circle.style.borderColor = DS.border;
                 circle.style.boxShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descEl.style.color  = COLORS.muted;
+                titleEl.style.color = DS.dim;
+                descEl.style.color  = DS.dim;
             } else if (input.checked) {
-                circle.style.background = COLORS.ok;        // #1AB394
-                circle.style.borderColor = COLORS.ok;
-                circle.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color  = COLORS.muted;
+                circle.style.background = "#ffffff";
+                circle.style.borderColor = DS.accent;
+                circle.style.boxShadow = "inset 0 0 0 6px " + DS.accent;
+                titleEl.style.color = DS.text;
+                descEl.style.color  = DS.muted;
             } else {
-                circle.style.background = COLORS.grey;
-                circle.style.borderColor = COLORS.border;
+                circle.style.background = "#ffffff";
+                circle.style.borderColor = "#cbd5e1";
                 circle.style.boxShadow = "none";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color  = COLORS.muted;
+                titleEl.style.color = DS.text;
+                descEl.style.color  = DS.muted;
             }
-            svg.style.opacity   = input.checked && !input.disabled ? "1" : "0";
-            svg.style.transform = input.checked && !input.disabled ? "scale(1)" : "scale(0.9)";
+            dsSetCard(wrap, on, false);
+            dsSetBadge(badge, on);
             wrap.style.cursor   = input.disabled ? "not-allowed" : "pointer";
         }
 
         // Focus ring
-        input.addEventListener("focus", () => { if (!input.disabled) wrap.style.boxShadow = `0 0 0 4px ${COLORS.ring}`; });
-        input.addEventListener("blur",  () => { wrap.style.boxShadow = "none"; });
+        input.addEventListener("focus", () => { if (!input.disabled) dsSetCard(wrap, input.checked, true); });
+        input.addEventListener("blur",  () => { dsSetCard(wrap, input.checked && !input.disabled, false); });
 
         // Press micro-animation
         wrap.addEventListener("mousedown", () => { if (!input.disabled) wrap.style.transform = "translateY(1px)"; });
@@ -199,7 +277,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -223,7 +301,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createCard(item);
@@ -255,27 +333,17 @@
                                    onSave
                                } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "16px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ alignItems: "center", userSelect: "none" }),
+            // Boite de saisie compacte a gauche, pendant du cercle de la case a cocher.
             rectangle: {
                 flex: "0 0 auto",
-                width: "164px",
-                height: "64px",
-                borderRadius: "12px",
+                width: "120px",
+                height: "44px",
+                borderRadius: "8px",
                 display: "grid",
                 placeItems: "center",
-                border: `2px solid ${COLORS.border}`,
-                background: COLORS.grey,
+                border: "1px solid " + DS.border,
+                background: DS.card,
                 boxShadow: "none",
                 transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease"
             },
@@ -284,16 +352,17 @@
                 height: "100%",
                 border: "none",
                 background: "transparent",
-                color: "#ffffff",
-                fontSize: "20px",
+                color: DS.text,
+                fontSize: "18px",
                 fontWeight: "700",
                 textAlign: "center",
                 outline: "none",
-                padding: "0 12px"
+                padding: "0 12px",
+                fontFamily: "'Courier New', Courier, monospace"
             },
             content: { display: "grid", gap: "6px", minWidth: "0", flex: "1" },
-            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc: { fontSize: "16px", color: COLORS.muted, fontWeight: COLORS.descFontWeight }
+            title: DS_TITLE,
+            desc: DS_DESC
         };
 
         const wrap = el("div", styles.card);
@@ -345,21 +414,15 @@
 
         function applyState() {
             if (input.disabled) {
-                rectangle.style.background = COLORS.greyLight;
-                rectangle.style.borderColor = COLORS.greyLight;
-                rectangle.style.boxShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descEl.style.color = COLORS.muted;
-                input.style.color = COLORS.muted;
+                dsSetInput(rectangle, input, null, true);
+                titleEl.style.color = DS.dim;
+                descEl.style.color = DS.dim;
             } else {
                 const val = parseInt(input.value, 10);
                 const hasValue = !isNaN(val) && val !== 0;
-                rectangle.style.background = hasValue ? COLORS.ok : COLORS.grey;
-                rectangle.style.borderColor = hasValue ? COLORS.ok : COLORS.border;
-                rectangle.style.boxShadow = hasValue ? "0 10px 22px -10px rgba(26,179,148,0.5)" : "none";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
+                dsSetInput(rectangle, input, hasValue ? true : null, false);
+                titleEl.style.color = DS.text;
+                descEl.style.color = DS.muted;
             }
         }
 
@@ -434,7 +497,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -451,7 +514,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createIntegerCard(item);
@@ -483,40 +546,12 @@
                                         onSave
                                     } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "grid",
-                gap: "12px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ display: "grid", gap: "12px", userSelect: "none" }),
             header: { display: "grid", gap: "6px" },
-            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc: { fontSize: "16px", color: COLORS.muted },
-            inputWrapper: {
-                width: "100%",
-                borderRadius: "12px",
-                border: `2px solid ${COLORS.border}`,
-                background: COLORS.grey,
-                boxShadow: "none",
-                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
-                overflow: "hidden"
-            },
-            inputField: {
-                width: "100%",
-                border: "none",
-                background: "transparent",
-                color: "#ffffff",
-                fontSize: "18px",
-                fontWeight: "600",
-                outline: "none",
-                padding: "14px 16px",
-                fontFamily: "monospace"
-            }
+            title: DS_TITLE,
+            desc: DS_DESC,
+            inputWrapper: dsInputWrapperStyle(),
+            inputField: dsInputStyle(true)
         };
 
         const wrap = el("div", styles.card);
@@ -572,38 +607,9 @@
         }
 
         function applyState(isValid = null) {
-            if (input.disabled) {
-                inputWrapper.style.background = COLORS.greyLight;
-                inputWrapper.style.borderColor = COLORS.greyLight;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descEl.style.color = COLORS.muted;
-                input.style.color = COLORS.muted;
-            } else if (isValid === true) {
-                // Valid integer
-                inputWrapper.style.background = COLORS.ok;
-                inputWrapper.style.borderColor = COLORS.ok;
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else if (isValid === false) {
-                // Invalid integer
-                inputWrapper.style.background = "#8B2E2E";
-                inputWrapper.style.borderColor = "#C74444";
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else {
-                // Neutral (empty or typing)
-                inputWrapper.style.background = COLORS.grey;
-                inputWrapper.style.borderColor = COLORS.border;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            }
+            dsSetInput(inputWrapper, input, isValid, input.disabled);
+            titleEl.style.color = input.disabled ? DS.dim : DS.text;
+            descEl.style.color = input.disabled ? DS.dim : DS.muted;
         }
 
         function saveValue() {
@@ -688,7 +694,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -705,7 +711,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createIntegerFieldCard(item);
@@ -737,39 +743,12 @@
                                      onSave
                                  } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "grid",
-                gap: "12px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ display: "grid", gap: "12px", userSelect: "none" }),
             header: { display: "grid", gap: "6px" },
-            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc: { fontSize: "16px", color: COLORS.muted },
-            inputWrapper: {
-                width: "100%",
-                borderRadius: "12px",
-                border: `2px solid ${COLORS.border}`,
-                background: COLORS.grey,
-                boxShadow: "none",
-                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
-                overflow: "hidden"
-            },
-            inputField: {
-                width: "100%",
-                border: "none",
-                background: "transparent",
-                color: "#ffffff",
-                fontSize: "18px",
-                fontWeight: "600",
-                outline: "none",
-                padding: "14px 16px"
-            }
+            title: DS_TITLE,
+            desc: DS_DESC,
+            inputWrapper: dsInputWrapperStyle(),
+            inputField: dsInputStyle(false)
         };
 
         const wrap = el("div", styles.card);
@@ -819,38 +798,9 @@
         }
 
         function applyState(isValid = null) {
-            if (input.disabled) {
-                inputWrapper.style.background = COLORS.greyLight;
-                inputWrapper.style.borderColor = COLORS.greyLight;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descEl.style.color = COLORS.muted;
-                input.style.color = COLORS.muted;
-            } else if (isValid === true) {
-                // Valid text
-                inputWrapper.style.background = COLORS.ok;
-                inputWrapper.style.borderColor = COLORS.ok;
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else if (isValid === false) {
-                // Invalid text
-                inputWrapper.style.background = "#8B2E2E";
-                inputWrapper.style.borderColor = "#C74444";
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else {
-                // Neutral (empty or typing)
-                inputWrapper.style.background = COLORS.grey;
-                inputWrapper.style.borderColor = COLORS.border;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            }
+            dsSetInput(inputWrapper, input, isValid, input.disabled);
+            titleEl.style.color = input.disabled ? DS.dim : DS.text;
+            descEl.style.color = input.disabled ? DS.dim : DS.muted;
         }
 
         function saveValue() {
@@ -932,7 +882,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -949,7 +899,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createTextFieldCard(item);
@@ -975,44 +925,17 @@
                                    defaultValue = '',
                                    placeholder = '192.168.1.0/24',
                                    disabled = false,
+                                   allowIPv6 = false,
                                    onChange,
                                    onSave
                                } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "grid",
-                gap: "12px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ display: "grid", gap: "12px", userSelect: "none" }),
             header: { display: "grid", gap: "6px" },
-            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc: { fontSize: "16px", color: COLORS.muted },
-            inputWrapper: {
-                width: "100%",
-                borderRadius: "12px",
-                border: `2px solid ${COLORS.border}`,
-                background: COLORS.grey,
-                boxShadow: "none",
-                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
-                overflow: "hidden"
-            },
-            inputField: {
-                width: "100%",
-                border: "none",
-                background: "transparent",
-                color: "#ffffff",
-                fontSize: "18px",
-                fontWeight: "600",
-                outline: "none",
-                padding: "14px 16px",
-                fontFamily: "monospace"
-            }
+            title: DS_TITLE,
+            desc: DS_DESC,
+            inputWrapper: dsInputWrapperStyle(),
+            inputField: dsInputStyle(true)
         };
 
         const wrap = el("div", styles.card);
@@ -1096,6 +1019,16 @@
                 return { valid: true, value: trimmed };
             }
 
+            // IPv6 (adresse ou préfixe 1-128), seulement pour les champs qui
+            // l'acceptent (réseaux de confiance) : contrôle de forme, le
+            // serveur valide strictement.
+            if (allowIPv6) {
+                const v6 = trimmed.match(/^([0-9a-fA-F:]+)(?:\/(\d{1,3}))?$/);
+                if (v6 && v6[1].includes(':') && (v6[2] === undefined || (+v6[2] >= 1 && +v6[2] <= 128))) {
+                    return { valid: true, value: trimmed };
+                }
+            }
+
             return { valid: false, error: 'Invalid format (use IP, CIDR, or subnet mask)' };
         }
 
@@ -1113,38 +1046,9 @@
         }
 
         function applyState(isValid = null) {
-            if (input.disabled) {
-                inputWrapper.style.background = COLORS.greyLight;
-                inputWrapper.style.borderColor = COLORS.greyLight;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descEl.style.color = COLORS.muted;
-                input.style.color = COLORS.muted;
-            } else if (isValid === true) {
-                // Valid network
-                inputWrapper.style.background = COLORS.ok;
-                inputWrapper.style.borderColor = COLORS.ok;
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else if (isValid === false) {
-                // Invalid network
-                inputWrapper.style.background = "#8B2E2E";
-                inputWrapper.style.borderColor = "#C74444";
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else {
-                // Neutral (empty or typing)
-                inputWrapper.style.background = COLORS.grey;
-                inputWrapper.style.borderColor = COLORS.border;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            }
+            dsSetInput(inputWrapper, input, isValid, input.disabled);
+            titleEl.style.color = input.disabled ? DS.dim : DS.text;
+            descEl.style.color = input.disabled ? DS.dim : DS.muted;
         }
 
         function saveValue() {
@@ -1224,7 +1128,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -1241,7 +1145,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createNetworkCard(item);
@@ -1271,51 +1175,22 @@
                                   onSave
                               } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "grid",
-                gap: "12px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                marginTop: "10px",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ display: "grid", gap: "12px", marginTop: "10px", userSelect: "none" }),
             header: { display: "grid", gap: "6px" },
-            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc: { fontSize: "16px", color: COLORS.muted, position: "relative" },
+            title: DS_TITLE,
+            desc: Object.assign({ position: "relative" }, DS_DESC),
             descContent: { display: "inline" },
             expandBtn: {
                 display: "inline",
                 marginLeft: "6px",
-                color: COLORS.ok,
+                color: DS.accent,
                 cursor: "pointer",
                 fontWeight: "600",
                 textDecoration: "underline",
                 transition: "color .2s ease"
             },
-            inputWrapper: {
-                width: "100%",
-                borderRadius: "12px",
-                border: `2px solid ${COLORS.border}`,
-                background: COLORS.grey,
-                boxShadow: "none",
-                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
-                overflow: "hidden"
-            },
-            inputField: {
-                width: "100%",
-                border: "none",
-                background: "transparent",
-                color: "#ffffff",
-                fontSize: "18px",
-                fontWeight: "600",
-                outline: "none",
-                padding: "14px 16px",
-                fontFamily: "monospace"
-            }
+            inputWrapper: dsInputWrapperStyle(),
+            inputField: dsInputStyle(true)
         };
 
         const wrap = el("div", styles.card);
@@ -1345,7 +1220,7 @@
 
             expandBtn = el("span", styles.expandBtn, { text: "more" });
             expandBtn.addEventListener("mouseenter", () => {
-                expandBtn.style.color = "#ffffff";
+                expandBtn.style.color = "#047857";
             });
             expandBtn.addEventListener("mouseleave", () => {
                 expandBtn.style.color = COLORS.ok;
@@ -1518,38 +1393,9 @@
         }
 
         function applyState(isValid = null) {
-            if (input.disabled) {
-                inputWrapper.style.background = COLORS.greyLight;
-                inputWrapper.style.borderColor = COLORS.greyLight;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descEl.style.color = COLORS.muted;
-                input.style.color = COLORS.muted;
-            } else if (isValid === true) {
-                // Valid domain
-                inputWrapper.style.background = COLORS.ok;
-                inputWrapper.style.borderColor = COLORS.ok;
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else if (isValid === false) {
-                // Invalid domain
-                inputWrapper.style.background = "#8B2E2E";
-                inputWrapper.style.borderColor = "#C74444";
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else {
-                // Neutral (empty or typing)
-                inputWrapper.style.background = COLORS.grey;
-                inputWrapper.style.borderColor = COLORS.border;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            }
+            dsSetInput(inputWrapper, input, isValid, input.disabled);
+            titleEl.style.color = input.disabled ? DS.dim : DS.text;
+            descEl.style.color = input.disabled ? DS.dim : DS.muted;
         }
 
         function saveValue() {
@@ -1629,7 +1475,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -1646,7 +1492,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createDomainCard(item);
@@ -1676,51 +1522,22 @@
                                onSave
                            } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "grid",
-                gap: "12px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                marginTop: "10px",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ display: "grid", gap: "12px", marginTop: "10px", userSelect: "none" }),
             header: { display: "grid", gap: "6px" },
-            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            desc: { fontSize: "16px", color: COLORS.muted, position: "relative" },
+            title: DS_TITLE,
+            desc: Object.assign({ position: "relative" }, DS_DESC),
             descContent: { display: "inline" },
             expandBtn: {
                 display: "inline",
                 marginLeft: "6px",
-                color: COLORS.ok,
+                color: DS.accent,
                 cursor: "pointer",
                 fontWeight: "600",
                 textDecoration: "underline",
                 transition: "color .2s ease"
             },
-            inputWrapper: {
-                width: "100%",
-                borderRadius: "12px",
-                border: `2px solid ${COLORS.border}`,
-                background: COLORS.grey,
-                boxShadow: "none",
-                transition: "background-color .2s ease, border-color .2s ease, box-shadow .2s ease",
-                overflow: "hidden"
-            },
-            inputField: {
-                width: "100%",
-                border: "none",
-                background: "transparent",
-                color: "#ffffff",
-                fontSize: "18px",
-                fontWeight: "600",
-                outline: "none",
-                padding: "14px 16px",
-                fontFamily: "monospace"
-            }
+            inputWrapper: dsInputWrapperStyle(),
+            inputField: dsInputStyle(true)
         };
 
         const wrap = el("div", styles.card);
@@ -1750,7 +1567,7 @@
 
             expandBtn = el("span", styles.expandBtn, { text: "more" });
             expandBtn.addEventListener("mouseenter", () => {
-                expandBtn.style.color = "#ffffff";
+                expandBtn.style.color = "#047857";
             });
             expandBtn.addEventListener("mouseleave", () => {
                 expandBtn.style.color = COLORS.ok;
@@ -1925,38 +1742,9 @@
         }
 
         function applyState(isValid = null) {
-            if (input.disabled) {
-                inputWrapper.style.background = COLORS.greyLight;
-                inputWrapper.style.borderColor = COLORS.greyLight;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descEl.style.color = COLORS.muted;
-                input.style.color = COLORS.muted;
-            } else if (isValid === true) {
-                // Valid URI
-                inputWrapper.style.background = COLORS.ok;
-                inputWrapper.style.borderColor = COLORS.ok;
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else if (isValid === false) {
-                // Invalid URI
-                inputWrapper.style.background = "#8B2E2E";
-                inputWrapper.style.borderColor = "#C74444";
-                inputWrapper.style.boxShadow = "0 10px 22px -10px rgba(199,68,68,0.5)";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            } else {
-                // Neutral (empty or typing)
-                inputWrapper.style.background = COLORS.grey;
-                inputWrapper.style.borderColor = COLORS.border;
-                inputWrapper.style.boxShadow = "none";
-                titleEl.style.color = COLORS.text;
-                descEl.style.color = COLORS.muted;
-                input.style.color = "#ffffff";
-            }
+            dsSetInput(inputWrapper, input, isValid, input.disabled);
+            titleEl.style.color = input.disabled ? DS.dim : DS.text;
+            descEl.style.color = input.disabled ? DS.dim : DS.muted;
         }
 
         function saveValue() {
@@ -2036,7 +1824,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -2053,7 +1841,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createUriCard(item);
@@ -2080,20 +1868,7 @@
                                            onDescriptionSave
                                        } = {}) {
         const styles = {
-            card: {
-                position: "relative",
-                display: "flex",
-                alignItems: "flex-start",
-                gap: "16px",
-                background: COLORS.card,
-                border: `1px solid ${COLORS.border}`,
-                borderRadius: "16px",
-                padding: "18px",
-                marginBottom: "6px",
-                cursor: "pointer",
-                userSelect: "none",
-                transition: "box-shadow .2s ease, transform .02s ease, border-color .2s ease"
-            },
+            card: dsCardStyle({ marginBottom: "6px", cursor: "pointer", userSelect: "none" }),
             hiddenInput: {
                 position: "absolute",
                 opacity: "0",
@@ -2101,46 +1876,27 @@
                 height: "1px",
                 pointerEvents: "none"
             },
-            iconContainer: {
-                flex: "0 0 auto",
-                width: "64px",
-                height: "64px",
-                display: "grid",
-                placeItems: "center",
-                transition: "transform .02s ease"
-            },
-            icon: {
-                fontSize: "42px",
-                color: COLORS.grey,
-                transition: "color .2s ease, text-shadow .2s ease",
-                textShadow: "none"
-            },
+            iconContainer: dsChipStyle(),
+            icon: { fontSize: "16px", transition: "color .2s ease" },
             content: { display: "grid", gap: "6px", minWidth: "0", flex: "1" },
-            title: { fontWeight: "800", letterSpacing: ".2px", fontSize: "18px", color: COLORS.text },
-            descWrapper: {
-                position: "relative"
-            },
-            descDisplay: {
-                fontSize: "16px",
-                color: COLORS.muted,
-                cursor: "text",
-                padding: "4px 8px",
-                borderRadius: "4px",
-                transition: "background-color .2s ease"
-            },
+            title: DS_TITLE,
+            descWrapper: { position: "relative" },
+            descDisplay: Object.assign({ cursor: "text", padding: "4px 8px", margin: "0 -8px", borderRadius: "6px",
+                                         transition: "background-color .2s ease" }, DS_DESC),
             descEdit: {
-                fontSize: "16px",
-                color: COLORS.text,
-                background: COLORS.card,
-                border: `2px solid ${COLORS.ok}`,
-                borderRadius: "4px",
-                padding: "6px 10px",
+                fontSize: "14px",
+                lineHeight: "1.6",
+                color: DS.text,
+                background: DS.card,
+                border: "1px solid " + DS.accent,
+                borderRadius: "6px",
+                padding: "8px 10px",
                 outline: "none",
                 width: "100%",
-                minHeight: "40px",
+                minHeight: "60px",
                 fontFamily: "inherit",
                 resize: "vertical",
-                boxShadow: `0 0 0 4px ${COLORS.ring}`,
+                boxShadow: "0 0 0 3px " + DS.ring,
                 display: "none"
             }
         };
@@ -2182,30 +1938,12 @@
         let lastSavedDescription = descEdit.value;
 
         function applyState() {
-            if (disabled) {
-                icon.style.color = COLORS.greyLight;
-                icon.style.textShadow = "none";
-                titleEl.style.color = COLORS.muted;
-                descDisplay.style.color = COLORS.muted;
-            } else if (isEditing) {
-                // Green when editing
-                icon.style.color = COLORS.ok;
-                icon.style.textShadow = "0 10px 22px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descDisplay.style.color = COLORS.muted;
-            } else if (hasBeenEdited) {
-                // Green after editing
-                icon.style.color = COLORS.ok;
-                icon.style.textShadow = "0 10px 22px rgba(26,179,148,0.5)";
-                titleEl.style.color = COLORS.text;
-                descDisplay.style.color = COLORS.muted;
-            } else {
-                // Grey initially (before any editing)
-                icon.style.color = COLORS.grey;
-                icon.style.textShadow = "none";
-                titleEl.style.color = COLORS.text;
-                descDisplay.style.color = COLORS.muted;
-            }
+            var on = !disabled && (isEditing || hasBeenEdited);
+            dsSetChip(iconContainer, on);
+            icon.style.color = disabled ? DS.dim : (on ? "#ffffff" : DS.muted);
+            titleEl.style.color = disabled ? DS.dim : DS.text;
+            descDisplay.style.color = disabled ? DS.dim : DS.muted;
+            dsSetCard(wrap, isEditing && !disabled, false);
             wrap.style.cursor = disabled ? "not-allowed" : "pointer";
         }
 
@@ -2272,7 +2010,7 @@
 
         descDisplay.addEventListener("mouseenter", () => {
             if (!disabled && !isEditing) {
-                descDisplay.style.background = "rgba(255,255,255,0.05)";
+                descDisplay.style.background = "#f8fafc";
             }
         });
 
@@ -2320,7 +2058,7 @@
         renderList(containerId, items = []) {
             const host = document.getElementById(containerId);
             if (!host) { console.warn("Container not found:", containerId); return []; }
-            const grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+            const grid = el("div", { display: "grid", gap: "14px" });
             host.appendChild(grid);
             const ctrls = [];
             for (const cfg of items) {
@@ -2337,7 +2075,7 @@
             let grid = host.lastElementChild;
             const isGrid = grid && grid.style && grid.style.display === "grid";
             if (!isGrid) {
-                grid = el("div", { maxWidth: "780px", margin: "0 auto", display: "grid", gap: "16px" });
+                grid = el("div", { display: "grid", gap: "14px" });
                 host.appendChild(grid);
             }
             const card = createExplainCheckboxCard(item);

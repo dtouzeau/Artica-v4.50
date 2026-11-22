@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 class samba_kerb{
 	
 	public function __construct(){
@@ -71,7 +72,7 @@ class samba_kerb{
 		$SambaBindInterface=$sock->GET_INFO("SambaBindInterface");
 		$WinBindMaxClients=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("WinBindMaxClients"));
 		if($WinBindMaxClients==0){$WinBindMaxClients=500;}
-		if(!is_file("/etc/artica-postfix/settings/Daemons/KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
+		if(!artica_setting_exists("KerbAuthSMBV2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthSMBV2", 1);}
 		
 		$array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
 		foreach ($array as $key=>$value){
@@ -100,7 +101,7 @@ class samba_kerb{
 		if(!is_numeric($KerbAuthMapUntrustedDomain)){$KerbAuthMapUntrustedDomain=1;}
 		if(!is_numeric($KerbAuthTrusted)){$KerbAuthTrusted=1;}
 		$KerbAuthSMBV2=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthSMBV2"));
-		if(!is_file("/etc/artica-postfix/settings/Daemons/SambaClientNTLMv2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SambaClientNTLMv2", 1);}
+		if(!artica_setting_exists("SambaClientNTLMv2")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("SambaClientNTLMv2", 1);}
 		$SambaClientNTLMv2=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SambaClientNTLMv2"));
 		
 		

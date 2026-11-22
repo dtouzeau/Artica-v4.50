@@ -1,18 +1,25 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
+// Les repartiteurs ?enable-signature= et ?enable-firewall= appelaient
+// enable_signature() et enable_firewall(), qui ne sont definies NI dans ce
+// fichier NI ailleurs: les deux URL repondaient un fatal « Call to undefined
+// function ». La paire appartient a la famille Suricata (elle bascule une
+// signature dans suricata-rules.db et un drapeau dans suricata_sig) et n'a
+// rien a faire ici; seul fw.ids.rules.php produit reellement
+// « ?enable-signature= ».
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["search"])){table();exit;}
-if(isset($_GET["enable-signature"])){enable_signature();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 page();
 
 
@@ -85,11 +92,16 @@ function table():bool{
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$text_class="";
 		if(trim($line)==null){continue;}
-		if($GLOBALS['VERBOSE']){echo "FOUND $line\n";}
+		if($GLOBALS['VERBOSE']){echo "FOUND ".req_html($line)."\n";}
         $srcline=$line;
 
 
         list($datetext,$service,$type,$logtype,$line)=ParseRows($srcline);
+        // Pentest 2026-11-04 : message/service/type Loki (donnee externe) affiches sans encodage (XSS stockee).
+        $line=req_html($line);
+        $service=req_html($service);
+        $type=req_html($type);
+        $datetext=req_html($datetext);
         $line=str_replace("#012","",$line);
         $line=str_replace("#011","",$line);
         $label=$LEVELS[$logtype];

@@ -13,7 +13,7 @@ if(!$usersmenus->AsAnAdministratorGeneric){
 	$tpl=new templates();
 	$alert=$tpl->_ENGINE_parse_body('{ERROR_NO_PRIVS}');
 	echo "alert('$alert');";
-	die("DIE " .__FILE__." Line: ".__LINE__);	
+	die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");	
 }
 
 

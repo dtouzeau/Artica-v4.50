@@ -42,12 +42,12 @@ if($EnableIPSECService==1){
 }
 if($APP_KEEPALIVED_ENABLE==1){
     squid_admin_mysql(0,"Disable KEEPALIVED Master, License error",null,__FILE__,__LINE__);
-    shell_exec("$php /usr/share/artica-postfix/exec.keepalived.php --disable");
+    shell_exec("/usr/sbin/articarest -disable-keepalived");
 }
 
 if($APP_KEEPALIVED_ENABLE_SLAVE==1){
     squid_admin_mysql(0,"Disable KEEPALIVED Slave, License error",null,__FILE__,__LINE__);
-    shell_exec("$php /usr/share/artica-postfix/exec.keepalived.php --disable-secondary_node");
+    shell_exec("/usr/sbin/articarest -disable-keepalived-secondary");
 }
 
 if($UfdbcatEnableArticaDB==1) {

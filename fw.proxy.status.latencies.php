@@ -97,7 +97,7 @@ function render_charts(): void {
     $period = isset($_GET["period"]) && in_array($_GET["period"], $valid) ? $_GET["period"] : 'current';
 
     $h = [];
-    $h[] = "<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[] = "";
 
     // 1. Summary widgets
     $h[] = render_summary($period);
@@ -280,7 +280,7 @@ function render_top_slow_section(): void {
     if (!in_array($period, $valid)) $period = 'current';
 
     $h = [];
-    $h[] = "<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[] = "";
     $h[] = render_top_slow($period, $by);
     $h[] = "<script>NoSpinner();</script>";
     echo $tpl->_ENGINE_parse_body(implode("\n", $h));
@@ -351,7 +351,7 @@ function site_trend_chart(): void {
     $uid = 'trend-' . uniqid();
 
     $h = [];
-    $h[] = "<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[] = "";
     $h[] = "<div class='ibox'><div class='ibox-title'><h5><i class='fas fa-chart-line'></i>&nbsp; $safeSite</h5></div>";
     $h[] = "<div class='ibox-content'>";
     $h[] = "<div style='position:relative;height:300px'><canvas id='$uid'></canvas></div>";

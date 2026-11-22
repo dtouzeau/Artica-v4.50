@@ -1,11 +1,11 @@
 <add_network>Adicionar uma nova rede</add_network>
-<add_network_text>Define a new network (IP & Mask) to scan in order to find computers</add_network_text>
-<delete_all_computers_warn>This operation will delete all computers in the database, do you want to perfom this operation ?</delete_all_computers_warn>
+<add_network_text>Defina uma nova rede (IP e m&#225;scara) para analisar a fim de encontrar computadores</add_network_text>
+<delete_all_computers_warn>Esta opera&#231;&#227;o eliminar&#225; todos os computadores na base de dados, deseja efetuar esta opera&#231;&#227;o?</delete_all_computers_warn>
 <edit_networks>Editar redes</edit_networks>
 <edit_networks_text>Adicionar ou remover redes para ajudar o scanner a detectar computadores</edit_networks_text>
-<import_artica_computers>Import computers</import_artica_computers>
-<import_artica_computers_explain>This feature allow you to import computers list from an another Artica server</import_artica_computers_explain>
-<import_artica_computers_text>Import computers from other Articas servers</import_artica_computers_text>
-<network_scanner_execute_background>The network scanner was executed in background mode, the network list will be updated in few times</network_scanner_execute_background>
-<scan_your_network>Scan your network</scan_your_network>
-<scan_your_network_text>Launch the scanner in order to refresh the computer list in your network</scan_your_network_text>
+<import_artica_computers>Importar computadores</import_artica_computers>
+<import_artica_computers_explain>Esta funcionalidade permite-lhe importar a lista de computadores de outro servidor Artica</import_artica_computers_explain>
+<import_artica_computers_text>Importar computadores de outros servidores Artica</import_artica_computers_text>
+<network_scanner_execute_background>O scanner de rede foi executado em modo de fundo, a lista de rede ser&#225; atualizada em breve</network_scanner_execute_background>
+<scan_your_network>Analisar a sua rede</scan_your_network>
+<scan_your_network_text>Inicie o scanner para atualizar a lista de computadores na sua rede</scan_your_network_text>

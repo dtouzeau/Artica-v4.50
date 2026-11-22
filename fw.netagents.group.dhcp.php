@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DHCP management overview for an agent group.
  * Shows DHCP install status per agent and links to per-section group pages.
@@ -93,7 +95,7 @@ function gdhcp_tabs(): bool {
     }
     $h[] = $tpl->tabs_default($tabs);
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     return true;
 }
 
@@ -116,7 +118,7 @@ function gdhcp_status(): void {
     if (empty($agents)) {
         $h[] = "<p style='padding:15px;color:#999'><i>{no_agents_in_group}</i></p>";
     } else {
-        $h[] = "<table class='table table-striped table-condensed' style='margin:0'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "  <thead><tr>";
         $h[] = "    <th>{hostname}</th>";
         $h[] = "    <th>{version}</th>";
@@ -161,7 +163,7 @@ function gdhcp_status(): void {
             $h[] = "    <td>$actions</td>";
             $h[] = "  </tr>";
         }
-        $h[] = "  </tbody></table>";
+        $h[] = "  </tbody></table></div></div></div>";
     }
     $h[] = "  </div></div>";
     echo $tpl->_ENGINE_parse_body(implode("\n", $h));
@@ -274,7 +276,8 @@ function gdhcp_leases_data(): void {
         'hostname' => $hostname,
         'state'    => $state,
         'search'   => $agent,   // agent name goes into generic search
-    ], fn($v) => $v !== '' && $v !== 0));
+    // Plancher PHP 7.3: pas de fonction flechee (elle casse tout le fichier).
+    ], function($v){ return $v !== '' && $v !== 0; }));
 
     $json = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/dhcp/group/$id/leases?$qs"));
     if (!is_object($json) || (isset($json->Status) && !$json->Status)) {
@@ -295,7 +298,7 @@ function gdhcp_leases_data(): void {
     $rows = [];
     $TRCLASS = null;
     foreach ($leases as $l) {
-        if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+        $TRCLASS=null;
         $lipAddr = htmlspecialchars($l->ip_address      ?? '');
         $mac     = htmlspecialchars($l->hardware_address ?? '');
         $hn      = htmlspecialchars($l->client_hostname  ?? '—');

@@ -1,11 +1,11 @@
 <add_network>Nueva red</add_network>
 <add_network_text>Definir una nueva red (IP y m%C3¡scara) para escanear con el fin de encontrar ordenadores</add_network_text>
-<delete_all_computers_warn>This operation will delete all computers in the database, do you want to perfom this operation ?</delete_all_computers_warn>
+<delete_all_computers_warn>Esta operaci&#243;n eliminar&#225; todos los equipos de la base de datos, &#191;desea realizar esta operaci&#243;n?</delete_all_computers_warn>
 <edit_networks>Editar Redes</edit_networks>
-<edit_networks_text>Add or remove networks in order to help scanner detecting computers</edit_networks_text>
+<edit_networks_text>A&#241;ada o elimine redes para ayudar al esc&#225;ner a detectar equipos</edit_networks_text>
 <import_artica_computers>Importar Computadoras</import_artica_computers>
 <import_artica_computers_explain>Esta opci&oacute;n le permite importar una lista de computadoras desde otros servidores Artica</import_artica_computers_explain>
 <import_artica_computers_text>Importar computadoras desde otros servidores Artica</import_artica_computers_text>
-<network_scanner_execute_background>The network scanner was executed in background mode, the network list will be updated in few times</network_scanner_execute_background>
-<scan_your_network>Scan your network</scan_your_network>
-<scan_your_network_text>Launch the scanner in order to refresh the computer list in your network</scan_your_network_text>
+<network_scanner_execute_background>El esc&#225;ner de red se ejecut&#243; en modo de fondo, la lista de red se actualizar&#225; en breve</network_scanner_execute_background>
+<scan_your_network>Escanear su red</scan_your_network>
+<scan_your_network_text>Inicie el esc&#225;ner para actualizar la lista de equipos de su red</scan_your_network_text>

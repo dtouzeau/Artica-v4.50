@@ -2,7 +2,9 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+include_once(dirname(__FILE__)."/ressources/prefetch-info.inc"); __prefetchCommonSettings($GLOBALS["CLASS_SOCKETS"]);
 include_once(dirname(__FILE__)."/ressources/class.icon.top.inc");
+include_once(dirname(__FILE__)."/ressources/class.dashboard2.ui.inc");
 include_once("/usr/share/artica-postfix/ressources/class.postgres.inc");
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;$GLOBALS["DEBUG_PROCESS"]=true;$GLOBALS["DEBUG_PRIVS"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
@@ -11,62 +13,67 @@ if(!$tpl->xPrivs()){page_no_privs();die();}
 clean_xss_deep();
 if(isset($_GET["trial-explain"])){trial_explain_js();exit;}
 if(isset($_GET["trial-popup"])){trial_explain_popup();exit;}
-if(isset($_GET["dynacls"])){dynacls();exit;}
-if(isset($_GET['app-status'])){app_status();exit;}
-if(isset($_GET["flot1"])){flot1();exit;}
-if(isset($_GET["flot2"])){flot2();exit;}
-if(isset($_GET["flot3"])){flot3();exit;}
-if(isset($_GET["flot4"])){flot4();exit;}
-if(isset($_GET["flot5"])){flot5();exit;}
 if(isset($_GET["widget-hostname"])){widget_hostname();exit;}
 if(isset($_GET["widget-info"])){widget_info();exit;}
 xgen();
 function xgen():bool{
-    $OPENVPN            = false;
     $users              = new usersMenus();
     $page               = CurrentPageName();
     $IsWizardExecuted   = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("IsWizardExecuted"));
     $EnableOpenVPNServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenVPNServer"));
 
+    // Le drapeau de service prime sur la presence du paquet : un OpenVPN
+    // installe mais desactive ne doit pas compter comme disponible.
     if($EnableOpenVPNServer==0){$users->OPENVPN_INSTALLED=false;}
 
-    if($users->OPENVPN_INSTALLED){
-        if($users->AsVPNManager){
-            $vpn=new openvpn();
-            if($vpn->main_array["GLOBAL"]["ENABLE_SERVER"]==1){$OPENVPN=true;}
+    // Opérateur de tenant SIEM (retour Maxime REGENT 2026-09-11) : sans droit système,
+    // l'état de l'appliance (fw.system.status.php) ne lui rend rien et sa page d'arrivée
+    // est vide. Son tableau de bord statistiques prend la place — c'est la seule chose
+    // qu'il vient voir, et son périmètre y est résolu côté serveur.
+    $status_url="fw.system.status.php?tabs=yes";
+    if(!$users->AsSystemAdministrator && !$users->AsAnAdministratorGeneric){
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaSiem"))==1){
+            include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+            $stats=new statistics_appliance();
+            if(!$stats->denied && !$stats->global){ $status_url="fw.statistics.dashboard.php"; }
         }
     }
-
-    if($GLOBALS["VERBOSE"]){echo "<H3>OPENVPN === $OPENVPN</H3>\n";}
+    // Compte AsMetaAdmin seul : le bandeau de l'appliance n'est meme pas calcule (voir plus bas).
+    $MetaAdminOnly=$users->isMetaAdminOnly();
     $html="
-    <!-- IsWizardExecuted ===  $IsWizardExecuted -->		
-    <div class=\"row border-bottom dashboard-header\" style='padding-top:3px'>
-    <table style='width:100%'>
-    <tr>
-    <td style='width:50%;vertical-align:top'>
-        <div id='dashbord-title'>
-            <div id='widget-hostname'></div>
-        </div>
-    </td>
-    <td style='width:50%;padding-left:15px;vertical-align:top'>
-    <div id='widget-info'></div>
-    
-    </td>
-    </tr>
-    </table>	
+    <!-- IsWizardExecuted ===  $IsWizardExecuted -->
+    ".dashboard2_css()."
+    <div id='dash2'>
+    <div class=\"dashboard-header\" style='padding-top:3px'>
+    ".($MetaAdminOnly?"":dashboard2_hero_grid())."
         <div id='index-warning'></div>
         <div id='applications-status'></div>
-        <div id='main-dashboard-status' class='white-bg' style='padding-top:10px;padding-left: 10px'></div>
+        <div id='main-dashboard-status' class='white-bg' style='padding-top:10px'></div>
     </div>
-    
+    </div>
+
     <script>
         $.address.state('/');
         $.address.value('index');
-        if(document.getElementById('main-dashboard-status') ){ LoadAjaxSilent('main-dashboard-status','fw.system.status.php?tabs=yes');}
-        
-        
+        if(document.getElementById('main-dashboard-status') ){ LoadAjaxSilent('main-dashboard-status','$status_url');}
+
+
     </script>
     ";
+    // Compte qui n'a que AsMetaAdmin (administrateur de tenants Artica Meta, spec 2026-11-13
+    // 5.10.6) : ni bandeau de l'appliance ni etat de ses services -- ils nomment les noeuds et
+    // services de tous les clients. Son accueil est le tableau de bord Artica Meta, filtre par
+    // le daemon sur son tenant.
+    if($MetaAdminOnly){
+        $html="
+    <div id='meta-admin-home' class='white-bg' style='padding-top:10px'></div>
+    <script>
+        $.address.state('/');
+        $.address.value('index');
+        if(document.getElementById('meta-admin-home') ){ LoadAjaxSilent('meta-admin-home','fw.netagents.php?home=yes');}
+    </script>
+    ";
+    }
     VERBOSE("template_admin() OK", __LINE__);
     $tpl=new template_admin(null,$html);
     if(isset($_GET["content"])) {
@@ -190,6 +197,45 @@ function widget_category_service():bool{
 
 
 }
+
+// widget_siem_tenant — la carte vue par un opérateur de tenant.
+//
+// Elle ne peut pas montrer les compteurs d'exploitation (taille de base, nœuds, événements/s) :
+// ceux-là décrivent l'APPLIANCE, pas un périmètre, et /api/v1/admin/overview les calcule sans
+// aucun filtre de tenant. Elle montre donc ce que l'opérateur a le droit de voir — son propre
+// trafic sur 24 h — et NOMME les tenants couverts dès qu'il y en a plusieurs, sans quoi un total
+// additionnerait plusieurs organisations sans le dire.
+function widget_siem_tenant($stats,$tpl):bool{
+    $to=gmdate("Y-m-d\\TH:i:s\\Z");
+    $from=gmdate("Y-m-d\\TH:i:s\\Z",time()-86400);
+    $o=$stats->get("/api/v1/siem/overview?from=".urlencode($from)."&to=".urlencode($to));
+    $DISPLAY=array();
+    $bg="white-bg";
+    if(!is_array($o) || !$stats->ok()){
+        $bg="red-bg";
+        $DISPLAY[]="<li><span class=\"fas fa-triangle-exclamation m-r-xs\"></span>{api_unavailable}</li>";
+        echo $tpl->_ENGINE_parse_body(widget_siem_card($bg,"",$DISPLAY));
+        return true;
+    }
+    $k=isset($o["kpis"])&&is_array($o["kpis"])?$o["kpis"]:array();
+    $ev=intval((isset($k["proxy_requests"])?$k["proxy_requests"]:0))
+       +intval((isset($k["firewall_sessions"])?$k["firewall_sessions"]:0))
+       +intval((isset($k["mail_messages"])?$k["mail_messages"]:0));
+    $DISPLAY[]="<li><span class=\"fas fa-database m-r-xs\"></span><label>{last_24_hours}:</label> <strong>".siem_number($ev)."</strong> {events}</li>";
+
+    $den=intval((isset($k["proxy_denied"])?$k["proxy_denied"]:0))
+        +intval((isset($k["firewall_denied"])?$k["firewall_denied"]:0));
+    $DISPLAY[]="<li><span class=\"fas fa-ban m-r-xs\"></span><label>{blocked_traffic}:</label> ".siem_number($den)."</li>";
+
+    // Les tenants couverts, seulement s'il y en a plusieurs : sur un périmètre unique la carte
+    // reste exactement aussi sobre qu'avant.
+    $tenants=siem_scope_tenants($o);
+    if(count($tenants)>0){
+        $DISPLAY[]="<li><span class=\"fas fa-building m-r-xs\"></span><label>{siem_scope_covers} (".count($tenants)."):</label> ".siem_h(@implode(", ",$tenants))."</li>";
+    }
+    echo $tpl->_ENGINE_parse_body(widget_siem_card($bg,"",$DISPLAY));
+    return true;
+}
 function widget_pdns():bool{
     $EnablePDNS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePDNS"));
     if($EnablePDNS==0){
@@ -198,7 +244,7 @@ function widget_pdns():bool{
     $tpl=new template_admin();
     $bg="white-bg";
     $queries=0;
-    $title_icon="fas fa-database";
+    $title_icon=ico_database;
     $APP_PDNS_VERSION=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("PDNSVersion");
     $sock=new sockets();
     $data=$sock->REST_API("/pdns/status");
@@ -280,7 +326,7 @@ function widget_postfix_iniget():string{
     if(!function_exists("json_decode")){
         return "[POSTFIX]\nrunning=0";
     }
-    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/postfix/master/status"));
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/master/status"));
     if (json_last_error()> JSON_ERROR_NONE) {
         $data=$mem->getKey($Key);
         if(strlen($data)>0){
@@ -401,8 +447,7 @@ function widget_nginx():bool{
     $QUERIES_TEXT=$tpl->FormatNumber($GLOBAL_NGINX_REQUESTS);
     $CNX_TEXT=$tpl->FormatNumber($GLOBAL_NGINX_ACNX);
 
-    $js="Loadjs('fw.rrd.php?img=nginx_requests')";
-    $js1="Loadjs('fw.rrd.php?img=nginx-cnxs')";
+
 
 
     if($running==0){
@@ -415,8 +460,8 @@ function widget_nginx():bool{
         $DISPLAY[]="<li><span class=\"fas fa-plug m-r-xs\"></span>&nbsp;{running}:</label> {since} $uptime</li>";
     }
     if(!is_array($NGINX_ALL_HOSTS)){$NGINX_ALL_HOSTS=array();}
-    $QUERIES_TEXT=$tpl->td_href($QUERIES_TEXT,null,$js);
-    $CNX_TEXT=$tpl->td_href($CNX_TEXT,null,$js1);
+    $QUERIES_TEXT=$tpl->td_href($QUERIES_TEXT,null,"");
+    $CNX_TEXT=$tpl->td_href($CNX_TEXT,null,"");
     $DISPLAY[]="<li><span class=\"fas fa-bolt m-r-xs\"></span>&nbsp;{queries}:</label> $QUERIES_TEXT</li>";
     $DISPLAY[]="<li><span class=\"fas fa-microchip m-r-xs\"></span>&nbsp;{connexions}:</label> $CNX_TEXT</li>";
     $DISPLAY[]="<li><span class=\"fas fa-globe-africa m-r-xs\">
@@ -449,8 +494,8 @@ function widget_nginx():bool{
 function widget_dnsdist():bool{
     $EnableDNSDist=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist"));
     if($EnableDNSDist==0){
-        VERBOSE("-- widget_vpn_client",__LINE__);
-        return widget_vpn_client();}
+        VERBOSE("-- widget_openvpn",__LINE__);
+        return widget_openvpn();}
     $tpl=new template_admin();
     $bg="white-bg";
     $queries=0;
@@ -499,7 +544,7 @@ function widget_dnsdist():bool{
 
     $DISPLAY[]="<li><span class=\"fas fa-bolt m-r-xs\"></span>&nbsp;{queries}:</label> $QUERIES_TEXT</li>";
     $DISPLAY[]="<li><span class=\"fas fa-microchip m-r-xs\"></span>&nbsp;{cache_rate}:</label> $prc%</li>";
-    $DISPLAY[]="<li><span class=\"fab fa-free-code-camp\"></span>&nbsp;{reputation}:</label> $EnableDNSFirewall_text</li>";
+    $DISPLAY[]="<li><span class=\"fa-solid fa-block-brick-fire\"></span>&nbsp;{reputation}:</label> $EnableDNSFirewall_text</li>";
     $DISPLAY[]="<li><span class=\"fa-solid fa-display-medical\"></span>&nbsp;$new_host_resolve</li>";
 
     $widget1="<div class=\"widget $bg p-xl\" style='padding-top:5px;padding-bottom:2px;min-height: 197px'>
@@ -677,31 +722,137 @@ function widget_hacluster():bool{
 
 
 }
+// Bastion RDS Proxy : prime sur le resolveur DNS (et sur tout ce que widget_unbound()
+// teste ensuite). Metriques lues en un appel /rdpproxy/state (sessions connectees,
+// strategies actives et enregistrees, port, services), plus la duree de fonctionnement
+// (/rdpproxy/status) et le nombre d'enregistrements video. RDPPROXY_CNX n'est pas
+// repris : aucun code ne l'ecrit, il vaudrait toujours 0.
+function widget_rdpproxy():bool{
+    include_once(dirname(__FILE__)."/ressources/class.rdpproxy.inc");
+    $tpl=new template_admin();
+    $bg="white-bg";
+    $title_icon="fa-solid fa-display";
+    $DISPLAY=array();
+
+    $error="";
+    $st=rdpproxy_state($error);
+    $version=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RDPPROXY_VERSION"));
+    if($error!=""){
+        $bg="red-bg";
+        $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>&nbsp;{error}: ".htmlspecialchars($error,ENT_QUOTES)."</li>";
+    }else{
+        if(!empty($st["proxy"]["version"])){$version=(string)$st["proxy"]["version"];}
+        if(empty($st["proxy"]["running"])){
+            $bg="red-bg";
+            $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>&nbsp;{APP_RDPPROXY}: {stopped}</li>";
+        }else{
+            $uptime="";
+            $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/rdpproxy/status"));
+            if(is_object($json) && !empty($json->Status) && isset($json->Info)){
+                $ini=new Bs_IniHandler();
+                $ini->loadString($json->Info);
+                $uptime=trim((string)$ini->get("APP_RDPPROXY","uptime"));
+            }
+            $since=$uptime==""?"":" {since} ".htmlspecialchars($uptime,ENT_QUOTES);
+            $DISPLAY[]="<li><span class=\"fas fa-plug m-r-xs\"></span>&nbsp;{running}:$since</li>";
+        }
+        // Sans authentificateur, plus aucune connexion n'aboutit : a voir des l'accueil.
+        if(empty($st["hook"]["running"])){
+            $bg="red-bg";
+            $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>&nbsp;{APP_RDPPROXY_AUTHHOOK}: {stopped}</li>";
+        }
+        $sessions=$tpl->FormatNumber(intval($st["sessions"] ?? 0));
+        $DISPLAY[]="<li><span class=\"fas fa-users m-r-xs\"></span>&nbsp;{active_sessions}: <a href='/rdpproxy-sessions' style='color:inherit;text-decoration:underline'>$sessions</a></li>";
+
+        $policies=intval($st["policies_enabled"] ?? 0);
+        $recording=intval($st["policies_recording"] ?? 0);
+        $rec=$recording>0?" &middot; {recorded}: ".$tpl->FormatNumber($recording):"";
+        $DISPLAY[]="<li><span class=\"fas fa-list-ol m-r-xs\"></span>&nbsp;{policies}: ".$tpl->FormatNumber($policies)."$rec</li>";
+
+        $verr="";$vpath="";$vsupported=false;$vtotal=0;
+        rdpproxy_videos($verr,$vpath,$vsupported,1,$vtotal);
+        $port=intval($st["listen_port"] ?? 3389);
+        $videos=$verr==""?" &middot; {videos}: ".$tpl->FormatNumber($vtotal):"";
+        $DISPLAY[]="<li><span class=\"fas fa-video m-r-xs\"></span>&nbsp;{listen_port}: $port$videos</li>";
+    }
+    $version=htmlspecialchars($version,ENT_QUOTES);
+    $vtxt=$version==""?"":" v.$version";
+
+    $widget1="<div class=\"widget $bg p-xl\" style='padding-top:5px;padding-bottom:2px;min-height: 197px'>
+<div class='row'>
+    <table style='width:100%'>
+    <tr>
+    <td style='vertical-align:top;width:1%' nowrap><i class='$title_icon fa-7x' style='margin-top:10px'></i></td>
+    <td style='vertical-align:top;'>
+        <div class='col-xs-8 text-left'>
+        <h2>{APP_RDPPROXY}$vtxt</h2>
+        <ul class=\"list-unstyled m-t-md\" style='margin-top:5px'>
+                            ".@implode(" ",$DISPLAY)."
+                        </ul>
+        </div>
+     </td>
+     </tr>
+     </table>
+
+</div>
+</div>";
+    echo $tpl->_ENGINE_parse_body($widget1);
+    return true;
+}
+
 function widget_unbound():bool{
     $tpl=new template_admin();
-    
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableRDPProxy"))==1){
+        VERBOSE("-- widget_rdpproxy",__LINE__);
+        return widget_rdpproxy();
+    }
+
     if(LogsSinkEnabled()){
         VERBOSE("-- widget_log_sink",__LINE__);
         return widget_log_sink();
     }
+
     $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
-    if($Enablehacluster==1){return widget_hacluster();}
+    if($Enablehacluster==1){
+        return widget_hacluster();
+    }
     $APP_RBLDNSD_ENABLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_RBLDNSD_ENABLED"));
     if($APP_RBLDNSD_ENABLED==1){
         VERBOSE("-- widget_rbldnsd",__LINE__);
         return widget_rbldnsd();
     }
+    $EnableArticaSiem=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaSiem"));
+    // Une appliance SIEM n'est pas un résolveur : son widget d'accueil doit
+    // parler d'événements et de stockage, pas de requêtes DNS. Le rôle proxy,
+    // lui, garde la priorité historique (testé au-dessus).
+    VERBOSE("--- widget_siem: $EnableArticaSiem",__LINE__);
+    if($EnableArticaSiem==1){
+        return widget_siem();
+    }
+    if(sambaEnabled()==1){
+        VERBOSE("-- widget_samba",__LINE__);
+        return widget_samba();
+    }
+    $users=new usersMenus();
+    $EnableOpenVPNServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenVPNServer"));
+    if(!$users->OPENVPN_INSTALLED){$EnableOpenVPNServer=0;}
+    if($EnableOpenVPNServer==1) {
+        return widget_openvpn();
+    }
+
 
     $widget_unbound_active=widget_unbound_active();
     if($widget_unbound_active==0){
         VERBOSE("-- widget_dnsdist",__LINE__);
-        return widget_dnsdist();}
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("unbound.php?status=yes");
+        return widget_dnsdist();
+    }
     $EnableDNSFirewall=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSFirewall"));
     $UnboundVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundVersion");
     $bg="white-bg";
-    $title_icon="fas fa-database";
+    $title_icon=ico_database;
     $statsf=PROGRESS_DIR."/unbound.control.stats";
+    // The daemon writes the file (stats_noreset); exec.status.php no longer does.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/control/stats");
 
     $unbound_control=array();
     $f=explode("\n",@file_get_contents($statsf));
@@ -720,7 +871,12 @@ function widget_unbound():bool{
     $cache=FormatBytes($cache/1024);
 
 
-    $ini=new Bs_IniHandler(PROGRESS_DIR."/unbound.status");
+    // GET /unbound/status rend l'etat du service (INI [APP_UNBOUND]) ; remplace
+    // framework/unbound.php?status, qui lancait exec.status.php --unbound en root
+    // pour ecrire un fichier relu ici.
+    $ini=new Bs_IniHandler();
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/unbound/status"));
+    if(is_object($json) && isset($json->Info)){$ini->loadString((string)$json->Info);}
 
     $running=$ini->get("APP_UNBOUND","running",0);
 
@@ -738,7 +894,7 @@ if($EnableDNSFirewall==1){
 
     $DISPLAY[]="<li><span class=\"fas fa-bolt m-r-xs\"></span>&nbsp;{queries}:</label> $QUERIES_TEXT</li>";
     $DISPLAY[]="<li><span class=\"fas fa-microchip m-r-xs\"></span>&nbsp;{memory_cache}:</label> $cache</li>";
-    $DISPLAY[]="<li><span class=\"fab fa-free-code-camp\"></span>&nbsp;{APP_DNS_FIREWALL}:</label> $EnableDNSFirewall_text</li>";
+    $DISPLAY[]="<li><span class=\"fa-solid fa-block-brick-fire\"></span>&nbsp;{APP_DNS_FIREWALL}:</label> $EnableDNSFirewall_text</li>";
 
 
 
@@ -1118,6 +1274,89 @@ function widget_docker():bool{
     return true;
 
 }
+// widget_siem — la carte d'accueil d'une appliance Artica SIEM, sur le patron des
+// autres widget_* : les chiffres essentiels du rôle (événements stockés, taille de
+// la base ClickHouse, débit d'ingestion, nœuds du déploiement), lus sur
+// /api/v1/admin/overview via l'include commun (jamais ClickHouse en direct).
+// Un champ que l'API n'a pas renvoyé s'affiche « - », jamais 0 : « nodes » et
+// « version » n'existent qu'à partir du binaire 1.0.22 (absent ≠ zéro).
+function widget_siem():bool{
+    include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+    $tpl=new template_admin();
+    $bg="white-bg";
+    $DISPLAY=array();
+    $version="";
+
+    $stats=new statistics_appliance();
+
+    // Aucun tenant attribué : ce n'est PAS une panne, et la carte ne doit pas le dire. Avant la
+    // feature 021 ce cas tombait dans la branche « API indisponible » en rouge, ce qui envoyait
+    // l'exploitant chercher un service arrêté au lieu d'un droit manquant.
+    if($stats->denied){
+        $DISPLAY[]="<li><span class=\"fas fa-user-lock m-r-xs\"></span>{siem_no_tenant_granted}</li>";
+        echo $tpl->_ENGINE_parse_body(widget_siem_card($bg,$version,$DISPLAY));
+        return true;
+    }
+
+    // /api/v1/admin/overview compte les tables ENTIÈRES, sans filtre de tenant, et exige le rôle
+    // global. Un opérateur de tenant n'a donc pas à le voir : il lit son propre périmètre par
+    // /api/v1/siem/overview, qui l'applique côté serveur.
+    if(!$stats->global){
+        widget_siem_tenant($stats,$tpl);
+        return true;
+    }
+
+    $o=$stats->get("/api/v1/admin/overview");
+    if(!is_array($o) || !$stats->ok()){
+        // API injoignable : la carte le DIT (fond rouge, motif) au lieu d'aligner
+        // des zéros qui ressembleraient à une appliance saine et vide.
+        $bg="red-bg";
+        $DISPLAY[]="<li><span class=\"fas fa-triangle-exclamation m-r-xs\"></span>{api_unavailable}</li>";
+    }else{
+        if(isset($o["version"]) && trim($o["version"])!=""){ $version=" v.".htmlspecialchars($o["version"]); }
+
+        $total=isset($o["total_events"])?$tpl->FormatNumber(intval($o["total_events"])):"-";
+        $DISPLAY[]="<li><span class=\"fas fa-database m-r-xs\"></span><label>{total_events}:</label> <strong>$total</strong></li>";
+
+        $db=isset($o["db_bytes"])?siem_bytes(floatval($o["db_bytes"])):"-";
+        $DISPLAY[]="<li><span class=\"fas fa-hard-drive m-r-xs\"></span><label>{database_size}:</label> $db</li>";
+
+        if(isset($o["events_per_sec"]) && floatval($o["events_per_sec"])>0){
+            $DISPLAY[]="<li><span class=\"fas fa-gauge-high m-r-xs\"></span><label>{siem_events_per_sec}:</label> ".number_format(floatval($o["events_per_sec"]),2)."/s</li>";
+        }
+
+        $nodes=isset($o["nodes"])?strval(intval($o["nodes"])):"-";
+        $DISPLAY[]="<li><span class=\"fas fa-circle-nodes m-r-xs\"></span><label>{siem_nodes}:</label> $nodes</li>";
+    }
+
+    echo $tpl->_ENGINE_parse_body(widget_siem_card($bg,$version,$DISPLAY));
+    return true;
+}
+
+// widget_siem_card — le gabarit de la carte SIEM, partagé par ses trois états (global, tenant,
+// aucun tenant). Extrait pour que les variantes ne soient pas trois copies du même HTML, qui
+// divergeraient à la première retouche.
+function widget_siem_card($bg,$version,$DISPLAY):string{
+    return "<div class=\"widget $bg p-xl\" style='padding-top:5px;padding-bottom:2px;min-height: 197px'>
+<div class='row'>
+    <table style='width:100%'>
+    <tr>
+    <td style='vertical-align:top;width:1%' nowrap><i class='fas fa-chart-area fa-7x' style='margin-top:10px'></i></td>
+    <td style='vertical-align:top;'>
+        <div class='col-xs-8 text-left'>
+        <h2>Artica SIEM$version</h2>
+        <ul class=\"list-unstyled m-t-md\" style='margin-top:5px'>
+                            ".@implode(" ",$DISPLAY)."
+                        </ul>
+        </div>
+     </td>
+     </tr>
+     </table>
+
+</div>
+</div>";
+}
+
 function widget_info():bool{
     VERBOSE("--- widget_info",__LINE__);
     $windows=null;
@@ -1156,7 +1395,6 @@ function widget_info():bool{
 
     $DISPLAY_ERRORS=array();
     $ERR=$icotop->NOTIFS_SQUID(array(),true);
-    $js="Loadjs('fw.rrd.php?img=filedesc')";
     $js1="Loadjs('fw.rrd.php?img=allqueries')";
     $js2="Loadjs('fw.rrd.php?img=squidmem')";
     $js3="Loadjs('fw.rrd.php?img=proxy_users')";
@@ -1164,9 +1402,6 @@ function widget_info():bool{
     $js5="Loadjs('fw.rrd.php?img=squidcpu')";
 
 
-    if(!is_file("img/squid/filedesc-day.png")){
-        $js="Blur()";
-    }
     if(!is_file("img/squid/allqueries-day.png")){
         $js1="Blur()";
     }
@@ -1186,21 +1421,18 @@ function widget_info():bool{
 
     $RRD_SQUID_IDNS_QUERIES=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RRD_SQUID_IDNS_QUERIES"));
     $RRD_SQUID_CPUS=floatval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("RRD_SQUID_CPUS"));
-    $sf=$tpl->td_href("{file_descriptors}","{statistics}",$js);
+    // "A propos" : les fonctionnalites du proxy, leur etat et leur raccourci.
+    $sf=$tpl->td_href("{about_your_proxy}","{about2}","Loadjs('fw.proxy.about.php')");
     $sf1=$tpl->td_href("{requests}","{statistics}",$js1);
     $sf2=$tpl->td_href("{proxy_memory}","{statistics}",$js2);
     $sf3=$tpl->td_href("{members}","{statistics}",$js3);
     $sf4=$tpl->td_href("{DNS_QUERIES}","{statistics}",$js4);
 
-    if(intval($icotop->filedesc_prc)==0){
-        $icotop->filedesc_prc=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("squid_current_filedesc"))."%";
-    }
-
-    $DISPLAY[]="<li><span class=\"far fa-file-medical-alt m-r-xs\"></span>$sf:</label> $icotop->filedesc_prc</li>";
+    $DISPLAY[]="<li><span class=\"far fa-circle-info m-r-xs\"></span>$sf</li>";
 
     if($reqtot>0){
         $reqtot=$tpl->FormatNumber($reqtot);
-        $DISPLAY[]="<li><span class=\"fas fa-cloud-showers-heavy m-r-xs\"></span>$sf1:</label>$reqtot</li>";
+        $DISPLAY[]="<li><span class=\"fas fa-cloud-showers-heavy m-r-xs\"></span>$sf1:$reqtot</li>";
     }
     if($CurentMem>0){
         $cpu_text="";
@@ -1208,11 +1440,11 @@ function widget_info():bool{
             $RRD_SQUID_CPUS=round($RRD_SQUID_CPUS,2);
             $cpu_text=  $tpl->td_href("CPU: $RRD_SQUID_CPUS%","{statistics}",$js5);
         }
-        $DISPLAY[]="<li><span class=\"fas fa-memory m-r-xs\"></span>$sf2:</label>{$CurentMem}MiB $cpu_text</li>";
+        $DISPLAY[]="<li><span class=\"fas fa-memory m-r-xs\"></span>$sf2:{$CurentMem}MiB $cpu_text</li>";
     }
     if($THESHIELDS_USERS>0){
         $THESHIELDS_USERS=$tpl->FormatNumber($THESHIELDS_USERS);
-        $DISPLAY[]="<li><span class=\"far fa-users m-r-xs\"></span>$sf3:</label>$THESHIELDS_USERS</li>";
+        $DISPLAY[]="<li><span class=\"far fa-users m-r-xs\"></span>$sf3:$THESHIELDS_USERS</li>";
     }
     if($RRD_SQUID_IDNS_QUERIES>0){
         $RRD_SQUID_IDNS_QUERIES=$tpl->FormatNumber($RRD_SQUID_IDNS_QUERIES);
@@ -1347,6 +1579,123 @@ function widget_get_activedirectortyname():string{
     return "<li><span class=\"$ico m-r-xs\"></span><label>Active Directory:</label> $hostname</li>";
 }
 
+/**
+ * Serveur OpenVPN -- maillon de la chaine de repli des widgets.
+ *
+ * Place AVANT widget_vpn_client() : celui-ci couvre le cote CLIENT (table
+ * vpn_client, tunnels sortants), celui-ci le cote SERVEUR. Sur une appliance
+ * sans serveur OpenVPN, on rend widget_vpn_client() -- donc le comportement
+ * est EXACTEMENT celui d'avant l'ajout.
+ *
+ * N'utilise PAS l'ancien chemin getFrameWork("cmd.php?openvpn-status=yes") :
+ * son handler existe toujours (framework/cmd.php:266), mais il fait ecrire un
+ * fichier par exec.status.php pour le relire aussitot -- un aller-retour disque
+ * par affichage, que deux chargements simultanes font se marcher dessus.
+ * /openvpn/service/status rend la meme chose en une requete.
+ */
+function widget_openvpn():bool{
+    $users=new usersMenus();
+    // Le drapeau de service prime sur la presence du paquet : un OpenVPN
+    // installe mais desactive n'a pas d'etat a montrer.
+    $EnableOpenVPNServer=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableOpenVPNServer"));
+    if(!$users->OPENVPN_INSTALLED OR $EnableOpenVPNServer==0){
+        VERBOSE("-- widget_vpn_client",__LINE__);
+        return widget_vpn_client();
+    }
+
+    $tpl=new template_admin();
+    $bg="white-bg";
+    $title_icon=ico_shield;
+    $OpenVPNVersion=trim((string)$GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNVersion"));
+    $VERSION=($OpenVPNVersion!=="")?" v$OpenVPNVersion":"";
+
+    // --- etat du service -----------------------------------------------------
+    $running=false;
+    // « lecture ratee » et « service arrete » sont deux etats DIFFERENTS, et le
+    // widget ne doit pas affirmer le second quand il n'a mesure que le premier.
+    $reached=false;
+    // « uptime » de cet INI est une CHAINE LISIBLE ("3 Days, 16 hours"), pas un
+    // nombre de secondes : SERVICE_STATUS l'affiche tel quel apres {since}
+    // (class.template-admin.inc:13717). Un intval() y lirait 3, et time()-3
+    // afficherait « 0 minute » sans que rien ne le signale.
+    $uptime="";
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/openvpn/service/status"));
+    if(is_object($json) && isset($json->Status) && $json->Status && property_exists($json,"Info")){
+        $ini=new Bs_IniHandler();
+        $ini->loadString($json->Info);
+        $reached=true;
+        $running=(intval($ini->_params["APP_OPENVPN"]["running"] ?? 0)==1);
+        $uptime=trim((string)($ini->_params["APP_OPENVPN"]["uptime"] ?? ""));
+    }
+
+    if(!$running){
+        // Rouge dans les deux cas -- une route de statut muette merite autant
+        // l'attention qu'un service arrete -- mais le LIBELLE dit ce qu'on
+        // sait, jamais ce qu'on suppose.
+        $bg="red-bg";
+        $etat=$reached?"{stopped}":"{unavailable}";
+        $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>{APP_OPENVPN}: $etat</li>";
+        return widget_openvpn_render($tpl,$bg,$title_icon,$VERSION,$DISPLAY);
+    }
+
+    $ico_time=ico_clock;
+    if($uptime!==""){
+        // Affichee TELLE QUELLE, comme le fait SERVICE_STATUS. Ne pas tenter
+        // svctile_uptime() pour la compacter : elle est PRIVATE, et
+        // method_exists() rend true sur une methode privee -- le garde aurait
+        // ete inoperant et l'appel un fatal, c'est-a-dire un spinner sans fin.
+        $DISPLAY[]="<li><span class=\"$ico_time m-r-xs\"></span>{running}:</label> {since} $uptime</li>";
+    }else{
+        $DISPLAY[]="<li><span class=\"$ico_time m-r-xs\"></span>{running}</li>";
+    }
+
+    // --- sessions ------------------------------------------------------------
+    // Une lecture RATEE n'est pas une absence de session : afficher « 0 »
+    // parce que la route n'a pas repondu serait indiscernable d'un serveur
+    // reellement inoccupe. Dans ce cas la ligne n'est pas emise du tout.
+    $scan=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/openvpn/session/scan"));
+    if(is_object($scan) && isset($scan->Status) && $scan->Status && property_exists($scan,"List")){
+        $list=is_array($scan->List)?$scan->List:array();
+        $rx=0;$tx=0;
+        foreach($list as $o){
+            $rx+=floatval($o->BytesReceived ?? 0);
+            $tx+=floatval($o->BytesSent ?? 0);
+        }
+        $n=count($list);
+        $icodown=ico_download;
+        $icoupload=ico_upload;
+        $DISPLAY[]="<li><span class=\"fas fa-plug m-r-xs\"></span>{sessions}:</label> $n</li>";
+        // FormatBytes attend des KILO-octets, pas des octets.
+        $DISPLAY[]="<li><span class=\"$icodown m-r-xs\"></span>{reception}:</label> ".FormatBytes($rx/1024)."</li>";
+        $DISPLAY[]="<li><span class=\"$icoupload m-r-xs\"></span>{transmission}:</label> ".FormatBytes($tx/1024)."</li>";
+    }
+
+    return widget_openvpn_render($tpl,$bg,$title_icon,$VERSION,$DISPLAY);
+}
+
+/** Le gabarit, separe pour que les deux sorties de widget_openvpn() le partagent. */
+function widget_openvpn_render($tpl,$bg,$title_icon,$VERSION,$DISPLAY):bool{
+    $widget1="<div class=\"widget $bg p-xl\" style='padding-top:5px;padding-bottom:2px;min-height: 197px'>
+<div class='row'>
+    <table style='width:100%'>
+    <tr>
+    <td style='vertical-align:top;width:1%' nowrap><i class='$title_icon fa-7x' style='margin-top:10px'></i></td>
+    <td style='vertical-align:top;'>
+        <div class='col-xs-8 text-left'>
+        <h2>{APP_OPENVPN}$VERSION</h2>
+        <ul class=\"list-unstyled m-t-md\" style='margin-top:5px'>
+                            ".@implode(" ",$DISPLAY)."
+                        </ul>
+        </div>
+     </td>
+     </tr>
+     </table>
+</div>
+</div>";
+    echo $tpl->_ENGINE_parse_body($widget1);
+    return true;
+}
+
 function widget_vpn_client():bool{
     $tpl=new template_admin();
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
@@ -1416,7 +1765,12 @@ function widget_vpn_client():bool{
 function widget_Meta():bool{
     $EnableArticaMeta=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaMeta"));
     if($EnableArticaMeta==0){
-        return widget_Firewall();
+        return widget_samba();
+    }
+    // Compteurs du parc Meta et taille du depot : comptes Meta seulement (sinon, sans en-tete de
+    // perimetre, le daemon repondrait pour tout le parc de l'infogerant).
+    if(!function_exists("meta_node_admin") || !meta_node_admin()){
+        return widget_samba();
     }
     $tpl=new template_admin();
     $bg="white-bg";
@@ -1515,6 +1869,72 @@ function widget_Suricata():bool{
     return true;
 }
 
+function sambaEnabled():int{
+    $EnableSamba=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSamba"));
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SAMBA_INSTALLED"))==0){$EnableSamba=0;}
+    return $EnableSamba;
+}
+
+function widget_samba():bool{
+
+    include_once(dirname(__FILE__)."/ressources/class.artica-samba.inc");
+    if(sambaEnabled()==0){
+        return  widget_Firewall();
+    }
+
+    $tpl=new template_admin();
+    $samba=new ArticaSamba();
+    try{
+        $health=$samba->health();
+    }catch(\RuntimeException $e){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error(htmlspecialchars($e->getMessage())));
+        return false;
+    }
+    $bg="white-bg";
+    $status=$health["status"] ?? "unknown";
+    $version=$health["version"] ?? "";
+    $instances=$health["instances"] ?? 0;
+    $samba_version=$health["samba_version"]  ?? "???";
+    $title_icon=ico_server;
+    if($status<>"ok"){
+        $bg = "red-bg";
+        $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>{service}: {stopped}</label> </li>";
+    }else{
+        $ico=ico_clock;
+        $DISPLAY[]="<li><span class=\"$ico m-r-xs\"></span>{service}:</label> {running} v$samba_version</li>";
+        $ico=ico_list_opt;
+        $DISPLAY[]="<li><span class=\"$ico m-r-xs\"></span>{instances}:</label> $instances {servers}</li>";
+    }
+    if($instances==0){
+        $bg="red-bg";
+        $DISPLAY[]="<li><span class=\"fas fa-exclamation-circle m-r-xs\"></span>{status}: <strong class='text-danger'>{no_smb_instance}</strong></label> </li>";
+    }
+
+    $widget1="<div class=\"widget $bg p-xl\" style='padding-top:5px;padding-bottom:2px;min-height: 197px'>
+<div class='row'>
+    <table style='width:100%'>
+    <tr>
+    <td style='vertical-align:top;width:1%' nowrap><i class='$title_icon fa-7x' style='margin-top:10px'></i></td>
+    <td style='vertical-align:top;'>
+        <div class='col-xs-8 text-left'>
+        <h2>{APP_SAMBA} v.$version</h2>
+        <ul class=\"list-unstyled m-t-md\" style='margin-top:5px'>
+                            ".@implode(" ",$DISPLAY)."
+                        </ul>
+        </div>
+     </td>
+     </tr>
+     </table>
+</div>
+</div>";
+
+    echo $tpl->_ENGINE_parse_body($widget1);
+    return true;
+
+}
+
+
+
 function widget_Firewall():bool{
     $tpl=new template_admin();
 
@@ -1587,8 +2007,10 @@ function widget_nothing(){
     $DHCPD_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DHCPD_INSTALLED"));
 
     if($DHCPD_INSTALLED==1) {
+        // /dhcpd/service/install: /dhcpd/install never existed in the daemon
+        // (404 "did you use the Correct version of the Web API service?").
         $installDHCPD = $tpl->framework_buildjs(
-            "/dhcpd/install",
+            "/dhcpd/service/install",
             "dhcpd.progress",
             "dhcpd.progress.log",
             "mainsoft-progress",
@@ -1629,103 +2051,8 @@ function widget_nothing(){
 
 
 
-function app_status(){
-	$tpl=new template_admin();
-	$users=new usersMenus();
-	$OPENVPN=false;
-	$FW=true;
-	if($users->OPENVPN_INSTALLED){
-		if($users->AsVPNManager){
-			$vpn=new openvpn();
-			if($vpn->main_array["GLOBAL"]["ENABLE_SERVER"]==1){$OPENVPN=true;}
-		}
-	}
-	
-	if($OPENVPN){if($users->isVPNAdminOnly()){$FW=false;}}
-	if(!$users->AsFirewallManager){$FW=false;}
-	
 
-	
-	echo $tpl->_ENGINE_parse_body("<table class='table table-hover no-margins'>
-	<thead>
-		<th>{status}</th>
-		<th>{service}</th>	
-		<th>{version}</th>
-		<th>{info}</th>	
-	</thead>			
-	");
-	if($FW){echo suricata_status();}
-	if($users->AsVPNManager){echo openvpn_status();}
-	echo "</table>";
-	echo "<script>LoadAjax('main-dashboard-status','fw.proxy.php?app-status=yes')</script>";
-	
-	
-	
-}
-function suricata_status(){
-	$sock=new sockets();
-	$tpl=new template_admin();
-	$users=new usersMenus();
-	if(!$users->SURICATA_INSTALLED){return $tpl->status_array("{IDS}","{not_installed}",false,true);}
-	$EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));
-	$SuricataVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SuricataVersion");
-	if($EnableSuricata==0){return $tpl->status_array("{IDS}","v$SuricataVersion",false,true);}
-	
-	$sock->getFrameWork('suricata.php?daemon-status=yes');
-	$ini=new Bs_IniHandler("ressources/logs/web/suricata.status");
-	return $tpl->DAEMON_STATUS_ROW("IDS",$ini,null);
-}
-function openvpn_status(){
-	$sock=new sockets();
-	$tpl=new template_admin();
-	$users=new usersMenus();
-	
-	if(!$users->OPENVPN_INSTALLED){return $tpl->status_array("{APP_OPENVPN}","{not_installed}",false,true);}
-	$EnableOpenVPN=0;
-	$vpn=new openvpn();
-	if($vpn->main_array["GLOBAL"]["ENABLE_SERVER"]==1){$EnableOpenVPN=1;}
-	$OpenVPNVersion=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNVersion");
-	if($OpenVPNVersion<>null){$OpenVPNVersion="v$OpenVPNVersion";}
-	if($EnableOpenVPN==0){return $tpl->status_array("{APP_OPENVPN}","$OpenVPNVersion",false,true);}
-	$OpenVPNCNXNUmber=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNCNXNUmber"));
-	
-	$sock->getFrameWork("cmd.php?openvpn-status=yes");
-	$ini=new Bs_IniHandler("ressources/logs/web/openvpn.status");
-	return $tpl->DAEMON_STATUS_ROW("OPENVPN_SERVER",$ini,"$OpenVPNCNXNUmber {sessions}");
-}
-function flot1(){
-	
-	$data=unserialize(@file_get_contents("/usr/share/artica-postfix/ressources/interface-cache/FIREWALL.IPAUDIT.24H"));
-	$tpl=new template_admin();
-	$tpl->graph_date_line_sizeMB($data["ip1bytes"],$_GET["id"]);
-	
-			
-}
-function flot2(){
-	$data=unserialize(@file_get_contents("/usr/share/artica-postfix/ressources/interface-cache/FIREWALL.IPAUDIT.24H"));
-	$tpl=new template_admin();
-	$tpl->graph_date_line_sizeMB($data["ip2bytes"],$_GET["id"]);
-}
 
-function flot3(){
-	$data=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNStatsnClients"));
-	$tpl=new template_admin();
-	$tpl->graph_date_line_int($data,$_GET["id"]);
-}
-function flot4(){
-	$data=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNStatsBytesIn"));
-	$tpl=new template_admin();
-	$tpl->graph_date_line_sizeKB($data,$_GET["id"]);
-}
-function flot5(){
-	$data=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("OpenVPNStatsBytesOut"));
-	$tpl=new template_admin();
-	$tpl->graph_date_line_sizeKB($data,$_GET["id"]);
-}
-
-function dynacls(){
-	
-}
 function page_no_privs():bool{
     $HTTP_X_ARTICA_SUBFOLDER="/";
     if(isset($_SERVER["HTTP_X_ARTICA_SUBFOLDER"])){

@@ -22,11 +22,12 @@ function zoom_js(){
 }
 function zoom(){
 
-	$data=unserialize(base64_decode($_GET["data"]));
+	$data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
 $html[]="<div class=ibox-content>";
 $html[]="<table class='table table table-bordered'>";
-	while (list ($key,$val) = each ($data)){
-
+	// Pentest 2026-11-04 : cle/valeur du detail (donnee externe) affiche sans encodage (XSS stockee).
+	if(!is_array($data)){$data=array();}foreach ($data as $key=>$val){   // each() n'existe plus en PHP 8
+		$key=req_html($key);$val=req_html($val);
 		$html[]="<tr>
 		<td class=text-capitalize>$key:</td>
 		<td><strong>$val</strong></td>
@@ -58,7 +59,7 @@ function page(){
 	<div class=\"row\"> 
 		<div class='ibox-content'>
 		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["WEBT_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
+      		<input type=\"text\" class=\"form-control\" value=\"".req_html($_SESSION["WEBT_SEARCH"])."\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"javascript:Search$t(event);\">
       		<span class=\"input-group-btn\">
        		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"javascript:ss$t();\">Go!</button>
       	</span>
@@ -220,6 +221,9 @@ function search(){
 		}
 	
 		if(!$MATCHES){continue;}
+		// Pentest 2026-11-04 : URI/module/IP de la requete journalisee (donnee externe) affiche sans encodage (XSS stockee).
+		$date=req_html($date);$INFO=req_html($INFO);$MODULE=req_html($MODULE);
+		$PROTO=req_html($PROTO);$line=req_html($line);$ipaddr=req_html($ipaddr);
 		
 		
 		

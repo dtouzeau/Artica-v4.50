@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
@@ -49,7 +50,7 @@ function step1(){
     $ARRAY["TITLE"]="{join_cluster}";
     $ARRAY["AFTER"]="LoadAjax('table-loader-elasticsearch-service','fw.elasticsearch.php?tabs=yes');dialogInstance1.close();";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=join-cluster-progress')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=join-cluster-progress')";
 
     $html=$tpl->form_outside("{join_cluster}", @implode("\n", $form),"{ELK_join_a_cluster_explain1}","{join}",$jsrestart,$security);
     echo $tpl->_ENGINE_parse_body($html);

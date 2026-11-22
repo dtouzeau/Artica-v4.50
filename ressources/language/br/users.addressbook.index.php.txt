@@ -1,6 +1,6 @@
-<base_dn>Base DN</base_dn>
-<bind_dn>Bind DN connection</bind_dn>
-<your_address_book>Your Address Book</your_address_book>
-<your_address_book_text>This server can store for you your contacts.[br]This will ensure for you that these contacts will be available everywhere and everytime on all computers</your_address_book_text>
-<your_parameters>Your parameters</your_parameters>
-<your_parameters_text>Use these parameters and apply them to your prefered mail client in order to have access to your personal address book</your_parameters_text>
+<base_dn>DN base</base_dn>
+<bind_dn>Conex&#227;o Bind DN</bind_dn>
+<your_address_book>O seu cat&#225;logo de endere&#231;os</your_address_book>
+<your_address_book_text>Este servidor pode armazenar os seus contatos.[br]Isto garante a voc&#234; que estes contatos estar&#227;o dispon&#237;veis em todo o lugar e a qualquer momento em todos os computadores</your_address_book_text>
+<your_parameters>Os seus par&#226;metros</your_parameters>
+<your_parameters_text>Use estes par&#226;metros e aplique-os ao seu cliente de e-mail preferido para ter acesso ao seu cat&#225;logo de endere&#231;os pessoal</your_parameters_text>

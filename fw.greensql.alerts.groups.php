@@ -14,8 +14,10 @@ function js(){
 	$tpl=new template_admin();
 	$q=new green_sql();
 	
-	$agroupid=$_GET["agroupid"];
-	
+	// Pentest 2026-11-04 : agroupid etait concatene dans la requete.
+	// agroupid est un entier (alert_group.agroupid, cf. fw.greensql.approve.php).
+	$agroupid=intval($_GET["agroupid"] ?? 0);
+
 	$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT db_name,proxyid FROM alert_group WHERE agroupid='$agroupid'"));
 	$db_name=$ligne["db_name"];
 	$proxyid=intval($ligne["proxyid"]);
@@ -56,6 +58,15 @@ function table(){
 
 	$search=$tpl->query_pattern(trim(strtolower($_GET["search"])),array());
 	if($search["MAX"]==0){$search["MAX"]=150;}
+	// Pentest 2026-11-04 : la clause issue de query_pattern() ($search["Q"]) etait concatene dans la requete.
+	// query_pattern() recopie tel quel le nom de champ saisi (texte avant "=", "<", ">", LIKE)
+	// et les cles de $_GET["types"] : on n'accepte qu'une clause faite de chaines '...',
+	// de nombres, d'operateurs et des seules colonnes de la table alert.
+	$search["MAX"]=intval($search["MAX"]);
+	if(!greensql_alert_where_is_safe($search["Q"] ?? "")){
+		echo $tpl->div_error("{invalid}: {search}");
+		return;
+	}
 	$sql="SELECT * FROM alert {$search["Q"]}ORDER BY event_time DESC LIMIT 0,{$search["MAX"]}";
 	$results=$q->QUERY_SQL($sql);
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error."<br>$sql");return;}
@@ -74,10 +85,11 @@ function table(){
 		$date=strtotime($ligne["event_time"]);
 		$date_text=$tpl->time_to_date($date,true);
 		$risk=$ligne["risk"];
-		$dbuser=$ligne["dbuser"];
-		$userip=$ligne["userip"];
-		$query=$ligne["query"];
-		$reason=$ligne["reason"];
+		// Pentest 2026-11-04 : utilisateur/IP/requete SQL/raison (donnee externe) affiches sans encodage (XSS stockee).
+		$dbuser=req_html($ligne["dbuser"]);
+		$userip=req_html($ligne["userip"]);
+		$query=req_html($ligne["query"]);
+		$reason=req_html($ligne["reason"]);
 
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td style='width:1%' nowrap>{$date_text}</td>";
@@ -100,11 +112,33 @@ function table(){
 	$html[]="</tr>";
 	$html[]="</tfoot>";
 	$html[]="</table>";
-	$html[]="<div><small>$sql</small></div>
+	$html[]="<div><small>".req_html($sql)."</small></div>
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 	$(document).ready(function() { $('#table-greensql-alerts').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
 
 	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+}
+// Pentest 2026-11-04 : $search["Q"] (query_pattern) etait concatene dans la requete.
+// Les chaines '...' sont retirees comme MySQL les lit (aucun antislash accepte, donc
+// pas d'echappement \' ; un '' double redonne deux chaines contigues) ; le reste ne
+// doit contenir que des operateurs, des nombres, WHERE/AND/OR/NOT/LIKE/LOWER et les
+// colonnes de la table alert. Plus de SELECT/UNION/commentaire possible.
+function greensql_alert_where_is_safe($Q):bool{
+	$Q=trim((string)$Q);
+	if($Q===""){return true;}
+	if(strpos($Q,"\\")!==false){return false;}
+	if(substr_count($Q,"'")%2<>0){return false;}
+	if(!preg_match('#^WHERE\s#i',$Q)){return false;}
+	$rest=preg_replace("#'[^']*'#"," ",$Q);
+	$allowed=array("where","and","or","not","like","lower",
+		"alertid","agroupid","event_time","risk","block","dbuser","userip","query","reason");
+	if(!preg_match_all('#\s+|[()=<>~!,]|-?(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE]-?[0-9]+)?|[A-Za-z_][A-Za-z0-9_]*#',$rest,$m)){return false;}
+	if(strlen(implode("",$m[0]))<>strlen($rest)){return false;}
+	foreach ($m[0] as $tok){
+		if(!preg_match('#^[A-Za-z_]#',$tok)){continue;}
+		if(!in_array(strtolower($tok),$allowed,true)){return false;}
+	}
+	return true;
 }

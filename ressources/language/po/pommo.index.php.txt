@@ -1,7 +1,7 @@
-<default_language>Default language</default_language>
-<pommo_explain>poMMo is versatile mass mailing software.[br]
-It can be used to add a mailing list to your Web site or to organize stand alone mailings.[br]
-Unique Features such as the ability to mail subsets of your subscribers set it apart from alternatives.[br]
-poMMo is written in PHP and freely provided under the GPL</pommo_explain>
-<restore_admin>Restore Admin & password</restore_admin>
-<restore_admin_text>Admin is successfully restored, use the Artica Administrator & password to logon</restore_admin_text>
+<default_language>Idioma predefinido</default_language>
+<pommo_explain>O poMMo &#233; um software vers&#225;til de envio de correio em massa.[br]
+Pode ser usado para adicionar uma lista de distribui&#231;&#227;o ao seu site ou para organizar envios independentes.[br]
+Caracter&#237;sticas &#250;nicas, como a capacidade de enviar correio a subconjuntos dos seus subscritores, distinguem-no das alternativas.[br]
+O poMMo &#233; escrito em PHP e fornecido gratuitamente sob a GPL</pommo_explain>
+<restore_admin>Restaurar administrador e palavra-passe</restore_admin>
+<restore_admin_text>O administrador foi restaurado com sucesso, use o Administrador Artica e a palavra-passe para iniciar sess&#227;o</restore_admin_text>

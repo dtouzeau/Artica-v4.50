@@ -5,6 +5,10 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : les jetons base64 (member-js, member-tabs, ...) etaient recopies sans encodage dans la page (XSS).
+foreach(array("member-js","member-tabs","database-link-js","database-link-perform","delete-user-database","delete-user","member-popup","member-databases","member-databases-list","database-link-popup") as $xssk){
+    if(isset($_GET[$xssk])){$_GET[$xssk]=preg_replace('#[^A-Za-z0-9+/= ]#','',(string)$_GET[$xssk]);}
+}
 if(isset($_GET["member-js"])){member_mysql_js();exit;}
 if(isset($_GET["member-popup"])){member_popup();exit;}
 if(isset($_POST["User2"])){member_save();exit;}
@@ -27,11 +31,12 @@ function member_mysql_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["member-js"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$title="{new_member}";
 
 	if(isset($MAINDEF["user"])){
-		$title="{member} {$MAINDEF["user"]}@{$MAINDEF["host"]}";
+		// Pentest 2026-11-04 : user/host (decodes de member-js) etaient recopies sans encodage dans la page (XSS).
+		$title="{member} ".req_html(req_html("{$MAINDEF["user"]}@{$MAINDEF["host"]}"));
 		$tpl->js_dialog1($title, "$page?member-tabs=$MAIN");
 		return;
 	}
@@ -52,10 +57,11 @@ function database_link_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["database-link-js"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
-	$tpl->js_dialog2("{member} {$MAINDEF["user"]}@{$MAINDEF["host"]} {link_database}","$page?database-link-popup=$MAIN");
+	// Pentest 2026-11-04 : user/host (decodes de database-link-js) etaient recopies sans encodage dans la page (XSS).
+	$tpl->js_dialog2("{member} ".req_html(req_html("{$MAINDEF["user"]}@{$MAINDEF["host"]}"))." {link_database}","$page?database-link-popup=$MAIN");
 }
 
 function database_link_perform():bool{
@@ -63,7 +69,7 @@ function database_link_perform():bool{
 	$MAIN=$_GET["database-link-perform"];
 	$md=$_GET["md"];
 	$tpl=new template_admin();
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$database=$_GET["database"];
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
@@ -81,10 +87,11 @@ function database_link_perform():bool{
 
 function database_unlink_js():bool{
     $MAIN=$_GET["delete-user-database"];
-    $MAINDEF=unserialize(base64_decode($MAIN));
+    $MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
     $user=$MAINDEF["user"];
     $host=$MAINDEF["host"];
-    $md=$MAINDEF["md"];
+    // Pentest 2026-11-04 : md (decode de delete-user-database) etait recopie sans encodage dans la page (XSS).
+    $md=preg_replace('/[^A-Za-z0-9_-]/','',(string)($MAINDEF["md"] ?? ""));
     $database=$MAINDEF["database"];
     $tpl=new template_admin();
 
@@ -104,12 +111,13 @@ function member_delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["delete-user"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
-	$md=$MAINDEF["md"];
+	// Pentest 2026-11-04 : user/host/md (decodes de delete-user) etaient recopies sans encodage dans la page (XSS).
+	$md=preg_replace('/[^A-Za-z0-9_-]/','',(string)($MAINDEF["md"] ?? ""));
 	$MAINDEF["host"]=str_replace("%", "*", $MAINDEF["host"]);
-	$tpl->js_confirm_delete("{$MAINDEF["user"]}@{$MAINDEF["host"]}", "delete-user", "$user@$host","$('#$md').remove()");
+	$tpl->js_confirm_delete(req_html("{$MAINDEF["user"]}@{$MAINDEF["host"]}"), "delete-user", "$user@$host","$('#$md').remove()");
 }
 function member_delete(){
 	$page=CurrentPageName();
@@ -121,6 +129,9 @@ function member_delete(){
 
 
 
+	// Pentest 2026-11-04 : delete-user (User/Host) etait concatene dans la requete.
+	$User=mysql_escape_string2((string)$User);
+	$Host=mysql_escape_string2((string)($Host ?? ""));
 	$q->QUERY_SQL("DELETE  FROM `db` WHERE `Host`='$Host' AND `User`='$User'","mysql");
 	if(!$q->ok){echo $q->mysql_error;return;}
 	$q->QUERY_SQL("DROP USER '$User'@'$Host'","mysql");
@@ -132,7 +143,7 @@ function member_popup():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["member-popup"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$title="{new_member}";
 	$btn="{add}";
 	$jsafter="LoadAjax('table-mysql-list','$page?table=yes');";
@@ -341,7 +352,7 @@ function member_databases_list(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["member-databases-list"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
 	
@@ -433,7 +444,7 @@ function database_link_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["database-link-popup"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
 

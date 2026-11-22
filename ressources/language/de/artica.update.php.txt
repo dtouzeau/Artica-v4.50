@@ -1,20 +1,18 @@
-<autoupdate_text>This feature allows artica to check if there is new builds on the artica update server.[br]You can enable/disable the auto-installation of new releases[br]
-If you choose to disable auto-installation, update agent will wait your order to perform auto-install.</autoupdate_text>
-<CheckEveryMinutes>Check update every x minutes</CheckEveryMinutes>
-<current_version>Current version</current_version>
-<enable_autoinstall>Enable auto-install</enable_autoinstall>
-<enable_autoupdate>Enable auto-update feature</enable_autoupdate>
-<enable_nightlybuild>{Enable nightly build updates}</enable_nightlybuild>
-<front_page_notify>Notify new updates on front-page</front_page_notify>
-<install_package>Install Package...</install_package>
-<install_package_text>Are you sure to upgrade Artica Core using this package ?
-If yes, the update process will restart Artica and the Interface should not be available for few seconds.
-</install_package_text>
-<perform_update_text>This operation will perform update in background mode,
-please wait few minutes and return back this section in events in order to
-see if there is a successfull udpate operation.
-Perform Update now ??
-</perform_update_text>
-<samba_notify>Notify on new Samba updates (email too)</samba_notify>
-<update_list>Update List</update_list>
-<uri>Update server url</uri>
+<autoupdate_text>Mit dieser Funktion kann Artica pr&#252;fen, ob neue Builds auf dem Artica-Update-Server verf&#252;gbar sind.[br]Sie k&#246;nnen die automatische Installation neuer Versionen aktivieren/deaktivieren[br]
+Wenn Sie die automatische Installation deaktivieren, wartet der Update-Agent auf Ihren Befehl, um die automatische Installation durchzuf&#252;hren.</autoupdate_text>
+<CheckEveryMinutes>Alle x Minuten auf Updates pr&#252;fen</CheckEveryMinutes>
+<current_version>Aktuelle Version</current_version>
+<enable_autoinstall>Auto-Installation aktivieren</enable_autoinstall>
+<enable_autoupdate>Auto-Update-Funktion aktivieren</enable_autoupdate>
+<enable_nightlybuild>{Nightly-Build-Updates aktivieren}</enable_nightlybuild>
+<front_page_notify>Neue Updates auf der Startseite benachrichtigen</front_page_notify>
+<install_package>Paket installieren...</install_package>
+<install_package_text>M&#246;chten Sie Artica Core wirklich mit diesem Paket aktualisieren?
+Wenn ja, startet der Update-Vorgang Artica neu und die Oberfl&#228;che ist einige Sekunden lang nicht verf&#252;gbar.</install_package_text>
+<perform_update_text>Dieser Vorgang f&#252;hrt das Update im Hintergrundmodus durch,
+bitte warten Sie einige Minuten und kehren Sie in diesem Bereich zu den Ereignissen zur&#252;ck, um
+zu sehen, ob der Update-Vorgang erfolgreich war.
+Update jetzt durchf&#252;hren??</perform_update_text>
+<samba_notify>Bei neuen Samba-Updates benachrichtigen (auch per E-Mail)</samba_notify>
+<update_list>Update-Liste</update_list>
+<uri>URL des Update-Servers</uri>

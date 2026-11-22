@@ -1,30 +1,29 @@
-<about> OBM is a global Groupware, Messaging, CRM and Project appliation.[br] It is mainly used as an Exchange Or Notes/Domino Mail and groupware replacement but also as simple contact databases to full CRM. OBM advanced shared calendar and contacts has connectors with MS Outlook, Thunderbird/Lightning or PDA.
-OBM is always evolving and the data and the database model are subject to change.</about>
-<apacheconf>Lighttpd Config file</apacheconf>
-<close_now>All operations completed, You can close the windows now</close_now>
-<domains_updated>Domains updated</domains_updated>
-<enable_obm>Enable OBM Features</enable_obm>
-<exporting_obm>Exporting Artica users to OBM (waiting please)....</exporting_obm>
-<export_artica_users>Export Artica users</export_artica_users>
-<export_artica_users_text>This feature allows you to create all users you have already created in Artica to OBM database</export_artica_users_text>
-<external_protocol>External protocol</external_protocol>
-<external_url>External URL</external_url>
-<external_url_text>Should be for example :
-for https://extranet.aliasource.fr/obm/ [br]
-external url = extranet.aliasource.fr[br]
-external protocol = https[br]</external_url_text>
-<group_failed>Group Failed</group_failed>
-<group_updated>Group updated/added</group_updated>
-<https_port>HTTPS port of the web server</https_port>
-<OBMSyncCron>Sync Period</OBMSyncCron>
-<OBMSyncCron_text>OBM use Mysql database to store users[br]You need to export LDAP users to the OBM database in order to allow them access on it[br]
-To do you can program a period in minutes or  hour (m or h ) that allow artica to perform periodically exportation.
-</OBMSyncCron_text>
-<obm_connect_has_admin>Connect to OBM administrator using the same Artica Login</obm_connect_has_admin>
-<organizations_added>Organizations/Domains Added</organizations_added>
-<syncevents>Synchronizations Events</syncevents>
-<update_global_admin>Insert Global Artica Administrator in OBM (GLobal)</update_global_admin>
-<user_added>Users added</user_added>
-<user_failed>Users Failed</user_failed>
-<user_updated>Users updated</user_updated>
-<warn_export_obm>Are you sure to export all artica users to OBM ?</warn_export_obm>
+<about>OBM ist eine globale Groupware-, Messaging-, CRM- und Projektanwendung.[br] Sie wird haupts&#228;chlich als Ersatz f&#252;r Exchange oder Notes/Domino-Mail und Groupware verwendet, aber auch als einfache Kontaktdatenbank bis hin zum vollst&#228;ndigen CRM. Der erweiterte gemeinsame Kalender und die Kontakte von OBM verf&#252;gen &#252;ber Konnektoren mit MS Outlook, Thunderbird/Lightning oder PDA.
+OBM entwickelt sich st&#228;ndig weiter, und die Daten sowie das Datenbankmodell k&#246;nnen sich &#228;ndern.</about>
+<apacheconf>Lighttpd-Konfigurationsdatei</apacheconf>
+<close_now>Alle Vorg&#228;nge abgeschlossen, Sie k&#246;nnen das Fenster jetzt schlie&#223;en</close_now>
+<domains_updated>Dom&#228;nen aktualisiert</domains_updated>
+<enable_obm>OBM-Funktionen aktivieren</enable_obm>
+<exporting_obm>Artica-Benutzer werden nach OBM exportiert (bitte warten)....</exporting_obm>
+<export_artica_users>Artica-Benutzer exportieren</export_artica_users>
+<export_artica_users_text>Mit dieser Funktion k&#246;nnen Sie alle bereits in Artica erstellten Benutzer in die OBM-Datenbank &#252;bernehmen</export_artica_users_text>
+<external_protocol>Externes Protokoll</external_protocol>
+<external_url>Externe URL</external_url>
+<external_url_text>Sollte zum Beispiel sein:
+f&#252;r https://extranet.aliasource.fr/obm/ [br]
+externe URL = extranet.aliasource.fr[br]
+externes Protokoll = https[br]</external_url_text>
+<group_failed>Gruppe fehlgeschlagen</group_failed>
+<group_updated>Gruppe aktualisiert/hinzugef&#252;gt</group_updated>
+<https_port>HTTPS-Port des Webservers</https_port>
+<OBMSyncCron>Synchronisierungszeitraum</OBMSyncCron>
+<OBMSyncCron_text>OBM verwendet eine MySQL-Datenbank zum Speichern von Benutzern[br]Sie m&#252;ssen LDAP-Benutzer in die OBM-Datenbank exportieren, um ihnen Zugriff darauf zu gew&#228;hren[br]
+Dazu k&#246;nnen Sie einen Zeitraum in Minuten oder Stunden (m oder h) programmieren, der es Artica erm&#246;glicht, den Export periodisch durchzuf&#252;hren.</OBMSyncCron_text>
+<obm_connect_has_admin>Mit dem OBM-Administrator &#252;ber dasselbe Artica-Login verbinden</obm_connect_has_admin>
+<organizations_added>Organisationen/Dom&#228;nen hinzugef&#252;gt</organizations_added>
+<syncevents>Synchronisierungsereignisse</syncevents>
+<update_global_admin>Globalen Artica-Administrator in OBM einf&#252;gen (Global)</update_global_admin>
+<user_added>Benutzer hinzugef&#252;gt</user_added>
+<user_failed>Benutzer fehlgeschlagen</user_failed>
+<user_updated>Benutzer aktualisiert</user_updated>
+<warn_export_obm>Sind Sie sicher, dass Sie alle Artica-Benutzer nach OBM exportieren m&#246;chten?</warn_export_obm>

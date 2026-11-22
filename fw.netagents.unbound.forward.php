@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Forward Zones CRUD for Unbound on a single remote agent.
  * Operates on the `forward_zones` array of the full UnboundConfig JSON blob.
@@ -10,7 +12,7 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 if (!isset($GLOBALS["CLASS_SOCKETS"])) { $GLOBALS["CLASS_SOCKETS"] = new sockets(); }
 $users = new usersMenus();
-if (!$users->AsSystemAdministrator) { exit(); }
+if (!meta_node_admin($users)) { exit(); }
 
 if (isset($_GET["fwd-btn-js"]))  { fwd_btn_js();  exit; }
 if (isset($_GET["fwd-add-js"]))  { fwd_add_js();  exit; }
@@ -109,7 +111,7 @@ function fwd_search(): void {
     }
 
     $h[] = "<div id='fwd-result-$id' style='margin-bottom:10px'></div>";
-    $h[] = "<table id='table-$t' class='table table-striped' data-page-size='50'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "<thead><tr>";
     $h[] = "  <th data-sortable='true' data-type='text'>{forward_zone_name}</th>";
     $h[] = "  <th data-sortable='true' data-type='text'>TLS</th>";
@@ -121,7 +123,7 @@ function fwd_search(): void {
     $search=$_GET["search"] ??  "";
     $TRCLASS = null;
     foreach ($zones as $i => $fz) {
-        if ($TRCLASS === "footable-odd") { $TRCLASS = null; } else { $TRCLASS = "footable-odd"; }
+        $TRCLASS=null;
 
         $zone    = htmlspecialchars($fz->zone ?? '');
         $tls     = !empty($fz->tls);
@@ -143,8 +145,8 @@ function fwd_search(): void {
 
         $editJs   = "Loadjs('$page?fwd-edit-js=$id&fwd_id=$i')";
         $deleteJs = "FwdDelete_{$id}($i)";
-        $editBtn  = $tpl->icon_edit_field($editJs, "AsSystemAdministrator");
-        $delBtn   = $tpl->icon_delete($deleteJs, "AsSystemAdministrator");
+        $editBtn  = $tpl->icon_edit_field($editJs, "AsMetaAdmin");
+        $delBtn   = $tpl->icon_delete($deleteJs, "AsMetaAdmin");
 
         $h[] = "<tr class='$TRCLASS'>";
         $h[] = "  <td>$zoneTxt</td>";
@@ -156,13 +158,13 @@ function fwd_search(): void {
     }
     $h[] = "</tbody>";
     $h[] = "<tfoot><tr><td colspan='5'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $h[] = "</table>";
+    $h[] = "</table></div></div></div>";
     $h[] = fwd_js_block($id, $page);
     $h[] = "<script>NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS);
     $h[] ="LoadAjax('foward-zone-btns-$id','$page?fwd-btn-js=yes&id=$id&function=$function');";
     $h[] = "</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
 }
 
 // ── Form ─────────────────────────────────────────────────────────────────────

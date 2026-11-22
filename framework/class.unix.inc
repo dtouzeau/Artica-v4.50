@@ -23,7 +23,6 @@ include_once("/usr/share/artica-postfix/ressources/class.process.inc");
 include_once("/usr/share/artica-postfix/ressources/class.os.system.inc");
 include_once("/usr/share/artica-postfix/ressources/class.squid.manager.inc");
 include_once("/usr/share/artica-postfix/framework/class.monit.inc");
-include_once(dirname(__FILE__)."/class.hd.inc");
 $GLOBALS["SSLKEY_PATH"]="/etc/ssl/certs/apache";
 $GLOBALS["MAX_RECUSIVE_DIRS"]=400;
 $GLOBALS["RECURSVIVE_INC"]=0;
@@ -75,23 +74,6 @@ class unix {
 
     }
 
-    function ReplicatePHPFMPService():bool{
-        $srcfile="/usr/share/artica-postfix/bin/articarest";
-        $dstfile="/usr/sbin/artica-phpfpm-service";
-        $md51=md5_file($srcfile);
-        $md52=md5_file($dstfile);
-        if($md51==$md52){
-            @chmod($dstfile,0755);
-            return true;
-        }
-        if(is_file($dstfile)) {
-            @unlink($dstfile);
-        }
-        @copy($srcfile,$dstfile);
-        @chmod($dstfile,0755);
-        return true;
-    }
-
     private function go_exec_syslog($text):bool{
         if(!function_exists("openlog")){return false;}
         openlog("go-exec", LOG_PID , LOG_SYSLOG);
@@ -99,29 +81,6 @@ class unix {
         closelog();
         return true;
     }
-    public function ArticaVersionString():string{
-        $VERSION=trim(@file_get_contents("/usr/share/artica-postfix/VERSION"));
-        $SP=$this->ArticaVersionSP();
-        if($SP>0){
-            return "$VERSION Service Pack $SP";
-        }
-        return $VERSION;
-    }
-
-    public function ArticaVersionSP():int{
-      $VERSION=trim(@file_get_contents("/usr/share/artica-postfix/VERSION"));
-      if (!is_dir("/usr/share/artica-postfix/SP")) {
-        @mkdir("/usr/share/artica-postfix/SP");
-        return 0;
-      }
-      if (!is_file("/usr/share/artica-postfix/SP/$VERSION")) {
-        return 0;
-      }
-      $SP=intval(@file_get_contents("/usr/share/artica-postfix/SP/$VERSION"));
-      return $SP;
-
-    }
-
     public function go_exec_out($cmd):array{
         $Masterbin = "/bin/go-exec";
         $this->go_exec_syslog($cmd);
@@ -176,74 +135,6 @@ class unix {
         shell_exec("$nohup $sh >/dev/null 2>&1 &");
     }
 
-    private function IsLocalDNS():bool{
-        $EnableDNSDist=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDNSDist"));
-        if($EnableDNSDist==1){return true;}
-        $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
-        if($UnboundEnabled==1){return true;}
-        return false;
-    }
-
-    public function ResolvLocalDNSAddress():array{
-        $interfaces=array();
-        $HaClusterClient=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
-        $HaClusterGBConfig=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterGBConfig"));
-
-        if ($HaClusterClient == 1) {
-            if (trim($HaClusterGBConfig["DNS1"]) <> null) {
-                $interfaces[$HaClusterGBConfig["DNS1"]]=$HaClusterGBConfig["DNS1"];
-            }
-            if (trim($HaClusterGBConfig["DNS2"]) <> null) {
-                $interfaces[$HaClusterGBConfig["DNS2"]]=$HaClusterGBConfig["DNS2"];
-            }
-        }
-
-
-        if(!$this->IsLocalDNS()){
-            $f=array();
-            if(count($interfaces)==0){return array();}
-            foreach ($interfaces as $IpAddr=>$none){$f[]=$IpAddr;}
-            return $f;
-        }
-
-        $interfaces=array();
-        $PowerDNSListenAddr=explode("\n",trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSListenAddr")));
-        $ListenOnlyLoopBack=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ListenOnlyLoopBack"));
-        if($ListenOnlyLoopBack==1){return array("127.0.0.1");}
-        foreach ($PowerDNSListenAddr as $interface){
-            $interface=trim($interface);
-            if($interface==null){continue;}
-            $IpAddr = $this->InterfaceToIPv4($interface);
-            if($IpAddr==null){continue;}
-            if($IpAddr=="0.0.0.0"){continue;}
-            if (!$this->IS_IPADDR_EXISTS($IpAddr)) {continue;}
-            $interfaces[$IpAddr]=$IpAddr;
-        }
-        if(count($interfaces)==0){
-            $NETS=$this->NETWORK_ALL_INTERFACES(true);
-            foreach ($NETS as $IpAddr=>$none){
-                if($IpAddr==null){continue;}
-                if($IpAddr=="0.0.0.0"){continue;}
-                $interfaces[$IpAddr]=$IpAddr;
-            }
-        }
-        $f=array();
-        foreach ($interfaces as $IpAddr=>$none){
-            $f[]=$IpAddr;
-
-        }
-        return $f;
-    }
-
-
-    public function FILE_SIZE_BYTES_TO_MB($filepath):int{
-        if(!is_file($filepath)){return 0;}
-        $filebytes=@filesize($filepath);
-        $fileko=$filebytes/1024;
-        $fileMo=round($fileko/1024);
-        return intval($fileMo);
-    }
-
     public function folderSec($path,$chmod,$user):bool{
         if(!is_dir($path)){
             @mkdir($path,0755,true);
@@ -279,27 +170,6 @@ class unix {
     }
 
 
-    public function log_task($prio,$TaskType,$subject){
-        if(!class_exists("lib_sqlite")){include_once("/usr/share/artica-postfix/ressources/class.sqlite.inc");}
-        $q=new lib_sqlite("/home/artica/SQLITE/schedule_events.db");
-        $zdate=time();
-
-        $sql="CREATE TABLE IF NOT EXISTS `events` ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, `TaskType` INTEGER, `prio` INTEGER NOT NULL DEFAULT 2, `zdate` INTEGER,`subject` TEXT);";
-
-        $subject=str_replace("'",'`',$subject);
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){$this->ToSyslog("FATAL $q->mysql_error on line ".__LINE__);}
-        $q->QUERY_SQL("INSERT INTO events (TaskType,prio,zdate,subject) VALUES ($TaskType,$prio,$zdate,'$subject')");
-        if(!$q->ok){$this->ToSyslog("FATAL $q->mysql_error on line ".__LINE__);}
-
-    }
-
-    PUBLIC function LOCATE_SYSLOG_INITD(){
-        if(is_file("/etc/init.d/rsyslog")){return "/etc/init.d/rsyslog";}
-        if(is_file("/etc/init.d/syslog")){return "/etc/init.d/syslog";}
-        if(is_file("/etc/init.d/sysklogd")){return "/etc/init.d/sysklogd";}
-        return null;
-    }
     public function IsProxy(){
         $ini=new iniFrameWork();
         $sock=new sockets();
@@ -316,18 +186,6 @@ class unix {
     }
     public function Process1(){
         return true;
-    }
-
-    public function isPostGreSQLALive():bool{
-        $PostgreSQL_PID=$this->PostgreSQL_PID();
-        if($this->process_exists($PostgreSQL_PID)){return true;}
-        return false;
-   }
-
-    private function PostgreSQL_PID():int{
-        $pid=$this->get_pid_from_file("/home/ArticaStatsDB/postmaster.pid");
-        if($this->process_exists($pid)){return intval($pid);}
-        return intval($this->PIDOF("/usr/local/ArticaStats/bin/postgres"));
     }
 
     public function reload_monit():bool{
@@ -411,44 +269,6 @@ class unix {
 
     public function CORP_LICENSE(){
         return $GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE();
-    }
-    public function wgetrc($key,$val=null){
-        $f=explode("\n",@file_get_contents("/etc/wgetrc"));
-
-        foreach ($f as $line){
-            $line=trim($line);
-            if($line==null){continue;}
-            if(substr($line, 0,1)=="#"){continue;}
-            if(preg_match("#^$key#", $line)){continue;}
-            if(preg_match("#LC_ALL#", $line)){continue;}
-            $t[]="$line";
-
-        }
-
-        if($val<>null){$t[]="$key = $val\n";}
-        @file_put_contents("/etc/wgetrc", @implode("\n", $t));
-
-        return true;
-    }
-
-    public function CLAMAV_DIRECTORIES():bool{
-        $dirs[]="/var/clamav";
-        $dirs[]="/var/run/clamav";
-        $dirs[]="/var/lib/clamav";
-        $dirs[]="/var/log/clamav";
-        $ClamUser=$this->ClamUser();
-
-        foreach ($dirs as $directory){
-            if(!is_dir($directory)) {@mkdir($directory, 0755, true);}
-
-            if(is_file($directory)) {
-                @unlink($directory);
-                @mkdir($directory, 0755, true);
-            }
-            $this->chown_func("$ClamUser", "$ClamUser",$directory);
-
-        }
-            return true;
     }
 
 
@@ -565,90 +385,9 @@ class unix {
         $search=str_replace("]","\]",$search);
         return $search;
     }
-    PUBLIC function LOCATE_SSHD_PID_PATH():string{
-        if(is_file("/var/run/sshd.pid")){return "/var/run/sshd.pid";}
-        if(is_file("/var/run/sshd.init.pid")){return "/var/run/sshd.init.pid";}
-        return "/var/run/sshd.pid";
-    }
-    PUBLIC function LOCATE_SSHD_CONFIG_PATH():string{
-        return "/etc/ssh/sshd_config";
-
-    }
     public function MONIT_RELOAD(){
         $monit=new monit_unix();
         $monit->RELOAD();
-    }
-    public function maillog_to_backupdir($fullpath){
-
-        $IsMaillog=false;
-        $file=basename($fullpath);
-        if(preg_match("#^mail\.(log|warn|info)-#", $file)){$IsMaillog=true;}
-        if(preg_match("#^mail\.(log|warn|info)\.([0-9]+)#", $file)){$IsMaillog=true;}
-
-        if(!$IsMaillog){return false;}
-
-
-        if(!isset($GLOBALS["maillogToMysql"])){
-            $GLOBALS["maillogToMysql"]=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("maillogToMysql"));
-        }
-
-        if(!is_numeric($GLOBALS["maillogToMysql"])){return false;}
-        if($GLOBALS["maillogToMysql"]==0){return false;}
-
-        if(!isset($GLOBALS["maillogStoragePath"])){
-            $GLOBALS["maillogStoragePath"]=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("maillogStoragePath"));
-        }
-
-        if(!isset($GLOBALS["maillogMaxDays"])){
-            $GLOBALS["maillogMaxDays"]=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("maillogMaxDays"));
-        }
-        if($GLOBALS["maillogStoragePath"]==null){$GLOBALS["maillogStoragePath"]="/home/postfix/maillog";}
-        if(!is_numeric($GLOBALS["maillogMaxDays"])){$GLOBALS["maillogMaxDays"]=7;}
-
-        $maillogStoragePath=$GLOBALS["maillogStoragePath"];
-        $maillogMaxMin=$GLOBALS["maillogMaxDays"]*24;
-        $maillogMaxMin=$maillogMaxMin*60;
-        if(!is_dir($maillogStoragePath)){ @mkdir($maillogStoragePath,0755,true); }
-        $timef=$this->file_time_min($fullpath);
-        if($timef>$maillogMaxMin){@unlink($fullpath);return true;}
-        if(@copy($fullpath, "$maillogStoragePath/$file")){
-            @unlink($fullpath);
-            return true;
-        }
-        return false;
-
-    }
-    public function LOCATE_VBoxHeadless(){
-        if(is_file("/usr/lib/virtualbox/VBoxHeadless")){return "/usr/lib/virtualbox/VBoxHeadless";}
-        if(is_file("/usr/local/lib/virtualbox/VBoxHeadless")){return "/usr/local/lib/virtualbox/VBoxHeadless";}
-        return null;
-    }
-    public function LOCATE_CYRRECONSTRUCT(){
-        if(is_file("/usr/sbin/cyrreconstruct")){return "/usr/sbin/cyrreconstruct";}
-        if(is_file("/usr/lib/cyrus/bin/reconstruct")){return "/usr/lib/cyrus/bin/reconstruct";}
-        if(is_file("/usr/lib/cyrus-imapd/reconstruct")){return "/usr/lib/cyrus-imapd/reconstruct";}
-        $this->events("Unable to stat cyrus reconstruct tool");
-        return null;
-    }
-
-    public function LOCATE_SLPAD_PATH(){
-        if(is_file("/usr/sbin/slapd")){return "/usr/sbin/slapd";}
-        if(is_file("/usr/lib/openldap/slapd")){return "/usr/lib/openldap/slapd";}
-        return $this->find_program("slpad");
-    }
-    public function LOCATE_SIEVEC(){
-        if(is_file("/usr/sbin/sievec")){return "/usr/sbin/sievec";}
-        if(is_file("/usr/lib/cyrus/bin/sievec")){return "/usr/lib/cyrus/bin/sievec";}
-        if(is_file("/usr/lib/cyrus-imapd/sievec")){return "/usr/lib/cyrus-imapd/sievec";}
-        $this->events("Unable to stat cyrus sievec tool");
-        return null;
-    }
-    public function LOCATE_CLAMDCONF():string{
-        if(is_file("/etc/clamav/clamd.conf")){return "/etc/clamav/clamd.conf";}
-        if(is_file("/etc/clamd.conf")){return "/etc/clamd.conf";}
-        if(is_file("/usr/local/etc/clamav/clamd.conf")){return "/usr/local/etc/clamav/clamd.conf";}
-        if(is_file("/usr/local/etc/clamd.conf")){return "/usr/local/etc/clamd.conf";}
-        return "";
     }
     public function APACHE_LOCATE_PHP_FPM():string{
         $f[]="/usr/sbin/php-fpm8.2";
@@ -669,12 +408,6 @@ class unix {
         }
 
         return "";
-    }
-    public function apache_LOCATE_MIME_TYPES(){
-        if(is_file("/etc/mime.types")){return "/etc/mime.types";}
-        if(is_file("/etc/apache2/mime.types")){return "/etc/apache2/mime.types";}
-        if(is_file("/etc/httpd/mime.types")){return "/etc/httpd/mime.types";}
-        return null;
     }
     public function CPU_NUMBER(){
         $time=$this->time_min(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("CPU_NUMBER_TIME")));
@@ -999,23 +732,6 @@ class unix {
         if($userinfo["uid"]<1){return false;}
         return true;
     }
-    public function SystemUserGetuid($username){
-        $userinfo = posix_getpwnam($username);
-        if(!isset($userinfo["uid"])){return null;}
-        if(!is_numeric($userinfo["uid"])){return null;}
-        if($userinfo["uid"]<1){return null;}
-        return $userinfo["uid"];
-    }
-    public function SystemGroupUid($groupname){
-        if(!function_exists("posix_getgrnam")){
-            return "";
-        }
-        $userinfo = posix_getgrnam($groupname);
-        if(!isset($userinfo["gid"])){return null;}
-        if(!is_numeric($userinfo["gid"])){return null;}
-        if($userinfo["gid"]<1){return null;}
-        return $userinfo["gid"];
-    }
     public function SystemCreateUser($username,$group=null,$xshell=null,$sHome=null):bool{
         $GLOBALS["SystemCreateUser"]=array();
 
@@ -1190,54 +906,6 @@ class unix {
         return false;
 
     }
-    public function CYRUS_PID_PATH(){
-        if(is_file('/var/run/cyrus-master.pid')){return '/var/run/cyrus-master.pid';}
-        if(is_file('/var/run/cyrmaster.pid')){return '/var/run/cyrmaster.pid';}
-        if(is_file('/var/run/cyrus.pid')){return '/var/run/cyrus.pid';}
-        return "/var/run/cyrmaster.pid";
-    }
-    public function CYRUS_DAEMON_BIN_PATH():string{
-        $cyrmaster=$this->find_program("cyrmaster");
-        if(is_file($cyrmaster)){return $cyrmaster;}
-        if(is_file('/usr/lib/cyrus-imapd/cyrus-master') ){return '/usr/lib/cyrus-imapd/cyrus-master';}
-        if (is_file('/usr/lib/cyrus/bin/master') ){return '/usr/lib/cyrus/bin/master';}
-        if (is_file('/usr/sbin/cyrmaster') ){return '/usr/sbin/cyrmaster';}
-        if (is_file('/usr/sbin/cyrmaster') ){return '/usr/sbin/cyrmaster';}
-        if (is_file('/opt/artica/cyrus/bin/master') ){return '/opt/artica/cyrus/bin/master';}
-        return "";
-    }
-    public function CYRADM_PATH():string{
-        if (is_file('/usr/bin/cyradm') ){return '/usr/bin/cyradm';}
-        if (is_file('/usr/share/bin/cyradm') ){return '/usr/share/bin/cyradm';}
-        if (is_file('/opt/artica/bin/cyradm') ){return '/opt/artica/bin/cyradm';}
-        return "";
-    }
-    function CYRUS_SYNC_CLIENT_BIN_PATH():string{
-        $sync_client=$this->find_program("sync_client");
-        if(is_file($sync_client)){return $sync_client;}
-        if(is_file('/usr/lib/cyrus-imapd/sync_client')){return '/usr/lib/cyrus-imapd/sync_client';}
-        if(is_file('/usr/lib/cyrus/bin/sync_client')){return '/usr/lib/cyrus/bin/sync_client';}
-        if(is_file('/usr/sbin/sync_client')){return '/usr/sbin/sync_client';}
-        return "";
-    }
-    public function LOCATE_CYRUS_QUOTA():string{
-        $sync_client=$this->find_program("cyrquota");
-        if(is_file($sync_client)){return $sync_client;}
-        if(is_file('/usr/sbin/cyrquota') ){ return '/usr/sbin/cyrquota';}
-        if(is_file('/usr/lib/cyrus/bin/quota') ){ return '/usr/lib/cyrus/bin/quota';}
-        if(is_file('/usr/lib/cyrus-imapd/quota') ){ return '/usr/lib/cyrus-imapd/quota';}
-        return "";
-    }
-    public function JAVA_HOME_GET():string{
-        $f=explode("\n", @file_get_contents("/etc/environment"));
-        foreach ( $f as $val ){
-            if(preg_match("#JAVA_HOME=(.+)#", $val,$re)){
-                $re[1]=str_replace('"', "", $re[1]);
-                if(is_dir($re[1])){return $re[1];}
-            }
-        }
-
-        return "";}
     public function MYSQL_REPAIR_TABLE_FILE_NOT_FOUND($file,$table):string{
         $Dir=dirname($file);
         if($table==null){return "";}
@@ -1276,23 +944,6 @@ class unix {
         return @implode("", $L);
 
     }
-    public function JAVA_HOME_SET($dir){
-        $f=explode("\n", @file_get_contents("/etc/environment"));
-
-        foreach ( $f as $num=>$val ){
-            if(preg_match("#JAVA_HOME=(.+)#", $val,$re)){
-                $re[1]=str_replace('"', "", $re[1]);
-                if($re[1]==$dir){return;}
-                $f[$num]="JAVA_HOME=\"$dir\"";
-                @file_put_contents("/etc/environment", @implode("\n", $f));
-                return;
-            }
-        }
-
-        $f[]="JAVA_HOME=\"$dir\"";
-        @file_put_contents("/etc/environment", @implode("\n", $f));
-
-    }
     public function UnixGroupExists($groupname):bool{
 
         $f=explode("\n",@file_get_contents("/etc/group"));
@@ -1320,30 +971,6 @@ class unix {
         if($GLOBALS["VERBOSE"]){echo "UnixUserExists() user:$username does not exists in database\n";}
         return false;
     }
-    function ldap_GET_CONFS(){
-
-        $SLAPD_CONF=$this->SLAPD_CONF_PATH();
-        $f=explode("\n",@file_get_contents($SLAPD_CONF));
-        foreach ( $f as $line ){
-            if(preg_match("#suffix.*?\"(.+?)\"#", $line,$re)){
-                $ARRAY["SUFFIX"]=$re[1];
-                continue;
-            }
-
-            if(preg_match("#rootdn.*?\"(.+?)\"#", $line,$re)){
-                $ARRAY["DN"]=$re[1];
-                continue;
-            }
-            if(preg_match("#rootpw.*?\"(.+?)\"#", $line,$re)){
-                $ARRAY["PWD"]=$re[1];
-                continue;
-            }
-
-        }
-
-        return $ARRAY;
-
-    }
     public function file_ext($path){
         $path_info = pathinfo($path);
         return $path_info['extension'];
@@ -1353,20 +980,6 @@ class unix {
         return $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID");
 
     }
-    public function IsSquidTaskCanBeExecuted(){
-        if(!class_exists("settings_inc")){include_once(dirname(__FILE__)."/class.settings.inc");}
-        $users=new settings_inc();
-        $sock=new sockets();
-        $update=true;
-        $EnableWebProxyStatsAppliance=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableWebProxyStatsAppliance"));
-        if($EnableWebProxyStatsAppliance==1){return true;}
-        if(is_file("/etc/artica-postfix/STATS_APPLIANCE")){return true;}
-        $CategoriesRepositoryEnable=$sock->GET_INFO("CategoriesRepositoryEnable");
-        if($CategoriesRepositoryEnable==1){return true;}
-        if(!$users->SQUID_INSTALLED){$update=false;}
-        return $update;
-    }
-
     public function SQUID_SSL_CRTD_PATH():string{
         $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
         $sslcrtd_program_in_memory=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("sslcrtd_program_in_memory"));
@@ -1377,48 +990,6 @@ class unix {
     }
 
 
-    public function tune2fs_values($dev){
-        $tune2fs=$this->find_program("tune2fs");
-        $cmd="$tune2fs -l $dev 2>&1";
-        exec($cmd,$results);
-        $array=array();
-
-        foreach ($results as $line){
-
-            if(preg_match("#Bad magic number#", $line)){
-                $array["ERROR"]=true;
-                $array["ERROR_TEXT"]=$line;
-            }
-
-            $av="available";
-            if(!preg_match("#^(.+?):\s+(.+)#i",$line,$re)){continue;}
-            $key=trim(strtoupper($re[1]));
-            $key=str_replace(" ", "_", $key);
-            $value=trim($re[2]);
-            if($value=="<not $av>"){$value=null;}
-            if($value=="<none>"){$value=null;}
-            $array[$key]=$value;
-        }
-
-        $results=array();
-        $df=$this->find_program("df");
-        exec("$df -i $dev 2>&1",$results);
-        foreach ($results as $ligne){
-            if(preg_match("#^.*?\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9\.]+)%\s+(.+)#", $ligne,$re)){
-                $array["INODES_MAX"]=$re[1];
-                $array["INODES_USED"]=$re[2];
-                $array["INODES_AVAILABLE"]=$re[3];
-                $array["INODES_POURC"]=$re[4];
-                break;
-            }
-        }
-        $BLKID=$this->BLKID_INFOS($dev);
-        foreach ($BLKID as $num=>$ligne){
-            $array[$num]=$ligne;
-        }
-
-        return $array;
-    }
     public function sysctl($key,$value){
         $keyS=str_replace(".", "\.", $key);
         $t=false;
@@ -1438,45 +1009,6 @@ class unix {
         reset($f);
         @file_put_contents("/etc/sysctl.conf", implode("\n", $f));
 
-    }
-    public function LOCATE_CLAMDSOCKET():string{
-        $f=@explode("\n",@file_get_contents($this->LOCATE_CLAMDCONF()));
-        foreach ( $f as $val ){
-            if(preg_match("#LocalSocket\s+(.+)#",$val,$re)){
-                return trim($re[1]);
-            }
-        }
-        return "";
-    }
-    public function SQUID_CACHE_FROM_SQUIDCONF(){
-        $array=array();
-        $fname="/etc/squid3/caches.conf";
-        if(!is_file($fname)){$fname="/etc/squid3/squid.conf";}
-
-        $f=explode("\n",@file_get_contents($fname));
-        foreach ($f as $line){
-            if(preg_match("#cache_dir\s+(.+?)\s+(.+?)\s+#",$line,$re)){
-                $array[trim($re[2])]=trim($re[1]);
-            }
-
-        }
-
-        return $array;
-    }
-    public function SQUID_CACHE_FROM_SQUIDCONF_FULL(){
-        $array=array();
-        $fname="/etc/squid3/caches.conf";
-        if(!is_file($fname)){$fname="/etc/squid3/squid.conf";}
-
-        $f=explode("\n",@file_get_contents($fname));
-        foreach ($f as $line){
-            if(preg_match("#cache_dir\s+(.+?)\s+(.+?)\s+#",$line,$re)){
-                $array[trim($re[2])]=$line;
-            }
-
-        }
-
-        return $array;
     }
     public function LOCATE_STUNNEL():string{
         $bins[]="stunnel5";
@@ -1575,53 +1107,6 @@ class unix {
         }
         return $result;
     }
-    public function NETWORK_DEFAULT_IP_ADDR():string{
-        $NETWORK_ALL_INTERFACES=$this->NETWORK_ALL_INTERFACES();
-        for($i=0;$i<5;$i++){
-            if(!isset($NETWORK_ALL_INTERFACES["eth$i"])){continue;}
-            if($NETWORK_ALL_INTERFACES["eth$i"]["IPADDR"]=="0.0.0.0"){continue;}
-            if(preg_match("#127.0.0#", $NETWORK_ALL_INTERFACES["eth$i"]["IPADDR"])){continue;}
-            return $NETWORK_ALL_INTERFACES["eth$i"]["IPADDR"];
-
-        }
-
-        for($i=0;$i<5;$i++){
-            if(!isset($NETWORK_ALL_INTERFACES["br$i"])){continue;}
-            if($NETWORK_ALL_INTERFACES["br$i"]["IPADDR"]=="0.0.0.0"){continue;}
-            if(preg_match("#127.0.0#", $NETWORK_ALL_INTERFACES["br$i"]["IPADDR"])){continue;}
-            return $NETWORK_ALL_INTERFACES["br$i"]["IPADDR"];
-        }
-        return "";
-    }
-    public function NETWORK_REPORT(){
-
-        $results[]="Report....:";
-        $ifconfig=$this->find_program("ifconfig");
-        exec("$ifconfig -a 2>&1",$results);
-        $ip=$this->find_program("ip");
-        exec("$ip link show 2>&1",$results);
-        exec("$ip addr 2>&1",$results);
-        $results[]="Routes....:";
-        exec("$ip route 2>&1",$results);
-        $results[]="DNS.......:\n";
-        $results[]=@file_get_contents("/etc/resolv.conf");
-        $results[]="TESTS pings......:";
-        $ARRAY=$this->NETWORK_ALL_INTERFACES();
-        foreach ($ARRAY as $interface=>$ligne){
-            if(!isset($ligne["GATEWAY"])){continue;}
-            if($ligne["GATEWAY"]==null){continue;}
-            $results[]=$this->report_ping($interface,$ligne["GATEWAY"]);
-        }
-
-        return @implode("\r\n", $results);
-    }
-    private function report_ping($from,$to){
-        $array[]="Ping from $from -> $to";
-        $ping=$this->find_program("ping");
-        exec("$ping -I $from -c 2 -i 0 $to 2>&1",$array);
-        return @implode("\r\n", $array);
-
-    }
 
     public function PingHostCMD($cible,$source=null):bool{
         if(isset($GLOBALS["PingHostCMD"][$cible])){return $GLOBALS["PingHostCMD"][$cible];}
@@ -1646,29 +1131,6 @@ class unix {
     }
 
 
-    public function LOCATE_WINBINDD_PID():string{
-        if(is_file("/var/run/winbindd.pid")){return "/var/run/winbindd.pid";}
-        if(is_file("/var/run/samba/winbindd.pid")){return "/var/run/samba/winbindd.pid";}
-        return "";
-
-    }
-    public function LOCATE_CYRUS_IPURGE():string{
-        if(is_file("/usr/sbin/ipurge")){return "/usr/sbin/ipurge";}
-        if(is_file("/usr/lib/cyrus/bin/ipurge")){return "/usr/lib/cyrus/bin/ipurge";}
-        if(is_file("/usr/lib/cyrus-imapd/ipurge")){return "/usr/lib/cyrus-imapd/ipurge";}
-        $this->events("Unable to stat cyrus ipurge tool");
-        return "";
-    }
-
-
-
-    public function LOCATE_CYRQUOTA():string{
-        if(is_file("/usr/sbin/cyrquota")){return "/usr/sbin/cyrquota";}
-        if(is_file("/usr/lib/cyrus/bin/quota")){return "/usr/lib/cyrus/bin/quota";}
-        if(is_file("/usr/lib/cyrus-imapd/quota")){return "/usr/lib/cyrus-imapd/quota";}
-        $this->events("Unable to stat cyrus cyrquota tool");
-        return "";
-    }
     public function LOCATE_CYRUS_DAEMON():string{
         if(is_file("/usr/lib/cyrus-imapd/cyrus-master")){return "/usr/lib/cyrus-imapd/cyrus-master";}
         if(is_file("/usr/lib/cyrus/bin/master")){return "/usr/lib/cyrus/bin/master";}
@@ -1683,14 +1145,6 @@ class unix {
         if(is_file("/usr/lib/cyrus-imapd/deliver")){return "/usr/lib/cyrus-imapd/deliver";}
         return "";
     }
-    public function LOCATE_CYRUS_PIDPATH():string{
-        if(is_file("/var/run/cyrus-master.pid")){return "/var/run/cyrus-master.pid";}
-        if(is_file("/var/run/cyrmaster.pid")){return "/var/run/cyrmaster.pid";}
-        if(is_file("/var/run/cyrus.pid")){return "/var/run/cyrus.pid";}
-        $this->events("Unable to stat cyrus pid path");
-        return "";
-    }
-
     public function LOCATE_MILTER_GREYLIST_PID():string{
         if(is_file("/var/run/milter-greylist/milter-greylist.pid")){return "/var/run/milter-greylist/milter-greylist.pid";}
         return "";
@@ -1714,54 +1168,6 @@ class unix {
             return "/usr/share/artica-postfix/bin/procstat";}
         return "";
     }
-    public function GetSingleMemoryOf($pid):string{
-        if($pid<1){
-            if($GLOBALS["DEBUG"]){echo __FUNCTION__." bad pid \"$pid\"\n";}
-            return "";
-        }
-        $rss=$this->GetMemoriesOfUniquePID($pid);
-        if($this->process_exists($pid)){$l[]="installed=1";$l[]="running=1";}
-        $l[]="master_pid=$pid";
-        $l[]="master_memory=$rss";
-        $l[]="processes_number=1";
-
-        if(!is_file("/usr/share/artica-postfix/bin/procstat")){
-            $gcc=$this->find_program("gcc");
-            if(!is_file($gcc)){return "";}
-            shell_exec("$gcc -o /usr/share/artica-postfix/bin/procstat /usr/share/artica-postfix/bin/install/procstat.c");
-        }
-
-        if(!is_file("/usr/share/artica-postfix/bin/procstat")){
-            $this->events("Unable to compile procstat !!! in " .__CLASS__."/".__FUNCTION__." Line".__LINE__);
-        }
-
-        @chmod("/usr/share/artica-postfix/bin/procstat",0755);
-        exec("/usr/share/artica-postfix/bin/procstat $pid 2>&1",$results);
-        foreach ($results as $ligne){
-            if(preg_match("#GLIBC.+?not found#",$ligne)){
-                @unlink("/usr/share/artica-postfix/bin/procstat");
-                return "";
-            }
-
-            if(preg_match("#start_time:.+?\(([0-9]+)#",$ligne,$re)){
-                $tt=$this->time_duration($re[1]);
-                $tt=str_replace(" Months,","M",$tt);
-                $tt=str_replace(" days,","d",$tt);
-                $tt=str_replace(" hours,","h",$tt);
-                $tt=str_replace(" minutes,","mn",$tt);
-                $tt=str_replace(" seconds","s",$tt);
-                $tt=str_replace(" hour,","h",$tt);
-                $tt=str_replace(" minute,","mn",$tt);
-                $tt=str_replace(" second","s",$tt);
-                $l[]="uptime=$tt";}
-
-        }
-        $l[]="";
-        return implode("\n",$l);
-
-
-    }
-
     public function THREAD_COMMAND_SET($zcommands):bool{
         $tbl=array();
         $md5command=md5(trim($zcommands));
@@ -1789,42 +1195,6 @@ class unix {
         $tbl[]=$zcommands;
         @file_put_contents('/etc/artica-postfix/background',implode("\n",$tbl));
         return true;
-    }
-    public function GetMemoriesOfChild($pid){
-        if($pid<1){
-            if($GLOBALS["DEBUG"]){echo __FUNCTION__." bad pid \"$pid\"\n";}return null;}
-
-
-        $rss=$this->GetMemoriesOfUniquePID($pid);
-
-        $count=1;
-        if($this->process_exists($pid)){$l[]="installed=1";$l[]="running=1";}
-        $l[]="threads_socket=".$this->PROCESS_SOCKETS_NUM($pid);
-        $l[]="application_installed=1";
-        $l[]="master_pid=$pid";
-        $l[]="master_memory=$rss";
-        //$l[]="master_cached_memory=$vm";
-        $l[]="processes_number=$count";
-
-
-        exec("/usr/share/artica-postfix/bin/procstat $pid 2>&1",$results);
-        foreach ($results as $ligne){
-            if(preg_match("#start_time:.+?\(([0-9]+)#",$ligne,$re)){
-                $tt=$this->time_duration($re[1]);
-                $tt=str_replace(" Months,","M",$tt);
-                $tt=str_replace(" days,","d",$tt);
-                $tt=str_replace(" hours,","h",$tt);
-                $tt=str_replace(" minutes,","mn",$tt);
-                $tt=str_replace(" seconds","s",$tt);
-                $tt=str_replace(" hour,","h",$tt);
-                $tt=str_replace(" minute,","mn",$tt);
-                $tt=str_replace(" second","s",$tt);
-                $l[]="uptime=$tt";}
-
-        }
-        $l[]="";
-        return implode("\n",$l);
-
     }
     public function GetMemoriesOfUniquePID($pid):int{
         if(!is_numeric($pid)){return 0;}
@@ -2020,100 +1390,6 @@ class unix {
         }
         return 0;
     }
-    public function vhosts_BuildCertificate($hostname){
-
-        if($hostname=="__default__"){$hostnameText=$this->hostname_g();}else{$hostnameText=$hostname;}
-
-        $dir=$GLOBALS["SSLKEY_PATH"];
-        if(is_file("$dir/$hostname.crt")){
-            if(is_file("$dir/$hostname.key")){return true;}
-        }
-
-        if(!is_dir($dir)){@mkdir($dir,0600,true);}
-
-        $sock=new sockets();
-        $CertificateMaxDays=$sock->GET_INFO('CertificateMaxDays');
-        if($CertificateMaxDays==null){$CertificateMaxDays=730;}
-        if(!class_exists("Bs_IniHandler")){
-            $ini=new iniFrameWork();
-        }else{
-            $ini=new Bs_IniHandler();
-        }
-
-        $ini->loadFile("/etc/artica-postfix/ssl.certificate.conf");
-        $conf="/etc/ssl/certs/apache/$hostname.conf";
-        $openssl=$this->find_program("openssl");
-        echo "Starting......: ".date("H:i:s")." Certificate \"$conf\" ". count($ini->_params) ." Keys\n";
-
-        unset($ini->_params["HOSTS_ADDONS"]);
-        $ini->_params["default_db"]["default_days"]=$CertificateMaxDays;
-        $ini->_params["server_policy"]["commonName"]=$hostnameText;
-        $ini->_params["user_policy"]["commonName"]=$hostnameText;
-        $ini->_params["default_ca"]["commonName"]=$hostnameText;
-        $ini->_params["default_ca"]["commonName_value"]=$hostnameText;
-        $ini->_params["policy_match"]["commonName"]=$hostnameText;
-        $ini->_params["policy_anything"]["commonName"]=$hostnameText;
-        reset($ini->_params);
-        $ini->saveFile($conf);
-        $cmd="$openssl req -new -x509 -batch -config $conf -nodes -out $dir/$hostname.crt -keyout $dir/$hostname.key -days $CertificateMaxDays 2>&1";
-        exec($cmd,$results);
-        if($GLOBALS["VERBOSE"]){
-            echo "$cmd\n".@implode("\n",$results)."\n";
-        }
-
-    }
-    public function getLOCALEUSED(){
-        $locale=$this->find_program("env");
-        writelogs_framework("$locale 2>&1",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-        exec("$locale 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            writelogs_framework("$ligne",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-            if(preg_match("#LANG=(.+)#",$ligne,$re)){return trim($re[1]);}
-        }
-
-        shell_exec("LANG=en_US.utf8");
-        return "en_US.utf8";
-    }
-    public function SSHD_GET_FINGERPRINT($path):string{
-        $path=$this->shellEscapeChars($path);
-        $sshkeygen=$this->find_program("ssh-keygen");
-        $maincmd="$sshkeygen -lf $path";
-        writelogs_framework("$maincmd 2>&1" ,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-        exec($maincmd,$results);
-        foreach ($results as $ligne){
-            writelogs_framework("$ligne" ,__FUNCTION__,__FILE__,__LINE__);
-            if(preg_match("#^[0-9]+\s+(.+?)\s+#",$ligne,$re)){
-                writelogs_framework("FOUND {$re[1]}" ,__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-                return $re[1];
-            }
-        }
-        return "";
-    }
-    public function KERNEL_CONFIG():array{
-        $uname=$this->find_program("uname");
-        if($GLOBALS["VERBOSE"]){echo __CLASS__."/".__FUNCTION__."/".__LINE__." uname= $uname\n";}
-        exec("$uname -r 2>&1",$results);
-        $kernelver=trim(@implode("", $results));
-        if($GLOBALS["VERBOSE"]){echo __CLASS__."/".__FUNCTION__."/".__LINE__." kernelver = $kernelver\n";}
-        $file="/boot/config-$kernelver";
-        if(!is_file($file)){
-            writelogs_framework("$file no such file" ,__FUNCTION__,__FILE__,__LINE__);
-            if($GLOBALS["VERBOSE"]){echo __CLASS__."/".__FUNCTION__."/".__LINE__." $file no such file\n";}}
-        $t=explode("\n",@file_get_contents($file));
-
-        writelogs_framework("Open $file" ,__FUNCTION__,__FILE__,__LINE__);
-        $Array=array();
-        foreach ($t as $ligne){
-            if(!preg_match("#^([A-Z_\-]+)=(.+)#", $ligne,$re)){continue;}
-            if(trim($re[2])=="y"){$re[2]=1;}
-            if(trim($re[2])=="m"){$re[2]=1;}
-            $Array[trim($re[1])]=trim($re[2]);
-
-        }
-
-        return $Array;
-
-    }
     public function KERNEL_VERSION(){
         if(isset($GLOBALS["KERNEL_VERSION"])){return $GLOBALS["KERNEL_VERSION"];}
         $GLOBALS["KERNEL_VERSION"]=php_uname("r");
@@ -2268,11 +1544,9 @@ class unix {
             "APP_TFTPD"=>"Trivial File Transfer Protocol service",
             "APP_POLICYD_WEIGHT"=>"Policy Daemon for Postfix",
             "APP_VIRTUALBOX_WEBSERVICE"=>"VirtualBox Web service",
-            "APP_MILTER_DKIM"=>"Milter-DKIM service",
             "APP_DROPBOX"=>"DropBox service",
             "APP_ARTICA_SQUIDGUARDTAIL"=>"squidGuard watchdog daemon",
             "APP_UFDBGUARD"=>"UfdbGuard Filtering service",
-            "APP_OPENDKIM"=>"OpenDKIM Filter service",
             "APP_SQUIDGUARD_HTTP"=>"SquidGuard HTTP service",
             "APP_DNSMASQ"=>"DNS forwarder caching",
             "APP_SMARTMONTOOLS"=>"SMART hard disk monitoring",
@@ -2321,7 +1595,6 @@ class unix {
             "APP_AMAVISD_MILTER"=>"Amavis listener milter",
             "APP_AMAVISD_NEW"=>"Amavis Daemon",
             "APP_CLAMAV_MILTER"=>"ClamAV For Postfix",
-            "APP_MAILSPY"=>"MailSpy",
             "APP_ARTICA"=>"Artica service",
 
 
@@ -2639,55 +1912,6 @@ class unix {
 
     }
 
-    public function GetAvailableListenIP(){
-        if(isset($GLOBALS["GetAvailableListenIP"])){return $GLOBALS["GetAvailableListenIP"];}
-        $unix=new unix();
-        $ifconfig=$unix->find_program("ifconfig");
-        exec("$ifconfig -a 2>&1",$results);
-        foreach ($results as $num=>$line){
-            if(preg_match("#inet addr.*?([0-9\.]+)#", $line,$re)){
-
-                if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." available network: {$re[1]}\n";}
-                $GLOBALS["GetAvailableListenIP"][$re[1]]=$re[1];
-                continue;
-            }
-            if(preg_match("#inet6 addr:\s+(.*?)\/#", $line,$re)){
-                if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." available network: {$re[1]}\n";}
-                $GLOBALS["GetAvailableListenIP"][$re[1]]=$re[1];
-                continue;
-            }
-
-            if($GLOBALS["VERBOSE"]){echo "GetAvailableListenIP() no match `$line`\n";}
-        }
-        if(count($GLOBALS["GetAvailableListenIP"])==0){echo "Starting......: ".date("H:i:s")." No IP ????\n";}
-        return $GLOBALS["GetAvailableListenIP"];
-
-    }
-    public function SQUID_ACTIVE_REQUESTS(){
-
-        $CacheFile="/usr/share/artica-postfix/ressources/logs/active_requests.inc";
-        if(isset($GLOBALS["squidclient"]["active_requests"])){return $GLOBALS["squidclient"]["active_requests"];}
-        $CacheTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidClientCacheTime"));
-        if($CacheTime==0){$CacheTime=30;}
-
-        if(is_file($CacheFile)){
-            $xtime=$this->file_time_min($CacheFile);
-            if($xtime<$CacheTime){
-                return unserialize(@file_get_contents($CacheFile));
-            }
-        }
-
-
-
-
-        $manager=new cache_manager();
-        return $manager->active_requests();
-
-    }
-
-
-
-
     public function isNGnx(){
         if(isset($GLOBALS["isNGnx"])){return $GLOBALS["isNGnx"];}
         $nginx=$this->find_program("nginx");
@@ -2820,25 +2044,6 @@ class unix {
         return false;
     }
 
-    public function NETWORK_DEFAULT_LISTEN_ADDR(){
-        return $this->NETWORK_DEFAULT_IP_ADDR();
-    }
-
-
-    private function ifconfig_interface($Interface,$array){
-        $ip=$this->find_program("ifconfig");
-        exec("$ip $Interface 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            $ligne=trim($ligne);
-            if($ligne==null){continue;}
-            if(preg_match("#^inet\s+[A-za-z]+:([0-9\.]+)\s+[A-za-z]+:([0-9\.]+)\s+[A-za-z]+:([0-9\.]+)#",$ligne,$re)){
-                $array[$Interface]["NETMASK"]=$re[3];
-                $array[$Interface]["BROADCAST"]=$re[2];
-            }
-        }
-        return $array;
-    }
-
     public function NETWORK_IFNAME_TO_IP($eth):string{
         $eth=trim($eth);
         $NETWORK_ALL_INTERFACES=$this->NETWORK_ALL_INTERFACES();
@@ -2847,47 +2052,6 @@ class unix {
         return strval($NETWORK_ALL_INTERFACES[$eth]["IPADDR"]);
 
     }
-
-    public function NETWORK_ALL_INTERFACES_DEB9($OnlyIPS=false){
-        $array=array();
-        $IPTABLE=array();
-        $iplist="/usr/share/artica-postfix/bin/iplist.py";
-        chmod($iplist,0755);
-        exec("$iplist 2>&1",$ips);
-        foreach ($ips as $line){
-            $zip=explode("||",$line);
-            $Interface=$zip[0];
-            $array[$Interface]["INTERFACE"]=$Interface;
-            $array[$Interface]["IPADDR"]=$zip[1];
-            $IPTABLE[$zip[1]]=true;
-            $maindir="/sys/class/net/$Interface";
-            if(!is_dir($maindir)){continue;}
-            $array[$Interface]["STATE"]="no";
-            $array[$Interface]["PROMISC"]=false;
-            $array[$Interface]["MAC"]=trim(@file_get_contents("$maindir/address"));
-            $operstate=strtoupper(trim(@file_get_contents("$maindir/operstate")));
-            if($operstate=="UP"){
-                $array[$Interface]["STATE"]="yes";
-            }
-        }
-        if($OnlyIPS){return $IPTABLE;}
-        $ip=$this->find_program("ip");
-        exec("$ip route list 2>&1",$results);
-
-        foreach ($results as $ligne){
-            if(preg_match("#default via\s+([0-9\.]+)\s+dev\s+([0-9A-Za-z\-\_]+)#", $ligne,$re)){
-                $Interface=$re[2];
-                if(preg_match("#^(.+?)@#", $Interface,$ri)){$Interface=$ri[1];}
-                if($Interface==null){continue;}
-                $array[$Interface]["GATEWAY"]=$re[1];
-
-            }
-        }
-
-
-        return $array;
-    }
-
 
     public function CleanInterfacesForBondMembers($eth,$ipaddr,$netmask):string{
         //Reset interfaces members of bound
@@ -3028,104 +2192,11 @@ class unix {
         return $array;
 
     }
-    public function TCP_LIST_NICS(){
-        if(isset($GLOBALS["TCP_LIST_NICS"])){return $GLOBALS["TCP_LIST_NICS"];}
-        $datas=explode("\n",@file_get_contents("/proc/net/dev"));
-        foreach ( $datas as $line){
-            if(!preg_match("#^(.+?):#",$line,$re)){continue;}
-            $GLOBALS["TCP_LIST_NICS"][trim(strtolower($re[1]))]=true;
-
-        }
-        return $GLOBALS["TCP_LIST_NICS"];
-    }
-
-    public function NETWORK_INTERFACE_OK($eth){
-        $TCP_LIST_NICS=$this->TCP_LIST_NICS();
-        if(!isset($TCP_LIST_NICS[trim(strtolower($eth))])){return false;}
-        $ip=$this->find_program("ip");
-        exec("$ip link show $eth 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(preg_match("#does not exist#",$ligne)){return false;}
-            if(!preg_match("#^[0-9]+.*?state\s+([A-Z]+)#", $ligne,$re)){continue;}
-            $state=$re[1];
-            if($state=="DOWN"){return false;}
-        }
-        return true;
-    }
 
     function NMAP_CMDLINE($net,$tmpfile){
         $nmap=$this->find_program("nmap");
         return "$nmap $net -oG $tmpfile -F -R -O -A --system-dns -p1 --min-hostgroup 30 --min-parallelism 30 --osscan-guess --host-timeout 5000";
     }
-
-
-    function NETWORK_DEBIAN_FILCONF($eth){
-        $return=array();
-        $f=explode("\n",@file_get_contents('/etc/network/interfaces'));
-        $ttr["address"]="IPADDR";
-        $ttr["netmask"]="NETMASK";
-        $ttr["gateway"]="GATEWAY";
-        $ttr["broadcast"]="BROADCAST";
-        $ttr["network"]="NETWORK";
-        $ttr["metric"]="METRIC";
-        $outputz=array();
-
-        foreach ($f as $ligne){
-            $interface=null;
-            if(preg_match("#iface\s+(.+?)\s+.*?(static|dhcp)#", $ligne,$re)){
-                $interface=$re[1];
-                $outputz[$interface]["BOOTPROTO"]=$re[2];
-                $outputz[$interface]="METHOD=debian";
-                $outputz[$interface]="DEVICE=$interface";
-                continue;
-            }
-
-            if(preg_match("#(.+?)\s+(.+)#", $ligne,$re)){
-                $key=strtolower(trim($re[1]));
-                if(isset($ttr[$key])){
-                    $outputz[$interface][$ttr[$key]]=trim($re[2]);
-                    continue;
-                }
-
-                $outputz[$interface][$key]=$re[2];
-
-            }
-
-        }
-        foreach ($outputz[$eth] as $num=>$ligne){
-            $return[]="$num=$ligne";
-        }
-        return @implode("\n",$return);
-    }
-
-
-    function APACHE_ListenDefaultAddress(){
-        if(isset($GLOBALS["APACHE_ListenDefaultAddress"])){return $GLOBALS["APACHE_ListenDefaultAddress"];}
-        if($this->isNGnx()){$GLOBALS["APACHE_ListenDefaultAddress"]="127.0.0.1";return "127.0.0.1";}
-
-
-        $GLOBALS["APACHE_ListenDefaultAddress"]=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FreeWebListen"));
-        if($GLOBALS["APACHE_ListenDefaultAddress"]==null){$GLOBALS["APACHE_ListenDefaultAddress"]="*";}
-        if($GLOBALS["APACHE_ListenDefaultAddress"]<>"*"){
-            if(is_numeric($GLOBALS["APACHE_ListenDefaultAddress"])){
-                if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." Apache WARNING `{$GLOBALS["APACHE_ListenDefaultAddress"]}` is not a valid network address...\n";}
-                $GLOBALS["APACHE_ListenDefaultAddress"]="*";
-            }
-        }
-
-        if($GLOBALS["APACHE_ListenDefaultAddress"]=="0.0.0.0"){return $GLOBALS["APACHE_ListenDefaultAddress"];}
-        if($GLOBALS["APACHE_ListenDefaultAddress"]=="*"){return $GLOBALS["APACHE_ListenDefaultAddress"];}
-        $GetAvailableListenIP=$this->GetAvailableListenIP();
-        if(!isset($GetAvailableListenIP[$GLOBALS["APACHE_ListenDefaultAddress"]])){
-            if($GLOBALS["VERBOSE"]){echo "Starting......: ".date("H:i:s")." Apache WARNING `{$GLOBALS["APACHE_ListenDefaultAddress"]}` does not exists...\n";}
-            $GLOBALS["APACHE_ListenDefaultAddress"]="*";
-            return $GLOBALS["APACHE_ListenDefaultAddress"];
-        }
-        return $GLOBALS["APACHE_ListenDefaultAddress"];
-    }
-
-
-
 
 
     function GET_PERFS($value){
@@ -3162,17 +2233,6 @@ class unix {
         return "0.0.0";
     }
 
-
-    public function LIGHTTPD_PORT($conf=null):int{
-        if($conf==null){$conf=$this->LIGHTTPD_CONF_PATH();}
-        $tbl=explode("\n",@file_get_contents($conf));
-        foreach ($tbl as $line){
-            if(preg_match("#^server\.port.*?=.*?([0-9]+)#",$line,$re)){
-                return intval($re[1]);
-            }
-        }
-        return 0;
-    }
 
     public function LIGHTTPD_USER($conf=null):string{
         if($conf==null){$conf=$this->LIGHTTPD_CONF_PATH();}
@@ -3473,19 +2533,6 @@ class unix {
         }
 
     }
-    public function LOCATE_SQUID_CONF(){
-        if(is_file('/etc/squid3/squid.conf')){ return '/etc/squid3/squid.conf';}
-        if(is_file('/opt/artica/etc/squid.conf')){ return '/opt/artica/etc/squid.conf';}
-        if(is_file('/etc/squid/squid.conf')){ return '/etc/squid/squid.conf';}
-    }
-
-    public function LOCATE_DHCPD_PID_PATH(){
-
-        if(is_file('/var/run/dhcpd.pid')){ return '/var/run/dhcpd.pid';}
-        if(is_file('/var/run/dhcpd/dhcpd.pid')){ return '/var/run/dhcpd/dhcpd.pid';}
-        if(is_file('/var/run/dhcp3-server/dhcpd.pid')){ return '/var/run/dhcp3-server/dhcpd.pid';}
-    }
-
     public function LOCATE_PURE_FTPD_PID_PATH():string{
         if(is_file('/var/run/pure-ftpd/pure-ftpd.pid')){return "/var/run/pure-ftpd/pure-ftpd.pid";}
         if(is_file('/var/run/pure-ftpd.pid')){return "/var/run/pure-ftpd.pid";}
@@ -3522,13 +2569,6 @@ class unix {
         return $array;
 
     }
-    public function BetterFS(){
-        if(!$this->IsExt4()){return "ext3";}
-        if(is_file($this->find_program("mkfs.ext4"))){return "ext4";}
-        if(is_file($this->find_program("mkfs.ext3"))){return "ext3";}
-        return "ext3";
-    }
-
     public function IsExt4(){
         $f=explode("\n",@file_get_contents("/proc/filesystems"));
         foreach ($f as $num=>$ligne){
@@ -3591,49 +2631,6 @@ class unix {
         return $host;
     }
 
-    function BACKUPPC_locate_config_path(){
-        if(is_file("/etc/backuppc/config.pl")){return "/etc/backuppc";}
-        if(is_file("/etc/BackupPC/config.pl")){return "/etc/BackupPC";}
-
-    }
-
-
-
-
-    function chmod_alldirs($bit,$dir){
-        $dirz=explode("/",$dir);
-        $dirStart="/{$dirz[0]}";
-        if($dirStart=="/"){$dirStart=null;}
-        for($i=1;$i<count($dirz);$i++){
-            $dirStart=$dirStart."/".$dirz[$i];
-            if(!is_dir($dirStart)){@mkdir($dirStart,$bit,true);continue;}
-            @chmod($dirStart, $bit);
-
-        }
-
-
-    }
-
-    public function DiskLabel($sda=null){
-        if($sda==null){return "";}
-        if(!is_dir("/dev/disk/by-label")){return "";}
-        $handle = opendir("/dev/disk/by-label");
-        if(!$handle){return "";}
-
-        if($handle){
-            while (false !== ($filename = readdir($handle))) {
-                if($filename=="."){continue;}
-                if($filename==".."){continue;}
-                $targetFile="/dev/disk/by-label/$filename";
-                if(is_dir($targetFile)){continue;}
-                if(!is_link($targetFile)){continue;}
-                $spath=readlink($targetFile);
-                if(preg_match("#\/$sda#i",$spath)){return $filename;}
-            }
-        }
-        return "";
-    }
-
     public function ToSyslog($text,$error=false,$forcefile=null){
 
         if(!is_bool($error)){
@@ -3681,41 +2678,6 @@ class unix {
         $time=date("H:i:s");
         @fwrite($f, "$time: $text\n");
         @fclose($f);
-    }
-
-    private function SystemUserGroups($username){
-        $username=strtolower(trim($username));
-        $groupsLine=null;
-        $ARRAY=array();
-        $groupsbin=$this->find_program("groups");
-        exec("$groupsbin $username 2>&1",$results);
-        foreach ($results as $index=>$ligne){
-            $ligne=trim($ligne);
-            if($ligne==null){continue;}
-            if(preg_match("$username.*?:(.+)#", $ligne,$re)){
-                $groupsLine=trim($re[1]);
-                break;
-            }
-        }
-
-        if($groupsLine==null){return array();}
-        $xgroupsLine=explode(" ",$groupsLine);
-        foreach ($xgroupsLine as $ligne){
-            $ligne=trim(strtolower($ligne));
-            if($ligne==null){continue;}
-            $ARRAY[$ligne]=$ligne;
-        }
-
-    }
-
-    public function SystemIsUserInGroup_cmdline($username,$groupName){
-        $groupName=trim(strtolower($groupName));
-        if($groupName==null){return true;}
-        $ARRAY=$this->SystemUserGroups($username);
-        if(!isset($ARRAY[$groupName])){return false;}
-        return true;
-
-
     }
 
     public function SystemSecurityLimitsConf():bool{
@@ -3902,104 +2864,6 @@ class unix {
 
     }
 
-    function chmod_func($bit,$dir){
-        if(@is_link($dir)){$dir=@readlink($dir);}
-        if(!is_dir($dir)){if(!is_file($dir)){return;}}
-        $findbit=false;
-        if($bit=="493"){$bit="0755";$findbit=true;}
-        if($bit=="511"){$bit="0777";$findbit=true;}
-        if($bit=="416"){$bit="0640";$findbit=true;}
-        if($bit=="666"){$bit="0666";$findbit=true;}
-
-        if($bit=="0755"){$bit="0755";$findbit=true;}
-        if($bit=="0777"){$bit="0777";$findbit=true;}
-        if($bit=="0640"){$bit="0640";$findbit=true;}
-        if($bit=="0666"){$bit="0666";$findbit=true;}
-
-        if($bit=="755"){$bit="0755";$findbit=true;}
-        if($bit=="777"){$bit="0777";$findbit=true;}
-        if($bit=="640"){$bit="0640";$findbit=true;}
-
-        if(!$findbit){return;}
-
-        if(isset($GLOBALS["chmod_func"][md5("$bit$dir")])){return;}
-        $dir=trim($dir);
-        $recursive=false;
-        $chmod=$this->find_program("chmod");
-
-        if(!isset($GLOBALS["DEBUG_CHOWN"])){
-            $GLOBALS["DEBUG_CHOWN"]=intval(trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DebugChownFunc")));
-        }
-
-        if(function_exists("debug_backtrace")){
-            $trace=@debug_backtrace();
-            if(isset($trace[1])){
-                $called="called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";
-            }
-        }
-
-        if($GLOBALS["DEBUG_CHOWN"]){
-            $this->Tologs("/var/log/artica.chown.debug","bit $bit \"$dir\" $called");
-        }
-
-        if(substr($dir, strlen($dir)-1,1)=="*"){
-            $dir=substr($dir, 0,strlen($dir)-1);
-            $recursive=true;
-        }
-
-
-
-        if($recursive){
-            shell_exec("$chmod -R $bit $dir >/dev/null 2>&1");
-        }else{
-            shell_exec("$chmod $bit $dir >/dev/null 2>&1");
-        }
-
-        $GLOBALS["chmod_func"][md5("$bit$dir")]=true;
-
-    }
-
-    function PEAR_INSTALL_CHECK($packagename){
-        $pear=$this->find_program("pear");
-        if(strlen($pear)<5){return false;}
-        exec("$pear list 2>&1",$array);
-        foreach ($array as $num=>$ligne){
-            if(preg_match("#^$packagename\s+#",$ligne,$re)){
-                return true;
-            }
-        }
-        return false;
-    }
-
-
-    function BACKUPPC_GET_CONFIG_INFOS($key){
-        $f=explode("\n",@file_get_contents($this->BACKUPPC_locate_config_path()."/config.pl"));
-        foreach ($f as $num=>$ligne){
-            if(preg_match("#Conf\{$key\}.*?'(.+?)';#i",$ligne,$re)){
-                $re[1]=trim($re[1]);
-                $re[2]=str_replace("'","",$re[1]);
-                return $re[1];
-            }
-        }
-
-    }
-
-    function BACKUPPC_GET_CGIBIN_PATH(){
-        if(is_file("/usr/share/backuppc/cgi-bin/index.cgi")){return "/usr/share/backuppc/cgi-bin/index.cgi";}
-        if(is_file("/usr/share/backuppc/cgi-bin/BackupPC_Admin")){return "/usr/share/backuppc/cgi-bin/BackupPC_Admin";}
-        if(is_file("/usr/share/BackupPC/sbin/BackupPC_Admin")){return "/usr/share/BackupPC/sbin/BackupPC_Admin";}
-    }
-
-    function BACKUPPC_GET_IMG_DIR():string{
-        if(is_dir("/usr/share/backuppc/image")){return "/usr/share/backuppc/image";}
-        if(is_dir("/usr/share/BackupPC/html")){return "/usr/share/BackupPC/html";}
-        return "";
-    }
-
-
-
-
-
     public function remove_monit($APP):bool{
         $path="/etc/monit/conf.d/$APP.monitrc";
         if(!is_file($path)) {return true;}
@@ -4142,214 +3006,6 @@ class unix {
             shell_exec("/sbin/chkconfig --level 345 " .basename($INITD_PATH)." on >/dev/null 2>&1");
         }
         return true;
-    }
-
-    public function create_service_compliance($Config=array()):bool{
-        $DAEMON_ARGS=null;
-        $php5script=null;
-        $php5Killer=null;
-            if(!isset($Config["PHP_BUILDER"])){$Config["PHP_BUILDER"]=null;}
-            if(!isset($Config["BINARY_OPTS"])){$Config["BINARY_OPTS"]=null;}
-            if(!isset($Config["COMPLIANCE"])){$Config["COMPLIANCE"]=false;}
-            if(!isset($Config["PHP_KILLER"])){$Config["PHP_KILLER"]=null;}
-            $php=$this->LOCATE_PHP5_BIN();
-            $COMPLIANCE=$Config["COMPLIANCE"];
-            $INITD_PATH=$Config["INITD_PATH"];
-            if($Config["PHP_BUILDER"]<>null){
-                $php5script="$php /usr/share/artica-postfix/".$Config["PHP_BUILDER"]." >/dev/null 2>&1 || true";
-            }
-            if($Config["PHP_KILLER"]<>null){
-                $php5Killer="$php /usr/share/artica-postfix/".$Config["PHP_KILLER"]." >/dev/null 2>&1 || true";
-            }
-
-            $daemonbinLog=basename($INITD_PATH);
-            $binary=$Config["BINARY"];
-            $cmdlines=trim($Config["BINARY_OPTS"]);
-            $PIDFILE=$Config["PIDFILE"];
-            if($cmdlines<>null){$cmdlines=" $cmdlines";}
-            if($cmdlines<>null){
-                $DAEMON_ARGS=" -- $cmdlines";
-            }
-
-            $f[]="#!/bin/sh";
-            $f[]="### BEGIN INIT INFO";
-            $f[]="# Provides:          $daemonbinLog";
-            $f[]="# Required-Start:    \$local_fs \$syslog";
-            $f[]="# Required-Stop:     \$local_fs \$syslog";
-            $f[]="# Should-Start:";
-            $f[]="# Should-Stop:";
-            $f[]="# Default-Start:     2 3 4 5";
-            $f[]="# Default-Stop:      0 1 6";
-            $f[]="# Short-Description: $daemonbinLog";
-            $f[]="# chkconfig: - 80 75";
-            $f[]="### END INIT INFO";
-            $f[]="";
-            $f[]=". /lib/lsb/init-functions";
-            $f[]="SRVNAME=\"$daemonbinLog Service\"";
-            $f[]="BINARY=\"$binary\"";
-            $f[]="PIDFILE=\"$PIDFILE\"";
-            $f[]="";
-            $f[]="";
-            $f[]="getpid(){";
-            $f[]="	if [  -f \$PIDFILE ]; then";
-            $f[]="		PID=\$(cat \$PIDFILE)";
-            $f[]="		STRLEN=\${#PID}";
-            $f[]="		";
-            $f[]="		if [ \"\$STRLEN\" -gt 0 ]; then ";
-            $f[]="			if [ -f \"/proc/\$PID/cmdline\" ]; then";
-            $f[]="				echo \$PID";
-            $f[]="				return \$PID";
-            $f[]="			fi";
-            $f[]="		fi";
-            $f[]="	fi";
-            $f[]="	";
-            $f[]="	PID=\"\$(pidof -s \$BINARY)\"";
-            $f[]="	STRLEN=\${#PID}";
-            $f[]="	if [ \"\$STRLEN\" -gt 0 ]; then ";
-            $f[]="		if [ -f \"/proc/\$PID/cmdline\" ]; then";
-            $f[]="			echo \$PID";
-            $f[]="			return \$PID";
-            $f[]="		fi";
-            $f[]="	fi";
-            $f[]="	";
-            $f[]="	echo \"0\"";
-            $f[]="	return \"0\"";
-            $f[]="";
-            $f[]="}";
-            $f[]="";
-            $f[]="";
-            $f[]="do_start() {";
-            $f[]="	pidnum=\$(getpid)";
-            $f[]="	    if [ \"\$pidnum\" -gt \"0\" ]; then ";
-            $f[]="	    	log_action_msg \"Daemon is currently running PID \$pidnum\"";
-            $f[]="	    	exit 0";
-            $f[]="	   fi";
-            $f[]="";
-            $f[]="	log_action_begin_msg \"Starting \$SRVNAME (\$BINARY)\"";
-            if($php5script<>null) {
-                $f[] = "  $php5script";
-            }
-            if(!$COMPLIANCE) {
-                $f[] = "	\$BINARY$cmdlines >/dev/null 2>&1";
-                $f[] = "	";
-                $f[] = "	for i in 1 2 3 4 5";
-                $f[] = "	do";
-                $f[] = "		sleep 1";
-                $f[] = "		pidnum=\$(getpid)";
-                $f[] = "		if [ \"\$pidnum\" -gt \"0\" ]; then ";
-                $f[] = "		    	log_action_end_msg 0";
-                $f[] = "	    		exit 0";
-                $f[] = "	   	fi";
-                $f[] = "		";
-                $f[] = "	done";
-                $f[] = "	log_action_end_msg 1";
-                $f[] = "	exit 1";
-            }else{
-                $f[]="	start-stop-daemon --start --quiet --pidfile \$PIDFILE --exec \$BINARY$DAEMON_ARGS";
-                $f[]="	return=\$?";
-                $f[]="	if [ \$return -eq 0 ]; then";
-                $f[]="		sleep 1";
-                $f[]="		exit 0";
-                $f[]="	fi";
-                $f[]="	log_end_msg 0";
-                $f[]="	exit 0";
-            }
-            $f[]="";
-            $f[]="}";
-            $f[]="do_stop(){";
-            $f[]="";
-            if($COMPLIANCE) {
-                $f[] = " 	log_action_begin_msg \"Stopping $daemonbinLog PID \$pidnum\"";
-                $f[] = "    start-stop-daemon --stop --quiet --oknodo --pidfile \$PIDFILE";
-                $f[] = "    log_end_msg \$?";
-                $f[] = "    rm -f \$PIDFILE";
-                $f[] = "    killproc -p \$PIDFILE \$DAEMON";
-                $f[] = $php5Killer;
-                $f[] = "    return \$?";
-            }else {
-                $f[] = "	pidnum=\$(getpid)";
-                $f[] = "	    if [ \"\$pidnum\" -eq \"0\" ]; then ";
-                $f[] = "	    	log_action_begin_msg \"Daemon is currently stopped\"";
-                $f[] = "	    	log_action_end_msg 0";
-                $f[] = $php5Killer;
-                $f[] = "	    	return 0";
-                $f[] = "	   fi";
-                $f[] = "";
-                $f[] = "	  kill -9 \$pidnum";
-                $f[] = $php5Killer;
-                $f[] = " 	  for i in 1 2 3 4 5";
-                $f[] = "		do";
-                $f[] = "		pidnum=\$(getpid)";
-                $f[] = "		if [ \"\$pidnum\" -eq \"0\" ]; then ";
-                $f[] = " 		 log_action_end_msg 0";
-                $f[] = " 		 return 0";
-                $f[] = " 		fi";
-                $f[] = " 		sleep 1";
-                $f[] = "	done";
-                $f[] = "	log_action_end_msg 1";
-                $f[] = "	return 1";
-            }
-            $f[]="";
-            $f[]="}";
-            $f[]="";
-            $f[]="";
-            $f[]="case \"\$1\" in";
-            $f[]=" start)";
-            $f[]="    do_start";
-            $f[]="  ;;";
-            $f[]="";
-            $f[]="  stop)";
-            $f[]="     do_stop";
-            $f[]="  ;;";
-            $f[]="";
-            $f[]="  restart|force-reload)";
-            $f[]="     do_stop";
-            $f[]="     pidnum=\$(getpid)";
-            $f[]="     if [ \"\$pidnum\" -eq \"0\" ]; then ";
-            $f[]="      do_start";
-            $f[]="     fi";
-            $f[]="     exit 1";
-            $f[]="     ";
-            $f[]=" ;;";
-            $f[]="  status)";
-            $f[]="";
-            $f[]="	    pidnum=\$(getpid)";
-            $f[]="	    if [ \"\$pidnum\" -gt \"0\" ]; then ";
-            $f[]="	    	echo \"Daemon is currently running PID \$pidnum\"";
-            $f[]="	    else";
-            $f[]="	    	echo \"PID sent is \$pidnum, daemon not running\"";
-            $f[]="	    fi";
-            $f[]="    ;;";
-            $f[]="  *)";
-            $f[]="    echo \"Usage: \$0 {start|stop|restart|status}\"";
-            $f[]="    exit 1";
-            $f[]="    ;;";
-            $f[]="esac";
-            $f[]="exit 0";
-            $f[]="";
-
-           $md5_src=null;
-            if(is_file($INITD_PATH)){
-                $md5_src=md5_file($INITD_PATH);
-            }
-
-            @file_put_contents($INITD_PATH, @implode("\n", $f));
-            @chmod($INITD_PATH,0755);
-            $md5_dst=md5_file($INITD_PATH);
-            if($md5_dst==$md5_src){return true;}
-            if(is_file('/usr/sbin/update-rc.d')){
-                shell_exec("/usr/sbin/update-rc.d -f " .basename($INITD_PATH)." defaults >/dev/null 2>&1");
-            }
-
-            if(is_file('/sbin/chkconfig')){
-                shell_exec("/sbin/chkconfig --add " .basename($INITD_PATH)." >/dev/null 2>&1");
-                shell_exec("/sbin/chkconfig --level 345 " .basename($INITD_PATH)." on >/dev/null 2>&1");
-            }
-        return true;
-
-
-
-
     }
 
     public function create_service($INITD,$binary,$param=null,$startlines=array(),$stoplines=array()):bool{
@@ -4495,55 +3151,6 @@ class unix {
 
         return $results;
     }
-
-    public function DISK_INODES(){
-
-        if(is_file("/etc/artica-postfix/settings/Daemons/InodesStatus")){
-            $TimeF=$this->file_time_min("/etc/artica-postfix/settings/Daemons/InodesStatus");
-            if($TimeF<60){
-                return unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("InodesStatus"));
-            }
-            @unlink("/etc/artica-postfix/settings/Daemons/InodesStatus");
-        }
-
-
-
-        $results=array();
-        $dfbin=$this->find_program("df");
-
-        if($this->process_exists($this->PIDOF($dfbin))){return array();}
-
-        exec("$dfbin -i -h 2>&1",$returns);
-        $pattern="#^(.+?)\s+([0-9,\.]+)([A-Z])\s+([0-9,\.]+)([A-Z])\s+([0-9,\.]+)([A-Z])\s+([0-9,\.]+)%\s+#";
-        foreach ($returns as $ligne){
-            if(!preg_match($pattern,$ligne,$re)){
-                if(preg_match("#^(.+?)\s+([0-9,\.]+)([A-Z])\s+([0-9,\.]+)\s+([0-9,\.]+)([A-Z])\s+([0-9,\.]+)%\s+#", $ligne,$re)){
-
-                    if(preg_match("#\/by-uuid\/(.+)#", trim($re[1]),$ri)){
-                        $uuid=trim($ri[1]);
-                        $UUIDS=$this->BLKID_UUIDs();
-                        if(isset($UUIDS[$uuid]["DEV"])){$re[1]=$UUIDS[$uuid]["DEV"];}
-                    }
-
-                    $results[trim($re[1])]=array("INODES"=>$re[2].$re[3],"USED"=>$re[4],"FREE"=>$re[5].$re[6],"POURC"=>trim($re[7]));
-                    continue;
-                }
-                continue;}
-
-            if(preg_match("#\/by-uuid\/(.+)#", trim($re[1]),$ri)){
-                $uuid=trim($ri[1]);
-                $UUIDS=$this->BLKID_UUIDs();
-                if(isset($UUIDS[$uuid]["DEV"])){$re[1]=$UUIDS[$uuid]["DEV"];}
-            }
-
-            $results[trim($re[1])]=array("INODES"=>$re[2].$re[3],"USED"=>$re[4].$re[5],"FREE"=>$re[6].$re[7],"POURC"=>trim($re[8]));
-
-        }
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("InodesStatus", serialize($results));
-        return $results;
-    }
-
-
 
     public FUNCTION SQUID_PARMAZ(){
         if(isset($GLOBALS["SQUID_PARMAZ"])){
@@ -4802,19 +3409,6 @@ class unix {
         return false;
     }
 
-    public function IS_FIREHOLE_ACTIVE(){
-        $firehol=$this->find_program("firehol");
-        if(!is_file($firehol)){return false;}
-        if(!is_file("/etc/artica-postfix/settings/Daemons/FireHolConfigured")){return false;}
-        $FireHolConfigured=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolConfigured"));
-        if($FireHolConfigured==0){return false;}
-        if(!is_file("/etc/artica-postfix/settings/Daemons/FireHolEnable")){return false;}
-        $FireHolEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FireHolEnable"));
-        if($FireHolEnable==0){return false;}
-        return true;
-
-    }
-
     public function alt_stat($file=null) {
         if($file==null){return false;}
         $ss=@stat($file);
@@ -4929,30 +3523,6 @@ class unix {
 
     }
 
-    function LESSFS_ARRAY():array{
-        $datas=explode("\n",@file_get_contents("/proc/mounts"));
-        $array=array();
-        foreach ($datas as $ligne){
-            if(preg_match("#^lessfs\s+(.+?)\s+fuse\.lessfs\s+#",$ligne,$re)){$array[trim($re[1])]=true;}
-        }
-        return $array;
-
-    }
-
-    public function DISK_MOUNTED($dev):bool{
-        $dev=$this->MapperDetect($dev);
-        $datas=explode("\n",@file_get_contents("/proc/mounts"));
-        $dev=$this->folder_to_regex($dev);
-
-        foreach ($datas as $ligne){
-            if(preg_match("#$dev#",$ligne)){
-                writelogs_framework("\"$dev\"=$ligne",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-                return true;
-            }
-        }
-        return false;
-    }
-
     public function MOUNTED_PATH($dev):string{
         if(strpos($dev,"by-uuid")==0){
             $dev=$this->MapperDetect($dev);
@@ -4968,56 +3538,6 @@ class unix {
         }
         return "";
     }
-
-    public function MOUNTED_DIRS($rpath):array{
-        if($rpath==null){return array();}
-        $results=array();
-
-        $rpath=$this->MapperDetect($rpath);
-        $rpath=$this->folder_to_regex($rpath);
-        if($GLOBALS["VERBOSE"]){
-            echo "Line: ".__LINE__.":: -> ^(.*?)\s+$rpath(.*?)\s+#  ... ".__FUNCTION__."\n";
-        }
-
-        $datas=explode("\n",@file_get_contents("/proc/mounts"));
-        foreach ($datas as $ligne){
-            if(!preg_match("#^.*?\s+$rpath(.*?)\s+#",$ligne,$re)){
-                continue;
-            }
-            echo "Line: ".__LINE__.":: $ligne -> ^.*?\s+$rpath.+?\s+# match ".__FUNCTION__."\n";
-            if(preg_match("#^.*?\s+(.+?)\s+#",$ligne,$re)) {
-                echo "Line: ".__LINE__.":: $ligne -> ^.*?\s+$rpath.+?\s+# match $re[1]".__FUNCTION__."\n";
-                $results[] = trim($re[1]);
-            }
-        }
-        return $results;
-    }
-
-    public function MOUNTED_DIR($path):string{
-        $path=$this->MapperDetect($path);
-        $path=$this->folder_to_regex($path);
-        $datas=explode("\n",@file_get_contents("/proc/mounts"));
-        foreach ($datas as $ligne){
-            if(!preg_match("#^(.*?)\s+$path\s+(ntfs|btrfs|ext|rw)#",$ligne,$re)){
-                if($GLOBALS["VERBOSE"]){echo "Line: ".__LINE__.":: $ligne -> ^(.*?)\s+$path\s+(btrfs|ext|rw) NOT match ".__FUNCTION__."\n";}
-                continue;
-            }
-            return trim($re[1]);
-        }
-        return "";}
-
-    public function LSOF_PIDS($directory):array{
-        $pids=array();
-        $lsof=$this->find_program("lsof");
-        exec("$lsof $directory 2>&1",$results);
-        foreach ($results as $ligne){
-            if(preg_match("#^.+?\s+([0-9]+)#",$ligne,$re)){
-                $pids[]=$re[1];
-            }
-        }
-        return $pids;
-    }
-
 
     public function MOUNTED_TMPFS_MEM($directory):int{
         $datas=explode("\n",@file_get_contents("/proc/mounts"));
@@ -5113,20 +3633,6 @@ class unix {
 
     }
 
-    public function isMaxInstances(){
-
-        $MaxInstnaces=11;
-        $MaxInstancesToDie=16;
-        $p=new processes_php();
-        $MemoryInstances=$p->MemoryInstances();
-        if(!is_numeric($MemoryInstances)){$MemoryInstances=0;}
-        if($MemoryInstances>$MaxInstancesToDie){return true;}
-        if($MemoryInstances>$MaxInstnaces){return true;}
-        return false;
-
-    }
-
-
     public function PROCESS_CACHE_MEMORY($pid,$noMo=false){
         //$PPID=$this->PROCESS_PPID();
         //if($PPID>1)
@@ -5171,26 +3677,6 @@ class unix {
         return intval($pid);
 
     }
-
-    public function PROCESS_SOCKETS_NUM($pid){
-        if(!is_dir("/proc/$pid/fd")){return 0;}
-        $list = @glob("/proc/$pid/fd/*");
-        $c=0;
-        foreach ($list as $line){
-            if(!is_link($line)){continue;}
-            $line =@readlink($line);
-            if(!preg_match("#^socket:#", $line)){continue;}
-            $c++;
-
-        }
-
-    }
-    public function network_test_port($ip,$port):bool{
-        $fp = @stream_socket_client("tcp://$ip:$port",$errno, $errstr,3, STREAM_CLIENT_CONNECT);
-        if($fp){@socket_close($fp);return true;}
-        return false;
-    }
-
 
     public function PROCESS_STATUS($pid):array{
         $STATUS=null;
@@ -5258,71 +3744,6 @@ class unix {
     }
 
 
-    public function HostToIp($hostname):string{
-        if(trim($hostname)==null){return "";}
-        $hostname=str_replace('$','',$hostname);
-        $ip=gethostbyname($hostname);
-
-        if($ip<>$hostname){
-            if(preg_match("#([0-9]+)\.([0-9]+).([0-9]+)\.([0-9]+)#",$ip)){return $ip;}
-        }
-        $nmblookup=$this->find_program("nmblookup");
-
-        if($nmblookup==null){return "";}
-        if(preg_match("#([0-9]+)\.([0-9]+).([0-9]+)\.([0-9]+)#",$hostname)){return "";}
-        $cmd="$nmblookup $hostname";
-        exec($cmd,$results);
-
-        foreach ($results as $ligne){
-            writelogs_framework("$ligne",__CLASS__."/".__FUNCTION__,__FILE__,__LINE__);
-            if(preg_match("#^([0-9\.]+)\s+#",$ligne,$re)){return $re[1];}
-        }
-        return "";
-    }
-    public function IpToHostname($ipaddr):string{
-        $ipaddr=trim($ipaddr);
-        if(!$this->isIPAddress($ipaddr)){return $ipaddr;}
-        if(!isset($GLOBALS["IPNAMES"])){$GLOBALS["IPNAMES"]=array();}
-        if(isset($GLOBALS["IPNAMES"][$ipaddr])){return $GLOBALS["IPNAMES"][$ipaddr];}
-
-        if(count($GLOBALS["IPNAMES"])>1500){$GLOBALS["IPNAMES"]=array();}
-        $this->ToSyslog(__FUNCTION__."[".__LINE__."]: gethostbyaddr($ipaddr) ");
-        $hostres=gethostbyaddr($ipaddr);
-        if(!$this->isIPAddress($hostres)){
-            $GLOBALS["IPNAMES"][$ipaddr]=$hostres;
-            return $hostres;
-        }
-        $GLOBALS["IPNAMES"][$ipaddr]=$ipaddr;
-        return $ipaddr;
-    }
-
-
-    public function IpToMac($ipaddr){
-        $ipaddr=trim($ipaddr);
-
-        if(!is_file("/usr/bin/arping")){return;}
-        $ttl=date('YmdH');
-        if(!isset($GLOBALS["CACHEARP"])){$GLOBALS["CACHEARP"]=array();}
-        if(count($GLOBALS["CACHEARP"])>3){unset($GLOBALS["CACHEARP"]);}
-        if(isset($GLOBALS["CACHEARP"][$ttl][$ipaddr])){return $GLOBALS["CACHEARP"][$ttl][$ipaddr];}
-
-        $cmd="/usr/bin/arping -f -c 1 $ipaddr 2>&1";
-        exec($cmd,$results);
-        foreach ($results as $num=>$line){
-            if(!preg_match("#reply from.*?\[(.+?)\]#", $line,$re)){ continue; }
-            $re[1]=trim(strtolower($re[1]));
-
-            if($this->IsvalidMAC($re[1])){
-                $GLOBALS["CACHEARP"][$ttl][$ipaddr]=$re[1];
-                return;
-            }else{
-                $GLOBALS["CACHEARP"][$ttl][$ipaddr]="00:00:00:00:00:00";
-                return "00:00:00:00:00:00";
-            }
-
-        }
-    }
-
     public static function isIPAddress( $ip ) {
         $ip=trim($ip);
         if($ip==null){return false;}
@@ -5354,11 +3775,6 @@ class unix {
     }
 
 
-    public function AddFSTab($dev,$mount){
-        $hd=new hd($dev);
-        $hd->AddFSTab($mount);
-    }
-
     public function DelFSTab($dev){
         if($dev==null){return null;}
         $datas=explode("\n",@file_get_contents("/etc/fstab"));
@@ -5380,130 +3796,6 @@ class unix {
 
     }
 
-    public function DelFSTabByMount($mountPoint){
-
-        $umountbin=$this->find_program("umount");
-        shell_exec("$umountbin -l $mountPoint >/dev/null 2>&1");
-        $mountPoint=str_replace(".", "\.", $mountPoint);
-        $mountPoint=str_replace("/", "\/", $mountPoint);
-
-
-        $t=array();
-        $datas=explode("\n",@file_get_contents("/etc/fstab"));
-        foreach ($datas as $ligne){
-            if(trim($ligne)==null){continue;}
-            if(!preg_match("#$mountPoint#", $ligne)){
-                $t[]=$ligne;
-            }
-
-        }
-
-
-
-        if(!file_put_contents("/etc/fstab",implode("\n",$t))){
-            writelogs_framework("Unable to save /etc/fstab",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-        }
-
-    }
-
-
-    public function GetFSTabMountPoint($dev){
-        if($dev==null){return null;}
-        $dev=$this->MapperDetect($dev);
-        $array=array();
-        $dev=str_replace("/","\/",$dev);
-        $datas=explode("\n",@file_get_contents("/etc/fstab"));
-        foreach ($datas as $num=>$ligne){
-            if($ligne==null){continue;}
-            if(preg_match("#$dev\s+(.+?)\s+#",$ligne,$re)){
-                $array[]=trim($re[1]);
-            }
-        }
-
-        return $array;
-
-    }
-
-
-    function SendEmailConfigured($arrayParams,$subject=null,$content=null){
-        include_once('/usr/share/artica-postfix/ressources/class.mail.inc');
-        include_once('/usr/share/artica-postfix/ressources/smtp/class.smtp.loader.inc');
-
-        if(function_exists("debug_backtrace")){
-            $trace=debug_backtrace();
-            if(isset($trace[1])){
-                $file=basename($trace[1]["file"]);
-                $function=$trace[1]["function"];
-                $line=$trace[1]["line"];
-
-            }
-
-        }
-        if($subject==null){$subject="No subject...";}
-        $smtp_dest=$arrayParams["smtp_dest"];
-        if($smtp_dest==null){echo "No recipient\n";return false;}
-        if(trim($arrayParams["smtp_server_name"])==null){echo "No valid SMTP server\n";return false;}
-
-        $array_load=sys_getloadavg();
-        $internal_load=$array_load[0];
-        $content=str_replace("\n", "\r\n", $content);
-        $content=$content."#---------------------\r\nCurrent load:$internal_load\r\nFrom: $file in line $line function $function()\r\n";
-
-
-        $hostname=$this->hostname_g();
-        $addresses=array();
-        if(strpos($smtp_dest, ";")>0){
-            $destZ=explode(";",$smtp_dest);
-            foreach ($destZ as $num=>$email){
-                if(preg_match("#^(.+?)@([a-z0-9\.\-\_]+)$#", $email,$re)){$addresses[]="{$re[1]}@{$re[2]}";}
-            }
-        }
-
-
-        if(strpos($smtp_dest, ",")>0){
-            $destZ=explode(",",$smtp_dest);
-            foreach ($destZ as $num=>$email){
-                if(preg_match("#^(.+?)@([a-z0-9\.\-\_]+)$#", $email,$re)){$addresses[]="{$re[1]}@{$re[2]}";}
-            }
-        }
-
-
-        if(count($addresses)==0){$addresses[]=$smtp_dest;}
-        if(!is_numeric($arrayParams["smtp_server_port"])){$arrayParams["smtp_server_port"]=25;}
-        $smtp_sender=$arrayParams["smtp_sender"];
-        if($smtp_sender==null){$smtp_sender="root@$hostname";}
-
-        $results=true;
-        $subject="[$hostname]: $subject";
-        foreach ($addresses as $num=>$DESTINATAIRE){
-            $mail = new PHPMailer\PHPMailer\PHPMailer();
-            $mail->IsSMTP();
-            $mail->AddAddress($DESTINATAIRE,$DESTINATAIRE);
-            $mail->AddReplyTo($smtp_sender,$smtp_sender);
-            $mail->From=$smtp_sender;
-            $mail->FromName=$smtp_sender;
-
-            $mail->Subject=$subject;
-            $mail->Body=$content;
-            $mail->Hostname=$hostname;
-            $mail->Host=$arrayParams["smtp_server_name"];
-            $mail->Port=$arrayParams["smtp_server_port"];
-
-            if(($arrayParams["smtp_auth_user"]<>null) && ($arrayParams["smtp_auth_passwd"]<>null)){
-                $mail->SMTPAuth=true;
-                $mail->Username=$arrayParams["smtp_auth_user"];
-                $mail->Password=$arrayParams["smtp_auth_passwd"];
-                if($arrayParams["tls_enabled"]==1){$mail->SMTPSecure = 'tls';}
-                if($arrayParams["ssl_enabled"]==1){$mail->SMTPSecure = 'ssl';}
-            }
-
-            if(!$mail->Send()){$results=false;continue;}
-
-        }
-        return $results;
-
-    }
-
     public function TOTAL_MEMORY_MB(){
         if(isset($GLOBALS["TOTAL_MEMORY_MB"])){return $GLOBALS["TOTAL_MEMORY_MB"];}
         $array=$this->TOTAL_MEMORY_KB_WORK();
@@ -5512,20 +3804,6 @@ class unix {
         return $GLOBALS["TOTAL_MEMORY_MB"];
 
     }
-
-    public function TOTAL_MEM_POURCENT_USED():int{
-        $array=$this->TOTAL_MEMORY_KB_WORK();
-        $Total=intval($array[0]);
-        if($Total==0){
-            return 0;
-        }
-        $Used=$array[1];
-        $prc=$Used/$Total;
-        $prc=round($prc*100);
-        return $prc;
-    }
-
-
 
     private function TOTAL_MEMORY_KB_WORK():array{
         if(!is_file("/etc/artica-postfix/mem.pl.txt")){
@@ -5543,12 +3821,6 @@ class unix {
     }
 
 
-    public function TOTAL_MEMORY_MB_USED(){
-        $array=$this->TOTAL_MEMORY_KB_WORK();
-        $Used=$array[1]/1024;
-        return round($Used);
-
-    }
     public function TOTAL_MEMORY_MB_FREE(){
         $array=$this->TOTAL_MEMORY_KB_WORK();
         $Total=$array[0];
@@ -5586,64 +3858,6 @@ class unix {
 
         return 0;}
 
-    function TMPFS_USEPERCENT($dir){
-        if(is_link($dir)){$dir=readlink($dir);}
-        if(!is_dir($dir)){
-            $directory_tmp=dirname($dir);
-            if(is_link($directory_tmp)){$directory_tmp=readlink($directory_tmp);}
-            if(is_dir($directory_tmp)){$dir=$directory_tmp;}
-        }
-
-        $df=$this->find_program("df");
-        exec("$df \"$dir\" 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(!preg_match("#^tmpfs\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9,\.])+%\s+#", $ligne,$re)){
-                if($GLOBALS["VERBOSE"]){echo "$dir :No match $ligne\n";}
-                continue;
-            }
-
-            return round($re[4]);
-
-        }
-
-    }
-
-    function TMPFS_CURRENTSIZE($dir){
-
-        $df=$this->find_program("df");
-        exec("$df \"$dir\" 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(!preg_match("#^(tmpfs|shm)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9,\.])+%\s+#", $ligne,$re)){
-                if($GLOBALS["VERBOSE"]){echo "$dir :No match $ligne\n";}
-                continue;
-            }
-
-            return round($re[2]);
-
-        }
-
-        return 0;}
-
-
-    function DIRECTORY_MountedOnDirAndDismount($Directory){
-
-        $c=0;
-        $umount=$this->find_program("umount");
-        $DirectoryEx=str_replace("/", '\/', $Directory);
-        $DirectoryEx=str_replace(".", "\.", $DirectoryEx);
-
-        $f=explode("\n",@file_get_contents("/proc/mounts"));
-        foreach ($f as $line){
-            if(preg_match("#.+?\s+$DirectoryEx\/(.+?)\s+#", $line,$re)){
-                shell_exec("$umount -l $Directory/{$re[1]}");
-                $c++;
-            }
-        }
-
-        return $c;
-
-    }
-
     public function DIRECTORY_FREEM($dir){
 
         if(is_link($dir)){$dir=readlink($dir);}
@@ -5658,30 +3872,6 @@ class unix {
         foreach ($results as $num=>$ligne){
             if(preg_match("#^\/.*?[0-9]+MB\s+[0-9]+MB\s+([0-9]+)MB\s+#", $ligne,$re)){return $re[1];}
 
-        }
-
-    }
-
-
-    public function DF_SATUS_K($dir){
-        $df=$this->find_program("df");
-        //1K-blocks      Used Available Use%
-        exec("$df -B K $dir 2>&1",$results);
-        $pattern="#^\/.*?([0-9]+)K\s+([0-9]+)K\s+([0-9]+)K\s+([0-9\.]+)%#";
-        if($GLOBALS["VERBOSE"]){echo __CLASS__."/".__FUNCTION__."] $df -B K $dir 2>&1 = ".count($results)." rows\n";}
-        foreach ($results as $num=>$ligne){
-
-            if(preg_match("#^Filesystem#", $ligne)){continue;}
-
-            if(!preg_match("$pattern", $ligne,$re)){
-                if($GLOBALS["VERBOSE"]){echo __CLASS__."/".__FUNCTION__."] $ligne -> No match $pattern\n";}
-                continue;}
-            return array(
-                "SIZE"=>$re[1],
-                "USED"=>$re[2],
-                "AIVA"=>$re[3],
-                "POURC"=>$re[4]
-            );
         }
 
     }
@@ -5737,23 +3927,6 @@ class unix {
             }
         }
         return "";
-
-    }
-
-    public function shell_php($command,$out=false):bool{
-        $php=$this->LOCATE_PHP5_BIN();
-        $single=$command;
-        $php_script=ARTICA_ROOT."/$command";
-
-        if(preg_match("#(.*?)\.php\s+#",$single,$re)){
-            $single=$re[1].".php";
-            $single_path=ARTICA_ROOT."/$single";
-            if(!is_file($single_path)){
-                $this->ToSyslog("$single_path no such binary, aborting",false,"framework");
-                return false;
-            }
-        }
-        return $this->shell_command("$php $php_script",$out);
 
     }
 
@@ -5922,17 +4095,6 @@ class unix {
         return $this->file_time_min("/etc/artica-postfix/pids/$filename");
     }
 
-    public function dir_time_min($path){
-        if(!is_dir($path)){return 1;}
-        $data1 = filemtime($path."/.");
-        $data2 = time();
-        $difference = ($data2 - $data1);
-        $results=intval(round($difference/60));
-        if($results<0){$results=1;}
-        return $results;
-    }
-
-
     public function time_min($firstTime){
         if(!is_numeric($firstTime)){
             $trace=debug_backtrace();
@@ -5953,51 +4115,6 @@ class unix {
         return $results;
 
     }
-
-    public function file_head_n($filename,$maxlines){
-        if(!is_file($filename)){return null;}
-        $file = fopen( $filename, "r" );
-        $index=0;
-        $t=array();
-        while ((( $line = fgets( $file )) !== false) && ( $index++ < $maxlines+1 )) {
-            $t[]=$line;
-        }
-        fclose( $file );
-
-        return @implode("\n",$t);
-
-    }
-
-    public function file_tail_n($filename, $lines, $revers = false):string{
-        if(!is_file($filename)){return "";}
-        $offset = -1;
-        $c = '';
-        $read = array();
-        $i = 0;
-        $fp = @fopen($filename, "r");
-        while( $lines && fseek($fp, $offset, SEEK_END) >= 0 ) {
-            $c = fgetc($fp);
-            if($c == "\n" || $c == "\r"){
-                $lines--;
-                if( $revers ){
-                    $read[$i] = strrev($read[$i]);
-                    $i++;
-                }
-            }
-            if( $revers ) $read[$i] .= $c;
-            else $read .= $c;
-            $offset--;
-        }
-        fclose ($fp);
-        if( $revers ){
-            if($read[$i] == "\n" || $read[$i] == "\r")
-                array_pop($read);
-            else $read[$i] = strrev($read[$i]);
-            return implode('',$read);
-        }
-        return strrev(rtrim($read,"\n\r"));
-    }
-
 
     public function file_time_min($path):int{
         if(!is_file($path)){
@@ -6108,13 +4225,6 @@ class unix {
         return $s;
     }
 
-    PUBLIC function LOCATE_SENDMAIL_PATH(){
-        $path=$this->find_program("sendmail");
-        if(is_file($path)){return $path;}
-        if(is_file("/usr/lib/sendmail")){return "/usr/lib/sendmail";}
-
-        return null;}
-
     public function Ufdbguard_remote_srvc_bool(){
         $UseRemoteUfdbguardService=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseRemoteUfdbguardService"));
         if($UseRemoteUfdbguardService==1){return true;}
@@ -6167,31 +4277,6 @@ class unix {
         @file_put_contents($progressfile, serialize($array));
         @chmod($progressfile,0755);
         return true;
-    }
-
-    public function DIRECTORY_SCAN($directory):array{
-        $entries_array[]=$directory;
-        return $this->recursive_directories($directory,$entries_array);
-
-    }
-
-    private function recursive_directories($directory, $entries_array = array()):array {
-        if(!is_dir($directory)) {return array();}
-        if(is_dir($directory)) {
-            $handle = opendir($directory);
-            while(FALSE !== ($entry = readdir($handle))) {
-                if($entry == '.' || $entry == '..') {
-                    continue;
-                }
-                $Entry = $directory . "/" . $entry;
-                if(is_dir($Entry)) {
-                    $entries_array[] = $Entry;
-                    $entries_array = $this->recursive_directories($Entry, $entries_array);
-                }
-            }
-            closedir($handle);
-        }
-        return $entries_array;
     }
 
     public function nginx_params(){
@@ -6260,7 +4345,7 @@ class unix {
         if(!$Decoded){
             return array();
         }
-        $Unser=unserialize($Decoded);
+        $Unser=unserialize($Decoded,array("allowed_classes"=>array("stdClass")));
         if(!$Unser){
             return array();
         }
@@ -6434,36 +4519,6 @@ class unix {
 
 
 
-    public function readlastline($filename,$rows_number=1) {
-        $tail=$this->find_program("tail");
-        exec("$tail -n $rows_number \"$filename\" 2>&1",$RESULTS);
-        return $RESULTS;
-
-
-    }
-    public function readFirstline($filename,$rows_number=1) {
-        $head=$this->find_program("head");
-        exec("$head -n $rows_number \"$filename\" 2>&1",$RESULTS);
-        if($GLOBALS["VERBOSE"]){echo "$head -n $rows_number \"$filename\" 2>&1 == ".count($RESULTS)." lines\n";}
-        return $RESULTS;
-
-
-    }
-    private function APACHE_DEFAULT_PIDLOG(){
-        if(isset($GLOBALS["APACHE_DEFAULT_PIDLOG"])){return $GLOBALS["APACHE_DEFAULT_PIDLOG"];}
-        $bin=$this->LOCATE_APACHE_BIN_PATH();
-        if(strlen($bin)<3){
-            if($GLOBALS["VERBOSE"]){echo "\n\nWARNING !!! LOCATE_APACHE_BIN_PATH return a non value !!\n";}
-            return;
-        }
-
-        exec("$bin -V 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(preg_match('#DEFAULT_PIDLOG="(.+?)"#',$ligne,$re)){$GLOBALS["APACHE_DEFAULT_PIDLOG"]=$re[1];return $GLOBALS["APACHE_DEFAULT_PIDLOG"];}
-        }
-
-    }
-
     public function LOCATE_APACHE_CONF_PATH(){
         if(isset($GLOBALS["LOCATE_APACHE_CONF_PATH"])){return $GLOBALS["LOCATE_APACHE_CONF_PATH"];}
         $GLOBALS["LOCATE_APACHE_CONF_PATH"]=$this->_LOCATE_APACHE_CONF_PATH();
@@ -6509,139 +4564,6 @@ class unix {
 
     }
 
-    public function LOCATE_APACHE_PID_PATH():string{
-        if(isset($GLOBALS[__FUNCTION__])){if($GLOBALS[__FUNCTION__]<>null){return $GLOBALS[__FUNCTION__];}}
-        $bin_path=$this->LOCATE_APACHE_BIN_PATH();
-        if(is_null($bin_path)){return "";}
-        $DEFAULT_PIDLOG=null;
-        exec("$bin_path -V 2>&1",$results);
-        foreach ($results as $ligne){
-            if(preg_match('#HTTPD_ROOT="(.+?)"#',$ligne,$re)){
-                $httpd_root=$re[1];
-            }
-
-            if(preg_match('#DEFAULT_PIDLOG="(.+?)"#',$ligne,$re)){$DEFAULT_PIDLOG=$re[1];}
-        }
-
-        if(!is_file($DEFAULT_PIDLOG)){
-            if(is_file("$httpd_root/$DEFAULT_PIDLOG")){$DEFAULT_PIDLOG="$httpd_root/$DEFAULT_PIDLOG";}
-        }
-        $GLOBALS[__FUNCTION__]=$DEFAULT_PIDLOG;
-        return strval($GLOBALS[__FUNCTION__]);
-
-    }
-
-    public function LOCATE_APACHE_VERSION(){
-        if(isset($GLOBALS[__FUNCTION__])){
-            if($GLOBALS[__FUNCTION__]<>null){return $GLOBALS[__FUNCTION__];}
-        }
-
-        $bin_path=$this->LOCATE_APACHE_BIN_PATH();
-        $md5=md5_file($bin_path);
-
-        if(is_file("/etc/artica-postfix/apache2_version")){
-            $array=unserialize(@file_get_contents("/etc/artica-postfix/apache2_version"));
-            if(!is_array($array)){$array=array();}
-            if($array["MD5"]==$md5){
-                return $array["VERSION"];
-            }
-        }
-
-
-        if($GLOBALS["VERBOSE"]){echo "LOCATE_APACHE_VERSION : \"$bin_path\"\n";}
-        exec("$bin_path -v 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(preg_match('#^Server version:.+?([0-9\.]+)#',$ligne,$re)){
-                $GLOBALS[__FUNCTION__]=$re[1];
-                $array["MD5"]=$md5;
-                $array["VERSION"]=$GLOBALS[__FUNCTION__];
-                @file_put_contents("/etc/artica-postfix/apache2_version", serialize($array));
-                return $GLOBALS[__FUNCTION__];
-            }
-            if($GLOBALS["VERBOSE"]){echo "NO MATCH:: \"^Server version:.+?([0-9\.]+)\" -> \"$ligne\"\n";}
-        }
-
-    }
-
-
-    public function IMAPD_GET($key){
-        if(!isset($GLOBALS["IMAPD_GET"])){
-            $GLOBALS["IMAPD_GET"]=@file_get_contents("/etc/imapd.conf");
-        }
-        $datas=explode("\n",$GLOBALS["IMAPD_GET"]);
-        foreach ($datas as $num=>$ligne){
-            if(preg_match("#^$key:(.+)#",$ligne,$re)){
-                return trim($re[1]);
-            }
-        }
-    }
-
-    public function ServicesCMDArray(){
-        $f[]="ldap";
-        $f[]="saslauthd";
-        $f[]="imap";
-        $f[]="kav6";
-        $f[]="squid";
-        $f[]="dansgardian";
-        $f[]="boa";
-        $f[]="ftp";
-        $f[]="mysql";
-        $f[]="apache";
-        $f[]="spamd";
-        $f[]="clamd";
-        $f[]="freshclam";
-        $f[]="mgreylist";
-        $f[]="daemon";
-        $f[]="clammilter";
-        $f[]="postfix";
-        $f[]="dnsmasq";
-        $f[]="stunnel";
-        $f[]="postfix";
-        $f[]="mailgraph";
-        $f[]="mimedefang";
-        $f[]="roundcube";
-        $f[]="kav4samba";
-        $f[]="bind9";
-        $f[]="yorel";
-        $f[]="p3scan";
-        $f[]="syslogng";
-        $f[]="mailarchive";
-        $f[]="bogom";
-        $f[]="collectd";
-        $f[]="mysql";
-        $f[]="fetchmail";
-        $f[]="mailspy";
-        $f[]="amavis";
-        $f[]="retranslator";
-        $f[]="spfmilter";
-        $f[]="dotclear";
-        $f[]="jcheckmail";
-        $f[]="mailman";
-        $f[]="kas3";
-        $f[]="dhcp";
-        $f[]="cicap";
-        $f[]="openvpn";
-
-        $f[]="dansguardian-tail";
-        $f[]="apache-groupware";
-        $f[]="cups";
-        $f[]="dstat";
-        $f[]="dstat-top-mem";
-        $f[]="dstat-top-cpu";
-        $f[]="rsync";
-        $f[]="policydw";
-        $f[]="autofs";
-        $f[]="mysql-cluster";
-        $f[]="assp";
-        $f[]="pdns";
-        $f[]="gluster";
-        $f[]="gluster-cli";
-        $f[]="zabbix";
-        $f[]="smartd";
-        return $f;
-    }
-
-
     public function monit_array(){
         $monit=new monit_unix();
         return $monit->all_status();
@@ -6676,73 +4598,6 @@ class unix {
     }
 
 
-    public function IsProtectedDirectory($folder,$nopreg=false){
-        if($folder==null){return true;}
-        if($folder=="/"){return true;}
-        $l["/cdrom"]=true;
-        $l["/sys"]=true;
-        $l["/tmp"]=true;
-        $l["/initrd"]=true;
-        $l["/dev"]=true;
-        $l["/etc"]=true;
-        $l["/boot"]=true;
-        $l["/var/lib"]=true;
-        $l["/sbin"]=true;
-        $l["/lib"]=true;
-        $l["/bin"]=true;
-        $l["/usr/libexec"]=true;
-        $l["/usr/sbin"]=true;
-        $l["/usr/bin"]=true;
-        $l["/usr/include"]=true;
-        $l["/usr/local"]=true;
-        $l["/usr/src"]=true;
-        $l["/usr/usr"]=true;
-        $l["/usr/X11R6"]=true;
-        $l["/usr/lib"]=true;
-        $l["/usr/lib64"]=true;
-        $l["/usr/share/artica-postfix"]=true;
-        $l["/usr/src"]=true;
-        $l["/srv"]=true;
-        $l["/var/log"]=true;
-        $l["/var/db"]=true;
-        $l["/var/lib"]=true;
-        $l["/var/lock"]=true;
-        $l["/var/mail"]=true;
-        $l["/var/milter-greylist"]=true;
-        $l["/var/spool"]=true;
-        $l["/var/opt"]=true;
-        $l["/usr/share"]=true;
-        $l["/opt"]=true;
-        $l["/var/cache"]=true;
-        $l["/var/local"]=true;
-        $l["/var/run"]=true;
-        $l["/var/tmp"]=true;
-        $l["/var/webmin"]=true;
-        $l["/lost+found"]=true;
-
-        if($nopreg){
-            $l["/home"]=true;
-            if(isset($l[$folder])){return true;}
-            return false;
-        }
-
-        foreach ($l as $num=>$ligne){
-            $p=str_replace("/","\/",$num);
-            $p=str_replace(".","\.",$p);
-            if(preg_match("#$p#",$folder)){
-                writelogs("$folder match $p -> protected directory...",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-                writelogs_framework("$folder match $p -> protected directory...",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
-                return true;}
-        }
-    }
-
-
-    public function LOCATE_HEAD(){
-        return $this->find_program("head");
-        $this->events("Unable to stat head !");
-
-    }
-
     public function LOCATE_DB_RECOVER(){
         $file=$this->find_program("db4.10_recover");
         if(strlen($file)>3){return $file;}
@@ -6767,63 +4622,6 @@ class unix {
         if(is_file('/etc/init.d/slapd')){return '/etc/init.d/slapd';}
         if(is_file('/usr/local/etc/rc.d/slapd')){return '/usr/local/etc/rc.d/slapd';}
         return "/etc/init.d/slapd";
-    }
-
-    public function LOCATE_DB_ARCHIVE():string{
-        $file=$this->find_program("db4.10_archive");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.9_archive");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.8_archive");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.7_archive");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.6_archive");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.5_archive");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db_archive");
-        if(strlen($file)>3){return $file;}
-        return "";
-
-    }
-
-    public function LOCATE_DB_STAT():string{
-        $file=$this->find_program("db4.10_stat");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.9_stat");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.8_stat");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.7_stat");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.6_stat");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db4.5_stat");
-        if(strlen($file)>3){return $file;}
-        $file=$this->find_program("db_stat");
-        if(strlen($file)>3){return $file;}
-        return "";
-
-    }
-
-
-
-    public function LOCATE_SYSLOG_PATH():string{
-        $datas="";
-        if(is_file("/etc/artica-postfix/settings/Daemons/syslog_path")){
-            $datas=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("syslog_path"));
-            if(!is_file($datas)){$datas="/var/log/syslog";}
-
-        }
-        if($datas==null){return "/var/log/syslog";}
-        return $datas;
-    }
-
-    public function LOCATE_DU():string{
-        return $this->find_program("du");
-        $this->events("Unable to stat du !");
-        return "";
     }
 
     public function FormatBytes($kbytes):string{
@@ -6859,26 +4657,6 @@ class unix {
         return $SysTmpDir;
     }
 
-
-    public function VerifyTar($path){
-        if(!is_file($path)){
-            echo $path." no such file\n";
-            return false;
-        }
-        $path=$this->shellEscapeChars($path);
-        $tar=$this->find_program("tar");
-        echo "$tar -tf $path\n";
-        exec("$tar -tf $path 2>&1",$results);
-        $c=0;
-        foreach ($results as $line){
-            $c++;
-            if(preg_match("#(not look like a tar archive|Exiting with failure|Not found in archive)#i",$line)){
-                echo "Failed: $line\n";return false;}
-            if($c>10){break;}
-
-        }
-        return true;
-    }
 
     public function FILE_TEMP(){
         if(function_exists("tempnam")){
@@ -6976,73 +4754,6 @@ class unix {
 
     }
 
-    private function udevinfo_disks_query_all($dev){
-        if(is_file('/usr/bin/udevinfo')){
-            $cmd="/usr/bin/udevinfo -a -p `/usr/bin/udevinfo -q path -n $dev`";
-        }
-        $ARRAY=array();
-
-        if(is_file('/sbin/udevadm')){
-            $cmd="/sbin/udevadm info --query=all --path=`/sbin/udevadm info --query=path --name=$dev`";
-        }
-
-        exec("$cmd 2>&1",$results);
-        foreach ($results as $line){
-            if(preg_match("#E:\s+([A-Z\_]+)=(.+)#", $line,$re)){
-                $ARRAY[$re[1]]=trim($re[2]);
-            }
-        }
-
-        return $ARRAY;
-
-    }
-
-
-    private function udevinfo_disks(){
-
-
-        if(is_file('/usr/bin/udevinfo')){$cmd='/usr/bin/udevinfo -e';}
-        if(is_file('/sbin/udevadm')){$cmd='/sbin/udevadm info -e';}
-
-        exec("$cmd 2>&1",$results);
-        foreach ($results as $index=>$line){
-            if(preg_match("#P:\s+(.+)$#", $line,$re)){$DEV=$re[1];continue;}
-            if(preg_match("#E:\s+([A-Z\_]+)=(.+)#", $line,$re)){
-                $ARRAY[$DEV][$re[1]]=trim($re[2]);
-            }
-
-        }
-
-
-        foreach ($ARRAY as $dev=>$ar){
-
-            if(!isset($ar["DEVNAME"])){
-                //if($GLOBALS["VERBOSE"]){echo "$dev -> NO DEVNAME\n";}
-                continue;
-            }
-
-            if(isset($ar["DEVTYPE"])){
-                $NewArray=$this->udevinfo_disks_query_all($ar["DEVNAME"]);
-
-                foreach ($NewArray as $a=>$b){
-                    $ARRAY[$dev][$a]=$b;
-                }
-
-                foreach ($ARRAY[$dev] as $key=>$val){
-                    $NEWARRAY[$ar["DEVNAME"]][$key]=$val;
-
-                }
-
-            }
-
-
-        }
-
-
-        return $NEWARRAY;
-
-    }
-
     public function LINUX_VERS():array{
         $distriname=$this->LINUX_DISTRIBUTION();
         if(preg_match("#([0-9]+)\.([0-9]+)#", $distriname,$re)){
@@ -7089,104 +4800,6 @@ class unix {
 //##############################################################################
 
 
-    public function KERNEL_VERSION_BIN(){
-        $cmd=$this->find_program("uname")." -r";
-        exec($cmd,$datas);
-        if(preg_match("#^([0-9]+)\.([0-9]+)\.([0-9]+)#",$datas[0],$re)){
-            if(strlen($re[2])==1){$re[2]='0'.$re[2];}
-            if(strlen($re[3])==1){$re[3]='0'.$re[3];}
-            $kernel=$re[1].$re[2].$re[3];
-
-        }
-
-        return $kernel;
-    }
-
-
-
-
-
-
-    private function miltergreylist_check(){
-        $ConfigurationFile=$this->MILTER_GREYLIST_CONF_PATH();
-        $MILTER_GREYLIST_BIN_PATH=$this->MILTER_GREYLIST_BIN_PATH();
-        $tmpf=$this->FILE_TEMP();
-        for($i=0;$i<50;$i++){
-            exec("$MILTER_GREYLIST_BIN_PATH -f $ConfigurationFile -c >$tmpf 2>&1");
-            $dd=@file_get_contents($tmpf);
-
-            @unlink($tmpf);
-            if(preg_match("#config error at line\s+([0-9]+)#is",$dd,$ri)){
-                if(!$this->miltergreylist_removeline($ri[1])){break;}
-                continue;
-            }
-
-            else{break;}
-        }
-    }
-
-    private function miltergreylist_removeline($line_number){
-        $ConfigurationFile=$this->MILTER_GREYLIST_CONF_PATH();
-        if(!is_file($ConfigurationFile)){return null;}
-        $datas=@file_get_contents($ConfigurationFile);
-        $tbl=explode("\n",$datas);
-        if(count($tbl)==$line_number){
-            $tbl[]="";
-            file_put_contents($ConfigurationFile,implode("\n",$tbl));
-            return false;
-        }
-        echo "Starting......: ".date("H:i:s")." milter-greylist Config...: error, removing  \"{$tbl[$line_number]}\" line $line_number";
-        unset($tbl[$line_number]);
-        file_put_contents($ConfigurationFile,implode("\n",$tbl));
-        return true;
-    }
-
-
-
-    public function miltergreylist_buildacl($pattern){
-        if(preg_match("#(.+?)@(.+)#",$pattern,$re)){
-            $part=trim($re[1]);
-            $domain=trim($re[2]);
-        }
-        $part=str_replace('*','',$part);
-
-        if(strlen($part)==0){
-            $suffix='acl whitelist domain';
-            $domain=str_replace("","@",$domain);
-            if(substr($domain, 0,1)=="."){$domain=substr($domain, 1,strlen($domain));}
-            $pattern=trim($domain);
-            if(preg_match("#^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$#", $domain)){
-                $suffix='acl whitelist addr';
-            }
-
-
-        }else{
-            $suffix="acl whitelist from";
-        }
-
-        if(strpos($pattern,'*')>0){
-            $pattern=str_replace('.','\.',$pattern);
-            $pattern=str_replace('*','.*',$pattern);
-            $pattern="/$pattern/";
-        }
-
-        return "$suffix $pattern";
-    }
-
-
-    public function MILTER_GREYLIST_CONF_PATH(){
-        if(is_file('/etc/milter-greylist/greylist.conf')){return '/etc/milter-greylist/greylist.conf';}
-        if(is_file('/etc/mail/greylist.conf')){return '/etc/mail/greylist.conf';}
-        if(is_file('/opt/artica/etc/milter-greylist/greylist.conf')){return '/opt/artica/etc/milter-greylist/greylist.conf';}
-        return '/etc/mail/greylist.conf';
-    }
-
-    public function MILTER_GREYLIST_BIN_PATH(){
-        if(is_file('/usr/local/bin/milter-greylist')){return '/usr/local/bin/milter-greylist';}
-        if(is_file('/usr/sbin/milter-greylist')){return '/usr/sbin/milter-greylist';}
-        if(is_file('/usr/bin/milter-greylist')){return '/usr/bin/milter-greylist';}
-    }
-
     public function DIRPART_INFO($directory){
         if(is_link($directory)){$directory=@readlink($directory);}
         $df=$this->find_program("df");
@@ -7202,106 +4815,6 @@ class unix {
                 return $array;
             }
         }
-    }
-
-    public function DIRPART_OF($directory){
-        if(is_link($directory)){$directory=@readlink($directory);}
-        $df=$this->find_program("df");
-        exec("$df $directory 2>&1",$results);
-        foreach ($results as $index=>$line){
-            if(preg_match("#(.*?)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)%\s+(.*)#",$line,$re)){
-                if(strpos($re[1],"by-uuid")>0){return $this->DISK_DEVNAMEOF($re[1]);}
-                return $re[1];
-
-            }
-        }
-        return null;
-    }
-
-    public function DISK_DEVNAMEOF($string){
-        $udevadm=$this->find_program("udevadm");
-        exec("$udevadm  info -q all -n \"$string\" 2>&1",$results);
-        foreach ($results as $index=>$line){
-            if(preg_match("#DEVNAME=(.+)#", $line,$re)){
-                return trim($re[1]);
-
-            }
-        }
-        return null;}
-
-    public function DISK_GET_PARENT_PART($dev){
-        $dev=$this->DISK_DEVNAMEOF($dev);
-        $ID_PART_ENTRY_DISK=null;
-        $udevadm=$this->find_program("udevadm");
-
-        exec("$udevadm  info -q all -n $dev 2>&1",$results);
-        if($GLOBALS["VERBOSE"]){echo "udevadm  info -q all -n $dev 2>&1 ".count($results)." rows\n";}
-        foreach ($results as $index=>$line){
-
-
-            if(preg_match("#DEVNAME=(.+)#", $line,$re)){
-                $partname=trim($re[1]);
-                if($GLOBALS["VERBOSE"]){echo "$dev = Partition : $partname\n";}
-                continue;
-            }
-
-            if(preg_match("#ID_PART_ENTRY_DISK=(.+)#", $line,$re)){
-                $ID_PART_ENTRY_DISK=trim($re[1]);
-                if($GLOBALS["VERBOSE"]){echo "$dev = $ID_PART_ENTRY_DISK\n";}
-                if($ID_PART_ENTRY_DISK<>null){break;}
-                continue;
-            }
-
-        }
-
-        if($ID_PART_ENTRY_DISK==null){return null;}
-        return $this->DISK_DEVNAMEOF("/dev/block/$ID_PART_ENTRY_DISK");
-    }
-
-
-    public function DIRDISK_OF($directory){
-        $ID_PART_ENTRY_DISK=null;
-        $dev=$this->DIRPART_OF($directory);
-        if($GLOBALS["VERBOSE"]){echo "$directory = Partition : $dev\n";}
-
-        if($dev==null){return null;}
-        $udevadm=$this->find_program("udevadm");
-
-
-
-        exec("$udevadm  info -q all -n $dev 2>&1",$results);
-
-        if($GLOBALS["VERBOSE"]){echo "udevadm  info -q all -n $dev 2>&1 ".count($results)." rows\n";}
-
-        foreach ($results as $index=>$line){
-
-
-            if(preg_match("#DEVNAME=(.+)#", $line,$re)){
-                $partname=trim($re[1]);
-                if($GLOBALS["VERBOSE"]){echo "$dev = Partition : $partname\n";}
-                continue;
-            }
-
-            if(preg_match("#ID_PART_ENTRY_DISK=(.+)#", $line,$re)){
-                $ID_PART_ENTRY_DISK=trim($re[1]);
-                if($GLOBALS["VERBOSE"]){echo "$dev = $ID_PART_ENTRY_DISK\n";}
-                if($ID_PART_ENTRY_DISK<>null){break;}
-                continue;
-            }
-
-        }
-
-        if($ID_PART_ENTRY_DISK==null){return null;}
-        return $this->DISK_DEVNAMEOF("/dev/block/$ID_PART_ENTRY_DISK");
-
-
-    }
-
-    public function DIRSIZE_KO_nocache($directory){
-        if(is_link($directory)){$directory=readlink($directory);}
-        $res=$this->DIRSIZE_BYTES_NOCACHE($directory);
-        if($res==0){return 0;}
-        return round($res/1024);
     }
 
     public function DIRSIZE_KO($directory){
@@ -7392,16 +4905,6 @@ class unix {
         return $result;
     }
 
-    public function DIR_COUNT_OF_FILES($directory){
-        if(is_link($directory)){$directory=readlink($directory);}
-        if(!is_dir($directory)){return 0;}
-        $find=$this->find_program("find");
-        $nice=$this->EXEC_NICE();
-        $wc=$this->find_program("wc");
-        exec(trim("$nice $find \"$directory\" -type f  | $wc -l 2>&1"),$results);
-        return trim(@implode("",$results));
-    }
-
     public function LOCATE_PHP5_BIN():string{
         if(isset($GLOBALS["LOCATE_PHP5_BIN"])){if(strlen($GLOBALS["LOCATE_PHP5_BIN"])>3){return $GLOBALS["LOCATE_PHP5_BIN"];}}
         $locate[]="/usr/bin/php";
@@ -7424,10 +4927,6 @@ class unix {
         $this->events("Unable to stat php5 !");
         return "";
     }
-        public function LOCATE_CUPS_ACCEPT(){
-        if(is_file('/usr/sbin/cupsaccept')){return '/usr/sbin/cupsaccept';}
-        if(is_file('/usr/sbin/accept')){return '/usr/sbin/accept';}
-    }
     //#############################################################################
 
     public function getmodpathfromconf():string{
@@ -7442,39 +4941,6 @@ class unix {
     }
 
 
-    public function CGROUPS_limit_service_structure($groupname,$cpu_shares,$cpus=0,$blkio=0):bool{
-        $echobin=$this->find_program("echo");
-        $this->CGROUPS_create_service_structure($groupname);
-        echo "Starting......: ".date("H:i:s")." cgroups Limiting $groupname to $cpu_shares share CPU:#$cpus I/O $blkio limit\n";
-        system("$echobin $cpu_shares > /cgroups/cpu/$groupname/cpu.shares");
-        system("$echobin 0 >/cgroups/cpuset/$groupname/cpuset.mems");
-        system("$echobin ".intval($cpus)." > /cgroups/cpuset/$groupname/cpuset.cpus");
-        system("$echobin $blkio >/cgroups/blkio/$groupname/blkio.weight");
-        return true;
-    }
-
-    private function CGROUPS_create_service_structure($groupname){
-        $subgroups[]="cpuset";
-        $subgroups[]="blkio";
-        $subgroups[]="cpu";
-        $unix=new unix();
-        $cgcreate=$this->find_program("cgcreate");
-        $CREATED=true;
-
-
-        foreach ($subgroups as $ligne){
-            if(!is_dir("/cgroups/$ligne/$groupname")){$CREATED=false;break;}
-
-        }
-
-        if($CREATED){return;}
-        shell_exec("$cgcreate -a root -g cpu,cpuset,blkio:$groupname");
-    }
-
-
-
-
-
     public function APACHE_DIR_SITES_ENABLED(){
         if(is_dir("/etc/apache2/sites-enabled")){return '/etc/apache2/sites-enabled';}
         $httpdconf=$this->LOCATE_APACHE_CONF_PATH();
@@ -7484,74 +4950,11 @@ class unix {
 
     }
 
-    public function LIGHTTPD_PHP5_CGI_BIN_PATH(){
-        if(isset($GLOBALS["LIGHTTPD_PHP5_CGI_BIN_PATH"])){return $GLOBALS["LIGHTTPD_PHP5_CGI_BIN_PATH"];}
-        $GLOBALS["LIGHTTPD_PHP5_CGI_BIN_PATH"]=$this->find_program("php-fcgi");
-        if(!is_file($GLOBALS["LIGHTTPD_PHP5_CGI_BIN_PATH"])){$GLOBALS["LIGHTTPD_PHP5_CGI_BIN_PATH"]=$this->find_program("php-cgi");}
-        return $GLOBALS["LIGHTTPD_PHP5_CGI_BIN_PATH"];
-
-    }
-
-    function CREATE_NEW_UUID(){
-        if(is_file("/etc/artica-postfix/settings/Daemons/SYSTEMID_CREATED")){
-            $value=trim(@file_get_contents("/etc/artica-postfix/settings/Daemons/SYSTEMID"));
-            if($value<>null){return $value;}
-        }
-        if(is_file("/etc/artica-postfix/settings/Daemons/SYSTEMID")) {
-            $chattr = $this->find_program("chattr");
-            shell_exec("$chattr -i /etc/artica-postfix/settings/Daemons/SYSTEMID");
-        }
-        $uuid=trim($this->gen_uuid());
-        if(strlen($uuid)>5){
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEMID", $uuid);
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEMID_CREATED", time());
-            shell_exec("$chattr +i /etc/artica-postfix/settings/Daemons/SYSTEMID");
-
-            if(is_file("/etc/init.d/squid")) {
-                $nohup=$this->find_program("nohup");
-                $php5=$this->LOCATE_PHP5_BIN();
-                $pprefix="/usr/share/artica-postfix";
-                $todev=">/dev/null 2>&1";
-                shell_exec("$nohup $php5 $pprefix/exec.squid.global.access.php --common $todev &");
-            }
-
-
-            return $uuid;
-
-        }else{
-            echo "Gen_uuid return bad value!\n";
-        }
-
-    }
-    public function GetHotFixVersion(){
-        $f=explode("\n",@file_get_contents("/usr/share/artica-postfix/fw.updates.php"));
-        foreach ($f as $line){
-            if(preg_match("#HOTFIX.*?=\"([0-9]+)\"#",$line,$re)){
-                return $re[1];
-            }
-        }
-        return 0;
-    }
-
     public function GetUniqueID(){
         if(isset($GLOBALS["MYUUID"])){return $GLOBALS["MYUUID"];}
         $GLOBALS["MYUUID"]=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEMID"));
         return $GLOBALS["MYUUID"];
 
-    }
-
-    public function gen_uuid(){
-        return sprintf(
-            '%08x-%04x-%04x-%02x%02x-%012x',
-            mt_rand(),
-            mt_rand(0, 65535),
-            bindec(substr_replace(
-                    sprintf('%016b', mt_rand(0, 65535)), '0100', 11, 4)
-            ),
-            bindec(substr_replace(sprintf('%08b', mt_rand(0, 255)), '01', 5, 2)),
-            mt_rand(0, 255),
-            mt_rand()
-        );
     }
 
     public function ifconfig_all_ips(){
@@ -7564,32 +4967,6 @@ class unix {
 
 
 
-    public function ifconfig_interfaces_list(){
-        $ri=array();
-        $cmd=$this->find_program("ip")." -o addr sho 2>&1";
-        exec($cmd,$results);
-        foreach ($results as $index=>$line){
-            if(preg_match("#^[0-9]+:\s+(.*?)\s+inet\s+([0-9\.]+)\/#", $line,$re)){
-                if(preg_match("#(.+?)@(.+)#", $re[1],$rz)){$re[1]=$rz[1];}
-                $ri[$re[1]]=$re[2];
-                continue;
-            }
-
-        }
-
-
-
-        return $ri;
-    }
-
-    public function LOCATE_APACHE_CTL(){
-        $apachectl=$this->find_program("apachectl");
-        if(is_file($apachectl)){return $apachectl;}
-        $apachectl=$this->find_program("apache2ctl");
-        if(!is_file($apachectl)){$apachectl=$this->find_program("apachectl");}
-        if(is_file($apachectl)){return $apachectl;}
-    }
-
     public function SAMBA_GetNetAdsInfos(){
         $net=$this->LOCATE_NET_BIN_PATH();
         if(!is_file($net)){return array();}
@@ -7601,61 +4978,6 @@ class unix {
         }
         if(!isset($array["KDC server"])){$array["KDC server"]=null;}
         return $array;
-    }
-
-    public function PATH_LDAP_DIRECTORY_DATA(){
-        $file=file_get_contents("/etc/ldap/slapd.conf");
-        $datas=explode("\n",$file);
-        if(!is_array($datas)){
-            $this->events("Unable to stat /etc/ldap/slpad.conf !");
-            return null;}
-        foreach ($datas as $num=>$ligne){
-            if(preg_match("#^directory\s+(.+)#",$ligne,$re)){
-                return trim($re[1]);
-            }
-        }
-        $this->events("Unable to stat directory in /etc/ldap/slpad.conf ! in ".count($datas)." rows");
-    }
-
-    public function FILE_IS_LINK($path){
-        $path=rtrim($path, '/');
-        $stat=$this->find_program("stat");
-        exec("$stat $path 2>&1",$datas);
-        foreach ($datas as $num=>$ligne){$ligne=trim($ligne);if($ligne==null){continue;}if(preg_match("#^File:.+?\->\s+.*?#", trim($ligne))){return true;}}
-        return false;
-    }
-
-    public function FILE_REALPATH($path){
-        $orgpath=$path;
-        $path=rtrim($path, '/');
-        $stat=$this->find_program("stat");
-        exec("$stat $path 2>&1",$datas);
-        foreach ($datas as $num=>$ligne){
-            $ligne=trim($ligne);
-            if($ligne==null){continue;}
-            if(preg_match("#^File:.+?\->\s+.*?#", trim($ligne))){
-                $f=explode("->", $ligne);
-                $realpth=trim($f[1]);
-                if(substr($realpth, 0,1)=="`"){$realpth=substr($realpth, 1,strlen($realpth));}
-                if(substr($realpth, strlen($realpth)-1,1)=="'"){$realpth=substr($realpth, 0,strlen($realpth)-1);}
-                return trim($realpth);
-            }
-        }
-        return trim($orgpath);
-    }
-
-    function LDAP_SCHEMA_PATH(){
-        if(is_dir('/etc/ldap/schema')){return '/etc/ldap/schema';}
-        if(is_dir('/etc/openldap/schema')){return '//etc/openldap/schema';}
-        if(is_dir('/opt/artica/etc/openldap/schema')){return '//opt/artica/etc/openldap/schema';}
-    }
-
-
-    public function DHCPD_BIN_PATH(){
-        $dhcpd=$this->find_program("dhcpd");
-        if(is_file($dhcpd)){return $dhcpd;}
-        $dhcpd=$this->find_program("dhcpd3");
-        if(is_file($dhcpd)){return $dhcpd;}
     }
 
     public function SessionPathInMemoryInfos(){
@@ -7844,22 +5166,6 @@ class unix {
     }
 
 
-    public function REMOVE_INTERFACE_CACHE():bool{
-        $rm=$this->find_program("rm");
-        include_once(dirname(__FILE__)."/class.status.hardware.inc");
-        shell_exec("$rm -rf /usr/share/artica-postfix/ressources/logs/web/*");
-        shell_exec("$rm -rf /usr/share/artica-postfix/ressources/logs/cache/*");
-        shell_exec("$rm -rf /usr/share/artica-postfix/ressources/interface-cache/*");
-        if(is_file("/usr/share/artica-postfix/ressources/logs/global.status.ini")) {
-            @unlink("/usr/share/artica-postfix/ressources/logs/global.status.ini");
-        }
-        $php=$this->LOCATE_PHP5_BIN();
-        system("$php /usr/share/artica-postfix/exec.status.php --process1");
-        shell_exec("$php /usr/share/artica-postfix/exec.squid.interface-size.php --force");
-        return true;
-    }
-
-
     public function KILL_PROCESSES_BY_PORT($port){
         $FUSERS=array();
         $results=array();
@@ -7912,55 +5218,6 @@ class unix {
             if(preg_match("#^$modname\s+[0-9]+#", $yline)){return true;}
         }
         return false;
-    }
-
-    public function find_library($strlib){
-
-        $directory[]="/lib/x86_64-linux-gnu";
-        $directory[]="/usr/lib64";
-        $directory[]="/usr/lib";
-        $directory[]="/lib64";
-        $directory[]="/lib";
-        $directory[]="/usr/x86_64-linux-gnu/lib64";
-        $directory[]="/usr/x86_64-linux-gnu/lib";
-        $directory[]="/usr/local/lib/x86_64-linux-gnu";
-        $directory[]="/usr/local/lib64";
-        $directory[]="/usr/local/lib";
-
-        foreach ($directory as $path){
-            if(is_file("$path/$strlib")){return true;}
-        }
-        return false;
-
-    }
-
-    public function network_get_all_ips(){
-
-        $f=explode("\n",@file_get_contents("/proc/net/fib_trie"));
-        $array=array();
-        $IPADDR=null;
-        foreach ($f as $line){
-
-            if(preg_match("#\/[0-9]+\s+host LOCAL#",$line,$re)){
-                if($IPADDR==null){continue;}
-                $array[$IPADDR]=true;
-            }
-
-
-            if(!preg_match("#\|--\s+([0-9\.]+)#",$line,$re)){continue;}
-            $IPADDR=$re[1];
-            if($IPADDR=="127.0.0.0"){$IPADDR=null;continue;}
-            if($IPADDR=="127.0.0.1"){$IPADDR=null;continue;}
-
-
-        }
-        $final=array();
-        foreach ($array as $ipaddr=>$none){
-
-            $final[]=$ipaddr;
-        }
-        return $final;
-
     }
 
     public function syslog_pattern($MAIN):array{
@@ -8056,18 +5313,6 @@ class unix {
 
     }
 
-    public function netstat_port($ip,$port):array{
-        $array=array();
-        $ip=str_replace(".","\.",$ip);
-        exec("netstat -anp 2>&1",$results);
-        foreach ($results as $line){
-            if(!preg_match("#^(tcp|udp)\s+[0-9]+\s+[0-9]+\s+$ip:$port\s+.*?LISTEN\s+([0-9]+)\/(.+)#",$line,$re)){continue;}
-            $pid=$re[2];
-            $array[$pid]=true;
-        }
-        return $array;
-    }
-
     public function CICAP_SERVICE_EVENTS($text,$file=null,$line=0){
         $file=basename($file);
         $line=date("D M  ").Intval(date("d")).date(" H:i:s Y").", ".getmypid()."/".
@@ -8076,71 +5321,6 @@ class unix {
         $f = @fopen("/var/log/c-icap/c-icap-server.log", 'a');
         @fwrite($f, $line);
         @fclose($f);
-
-    }
-
-    public 	function CleanOldLibs(){
-        $ln=$this->find_program("ln");
-        if(is_file("/usr/lib/x86_64-linux-gnu/libtalloc.so.2")){
-            if(is_file("/usr/lib/libtalloc.so.2")){@unlink("/usr/lib/libtalloc.so.2");}
-        }
-
-        if(is_file("/usr/lib/libicapapi.so.3.0.4")){
-            @unlink("/usr/lib/libicapapi.so.3.0.1");
-            @unlink("/usr/lib/libicapapi.so.3.0.2");
-            @unlink("/usr/lib/libicapapi.so.3.0.3");
-            if(!is_link("/usr/lib/libicapapi.so.3")){
-                @unlink("/usr/lib/libicapapi.so.3");
-                shell_exec("$ln -sf /usr/lib/libicapapi.so.3.0.4 /usr/lib/libicapapi.so.3 >/dev/null 2>&1");
-            }
-        }
-
-        if(is_file("/usr/lib/libicapapi.so.3.0.3")){
-            @unlink("/usr/lib/libicapapi.so.3.0.1");
-            @unlink("/usr/lib/libicapapi.so.3.0.2");
-            if(!is_link("/usr/lib/libicapapi.so.3")){
-                @unlink("/usr/lib/libicapapi.so.3");
-                shell_exec("$ln -sf /usr/lib/libicapapi.so.3.0.3 /usr/lib/libicapapi.so.3 >/dev/null 2>&1");
-            }
-        }
-        if(is_file("/usr/lib/libicapapi.so.3.0.2")){
-            @unlink("/usr/lib/libicapapi.so.3.0.1");
-            if(!is_link("/usr/lib/libicapapi.so.3")){
-                @unlink("/usr/lib/libicapapi.so.3");
-                shell_exec("$ln -sf /usr/lib/libicapapi.so.3.0.2 /usr/lib/libicapapi.so.3 >/dev/null 2>&1");
-            }
-        }
-
-        if(is_file("/usr/lib/libicapapi.so.3.0.1")){
-            if(!is_link("/usr/lib/libicapapi.so.3")){
-                shell_exec("$ln -s /usr/lib/libicapapi.so.3.0.1 /usr/lib/libicapapi.so.3 >/dev/null 2>&1");
-            }
-        }
-
-    }
-
-    public function load_rt_table(){
-        $f=explode("\n", @file_get_contents("/etc/iproute2/rt_tables"));
-        foreach ( $f as $index=>$line ){
-            if(!preg_match("#([0-9]+)\s+(.+)#", $line,$re)){continue;}
-            $array[$re[2]]=$re[1];
-
-        }
-
-
-    }
-
-    public function last_rt_table_number(){
-        $c=0;
-        $f=explode("\n", @file_get_contents("/etc/iproute2/rt_tables"));
-        foreach ( $f as $index=>$line ){
-            if(!preg_match("#([0-9]+)\s+(.+)#", $line,$re)){continue;}
-            if($re[1]>0){continue;}
-            if($re[1]>252){continue;}
-            if($re[1]>$c){$c=$re[1];}
-        }
-
-        return $c;
 
     }
 
@@ -8177,59 +5357,6 @@ class unix {
 
     }
 
-
-    public function BLKID_INFOS($dev){
-        $array=array();
-        $blkid=$this->find_program("blkid");
-        $df=$this->find_program("df");
-        if(!is_file($blkid)){return array("UUID"=>"blkid No such binary");}
-        $cmd="$blkid \"$dev\" 2>&1";
-        exec($cmd,$results);
-        $imploded=trim(@implode("", $results));
-        $f=explode(" ",$imploded );
-        foreach ($f as $num=>$ligne){if(preg_match('#(.+?)="(.+?)"#', $ligne,$re)){$array[strtoupper($re[1])]=$re[2];}}
-        $results=array();
-        $devRgx=str_replace("/", "\/", $dev);
-        $devRgx=str_replace(".", "\.", $devRgx);
-        exec("$df -h \"$dev\" 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(preg_match("#$devRgx\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9\.]+)%\s+(.+)#", $ligne,$re)){
-                $array["SIZE"]=$re[1];
-                $array["USED"]=$re[2];
-                $array["AIVA"]=$re[3];
-                $array["POURC"]=$re[4];
-                $array["MOUNTED"]=$re[5];
-            }
-        }
-        return $array;
-
-    }
-
-    public function DIR_STATUS($path){
-        $array=array();
-        $df=$this->find_program("df");
-
-
-        $results=array();
-
-        exec("$df \"$path\" 2>&1",$results);
-
-        $pattern="#.*?\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9\.]+)%\s+(.+)#";
-
-        foreach ($results as $num=>$ligne){
-            if(!preg_match($pattern, $ligne,$re)){
-                writelogs_framework("No match \"$ligne\" $pattern",__FUNCTION__,__FILE__,__LINE__);
-                continue;
-            }
-            $array["SIZE"]=$re[1];
-            $array["USED"]=$re[2];
-            $array["AIVA"]=$re[3];
-            $array["POURC"]=$re[4];
-            $array["MOUNTED"]=$re[5];
-        }
-        return $array;
-
-    }
 
     public function BLKID_UUIDs(){
         $uuid=null;
@@ -8273,87 +5400,6 @@ class unix {
         return false;
 
     }
-
-    public function SYSTEMS_ALL_PARTITIONS(){
-        $df=$this->find_program("df");
-        exec("$df -h 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(preg_match("#(.+?)\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9A-Z\.]+)\s+([0-9\.]+)%\s+(.+)#", $ligne,$re)){
-                $array[$re[1]]["SIZE"]=$re[2];
-                $array[$re[1]]["USED"]=$re[3];
-                $array[$re[1]]["AIVA"]=$re[4];
-                $array[$re[1]]["POURC"]=$re[5];
-                $array[$re[1]]["MOUNTED"]=$re[6];
-                $array[$re[1]]["VALUES"]=$this->tune2fs_values($re[1]);
-
-            }
-        }
-        return $array;
-
-    }
-
-    public function SYSTEM_GET_MEMORY_MB(){
-
-        $free=$this->find_program("free");
-        exec("$free -m 2>&1",$results);
-        foreach ($results as $num=>$ligne){if(preg_match("#Mem:\s+([0-9]+)#", $ligne,$re)){return $re[1];}}
-        return 0;
-    }
-
-    public function SYSTEM_GET_SWAP_MB(){
-
-        $free=$this->find_program("free");
-        exec("$free -m 2>&1",$results);
-        foreach ($results as $num=>$ligne){if(preg_match("#Swap:\s+([0-9]+)#", $ligne,$re)){return $re[1];}}
-        return 0;
-    }
-
-    public function SYSTEM_GET_SWAP_PERC(){
-
-        $SYSTEM_GET_SWAP_PERC_TIME=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEM_GET_SWAP_PERC_TIME"));
-        if($this->time_min($SYSTEM_GET_SWAP_PERC_TIME)<15){
-            return intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SYSTEM_GET_SWAP_PERC"));
-        }
-
-        $free=$this->find_program("free");
-        exec("$free -m 2>&1",$results);
-        foreach ($results as $num=>$ligne){
-            if(!preg_match("#Swap:\s+([0-9]+)\s+([0-9]+)#", $ligne,$re)){continue;}
-            $total=intval($re[1]);
-            $used=intval($re[2]);
-            if($total==0){
-                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEM_GET_SWAP_PERC_TIME",time());
-                $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEM_GET_SWAP_PERC",0);
-                return 0;
-            }
-            $prc=($used/$total)*100;
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEM_GET_SWAP_PERC_TIME",time());
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEM_GET_SWAP_PERC",round($prc));
-            return round($prc);
-        }
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEM_GET_SWAP_PERC_TIME",time());
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SYSTEM_GET_SWAP_PERC",0);
-        return 0;
-
-    }
-
-    function system_mysql_events($subject,$text,$file,$context,$line=null){
-        $file=basename($file);
-        if(!is_numeric($line)){$line=0;}
-        if($GLOBALS["VERBOSE"]){echo "$subject $text script:$file in line $line\n";}
-        if(!class_exists("mysql")){include_once("/usr/share/artica-postfix/ressources/class.mysql.inc");}
-        if(!class_exists("mysql")){if($GLOBALS["VERBOSE"]){echo "mysql no such class!\n";}return;}
-        if(!isset($GLOBALS["MYHOSTNAME"])){$GLOBALS["MYHOSTNAME"]=$this->hostname_g();}
-        $file=basename($file);
-        $subject=addslashes($subject);
-        $text=addslashes($text);
-        $sql="INSERT IGNORE INTO events (zDate,hostname,process,text,context,sended,content)
-		VALUES(NOW(),'{$GLOBALS["MYHOSTNAME"]}','$file','$subject','$context','1','$text')";
-        $q=new mysql();
-        $q->QUERY_SQL($sql,"artica_events");
-        if(!$q->ok){if(function_exists("writelogs")){writelogs("Fatal: $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);}}
-    }
-
 
     public function UFDBGUARDD_MINOR():int{
         if(isset($GLOBALS["UFDBGUARDD_MINOR"])){return $GLOBALS["UFDBGUARDD_MINOR"];}
@@ -8560,55 +5606,6 @@ class unix {
     }
 
 
-    public function ChangeRootPassword($password){
-
-        if(!is_file("/etc/artica-postfix/shadow.bak")){
-            if(is_file("/etc/artica-postfix/shadow.bak")){@unlink("/etc/artica-postfix/shadow.bak");}
-            @copy("/etc/shadow", "/etc/artica-postfix/shadow.bak");
-        }
-
-        $t=array();
-        $f=explode("\n",@file_get_contents("/etc/shadow"));
-        foreach ($f as $num=>$val){
-            if(trim($val)==null){continue;}
-            if(preg_match("#^root:(.*?):.*?:#", $val,$re)){
-                $val=str_replace($re[1], "", $val);
-
-            }
-
-            $t[]=$val;
-
-        }
-
-        @file_put_contents("/etc/shadow", @implode("\n", $t));
-
-
-
-        $php=$this->LOCATE_PHP5_BIN();
-        $cmd=trim("/usr/sbin/artica-phpfpm-service -build-pam");
-        shell_exec($cmd);
-
-        $echo=$this->find_program("echo");
-
-        $chpasswd=$this->find_program("chpasswd");
-        $passwd=$this->shellEscapeChars($password);
-
-        $cmd="$echo root:$passwd | $chpasswd 2>&1";
-        exec("$cmd",$results);
-        writelogs_framework("$cmd " .count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
-
-        foreach ($results as $num=>$line){writelogs_framework("$line",__FUNCTION__,__FILE__,__LINE__);}
-        reset($results);
-        return base64_encode(@implode("\n",$results));
-
-
-
-    }
-
-
-
-
-
     public function POSTFIX_VERSION(){return $this->POSTCONF_GET("mail_version");}
 
     public function LOCATE_POSTFIX_DAEMON_DIRECTORY(){
@@ -8623,42 +5620,6 @@ class unix {
         $GLOBALS[__FUNCTION__]=$locate1;
         return $locate1;
     }
-
-    function IncidentSquid($subject):bool{
-        $q=new lib_sqlite("/home/artica/SQLITE_TEMP/system.perf.queue.db");
-        if(!is_dir("/home/artica/SQLITE_TEMP")){@mkdir("/home/artica/SQLITE_TEMP",0755,true);}
-        @chmod("/home/artica/SQLITE_TEMP/system.perf.queue.db",0755);
-        @chown("/home/artica/SQLITE_TEMP/system.perf.queue.db","www-data");
-        @chown("/home/artica/system","www-data");
-        $SystemInfoCache="/etc/squid3/squid_get_system_info.db";
-        $StoreDirCache="/etc/squid3/squid_storedir_info.db";
-
-        $SourceTime=time();
-        $Workdir=$this->TEMP_DIR()."/$SourceTime";
-        @mkdir($Workdir,0755,true);
-        $q->QUERY_SQL("CREATE TABLE IF NOT EXISTS `perfs_queue` ( `zDate` INTEGER NOT NULL PRIMARY KEY, `subject` TEXT NOT NULL, `file` TEXT NOT NULL )");
-
-        $tail=$this->find_program("tail");
-        $tmpfile=$Workdir."/cache.log";
-        shell_exec("$tail -n 2000 /var/log/squid/cache.log >$tmpfile");
-        $tmpfilegz=$this->FILE_TEMP();
-        $tar=$this->find_program("tar");
-        $ps=$this->find_program("ps");
-        $grep=$this->find_program("grep");
-        $rm=$this->find_program("rm");
-        system("cd $Workdir");
-        @chdir($Workdir);
-        @copy($SystemInfoCache,"$Workdir/".basename($SystemInfoCache));
-        @copy($StoreDirCache,"$Workdir/".basename($StoreDirCache));
-        shell_exec("$ps -aux | $grep squid >$Workdir/ps.txt");
-        shell_exec("$tar -czf $tmpfilegz *");
-        $data=base64_encode(@file_get_contents($tmpfilegz));
-        @unlink($tmpfile);
-        shell_exec("$rm -rf $Workdir");
-        $q->QUERY_SQL("INSERT OR IGNORE INTO `perfs_queue` (zDate,subject,file) VALUES ('$SourceTime','$subject','$data');");
-        return true;
-    }
-
 
     private function LOCATE_POSTFIX_DAEMON_DIRECTORY_1(){
         if(is_file('/usr/lib/postfix/master')){return ('/usr/lib/postfix');}
@@ -8683,19 +5644,7 @@ class unix {
         return "/usr/libexec/postfix/postmulti-script";
     }
 
-    public function LOCATE_POSTFIX_POSTSCREEN():string{
-        $f=$this->LOCATE_POSTFIX_DAEMON_DIRECTORY_2();
-        if(!is_null($f)) {
-            if (is_file($f)) {
-                return $f;
-            }
-        }
-        if(is_file('/usr/lib/postfix/postscreen')){return ('/usr/lib/postfix/postscreen');}
-        if(is_file('/usr/lib64/postfix/postscreen')){return ('/usr/lib64/postfix/postscreen');}
-        if(is_file('/usr/libexec/postfix/postscreen')){return ('/usr/libexec/postscreen');}
-        if(is_file('/usr/local/libexec/postfix/postscreen')){return ('/usr/local/libexec/postfix/postscreen');}
-        return "/usr/libexec/postfix/postscreen";
-    }
+
 
 
 
@@ -8729,13 +5678,6 @@ class unix {
 
 
     }
-
-
-    public function LOCATE_SENDMAIL_PID_PATH(){
-        if(is_file("/var/run/sendmail.pid")){return "/var/run/sendmail.pid";}
-        return null;
-    }
-
 
 
     public function events($text,$logFile=null,$phplog=false,$sourcefunction=null,$sourceline=null,$sourcefile=null)
@@ -8859,37 +5801,6 @@ class unix {
         return $c;
     }
 
-    public	function getDirectories($directory){
-        if(is_link($directory)){$directory=readlink($directory);}
-        $GLOBALS["RECURSVIVE_INC"]=$GLOBALS["RECURSVIVE_INC"]+1;
-        if($GLOBALS["MAX_RECUSIVE_DIRS"]<50){$GLOBALS["MAX_RECUSIVE_DIRS"]=400;}
-        if($GLOBALS["RECURSVIVE_INC"]>$GLOBALS["MAX_RECUSIVE_DIRS"]){
-            $trace=debug_backtrace();if(isset($trace[1])){$called=" called by ". basename($trace[1]["file"])." {$trace[1]["function"]}() line {$trace[1]["line"]}";}
-            error_log("[{$_SESSION["uid"]}]::PHP Fatal: cannot parse directory [instance {$GLOBALS["RECURSVIVE_INC"]}], maximum recursive of {$GLOBALS["MAX_RECUSIVE_DIRS"]} has been reached $called");
-            return;
-        }
-        $array_items = array();
-        if ($handle = @opendir($directory)) {
-            while (false !== ($file = readdir($handle))) {
-                if ($file != "." && $file != "..") {
-                    if (is_dir($directory. "/" . $file)) {
-                        $newarrayDirectories= $this->getDirectories($directory. "/" . $file);
-                        if(is_array($newarrayDirectories)){$array_items = array_merge($array_items,$newarrayDirectories);}
-                        $file = $directory . "/" . $file;
-                        $array_items[] = preg_replace("/\/\//si", "/", $file);
-                    } else {
-                        //$file = $directory . "/" . $file;
-                        //$array_items[] = preg_replace("/\/\//si", "/", $file);
-                    }
-                }
-            }
-            closedir($handle);
-        }
-        return $array_items;
-
-
-    }
-
     function DirRecursiveFiles($dir,$pattern=null){
         $Npattern=str_replace(".", "\.", $pattern);
         $Npattern=str_replace("*", ".*?", $Npattern);
@@ -8931,38 +5842,6 @@ class unix {
 
         @closedir($dir_handle);
         return $array;
-    }
-
-    function GLFS_ismounted($path){
-        $pathString=str_replace("/","\/",$path);
-        $pathString=str_replace(".","\.",$pathString);
-        $f=explode("\n",@file_get_contents("/proc/mounts"));
-        foreach ( $f as $index=>$line ){
-            if(preg_match("#$pathString\s+fuse\.glusterfs#",$line)){
-                return true;
-            }
-
-        }
-
-    }
-
-
-
-    public function dir_count_files_recursive($path) {
-        $files = 0;
-        $dir = opendir($path);
-        if (!$dir){return 0;}
-        while (($file = readdir($dir)) !== false) {
-            if ($file[0] == '.'){ continue; }
-            if (is_dir($path.$file)){
-                $files += $this->dir_count_files_recursive($path.$file.DIRECTORY_SEPARATOR);
-            }
-            else {
-                $files++;
-            }
-        }
-        closedir($dir);
-        return $files;
     }
 
     public function LOCATE_SQUID_PID(){
@@ -9029,19 +5908,6 @@ class unix {
         return false;
     }
 
-    public function PIDOF_UDP_PORT($ipaddr,$port):int{
-        $netstat=$this->find_program("netstat");
-        exec("$netstat -lupn 2>&1",$results);
-        $ipaddr=str_replace(".","\.",$ipaddr);
-        foreach ($results as $ligne){
-            $ligne=trim($ligne);
-            if($ligne==null){continue;}
-            if(!preg_match("#^udp\s+[0-9]+\s+[0-9]+\s+$ipaddr:$port\s+.*?\s+([0-9]+)\/#",$ligne,$re)){continue;}
-            return intval($re[1]);
-        }
-        return 0;
-    }
-
     private function PIDOF_DOCKER($pid):bool{
         if(!is_file("/etc/init.d/docker")){return false;}
         $PPID = $this->PPID_OF($pid);
@@ -9104,45 +5970,6 @@ class unix {
         return $LIST;
 
     }
-
-    public function PROCESS_GET_USER($pid){
-        $filename="/proc/$pid/status";
-        if(!is_file($filename)){return null;}
-        $f=explode("\n", @file_get_contents($filename));
-        foreach ($f as $num=>$ligne){
-            $ligne=trim($ligne);
-            if($ligne==null){continue;}
-            if(!preg_match("#Uid:\s+([0-9]+)#", $ligne,$re)){continue;}
-            if($re[1]==0){return "root";}
-            return $this->USER_ID_FROM_USERNAME($re[1]);
-        }
-
-    }
-
-    public function USER_ID_FROM_USERNAME($id){
-        $filename="/etc/shadow";
-        $f=explode("\n", @file_get_contents($filename));
-        foreach ($f as $num=>$ligne){
-            $ligne=trim($ligne);
-            if($ligne==null){continue;}
-            if(!preg_match("#^(.*?):.*?:$id#",$ligne,$re)){continue;}
-            return $re[1];
-        }
-
-        return -1;
-    }
-
-
-    public function PROCESS_TIME_TO_LIVE($pid){
-        @chmod("/usr/share/artica-postfix/bin/procstat",0755);
-        exec("/usr/share/artica-postfix/bin/procstat",$array);
-        foreach ($array as $num=>$ligne){
-            if(preg_match("#start_time:.+?\((.+?)\.#",$ligne,$re)){
-                return ($re[1]/60);
-            }
-        }
-    }
-
 
     public function POSTFIX_MULTI_INSTANCES_LIST():array{
         if(!isset($GLOBALS["MEM_postmulti"])){$GLOBALS["MEM_postmulti"]=null;}
@@ -9258,60 +6085,6 @@ class unix {
         return true;
     }
 
-    private function squid_is31(){
-        if(isset($GLOBALS["squid_is31"])){return $GLOBALS["squid_is31"];}
-        $root_squid_version=$this->squid_version();
-        if($GLOBALS["VERBOSE"]){echo "Version: $root_squid_version\n";}
-        $data=null;
-        $GLOBALS["squid_is31"]=false;
-        $VER=explode(".",$root_squid_version);
-        if($VER[0]<4){
-            if($VER[1]<2){
-                if($GLOBALS["VERBOSE"]){echo "$root_squid_version -> is 3.1.x\n";}
-                $GLOBALS["squid_is31"]=true;return true;}
-        }
-        return false;
-
-    }
-
-
-    public function squid_internal_port(){
-        $array=$this->squid_get_internal_addrport();
-        return $array[1];
-
-    }
-
-
-    public function GET_HTTP_PROXY_STRING(){
-        $squidbin=$this->LOCATE_SQUID_BIN();
-        if(is_file($squidbin)){
-            $SQUIDEnable=$this->GET_INFO("SQUIDEnable");
-            if(!is_numeric($SQUIDEnable)){$SQUIDEnable=1;}
-            if($SQUIDEnable==1){
-                $NoCheckSquid=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NoCheckSquid"));
-                if($NoCheckSquid==1){return null;}
-                $squid_port=$this->squid_internal_port();
-                return "http://127.0.0.1:$squid_port";
-            }
-
-        }
-        $ini=new Bs_IniHandler();
-        $datas=$this->GET_INFO("ArticaProxySettings");
-        if(trim($datas)==null){return null;}
-        $ini->loadString($datas);
-        $ArticaProxyServerEnabled=strtolower($ini->_params["PROXY"]["ArticaProxyServerEnabled"]);
-        if($ArticaProxyServerEnabled==null){return null;}
-        if($ArticaProxyServerEnabled=="no"){return null;}
-        if($ArticaProxyServerEnabled==0){return null;}
-        $ArticaProxyServerName=$ini->_params["PROXY"]["ArticaProxyServerName"];
-        if($ArticaProxyServerName==null){return null;}
-        $ArticaProxyServerPort=intval($ini->_params["PROXY"]["ArticaProxyServerPort"]);
-        if($ArticaProxyServerPort==0){return null;}
-        return "http://$ArticaProxyServerName:$ArticaProxyServerPort";
-
-    }
-
-
     private function squid_get_internal_addrport(){
         $SquidMgrListenPort=trim($this->GET_INFO("SquidMgrListenPort"));
         if( !is_numeric($SquidMgrListenPort) OR ($SquidMgrListenPort==0) ){
@@ -9410,342 +6183,6 @@ class unix {
 
     }
 
-
-    public function isSquidNTLM(){
-        $f=explode("\n",@file_get_contents("/etc/squid3/authenticate.conf"));
-        foreach ($f as $num=>$ligne){
-            if(preg_match("#^auth_param\s+ntlm\s+program#", $ligne)){return true;}
-        }
-        return false;
-
-    }
-
-
-
-
-    public function squid_get_system_info(){
-
-        $results=explode("\n",$this->squidclient("info"));
-
-        $path=null;
-
-        foreach ($results as $ligne){
-            if(preg_match("#^(.*?):$#", trim($ligne),$re)){
-                $title=$re[1];
-                continue;
-            }
-
-            if(preg_match("#\s+(.*?):\s+(.+)#", $ligne,$re)){
-                $sub=$re[1];
-                $values=trim($re[2]);
-            }
-            if(strpos($ligne, ':')==0){
-                if(preg_match("#\s+([0-9]+)\s+(.+)#", $ligne,$re)){
-                    $sub=trim($re[2]);
-                    $values=trim($re[1]);
-                }
-            }
-
-            if($title==null){continue;}
-            if($sub==null){continue;}
-            $ARRAY[$title][$sub]=$values;
-
-
-        }
-
-        return $ARRAY;
-
-    }
-
-
-    public function squid_get_cache_infos(){
-        $path=null;
-        $array=array();
-        $MAINCONTENT=$this->squidclient("storedir");
-
-        if($GLOBALS["VERBOSE"]){echo "******** storedir: ".strlen($MAINCONTENT)." Bytes ********\n";}
-        $results=explode("\n",$MAINCONTENT);
-        if($GLOBALS["VERBOSE"]){echo "******** storedir: ".count($results)." Rows ********\n";}
-        if($GLOBALS["VERBOSE"]){
-            if(count($results)<10){echo "################## \n\n$MAINCONTENT\n\n##################\n";}
-        }
-
-        foreach ($results as $index=>$line){
-            if(preg_match("#Connection refused#",$line)){
-                writelogs_framework($line,__FUNCTION__,__LINE__);;
-                return;
-            }
-
-
-
-            if(preg_match("#Shared Memory Cache#", $line)){
-                $path="Memory";
-                $array[$path]["index"]=0;
-                $array[$path]["PARTITION"]="Memory";
-                $array[$path]["DIRPART_INFO"]=null;
-                $array[$path]["FULL_SIZE"]=null;
-            }
-
-            if(preg_match("#Store Directory\s+\#([0-9]+).+?:\s+(.+)#",$line,$re)){
-                if($GLOBALS["VERBOSE"]){echo "Store Directory -> {$re[2]}\n";}
-                $path=trim($re[2]);
-                $array[$path]["index"]=$re[1];
-                $array[$path]["PARTITION"]=$this->DIRPART_OF($path);
-                $array[$path]["DIRPART_INFO"]=$this->DIRPART_INFO($path);
-                $array[$path]["FULL_SIZE"]=$this->DIRSIZE_BYTES($path);
-                continue;
-            }
-
-            if($path==null){continue;}
-
-            if(preg_match("#Maximum Size:\s+([0-9]+)#",$line,$re)){
-                if($GLOBALS["VERBOSE"]){echo "$path -> Maximum Size:{$re[1]}\n";}
-                $array[$path]["MAX"]=$re[1];
-                continue;
-            }
-
-            if(preg_match("#Current Size:\s+([0-9]+)#",$line,$re)){
-                if($GLOBALS["VERBOSE"]){echo "$path ->Current Size:{$re[1]} \"$line\"\n";}
-                $array[$path]["CURRENT"]=$re[1];
-                continue;
-            }
-
-            if(preg_match("#Current Size:\s+([0-9]+).*?KB\s+([0-9\.]+)%#",$line,$re)){
-                if($GLOBALS["VERBOSE"]){echo "$path ->Current Size:{$re[1]} \"$line\"\n";}
-                $array[$path]["CURRENT"]=$re[1];
-                $array[$path]["POURC"]=$re[2];
-                continue;
-            }
-
-            if(preg_match("#Percent Used:\s+([0-9\.]+)#",$line,$re)){
-                if($GLOBALS["VERBOSE"]){echo "$path ->Percent Used:{$re[1]}\n";}
-                $array[$path]["POURC"]=$re[1];
-                continue;
-            }
-
-            if(preg_match("#ERR_ACCESS_DENIED#",$line)){
-                writelogs_framework("ACCESS DENIED",__FUNCTION__,__LINE__);;
-                break;
-            }
-
-
-
-            if($GLOBALS["VERBOSE"]){echo "NOT DETECTED $line\n";}
-
-        }
-        return $array;
-
-    }
-
-
-    public function MYSQL_SOCKET_PATH(){
-        $cnf=$this->MYSQL_MYCNF_PATH();
-        $ini=new iniFrameWork($cnf);
-        $return=$ini->get("mysqld","socket");
-        if(trim($return==null)){return "/var/run/mysqld/mysqld.sock";}
-    }
-
-    public function MYSQL_MYCNF_PATH(){
-        if(is_file('/etc/mysql/my.cnf')){return('/etc/mysql/my.cnf');}
-        if(is_file('/etc/my.cnf')){return '/etc/my.cnf';}
-
-    }
-
-    public function MYSQL_DATADIR(){
-        return $this->MYSQL_DATA_DIR();
-
-    }
-
-
-
-    public function FSTAB_GETDEV($targetPointPath){
-        $datas=explode("\n",@file_get_contents("/etc/fstab"));
-        foreach ($datas as $num=>$ligne){
-            if(strpos($ligne,$targetPointPath)>0){
-                if(preg_match("#(.+?)\s+#",$ligne,$re)){
-                    return $re[1];
-                }}
-        }
-
-    }
-
-
-    public function FSTAB_QUOTA($dev,$enabled=0){
-        $rows=explode("\n",@file_get_contents("/etc/fstab"));
-        $dev_pattern=str_replace("/","\/",$dev);
-        if(!is_array($rows)){writelogs_framework("no rows, abort",__FUNCTION__,__FILE__);return ;}
-        foreach ($rows as $index=>$line){
-            if(preg_match("#$dev_pattern\s+(.+?)\s+(.*?)\s+(.*?)\s+(.+)#",$line,$re)){
-                $row_index=$index;
-                $mount_path=$re[1];
-                $type=$re[2];
-                $option=$re[3];
-                $other=$re[4];
-                break;
-            }
-        }
-        if($mount_path==null){return;}
-        $options=explode(",",$option);
-        foreach ($options as $i=>$token){$tokens[$token]=true;}
-        writelogs_framework("OPTIONS=$option mount on $mount_path",__FUNCTION__,__FILE__);
-        unset($tokens["usrquota"]);
-
-        if($enabled==0){
-            unset($tokens["usrquota"]);
-            unset($tokens["usrjquota=aquota.user"]);
-            unset($tokens["grpjquota=aquota.group"]);
-            unset($tokens["jqfmt=vfsv"]);
-            unset($tokens["jqfmt=vfsv0"]);
-
-        }else{
-            $tokens["usrjquota=aquota.user"]=true;
-            $tokens["grpjquota=aquota.group"]=true;
-            $tokens["jqfmt=vfsv0"]=true;
-        }
-        foreach ($tokens as $token=>$i){$final[]=$token;}
-        $new_options=implode(",",$final);
-        writelogs_framework("$dev\t$mount_path\t$type\t$new_options\t$other",__FUNCTION__,__FILE__,__LINE__);
-        reset($rows);
-        $rows[$row_index]="$dev\t$mount_path\t$type\t$new_options\t$other";
-        @file_put_contents("/etc/fstab",@implode("\n",$rows));
-        $mount=$this->find_program("mount");
-        writelogs_framework("$mount -o remount $dev",__FUNCTION__,__FILE__,__LINE__);
-        exec("$mount -o remount $dev");
-        $quotacheck=$this->find_program("quotacheck");
-        if(is_file($quotacheck)){shell_exec("$quotacheck -afgum &");}
-        $quotaon=$this->find_program("quotaon");
-        if(is_file($quotaon)){shell_exec("$quotaon -avug &");}
-
-
-    }
-
-
-    public function grep_php($filename,$maxnumLines=0,$pattern=null){
-        if($pattern==null){return $this->tail_php($filename,$maxnumLines);}
-        if(!is_file($filename)){
-            if($GLOBALS["DEBUG_GREP"]){echo "$filename no such file\n";}
-            return array();
-        }
-        $lines=array();
-        $fp = @fopen($filename, "r");
-        if(!$fp){
-            if($GLOBALS["DEBUG_GREP"]){echo "$filename BAD FD\n";}
-            return array();}
-
-        $t=array();
-        while(!feof($fp)){
-            $line = trim(fgets($fp, 4096));
-            $line=str_replace("\r\n", "", $line);
-            $line=str_replace("\n", "", $line);
-            $line=str_replace("\r", "", $line);
-            if(!preg_match("#$pattern#i", $line)){continue;}
-            $t[]=$line;
-        }
-
-        if(count($t)==0){return array();}
-        $RESULTS=array();
-        if($maxnumLines>0){
-            rsort($t);
-
-            for($i=0;$i<$maxnumLines;$i++){
-                if($GLOBALS["DEBUG_GREP"]){echo "{$t[$i]} OK\n";}
-                $RESULTS[]=$t[$i];
-            }
-
-        }
-
-
-        @fclose($fp);
-        return $RESULTS;
-    }
-
-
-    function tail_php($file, $numLines = 100,$pattern=null){
-        if($pattern<>null){return $this->grep_php($file,$numLines,$pattern);}
-        $fp = fopen($file, "r");
-        $chunk = 4096;
-        $fs = sprintf("%u", filesize($file));
-        $max = (intval($fs) == PHP_INT_MAX) ? PHP_INT_MAX : filesize($file);
-        $f=array();
-        for ($len = 0; $len < $max; $len += $chunk) {
-            $seekSize = ($max - $len > $chunk) ? $chunk : $max - $len;
-
-            fseek($fp, ($len + $seekSize) * -1, SEEK_END);
-            $data = fread($fp, $seekSize);
-            $f[]=$data;
-            if (substr_count($data, "\n") >= $numLines + 1) {
-                preg_match("!(.*?\n){".($numLines)."}$!", $data, $match);
-                fclose($fp);
-                return $f;
-            }
-        }
-        fclose($fp);
-        return $f;
-    }
-
-
-
-
-
-    public function CHANGE_HOSTNAME($hostname){
-        $pprefix="/usr/share/artica-postfix";
-        $todev=">/dev/null 2>&1";
-        if(trim($hostname)==null){return;}
-        @unlink("/etc/artica-postfix/FULL_HOSTNAME");
-        $hostname=str_replace(" ", "",$hostname);
-        if(strpos($hostname, ".")>0){
-            $tbl=explode(".",$hostname);
-            unset($tbl[0]);
-            $domainName=@implode(".", $tbl);
-        }
-
-        $domainName=str_replace("(", "", $domainName);
-        $domainName=str_replace(")", "", $domainName);
-        if($domainName==null){$domainName="localhost.localdomain";}
-
-        @file_put_contents("/etc/hostname", $hostname);
-        @file_put_contents("/etc/HOSTNAME", $hostname);
-        @file_put_contents("/etc/mailname", $hostname);
-        @file_put_contents("/etc/artica-postfix/FULL_HOSTNAME", $hostname);
-
-        $sysctl=$this->find_program("sysctl");
-        $hostnamebin=$this->find_program("hostname");
-        $nohup=$this->find_program("nohup");
-        $php5=$this->LOCATE_PHP5_BIN();
-        $hostnamectl=$this->find_program("hostnamectl");
-
-        shell_exec("$nohup $php5 $pprefix/exec.virtuals-ip.php --hosts $todev &");
-
-        if(strlen($sysctl)>3){
-            shell_exec("$sysctl -w kernel.domainname=$domainName $todev");
-            shell_exec("$sysctl -w kernel.hostname=$hostname $todev");
-            shell_exec("$sysctl -p $todev");
-        }
-
-        if(strlen($hostnamectl)>1){
-            shell_exec("$hostnamectl set-hostname $hostname");
-        }
-        if(strlen($hostnamebin)>3){
-            shell_exec("$hostnamebin $hostname $todev");
-        }
-
-        if(is_file("/etc/init.d/squid")) {
-            shell_exec("$nohup $php5 $pprefix/exec.squid.global.access.php --common $todev &");
-        }
-    }
-
-
-    public function GET_QUOTA_MOUNTED(){
-        $mount=$this->find_program("mount");
-        exec("$mount 2>&1",$results);
-        foreach ($results as $line){
-            if(!preg_match("#(.+?)\s+on\s+(.+?)\s+.+?usrjquota#",$line,$re)){continue;}
-            $rr[$re[2]]=true;
-        }
-
-        return $rr;
-
-    }
 
     function uptime(){
 
@@ -9921,59 +6358,6 @@ class unix {
     }
 
 
-    public function FSTAB_ACL($dev,$aclenabled=0){
-
-        $rows=explode("\n",@file_get_contents("/etc/fstab"));
-
-        $dev_pattern=str_replace("/","\/",$dev);
-        if(!is_array($rows)){writelogs_framework("no rows, abort",__FUNCTION__,__FILE__);return ;}
-        foreach ($rows as $index=>$line){
-            if(preg_match("#$dev_pattern\s+(.+?)\s+(.*?)\s+(.*?)\s+(.+)#",$line,$re)){
-                $row_index=$index;
-                $mount_path=$re[1];
-                $type=$re[2];
-                $option=$re[3];
-                $other=$re[4];
-                break;
-            }
-        }
-
-
-        if($mount_path==null){return;}
-        $options=explode(",",$option);
-
-        foreach ($options as $i=>$token){$tokens[$token]=true;}
-
-        writelogs_framework("OPTIONS=$option mount on $mount_path",__FUNCTION__,__FILE__);
-        if($aclenabled==0){
-            unset($tokens["acl"]);
-            unset($tokens["user_xattr"]);
-            $tune2fs_cmd="-acl";
-        }else{
-            $tokens["acl"]=true;
-            $tokens["user_xattr"]=true;
-            $tune2fs_cmd="+acl";
-        }
-        foreach ($tokens as $token=>$i){$final[]=$token;}
-
-        $new_options=implode(",",$final);
-        writelogs_framework("$dev\t$mount_path\t$type\t$new_options\t$other",__FUNCTION__,__FILE__,__LINE__);
-        reset($rows);
-        $rows[$row_index]="$dev\t$mount_path\t$type\t$new_options\t$other";
-        @file_put_contents("/etc/fstab",@implode("\n",$rows));
-        $mount=$this->find_program("mount");
-        exec("$mount -o remount $dev");
-        $tune2fs=$this->find_program("tune2fs");
-        if($tune2fs<>null){
-            exec("$tune2fs -o user_xattr,acl $dev 2>&1",$rs);
-            writelogs_framework("$tune2fs -o user_xattr,acl $dev",__FUNCTION__,__FILE__,__LINE__);
-            writelogs_framework(implode(",",$rs),__FUNCTION__,__FILE__,__LINE__);
-
-        }
-
-    }
-
-
     public function DISK_GET_PARTNUMBER($dev_path){
         $file=$this->find_program("file");
         $tmp=$this->FILE_TEMP();
@@ -10011,45 +6395,7 @@ class unix {
     }
 
 
-    public function DISK_GET_TYPE($dev_path){
-        $fs=$this->DISK_GET_TYPE_BYFILE($dev_path);
-        if($fs<>null){return $fs;}
-        $dev_path=str_replace("/","\/",$dev_path);
-        $blkid=$this->find_program("blkid");
-        $tmp=$this->FILE_TEMP();
-        shell_exec("$blkid >$tmp 2>&1");
-        $datas=explode("\n",@file_get_contents($tmp));
-        @unlink($tmp);
-        foreach ($datas as $ligne) {
-            if(preg_match("#^$dev_path.+?TYPE=\"(.+?)\"#",$ligne,$re)){
-                return $re[1];
-            }
-
-        }
-    }
-
 }
-
-function BuildingExecStatus($text,$pourc){
-    $ini=new iniFrameWork("/usr/share/artica-postfix/ressources/logs/exec.status.ini");
-    $ini->set("status","text","$text");
-    $ini->set("status","pourc","$pourc");
-    $ini->saveFile("/usr/share/artica-postfix/ressources/logs/exec.status.ini");
-    @chmod("/usr/share/artica-postfix/ressources/logs/exec.status.ini",0755);
-    error_log(__FUNCTION__.":: status $pourc% $text");
-
-}
-function BuildingExecRightStatus($text,$pourc){
-    $file="/usr/share/artica-postfix/ressources/logs/exec-right.status.ini";
-    $ini=new iniFrameWork($file);
-    $ini->set("status","text","$text");
-    $ini->set("status","pourc","$pourc");
-    $ini->saveFile($file);
-    @chmod($file,0755);
-}
-
-
-
 
 function cpulimit($forced=0){
     return;
@@ -10068,31 +6414,6 @@ function cpulimit($forced=0){
     $pid=getmypid();
     $cmd="{$GLOBALS["cpulimit_path"]} -p $pid -l $cpu -z >>/var/log/cpulimit 2>&1 &";
     if($GLOBALS["VERBOSE"]){writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);}
-    shell_exec($cmd);
-
-}
-
-
-function GET_INFO_DAEMON($key){
-    if(function_exists("apc_store")){$value=apc_fetch($key);if($value<>null){return trim($value);}}
-    if(isset($GLOBALS["GET_INFO_DAEMON"][$key])){
-        if($GLOBALS["GET_INFO_DAEMON"][$key]<>null){return $GLOBALS["GET_INFO_DAEMON"][$key];}
-    }
-    $result=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("$key"));
-    $GLOBALS["GET_INFO_DAEMON"][$key]=$result;
-    if(function_exists("apc_store")){apc_store($key, $result);}
-    return $result;
-}
-
-function cpulimitProcessName($processName){
-    $unix=new unix();
-    $cpulimit=$unix->find_program("cpulimit");
-    if($cpulimit==null){return null;}
-    $cpu=GET_INFO_DAEMON('cpulimit');
-    if($cpu==null){$cpu=0;}
-    if($cpu==0){return null;}
-    $cmd="$cpulimit -e $processName -l $cpu &";
-    writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
     shell_exec($cmd);
 
 }
@@ -10204,40 +6525,6 @@ function system_admin_events($text=null,$function=null,$file=null,$line=null,$ca
     return squid_admin_mysql($severity,$text,null,$file,$line);
 }
 
-function system_failover_events($text=null,$function=null,$file=null,$line=null,$category=null,$taskid=0){
-    if($text==null){return;}
-    if(function_exists("debug_backtrace")){
-        $trace=debug_backtrace();
-        if(isset($trace[1])){
-            if($file==null){$file=basename($trace[1]["file"]);}
-            if($function==null){$function=$trace[1]["function"];}
-            if($line==0){$line=$trace[1]["line"];}
-        }
-
-    }
-
-    $mem=round(((memory_get_usage()/1024)/1000),2);
-    $array_load=sys_getloadavg();
-    $internal_load=$array_load[0];
-    $text=$text."\nMemory used for this script:{$mem}M; System Load: $internal_load";
-    if($taskid>0){$GLOBALS["SCHEDULE_ID"]=$taskid;}
-    if(!isset($GLOBALS["SCHEDULE_ID"])){$GLOBALS["SCHEDULE_ID"]=0;}
-    if($GLOBALS["VERBOSE"]){echo "$function:: $text in line $line in file ".basename($file)."\n";}
-    $array["zdate"]=date("Y-m-d H:i:s");
-    $array["text"]=$text;
-    $array["function"]=$function;
-    $array["file"]=basename($file);
-    $array["line"]=$line;
-    $array["pid"]=getmypid();
-    $array["category"]=$category;
-    $array["TASKID"]=$GLOBALS["SCHEDULE_ID"];
-    if(isset($GLOBALS["ARGVS"])){$array["ARGVS"]=$GLOBALS["ARGVS"];}
-    $serialize=serialize($array);
-    $md5=md5($serialize);
-    if(!is_dir("{$GLOBALS["ARTICALOGDIR"]}/system_failover_events")){@mkdir("{$GLOBALS["ARTICALOGDIR"]}/system_failover_events",0755,true);}
-    @file_put_contents("{$GLOBALS["ARTICALOGDIR"]}/system_failover_events/$md5.log", $serialize);
-
-}
 function rotate_events($text=null,$function=null,$file=null,$line=null,$category=null,$taskid=0){
     if($text==null){return;}
     if(function_exists("debug_backtrace")){
@@ -10274,186 +6561,9 @@ function rotate_events($text=null,$function=null,$file=null,$line=null,$category
 
 }
 
-function hotspot_admin_mysql($severity,$subject,$text,$file=null,$line=0){
-    if(!is_numeric($line)){$line=0;}
-    // 0 -> RED, 1 -> WARN, 2 -> INFO
-    $function=null;
-    if(function_exists("debug_backtrace")){
-        $trace=debug_backtrace();
-        if(isset($trace[1])){
-            if($file==null){
-                $file=basename($trace[1]["file"]);
-            }
-            $function=$trace[1]["function"];
-            if($line==0){
-                $line=$trace[1]["line"];
-            }
-        }
-
-    }
-
-
-    if(function_exists("syslog")){
-        $file=basename($file);
-        $LOG_SEV=LOG_INFO;
-        openlog($file, LOG_PID , LOG_SYSLOG);
-        syslog($LOG_SEV, $subject);
-        closelog();
-    }
-
-
-
-    if(!is_numeric($GLOBALS["SCHEDULE_ID"])){$GLOBALS["SCHEDULE_ID"]=0;}
-
-
-    $array["zdate"]=date("Y-m-d H:i:s");
-    $array["subject"]=$subject;
-    $array["text"]=$text;
-    $array["severity"]=$severity;
-    $array["function"]=$function;
-    $array["file"]=basename($file);
-    $array["line"]=$line;
-    $array["pid"]=getmypid();
-    $array["TASKID"]=$GLOBALS["SCHEDULE_ID"];
-    $serialize=serialize($array);
-    $md5=md5($serialize);
-    if(!is_dir("{$GLOBALS["ARTICALOGDIR"]}/hotspot_admin_mysql")){@mkdir("{$GLOBALS["ARTICALOGDIR"]}/hotspot_admin_mysql",0755,true);}
-    @file_put_contents("{$GLOBALS["ARTICALOGDIR"]}/hotspot_admin_mysql/$md5.log", $serialize);
-
-}
-function rdpproxy_admin_mysql($severity,$subject,$text,$file=null,$line=0){
-    if(!is_numeric($line)){$line=0;}
-    $function=null;
-    // 0 -> RED, 1 -> WARN, 2 -> INFO
-
-    if(function_exists("debug_backtrace")){
-        $trace=debug_backtrace();
-        if(isset($trace[1])){
-            if($file==null){
-                $file=basename($trace[1]["file"]);
-            }
-            $function=$trace[1]["function"];
-            if($line==0){
-                $line=$trace[1]["line"];
-            }
-        }
-
-    }
-
-
-    if(function_exists("syslog")){
-        $file=basename($file);
-        $LOG_SEV=LOG_INFO;
-        openlog($file, LOG_PID , LOG_SYSLOG);
-        syslog($LOG_SEV, $subject ." [$line]");
-        closelog();
-    }
-
-    $unix=new unix();
-    $unix->events($subject,"/var/log/squid/artica.watchdog.log",false,$function,$line,$file);
-
-    if(!is_numeric($GLOBALS["SCHEDULE_ID"])){$GLOBALS["SCHEDULE_ID"]=0;}
-
-
-    $array["zdate"]=date("Y-m-d H:i:s");
-    $array["subject"]=$subject;
-    $array["text"]=$text;
-    $array["severity"]=$severity;
-    $array["function"]=$function;
-    $array["file"]=basename($file);
-    $array["line"]=$line;
-    $array["pid"]=getmypid();
-    $array["TASKID"]=$GLOBALS["SCHEDULE_ID"];
-    $serialize=serialize($array);
-    $md5=md5($serialize);
-    if(!is_dir("{$GLOBALS["ARTICALOGDIR"]}/rdpproxy_admin_mysql")){@mkdir("{$GLOBALS["ARTICALOGDIR"]}/rdpproxy_admin_mysql",0755,true);}
-    @file_put_contents("{$GLOBALS["ARTICALOGDIR"]}/rdpproxy_admin_mysql/$md5.log", $serialize);
-}
-
-
-
-function blackwhite_admin_mysql($severity,$subject,$text,$file=null,$line=0){
-    if(!is_numeric($line)){$line=0;}
-    // 0 -> RED, 1 -> WARN, 2 -> INFO
-
-    if(function_exists("debug_backtrace")){
-        $trace=debug_backtrace();
-        if(isset($trace[1])){
-            if($file==null){
-                $file=basename($trace[1]["file"]);
-            }
-            $function=$trace[1]["function"];
-            if($line==0){
-                $line=$trace[1]["line"];
-            }
-        }
-
-    }
-
-
-    if(function_exists("syslog")){
-        $file=basename($file);
-        $LOG_SEV=LOG_INFO;
-        openlog($file, LOG_PID , LOG_SYSLOG);
-        syslog($LOG_SEV, $subject ." [$line]");
-        closelog();
-    }
-
-    if(!is_numeric($GLOBALS["SCHEDULE_ID"])){$GLOBALS["SCHEDULE_ID"]=0;}
-
-
-    $array["zdate"]=date("Y-m-d H:i:s");
-    $array["subject"]=$subject;
-    $array["text"]=$text;
-    $array["severity"]=$severity;
-    $array["function"]=$function;
-    $array["file"]=basename($file);
-    $array["line"]=$line;
-    $array["pid"]=getmypid();
-    $array["TASKID"]=$GLOBALS["SCHEDULE_ID"];
-    $serialize=serialize($array);
-    $md5=md5($serialize);
-    if(!is_dir("{$GLOBALS["ARTICALOGDIR"]}/blackwhite_admin_mysql")){@mkdir("{$GLOBALS["ARTICALOGDIR"]}/blackwhite_admin_mysql",0755,true);}
-    @file_put_contents("{$GLOBALS["ARTICALOGDIR"]}/blackwhite_admin_mysql/$md5.log", $serialize);
-
-
-
-
-
-}
 function vsftpd_admin_mysql($severity,$subject,$text,$file=null,$line=0){
     squid_admin_mysql($severity, "VSFTPD: $subject", $text,$file,$line);
 }
-function time_admin_mysql_events($text,$function,$line){
-    $logFile="/var/log/artica.squid.smtp.log";
-    $maxSize=900000;
-    if(!is_file($logFile)){@touch($logFile);}
-
-    $size=@filesize($logFile);
-    if($size>$maxSize){
-        @unlink($logFile);
-        @touch($logFile);
-        @chmod($logFile, 0777);
-    }
-
-    $h = @fopen($logFile, 'a');
-    $line=date("Y-m-d H:i:s")." ".getmypid()."] $text ($function/$line)\n";
-    @fwrite($h,$line);
-    @fclose($h);
-
-}
-
-
-
-
-
-
-
-
-
-
-function nginx_admin_mysql($severity,$subject,$text,$file=null,$line=0){squid_admin_mysql($severity, $subject, $text,$file,$line);}
-
 function squid_admin_mysql_FormatBytes($kbytes){
 
     $spacer=" ";
@@ -10508,9 +6618,28 @@ function squid_admin_mysql($severity=0,$subject=null,$text=null,$file=null,$line
     $traces[]       = "Memory: ".__get_memory()."%";
     if(!isset($GLOBALS["DEBUG_NOTIFS"])){$GLOBALS["DEBUG_NOTIFS"]=false;}
 
+    if(is_null($subject)){
 
+        if(function_exists("debug_backtrace") && function_exists("writelogs")) {
+            $trace = debug_backtrace();
+            $file="";$function="";$line="";
+            if (isset($trace[0])) {
+                $file = basename($trace[0]["file"]);
+                $function = $trace[0]["function"];
+                $line = $trace[0]["line"];
+            }
 
-    if(preg_match("#OVERLOADED_SYSTEM#",$subject)){
+            if (isset($trace[1])) {
+                $file = basename($trace[1]["file"]);
+                $function = $trace[1]["function"];
+                $line = $trace[1]["line"];
+            }
+            writelogs("Warning: null subject from $file/$function/$line",__FUNCTION__,__FILE__,__LINE__);
+        }
+        return true;
+    }
+
+    if( preg_match("#OVERLOADED_SYSTEM#",$subject)){
         if($text==null){
             $unix=new unix();
             $text=$unix->ps_mem_report();
@@ -10581,7 +6710,6 @@ function squid_admin_mysql($severity=0,$subject=null,$text=null,$file=null,$line
 
 
 
-    $PROXY_DAEMONS["exec.squid.watchdog.php"]="squid";
     $PROXY_DAEMONS["exec.squid.php"]="squid";
     if ($GLOBALS["HaClusterClient"] == 1) {
         $daemonname=$basename;
@@ -10615,7 +6743,6 @@ function squid_admin_mysql($severity=0,$subject=null,$text=null,$file=null,$line
         $text = $text . "\n" . @implode("\n", $traces) . "\n";
     }
     $TRANSFERT_FILE["exec.pdns.php"]="pdns";
-    $TRANSFERT_FILE["exec.squid.watchdog.php"]="squid";
 
 
     $syslogfile=$file;
@@ -10698,10 +6825,6 @@ function ufdbguard_admin_events($text,$function,$file=null,$line=0,$category=nul
     $file=basename($file);$subject=substr($text,0,128);
     return squid_admin_mysql(2, $subject, $text."\nFunction $function category $category in $file $line",$file,$line);
 
-}
-function mysql_admin_events($text,$function,$file,$line,$category=null):bool{
-    $file=basename($file);$subject=substr($text,0,128);
-    return squid_admin_mysql(2, $subject, $text."\nFunction $function category $category in $file $line",$file,$line);
 }
 function update_events($text,$function,$file,$line,$category=null):bool{
     $file=basename($file);$subject=substr($text,0,128);
@@ -10816,39 +6939,6 @@ function unix_system_HUP($pid):bool{
     return true;
 }
 
-function recursive_remove_directory($directory, $empty=FALSE){
-    if($directory==null){return false;}
-    if(substr($directory,-1) == '/'){ $directory = substr($directory,0,-1); }
-    if(!file_exists($directory) || !is_dir($directory)) { return FALSE; }
-    if(!is_readable($directory)){return FALSE;}
-
-    $handle = opendir($directory);
-    while (FALSE !== ($item = readdir($handle))){
-        if($item == '.'){continue;}
-        if($item == '..'){continue;}
-
-        $path = $directory.'/'.$item;
-        if(is_dir($path)) {
-            recursive_remove_directory($path);
-            continue;
-        }
-        unlink($path);
-
-    }
-
-
-    closedir($handle);
-
-
-    if($empty == FALSE){
-        if(!rmdir($directory)){
-            return FALSE;
-        }
-    }
-    return TRUE;
-
-}
-
 function is_cluster(){
     $PowerDNSEnableClusterMaster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterMaster"));
     if($PowerDNSEnableClusterMaster==1){return true;}
@@ -10874,35 +6964,6 @@ function buildlocalsyslogfile($tfile):string{
     if(!is_dir(dirname($tfile))){@mkdir(dirname($tfile));}
     return "\taction(type=\"omfile\" dirCreateMode=\"0700\" FileCreateMode=\"0755\" File=\"$tfile\" ioBufferSize=\"128k\" flushOnTXEnd=\"off\" asyncWriting=\"on\")";
 }
-function buildlocalomhttp($remoteport,$restpath="inputs"):string{
-
-    if(!is_file("/usr/lib/x86_64-linux-gnu/rsyslog/omhttp.so")){
-        if(is_file("/etc/rsyslog.d/00_omhttp.conf")){
-            @unlink("/etc/rsyslog.d/00_omhttp.conf");
-        }
-        return "";
-    }
-
-    if (!is_file("/etc/rsyslog.d/00_omhttp.conf")) {
-        @file_put_contents("/etc/rsyslog.d/00_omhttp.conf", "module(load=\"omhttp\")\n");
-    }
-
-
-    return  "action(type=\"omhttp\"
-                    server=\"127.0.0.1\"
-                    serverport=\"$remoteport\"
-                    errorfile=\"\"
-                    restpath=\"$restpath\"
-                    retry=\"on\"
-                    useHttps=\"off\"
-                    queue.Type=\"LinkedList\"
-                    queue.Size=\"300000\"
-                    queue.workerthreadminimummessages=\"30000\"
-                    queue.workerthreads=\"3\"
-                    )";
-
-    }
-
 function BuildRemoteSyslogs($logtype='squid',$uniqKey=null):string{
     if(!class_exists("lib_sqlite")){
         include_once(ARTICA_ROOT."/ressources/class.sqlite.inc");
@@ -11016,4 +7077,13 @@ function BuildRemoteSyslogs($logtype='squid',$uniqKey=null):string{
     }
     if($CountOfSyslogRules==0){return "";}
     return @implode("\n",$SyslogRules);
+}
+// One shell word, whatever the bytes: '…' with every ' written '\''. Unlike escapeshellarg(),
+// it does not depend on LC_CTYPE (PHP 7.3 without a UTF-8 locale silently DROPS non-ASCII
+// bytes: "liste-été.txt" became 'liste-t.txt'). NUL cannot be passed to a command: removed.
+// Used where a request value reaches a command run as root (framework_execute(), shell_exec()).
+if(!function_exists("fw_shell_quote")){
+    function fw_shell_quote($value):string{
+        return "'".str_replace(array("\0","'"),array("","'\\''"),(string)$value)."'";
+    }
 }

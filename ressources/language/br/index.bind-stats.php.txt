@@ -1,8 +1,8 @@
 <failure>Falha</failure>
-<failure_text>The number of queries which resulted in a failure response other than those above</failure_text>
-<recursion>recursion</recursion>
-<recursion_text>The number of queries which caused the server to perform recursion in order to find the final answer</recursion_text>
-<success_text>The number of successful queries made to the server or zone. A successful query is defined as query which returns a NOERROR response other than a referral response</success_text>
-<sum>Sum</sum>
-<sum_text>The sum of all queries</sum_text>
-<_text>All statistics</_text>
+<failure_text>O n&#250;mero de consultas que resultaram numa resposta de falha diferente das anteriores</failure_text>
+<recursion>recurs&#227;o</recursion>
+<recursion_text>O n&#250;mero de consultas que fizeram o servidor efetuar recurs&#227;o para encontrar a resposta final</recursion_text>
+<success_text>O n&#250;mero de consultas bem-sucedidas feitas ao servidor ou zona. Uma consulta bem-sucedida &#233; definida como uma consulta que retorna uma resposta NOERROR que n&#227;o seja uma resposta de refer&#234;ncia</success_text>
+<sum>Soma</sum>
+<sum_text>A soma de todas as consultas</sum_text>
+<_text>Todas as estat&#237;sticas</_text>

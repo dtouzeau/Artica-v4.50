@@ -2,4 +2,4 @@
 <DOWNLOAD_CONFIG_FILES_TEXT>Descargue los archivos de configuraci%C3%B3n y extr%C3¡igalos al directorio de OpenVpn</DOWNLOAD_CONFIG_FILES_TEXT>
 <DOWNLOAD_OPENVPN_CLIENT>Descargar el cliente VPN de Windows</DOWNLOAD_OPENVPN_CLIENT>
 <DOWNLOAD_OPENVPN_CLIENT_TEXT>Descargue e instale el cliente VPN para conectarse a través de su red</DOWNLOAD_OPENVPN_CLIENT_TEXT>
-<WELCOME_USER_OPENVPN>Welcome to your VPN area</WELCOME_USER_OPENVPN>
+<WELCOME_USER_OPENVPN>Bienvenido a su &#225;rea VPN</WELCOME_USER_OPENVPN>

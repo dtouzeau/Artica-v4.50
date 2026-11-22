@@ -46,7 +46,8 @@ function table(){
 function delete(){
 	$ipaddr=$_GET["delete"];
 	$q=new postgres_sql();
-	$q->QUERY_SQL("DELETE FROM ipset_whitelists WHERE ipaddr='$ipaddr'");
+	// Pentest 2026-11-04 : delete etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("DELETE FROM ipset_whitelists WHERE ipaddr=$1",array(strval($ipaddr)));
 	echo "$('#{$_GET["md"]}').remove()\n";
 }
 
@@ -95,7 +96,8 @@ function ipaddr_popup(){
 	}else{
 		$bt="{apply}";
 		$form[]=$tpl->field_ipaddr("ipaddr", "{address}", null,true);
-		$ligne=pg_fetch_array($q->QUERY_SQL("SELECT * FROM ipset_whitelists WHERE ipaddr='$ipaddr'"));
+		// Pentest 2026-11-04 : ipaddr-popup etait concatene dans la requete.
+		$ligne=pg_fetch_array($q->QUERY_SQL_PARAMS("SELECT * FROM ipset_whitelists WHERE ipaddr=$1",array(strval($ipaddr))));
 		$description=$ligne["description"];
 		$title=$ipaddr." - {$ligne["zdate"]}";
 	}
@@ -114,7 +116,8 @@ function ipaddr_save(){
 
 
     $description="(".gethostbyaddr($ipaddr).") - $description";
-	$q->QUERY_SQL("INSERT INTO ipset_whitelists (ipaddr,description,zDate) VALUES ('$ipaddr','$description','$date')");
+	// Pentest 2026-11-04 : ipaddr, description et le nom PTR (donnee externe) etaient concatenes dans la requete.
+	$q->QUERY_SQL_PARAMS("INSERT INTO ipset_whitelists (ipaddr,description,zDate) VALUES ($1,$2,$3)",array(strval($ipaddr),$description,$date));
 	if(!$q->ok){echo "$ipaddr: $q->mysql_error";}
 
 
@@ -164,16 +167,19 @@ function search(){
 	$search=trim($_GET["search"]);
 	$aliases["ipaddr"]="ipaddr";
 	$querys=$tpl->query_pattern($search,$aliases);
-	$MAX=$querys["MAX"];
+	$MAX=intval($querys["MAX"]);
 	if($MAX==0){$MAX=150;}
 	$sql="SELECT * FROM ipset_whitelists {$querys["Q"]} ORDER BY zdate DESC LIMIT $MAX";
 	
+	// Pentest 2026-11-04 : search etait concatene dans la requete.
+	$sqlparams=array();
 	if(preg_match("#^([0-9\.]+)#", $search)){
-		$sql="SELECT * FROM ipset_whitelists WHERE ipaddr='$search' ORDER BY zdate DESC LIMIT $MAX";
+		$sql="SELECT * FROM ipset_whitelists WHERE ipaddr=$1 ORDER BY zdate DESC LIMIT $MAX";
+		$sqlparams=array($search);
 	}
 	
 	
-	$results = $q->QUERY_SQL($sql);
+	$results = count($sqlparams)>0?$q->QUERY_SQL_PARAMS($sql,$sqlparams):$q->QUERY_SQL($sql);
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." $sql<br>$q->mysql_error");return;}
 	
 

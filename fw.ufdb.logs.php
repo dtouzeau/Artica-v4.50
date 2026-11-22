@@ -25,11 +25,14 @@ function zoom_js(){
 }
 function zoom(){
 
-	$data=unserialize(base64_decode($_GET["data"]));
+	$data=unserialize(base64_decode($_GET["data"]),array("allowed_classes"=>false));
 $html[]="<div class=ibox-content>";
 $html[]="<table class='table table table-bordered'>";
 
+    // Pentest 2026-11-04 : cle/valeur du detail (donnee externe) affiche sans encodage (XSS stockee).
+    if(!is_array($data)){$data=array();}
     foreach ($data as $key=>$val){
+        $key=req_html($key);$val=req_html($val);
 		$html[]="<tr>
 		<td class=text-capitalize>$key:</td>
 		<td><strong>$val</strong></td>
@@ -245,13 +248,18 @@ function search(){
 		if($date==$today){$date=null;}
 
 
-        if($tcp->isValid($CLIENT_IP)){
+        // Pentest 2026-11-04 : utilisateur/IP/regle/categorie/methode du journal (donnee externe) affiche sans encodage (XSS stockee).
+        $CLIENT=req_html($CLIENT);$RULE=req_html($RULE);$CATEGORY=req_html($CATEGORY);
+        $ALLOW=req_html($ALLOW);$PROTO=req_html($PROTO);
+        $CLIENT_IP_RAW=$CLIENT_IP;
+        $CLIENT_IP=req_html($CLIENT_IP);
+        if($tcp->isValid($CLIENT_IP_RAW)){
 
-            $sql="SELECT mac,proxyalias FROM hostsnet WHERE ipaddr='$CLIENT_IP'";
+            $sql="SELECT mac,proxyalias FROM hostsnet WHERE ipaddr='$CLIENT_IP_RAW'";
             $ligne = $q->mysqli_fetch_array($sql);
             if($tcp->IsvalidMAC($ligne["mac"])){
                 $js="Loadjs('fw.edit.computer.php?mac=".urlencode($ligne["mac"])."&CallBackFunction=ss1560867994');";
-                $CLIENT_IP=$tpl->td_href("$CLIENT_IP/{$ligne["mac"]}","{edit}",$js);
+                $CLIENT_IP=$tpl->td_href("$CLIENT_IP_RAW/{$ligne["mac"]}","{edit}",$js);
             }
         }
 

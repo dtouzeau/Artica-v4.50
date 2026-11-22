@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * DHCP events viewer for a single remote agent.
  * Fetches the last hour of isc-dhcp3 journal lines via articarest,
@@ -76,7 +78,8 @@ function event_badge(string $type): string {
     ];
     if ($type === '') return '';
     $color = $colors[$type] ?? '#555';
-    return "<span class='badge' style='background:$color;color:#fff;font-size:11px'>$type</span>";
+    // Pentest 2026-11-04 : type d'evenement DHCP (donnee externe) affiche sans encodage (XSS stockee).
+    return "<span class='badge' style='background:$color;color:#fff;font-size:11px'>".req_html($type)."</span>";
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
@@ -129,30 +132,31 @@ function dhcp_search(): bool {
 
     $rows = '';
     foreach ($events as $ev) {
-        $ts     = htmlspecialchars($ev['ts']);
+        // Pentest 2026-11-04 : journal DHCP de l'agent (donnee externe) affiche sans encodage (XSS stockee).
+        $ts     = req_html($ev['ts']);
         $badge  = event_badge($ev['type']);
-        $detail = htmlspecialchars($ev['detail']);
-        $dtype  = htmlspecialchars($ev['type']);
+        $detail = req_html($ev['detail']);
+        $dtype  = req_html($ev['type']);
         $strlen=strlen(trim($detail));
         if($strlen<7){continue;}
         $rows  .= "<tr data-type=\"$dtype\">";
         $rows  .= "<td style='white-space:nowrap;color:#888;font-size:12px;width:120px'>$ts</td>";
         $rows  .= "<td style='width:130px'>$badge</td>";
-        $rows  .= "<td style='font-size:12px;font-family:monospace;word-break:break-all'>$detail</td>";
+        $rows  .= "<td style='font-size:12px;word-break:break-all'>$detail</td>";
         $rows  .= "</tr>";
     }
 
     $total = count($events);
     $table  = "<div style='margin-bottom:6px'><small class='text-muted'>$total events (last hour, newest first)</small></div>";
-    $table .= "<table class='table table-condensed table-hover' style='margin:0'>";
+    $table .= "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $table .= "<thead><tr>";
     $table .= "<th style='width:120px'>Time</th>";
     $table .= "<th style='width:130px'>Type</th>";
     $table .= "<th>Detail</th>";
     $table .= "</tr></thead>";
-    $table .= "<tbody>$rows</tbody></table>";
+    $table .= "<tbody>$rows</tbody></table></div></div></div>";
 
-    echo $tpl->_ENGINE_parse_body($table);
+    echo awc_table_style().$tpl->_ENGINE_parse_body($table);
     return true;
 }
 

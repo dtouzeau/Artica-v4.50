@@ -3,11 +3,11 @@
 &Eacute; capaz de filtrar em ambos os sentidos, quer a  entrada quer a saida de menssagens, atrav&eacute;s de crit&eacute;rios de complexidade arbitr&aacute;ria, [br] fornecidos pelo administrador, com base num ficheiro de script.</about>
 <apply_to_server>Aplicar configuraç%C3µes</apply_to_server>
 <close_windows>Todas as operaç%C3µes conclu%C3%ADdas, Pode agora fechar as janelas</close_windows>
-<enabled_plugins>Plugins Enabled</enabled_plugins>
-<global_settings>Plugins & settings</global_settings>
-<save_to_ldap_success> save settings to LDAP server</save_to_ldap_success>
-<save_to_server_success>Success Send order to framework </save_to_server_success>
-<script>Mailfromd user script</script>
-<service_mailfromd_failed>Failed !!! the service did not respond in time,check your script</service_mailfromd_failed>
-<service_mailfromd_suc>Success,  all settings are now in production mode</service_mailfromd_suc>
-<USE_CLIENT_SCRIPT>Use your script instead artica script</USE_CLIENT_SCRIPT>
+<enabled_plugins>Plugins ativados</enabled_plugins>
+<global_settings>Plugins e configura&#231;&#245;es</global_settings>
+<save_to_ldap_success>guardar as configura&#231;&#245;es no servidor LDAP</save_to_ldap_success>
+<save_to_server_success>Sucesso, ordem enviada ao framework</save_to_server_success>
+<script>Script de utilizador do Mailfromd</script>
+<service_mailfromd_failed>Falhou!!! o servi&#231;o n&#227;o respondeu a tempo, verifique o seu script</service_mailfromd_failed>
+<service_mailfromd_suc>Sucesso, todas as configura&#231;&#245;es est&#227;o agora em modo de produ&#231;&#227;o</service_mailfromd_suc>
+<USE_CLIENT_SCRIPT>Usar o seu script em vez do script artica</USE_CLIENT_SCRIPT>

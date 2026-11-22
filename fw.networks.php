@@ -1,7 +1,11 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+// awc_table_style()/awc_pager_js()/awc_search_bar(): kit tableaux — include INCONDITIONNEL.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.upload.handler.inc");
 
@@ -14,6 +18,8 @@ if(isset($_GET["net-new-popup"])){net_new_popup();exit;}
 if(isset($_POST["new-network"])){net_new_save();exit;}
 if(isset($_GET["net-popup"])){net_popup();exit;}
 if(isset($_GET["netmask-unlink"])){net_del();exit;}
+if(isset($_GET["net-delete-js"])){net_delete_js();exit;}
+if(isset($_POST["nwl-del-confirm"])){exit;}
 if(isset($_GET["report-js"])){report_js();exit;}
 if(isset($_GET["report-popup"])){report_popup();exit;}
 if(isset($_GET["ping-report-js"])){ping_report_js();exit;}
@@ -28,8 +34,10 @@ if(isset($_GET["arpscanner-enable"])){arpscanner_enable();exit;}
 page();
 
 function enable_trusted():bool{
-    $cdir=$_GET["enabled-trusted"];
+    $page=CurrentPageName();
+    $cdir=(string)$_GET["enabled-trusted"];
     $tpl=new template_admin();
+    if(!fwnet_valid($cdir)){return false;}
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
     $sql="SELECT trusted FROM networks_infos WHERE ipaddr='$cdir'";
     $ligne=$q->mysqli_fetch_array($sql);
@@ -48,7 +56,10 @@ function enable_trusted():bool{
     $memcached->saveKey("WebConsoleTrustedNet","");
 
     admin_tracks("Set My Network $cdir to trusted=$trusted");
-    return net_compile();
+    net_compile();
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('table-loader-network-service','$page?table=yes');\n";
+    return true;
 }
 function arpscanner_js(){
     $tpl=new template_admin();
@@ -161,32 +172,48 @@ function ping_report_popup():bool{
 
 }
 function net_del(){
-	$netDel=$_GET["netmask-unlink"];
+	$netDel=isset($_GET["netmask-unlink"])?(string)$_GET["netmask-unlink"]:"";
+	if(!preg_match('#^[0-9a-fA-F.:]+/[0-9]{1,3}$#',$netDel) && !preg_match('#^[0-9.]+$#',$netDel)){
+		return;
+	}
 	$net=new networkscanner();
-
-
-    foreach ($net->networklist as $num=>$maks){
+	foreach ($net->networklist as $num=>$maks){
 		if($maks==$netDel){
-			$q=new mysql();
-			$q_interface=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-			$q_interface->QUERY_SQL("DELETE FROM networks_infos WHERE ipaddr='$netDel'");
-			
-			$q=new lib_sqlite("/home/artica/SQLITE/fping.db");
-			$q->QUERY_SQL("DELETE FROM fping WHERE network='$netDel'");
-			
-			$q=new lib_sqlite("/home/artica/SQLITE/nmapping.db");
-			$q->QUERY_SQL("DELETE FROM nmapping WHERE network='$netDel'");
 			unset($net->networklist[$num]);
 			$net->save();
-            $memcached=new lib_memcached();
-            $memcached->saveKey("WebConsoleTrustedNet","");
-            admin_tracks("My Network: Delete local network $netDel");
-			echo "$('#{$_GET["md"]}').remove();\n";
-			reload_services();			
-			return;
+			break;
 		}
 	}
-	
+	$q_interface=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
+	$q_interface->QUERY_SQL("DELETE FROM networks_infos WHERE ipaddr='$netDel'");
+
+	$q=new lib_sqlite("/home/artica/SQLITE/fping.db");
+	$q->QUERY_SQL("DELETE FROM fping WHERE network='$netDel'");
+
+	$q=new lib_sqlite("/home/artica/SQLITE/nmapping.db");
+	$q->QUERY_SQL("DELETE FROM nmapping WHERE network='$netDel'");
+
+	$memcached=new lib_memcached();
+	$memcached->saveKey("WebConsoleTrustedNet","");
+	admin_tracks("My Network: Delete local network $netDel");
+	$md=preg_replace('/[^a-f0-9]/','',(string)(isset($_GET["md"])?$_GET["md"]:""));
+	if($md!==""){
+		echo "$('#$md').remove();\n";
+	}
+	reload_services();
+}
+
+function net_delete_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $net=trim((string)$_GET["net-delete-js"]);
+    if(!preg_match('#^[0-9a-fA-F.:]+/[0-9]{1,3}$#',$net) && !preg_match('#^[0-9.]+$#',$net)){
+        return $tpl->js_error("{error}");
+    }
+    $md=preg_replace('/[^a-f0-9]/','',(string)(isset($_GET["md"])?$_GET["md"]:""));
+    $net_enc=urlencode($net);
+    $js="Loadjs('$page?netmask-unlink=$net_enc&md=$md');";
+    return $tpl->js_confirm_execute(htmlspecialchars($net,ENT_QUOTES),"nwl-del-confirm","yes",$js);
 }
 
 function reload_services():bool{
@@ -201,14 +228,12 @@ function reload_services():bool{
 	
 	$SURICATA_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SURICATA_INSTALLED"));
 	if($SURICATA_INSTALLED==1){$EnableSuricata=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSuricata"));}
-	$EnableDKFilter=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDKFilter"));
     $NTPDEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NTPDEnabled"));
 
 	if($EnableFail2Ban==1){$GLOBALS["CLASS_SOCKETS"]->getFrameWork("fail2ban.php?restart=yes");}
 	if($EnableSuricata==1){$GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/suricata/reload");}
-    if($EnableDKFilter==1){$GLOBALS["CLASS_SOCKETS"]->getFrameWork("opendkim.php?restart=yes");}
     if($EnableTailScaleService==1){$GLOBALS["CLASS_SOCKETS"]->getFrameWork("tailscale.php?connect=yes");}
-    if($NTPDEnabled==1){$GLOBALS["CLASS_SOCKETS"]->REST_API("/ntpd/reconfigure");}
+    if($NTPDEnabled==1){$GLOBALS["CLASS_SOCKETS"]->REST_API("/chrony/reconfigure");}
 
     $UnboundEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnboundEnabled"));
     if($UnboundEnabled==1) {
@@ -236,7 +261,7 @@ function net_new_popup():bool{
     $js[]="BootstrapDialog1.close()";
     $js[]="LoadAjax('table-loader-network-service','$page?table=yes');";
 
-    echo $tpl->BigNetworkField("new-network","{new_network}","{new_trusted_network_explain}","","192.168.1.0/24",implode(";",$js));
+    echo $tpl->BigNetworkField("new-network","{new_network}","{new_trusted_network_explain_v6}","","192.168.1.0/24",implode(";",$js),null,true);
     return true;
 }
 
@@ -259,9 +284,11 @@ function net_popup():bool{
 
 
 		$net=explode("/",$network);
-		$sql="SELECT * FROM networks_infos WHERE ipaddr='$network'";
+		// Pentest 2026-11-04 : net-popup etait concatene dans la requete.
+		$sql="SELECT * FROM networks_infos WHERE ipaddr=?";
 		$q_interface=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-		$ligne=$q_interface->mysqli_fetch_array($sql);
+		$r=$q_interface->QUERY_SQL_PARAMS($sql,array((string)$network));
+		$ligne=isset($r[0]) ? $r[0] : array();
 		$scannable=intval($ligne["scannable"]);
 		$pingable=intval($ligne["pingable"]);
 		$pinginterval=intval($ligne["pinginterval"]);
@@ -357,7 +384,7 @@ function Tinyjs():bool{
     $prgress=base64_encode(serialize($ARRAY));
     $NMAPInstalled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("NMAPInstalled"));
     if($NMAPInstalled==0){$jsscan="blur();";}
-    $jsscan="Loadjs('fw.progress.php?content=$prgress&mainid=progress-network-restart')";
+    $jsscan="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-network-restart')";
 
 
 
@@ -436,8 +463,9 @@ function net_new_save():bool{
     $tpl->CLEAN_POST();
     $netinfos=$tpl->CLEAN_BAD_XSS($_POST["new-network"]);
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
-    $NetworkMasks=new NetworkMasks();
-    $cdir=$NetworkMasks->networkToCIDR($netinfos);
+    $cdir=fwnet_cidr((string)$netinfos);
+    if($cdir===""){echo $tpl->post_error("{invalid_network}");return false;}
+    $netinfos=$cdir;
 
     $netinfosBase64=base64_encode($netinfos);
     $sql="DELETE FROM networks_infos WHERE ipaddr='$cdir'";
@@ -453,10 +481,13 @@ function net_new_save():bool{
 function net_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $Net=$_POST["ip_addr"];
+    $Net=(string)$_POST["ip_addr"];
     unset($_POST["ip_addr"]);
+    if(!fwnet_valid($Net)){echo "{invalid_network}";return false;}
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
     foreach ($_POST as $key=>$value){
+        $key=preg_replace('/[^A-Za-z0-9_]/','',(string)$key);
+        if($key==""){continue;}
         if($key=="netinfos"){
             $value=base64_encode($value);
         }
@@ -505,7 +536,8 @@ function ping_report_table(){
 	$html[]="<tbody>";
 
 	$q=new lib_sqlite("/home/artica/SQLITE/fping.db");
-	$results=$q->QUERY_SQL("SELECT * FROM fping WHERE network='$net' AND available=".intval($_GET["available"])." ORDER BY hton");
+	// Pentest 2026-11-04 : ping-report-table etait concatene dans la requete.
+	$results=$q->QUERY_SQL_PARAMS("SELECT * FROM fping WHERE network=? AND available=".intval($_GET["available"])." ORDER BY hton",array((string)$net));
 	$TRCLASS=null;
 	if(!$q->ok){echo $q->mysql_error_html();}
 
@@ -514,7 +546,8 @@ function ping_report_table(){
 		$class=null;
 		$q=new postgres_sql();
 		if($ligne["mac"]<>null){
-			$ligne2=@pg_fetch_array($q->QUERY_SQL("SELECT * FROM hostsnet WHERE ipaddr='{$ligne["ipaddr"]}'"));
+			// Pentest 2026-11-04 : ipaddr (resultat de scan, donnee externe) etait concatene dans la requete.
+			$ligne2=@pg_fetch_array($q->QUERY_SQL_PARAMS("SELECT * FROM hostsnet WHERE ipaddr=$1",array(strval($ligne["ipaddr"]))));
 		}
 
 		if($_GET["available"]==1){
@@ -589,7 +622,8 @@ function report_popup(){
 	$html[]="<tbody>";
 	
 	$q=new lib_sqlite("/home/artica/SQLITE/nmapping.db");
-	$results=$q->QUERY_SQL("SELECT * FROM nmapping WHERE network='$net'","artica_backup");
+	// Pentest 2026-11-04 : report-popup etait concatene dans la requete.
+	$results=$q->QUERY_SQL_PARAMS("SELECT * FROM nmapping WHERE network=?",array((string)$net));
 	$TRCLASS=null;
 	
 	
@@ -597,7 +631,8 @@ function report_popup(){
 		$class=null;
 		$q=new postgres_sql();
 		if($ligne["mac"]<>null){
-			$ligne2=@pg_fetch_array($q->QUERY_SQL("SELECT * FROM hostsnet WHERE mac='{$ligne["mac"]}'"));
+			// Pentest 2026-11-04 : mac (resultat de scan, donnee externe) etait concatene dans la requete.
+			$ligne2=@pg_fetch_array($q->QUERY_SQL_PARAMS("SELECT * FROM hostsnet WHERE mac=$1",array(strval($ligne["mac"]))));
 		}
 		
 		$aclid=md5(serialize($ligne));
@@ -648,18 +683,27 @@ function report_popup(){
 }
 
 function enable(){
-    $netDel=$_GET["enable"];
+    $page=CurrentPageName();
+    $netDel=isset($_GET["enable"])?(string)$_GET["enable"]:"";
+    if(!preg_match('#^[0-9a-fA-F.:]+/[0-9.]+$#',$netDel) && !preg_match('#^[0-9.]+$#',$netDel)){
+        header("content-type: application/x-javascript");
+        echo "console.error('enable: bad network');\n";
+        return;
+    }
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
     $ligne=$q->mysqli_fetch_array("SELECT enabled FROM networks_infos WHERE ipaddr='$netDel'");
     if(intval($ligne["enabled"])==1){
         $q->QUERY_SQL("UPDATE networks_infos SET enabled=0 WHERE ipaddr='$netDel'");
-        reload_services();
-        return;
+        admin_tracks("My Network: disable $netDel");
+    }else{
+        $q->QUERY_SQL("UPDATE networks_infos SET enabled=1 WHERE ipaddr='$netDel'");
+        $memcached=new lib_memcached();
+        $memcached->saveKey("WebConsoleTrustedNet","");
+        admin_tracks("My Network: enable $netDel");
     }
-    $q->QUERY_SQL("UPDATE networks_infos SET enabled=1 WHERE ipaddr='$netDel'");
-    $memcached=new lib_memcached();
-    $memcached->saveKey("WebConsoleTrustedNet","");
     reload_services();
+    header("content-type: application/x-javascript");
+    echo "LoadAjax('table-loader-network-service','$page?table=yes');\n";
 }
 
 function isVPN():bool{
@@ -671,33 +715,236 @@ function isVPN():bool{
     return $SHOW_VPN;
 }
 
+// ---------------------------------------------------------------------------
+// Redesign stitch_modern_firewall_whitelist_manager — une fonction = un widget.
+
+function nwl_css():string{
+    if(!empty($GLOBALS["NWL_CSS_DONE"])){return "";}
+    $GLOBALS["NWL_CSS_DONE"]=true;
+    $mono="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+    return "<style type='text/css'>
+.nwl-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;
+ background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:12px;margin:0 0 14px 0;
+ box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.nwl-toolbar .sb-stitch{margin:0;flex:1 1 260px;max-width:420px}
+.nwl-toolbar .sb-stitch .ibox-content{padding:0;border:0;background:transparent}
+.nwl-card{background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;
+ box-shadow:0 1px 2px rgba(15,23,42,.04);margin:0 0 14px 0}
+.nwl-scroll{overflow-x:auto}
+.nwl-tbl{width:100%;border-collapse:collapse;text-align:left;font-size:12px;color:#334155}
+.nwl-tbl thead tr{background:rgba(248,250,252,.9);border-bottom:1px solid #e2e8f0}
+.nwl-tbl thead th{padding:14px 16px;font-size:11px;font-weight:600;letter-spacing:.06em;
+ text-transform:uppercase;color:#64748b;white-space:nowrap}
+.nwl-tbl thead th.nwl-th-main{color:#334155;font-weight:700}
+.nwl-tbl tbody tr{border-top:1px solid #f1f5f9;transition:background .15s}
+.nwl-tbl tbody tr:first-child{border-top:0}
+.nwl-tbl tbody tr:hover{background:rgba(248,250,252,.85)}
+.nwl-tbl tbody td{padding:16px;vertical-align:middle}
+.nwl-tbl .nwl-c{text-align:center}
+.nwl-tbl .nwl-r{text-align:right}
+.nwl-off{background:rgba(255,251,235,.55);border-left:2px solid #f59e0b}
+.nwl-off:hover{background:rgba(255,251,235,.85)}
+.nwl-check{width:16px;height:16px;margin:0;cursor:pointer;accent-color:#0d9488;
+ vertical-align:middle}
+.nwl-check:disabled{cursor:not-allowed;opacity:.45}
+.nwl-check-static{display:inline-flex;color:#cbd5e1;font-size:14px;line-height:1}
+.nwl-cidr{font-family:$mono;font-size:13px;font-weight:700;color:#0f172a}
+a.nwl-cidr-link{color:inherit;text-decoration:none;cursor:pointer;display:inline-block}
+a.nwl-cidr-link:hover .nwl-cidr{color:#0d9488}
+.nwl-pfx{color:#0d9488}
+.nwl-sub{font-size:11px;color:#94a3b8;margin-top:2px;font-family:inherit}
+.nwl-name{font-size:13px;font-weight:600;color:#1e293b}
+.nwl-meta{font-size:11px;color:#94a3b8;margin-top:2px;line-height:1.35}
+.nwl-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:999px;
+ font-size:11px;font-weight:600;border:1px solid transparent;white-space:nowrap;cursor:default}
+a.nwl-pill{text-decoration:none!important;cursor:pointer}
+.nwl-pill-yes{background:#ecfdf5;color:#047857;border-color:rgba(16,185,129,.35)}
+.nwl-pill-no{background:#f1f5f9;color:#475569;border-color:#e2e8f0}
+.nwl-pill-ban{background:#fff1f2;color:#be123c;border-color:rgba(244,63,94,.3)}
+.nwl-acts{display:inline-flex;align-items:center;gap:2px}
+.nwl-act{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;
+ border:0;background:transparent;border-radius:8px;color:#94a3b8;cursor:pointer;padding:0}
+.nwl-act:hover{background:#f1f5f9;color:#0d9488}
+.nwl-act-ind:hover{color:#005447}
+.nwl-act-warn{color:#d97706}
+.nwl-act-warn:hover{background:#fef3c7;color:#b45309}
+.nwl-act-del:hover{background:#fff1f2;color:#e11d48}
+.nwl-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;
+ padding:14px 20px;border-top:1px solid rgba(226,232,240,.9);background:rgba(248,250,252,.6);
+ font-size:12px;color:#64748b}
+.nwl-foot b{color:#0f172a;font-family:$mono;font-weight:700}
+.nwl-cards{display:grid;grid-template-columns:repeat(1,minmax(0,1fr));gap:12px;margin:0 0 8px 0}
+@media(min-width:768px){.nwl-cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.nwl-diag{display:flex;align-items:flex-start;gap:12px;padding:14px;background:#fff;
+ border:1px solid rgba(226,232,240,.95);border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.03)}
+.nwl-diag-ico{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;
+ justify-content:center;flex:0 0 auto;font-size:15px;border:1px solid transparent}
+.nwl-diag-ico.indigo{background:#e6eeed;border-color:#ccddda;color:#005447}
+.nwl-diag-ico.teal{background:#f0fdfa;border-color:#ccfbf1;color:#0d9488}
+.nwl-diag-ico.emerald{background:#ecfdf5;border-color:#d1fae5;color:#059669}
+.nwl-diag h4{margin:0;font-size:12px;font-weight:700;color:#0f172a}
+.nwl-diag p{margin:3px 0 0 0;font-size:11px;color:#64748b;line-height:1.4}
+</style>";
+}
+
+function nwl_pill($on,$clickJs=null,$ban=false):string{
+    if($on){
+        $cls="nwl-pill nwl-pill-yes";
+        $ico="fas fa-shield-check";
+        $txt="{yes}";
+    }elseif($ban){
+        $cls="nwl-pill nwl-pill-ban";
+        $ico="fas fa-ban";
+        $txt="{no}";
+    }else{
+        $cls="nwl-pill nwl-pill-no";
+        $ico="far fa-circle-question";
+        $txt="{no}";
+    }
+    $inner="<i class='$ico' style='font-size:10px'></i> $txt";
+    if($clickJs!==null && $clickJs!==""){
+        $js=htmlspecialchars($clickJs,ENT_QUOTES);
+        return "<a href=\"javascript:blur();\" class='$cls' OnClick=\"$js\">$inner</a>";
+    }
+    return "<span class='$cls'>$inner</span>";
+}
+
+// Case a cocher native (design stitch): Loadjs enable puis refresh table.
+function nwl_cell_enabled($page,$enc,$enabled,$editable):string{
+    if(!$editable){
+        return "<span class='nwl-check-static' title=\"{nwl_default_range}\"><i class='fas fa-minus'></i></span>";
+    }
+    $users=new usersMenus();
+    if(!$users->AsFirewallManager){
+        $chk=$enabled?" checked":"";
+        return "<input type='checkbox' class='nwl-check' disabled$chk>";
+    }
+    $chk=$enabled?" checked":"";
+    $enc=htmlspecialchars((string)$enc,ENT_QUOTES);
+    return "<input type='checkbox' class='nwl-check'$chk OnClick=\"Loadjs('$page?enable=$enc');\">";
+}
+
+function nwl_netmask($cidr):string{
+    $parts=explode("/",$cidr);
+    if(count($parts)<2){return "";}
+    $bits=intval($parts[1]);
+    if($bits<0 || $bits>32){return "";}
+    if($bits===0){return "0.0.0.0";}
+    $ipv=new ipv4($parts[0],$bits);
+    return (string)$ipv->netmask();
+}
+
+function nwl_cell_cidr($cidr,$clickJs=null):string{
+    $raw=(string)$cidr;
+    $host=htmlspecialchars($raw,ENT_QUOTES);
+    $pfx="";
+    if(preg_match('#^(.+)/([0-9]{1,3})$#',$raw,$m)){
+        $host=htmlspecialchars($m[1],ENT_QUOTES);
+        $pfx="/".htmlspecialchars($m[2],ENT_QUOTES);
+    }
+    $mask=nwl_netmask($raw);
+    $sub="";
+    if($mask!==""){
+        $sub="<div class='nwl-sub'>{netmask}: ".htmlspecialchars($mask,ENT_QUOTES)."</div>";
+    }
+    $inner="<div class='nwl-cidr'>$host<span class='nwl-pfx'>$pfx</span></div>$sub";
+    if($clickJs!==null && $clickJs!==""){
+        $js=htmlspecialchars($clickJs,ENT_QUOTES);
+        return "<a href=\"javascript:blur();\" class='nwl-cidr-link' title=\"{click_to_edit}\" OnClick=\"$js\">$inner</a>";
+    }
+    return $inner;
+}
+
+function nwl_cell_name($netinfos,$metaLines):string{
+    $raw=trim(strip_tags(str_replace(array("<br>","<br/>","<br />"),"\n",(string)$netinfos)));
+    $lines=preg_split('/\r\n|\r|\n/',$raw);
+    $title=trim((string)$lines[0]);
+    if($title===""){$title="{no_info}";}
+    $title=htmlspecialchars($title,ENT_QUOTES);
+    $h="<div class='nwl-name'>$title</div>";
+    $sub=array();
+    if(isset($lines[1]) && trim($lines[1])!==""){
+        $sub[]=htmlspecialchars(trim($lines[1]),ENT_QUOTES);
+    }
+    if(is_array($metaLines)){
+        foreach($metaLines as $m){
+            $m=trim(strip_tags((string)$m));
+            if($m!==""){$sub[]=$m;}
+        }
+    }
+    if(count($sub)>0){
+        $h.="<div class='nwl-meta'>".@implode(" · ",$sub)."</div>";
+    }
+    return $h;
+}
+
+function nwl_cell_actions($page,$maks_enc,$id,$nmapCount,$pingable,$prcping,$editable):string{
+    $tpl=new template_admin();
+    $h="<div class='nwl-acts'>";
+    if($editable){
+        $h.="<button type='button' class='nwl-act' title=\"{click_to_edit}\" "
+            ."OnClick=\"Loadjs('$page?net-js=$maks_enc');\"><i class='fas fa-sliders'></i></button>";
+    }
+    if($nmapCount>0){
+        $h.="<button type='button' class='nwl-act nwl-act-ind' title=\"{scan_report} ($nmapCount)\" "
+            ."OnClick=\"Loadjs('$page?report-js=$maks_enc');\"><i class='fas fa-list-check'></i></button>";
+    }
+    if($pingable==1 && $prcping>0){
+        $h.="<button type='button' class='nwl-act' title=\"Ping $prcping%\" "
+            ."OnClick=\"Loadjs('$page?ping-report-js=$maks_enc');\"><i class='fas fa-satellite-dish'></i></button>";
+    }
+    if($editable){
+        $h.="<button type='button' class='nwl-act nwl-act-del' title=\"{delete}\" "
+            ."OnClick=\"Loadjs('$page?net-delete-js=$maks_enc&md=$id');\"><i class='far fa-trash-can'></i></button>";
+    }
+    return $h."</div>";
+}
+
+function nwl_card_ids($scanned,$total):string{
+    $scanned=intval($scanned);
+    $total=intval($total);
+    $h ="<div class='nwl-diag'>";
+    $h.="<span class='nwl-diag-ico indigo'><i class='fas fa-shield-virus'></i></span>";
+    $h.="<div><h4>{nwl_ids_ips_title}</h4>";
+    // Traduire AVANT de substituer : sur "{nwl_ids_ips_explain}" brut, il n'y a aucun %s à remplacer.
+    $tpl=new template_admin();
+    $txt=$tpl->_ENGINE_parse_body("{nwl_ids_ips_explain}");
+    $h.="<p>".str_replace(array("%s","%t"),array((string)$scanned,(string)$total),$txt)."</p>";
+    $h.="</div></div>";
+    return $h;
+}
+
+function nwl_card_arp($enabled):string{
+    $h ="<div class='nwl-diag'>";
+    $h.="<span class='nwl-diag-ico teal'><i class='fas fa-radar'></i></span>";
+    $h.="<div><h4>{nwl_arp_title}</h4>";
+    if($enabled){
+        $h.="<p>{nwl_arp_explain_on}</p>";
+    }else{
+        $h.="<p>{nwl_arp_explain_off}</p>";
+    }
+    $h.="</div></div>";
+    return $h;
+}
+
+function nwl_card_strict():string{
+    $h ="<div class='nwl-diag'>";
+    $h.="<span class='nwl-diag-ico emerald'><i class='fas fa-lock'></i></span>";
+    $h.="<div><h4>{nwl_strict_title}</h4>";
+    $h.="<p>{nwl_strict_explain}</p>";
+    $h.="</div></div>";
+    return $h;
+}
+
 function table():bool{
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-    $function=$_GET["function"];
-	$q=new lib_sqlite("/home/artica/SQLITE/nmapping.db");
-	$items=$q->COUNT_ROWS("nmapping");
-	$FPING_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FPING_INSTALLED"));
-	$SHOW_VPN=isVPN();
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+    $q_nmapping=new lib_sqlite("/home/artica/SQLITE/nmapping.db");
+    $FPING_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("FPING_INSTALLED"));
+    $SHOW_VPN=isVPN();
 
-	$table[]="<table class='table table-hover'><thead>
-	<tr>
-	<th style='width:1%'  nowrap>{enabled}</th>
-	<th>{networks}</th>
-	<th style='width:1%'  nowrap>{trusted_network}</th>
-	<th style='width:1%'  nowrap>DNS</th>
-	<th style='width:1%'  nowrap>{vpn_allowed}</th>
-	<th style='width:1%'  nowrap>% {used}</th>
-	<th style='width:1%'  nowrap>Ping</th>
-	<th style='width:1%'  nowrap>Scan</th>
-	<th style='width:1%'  nowrap>{scan_report} $items {items}</th>
-	<th style='width:1%'  nowrap>DEL</th>
-	</tr>
-	</thead>
-	<tbody>
-	";
-
-
+    $durations=array();
     $durations[15]="15 {minutes}";
     $durations[30]="30 {minutes}";
     $durations[60]="1 {hour}";
@@ -713,51 +960,65 @@ function table():bool{
     $durations[20160]="2 {weeks}";
     $durations[43200]="1 {month}";
 
-
-    $q_nmapping=new lib_sqlite("/home/artica/SQLITE/nmapping.db");
     $q=new lib_sqlite("/home/artica/SQLITE/interfaces.db");
 
-    $results=$q->QUERY_SQL("SELECT * FROM routing_rules_src");
-    foreach ($results as $index=>$ligne){
-        $pattern=$ligne["pattern"];
-        if($pattern=="0.0.0.0/0.0.0.0"){continue;}
-        $netinfos=base64_encode("Network $pattern");
-        $q->QUERY_SQL("INSERT INTO networks_infos (ipaddr,netinfos) VALUES ('$pattern','$netinfos')");
-
+    // Moteur de routage actif: les motifs viennent de l'API, routing_rules_* n'est plus tenu a jour.
+    include_once(dirname(__FILE__)."/ressources/class.routing.ui.inc");
+    $RoutingEngineWhy=rtui_legacy_write_refused();
+    $RoutingEnginePatterns=null;
+    if($RoutingEngineWhy=="{routing_legacy_managed}" || $RoutingEngineWhy=="{routing_mig_activating}"){$RoutingEnginePatterns=rtui_legacy_rule_patterns();}
+    if($RoutingEnginePatterns!==null){
+        $results=array();
+        foreach ($RoutingEnginePatterns["src"] as $RoutingEnginePattern){$results[]=array("pattern"=>$RoutingEnginePattern);}
+    }else{
+        $results=$q->QUERY_SQL("SELECT * FROM routing_rules_src");
     }
-    $results=$q->QUERY_SQL("SELECT * FROM routing_rules_dest");
-
     foreach ($results as $index=>$ligne){
         $pattern=$ligne["pattern"];
         if($pattern=="0.0.0.0/0.0.0.0"){continue;}
         $netinfos=base64_encode("Network $pattern");
-        $q->QUERY_SQL("INSERT INTO networks_infos (ipaddr,netinfos) VALUES ('$pattern','$netinfos')");
-
+        $q->QUERY_SQL_PARAMS("INSERT INTO networks_infos (ipaddr,netinfos) VALUES (?,?)",array($pattern,$netinfos));
+    }
+    if($RoutingEnginePatterns!==null){
+        $results=array();
+        foreach ($RoutingEnginePatterns["dest"] as $RoutingEnginePattern){$results[]=array("pattern"=>$RoutingEnginePattern);}
+    }else{
+        $results=$q->QUERY_SQL("SELECT * FROM routing_rules_dest");
+    }
+    foreach ($results as $index=>$ligne){
+        $pattern=$ligne["pattern"];
+        if($pattern=="0.0.0.0/0.0.0.0"){continue;}
+        $netinfos=base64_encode("Network $pattern");
+        $q->QUERY_SQL_PARAMS("INSERT INTO networks_infos (ipaddr,netinfos) VALUES (?,?)",array($pattern,$netinfos));
     }
 
     $addDef=false;
-    $ligne3=$q->mysqli_fetch_array("SELECT count(*) as tcount FROM networks_infos WHERE trusted=1 AND enabled=1");
-    $tcount=$ligne3["tcount"];
+    // Suggestions RFC1918 seulement si la table est vide (sinon elles
+    // passent pour de vraies lignes a cocher et le clic ne fait rien).
+    $ligneAll=$q->mysqli_fetch_array("SELECT count(*) as tcount FROM networks_infos");
     $zNet=array();
-    if($tcount==0){
+    if(intval($ligneAll["tcount"])==0){
         $addDef=true;
-        $zNet["10.0.0.0/8"] = true;
-		$zNet["172.16.0.0/12"] = true;
-		$zNet["192.168.0.0/16"] = true;
+        $zNet["10.0.0.0/8"]=true;
+        $zNet["172.16.0.0/12"]=true;
+        $zNet["192.168.0.0/16"]=true;
     }
 
-
-    $td1=$tpl->table_td1prc();
+    $rows=array();
+    $scanned=0;
+    $total=0;
     $results=$q->QUERY_SQL("SELECT * FROM networks_infos");
     foreach ($results as $index=>$ligne){
-        $ID=$ligne["ID"];
+        $ID=intval($ligne["ID"]);
         $maks=$ligne["ipaddr"];
-        if(!preg_match("#^[0-9.]+/[0-9]+#",$maks)){
+        // IPv4 ou IPv6 (lot 6b) : le motif IPv4 seul effaçait au premier
+        // affichage tout réseau de confiance IPv6 qu'on venait d'ajouter.
+        if(!preg_match("#^([0-9.]+|[0-9a-fA-F:]+)/[0-9]+#",$maks)){
             $q->QUERY_SQL("DELETE FROM networks_infos WHERE ID=$ID");
-            $q_nmapping->QUERY_SQL("DELETE FROM nmapping WHERE network='$maks'");
+            // Pentest 2026-11-04 : ipaddr (non valide par construction) etait concatene dans la requete.
+            $q_nmapping->QUERY_SQL_PARAMS("DELETE FROM nmapping WHERE network=?",array(strval($maks)));
             continue;
         }
-        $pingable_text="";
         $maks_encoded=urlencode($maks);
         $scannable=intval($ligne["scannable"]);
         $pingable=intval($ligne["pingable"]);
@@ -766,152 +1027,135 @@ function table():bool{
         $trusted=intval($ligne["trusted"]);
         $enabled=intval($ligne["enabled"]);
         $dns=intval($ligne["dns"]);
-        $dns_icon="&nbsp;";
         $vpn=intval($ligne["vpn"]);
-        $trusted_network_fw=null;
 
-        if($addDef){
-            if(isset($zNet[$maks])){
-                $trusted=1;
-                unset($zNet[$maks]);
-            }
+        if($addDef && isset($zNet[$maks])){
+            $trusted=1;
+            unset($zNet[$maks]);
         }
-        if($trusted==1){
-            $dns=1;
+        if($trusted==1){$dns=1;}
+
+        $netinfos=base64_decode($ligne["netinfos"]);
+
+        // Pentest 2026-11-04 : ipaddr (motif non ancre en fin) etait concatene dans la requete.
+        $ligneN=$q_nmapping->QUERY_SQL_PARAMS("SELECT COUNT(*) as tcount FROM nmapping WHERE network=?",array(strval($maks)));
+        $ligneN=(is_array($ligneN) && isset($ligneN[0]))?$ligneN[0]:array();
+        $nmapCount=intval($ligneN["tcount"]);
+
+        $meta=array();
+        if($trusted==1){$meta[]="{trusted_network_fw}";}
+        if($scannable==1){
+            $meta[]="{can_be_analyzed}";
+            $scanned++;
         }
-        if($dns==1){
-            $dns_icon="<i class='fas fa-check'></i>";
+        if($pingable==1 && $FPING_INSTALLED==1){
+            $iv=isset($durations[$pinginterval])?$durations[$pinginterval]:"";
+            $meta[]="{can_use_ping}".($iv!==""?" {each} $iv":"");
         }
 
-        if(!$q->ok){echo $q->mysql_error_html(true);}
-        $netinfos=htmlspecialchars(base64_decode($ligne["netinfos"]));
-        $netinfos=nl2br($netinfos);
-        if($netinfos==null){$netinfos=" <i>({no_info})</i>";}
-        $report_button="{no_report}";
-        $scannable_text=null;
-        $sql="SELECT COUNT(*) as tcount FROM nmapping WHERE network='$maks'";
-        $ligne=$q_nmapping->mysqli_fetch_array($sql);
-        if(!$q->ok){echo $q->mysql_error_html(true);}
-        $patternenc=urlencode($maks);
-	$NmapCount=$ligne["tcount"];
-	$ping_prc=$tpl->icon_nothing();
-	
-	if($NmapCount>0){
-		$report_button="<a href=\"javascript:blur();\" OnClick=\"Loadjs('$page?report-js=$patternenc');\"><span class='label label-primary'>$NmapCount {items}</span></a>";
-	}
-	
-	
-	if($scannable==1){
-		$scannable_icon="<i class='fas fa-check'></i>";
-		$scannable_text="{can_be_analyzed}";
-	}else{
-		$report_button=$tpl->icon_nothing();
-		$scannable_icon="&nbsp;";
-	}
-	
-	if($pingable==1){
-		$pingable_icon="<i class='fas fa-check'></i>";
-		$pingable_text=", {can_use_ping} {each} {$durations[$pinginterval]}";
-		if($prcping>0) {
-            $ping_prc = "<a href=\"javascript:blur();\" 
-			OnClick=\"Loadjs('$page?ping-report-js=$patternenc');\">
-			<span class='label label-primary'>$prcping%</span></a>";
-        }
-	}else{
-		$pingable_icon=$tpl->icon_nothing();
-	}
-
-
-	$trusted_icon=$tpl->icon_check($trusted,"Loadjs('$page?enabled-trusted=$maks_encoded')",null,"AsFirewallManager");
-    if($trusted==1){
-        $trusted_network_fw="{trusted_network_fw}, ";
+        $total++;
+        $rows[]=array(
+            "id"=>md5($maks),
+            "cidr"=>$maks,
+            "enc"=>$maks_encoded,
+            "enabled"=>$enabled,
+            "trusted"=>$trusted,
+            "dns"=>$dns,
+            "vpn"=>$vpn,
+            "netinfos"=>$netinfos,
+            "meta"=>$meta,
+            "nmap"=>$nmapCount,
+            "pingable"=>$pingable,
+            "prcping"=>$prcping,
+            "editable"=>true,
+        );
     }
-
-
-	
-	if($FPING_INSTALLED==0){
-		$pingable_text=null;
-		$pingable_icon=$tpl->icon_nothing();
-	}
-        $enabled_ico=$tpl->icon_check($enabled,"Loadjs('$page?enable=$maks_encoded')",
-            null,"AsFirewallManager");
-
-	if($enabled)
-	
-	$id=md5($maks);
-        $zAMXTXT=array();
-        $AMXTXT=null;
-	    if($trusted_network_fw<>null){
-            $zAMXTXT[]=$trusted_network_fw;
-        }
-        if($scannable_text<>null){
-            $zAMXTXT[]=$scannable_text;
-        }
-        if($pingable_text<>null){
-            $zAMXTXT[]=$pingable_text;
-        }
-        if($netinfos<>null){
-            $zAMXTXT[]=$netinfos;
-        }
-        if(count($zAMXTXT)>0){
-            $AMXTXT="<br><small>".@implode("<br>",$zAMXTXT)."</small>";
-        }
-
-
-    $vpn_ico=$tpl->icon_nothing();
-    if($SHOW_VPN){
-        if($vpn==1){
-            $vpn_ico="<i class='fas fa-check'></i>";
-        }
-    }
-
-
-
-	$table[]="<tr id='$id'>";
-	$table[]="<td $td1>$enabled_ico</td>";
-	$table[]="<td>". $tpl->td_href($maks,"{click_to_edit}","Loadjs('$page?net-js=$maks_encoded');","AsFirewallManager")."$AMXTXT</td>";
-    $table[]="<td $td1>$trusted_icon</td>";
-    $table[]="<td $td1>$dns_icon</td>";
-    $table[]="<td $td1>$vpn_ico</td>";
-	$table[]="<td $td1>$ping_prc</td>";
-	$table[]="<td $td1>$pingable_icon</td>";
-	$table[]="<td $td1>$scannable_icon</td>";
-	$table[]="<td>$report_button</td>";
-	$table[]="<td>". $tpl->icon_delete("Loadjs('$page?netmask-unlink=$maks_encoded&md=$id')","AsFirewallManager")."</td>";
-	$table[]="</tr>";
-	
-	}
 
     if($addDef){
-        foreach ($zNet as $maks=>$none){
-            $trusted_icon=$tpl->icon_check(1,"",null,"AsFirewallManager");
-            $enabled_ico=$tpl->icon_check(1,"",null,"AsFirewallManager");
-            $dns_icon="<i class='fas fa-check'></i>";
-            $vpn_ico=$tpl->icon_nothing();
-            $ping_prc=$tpl->icon_nothing();
-            $pingable_icon=$tpl->icon_nothing();
-            $scannable_icon=$tpl->icon_nothing();
-            $report_button="&nbsp;";
-            $table[]="<tr id='$id'>";
-            $table[]="<td $td1>$enabled_ico</td>";
-            $table[]="<td>$maks</td>";
-            $table[]="<td $td1>$trusted_icon</td>";
-            $table[]="<td $td1>$dns_icon</td>";
-            $table[]="<td $td1>$vpn_ico</td>";
-            $table[]="<td $td1>$ping_prc</td>";
-            $table[]="<td $td1>$pingable_icon</td>";
-            $table[]="<td $td1>$scannable_icon</td>";
-            $table[]="<td>$report_button</td>";
-            $table[]="<td>&nbsp;</td>";
-            $table[]="</tr>";
+        foreach($zNet as $maks=>$none){
+            $total++;
+            $rows[]=array(
+                "id"=>md5($maks),
+                "cidr"=>$maks,
+                "enc"=>urlencode($maks),
+                "enabled"=>1,
+                "trusted"=>1,
+                "dns"=>1,
+                "vpn"=>0,
+                "netinfos"=>$maks,
+                "meta"=>array(),
+                "nmap"=>0,
+                "pingable"=>0,
+                "prcping"=>0,
+                "editable"=>false,
+            );
         }
     }
 
-	$table[]="</tbody></table>";
-    $table[]="<script>";
-    $table[]="Loadjs('$page?tinyjs=yes&function=$function');";
-    $table[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $table));
+    $EnableARPScanner=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableARPScanner"));
+    $ARPScannerSeen=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ARPScannerSeen"));
+    if($ARPScannerSeen==0){$EnableARPScanner=1;}
+
+    $html=array();
+    $html[]="<div class='nwl-toolbar'>";
+    $html[]=awc_search_bar("nwl-q","{nwl_filter_placeholder}");
+    $html[]="</div>";
+
+    $html[]="<div class='nwl-card'><div class='nwl-scroll'>";
+    $html[]="<table class='nwl-tbl'><thead><tr>";
+    $html[]="<th class='nwl-c' style='width:1%'>{enabled}</th>";
+    $html[]="<th class='nwl-th-main'>{nwl_subnet_mask}</th>";
+    $html[]="<th>{nwl_network_name}</th>";
+    $html[]="<th class='nwl-c'>{trusted_network}</th>";
+    if($SHOW_VPN){
+        $html[]="<th class='nwl-c'>{vpn_allowed}</th>";
+    }
+    $html[]="<th class='nwl-c'>DNS</th>";
+    $html[]="<th class='nwl-r'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='nwl-rows'>";
+
+    $users=new usersMenus();
+    $canEdit=$users->AsFirewallManager;
+    foreach($rows as $row){
+        $trCls=$row["enabled"]?"":" class='nwl-off'";
+        $html[]="<tr id='{$row["id"]}'$trCls>";
+        $html[]="<td class='nwl-c'>".nwl_cell_enabled($page,$row["enc"],$row["enabled"],$row["editable"])."</td>";
+        $cidrJs=($row["editable"] && $canEdit)?"Loadjs('$page?net-js={$row["enc"]}')":null;
+        $html[]="<td>".nwl_cell_cidr($row["cidr"],$cidrJs)."</td>";
+        $html[]="<td>".nwl_cell_name($row["netinfos"],$row["meta"])."</td>";
+        $trustedJs=$row["editable"]?"Loadjs('$page?enabled-trusted={$row["enc"]}')":null;
+        $html[]="<td class='nwl-c'>".nwl_pill($row["trusted"],$trustedJs)."</td>";
+        if($SHOW_VPN){
+            $html[]="<td class='nwl-c'>".nwl_pill($row["vpn"]==1,null,$row["vpn"]==0)."</td>";
+        }
+        $html[]="<td class='nwl-c'>".nwl_pill($row["dns"]==1,null,$row["dns"]==0)."</td>";
+        $html[]="<td class='nwl-r'>".nwl_cell_actions($page,$row["enc"],$row["id"],
+            $row["nmap"],$row["pingable"],$row["prcping"],$row["editable"])."</td>";
+        $html[]="</tr>";
+    }
+
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='nwl-foot'>";
+    $html[]="<span>".str_replace("%n",(string)$total,$tpl->_ENGINE_parse_body("{nwl_showing}"))."</span>";
+    $html[]="<span class='awc-pg' id='nwl-pager'></span>";
+    $html[]="</div></div>";
+
+    $html[]="<div class='nwl-cards'>";
+    $html[]=nwl_card_ids($scanned,$total);
+    $html[]=nwl_card_arp($EnableARPScanner==1);
+    $html[]=nwl_card_strict();
+    $html[]="</div>";
+
+    $html[]="<script>";
+    $html[]="Loadjs('$page?tinyjs=yes&function=$function');";
+    $html[]="NoSpinner();";
+    $html[]="</script>";
+
+    // Pas d'icon_check ici: pas besoin d'ICON_SCRIPTS_COMPILE.
+    $js=awc_pager_js(25,"nwl-rows","nwl-pager")
+        .awc_filter_js("nwl-q","nwl-rows","nwl-pager");
+
+    echo nwl_css().awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$js;
     return true;
 }
 function IsFw():bool{
@@ -922,4 +1166,30 @@ function IsFw():bool{
     return false;
 }
 
+// Réseau saisi : IPv4 (NetworkMasks) ou IPv6 (lot 6b), en CIDR ; "" si
+// invalide. Une saisie IPv6 rendait false, et la ligne était enregistrée avec
+// une adresse vide.
+function fwnet_cidr(string $raw):string{
+    $raw=trim($raw);
+    if(strpos($raw,":")!==false){
+        $parts=explode("/",$raw,2);
+        if(isset($parts[1]) && !preg_match('/^\d{1,3}$/',$parts[1])){return "";}
+        $bits=isset($parts[1])?intval($parts[1]):128;
+        if($bits<1 || $bits>128){return "";}
+        if(!filter_var($parts[0],FILTER_VALIDATE_IP,FILTER_FLAG_IPV6)){return "";}
+        $bin=inet_pton($parts[0]);
+        if($bin===false){return "";}
+        $addr=inet_ntop($bin);
+        if(strpos($addr,".")!==false){return "";}
+        return "$addr/$bits";
+    }
+    $NetworkMasks=new NetworkMasks();
+    $c=$NetworkMasks->networkToCIDR($raw);
+    return $c===false?"":(string)$c;
+}
 
+// Clé d'une ligne de networks_infos (adresse ou CIDR, IPv4 ou IPv6) : rien
+// d'autre ne doit atteindre les requêtes SQL de cette page.
+function fwnet_valid(string $v):bool{
+    return preg_match('#^[0-9a-fA-F.:]+(/[0-9.]{1,15})?$#',$v)===1;
+}

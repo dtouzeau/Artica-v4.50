@@ -1,20 +1,17 @@
-<br>This section help you to add words.
- if these words watchs emails will be filtered and consider as REJECTED
-</br>
-<bt_filter_headers>Subjects rules</bt_filter_headers>
-<bt_filter_headers_from>Mail from rules</bt_filter_headers_from>
-<bt_mime_attachments>attachments rules</bt_mime_attachments>
-<extension_list_title>filtered file attachments extension list</extension_list_title>
-<from_rules_explain>
-This feature allows you to block mails with specified words in sender's address
-</from_rules_explain>
-<js_del_extension>Delete this extension filter</js_del_extension>
+<br>Ta sekcja pomaga dodawa&#263; s&#322;owa.
+ je&#347;li te s&#322;owa pojawi&#261; si&#281; w wiadomo&#347;ciach, zostan&#261; one przefiltrowane i uznane za ODRZUCONE</br>
+<bt_filter_headers>Regu&#322;y temat&#243;w</bt_filter_headers>
+<bt_filter_headers_from>Regu&#322;y nadawcy</bt_filter_headers_from>
+<bt_mime_attachments>Regu&#322;y za&#322;&#261;cznik&#243;w</bt_mime_attachments>
+<extension_list_title>Lista filtrowanych rozszerze&#324; za&#322;&#261;cznik&#243;w plik&#243;w</extension_list_title>
+<from_rules_explain>Ta funkcja umo&#380;liwia blokowanie wiadomo&#347;ci z okre&#347;lonymi s&#322;owami w adresie nadawcy</from_rules_explain>
+<js_del_extension>Usu&#324; ten filtr rozszerze&#324;</js_del_extension>
 <js_del_from>Usu%C5%84 t%C4%99 regu%C5%82%C4%99</js_del_from>
-<js_del_subject>Delete this subject rule</js_del_subject>
-<mail_from_add>Add words rule for mail from mails</mail_from_add>
-<mime_attachments_add>Set the extension name like :exe or dll or bat</mime_attachments_add>
-<mime_attachments_explain>This feature allows you to block mails with specified attached file extension.</mime_attachments_explain>
-<postfix_error>Give the postfix error when pattern is matched</postfix_error>
-<subject_add>Add words rule for mail subjects</subject_add>
-<title_header>Subjects rules</title_header>
-<title_mime>attached files filtering</title_mime>
+<js_del_subject>Usu&#324; t&#281; regu&#322;&#281; tematu</js_del_subject>
+<mail_from_add>Dodaj regu&#322;&#281; s&#322;&#243;w dla adresu nadawcy</mail_from_add>
+<mime_attachments_add>Ustaw nazw&#281; rozszerzenia, np. :exe lub dll lub bat</mime_attachments_add>
+<mime_attachments_explain>Ta funkcja umo&#380;liwia blokowanie wiadomo&#347;ci z okre&#347;lonym rozszerzeniem za&#322;&#261;czonego pliku.</mime_attachments_explain>
+<postfix_error>Podaj b&#322;&#261;d postfix, gdy wzorzec zostanie dopasowany</postfix_error>
+<subject_add>Dodaj regu&#322;&#281; s&#322;&#243;w dla temat&#243;w wiadomo&#347;ci</subject_add>
+<title_header>Regu&#322;y temat&#243;w</title_header>
+<title_mime>Filtrowanie plik&#243;w za&#322;&#261;czonych</title_mime>

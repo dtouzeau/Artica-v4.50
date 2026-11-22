@@ -8,6 +8,26 @@ include_once(dirname(__FILE__).'/class.ad-agent.inc');
 include_once(dirname(__FILE__).'/class.reverse-proxy.privs.inc');
 class privileges{
     var $privs=array();
+    // Garde d'idempotence de SearchPrivileges() dans la requete courante.
+    private $SEARCH_DONE=false;
+    /**
+     * Tenants SIEM cumules des groupes de l'utilisateur (feature 021).
+     *
+     * Un ENSEMBLE, pas une liste: les cles portent les identifiants, si bien que deux groupes
+     * portant le meme tenant n'y entrent qu'une fois. Le doublon serait inoffensif pour la requete
+     * SQL finale, mais il fausserait tout decompte « combien de tenants cette personne voit-elle ».
+     */
+    private $SIEM_TENANTS=array();
+    private $EnableArticaSiem=null;
+    /**
+     * Artica Meta multi-tenant (spec 2026-11-13 5.2) : references des groupes de l'utilisateur
+     * (meme forme que siem_tenants_privs.dngroup : DN, gidNumber, sqlite:<id>), methode
+     * d'authentification qui a resolu les privileges, et nom de connexion tel que range dans
+     * $_SESSION["uid"]. Servent a GET /netagents/tenants/owners/resolve.
+     */
+    private $META_GROUPS=array();
+    private $META_SOURCE="";
+    private $LOGIN_NAME="";
     public $uid=null;
     private $eMailAddr=null;
     private $EnableManagedReverseProxy=0;
@@ -35,6 +55,7 @@ class privileges{
         $_SESSION["UID_KEY"]=$this->UID_KEY;
         $this->privilegesuid=$privilegesuid;
         $this->uid=$uid;
+        $this->LOGIN_NAME=trim(strval($uid));
         $this->radiusid=$radiusid;
         $this->VERBOSE=array();
         $CountOFPrivileges=0;
@@ -76,6 +97,7 @@ class privileges{
             $this->ACTIVE_DIRECTORY_DN=$re[2];
             $this->ACTIVE_DIRECTORY_INDEX=$re[1];
             $this->ACTIVE_DIRECTORY_USER=$re[3];
+            $this->LOGIN_NAME=trim($re[3]);
             $this->UID_KEY="PrivsOf".md5(trim($re[3]));
             $_SESSION["UID_KEY"]=$this->UID_KEY;
         }else{
@@ -266,6 +288,7 @@ $spec",1);
         $this->privs["AsWebStatisticsAdministrator"] = "yes";
         $this->privs["AsSquidPersonalCategories"] = "yes";
         $this->privs["AsArticaMetaAdmin"] = "yes";
+        $this->privs["AsMetaAdmin"] = "yes";
         $this->privs["AsFirewallManager"] = "yes";
         $this->privs["AsVPNManager"] = "yes";
         $this->privs["AsProxyMonitor"] = "yes";
@@ -279,7 +302,56 @@ $spec",1);
         }
         return @implode("\n",$f);
     }
+    /**
+     * Ecrit le cache des privileges -- et REFUSE d'y ecrire un jeu VIDE.
+     *
+     * Un tableau vide se serialise en "a:0:{}", soit "YTowOnt9" une fois encode:
+     * 8 caracteres. Or la relecture ne teste que strlen($privsCache)>1, donc un
+     * « cet utilisateur n'a aucun droit » etait memorise et rejoue comme un cache
+     * parfaitement valide, indiscernable d'un vrai jeu de droits. La branche de
+     * relecture injecte ensuite AsSystemAdministrator="no" quand la cle manque,
+     * ce qui porte le compteur a 1 -- exactement la valeur qu'affiche un compte
+     * ayant UN droit reel.
+     *
+     * Incident du 18/08/2026: des privileges poses sur un groupe Active Directory
+     * dont l'utilisateur n'etait pas membre (ARTICA_SMTP_ADMIN au lieu de
+     * ARTICA_SMTP_MANAGER) ont produit un jeu vide; « SetUser: privileges_array = 1 »
+     * est reste identique pendant un mois en signifiant successivement « un droit »
+     * puis « aucun droit ». Le fichier de cache contenait YTowOnt9.
+     *
+     * Le verdict est journalise DANS TOUS LES CAS, sans dependre de
+     * DebugWebConsoleAuth: c'est la seule trace qui separe « aucun droit trouve »
+     * de « droits trouves », et son absence est ce qui a rendu l'incident opaque.
+     */
+    private function CachePrivileges($origin=""){
+        // Le perimetre SIEM entre dans le jeu de privileges JUSTE AVANT la mise en cache, donc par
+        // un seul point quel que soit le chemin de resolution (AD, adagent, openldap, base locale).
+        $this->FinalizeSiemTenants();
+        // Tenants Artica Meta : meme point unique, juste avant la mise en cache.
+        $this->FinalizeMetaTenants();
+        $count=is_array($this->privs)?count($this->privs):0;
+        if($count==0){
+            writelogs("[$this->uid] NO privilege resolved ($origin) - cache NOT written",
+                __FUNCTION__,__FILE__,__LINE__);
+            return false;
+        }
+        writelogs("[$this->uid] $count privilege(s) resolved ($origin): "
+            .@implode(",",array_keys($this->privs)),__FUNCTION__,__FILE__,__LINE__);
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,base64_encode(serialize($this->privs)));
+        return true;
+    }
+
     public function SearchPrivileges(){
+        // Le constructeur rappelle cette methode quand le premier passage n'a rien
+        // donne. Tant qu'un resultat vide etait mis en cache, ce second appel etait
+        // gratuit; maintenant qu'il ne l'est plus, il refarait toute la resolution
+        // LDAP a chaque page pour un compte sans droit. Le premier passage a deja
+        // tout tente: on ne recommence pas.
+        if($this->SEARCH_DONE){
+            $this->VERBOSED("SearchPrivileges() already performed in this request",__LINE__);
+            return;
+        }
+        $this->SEARCH_DONE=true;
         $privsCache=$GLOBALS["CLASS_SOCKETS"]->GET_INFO($this->UID_KEY);
 
         if($GLOBALS["DEBUG_PRIVS"]){
@@ -289,7 +361,20 @@ $spec",1);
         if(strlen($privsCache)>1){
             $this->VERBOSED("$this->UID_KEY -- HIT !!!",__LINE__);
             $array=@unserialize(base64_decode($privsCache));
-            if($array !== false){
+            // Tenants Artica Meta resolus avant un changement de proprietaires : cache ignore,
+            // resolution complete (meta_tenants_flush_privs_cache(), class.sockets.inc).
+            if(is_array($array) && function_exists("meta_tenants_privs_stale") && meta_tenants_privs_stale($array)){
+                writelogs("[$this->uid] cached privileges predate an Artica Meta owners change - resolving again",
+                    __FUNCTION__,__FILE__,__LINE__);
+                $array=array();
+            }
+            // count($array)>0 et pas seulement !==false: "a:0:{}" se desserialise
+            // en un tableau vide parfaitement valide. L'accepter revenait a servir
+            // « aucun droit » depuis le cache a chaque requete, y compris apres
+            // correction de l'attribution cote annuaire. Un cache vide est ignore,
+            // la resolution complete reprend la main, et CachePrivileges() ne le
+            // reecrira pas -- les appliances deja piegees se reparent seules.
+            if(is_array($array) && count($array)>0){
                 $this->privs=$array;
                 if(!isset($this->privs["AsSystemAdministrator"])){$this->privs["AsSystemAdministrator"]="no";}
                 $this->VERBOSED("AsSystemAdministrator:[{$this->privs["AsSystemAdministrator"]}]",__LINE__);
@@ -298,13 +383,16 @@ $spec",1);
                 }
                 return;
             }
-            $this->VERBOSED("HIT BAD unserialize == FALSE !!!",__LINE__);
+            writelogs("[$this->uid] cache present but EMPTY or unreadable - ignored, resolving again",
+                __FUNCTION__,__FILE__,__LINE__);
+            $this->VERBOSED("HIT BAD unserialize == FALSE or empty !!!",__LINE__);
         }else{
             $this->VERBOSED("$this->UID_KEY ".strlen($privsCache)." bytes in Memcached",__LINE__);
         }
         $this->VERBOSED("->SearchPrivileges() ACTIVE DIRECTORY INDEX=$this->ACTIVE_DIRECTORY_INDEX ACTIVE_DIRECTORY_DN=$this->ACTIVE_DIRECTORY_DN",__LINE__);
 
         if(isset($this->ACTIVE_DIRECTORY_INDEX) AND $this->ACTIVE_DIRECTORY_INDEX=="adagent"){
+            $this->META_SOURCE="ad";
             include_once(dirname(__FILE__)."/class.external.ad.inc");
             $this->VERBOSED("->SearchPrivileges() - Active Directory Index $this->ACTIVE_DIRECTORY_INDEX ($this->ACTIVE_DIRECTORY_DN)",__LINE__);
             $ad=new external_ad_search(null,"adagent");
@@ -332,8 +420,7 @@ $spec",1);
 
                 }
             }
-            $CachePrivs=base64_encode(serialize($this->privs));
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,$CachePrivs);
+            $this->CachePrivileges("adagent, ".count($groups)." group(s) examined");
             return;
         }
 
@@ -343,6 +430,7 @@ $spec",1);
         }
 
         if(is_numeric($this->ACTIVE_DIRECTORY_INDEX) AND ($this->ACTIVE_DIRECTORY_DN<>null)){
+            $this->META_SOURCE="ad";
             include_once(dirname(__FILE__)."/class.external.ad.inc");
             $this->VERBOSED("->SearchPrivileges() - Active Directory Index $this->ACTIVE_DIRECTORY_INDEX ($this->ACTIVE_DIRECTORY_DN)",__LINE__);
             $ad=new external_ad_search(null,$this->ACTIVE_DIRECTORY_INDEX);
@@ -374,8 +462,7 @@ $spec",1);
 
                 if(preg_match("#CN=Domain Admins,CN=Users,#i",$dnGroup)){
                     $this->ParsePrivileges($this->default_all_rights());
-                    $CachePrivs=base64_encode(serialize($this->privs));
-                    $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,$CachePrivs);
+                    $this->CachePrivileges("AD/Domain Admins");
                     return;
                 }
                 if(preg_match("#CN=Enterprise Admins,CN=Users,#i",$dnGroup)){
@@ -385,28 +472,31 @@ $spec",1);
                 }
                 if(preg_match("#CN=Administrators,CN=Builtin#i",$dnGroup)){
                     $this->ParsePrivileges($this->default_all_rights());
-                    $CachePrivs=base64_encode(serialize($this->privs));
-                    $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,$CachePrivs);
+                    $this->CachePrivileges("AD/Builtin Administrators");
                     return;
                 }
             }
-            $CachePrivs=base64_encode(serialize($this->privs));
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,$CachePrivs);
+            $this->CachePrivileges("AD index $this->ACTIVE_DIRECTORY_INDEX, ".count($groups)." group(s) examined");
             return;
         }
 
 
         if($this->sqliteid>0){
-            $this->VERBOSED("->SearchPrivileges() IN SQLITE sqliteid:$this->sqliteid /home/artica/SQLITE/admins.db",__LINE__);
-            $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
-            $sql="SELECT lnk.ID as tid,groups.ID,groups.groupname,groups.privileges,groups.enabled FROM `groups`,`lnk`
-				WHERE groups.ID=lnk.groupid AND groups.enabled=1 AND lnk.userid=$this->sqliteid ORDER BY groupname";
-            $results=$q->QUERY_SQL($sql);
-            if(!$q->ok){$this->VERBOSED("$q->mysql_error",__LINE__);}
+            $this->META_SOURCE="sqlite";
+            $this->VERBOSED("->SearchPrivileges() IN SQLITE sqliteid:$this->sqliteid via /localadmins/users/{id}/privileges",__LINE__);
+            $sqliteid=intval($this->sqliteid);
+            $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/localadmins/users/$sqliteid/privileges")),true);
+            $results=array();
+            if(!is_array($resp) || empty($resp["success"])){
+                $this->VERBOSED("localadmins API failed: ".strval(is_array($resp)?($resp["error"] ?? "unknown"):"no response"),__LINE__);
+            }else{
+                $results=is_array($resp["data"] ?? null)?$resp["data"]:array();
+            }
             foreach ($results as $index=>$ligne){
-                $groupid=$ligne["ID"];
+                $groupid=intval($ligne["id"]);
                 $this->VERBOSED("FIND GROUP $groupid Name={$ligne["groupname"]}",__LINE__);
                 $this->IsHarmpPrivs("sqlite:$groupid");
+                $this->SiemTenantsPrivs("sqlite:$groupid");
 
                 if(strtolower($ligne["groupname"])=='administrators') {
                     $hash["ArticaGroupPrivileges"]=$this->AllPrivs();
@@ -415,7 +505,7 @@ $spec",1);
                 }
                 $nginx=new NginxPrivs("sqlite:$groupid");
                 $NginxPrivsText=$nginx->NginxPrivs();
-                if(strlen($NginxPrivsText)>2){
+                if(strlen($NginxPrivsText)>0){
                     $zNginxPrivs="\n[NginxPrivs]=\"$NginxPrivsText\"";
                     $hash["ArticaGroupPrivileges"]=$hash["ArticaGroupPrivileges"].$zNginxPrivs;
                 }
@@ -423,8 +513,7 @@ $spec",1);
                 $this->ParsePrivileges($hash["ArticaGroupPrivileges"]);
 
             }
-            $CachePrivs=base64_encode(serialize($this->privs));
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,$CachePrivs);
+            $this->CachePrivileges("sqlite localadmins");
             return;
         }
         if(trim((string) $this->uid)==null){
@@ -432,10 +521,12 @@ $spec",1);
             return;
         }
         if($this->radiusid>0) {
+            $this->META_SOURCE="radius";
             $q = new mysql();
             $results = $q->QUERY_SQL("SELECT groupname FROM radusergroup WHERE username='$this->uid'", "artica_backup");
             while ($ligne = mysqli_fetch_assoc($results)) {
                 $groupname = $ligne["groupname"];
+                $this->MetaTenantGroup($groupname);
                 $this->VERBOSED("$this->radiusid:: Groupname = '$groupname'", __LINE__);
                 if ($groupname == "administrators") {
                     $this->AllPrivs();
@@ -479,27 +570,26 @@ $spec",1);
 
 
             }
-            $CachePrivs = base64_encode(serialize($this->privs));
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY, $CachePrivs);
+            $this->CachePrivileges("radius");
             return;
         }
         if($this->uid==-100){
             if($this->webpage=="fw.login.php"){$this->VERBOSED("$this->webpage: -->privileges_Manager -> uid=`$this->uid`",__CLASS__."/".__LINE__);}
             $this->privileges_Manager();
-            $CachePrivs=base64_encode(serialize($this->privs));
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,$CachePrivs);
+            $this->CachePrivileges("manager");
             return;
         }
 
 
         if($this->webpage=="fw.login.php"){$this->VERBOSED("$this->webpage: -->SearchPrivileges -> uid=`$this->uid/$this->eMailAddr`",__CLASS__."/".__LINE__);}
         $this->ldap=new clladp();
+        // Annuaire OpenLDAP par defaut ; privileges_groups_AD()/adagent() le remplacent par
+        // "ad" quand ce sont eux qui ont resolu les groupes.
+        $this->META_SOURCE="ldap";
         $this->privileges_groups();
-        $this->ParsePrivilegesOU();
         $this->GetContent();
         $this->SinglePrivileges();
-        $CachePrivs=base64_encode(serialize($this->privs));
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO($this->UID_KEY,$CachePrivs);
+        $this->CachePrivileges("openldap");
         $_SESSION[__CLASS__][$this->uid]["CONTENT"]=$this->content;
 
 
@@ -536,6 +626,7 @@ $spec",1);
         foreach ($Groups as $dnGroup=>$GroupName){
             $this->VERBOSED("START privileges_groups_adagent() step3 {$dnGroup}",__LINE__);
             $this->IsHarmpPrivs($dnGroup);
+            $this->SiemTenantsPrivs($dnGroup);
             $hash=$gp->LoadGroupDataByDN($GroupName);
             if(strlen($hash["ArticaGroupPrivileges"])>10){
                 $this->VERBOSED("START privileges_groups_adagent() step4",__LINE__);
@@ -549,6 +640,7 @@ $spec",1);
 
             }
         }
+        $this->META_SOURCE="ad";
         $GLOBALS["privileges_groups_AD$this->uid"]=true;
         return true;
     }
@@ -578,6 +670,7 @@ $spec",1);
 
         foreach ($Groups as $dnGroup=>$GroupName){
             $this->IsHarmpPrivs($dnGroup);
+            $this->SiemTenantsPrivs($dnGroup);
             $hash=$gp->LoadGroupDataByDN($dnGroup);
             if(strlen($hash["ArticaGroupPrivileges"])>10){
                 if($GLOBALS["VERBOSE"]){echo "[".__FUNCTION__."::".$this->mem_getusage()."] ArticaGroupPrivileges:". strlen($hash["ArticaGroupPrivileges"])." bytes for $GroupName -> `$dnGroup`<br>\n";}
@@ -589,6 +682,7 @@ $spec",1);
 
             }
         }
+        $this->META_SOURCE="ad";
         $GLOBALS["privileges_groups_AD$this->uid"]=true;
         return true;
     }
@@ -604,6 +698,7 @@ $spec",1);
         $f[]="[AsDansGuardianAdministrator]=\"yes\"";
         $f[]="[AsSystemWebMaster]=\"yes\"";
         $f[]="[AsArticaMetaAdmin]=\"yes\"";
+        $f[]="[AsMetaAdmin]=\"yes\"";
         $f[]="[AsSquidPersonalCategories]=\"yes\"";
         $f[]="[AsFirewallManager]=\"yes\"";
         $f[]="[AsProxyMonitor]=\"yes\"";
@@ -616,6 +711,117 @@ $spec",1);
     private function privileges_Manager():bool{
         $this->ParsePrivileges($this->default_all_rights());
         return true;
+    }
+
+    /**
+     * Cumule les tenants SIEM portes par un groupe (feature 021).
+     *
+     * Appelee pour CHAQUE groupe de l'utilisateur, aux memes endroits que IsHarmpPrivs(): un
+     * utilisateur membre de plusieurs groupes voit l'UNION de leurs tenants, jamais l'intersection
+     * ni le dernier resolu.
+     *
+     * Aucune erreur n'est remontee a l'appelant, volontairement: si la table est injoignable,
+     * l'ensemble reste vide et l'utilisateur se voit REFUSER l'acces au SIEM. Une lecture qui
+     * echoue ne doit jamais elargir un perimetre -- c'est la seule direction d'echec acceptable
+     * pour un mecanisme d'isolation.
+     */
+    private function SiemTenantsPrivs($GroupDN):bool{
+        // Chaque groupe vu ici l'est aussi pour la resolution des tenants Artica Meta, AVANT le
+        // test du module SIEM : les deux perimetres sont independants.
+        $this->MetaTenantGroup($GroupDN);
+        if(strlen($GroupDN)<2){return true;}
+        if($this->EnableArticaSiem===null){
+            $this->EnableArticaSiem=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaSiem"));
+        }
+        if($this->EnableArticaSiem==0){return false;}
+        if(!class_exists("postgres_sql")){include_once(dirname(__FILE__)."/class.postgres.inc");}
+        $q=new postgres_sql();
+        $dnsql=function_exists("pg_escape_string2")?pg_escape_string2((string)$GroupDN):str_replace("'","''",(string)$GroupDN);
+        $results=$q->QUERY_SQL("SELECT tenant_id FROM siem_tenants_privs WHERE dngroup='$dnsql'");
+        // La table n'existe pas tant qu'aucune attribution n'a ete faite: ce n'est pas une anomalie,
+        // c'est l'etat d'une appliance ou personne n'a encore ouvert l'onglet. On sort en silence.
+        if(!$q->ok){return false;}
+        while($ligne=pg_fetch_assoc($results)){
+            $tid=trim((string)$ligne["tenant_id"]);
+            if($tid===""){continue;}
+            $this->SIEM_TENANTS[$tid]=true;
+            $this->VERBOSED("SIEM tenant [$tid] from $GroupDN",__LINE__);
+        }
+        return true;
+    }
+
+    /**
+     * Depose le perimetre resolu sous la cle SIEM_TENANTS, juste avant la mise en cache.
+     *
+     * Forme: une chaine d'identifiants separes par des virgules, TRIEE. C'est exactement la forme
+     * de l'en-tete X-Tenant-Id, donc rien ne se reinterprete entre ici et l'API; et un ordre stable
+     * rend deux journaux comparables, ce qu'un ordre variable interdirait.
+     *
+     * UN PERIMETRE VIDE N'ECRIT RIEN. « Aucun tenant » et « pas encore resolu » sont indiscernables
+     * une fois serialises: c'est exactement la confusion qui a rendu l'incident du 18/08/2026
+     * opaque pendant un mois sur les privileges eux-memes. Absent vaut donc « aucun tenant », et la
+     * resolution complete reprendra la main au prochain passage.
+     */
+    private function FinalizeSiemTenants(){
+        if(count($this->SIEM_TENANTS)==0){return;}
+        $list=array_keys($this->SIEM_TENANTS);
+        sort($list,SORT_STRING);
+        $this->privs["SIEM_TENANTS"]=@implode(",",$list);
+    }
+
+    /** Retient une reference de groupe pour la resolution des tenants Artica Meta. */
+    private function MetaTenantGroup($GroupDN){
+        $ref=trim(strval($GroupDN));
+        if(strlen($ref)<1){return;}
+        $this->META_GROUPS[$ref]=true;
+    }
+
+    /**
+     * Depose les tenants Artica Meta resolus sous la cle META_TENANTS, juste avant la mise en
+     * cache (meme point unique que FinalizeSiemTenants()).
+     *
+     * Ne s'applique qu'a un compte AsMetaAdmin qui n'est PAS infogerant : AsArticaMetaAdmin (ou
+     * AsArticaAdministrator, qui l'implique dans usersMenus) donne le perimetre global et prime.
+     * Forme : ids tries, separes par des virgules. AUCUN tenant ou resolution en echec => la cle
+     * est ABSENTE : le compte ne recoit aucun tenant (echec ferme) et la console lui montre un
+     * parc vide (META_SCOPE_HEADERS() pose alors tenant:0). L'echec est journalise.
+     */
+    private function FinalizeMetaTenants(){
+        unset($this->privs["META_TENANTS"]);
+        unset($this->privs["META_TENANTS_GEN"]);
+        if(!is_array($this->privs)){return;}
+        if(!privileges_priv_yes($this->privs,"AsMetaAdmin")){return;}
+        if(privileges_meta_global($this->privs)){return;}
+        // Generation des proprietaires sous laquelle ce resultat vaut (meme en echec ou sans
+        // tenant) : meta_tenants_flush_privs_cache() le rend perime, cache et sessions compris.
+        $this->privs["META_TENANTS_GEN"]=meta_tenants_generation();
+        $source=$this->META_SOURCE;
+        $uid=$this->LOGIN_NAME;
+        if($source===""){
+            writelogs("[$uid] Artica Meta tenants: unknown authentication method, no tenant granted",
+                __FUNCTION__,__FILE__,__LINE__);
+            return;
+        }
+        $groups=array_keys($this->META_GROUPS);
+        if(is_array($this->ACTIVE_DIRECTORY_GROUPSDN)){
+            foreach($this->ACTIVE_DIRECTORY_GROUPSDN as $dn){$groups[]=strval($dn);}
+        }
+        if(!method_exists($GLOBALS["CLASS_SOCKETS"],"META_TENANTS_RESOLVE")){
+            writelogs("[$uid] Artica Meta tenants: resolver unavailable, no tenant granted",__FUNCTION__,__FILE__,__LINE__);
+            return;
+        }
+        $ids=$GLOBALS["CLASS_SOCKETS"]->META_TENANTS_RESOLVE($source,$uid,$groups);
+        if(!is_array($ids)){
+            writelogs("[$uid] Artica Meta tenants: resolution failed ($source), no tenant granted",__FUNCTION__,__FILE__,__LINE__);
+            return;
+        }
+        if(count($ids)==0){
+            writelogs("[$uid] Artica Meta tenants: no tenant owned ($source, ".count($groups)." group(s))",
+                __FUNCTION__,__FILE__,__LINE__);
+            return;
+        }
+        $this->privs["META_TENANTS"]=@implode(",",$ids);
+        writelogs("[$uid] Artica Meta tenants: ".$this->privs["META_TENANTS"]." ($source)",__FUNCTION__,__FILE__,__LINE__);
     }
 
     private function IsHarmpPrivs($GroupDN):bool{
@@ -688,6 +894,7 @@ $spec",1);
                 $gidnumber=$result[$i]["gidnumber"][0];
                 $this->VERBOSED("LDAP Group: $gidnumber");
                 $this->IsHarmpPrivs($gidnumber);
+                $this->SiemTenantsPrivs($gidnumber);
                 if($gidnumber==544){
                     include_once(dirname(__FILE__)."/class.translate.rights.inc");
                     $pp=new TranslateRights();
@@ -700,7 +907,7 @@ $spec",1);
                 $zNginxPrivs="";
                 $nginx=new NginxPrivs($gidnumber);
                 $NginxPrivsText=$nginx->NginxPrivs();
-                if(strlen($NginxPrivsText)>2){
+                if(strlen($NginxPrivsText)>0){
                     $zNginxPrivs="\n[NginxPrivs]=\"$NginxPrivsText\"";
                 }
 
@@ -766,17 +973,7 @@ $spec",1);
         return $time."s ".$mem.$unit;
     }
 
-    private function ParsePrivilegesOU(){
-        $ldap=new clladp();
-        $userdn=$ldap->_Get_dn_userid($this->uid);
-        if(!preg_match("#ou=users,ou=(.+?),dc#",$userdn,$re)){return ;}
-        $ou=$re[1];
-        $hash=$ldap->OUDatas($ou);
-        if($this->webpage=="logon.php"){$this->VERBOSED("[$this->uid] parsing $ou organization privileges ",__CLASS__.'/'.__LINE__);}
-        if(isset($hash["ArticaGroupPrivileges"])){
-            $privs=$this->ParsePrivileges($hash["ArticaGroupPrivileges"]);
-        }
-    }
+
 
     private function GetContent(): void{
         $f=array();
@@ -839,4 +1036,79 @@ $spec",1);
 
 
 
+}
+
+/**
+ * Artica Meta multi-tenant (spec 2026-11-13 5.2) : cles de session lues par le daemon
+ * (netagents/metascope ParseSession), deposees ici et nulle part ailleurs.
+ *
+ *   $_SESSION["META_SCOPE"]  = "global"                     infogerant (AsArticaMetaAdmin)
+ *                            = "tenants:<id>[,<id>...]"     compte AsMetaAdmin, ids tries
+ *                            (absente)                      aucun privilege Meta, ou aucun tenant
+ *   $_SESSION["META_TENANT"] = id actif (entier), toujours un element de la liste ; absente hors
+ *                              "tenants:". Un id actif deja choisi (selecteur des pages Meta) est
+ *                              garde tant qu'il reste dans la liste, sinon le premier.
+ *
+ * Appelee apres chaque depot de $_SESSION["privileges_array"] (SetUser, BuildSession, lien
+ * d'API) et par SetManager (super-administrateur : global).
+ */
+// privileges_priv_yes(), privileges_meta_global(), meta_tenants_*() : class.sockets.inc
+// (predicats partages avec sockets::META_SCOPE_HEADERS()).
+if(!function_exists("meta_scope_compute")){
+    /**
+     * Fonction pure : array("scope"=>"global"|"tenants:..."|"", "tenants"=>int[] tries).
+     * $superadmin : session ouverte par SetManager() (uid -100 ET ARTICA_SUPERADMIN).
+     */
+    function meta_scope_compute($privs,$superadmin=false):array{
+        if($superadmin || privileges_meta_global($privs)){
+            return array("scope"=>"global","tenants"=>array());
+        }
+        if(!privileges_priv_yes($privs,"AsMetaAdmin")){return array("scope"=>"","tenants"=>array());}
+        $ids=array();
+        $raw=isset($privs["META_TENANTS"])?strval($privs["META_TENANTS"]):"";
+        foreach(explode(",",$raw) as $p){
+            $p=trim($p);
+            if(!preg_match('/^[0-9]{1,18}$/',$p)){continue;}
+            $id=intval($p);
+            if($id>0){$ids[$id]=$id;}
+        }
+        if(count($ids)==0){return array("scope"=>"","tenants"=>array());}
+        $ids=array_values($ids);
+        sort($ids,SORT_NUMERIC);
+        return array("scope"=>"tenants:".implode(",",$ids),"tenants"=>$ids);
+    }
+}
+if(!function_exists("meta_scope_session_sync")){
+    function meta_scope_session_sync($privs=null){
+        if(!isset($_SESSION) || !is_array($_SESSION)){return;}
+        if($privs===null){
+            $privs=isset($_SESSION["privileges_array"])?$_SESSION["privileges_array"]:array();
+        }
+        $uid=isset($_SESSION["uid"])?strval($_SESSION["uid"]):"";
+        $superadmin=!empty($_SESSION["ARTICA_SUPERADMIN"]) && $uid==="-100";
+        $r=meta_scope_compute($privs,$superadmin);
+        if($r["scope"]===""){
+            unset($_SESSION["META_SCOPE"]);
+            unset($_SESSION["META_TENANT"]);
+            unset($_SESSION["META_GEN"]);
+            return;
+        }
+        $_SESSION["META_SCOPE"]=$r["scope"];
+        if($r["scope"]==="global"){
+            unset($_SESSION["META_TENANT"]);
+            unset($_SESSION["META_GEN"]);
+            return;
+        }
+        // META_GEN : generation des proprietaires sous laquelle CES tenants ont ete resolus
+        // (META_TENANTS_GEN du jeu de privileges). Le daemon refuse une session de tenant dont
+        // META_GEN differe de MetaTenantsGeneration (proprietaires changes depuis) ou manque
+        // (ruling R-F3) : une page PHP reconstruit alors le perimetre. Absente => "" (perime).
+        $_SESSION["META_GEN"]=isset($privs["META_TENANTS_GEN"])?trim(strval($privs["META_TENANTS_GEN"])):"";
+        $active=0;
+        if(isset($_SESSION["META_TENANT"]) && preg_match('/^[0-9]{1,18}$/',strval($_SESSION["META_TENANT"]))){
+            $active=intval($_SESSION["META_TENANT"]);
+        }
+        if(!in_array($active,$r["tenants"],true)){$active=$r["tenants"][0];}
+        $_SESSION["META_TENANT"]=intval($active);
+    }
 }

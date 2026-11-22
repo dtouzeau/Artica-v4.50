@@ -17,7 +17,6 @@ if(isset($_GET["status-start"])){status_start();exit;}
 if(isset($_POST["WazhuClientServer"])){Save();exit;}
 if(isset($_GET["wazhu-client-status"])){status_client();exit;}
 if(isset($_GET["reset-js"])){reset_js();exit;}
-if(isset($_POST["reset"])){reset_save();exit;}
 if(isset($_GET["wazhu-client-top"])){status_top();exit;}
 if(isset($_GET["events-start"])){events_start();exit;}
 if(isset($_GET["search"])){search_results();exit;}
@@ -58,10 +57,12 @@ function delete_manager_node_js():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $agent_id=$_GET["delete-manager-node"];
-    $infos=unserialize(base64_decode($_GET["infos"]));
-    $hostname=$infos[0];
-    $IP=$infos[1];
-    $id=$_GET["id"];
+    $infos=unserialize(base64_decode($_GET["infos"]),array("allowed_classes"=>false));
+    // Pentest 2026-11-04 : infos/id etaient recopies sans encodage dans la page (XSS).
+    if(!is_array($infos)){$infos=array();}
+    $hostname=req_html($infos[0] ?? "");
+    $IP=req_html($infos[1] ?? "");
+    $id=preg_replace('/[^A-Za-z0-9_-]/','',(string)($_GET["id"] ?? ""));
 
     $tpl->js_confirm_delete("{host} $hostname ($IP)",
         "delete-manager-node","$agent_id","$('#$id').remove()");
@@ -201,9 +202,7 @@ function search_results():bool{
 
 
     $MAIN       = $tpl->format_search_protocol($_GET["search"],false,false,false,true);
-    $line       = base64_encode(serialize($MAIN));
-    $tfile      = PROGRESS_DIR."/wazhu.client.syslog";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("wazhu.client.php?logs=$line");
+    $results    = $tpl->logfile_search("wazuh-client",$MAIN);
 
 
     $html[]="
@@ -220,9 +219,6 @@ function search_results():bool{
 ";
 
 
-    $data=@file_get_contents($tfile);
-    $results=@explode("\n",$data);
-    krsort($results);
 
     $STATICO["ERROR"]="<span class='label label-danger'>ERROR</span>";
     $STATICO["LOG"]=               "<span class='label'>INFO.</span>";

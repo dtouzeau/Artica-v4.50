@@ -1,11 +1,8 @@
-<dkim_about>DKIM is an email authentication framework that addresses the widespread issue of email forgery,
-using cryptography to verify the domain of the sender.[br]
-It allows email providers to validate an emailâ€™s originating domain, making use of blacklists and whitelists more effective.
-[br]It also makes phishing attacks easier to detect by helping to identify abusive domains.</dkim_about>
-<On-BadSignature>Signature fails to validate</On-BadSignature>
-<On-DNSError>Transient DNS error is encountered</On-DNSError>
-<On-InternalError>Internal error of some kind is encountered</On-InternalError>
-<On-NoSignature>Message arrives unsigned</On-NoSignature>
-<On-Security>Message arrives containing properties that may be a security concern</On-Security>
-<On-SignatureMissing>Message is unsigned from a domain which advertises a "we sign everything" policy</On-SignatureMissing>
-<select_action>Selects the action to be taken when</select_action>
+<dkim_about>DKIM es un mecanismo de autenticaci%C3%B3n de correo electr%C3%B3nico que aborda el problema generalizado de la falsificaci%C3%B3n de mensajes, utilizando criptograf%C3%ADa para verificar el dominio del remitente.[br] Permite a los proveedores de correo validar el dominio de origen de un email, haciendo m%C3¡s eficaz el uso de listas negras y listas blancas.[br]También facilita la detecci%C3%B3n de ataques de phishing al ayudar a identificar dominios abusivos.</dkim_about>
+<On-BadSignature>Podpis nie przechodzi walidacji</On-BadSignature>
+<On-DNSError>Napotkano przej&#347;ciowy b&#322;&#261;d DNS</On-DNSError>
+<On-InternalError>Napotkano wewn&#281;trzny b&#322;&#261;d jakiego&#347; rodzaju</On-InternalError>
+<On-NoSignature>Wiadomo&#347;&#263; przychodzi niepodpisana</On-NoSignature>
+<On-Security>Wiadomo&#347;&#263; zawiera w&#322;a&#347;ciwo&#347;ci, kt&#243;re mog&#261; stanowi&#263; problem bezpiecze&#324;stwa</On-Security>
+<On-SignatureMissing>Wiadomo&#347;&#263; jest niepodpisana z domeny, kt&#243;ra og&#322;asza polityk&#281; &quot;podpisujemy wszystko&quot;</On-SignatureMissing>
+<select_action>Wybiera akcj&#281; do wykonania, gdy</select_action>

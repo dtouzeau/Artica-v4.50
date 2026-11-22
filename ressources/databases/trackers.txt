@@ -1051,8 +1051,6 @@ aaacompany.net
 aacdn.nagich.com
 aadata.april-international.com
 aadata.april.fr
-aadcdn.msauth.net
-aadcdn.msftauth.net
 aam.gumtree.com.au
 aamc.tfaforms.net
 aamt.msnbc.com
@@ -2653,7 +2651,6 @@ api.interia.nsaudience.pl
 api.internal-repo.net.zooplus.de
 api.italki.com.cdn.cloudflare.net
 api.jcpclick.com
-api.lab.amplitude.com
 api.login.history.net.zooplus.de
 api.login.net.zooplus.de
 api.login.ops.net.zooplus.de
@@ -2725,7 +2722,6 @@ api0.weather.com
 api1.shoptimally.com
 api1.weather.com
 api2-mtc.gazzetta.it
-api2.amplitude.com
 api2.branch.io
 api2.endclothing.com.edgekey.net
 api2.gkksi.com
@@ -4772,9 +4768,6 @@ browse-api.jcpenney.com.edgekey.net
 browser-consent-front.coco.s-cloud.fi
 browser-consent.coco.s-cloud.fi
 browser-http-intake.logs.datadoghq.com
-browser.events.data.microsoft.com
-browser.events.data.msn.com
-browser.pipe.aria.microsoft.com
 browserbu.gs
 brra.com
 brycecanyonshuttle.com
@@ -6845,16 +6838,6 @@ client-registry.mutinycdn.com
 client-scripts.a8.styla.com
 client-servicesupportusps.panders.tv
 client-stark-prd.chewy.com.edgekey.net
-client.arestravel.com
-client.axept.io
-client.bannerspace.net
-client.contents-search-windows.com
-client.lifteragecheck.com
-client.perimeterx.net
-client.px-cloud.net
-client.r-ht-1.net.daraz.com
-client.spinasale.com
-client.uchat.io
 clientcdn.pushengage.com
 clientcontent.franklyinc.com
 clientes.telcohumanmedia.com
@@ -34210,10 +34193,6 @@ tgf.thegrowthfaculty.com.au
 tgmtav.slumberland.com
 tgna-ux-ctrl.service.signalr.net
 tgna-ux-east2.service.signalr.net
-th.bing.com
-th.cdngangsta.com
-th.thgim.com
-th1.testhound.com
 thanhnien.ced.jns.vncdn.vn
 thaqyl.mediamarkt.nl
 thd.mr-in.com
@@ -37305,7 +37284,6 @@ use-p3.lbryplayer.xyz
 use-p4.lbryplayer.xyz
 use.edgefonts.net
 use.rekko.com
-use.typekit.com
 use1-match.justpremium.com
 use2-cdn.vocohub.com
 useast.quantumdex.io

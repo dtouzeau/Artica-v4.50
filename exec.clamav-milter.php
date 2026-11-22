@@ -443,7 +443,7 @@ function build(){
 	
 	@file_put_contents("/etc/clamav/clamav-milter.conf", @implode("\n", $f));
 	if($GLOBALS["OUTPUT"]){echo "Starting......: ".date("H:i:s")." [INIT]: {$GLOBALS["TITLENAME"]} /etc/clamav/clamav-milter.conf done\n";}
-    shell_exec("/usr/sbin/artica-phpfpm-service -postfix-milters -instanceid 0");
+    shell_exec("/usr/local/sbin/artica-postfix -postfix-milters -instanceid 0");
 
 
 	

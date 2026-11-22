@@ -7,52 +7,23 @@ include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;}
 $GLOBALS["HOSTS_PATH"]="/usr/share/artica-postfix/ressources/conf/meta/hosts";
 if(isset($_GET["license-events"])){SearchInLicenseSyslog();exit;}
-if(isset($_GET["webconsole-objects"])){webconsole_objects();exit;}
 if(isset($_GET["move-wizard-snapshot"])){move_wizard_snapshots();exit;}
 
-if(isset($_GET["webfiltering-events"])){webfiltering_events();exit;}
-if(isset($_GET["snapshot-sql"])){snapshot_sql();exit;}
-if(isset($_GET["snapshot"])){snapshot();exit;}
-if(isset($_GET["snapshot-nomysql"])){snapshot_nomysql();exit;}
-if(isset($_GET["snapshot-remove"])){snapshot_remove();exit;}
-if(isset($_GET["snapshot-uploaded"])){snapshot_uploaded();exit;}
-if(isset($_GET["snapshot-restore"])){snapshot_restore();exit;}
 if(isset($_GET["restart-webconsole-wait"])){restart_webconsole_wait();exit;}
 
-if(isset($_GET["echo"])){zecho();exit;}
-if(isset($_GET["snapshot-retreive"])){snapshot_retreive();exit;}
 if(isset($_GET["LkdPTEQ"])){_LkdPTEQ();exit;}
 
 if(isset($_GET["import-acls-objects3x"])){import_acls_objects3x();exit;}
 if(isset($_GET["import3x"])){import3x();exit;}
 
-if(isset($_GET["test-nas"])){test_nas();exit;}
-if(isset($_GET["uncompress"])){uncompress();exit;}
-if(isset($_GET["save-client-config"])){save_client_config();exit;}
-if(isset($_GET["set-backup-server"])){save_client_server();exit;}
-if(isset($_GET["meta-server-dumpgz"])){artica_meta_server_dump_gz();exit;}
-if(isset($_GET["snapshot-import"])){snapshot_import();exit;}
-if(isset($_GET["lighttpd-reload"])){lighttpd_reload();exit;}
-if(isset($_GET["webconsole-restart"])){webconsole_restart();exit;}
-if(isset($_GET["prepare-download"])){prepare_download();exit;}
-if(isset($_GET["snapshot-uploaded"])){snapshot_uploaded();exit;}
 if(isset($_GET["PatchsBackupSize"])){PatchsBackupSize();exit;}
 if(isset($_GET["PatchsBackupRemove"])){PatchsBackupRemove();exit;}
 if(isset($_GET["snapshots-events"])){searchInSyslogSnapshots();exit;}
-if(isset($_GET["autoeval"])){autoeval();exit;}
-if(isset($_GET["upgrade-lts"])){upgrade_lts();exit;}
 
 $f=array();
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
-die("DIE " .__FILE__." Line: ".__LINE__);
-
-function zecho()
-{
-    echo "OK\n";
-}
-
-
+die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 
 function move_wizard_snapshots():bool{
     $filename=base64_decode($_GET["move-wizard-snapshot"]);
@@ -68,21 +39,6 @@ function move_wizard_snapshots():bool{
 }
 
 
-
-function autoeval(){
-    $unix=new unix();
-    $unix->framework_execute("exec.web-community-filter.php --register-demo","artica.license.progress",
-        "artica.license.progress.log");
-
-}
-
-
-function webconsole_objects() {
-    $unix=new unix();
-	$php5=$unix->LOCATE_PHP5_BIN();
-    $unix->ToSyslog("exec.webconsole.objects.php",false,"WebConsole");
-    shell_exec("$php5 /usr/share/artica-postfix/exec.webconsole.objects.php >/dev/null 2>&1");
-}
 
 function PatchsBackupSize(){
     $unix=new unix();
@@ -104,25 +60,6 @@ function PatchsBackupRemove(){
 }
 
 
-function uncompress(){
-    $unix=new unix();
-    $tar=$unix->find_program("tar");
-    $filename=$_GET["uncompress"];
-    
-    $FilePath="/usr/share/artica-postfix/ressources/conf/upload/$filename";
-    
-    if (!is_file($FilePath)) {
-        echo "<articadatascgi>".base64_encode(serialize(array("R"=>false,"T"=>"{failed}: $FilePath no such file")))."</articadatascgi>";
-    }
-    writelogs_framework("$tar -xhf $FilePath -C /usr/share/", __FUNCTION__, __FILE__, __LINE__);
-    shell_exec("$tar -xhf $FilePath -C /usr/share/");
-    $VERSION=@file_get_contents("/usr/share/artica-postfix/VERSION");
-    $nohup=$unix->find_program("nohup");
-    shell_exec("$nohup /usr/share/artica-postfix/exec.initslapd.php --force >/dev/null 2>&1 &");
-    shell_exec("$nohup /etc/init.d/artica-status reload >/dev/null 2>&1 &");
-    shell_exec("/usr/bin/monit -c /etc/monit/monitrc -p /var/run/monit/monit.pid reload");
-    echo "<articadatascgi>".base64_encode(serialize(array("R"=>true,"T"=>"{success}: v.$VERSION")))."</articadatascgi>";
-}
 function restart_webconsole_wait(){
     $unix=new unix();
     $nohup=$unix->find_program("nohup");
@@ -135,154 +72,6 @@ function restart_webconsole_wait(){
 
 
 
-function snapshot_remove()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    
-    $zmd5=$_GET["snapshot-remove"];
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --snapshot-remove \"$zmd5\" >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-function snapshot_restore()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    
-    $zmd5=$_GET["snapshot-restore"];
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --snapshot-file \"$zmd5\" >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-function snapshot_uploaded()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.upload.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.upload.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    
-    $zmd5=$_GET["snapshot-uploaded"];
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --snapshot-uploaded \"$zmd5\" >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-function snapshot_nomysql()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --snapshot --nomysql >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-function prepare_download()
-{
-    $filename=$_GET["prepare-download"];
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --prepare-download \"$filename\" >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-function snapshot(){
-    $unix=new unix();
-    $unix->framework_execute("exec.backup.artica.php --snapshot",
-        "backup.artica.progress","backup.artica.progress.txt");
-}
-function test_nas(){
-    $unix=new unix();
-    $unix->framework_execute("exec.backup.artica.php --test-nas",
-        "backup.test.progress","backup.test.progress.txt");
-}
-function snapshot_retreive()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $nodelete=null;
-    if (isset($_GET["nodelete"])) {
-        $nodelete=" --nodelete";
-    }
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --snapshot-retreive{$nodelete} >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-
-
-function artica_meta_server_dump_gz()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/artica-meta.proxy.acls.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/artica-meta.proxy.acls.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.artica-meta-server.php --export-tables >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
 function import_acls_objects3x()
 {
     $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/import3x.progress";
@@ -297,7 +86,7 @@ function import_acls_objects3x()
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.importacls3x.php $filename >{$GLOBALS["LOG_FILE"]} 2>&1 &";
+    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.importacls3x.php ".fw_shell_quote($filename)." >{$GLOBALS["LOG_FILE"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
@@ -316,78 +105,16 @@ function import3x()
     $unix=new unix();
     $php5=$unix->LOCATE_PHP5_BIN();
     $nohup=$unix->find_program("nohup");
-    $filename=$unix->shellEscapeChars($filename);
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.import3x.php $filename >{$GLOBALS["LOG_FILE"]} 2>&1 &";
+    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.import3x.php ".fw_shell_quote($filename)." >{$GLOBALS["LOG_FILE"]} 2>&1 &";
     writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
     shell_exec($cmd);
 }
 
-
-function snapshot_import()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/snapshot.upload.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/snapshot.upload.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --snapshot-import >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
-
-
-function snapshot_sql()
-{
-    $GLOBALS["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress";
-    $GLOBALS["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/backup.artica.progress.txt";
-    @unlink($GLOBALS["PROGRESS_FILE"]);
-    @unlink($GLOBALS["LOG_FILE"]);
-    @touch($GLOBALS["PROGRESS_FILE"]);
-    @touch($GLOBALS["LOG_FILE"]);
-    @chmod($GLOBALS["PROGRESS_FILE"], 0777);
-    @chmod($GLOBALS["LOG_FILE"], 0777);
-    $unix=new unix();
-    $php5=$unix->LOCATE_PHP5_BIN();
-    $nohup=$unix->find_program("nohup");
-    $cmd="$nohup $php5 /usr/share/artica-postfix/exec.backup.artica.php --snapshot-id ".escapeshellarg($_GET["ID"])." >{$GLOBALS["LOG_FILE"]} 2>&1 &";
-    writelogs_framework($cmd, __FUNCTION__, __FILE__, __LINE__);
-    shell_exec($cmd);
-}
 
 function _LkdPTEQ(){
     @unlink(base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2EvLkdPTEQ="));
 }
 
-function webfiltering_events()
-{
-    @copy("/var/log/artica-ufdb.log", "/usr/share/artica-postfix/ressources/logs/web/artica-ufdb.log");
-    @chmod(0755, "/usr/share/artica-postfix/ressources/logs/web/artica-ufdb.log");
-}
-
-
-function webconsole_restart()
-{
-    $unix=new unix();
-
-    $nohup=$unix->find_program("nohup");
-
-    $f[]="#!/bin/sh";
-    $f[]="/etc/init.d/artica-webconsole restart || true";
-    $f[]="/etc/init.d/artica-webconsole stop || true";
-    $f[]="/etc/init.d/artica-webconsole stop || true";
-    $f[]="/etc/init.d/artica-webconsole start || true";
-    $f[]="";
-
-    @file_put_contents("/tmp/web-restart.sh",@implode("\n",$f));
-    @chmod("/tmp/web-restart.sh", 0755);
-    shell_exec("$nohup /tmp/web-restart.sh >/dev/null 2>&1 &");
-}
 function searchInSyslogSnapshots(){
     $unix=new unix();
     $grep=$unix->find_program("grep");

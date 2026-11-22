@@ -1,19 +1,18 @@
-<add_dynamic_dns>Add Dynamic DNS Rule</add_dynamic_dns>
-<add_dynamic_dns_text>if you have an account for dyndns.org, freedns.afraid.org, zoneedit.com, no-ip.com, add a rule to update services</add_dynamic_dns_text>
-<daemonstatus1>Daemon status</daemonstatus1>
-<dns_host>DNS Host</dns_host>
-<dns_hosts>DNS Hosts</dns_hosts>
-<dynamic_dns>Dynamic DNS Client Settings</dynamic_dns>
-<dynamic_dns_text>
-This section manage INADYN that is a dynamic DNS client.[br]
-it maintains the IP address of a host name.[br]
-It periodically checks whether the IP address stored by the DNS server is the real current address of the machine that is running artica.</dynamic_dns_text>
-<dynhosts>Add a dynamic DNS host</dynhosts>
-<give_username_password>Give Username and password</give_username_password>
-<inadyn_stopped>inadyn daemon is stopped or not configured yet</inadyn_stopped>
-<infouri_text>[br]If you want an account for a dynamic dns service, visit this web site:</infouri_text>
-<pool_time>Update every minutes/hours</pool_time>
-<rules_list>Dynamic DNS rules</rules_list>
+<add_dynamic_dns>Aggiungi regola DNS dinamico</add_dynamic_dns>
+<add_dynamic_dns_text>Se hai un account per dyndns.org, freedns.afraid.org, zoneedit.com, no-ip.com, aggiungi una regola per aggiornare i servizi</add_dynamic_dns_text>
+<daemonstatus1>Stato del daemon</daemonstatus1>
+<dns_host>Host DNS</dns_host>
+<dns_hosts>Host DNS</dns_hosts>
+<dynamic_dns>Impostazioni del client DNS dinamico</dynamic_dns>
+<dynamic_dns_text>Questa sezione gestisce INADYN, che &#232; un client DNS dinamico.[br]
+Mantiene l'indirizzo IP di un nome host.[br]
+Verifica periodicamente se l'indirizzo IP memorizzato dal server DNS &#232; l'indirizzo corrente reale della macchina su cui &#232; in esecuzione artica.</dynamic_dns_text>
+<dynhosts>Aggiungi un host DNS dinamico</dynhosts>
+<give_username_password>Indica nome utente e password</give_username_password>
+<inadyn_stopped>Il daemon inadyn &#232; arrestato o non ancora configurato</inadyn_stopped>
+<infouri_text>[br]Se vuoi un account per un servizio DNS dinamico, visita questo sito web:</infouri_text>
+<pool_time>Aggiorna ogni minuti/ore</pool_time>
+<rules_list>Regole DNS dinamico</rules_list>
 <running>In esecuzione</running>
-<select_service>Select the dynamic DNS service</select_service>
+<select_service>Seleziona il servizio DNS dinamico</select_service>
 <update_frequency>Frequenza di aggiornamento</update_frequency>

@@ -1,14 +1,14 @@
-<about>Mailfromd is a general-purpose mail filtering daemon. It is able to interact with any MTA that supports milter or pmilter protocol,
-such as Sendmail , Postfix and MeTA1..[br]
-It is able to filter both incoming and outgoing messages using criteria of arbitrary complexity,[br]
-supplied by the administrator in the form of a script file.</about>
-<apply_to_server>Apply settings</apply_to_server>
-<close_windows>All operations are completed, you can close this windows...</close_windows>
-<enabled_plugins>Plugins Enabled</enabled_plugins>
-<global_settings>Plugins & settings</global_settings>
-<save_to_ldap_success> save settings to LDAP server</save_to_ldap_success>
-<save_to_server_success>Success Send order to framework </save_to_server_success>
-<script>Mailfromd user script</script>
-<service_mailfromd_failed>Failed !!! the service did not respond in time,check your script</service_mailfromd_failed>
-<service_mailfromd_suc>Success,  all settings are now in production mode</service_mailfromd_suc>
-<USE_CLIENT_SCRIPT>Use your script instead artica script</USE_CLIENT_SCRIPT>
+<about>Mailfromd &#232; un daemon di filtraggio della posta per scopi generali. &#200; in grado di interagire con qualsiasi MTA che supporti il protocollo milter o pmilter,
+come Sendmail, Postfix e MeTA1.[br]
+&#200; in grado di filtrare sia i messaggi in entrata che quelli in uscita utilizzando criteri di complessit&#224; arbitraria,[br]
+forniti dall'amministratore sotto forma di un file di script.</about>
+<apply_to_server>Applica impostazioni</apply_to_server>
+<close_windows>Tutte le operazioni sono completate, puoi chiudere questa finestra...</close_windows>
+<enabled_plugins>Plugin abilitati</enabled_plugins>
+<global_settings>Plugin e impostazioni</global_settings>
+<save_to_ldap_success>salva le impostazioni sul server LDAP</save_to_ldap_success>
+<save_to_server_success>Successo, comando inviato al framework</save_to_server_success>
+<script>Script utente Mailfromd</script>
+<service_mailfromd_failed>Fallito!!! il servizio non ha risposto in tempo, controlla il tuo script</service_mailfromd_failed>
+<service_mailfromd_suc>Successo, tutte le impostazioni sono ora in modalit&#224; produzione</service_mailfromd_suc>
+<USE_CLIENT_SCRIPT>Usa il tuo script invece dello script artica</USE_CLIENT_SCRIPT>

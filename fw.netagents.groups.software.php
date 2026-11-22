@@ -4,6 +4,8 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 include_once dirname(__FILE__) . '/ressources/class.sockets.inc';
 include_once(dirname(__FILE__)."/ressources/class.netagent.artica.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if (isset($_GET["table-start"])) {table_start();exit;}
 if (isset($_GET["table-search"])) {table_search();exit;}
@@ -24,7 +26,7 @@ function key_search_js(): bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $users = new usersMenus();
-    if (!$users->AsArticaMetaAdmin) {
+    if (!meta_can_push($users)) {
         return $tpl->js_error("{no_privileges}");
     }
     $id = intval($_GET["id"]);
@@ -39,7 +41,7 @@ function js(): bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $users = new usersMenus();
-    if (!$users->AsArticaMetaAdmin) {
+    if (!meta_can_push($users)) {
         return $tpl->js_error("{no_privileges}");
     }
     $id = intval($_GET["id"]);
@@ -80,7 +82,7 @@ function table_search():bool{
         $results["keys"]=array();
     }
 
-    $html[]="<table id='table-softs-$id' class='table table-stripped' data-page-size='100' data-paging='true'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=false style='width:1%'>&nbsp;</th>";
@@ -100,7 +102,7 @@ function table_search():bool{
                 continue;
             }
         }
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $softname=$tpl->td_href($softname,"","Loadjs('$page?key-search=$mainkey&id=$id&deb=$debians_text')");
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td style='width:1%'><i class='$ico'></i></td>";
@@ -111,8 +113,8 @@ function table_search():bool{
     }
     $html[]="</tbody>";
     $html[]="<tfoot><tr><td colspan='2'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    $html[]="</table></div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$html));
     return true;
 }
 function key_search_table():bool{
@@ -133,7 +135,7 @@ function key_search_table():bool{
     // Handle both single-key (files array) and multi-key (softwares object) responses
 
     $html=array();
-    $html[]="<table class='table table-stripped' data-page-size='100' data-paging='true'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true data-type='text' colspan='2'>{version}</th>";
@@ -162,7 +164,7 @@ function key_search_table():bool{
             }
         }
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
 
         $sizeHuman=FormatBytes($size/1024);
         $dateFormatted="";
@@ -174,7 +176,7 @@ function key_search_table():bool{
         $fEnc=urlencode($filename);
         $lpEnc=urlencode($localPath);
         $pushJs="Loadjs('$page?push-js=yes&id=$id&soft=$soft&debver=$debian_version&f=$fEnc&lp=$lpEnc')";
-        $btn=$tpl->button_inline("{upgrade}",$pushJs,ico_cd,"AsArticaMetaAdmin",0,"btn-primary");
+        $btn=$tpl->button_inline("{upgrade}",$pushJs,ico_cd,"AsMetaAdmin",0,"btn-primary");
 
         $html[]="<tr class='$TRCLASS'>";
         $html[]="<td style='width:1%' class='center' nowrap><i class='$ico'></i></td>";
@@ -194,7 +196,7 @@ function key_search_table():bool{
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
     $html[]="<script>";
     $html[]="NoSpinner();";
     $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
@@ -237,6 +239,7 @@ function push_js(){
 function push_install(){
     header("content-type: application/x-javascript");
     $tpl=new template_admin();
+    if(!meta_can_push()){$tpl->js_error("{ERROR_NO_PRIVS}");return false;}
     $id=intval($_POST["id"]);
     $f=$_POST["f"];
     $lp=$_POST["lp"];

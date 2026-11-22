@@ -2,6 +2,7 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
     $GLOBALS["DEBUG_PRIVS"]=true;
@@ -9,7 +10,7 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 if(isset($_GET["form-change-pass-sqlite-popup"])){change_password_slite_popup();exit;}
 if(isset($_GET["form-change-pass-sqlite"])){change_password_slite_js();exit;}
 if(isset($_POST["formchangepasssqlite"])){change_password_slite_perform();exit;}
-if(isset($_POST["change_admin"])){change_manager_perform();exit;}
+if(isset($_POST["change_admin"])){if(!account_is_manager()){account_refuse_post("change_admin");exit;}change_manager_perform();exit;}
 if(isset($_GET["apilink-js"])){API_LINK_JS();exit;}
 if(isset($_GET["apilink-popup"])){API_LINK_POPUP();exit;}
 if(isset($_POST["apilink"])){API_LINK_SAVE();exit;}
@@ -19,14 +20,49 @@ if(isset($_POST["lang2"])){change_language_perform();exit;}
 if(isset($_GET["change-language-js"])){change_language_js();exit;}
 if(isset($_GET["change-language-popup"])){change_language_form();exit;}
 if(isset($_GET["after-language"])){change_language_after();exit;}
-if(isset($_GET["change-manager-popup"])){change_manager_popup();exit;}
-if(isset($_GET["change-manager-js"])){change_manager_js();exit;}
+if(isset($_GET["change-manager-popup"])){if(!account_is_manager()){account_refuse_popup();exit;}change_manager_popup();exit;}
+if(isset($_GET["change-manager-js"])){if(!account_is_manager()){account_refuse_js();exit;}change_manager_js();exit;}
 if(isset($_GET["client-certificate"])){client_certificate();exit;}
 if(isset($_GET["pfx-manager"])){client_certificate_download();exit;}
+if(isset($_GET["manager-password-js"])){if(!account_is_manager()){account_refuse_js();exit;}manager_password_js();exit;}
+if(isset($_GET["manager-password-popup"])){if(!account_is_manager()){account_refuse_popup();exit;}manager_password_popup();exit;}
+if(isset($_POST["MANAGERPASS"])){if(!account_is_manager()){account_refuse_post("MANAGERPASS");exit;}manager_password_save();exit;}
 if(isset($_GET["form-js"])){form_js();exit;}
 if(isset($_GET["form-popup"])){form_popup();exit;}
 page();
 
+// Les identifiants du super-administrateur (Manager) ne se changent que depuis la
+// session du Manager lui-meme (uid -100), exactement ce que l'interface affichait
+// deja (page : `if($_SESSION["uid"]==-100)`). Jusqu'au 2026-10-07 les points
+// d'entree ne le verifiaient pas : n'importe quel compte connecte -- un
+// administrateur DNS delegue par exemple -- pouvait POSTer change_admin ou
+// MANAGERPASS et prendre le compte Manager.
+function account_is_manager():bool{
+    return isset($_SESSION["uid"]) && (string)$_SESSION["uid"]==="-100";
+}
+function account_refuse_track($what){
+    $uid=isset($_SESSION["uid"])?preg_replace('/[^A-Za-z0-9_.@\-]/','',(string)$_SESSION["uid"]):"-";
+    $msg="Web console: $what on the super-administrator account refused for $uid (not the Manager session)";
+    error_log("Artica account guard: $msg");
+    if(function_exists("admin_tracks")){@admin_tracks($msg);}
+}
+function account_refuse_post($field){
+    account_refuse_track("POST $field");
+    http_response_code(403);
+    $tpl=new template_admin();
+    echo $tpl->post_error("{ERROR_NO_PRIVS2}");
+}
+function account_refuse_js(){
+    account_refuse_track("dialog");
+    header("content-type: application/x-javascript");
+    $tpl=new template_admin();
+    $tpl->js_error("{ERROR_NO_PRIVS2}");
+}
+function account_refuse_popup(){
+    account_refuse_track("form");
+    $tpl=new template_admin();
+    echo $tpl->_ENGINE_parse_body($tpl->div_error("{ERROR_NO_PRIVS2}"));
+}
 
 function API_LINK_JS():bool{
 	$page=CurrentPageName();
@@ -74,17 +110,41 @@ function change_password_slite_perform():bool{
         echo $tpl->post_error("Wrong username");
         return false;
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
-    $sql="UPDATE `users` SET passmd5='$passmd5' WHERE ID='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){$tpl=new template_admin();
-        echo $tpl->post_error($q->mysql_error);
+    $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/localadmins/users/$ID/password",array("passmd5"=>$passmd5))),true);
+    if(!is_array($resp) || empty($resp["success"])){
+        $err=is_array($resp)?strval($resp["error"] ?? "unknown error"):"daemon unreachable";
+        echo $tpl->post_error($err);
         return false;
     }
     return admin_tracks("Change user password");
 
 }
+function manager_password_save():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $ldap=new clladp();
+    $change_admin=$ldap->ldap_admin;
+    $change_password=trim($_POST["MANAGERPASS"]);
+    if($change_password==$ldap->ldap_password){
+        return admin_tracks("Super-admin credentials posted without changes");
 
+    }
+    $password_len=strlen($change_password);
+    if($password_len< 3){
+        return admin_tracks("Super-admin credentials posted without changes ( $password_len < 3 )");
+    }
+    // ChangeLDPSSET est ecrit par le daemon (RestSystemManagerPassword) a partir des
+    // deux seules valeurs utiles ; la page y ajoutait tout le $_POST.
+    $data=urlencode(base64_encode("$change_admin|||$change_password"));
+
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/system/password/manager/$data"));
+    if(!$json->Status){
+        echo $tpl->post_error($json->Error);
+        return false;
+    }
+    return admin_tracks("SuperAdmin credentials as been changed $change_admin with a password of $password_len characters");
+
+}
 function change_manager_perform():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
@@ -104,10 +164,7 @@ function change_manager_perform():bool{
         }
     }
     $password_len=strlen($change_password);
-    if(!is_dir("/usr/share/artica-postfix/ressources/conf/upload")){
-        @mkdir("/usr/share/artica-postfix/ressources/conf/upload",0755,true);
-    }
-    @file_put_contents("/usr/share/artica-postfix/ressources/conf/upload/ChangeLDPSSET", base64_encode(serialize($_POST)));
+    // ChangeLDPSSET est ecrit par le daemon (RestSystemManagerPassword).
 
 
     $data=urlencode(base64_encode("{$_POST["change_admin"]}|||{$_POST["change_password"]}"));
@@ -145,11 +202,13 @@ function change_manager_popup():bool{
 
 function API_LINK_POPUP():bool{
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/admins.db");
 	$tpl=new template_admin();
-	$ligne=$q->mysqli_fetch_array("SELECT ID,zmd5 FROM `APIs` WHERE userid='{$_SESSION["uid"]}'");
-	$ID=intval($ligne["ID"]);
-	$zmd5=$ligne["zmd5"];
+	$resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/localadmins/apis?userid=".urlencode(strval($_SESSION["uid"])))),true);
+	$ID=0;$zmd5=null;
+	if(is_array($resp) && !empty($resp["success"]) && is_array($resp["data"] ?? null)){
+		$ID=intval($resp["data"]["id"] ?? 0);
+		$zmd5=strval($resp["data"]["zmd5"] ?? "");
+	}
 	$button="{create_auth_link}";
 	$HTTP_HOST=$_SERVER["HTTP_HOST"];
     $form=array();
@@ -168,20 +227,22 @@ function API_LINK_POPUP():bool{
 }
 
 function API_LINK_SAVE(){
-	$q=new lib_sqlite("/home/artica/SQLITE/admins.db");
 	$FULLCONTENT=base64_encode(serialize($_SESSION));
-	$uid=$_SESSION["uid"];
-	$md5=md5(time().$FULLCONTENT);
-	$ID=$_POST["apilink"];
-	
-	if($ID==0){
-		$sql="INSERT INTO APIs (zmd5,userid,content) VALUES ('$md5','$uid','$FULLCONTENT')";
-	}else{
-		$sql="UPDATE APIs SET content='$FULLCONTENT',zmd5='$md5' WHERE ID=$ID";
+	$uid=strval($_SESSION["uid"]);
+	// L'identifiant du lien n'est PAS celui que poste le navigateur : le daemon met a
+	// jour par ID sans verifier le proprietaire (UPDATE ... WHERE ID=?), un compte
+	// pouvait donc ecraser le lien d'un autre. On relit celui du compte de la session.
+	$ID=0;
+	$cur=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/localadmins/apis?userid=".urlencode($uid))),true);
+	if(is_array($cur) && !empty($cur["success"]) && is_array($cur["data"] ?? null)){
+		$ID=intval($cur["data"]["id"] ?? 0);
 	}
-	
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error;}
+
+	$resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/localadmins/apis",
+		array("id"=>$ID,"userid"=>$uid,"content"=>$FULLCONTENT))),true);
+	if(!is_array($resp) || empty($resp["success"])){
+		echo is_array($resp)?strval($resp["error"] ?? "unknown error"):"daemon unreachable";
+	}
 	
 	
 	
@@ -263,6 +324,14 @@ function change_language_perform(){
     $tpl        = new template_admin();
     $tpl->CLEAN_POST();
     $_SESSION["detected_lang"]=$_POST["lang2"];
+    // FixedLanguage est un reglage GLOBAL (langue imposee a toute la console) : administrateur
+    // systeme seulement, comme la case du formulaire. La langue personnelle (session, cookie)
+    // reste modifiable par tout compte.
+    $users=new usersMenus();
+    if(isset($_POST["LockLang"]) && !$users->AsSystemAdministrator){
+        admin_tracks("Refused: lock the Web console language (not a system administrator)");
+        unset($_POST["LockLang"]);
+    }
     if(isset($_POST["LockLang"])){
         $fix=intval($_POST["LockLang"]);
         if($fix==0){
@@ -295,8 +364,20 @@ function form_js():bool{
     $tpl=new template_admin();
     return $tpl->js_dialog3("{parameters}", "$page?form-popup=yes");
 }
+function manager_password_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog3("{SuperAdmin}: {password}", "$page?manager-password-popup=yes",500);
+}
+function manager_password_popup():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $form[]=$tpl->field_password2("MANAGERPASS","{password}","");
+    echo $tpl->form_outside(null, $form,null,"{apply}","dialogInstance3.close();");
+    return true;
+}
 
-function form_popup(){
+function form_popup():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $HTMLTITLE=null;
@@ -326,276 +407,395 @@ function form_popup(){
     $field[]=$tpl->field_array_hash($fonts, "userfont", "{font_family}", $userfont);
     $field[]=$tpl->field_checkbox("StandardDropDown","{standard_dropdown}",$StandardDropDown);
     $field[]=$tpl->field_text("HTMLTITLE","{title_pages}",$HTMLTITLE);
+    $zooms=array();
+    foreach(console_zoom_levels() as $z){$zooms[$z]=$z==0?"{automatic}":"$z %";}
+    $field[]=$tpl->field_array_hash($zooms,"ConsoleZoom","{console_zoom}",console_zoom_current(),false,"{console_zoom_explain}",null,false);
 
     $tpl->form_add_button("Auth Link", "Loadjs('$page?apilink-js=yes')");
-    echo $tpl->form_outside(null, @implode("\n", $field),null,"{apply}","Loadjs('$page?after-form=yes')");
-}
-
-function privileges():bool{
-	$tpl=new template_admin();
-	$page=CurrentPageName();
-    $HTMLTITLE=null;
-	$ht=array();
-	include_once(dirname(__FILE__)."/ressources/class.translate.rights.inc");
-    if(!isset($_COOKIE["userfont"])){$_COOKIE["userfont"]="lato";}
-    if(!isset($_COOKIE["StandardDropDown"])){$_COOKIE["StandardDropDown"]=0;}
-
-	if(isset( $_SESSION["CLASS_TRANSLATE_RIGHTS"]["FINAL_PRIVS"][$_SESSION["uid"]] )){
-		unset($_SESSION["CLASS_TRANSLATE_RIGHTS"]["FINAL_PRIVS"][$_SESSION["uid"]]);
-	}
-
-
-	$userfont=$_COOKIE["userfont"];
-	$StandardDropDown=intval($_COOKIE["StandardDropDown"]);
-	if(isset($_COOKIE["StandardDropDown"])){$StandardDropDown=intval($_COOKIE["StandardDropDown"]);}
-	if(isset($_COOKIE["HTMLTITLE"])){$HTMLTITLE=$_COOKIE["HTMLTITLE"];}
-	if($HTMLTITLE==null){$HTMLTITLE="%s (%v)";}
-	
-	if($userfont==null){$userfont="lato";}
-	$fonts["ailerons"]="Ailerons";
-	$fonts["bariol"]="Bariol";
-	$fonts["lato"]="Lato";
-	$fonts["Roboto"]="Roboto";
-	$fonts["standard"]="Standard";
-
-    $username=$_SESSION["uid"];
-    if($username=="-100"){
-        $username="Manager";
-    }
-
-    $tpl->table_form_field_js("Loadjs('$page?form-js=yes')");
-    $tpl->table_form_field_text("{member}",$username,ico_user);
-    $StandardPass=true;
-    if(isset($_SESSION["SQLITE_ID"])) {
-        if ($_SESSION["SQLITE_ID"] > 0) {
-            $tpl->table_form_field_js("Loadjs('$page?form-change-pass-sqlite=yes')");
-            $tpl->table_form_field_text("{password}", "* * * *", ico_field);
-            $StandardPass=false;
-        }
-    }
-    if($StandardPass) {
-        $tpl->table_form_field_js("Loadjs('$page?form-js=yes')");
-        $tpl->table_form_field_text("{password}", "* * * *", ico_field);
-    }
-    $tpl->table_form_section("{skin}");
-    $tpl->table_form_field_text("{font_family}",$fonts[$userfont],ico_field);
-    $tpl->table_form_field_bool("{standard_dropdown}",$StandardDropDown,ico_field);
-    $tpl->table_form_field_text("{title_pages}",$HTMLTITLE,ico_html);
-    $tpl->table_form_field_js("");
-	$cr=new TranslateRights(null, $_SESSION["uid"]);
-	$ActiveDirectoryIndex="Nan";
-	$r=$cr->GetPrivsArray();
-
-	$users=new usersMenus();
-
-	$ldap=new clladp();
-	$IsKerbAuth=$ldap->IsKerbAuth();
-
-	
-
-	if(isset($_SESSION["ACTIVE_DIRECTORY_INDEX"])){
-		if(is_numeric($_SESSION["ACTIVE_DIRECTORY_INDEX"])){
-			$ActiveDirectoryIndex=$_SESSION["ACTIVE_DIRECTORY_INDEX"];
-		}
-	}
-    VERBOSE("$page: ActiveDirectoryIndex=$ActiveDirectoryIndex", __LINE__);
-	if(is_numeric($ActiveDirectoryIndex)){
-		$IsKerbAuth=true;
-		$ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
-		$HASH=$ActiveDirectoryConnections[$ActiveDirectoryIndex];
-	}
-
-	$CountDePrivs=count($r);
-    $cprivs=0;
-
-    if(count($users->NGINX_SERVICES)>0){
-        $tpl->table_form_section("{myWebServices}","{myWebServices_text}");
-        foreach ($users->NGINX_SERVICES as $ServicesID=>$none){
-            if(!is_numeric($ServicesID)){continue;}
-            $ServiceName=get_nginx_servicename($ServicesID);
-            if(strlen($ServiceName)>3) {
-                $cprivs++;
-                $tpl->table_form_field_text("{webservice}",$ServiceName, ico_earth);
-            }
-        }
-
-    }
-    if(count($users->SIMPLE_ACLS)>0){
-        $tpl->table_form_section("{access_rules}","");
-        $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-        foreach ($users->SIMPLE_ACLS as $aclid=>$none){
-            $ligne      = $q->mysqli_fetch_array("SELECT ID,aclname FROM webfilters_simpleacls WHERE ID='$aclid'");
-            if(!isset($ligne["aclname"])){
-                continue;
-            }
-            $aclname=$ligne["aclname"];
-            $tpl->table_form_field_js("Loadjs('fw.proxy.rules.php?rule-settings=$aclid')");
-            $cprivs++;
-            $tpl->table_form_field_text("{rule}",$aclname, ico_shield);
-        }
-    }
-
-
-    $tpl->table_form_field_js("");
-    $tpl->table_form_section("{my_privileges}");
-    $dPrivs=0;
-
-    if($users->AsHamrpAdmin){
-        $cprivs++;
-        $dPrivs++;
-        $tpl->table_form_field_bool("{APP_HAMRP}",1,ico_check);
-    }
-
-
-    foreach ($r as $key=>$val){
-		if($GLOBALS["VERBOSE"]){echo "<li>$key = \"$val\"</li>\n";}
-		if($users->$key){
-            $dPrivs++;
-			$cprivs++;
-            $tpl->table_form_field_bool("{{$key}}",1,ico_check);
-		}
-	}
-
-	if($cprivs==0){
-        $tpl->table_form_field_text("{error}","{ERROR_NO_PRIVS2}",ico_infoi_bounce,true);
-
-	}else{
-        if($dPrivs==0){
-            $tpl->table_form_field_text("{info}","{ERROR_NO_PRIVS2}",ico_lock);
-        }
-    }
-
-	$ht[]=$tpl->table_form_compile();
-
-
-    if($_SESSION["uid"]<>"-100") {
-	if($IsKerbAuth){
-        $tpl->table_form_section("{my_microsoft_groups}");
-
-		$cprivs=0;
-		if($GLOBALS["VERBOSE"]){echo "<li><strong>IsKerbAuth = TRUE (line ".__LINE__.")</strong></li>\n";}
-		include_once(dirname(__FILE__)."/ressources/class.external.ad.inc");
-		$ad=new external_ad_search(null,$ActiveDirectoryIndex);
-		$groups=$ad->GroupsOfMember($_SESSION["ACTIVE_DIRECTORY_DN"]);
-
-		foreach ($groups as $dn=>$name){
-			$cprivs++;
-            $tpl->table_form_field_text("$name",$dn,ico_users);
-		}
-
-		if($cprivs==0){
-            $tpl->table_form_field_text("{error}","{ERROR_NO_GROUP_ACCOUNT}",ico_infoi_bounce,true);
-		}
-	}else {
-        $tpl->table_form_section("{my_groups}");
-        $ct = new user($_SESSION["uid"]);
-        $groups = $ct->GetGroups($_SESSION["uid"]);
-
-        $cprivs = 0;
-        foreach ($groups as $name => $gidNumber) {
-            $cprivs++;
-            $tpl->table_form_field_bool("$name", 1, ico_users);
-        }
-    }
-
-        if(isset($_SESSION["SQLITE_ID"])) {
-            if ($_SESSION["SQLITE_ID"] > 0) {
-                $q = new lib_sqlite("/home/artica/SQLITE/admins.db");
-
-                $sql = "SELECT lnk.ID as tid,groups.ID,groups.groupname,groups.enabled FROM `groups`,`lnk`
-	                        WHERE groups.ID=lnk.groupid AND lnk.userid={$_SESSION["SQLITE_ID"]} ORDER BY groupname";
-                VERBOSE($sql, __LINE__);
-                $results = $q->QUERY_SQL($sql);
-                if (!$q->ok) {
-                    echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);
-                    return false;
-                }
-                foreach ($results as $index => $ligne) {
-                    $groupname = $ligne["groupname"];
-                    if ($groupname == null) {$groupname = "{unknown}";}
-                    $cprivs++;
-                    $tpl->table_form_field_bool("$groupname",1,ico_users);
-                }
-            }
-        }
-
-        if($cprivs==0){
-                $tpl->table_form_field_text("{error}", "{ERROR_NO_GROUP_ACCOUNT}", ico_infoi_bounce, true);
-
-        }
-		
-
-	}
-	
-	$ht[]=$tpl->table_form_compile();
-
-	if(!isset($_SESSION["SQUID_DYNAMIC_ACLS"])){$_SESSION["SQUID_DYNAMIC_ACLS"]=array();}
-	
-	
-	if(count($_SESSION["SQUID_DYNAMIC_ACLS"])>0){
-		$ht[]="
-		<table class=\"table table-hover\">
-		<thead>
-		<tr>
-		<th>{dynamic_acls_newbee}</th>
-		</tr>
-		</thead>
-		<tbody>";
-		$q=new mysql_squid_builder();
-
-		foreach ($_SESSION["SQUID_DYNAMIC_ACLS"] as $gpid=>$val){
-			$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT GroupName FROM webfilters_sqgroups WHERE ID=$gpid"));
-			$ht[]="<tr><td><span class='fa fa-file-o'></span>&nbsp;{$ligne["GroupName"]}</td></tr>";
-		}
-		
-		$ht[]="</tbody></table>";
-		
-	}
-
-
-	$ht[]="</div>";
-
-    $Center=@implode("\n",$ht);
-    $html[]="<table style='width:100%'>";
-    $html[]="<tr>";
-    $html[]="<td style='vertical-align: top;width:150px'><div id='client-certificate'></div></td>";
-    $html[]="<td style='vertical-align: top;width:99%;padding-left:15px'>$Center</td>";
-    $html[]="</tr>";
-    $html[]="</table>";
-
-
-    $username=$_SESSION["uid"];
-    if($username==-100){ $ldap=new clladp(); $username="$ldap->ldap_admin/{administrator}"; }
-    $SessionCookieLifetime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SessionCookieLifetime"));
-    $you_have_x_minutes="<br><strong>{sessionid_label}: {unlimited}</strong>";
-
-    if($SessionCookieLifetime>0){
-        $final=$_SESSION["SESSARTSTART"]+($SessionCookieLifetime*60);
-        $left=$tpl->time_diff_min($final);
-        $you_have_x_minutes=$tpl->_ENGINE_parse_body("{you_have_x_minutes}");
-        $you_have_x_minutes="<br><strong>{sessionid_label}: ".str_replace("%s",$left,$you_have_x_minutes)."</strong>";
-    }
-
-
-
-    $TINY_ARRAY["TITLE"]=$username;
-    $TINY_ARRAY["ICO"]="fad fa-user-tie";
-    $TINY_ARRAY["EXPL"]="{myaccount_text}$you_have_x_minutes";
-    $TINY_ARRAY["BUTTONS"]=null;
-    $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
-
-
-
-    $html[]="<script>";
-    $html[]="LoadAjax('client-certificate','$page?client-certificate=yes');";
-    $html[]=$headsjs;
-    $html[]="</script>";
-
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    // ?after-form=yes n'etait aiguille nulle part : la fenetre restait ouverte et la
+    // page n'etait pas rafraichie apres l'enregistrement.
+    echo $tpl->form_outside(null, @implode("\n", $field),null,"{apply}",
+        "dialogInstance3.close();if(window.ConsoleZoomApply){ConsoleZoomApply();}LoadAjaxSilent('table-loader','$page?table=yes');");
     return true;
 }
 
+/**
+ * Page "Mon compte" (maquette stitch_artica_account_dashboard) : identite et session,
+ * apparence, certificat client du Manager, droits du compte et groupes.
+ * acc_collect() rassemble les donnees (logique d'origine conservee) ; chaque carte
+ * est rendue par sa propre fonction ; CSS et JS concatenes HORS du moteur.
+ */
+function privileges():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    include_once(dirname(__FILE__)."/ressources/class.translate.rights.inc");
+    if(isset($_SESSION["CLASS_TRANSLATE_RIGHTS"]["FINAL_PRIVS"][$_SESSION["uid"]])){
+        unset($_SESSION["CLASS_TRANSLATE_RIGHTS"]["FINAL_PRIVS"][$_SESSION["uid"]]);
+    }
+    $d=acc_collect();
 
+    $html=array();
+    $html[]="<div class='acc-wrap ak'>";
+    $html[]=acc_card_identity($d);
+    $html[]="<div class='acc-grid2".($d["cert"]?"":" acc-grid1")."'>";
+    $html[]=acc_card_appearance();
+    if($d["cert"]){$html[]=acc_card_certificate_shell();}
+    $html[]="</div>";
+    $html[]=acc_rights_section($d);
+    if(!$d["manager"]){$html[]=acc_card_groups($d);}
+    $html[]="</div>";
+
+    $TINY_ARRAY["TITLE"]="{myaccount}";
+    $TINY_ARRAY["ICO"]="fad fa-user-tie";
+    $TINY_ARRAY["EXPL"]="{acc_page_explain}";
+    $TINY_ARRAY["BUTTONS"]=null;
+    $script="<script>";
+    if($d["cert"]){$script.="LoadAjaxSilent('client-certificate','$page?client-certificate=yes');";}
+    $script.="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');</script>";
+
+    echo acc_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$script;
+    return true;
+}
+
+/** Rassemble identite, session, droits et groupes du compte connecte. */
+function acc_collect():array{
+    $tpl=new template_admin();
+    $uid=(string)$_SESSION["uid"];
+    $d=array("manager"=>$uid==="-100","name"=>$uid,"type"=>"{acc_type_ldap}","password_js"=>"",
+        "privs"=>array(),"web"=>array(),"acls"=>array(),"siem"=>array(),"docker"=>array(),
+        "groups"=>array(),"groups_title"=>"{my_groups}","groups_error"=>"","proxy_rules"=>array(),
+        "session"=>"","session_warn"=>false,"cert"=>false,"count"=>0);
+    $page=CurrentPageName();
+    $sqliteId=isset($_SESSION["SQLITE_ID"])?intval($_SESSION["SQLITE_ID"]):0;
+
+    $ldap=new clladp();
+    $IsKerbAuth=$ldap->IsKerbAuth();
+    $ActiveDirectoryIndex="Nan";
+    if(isset($_SESSION["ACTIVE_DIRECTORY_INDEX"]) && is_numeric($_SESSION["ACTIVE_DIRECTORY_INDEX"])){
+        $ActiveDirectoryIndex=$_SESSION["ACTIVE_DIRECTORY_INDEX"];
+        $IsKerbAuth=true;
+    }
+
+    // Identite, type de compte et moyen de changer le mot de passe.
+    if($d["manager"]){
+        $d["name"]=$ldap->ldap_admin;
+        $d["type"]="{acc_type_manager}";
+        $d["password_js"]="Loadjs('$page?manager-password-js=yes')";
+        $d["cert"]=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdArticaClientAuth"))==1;
+    }elseif($sqliteId>0){
+        $d["type"]="{acc_type_local}";
+        $d["password_js"]="Loadjs('$page?form-change-pass-sqlite=yes')";
+    }elseif($IsKerbAuth){
+        $d["type"]="{acc_type_ad}";
+    }
+
+    // Duree de session restante.
+    $life=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SessionCookieLifetime"));
+    if($life>0){
+        $final=intval($_SESSION["SESSARTSTART"] ?? time())+($life*60);
+        $left=$final>time()?$tpl->time_diff_min($final):0;
+        $d["session"]=str_replace("%s","<strong>$left</strong>",$tpl->_ENGINE_parse_body("{you_have_x_minutes}"));
+        $d["session_warn"]=$left<10;
+    }
+
+    $users=new usersMenus();
+    $cr=new TranslateRights(null,$_SESSION["uid"]);
+    $r=$cr->GetPrivsArray();
+
+    // Listes de perimetre : services web, regles d'acces, tenants SIEM, droits Docker.
+    foreach($users->NGINX_SERVICES as $ServicesID=>$none){
+        if(!is_numeric($ServicesID)){continue;}
+        $name=get_nginx_servicename($ServicesID);
+        if(strlen($name)>3){$d["web"][]=$name;}
+    }
+    foreach($users->SIMPLE_ACLS as $aclid=>$none){
+        $row=acls_api_get("/proxy/simple-acls/".intval($aclid));
+        if(!is_array($row) || !isset($row["aclName"])){continue;}
+        $d["acls"][intval($aclid)]=(string)$row["aclName"];
+    }
+    if(property_exists($users,"SIEM_TENANTS") && is_array($users->SIEM_TENANTS) && count($users->SIEM_TENANTS)>0
+        && intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaSiem"))==1){
+        $names=array();
+        if(!function_exists("siem_tenants_available")){
+            @include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+        }
+        if(function_exists("siem_tenants_available")){
+            $avail=siem_tenants_available();
+            if(is_array($avail)){$names=$avail;}
+        }
+        foreach($users->SIEM_TENANTS as $tenant_id=>$none){
+            $tenant_id=trim((string)$tenant_id);
+            if($tenant_id===""){continue;}
+            $d["siem"][]=(isset($names[$tenant_id]) && $names[$tenant_id]!==$tenant_id)
+                ? $names[$tenant_id]." (".$tenant_id.")" : $tenant_id;
+        }
+    }
+    include_once(dirname(__FILE__)."/ressources/class.docker.manager.inc");
+    $dockerPerms=docker_perms();
+    if(count($dockerPerms)>0){
+        if($dockerPerms===array("DOCKER_ADMIN")){
+            $d["docker"][]=array("{docker_full_access}",docker_perms_origin());
+        }else{
+            foreach(docker_priv_table() as $row){
+                if(!in_array($row["perm"],$dockerPerms,true)){continue;}
+                $d["docker"][]=array($row["family"]." : ".$row["label"],$row["perm"]);
+            }
+        }
+    }
+
+    // Privileges oui/non.
+    if($users->AsHamrpAdmin){$d["privs"][]="{APP_HAMRP}";}
+    foreach($r as $key=>$val){
+        if(strpos($key,"AsDocker")===0 && $key!=="AsDockerAdmin" && $key!=="AsDockerReverse"){continue;}
+        if($users->$key){$d["privs"][]="{{$key}}";}
+    }
+    $d["count"]=count($d["privs"])+count($d["web"])+count($d["acls"])+count($d["siem"])+count($d["docker"]);
+
+    if($d["manager"]){return $d;}
+
+    // Groupes : Active Directory, annuaire LDAP local, groupes d'administrateurs locaux.
+    if($IsKerbAuth){
+        $d["groups_title"]="{my_microsoft_groups}";
+        include_once(dirname(__FILE__)."/ressources/class.external.ad.inc");
+        $ad=new external_ad_search(null,$ActiveDirectoryIndex);
+        $groups=$ad->GroupsOfMember($_SESSION["ACTIVE_DIRECTORY_DN"] ?? "");
+        if(is_array($groups)){
+            foreach($groups as $dn=>$name){$d["groups"][]=array((string)$name,(string)$dn);}
+        }
+    }else{
+        $ct=new user($_SESSION["uid"]);
+        $groups=$ct->GetGroups($_SESSION["uid"]);
+        if(is_array($groups)){
+            foreach($groups as $name=>$gid){$d["groups"][]=array((string)$name,"");}
+        }
+    }
+    if($sqliteId>0){
+        $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/localadmins/users/$sqliteId/groups")),true);
+        if(!is_array($resp) || empty($resp["success"])){
+            $d["groups_error"]=is_array($resp)?strval($resp["error"] ?? "unknown error"):"{unable_to_connect_to_the_service}";
+        }else{
+            foreach((is_array($resp["data"] ?? null)?$resp["data"]:array()) as $ligne){
+                $g=strval($ligne["groupname"] ?? "");
+                $d["groups"][]=array($g==""?"{unknown}":$g,"");
+            }
+        }
+    }
+
+    // Regles proxy dynamiques heritees de la session.
+    if(isset($_SESSION["SQUID_DYNAMIC_ACLS"]) && is_array($_SESSION["SQUID_DYNAMIC_ACLS"]) && count($_SESSION["SQUID_DYNAMIC_ACLS"])>0){
+        $q=new mysql_squid_builder();
+        foreach($_SESSION["SQUID_DYNAMIC_ACLS"] as $gpid=>$val){
+            $ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT GroupName FROM webfilters_sqgroups WHERE ID=".intval($gpid)));
+            if(is_array($ligne)){$d["proxy_rules"][]=(string)$ligne["GroupName"];}
+        }
+    }
+    return $d;
+}
+
+/** Initiales d'un nom de compte (2 caracteres, multi-octets). */
+function acc_initials($name):string{
+    $name=trim(preg_replace('#[^\p{L}\p{N} ._-]#u','',(string)$name));
+    if($name===""){return "?";}
+    $parts=preg_split('#[ ._-]+#',$name);
+    if(count($parts)>1 && $parts[1]!==""){
+        return mb_strtoupper(mb_substr($parts[0],0,1).mb_substr($parts[1],0,1));
+    }
+    return mb_strtoupper(mb_substr($name,0,2));
+}
+
+/** Carte d'identite : avatar, nom, type de compte, session, mot de passe. */
+function acc_card_identity($d):string{
+    $h="<section class='ak-card ak-card-pad acc-card acc-identity'>";
+    $h.="<span class='acc-avatar' aria-hidden='true'>".htmlspecialchars(acc_initials($d["name"]))."</span>";
+    $h.="<div class='acc-identity-body'><div class='acc-name-row'><h2>".htmlspecialchars($d["name"])."</h2>";
+    $h.="<span class='ak-pill ak-ok'>".$d["type"]."</span></div>";
+    $cls=$d["session_warn"]?"acc-session acc-session-warn":"acc-session";
+    $txt=$d["session"]<>""?"{sessionid_label} : ".$d["session"]:"{acc_session_unlimited}";
+    $h.="<div class='$cls'><span class='acc-session-ico'><i class='far fa-clock'></i></span>$txt</div></div>";
+    if($d["password_js"]<>""){
+        $h.="<button type='button' class='ak-btn ak-btn-lg ak-btn-primary' onclick=\"{$d["password_js"]}\"><i class='fas fa-key'></i>{acc_change_password}</button>";
+    }else{
+        $h.="<p class='acc-note'>{acc_password_directory}</p>";
+    }
+    $h.="</section>";
+    return $h;
+}
+
+/** Carte Apparence : langue, police, listes deroulantes, titre des onglets. */
+function acc_card_appearance():string{
+    $page=CurrentPageName();
+    $font=$_COOKIE["userfont"] ?? "lato";
+    $fonts=array("ailerons"=>"Ailerons","bariol"=>"Bariol","lato"=>"Lato","Roboto"=>"Roboto","standard"=>"Standard");
+    $fontName=$fonts[$font] ?? "Lato";
+    $dd=intval($_COOKIE["StandardDropDown"] ?? 0)==1;
+    $title=trim((string)($_COOKIE["HTMLTITLE"] ?? ""));
+    if($title===""){$title="%s (%v)";}
+    $lang=trim((string)($_COOKIE["artica-language"] ?? ""));
+
+    $h="<section class='ak-card ak-card-pad acc-card'>";
+    $h.="<div class='acc-card-head'><span class='ak-ico ak-ico-sm ak-ico-sq'><i class='fas fa-palette'></i></span><h3>{skin}</h3>";
+    $h.="<button type='button' class='ak-btn' onclick=\"Loadjs('$page?form-js=yes')\"><i class='fas fa-sliders'></i>{modify}</button></div>";
+    $h.="<dl class='acc-rows'>";
+    if($lang<>""){$h.="<dt>{mylanguage}</dt><dd><span class='ak-tag ak-off'>".htmlspecialchars(strtoupper($lang))."</span></dd>";}
+    $h.="<dt>{font_family}</dt><dd><span class='ak-tag ak-off'>".htmlspecialchars($fontName)."</span></dd>";
+    $h.="<dt>{console_zoom}</dt><dd><span class='ak-tag ak-off'>".(console_zoom_current()==0?"{automatic}":console_zoom_current()." %")."</span></dd>";
+    $h.="<dt>{standard_dropdown}</dt><dd>".($dd?"<span class='ak-pill ak-ok'><span class='acc-uc'>{yes}</span></span>":"<span class='ak-pill ak-off'><span class='acc-uc'>{no}</span></span>")."</dd>";
+    $h.="</dl>";
+    $h.="<div class='acc-field'><span class='ak-kicker'>{title_pages}</span>";
+    $h.="<div class='acc-tabpreview'><i class='far fa-window-maximize'></i><span>".htmlspecialchars($title)."</span></div>";
+    $h.="<span class='ak-help'>{acc_title_help}</span></div>";
+    $h.="</section>";
+    return $h;
+}
+
+/** Enveloppe de la carte Certificat client ; son contenu vient de ?client-certificate=yes. */
+function acc_card_certificate_shell():string{
+    $h="<section class='ak-card ak-card-pad acc-card'>";
+    $h.="<div class='acc-card-head'><span class='ak-ico ak-ico-sm ak-ico-sq'><i class='fas fa-file-certificate'></i></span><h3>{acc_client_certificate}</h3></div>";
+    $h.="<p class='acc-explain'>{acc_client_certificate_explain}</p>";
+    $h.="<div id='client-certificate'></div></section>";
+    return $h;
+}
+
+/** Section des droits : privileges puis listes de perimetre, chacune dans sa carte. */
+function acc_rights_section($d):string{
+    $h="<div class='acc-section'><h2>{acc_rights_title}</h2><p>{acc_rights_explain}</p></div>";
+    $h.="<section class='ak-card ak-card-pad acc-card'>";
+    $h.="<div class='acc-card-head'><span class='ak-ico ak-ico-sm ak-ico-sq'><i class='fas fa-user-shield'></i></span><h3>{my_privileges}</h3></div>";
+    if(count($d["privs"])==0){
+        $cls=$d["count"]==0?"ak-banner ak-warn acc-empty-warn":"ak-empty";
+        $h.="<div class='$cls'><i class='fas fa-lock'></i> {ERROR_NO_PRIVS2}</div>";
+    }else{
+        $h.="<ul class='acc-chips acc-chips-3'>";
+        foreach($d["privs"] as $p){$h.="<li class='acc-right'><span class='acc-check'><i class='fas fa-check'></i></span><span>$p</span></li>";}
+        $h.="</ul>";
+    }
+    $h.="</section>";
+
+    $cards=array();
+    if(count($d["web"])>0){
+        $items=array();
+        foreach($d["web"] as $n){$items[]="<li class='acc-right'><span class='acc-li-ico'><i class='fas fa-globe'></i></span><span>".htmlspecialchars($n)."</span></li>";}
+        $cards[]=acc_list_card("fas fa-globe","{myWebServices}","{myWebServices_text}",$items);
+    }
+    if(count($d["acls"])>0){
+        $items=array();
+        foreach($d["acls"] as $id=>$n){
+            $items[]="<li><a class='acc-right acc-right-link' href='javascript:blur();' onclick=\"Loadjs('fw.proxy.rules.php?rule-settings=$id')\"><span class='acc-li-ico'><i class='fas fa-shield-halved'></i></span><span>".htmlspecialchars($n)."</span><span class='acc-chev'><i class='fas fa-chevron-right'></i></span></a></li>";
+        }
+        $cards[]=acc_list_card("fas fa-shield-halved","{access_rules}","",$items);
+    }
+    if(count($d["siem"])>0){
+        $items=array();
+        foreach($d["siem"] as $n){$items[]="<li class='acc-right'><span class='acc-li-ico'><i class='fas fa-building'></i></span><span>".htmlspecialchars($n)."</span></li>";}
+        $cards[]=acc_list_card("fas fa-building","{siem_tenants}","{siem_tenants_account_text}",$items);
+    }
+    if(count($d["docker"])>0){
+        $items=array();
+        foreach($d["docker"] as $row){
+            $items[]="<li class='acc-right'><span class='acc-li-ico'><i class='fab fa-docker'></i></span><span>$row[0]</span><span class='acc-code'>".htmlspecialchars((string)$row[1])."</span></li>";
+        }
+        $cards[]=acc_list_card("fab fa-docker","{docker_my_privileges}","{docker_my_privileges_text}",$items);
+    }
+    if(count($cards)>0){$h.="<div class='acc-grid2'>".@implode("",$cards)."</div>";}
+    return $h;
+}
+
+/** Une carte de liste de perimetre (services, regles, tenants, Docker). */
+function acc_list_card($ico,$title,$explain,$items):string{
+    $h="<section class='ak-card ak-card-pad acc-card'>";
+    $h.="<div class='acc-card-head'><span class='ak-ico ak-ico-sm ak-ico-sq'><i class='$ico'></i></span><h3>$title</h3></div>";
+    if($explain<>""){$h.="<p class='acc-explain'>$explain</p>";}
+    $h.="<ul class='acc-chips'>".@implode("",$items)."</ul></section>";
+    return $h;
+}
+
+/** Carte des groupes du compte (AD avec DN, LDAP, administrateurs locaux) et regles proxy. */
+function acc_card_groups($d):string{
+    $h="<section class='ak-card ak-card-pad acc-card'>";
+    $h.="<div class='acc-card-head'><span class='ak-ico ak-ico-sm ak-ico-sq'><i class='fas fa-users'></i></span><h3>".$d["groups_title"]."</h3></div>";
+    if($d["groups_error"]<>""){
+        $h.="<div class='ak-banner ak-warn acc-empty-warn'><i class='fas fa-triangle-exclamation'></i> ".htmlspecialchars($d["groups_error"])."</div>";
+    }elseif(count($d["groups"])==0){
+        $h.="<div class='ak-empty'>{ERROR_NO_GROUP_ACCOUNT}</div>";
+    }else{
+        $h.="<ul class='acc-chips acc-chips-2'>";
+        foreach($d["groups"] as $g){
+            $h.="<li class='acc-right'><span class='acc-li-ico'><i class='fas fa-users'></i></span><span class='acc-group'><span>".htmlspecialchars($g[0])."</span>";
+            if($g[1]<>""){$h.="<span class='acc-dn' title=\"".htmlspecialchars($g[1])."\">".htmlspecialchars($g[1])."</span>";}
+            $h.="</span></li>";
+        }
+        $h.="</ul>";
+    }
+    if(count($d["proxy_rules"])>0){
+        $h.="<span class='ak-kicker acc-lbl-gap'>{dynamic_acls_newbee}</span><ul class='acc-chips acc-chips-2'>";
+        foreach($d["proxy_rules"] as $n){$h.="<li class='acc-right'><span class='acc-check'><i class='fas fa-check'></i></span><span>".htmlspecialchars($n)."</span></li>";}
+        $h.="</ul>";
+    }
+    $h.="</section>";
+    return $h;
+}
+
+/** CSS du kit de la page (une fois par requete). */
+function acc_style():string{
+    if(isset($GLOBALS["ACC_STYLE_DONE"])){return "";}
+    $GLOBALS["ACC_STYLE_DONE"]=true;
+    $soft="rgba(16,185,129,.12)";
+    if(function_exists("brand_ui_accents") && function_exists("brand_palette")){
+        $a=brand_ui_accents(brand_palette());
+        if(!empty($a["accent_soft"])){$soft=$a["accent_soft"];}
+    }
+    // Seules les regles propres a la page : le reste vient du kit ak- (angular.css.php).
+    return "<style>
+.acc-wrap{margin-top:20px}
+.acc-card{margin-bottom:24px}
+.acc-identity{display:flex;align-items:center;gap:24px}
+.acc-avatar{width:72px;height:72px;border-radius:50%;background:$soft;color:#00504a;display:inline-flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;flex:0 0 auto}
+.acc-identity-body{flex:1 1 auto;min-width:0}
+.acc-name-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.acc-name-row h2{font-size:24px;font-weight:600;margin:0;color:#111d23}
+.acc-session{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:14px;color:#3d4947}
+.acc-session strong{color:#111d23;font-variant-numeric:tabular-nums}
+.acc-session-warn,.acc-session-warn strong{color:#865300}
+.acc-session-ico{color:#6d7a77;display:inline-flex}
+.acc-note{font-size:13px;color:#3d4947;max-width:280px;margin:0;text-align:right}
+.acc-grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px;align-items:stretch}
+.acc-grid1{grid-template-columns:1fr}
+.acc-card-head{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.acc-card-head h3{font-size:17px;font-weight:600;margin:0;color:#111d23;flex:1 1 auto}
+.acc-explain{font-size:14px;color:#3d4947;margin:-4px 0 16px 0;line-height:1.5}
+.acc-right-link:focus-visible{outline:2px solid #006a62;outline-offset:2px}
+.acc-uc{display:inline-block}
+.acc-uc::first-letter{text-transform:uppercase}
+.acc-rows{display:grid;grid-template-columns:1fr auto;gap:12px 16px;align-items:center;margin:0 0 16px 0;font-size:14px}
+.acc-rows dt{font-weight:400;color:#111d23}
+.acc-rows dd{margin:0;text-align:right}
+.acc-field{display:flex;flex-direction:column;gap:6px;border-top:1px solid #f1f5f9;padding-top:14px}
+.acc-lbl-gap{display:block;margin:20px 0 10px 0}
+.acc-tabpreview{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:14px;color:#111d23}
+.acc-tabpreview i{color:#6d7a77}
+.acc-section{margin:8px 0 16px 0}
+.acc-section h2{font-size:18px;font-weight:600;margin:0;color:#111d23}
+.acc-section p{font-size:14px;color:#3d4947;margin:4px 0 0 0}
+.acc-chips{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:10px}
+.acc-chips-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.acc-chips-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.acc-right{display:flex;align-items:center;gap:10px;min-height:42px;padding:8px 12px;border:1px solid #e2e8f0;border-radius:8px;background:#f8fafc;font-size:14px;color:#111d23;line-height:1.35}
+.acc-right-link{text-decoration:none;color:#111d23;transition:background .15s}
+.acc-right-link:hover{background:#e3f0f8;color:#111d23}
+.acc-check{width:22px;height:22px;border-radius:50%;background:$soft;color:#006a62;display:inline-flex;align-items:center;justify-content:center;font-size:11px;flex:0 0 auto}
+.acc-li-ico{width:22px;display:inline-flex;justify-content:center;color:#006a62;font-size:14px;flex:0 0 auto}
+.acc-chev{margin-left:auto;color:#6d7a77;font-size:11px}
+.acc-code{margin-left:auto;font-size:13px;color:#6d7a77;letter-spacing:.03em;white-space:nowrap}
+.acc-group{display:flex;flex-direction:column;min-width:0}
+.acc-dn{font-size:13px;color:#6d7a77;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.acc-empty-warn{font-weight:600}
+.acc-cert-state{margin-bottom:16px;font-weight:600}
+.acc-cert-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.acc-cert-renew{margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;font-size:13px;color:#3d4947;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+@media(max-width:1100px){.acc-grid2,.acc-chips-2,.acc-chips-3{grid-template-columns:1fr}}
+</style>";
+}
 
 function lang(){
     $tpl=new template_admin();
@@ -609,47 +809,52 @@ function lang(){
     setcookie("userfont", $userfont, time()+172800);
     setcookie("StandardDropDown", $StandardDropDown, time()+172800);
     setcookie("HTMLTITLE", $HTMLTITLE, time()+172800);
+    // Zoom de la console : liste fermee (la valeur finit dans du CSS), un an, tout le site.
+    if(isset($_POST["ConsoleZoom"])){
+        $zoom=intval($_POST["ConsoleZoom"]);
+        if(!in_array($zoom,console_zoom_levels(),true)){
+            echo $tpl->post_error("{console_zoom}: $zoom");
+            return;
+        }
+        setcookie("ConsoleZoom", (string)$zoom, time()+31536000, "/");
+    }
 
 }
+/**
+ * Contenu de la carte "Certificat client" du Manager (charge dans #client-certificate).
+ * L'ancien bouton "Afficher le certificat" lancait la MEME action que "Creer" et
+ * regenerait donc le certificat en service : il est retire, aucune vue n'existe.
+ * Recreer un certificat invalide celui deja installe : une confirmation le dit.
+ */
 function client_certificate(){
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $js=$tpl->framework_buildjs("webconsole.php?certificate-manager=yes",
+    if($_SESSION["uid"]<>-100){return false;}
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdArticaClientAuth"))==0){return false;}
+    $js=$tpl->framework_buildjs("/webconsole/client-cert/manager",
         "manager-certificate.progress","manager-certificate.log",
         "progress-myaccount-restart",
-        "LoadAjax('client-certificate','$page?client-certificate=yes');");
-
-    if($_SESSION["uid"]<>-100){return false;}
-    $LighttpdArticaClientAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdArticaClientAuth"));
-    if($LighttpdArticaClientAuth==0){return false;}
-    $LighttpdManagerClientAuth=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdManagerClientAuth"));
-    if($LighttpdManagerClientAuth==null){
-
-        $html="<div id='manager-certificate' class='center'>
-            <i class='fas fa-file-certificate fa-10x'></i><p style='margin-top: 10px'>
-            ".$tpl->button_autnonome("{create_certificate}",$js,"fas fa-file-certificate",null,165)."
-          </p>
-           </div>";
-        echo $tpl->_ENGINE_parse_body($html);
+        "LoadAjaxSilent('client-certificate','$page?client-certificate=yes');");
+    $has=strlen(trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdManagerClientAuth")))>20;
+    $html=array();
+    if(!$has){
+        $html[]="<div class='ak-banner ak-off acc-cert-state'><i class='far fa-circle'></i> {acc_cert_none}</div>";
+        $html[]="<div class='acc-cert-actions'><button type='button' class='ak-btn' onclick=\"$js\"><i class='fas fa-plus'></i>{create_certificate}</button></div>";
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
         return true;
-
     }
-
-
-    $jsdown="window.location.href='$page?pfx-manager=yes'";
-    $html="<div id='manager-certificate' class='center'>
-            <i class='fas fa-file-certificate fa-10x' style='color:#18a689'></i>
-            <p style='margin-top: 10px'>
-            <div>".$tpl->button_autnonome("{download}",$jsdown,"fas fa-file-certificate",null,165)."</div>
-            
-            <div style='margin-top:5px'>".$tpl->button_autnonome("{create_certificate}",$js,"fas fa-file-certificate",null,165,"btn-warning")."</div>
-            
-            <div style='margin-top:5px'>".$tpl->button_autnonome("{display_certificate}",$js,"fas fa-file-certificate",null,165,"btn-info")."</div>
-            
-          </p>
-           </div>";
-
-    echo $tpl->_ENGINE_parse_body($html);
+    $downloaded=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdManagerCertDown"))==1;
+    // Confirmation integree a framework_buildjs : recreer invalide le certificat installe.
+    $jsRenew=$tpl->framework_buildjs("/webconsole/client-cert/manager",
+        "manager-certificate.progress","manager-certificate.log",
+        "progress-myaccount-restart",
+        "LoadAjaxSilent('client-certificate','$page?client-certificate=yes');",null,"{acc_cert_renew_confirm}");
+    $html[]="<div class='ak-banner ak-ok acc-cert-state'><i class='fas fa-circle-check'></i> {acc_cert_ready}";
+    $html[]=$downloaded?"<span class='ak-pill ak-ok' style='margin-left:auto'>{acc_cert_downloaded}</span>":"<span class='ak-pill ak-warn' style='margin-left:auto'>{acc_cert_not_downloaded}</span>";
+    $html[]="</div>";
+    $html[]="<div class='acc-cert-actions'><button type='button' class='ak-btn' onclick=\"window.location.href='$page?pfx-manager=yes'\"><i class='fas fa-download'></i>{acc_cert_download}</button></div>";
+    $html[]="<div class='acc-cert-renew'><button type='button' class='ak-link' onclick=\"$jsRenew\"><i class='fas fa-rotate'></i>{acc_cert_renew}</button><span>{acc_cert_renew_warn}</span></div>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
     return true;
 }
 function client_certificate_download(){
@@ -673,27 +878,14 @@ function client_certificate_download(){
 
 
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
 function get_nginx_servicename($ID):string{
     $ID=intval($ID);
     if($ID==0){return "Unknown";}
-    $q                          = new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT servicename FROM nginx_services WHERE ID=$ID");
-    return strval($ligne["servicename"]);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_services/ID/$ID");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"]) || count($data["rows"])==0){
+        return "Unknown";
+    }
+    $row=$data["rows"][0];
+    return isset($row["servicename"]) ? strval($row["servicename"]) : "Unknown";
 }

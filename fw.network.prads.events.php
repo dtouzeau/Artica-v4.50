@@ -107,7 +107,8 @@ function search(){
         if(preg_match("#(discover|success)#i",$line)){$text="text-success";}
         if(preg_match("#(fatal|error)#i",$line)){$text="text-danger";}
 
-        $line="<span class='$text'>$line</span>";
+        // Pentest 2026-11-04 : ligne de journal PRADS (donnee reseau externe) affichee sans encodage (XSS stockee).
+        $line="<span class='$text'>".req_html($line)."</span>";
 
 
 

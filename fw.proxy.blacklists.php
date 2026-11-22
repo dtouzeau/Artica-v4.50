@@ -1,5 +1,13 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsDansGuardianAdministrator){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -58,7 +66,7 @@ function export():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $jsrestart=$tpl->framework_buildjs(
-        "squid2.php?export-blacklists=yes",
+        "/proxy/blacklists/export",
         "squid.export.progress","squid.export.txt",
         "proxy-blacklist-progress",
         "document.location.href='$page?download-exported=yes'"
@@ -120,18 +128,22 @@ function file_uploaded():bool{
     $function=$_GET["function"];
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $file="/usr/share/artica-postfix/ressources/conf/upload/{$_GET["file-uploaded"]}";
+    // Pentest 2026-11-04 : file-uploaded n'etait pas reduit a un nom : "../" faisait supprimer (unlink) un fichier hors du dossier d'upload.
+    $fname=fw_progress_upload_name($_GET["file-uploaded"] ?? "");   // nom simple, existant dans conf/upload, sinon ""
+    if($fname===""){$tpl->js_error("unexpected file..");return false;}
+    $file="/usr/share/artica-postfix/ressources/conf/upload/$fname";
 
     if(!preg_match("#\.txt$#i",basename($file))){
-        $tpl->js_error("$file unexpected file..");
+        // Pentest 2026-11-04 : file-uploaded etait recopie sans encodage dans la page (XSS).
+        $tpl->js_error(req_html($file)." unexpected file..");
         @unlink($file);
         return false;
     }
 
-    $tfile=urlencode(basename($file));
+    $tfile=rawurlencode(basename($file));
 
     $jscompile=$tpl->framework_buildjs(
-        "squid2.php?import-blacklist=$tfile",
+        "/proxy/global/blacklists/import/$tfile",
         "squid.wb.import.progress",
         "squid.wb.import.txt",
          "upload-black-progress","dialogInstance1.close();$function()");
@@ -153,9 +165,11 @@ function delete_js(){
     $domain=$_GET["delete-js"];
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $q->QUERY_SQL("DELETE FROM deny_websites WHERE items='$domain'");
+    // Pentest 2026-11-04 : delete-js (domaine) etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM deny_websites WHERE items=?",array((string)$domain));
     if(!$q->ok){
-        echo $tpl->js_mysql_alert($q->mysql_error);
+        // Pentest 2026-11-04 : delete-js etait recopie sans encodage dans la page (XSS) via l'erreur SQL.
+        echo $tpl->js_mysql_alert(req_html($q->mysql_error));
         return false;
     }
     admin_tracks("Remove $domain from proxy blacklisted domains list");
@@ -171,35 +185,39 @@ function main(){
     $t=time();
     $page=CurrentPageName();
     $QUERY=null;
+    $QBINDS=array();
     if(isset($_GET["search"])){
         $search="*{$_GET["search"]}*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $QUERY=" WHERE items LIKE '$search'";
+        // Pentest 2026-11-04 : search etait concatene dans la requete.
+        $QUERY=" WHERE items LIKE ?";
+        $QBINDS=array($search);
     }
     $TRCLASS=null;
 	$t=time();
 	$sql="SELECT items  FROM deny_websites $QUERY ORDER BY items LIMIT 1000";
 
-    $html[]="<table id='table-$t' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
 			$html[]="<thead>";
 			$html[]="<tr>";
-            $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-            $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{websites}</th>";
-			$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>DEL</th>";
-			$html[]="<th data-sortable=false></th>";
+            $html[]="<th>&nbsp;</th>";
+            $html[]="<th>{websites}</th>";
+			$html[]="<th>DEL</th>";
+			$html[]="<th></th>";
 			$html[]="</tr>";
 			$html[]="</thead>";
-			$html[]="<tbody>";
+			$html[]="<tbody id='blacklists-rows'>";
 
 
-    $results=$q->QUERY_SQL($sql);
+    $results=$q->QUERY_SQL_PARAMS($sql,$QBINDS);
     if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
+        // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS) via l'erreur SQL.
+        echo $tpl->div_error(req_html($q->mysql_error));
     }
 	foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $domain=$ligne["items"];
         $md=md5($domain);
         $domainEnc=urlencode($domain);
@@ -215,7 +233,9 @@ function main(){
 
     $jscompile=$tpl->framework_buildjs(
         "/proxy/global/blacklists/compile",
-        "squid.wb.progress","squid.wb.txt","proxy-blacklist-progress");
+        "squid.wb.progress",
+        "squid.wb.txt",
+        "proxy-blacklist-progress");
 
     $page=CurrentPageName();
 
@@ -244,13 +264,15 @@ function main(){
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
 
-    $html[]="</table>
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='blacklists-pager'></span></div></div></div>
     <script>
         NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
         $jstiny
     </script>";
 
-echo $tpl->_ENGINE_parse_body($html);
+echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body($html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"blacklists-rows","blacklists-pager");
 
 	
 }

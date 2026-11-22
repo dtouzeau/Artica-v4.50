@@ -1,4 +1,5 @@
 <?php
+// Post SP10 - 13/10/2026
 if(isset($_GET["call"])){call();exit;}
 
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
@@ -32,6 +33,13 @@ if($users->APP_UFDBGUARD_INSTALLED){
 
 $f[]="<div class='sidebar-title' id='my-side-barr-title'><H2 style='margin-bottom:0px;margin-top:0px'>{actions}</H2></div>";
 $f[]="<ul class='sidebar-list'>";
+
+// Artica AI installed and an AI privilege: the AI terminal answers questions
+// and runs the console search.
+include_once(dirname(__FILE__)."/ressources/class.artica-ai.ui.inc");
+if(!$users->isWebStatisticsAdministratorOnly() && ai_installed() && ai_menu_visible()){
+    $f[]=line_icon("Loadjs('fw.system.ai.chat.php?ask-js=yes');","fas fa-robot","{ai_ask_articaai}","btn-primary");
+}
 
 $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
 $SquidCachesProxyEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidCachesProxyEnabled"));

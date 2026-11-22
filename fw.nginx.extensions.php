@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
 if(isset($_GET["service-js"])){service_js();exit;}
@@ -75,23 +77,8 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
 
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
+
 function rule_enable():bool{
     $UserAgent=$_GET["pattern-enable"];
     $serviceid=intval($_GET["serviceid"]);
@@ -309,17 +296,18 @@ function top_buttons():bool{
     $topbuttons[] = array("Loadjs('$page?rule-export-js=$serviceid')", ico_import, "{export}/{import}");
 
 
-    if(!isHarmpID()) {
+
         $compile_js_progress=compile_js_progress($serviceid);
         $topbuttons[] = array($compile_js_progress, ico_save, "{apply}");
-    }
+
     echo $tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
     return true;
 }
 
 function rule_disable_all():bool{
     $function=$_GET["function"];
-    $serviceid=$_GET["serviceid"];
+    // Pentest 2026-11-04 : serviceid etait recopie sans encodage dans la page (XSS).
+    $serviceid=intval($_GET["serviceid"]);
     $sock       = new socksngix($serviceid);
     $data=unserialize(base64_decode($sock->GET_INFO("AllowedExtensions")));
     foreach ($data as $UserAgent=>$none){
@@ -334,7 +322,8 @@ function rule_disable_all():bool{
 }
 function rule_enable_all():bool{
     $function=$_GET["function"];
-    $serviceid=$_GET["serviceid"];
+    // Pentest 2026-11-04 : serviceid etait recopie sans encodage dans la page (XSS).
+    $serviceid=intval($_GET["serviceid"]);
     $sock       = new socksngix($serviceid);
     $data=unserialize(base64_decode($sock->GET_INFO("AllowedExtensions")));
     foreach ($data as $UserAgent=>$none){
@@ -360,12 +349,13 @@ function popup_table2():bool{
     $search=$_GET["search"];
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{extensions}</th>
-        	<th nowrap>{enable}</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>{enable}</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
@@ -423,11 +413,10 @@ function popup_table2():bool{
 
     }
 
-        $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('fexts-nginx-$serviceid','$page?top-buttons=$serviceid&function=$function');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
         }

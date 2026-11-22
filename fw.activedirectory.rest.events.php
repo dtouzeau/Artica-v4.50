@@ -1,4 +1,5 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
@@ -33,12 +34,8 @@ function events_searcher():bool{
     $tpl        = new template_admin();
     if(isset($_GET["search"])){$_GET["search"]=trim($tpl->CLEAN_BAD_XSS($_GET["search"]));}
     $MAIN       = $tpl->format_search_protocol($_GET["search"]);
-    $line       = base64_encode(serialize($MAIN));
-    $target     = PROGRESS_DIR."/adrest.search";
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid.ad.restfull.php?events=$line");
+    $f          = $tpl->logfile_search("articarest",$MAIN,false,200);
 
-    $f=explode("\n",@file_get_contents($target));
-    krsort($f);
 
     $tooltips["paused"]="<label class='label label-warning'>{paused}</label>";
     $tooltips["exited"]="<label class='label label-danger'>{stopped}</label>";
@@ -76,10 +73,11 @@ function events_searcher():bool{
         }
         if(!property_exists($json,"level")){continue;}
 
+        // Pentest 2026-11-04 : level/message (donnee externe, journal articarest) affiche sans encodage (XSS stockee).
         $level=$json->level;
         $FTime=$tpl->time_to_date($json->time,true);
-        $level_label="<label class='label label-default'>$level</label>";
-        $message=$json->message;
+        $level_label="<label class='label label-default'>".req_html($level)."</label>";
+        $message=req_html($json->message);
         if(isset($tooltips[$level])){
             $level_label=$tooltips[$level];
         }

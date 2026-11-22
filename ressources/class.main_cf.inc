@@ -309,7 +309,6 @@ class main_cf{
         if($this->main_array["myorigin"]==null){$this->main_array["myorigin"]='$mydomain';}
         if($this->main_array["smtpd_timeout"]==null){$this->main_array["smtpd_timeout"]='300';}
          if($this->main_array["ignore_mx_lookup_error"]==null){$this->main_array["ignore_mx_lookup_error"]='no';}
-        if($this->main_array["disable_dns_lookups"]==null){$this->main_array["disable_dns_lookups"]='no';}
         if($this->main_array["smtpd_tls_ask_ccert"]==null){$this->main_array["smtpd_tls_ask_ccert"]='no';}
         if($this->main_array["smtpd_tls_security_level"]==null){$this->main_array["smtpd_tls_security_level"]='none';}
         if($this->main_array["smtpd_tls_req_ccert"]==null){$this->main_array["smtpd_tls_req_ccert"]='no';}
@@ -649,7 +648,7 @@ class main_cf{
 
 
         if($NoRestartDaemon==0){
-            $datas=$sock->getFrameWork('cmd.php?SaveMaincf=yes');
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/reconfigure");
             writepostfixlogs("Send order to restart daemon done...");
         }
 
@@ -849,8 +848,8 @@ class master_cf{
         $this->edit_service("bsmtp   ","unix","-","n","n",        "-","-",array("pipe",'flags=Fq. user=bsmtp argv=/usr/lib/bsmtp/bsmtp -t$nexthop -f$sender $recipient'));
         $this->edit_service("scalemail-backend","unix","-","n","n","-","2",array("pipe",
             'flags=R user=scalemail argv=/usr/lib/scalemail/bin/scalemail-store ${nexthop} ${user} ${extension}'));
-        $sock=new sockets();
-        $sock->getFrameWork("cmd.php?postfix-throttle=yes&instance=$this->hostname");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport/$this->hostname");
+
 
 
     }
@@ -890,8 +889,7 @@ class master_cf{
         $q->QUERY_SQL($sql,"artica_backup");
         if(!$q->ok){echo __CLASS__.'/'.__FUNCTION__ ." (".__LINE__.") failed\n$q->mysql_error\n<H2>$sql</H2>";return false;}
         if(!$this->noService){
-            $sock=new sockets();
-            $sock->getFrameWork("cmd.php?postfix-throttle=yes&instance=$this->hostname");
+            $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport/$this->hostname");
         }
         return true;
     }
@@ -915,8 +913,7 @@ class master_cf{
         $sql="UPDATE master_cf SET `COMMAND`='$options' WHERE zmd5='$zmd5'";
         $q->QUERY_SQL($sql,"artica_backup");
         if(!$q->ok){echo __CLASS__.'/'.__FUNCTION__ ." (".__LINE__.") failed\n$q->mysql_error\n<H2>$sql</H2>";return false;}
-        $sock=new sockets();
-        $sock->getFrameWork("cmd.php?postfix-throttle=yes&instance=$this->hostname");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport/$this->hostname");
         return true;
     }
     function del_command_options($zmd5,$index){
@@ -938,8 +935,7 @@ class master_cf{
         $sql="UPDATE master_cf SET `COMMAND`='$options'";
         $q->QUERY_SQL($sql,"artica_backup");
         if(!$q->ok){echo __CLASS__.'/'.__FUNCTION__ ." (".__LINE__.") failed\n$q->mysql_error\n<H2>$sql</H2>";return false;}
-        $sock=new sockets();
-        $sock->getFrameWork("cmd.php?postfix-throttle=yes&instance=$this->hostname");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport/$this->hostname");
         return true;
     }
 
@@ -949,8 +945,7 @@ class master_cf{
         writelogs("$sql=$zdm5",__CLASS__.'/'.__FUNCTION__,__FILE__,__LINE__);
         $q->QUERY_SQL($sql,"artica_backup");
         if(!$q->ok){echo __CLASS__.'/'.__FUNCTION__ ." (".__LINE__.") failed\n$q->mysql_error\n<H2>$sql</H2>";return false;}
-        $sock=new sockets();
-        $sock->getFrameWork("cmd.php?postfix-throttle=yes&instance=$this->hostname");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/transport/$this->hostname");
         return true;
     }
 
@@ -1003,12 +998,8 @@ class master_cf{
                 return false;
             }
         }
-
-        $sock=new sockets();
-        $sock->SET_INFO("MasterCFEnabled",1);
-        if($NoRestartDaemon==0){$datas=$sock->getFrameWork('cmd.php?SaveMaincf=yes');}
-        $tpl=new templates();
-
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("MasterCFEnabled",1);
+        $GLOBALS["CLASS_SOCKETS"]->REST_API_POSTFIX("/postfix/reconfigure");
         return true;
 
 
@@ -1681,7 +1672,7 @@ class main_perso{
         $q->QUERY_SQL($sql,"artica_backup");
         if(!$q->ok){echo $q->mysql_error."\nfile: ".__FILE__."\nline:".__LINE__;return;}
         $sock=new sockets();
-        $sock->getFrameWork("cmd.php?postfix-perso-settings=yes");
+        $sock->REST_API_POSTFIX("/postfix/articafilter/0");
 
 
     }
@@ -1710,7 +1701,7 @@ class main_perso{
         $q->QUERY_SQL($sql,"artica_backup");
         if(!$q->ok){echo $q->mysql_error."\nfile: ".__FILE__."\nline:".__LINE__;return;}
         $sock=new sockets();
-        $sock->getFrameWork("cmd.php?postfix-perso-settings=yes");
+        $sock->REST_API_POSTFIX("/postfix/articafilter/0");
 
     }
 
@@ -1879,7 +1870,6 @@ function array_postfix_status(){
     $array[]="SPFMILTER";
     $array[]="CLAMAV";
     $array[]="FRESHCLAM";
-    $array[]="MAILSPY";
     $array[]="KAVMILTER";
     $array[]="KAS_MILTER";
     $array[]="KAS3";
@@ -1890,8 +1880,6 @@ function array_postfix_status(){
     $array[]="MAILMAN";
     $array[]="APP_CYRUS_IMAP";
     $array[]="MAILARCHIVER";
-    $array[]="APP_OPENDKIM";
-    $array[]="APP_MILTER_DKIM";
     $array[]="APP_ZARAFA";
     $array[]="APP_ZARAFA_SPOOLER";
     $array[]="APP_ZARAFA_GATEWAY";

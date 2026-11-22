@@ -5,6 +5,8 @@ include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : les parametres base64 database-* etaient recopies sans encodage dans la page (XSS).
+foreach (array("database-js","database-tabs","database-link-js","database-link-perform","database-databases","database-databases-list","database-link-popup","database-popup") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^A-Za-z0-9+/=]#','',(string)$_GET[$xk]);}}
 if(isset($_GET["database-js"])){database_mysql_js();exit;}
 if(isset($_GET["database-popup"])){database_popup();exit;}
 if(isset($_POST["create-database"])){database_save();exit;}
@@ -23,7 +25,7 @@ function database_mysql_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["database-js"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$title="{new_database}";
 
 	if(isset($MAINDEF["database"])){
@@ -46,7 +48,7 @@ function database_link_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["database-link-js"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
 	$tpl->js_dialog2("{member} {$MAINDEF["user"]}@{$MAINDEF["host"]} {link_database}","$page?database-link-popup=$MAIN");
@@ -57,12 +59,14 @@ function database_link_perform(){
 	$MAIN=$_GET["database-link-perform"];
 	$md=$_GET["md"];
 	$tpl=new template_admin();
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$database=$_GET["database"];
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
 	$q=new mysql();
-	$q->QUERY_SQL("GRANT ALL PRIVILEGES ON $database.* TO '$user'@'$host';");
+	// Pentest 2026-11-04 : database (identifiant) et user/host (parametre de l'URL) etaient concatenes dans la requete.
+	$database=preg_replace('/[^A-Za-z0-9_$-]/','',strval($database));
+	$q->QUERY_SQL("GRANT ALL PRIVILEGES ON `$database`.* TO '".mysql_escape_string2($user)."'@'".mysql_escape_string2($host)."';");
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 	header("content-type: application/x-javascript");
 	echo "$('#$md').remove();\n";
@@ -224,7 +228,7 @@ function database_databases_list(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["database-databases-list"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
 	
@@ -251,7 +255,8 @@ function database_databases_list(){
 	
 	
 	$TRCLASS=null;
-	$results=$q->QUERY_SQL("SELECT * FROM `db` WHERE `User`='$user' AND `Host`='$host' ORDER BY `Db`","mysql");
+	// Pentest 2026-11-04 : user/host (parametre de l'URL) etaient concatenes dans la requete.
+	$results=$q->QUERY_SQL("SELECT * FROM `db` WHERE `User`='".mysql_escape_string2($user)."' AND `Host`='".mysql_escape_string2($host)."' ORDER BY `Db`","mysql");
 	if(!$q->ok){echo $tpl->FATAl_ERROR_SHOW_128($q->mysql_error);return;}
 	
 	while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){
@@ -314,14 +319,15 @@ function database_link_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$MAIN=$_GET["database-link-popup"];
-	$MAINDEF=unserialize(base64_decode($MAIN));
+	$MAINDEF=unserialize(base64_decode($MAIN),array("allowed_classes"=>false));
 	$user=$MAINDEF["user"];
 	$host=$MAINDEF["host"];
 	
 	
 	
 	
-	$results=$q->QUERY_SQL("SELECT `Db` FROM `db` WHERE `User`='$user' AND `Host`='$host' ORDER BY `Db`","mysql");
+	// Pentest 2026-11-04 : user/host (parametre de l'URL) etaient concatenes dans la requete.
+	$results=$q->QUERY_SQL("SELECT `Db` FROM `db` WHERE `User`='".mysql_escape_string2($user)."' AND `Host`='".mysql_escape_string2($host)."' ORDER BY `Db`","mysql");
 	if(!$q->ok){echo $tpl->FATAl_ERROR_SHOW_128($q->mysql_error);return;}
 	
 	while($ligne=@mysqli_fetch_array($results,MYSQLI_ASSOC)){

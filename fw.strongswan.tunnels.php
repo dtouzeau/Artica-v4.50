@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 // SP 127
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc"); if (!isset($GLOBALS["CLASS_SOCKETS"])) {
     if (!class_exists("sockets")) {
@@ -7,6 +10,8 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc"); if (!iss
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 }
 include_once(dirname(__FILE__) . '/framework/class.unix.inc');
+// Include INCONDITIONNEL de premier niveau (CLAUDE.md, awc-* regle 1).
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus(); if (!$users->AsVPNManager) {
     exit();
 }
@@ -251,11 +256,13 @@ function wizard_site2site_save()
 
 
     if (isset($_POST["connection_name"])) {
-        $sql1=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_conns WHERE `conn_name`='{$_SESSION["WIZARDS2S"]["connection_name"]}'");
+        // Pentest 2026-11-04 : connection_name etait concatene dans la requete.
+        $r_sql1=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_conns WHERE `conn_name`=?",array($_SESSION["WIZARDS2S"]["connection_name"]));
+        $sql1=isset($r_sql1[0]) ? $r_sql1[0] : array();
         $Items=$sql1['count'];
 
         if ($Items>0) {
-            echo "jserror: The connection name already exist, please choose a new one\n";
+            echo (new template_admin())->post_error("The connection name already exist, please choose a new one\n");
         }
     }
 
@@ -263,7 +270,7 @@ function wizard_site2site_save()
     if (isset($_POST["rightsubnet"])) {
         $ipClass=new IP();
         if (!$ipClass->isValid($_POST["rightsubnet"])) {
-            echo "jserror: Invalid remote subnet";
+            echo (new template_admin())->post_error("Invalid remote subnet");
         }
     }
     if (isset($_POST["right"])) {
@@ -272,10 +279,10 @@ function wizard_site2site_save()
         $netmask=$net->NETMASK;
         $ipaddr=$net->IPADDR;
         if (!$IpClass->isValid($_POST["right"])) {
-            echo "jserror: Invalid remote ip address";
+            echo (new template_admin())->post_error("Invalid remote ip address");
         }
         if ($left==$_POST["right"]) {
-            echo "jserror: Same network (Source/Remote)";
+            echo (new template_admin())->post_error("Same network (Source/Remote)");
         }
         $rightsubnet=$IpClass->maskTocdir($ipaddr, $netmask);
         $ipaddrTB=explode(".", $ipaddr);
@@ -285,7 +292,7 @@ function wizard_site2site_save()
             $IpToTest=@implode(".", $ipaddrTB).".".rand(1, 255);
         }
         if (ip_in_range($IpToTest, $RightNetmaskToTest)) {
-            echo "jserror:Your network $IpToTest cannot be same of the remote network $RightNetmaskToTest for routing incompatibility";
+            echo (new template_admin())->post_error("Your network $IpToTest cannot be same of the remote network $RightNetmaskToTest for routing incompatibility");
         }
     }
     //echo "jserror: ho!! you have made a wrong patternn...";
@@ -312,17 +319,18 @@ function wizard_site2site_final_save()
     $saveparams='[{"type":"text","required":false,"label":"connection name","description":"Name of connection. Don`t use special characters or spaces. Example: siteX-to-siteY","className":"form-control","name":"conn","access":false,"subtype":"text","value": "'.$conn_name.'"},{"type":"select","required":false,"label":"authby","description":"How the two security gateways should authenticate each other; acceptable values are secret or pskfor pre-shared secrets, pubkey (the default) for public key signatures as well as the synonyms rsasigfor RSA digital signatures and ecdsasig for Elliptic Curve DSA signatures.never can be used if negotiation is never to be attempted or accepted (useful for shunt-only conns).Digital signatures are superior in every way to shared secrets. IKEv1 additionally supports the valuesxauthpsk and xauthrsasig that will enable eXtended Authentication (XAuth) in addition to IKEv1 mainmode based on shared secrets or digital RSA signatures, respectively.This parameter is deprecated for IKEv2 connections (and IKEv1 connections since 5.0.0), as two peersdo not need to agree on an authentication method. Use the left|rightauth parameter instead to defineauthentication methods.","className":"form-control","name":"authby","access":false,"multiple":false,"values":[{"label":"pubkey","value":"pubkey"},{"label":"rsasig","value":"rsasig"},{"label":"ecdsasig","value":"ecdsasig"},{"label":"psk","value":"psk"},{"label":"secret","value":"secret","selected":true},{"label":"xauthrsasig","value":"xauthrsasig"},{"label":"xauthpsk","value":"xauthpsk"},{"label":"never","value":"never"}]},{"type":"select","required":false,"label":"auto","description":"What operation, if any, should be done automatically at IPsec startup. add loads a connection withoutstarting it. route loads a connection and installs kernel traps. If traffic is detected betweenleftsubnet and rightsubnet, a connection is established. start loads a connection and bringsit up immediately. ignore ignores the connection. This is equal to deleting a connection from the configfile. Relevant only locally, other end need not agree on it.","className":"form-control","name":"auto","access":false,"multiple":false,"values":[{"label":"ignore","value":"ignore"},{"label":"add","value":"add"},{"label":"route","value":"route"},{"label":"start","value":"start","selected":true}]},{"type":"select","required":false,"label":"type","description":"The type of the connection; currently the accepted values are Tunnel: signifying a host-to-host,host-to-subnet, or subnet-to-subnet tunnel;Transport: signifying host-to-host transport mode;Transport_proxy: signifying the special Mobile IPv6 transport proxy mode;Passthrough: signifying that no IPsec processing should be done at all;Drop, signifying that packetsshould be discarded.","className":"form-control","name":"type","access":false,"multiple":false,"values":[{"label":"tunnel","value":"tunnel","selected":true},{"label":"transport","value":"transport"},{"label":"transport_proxy","value":"transport_proxy"},{"label":"passthrough","value":"passthrough"},{"label":"drop","value":"drop"}]},{"type":"text","required":false,"label":"left","description":"The IP address of the participant`s public-network interface or one of several magic values.The value %any for the local endpoint signifies an address to be filled in(by automatic keying) during negotiation. If the local peer initiates the connection setup the routing tablewill be queried to determine the correct local IP address. In case the local peer is responding to a connectionsetup then any IP address that is assigned to a local interface will be accepted. The value %any4 restrictsaddress selection to IPv4 addresses, the value %any6 reistricts address selection to IPv6 addresses.Prior to 5.0.0 specifying %any for the local endpoint was not supported for IKEv1 connections, insteadthe keyword %defaultroute could be used, causing the value to be filled in automatically with the localaddress of the default-route interface (as determined at IPsec startup time and during configurationupdate). Either left or right may be %defaultroute, but not both.The prefix % in front of a fully-qualified domain name or an IP address will implicitly set left|rightallowany=yes.If %any is used for the remote endpoint it literally means any IP address.If an FQDN is assigned it is resolved every time a configuration lookup is done. If DNS resolution times out,the lookup is delayed for that time.Since 5.1.1 connections can be limited to a specific range of hosts. To do so a range (10.1.0.0-10.2.255.255)or a subnet (10.1.0.0/16) can be specified, and multiple addresses, ranges and subnets can be separated by commas.While one can freely combine these items, to initiate the connection at least one non-range/subnet is required.Please note that with the usage of wildcards multiple connection descriptions might match a given incomingconnection attempt. The most specific description is used in that case.","className":"form-control","name":"left","access":false,"subtype":"text","value": "'.$left.'"},{"type":"text","required":false,"label":"leftsubnet","description":"Private subnet behind the left participant, expressed as network/netmask; if omitted, essentially assumedto be left/32|128, signifying that the left|right end of the connection goes to the left|right participant only.The configured subnets of the peers may differ, the protocol narrows it to the greatest common subnet.Since 5.0.0 this is also done for IKEv1, but as this may lead to problems with other implementations,make sure to configure identical subnets in such configurations.IKEv2 supports multiple subnets separated by commas, IKEv1 only interprets the first subnet of such a definition,unless the Cisco Unity extension plugin is enabled (available since 5.0.1). This is due to a limitation of the IKEv1protocol, which only allows a single pair of subnets per CHILD_SA. So to tunnel several subnets a conn entry hasto be defined and brought up for each pair of subnets.Since 5.1.0 the optional part after each subnet enclosed in square brackets specifies a protocol/port to restrictthe selector for that subnet. Examples: leftsubnet=10.0.0.1[tcp/http],10.0.0.2[6/80] or leftsubnet=fec1::1[udp],10.0.0.0/16[/53].Instead of omitting either value %any can be used to the same effect, e.g. leftsubnet=fec1::1[udp/%any],10.0.0.0/16[%any/53].Since 5.1.1, if the protocol is icmp or ipv6-icmp the port is interpreted as ICMP message type if it is less than 256,or as type and code if it greater or equal to 256, with the type in the most significant 8 bits and the code in theleast significant 8 bits.The port value can alternatively take the value %opaque for RFC 4301 OPAQUE selectors, or a numerical rangein the form 1024-65535. None of the kernel backends currently supports opaque or port ranges and uses %anyfor policy installation instead.Instead of specifying a subnet, %dynamic can be used to replace it with the IKE address, having the same effectas omitting left|rightsubnet completely. Using %dynamic can be used to define multiple dynamic selectors,each having a potentially different protocol/port definition.","className":"form-control","name":"leftsubnet","access":false,"subtype":"text","value": "'.$leftsubnet.'"},{"type": "text","required": true,"label": "leftid","description": "How the left|right participant should be identified for authentication; defaults to left|right or the subject of the certificate configured with left|rightcert. If left|rightcert is configured the identity has to be confirmed by the certificate, that is, it has to match the full subject DN or one of the subjectAltName extensions contained in the certificate.Can be an IP address, a fully-qualified domain name, an email address or a Distinguished Name for which theID type is determined automatically and the string is converted to the appropriate encoding.","className": "form-control","name": "leftid","access": true,"value": "'.$leftid.'","subtype": "text"},{"type":"text","required":false,"label":"right","description":"The IP address of the participant`s public-network interface or one of several magic values.The value %any for the local endpoint signifies an address to be filled in(by automatic keying) during negotiation. If the local peer initiates the connection setup the routing tablewill be queried to determine the correct local IP address. In case the local peer is responding to a connectionsetup then any IP address that is assigned to a local interface will be accepted. The value %any4 restrictsaddress selection to IPv4 addresses, the value %any6 reistricts address selection to IPv6 addresses.Prior to 5.0.0 specifying %any for the local endpoint was not supported for IKEv1 connections, insteadthe keyword %defaultroute could be used, causing the value to be filled in automatically with the localaddress of the default-route interface (as determined at IPsec startup time and during configurationupdate). Either left or right may be %defaultroute, but not both.The prefix % in front of a fully-qualified domain name or an IP address will implicitly set left|rightallowany=yes.If %any is used for the remote endpoint it literally means any IP address.If an FQDN is assigned it is resolved every time a configuration lookup is done. If DNS resolution times out,the lookup is delayed for that time.Since 5.1.1 connections can be limited to a specific range of hosts. To do so a range (10.1.0.0-10.2.255.255)or a subnet (10.1.0.0/16) can be specified, and multiple addresses, ranges and subnets can be separated by commas.While one can freely combine these items, to initiate the connection at least one non-range/subnet is required.Please note that with the usage of wildcards multiple connection descriptions might match a given incomingconnection attempt. The most specific description is used in that case.","className":"form-control","name":"right","access":false,"subtype":"text","value": "'.$right.'"},{"type":"text","required":false,"label":"rightsubnet","description":"Private subnet behind the left participant, expressed as network/netmask; if omitted, essentially assumedto be left/32|128, signifying that the left|right end of the connection goes to the left|right participant only.The configured subnets of the peers may differ, the protocol narrows it to the greatest common subnet.Since 5.0.0 this is also done for IKEv1, but as this may lead to problems with other implementations,make sure to configure identical subnets in such configurations.IKEv2 supports multiple subnets separated by commas, IKEv1 only interprets the first subnet of such a definition,unless the Cisco Unity extension plugin is enabled (available since 5.0.1). This is due to a limitation of the IKEv1protocol, which only allows a single pair of subnets per CHILD_SA. So to tunnel several subnets a conn entry hasto be defined and brought up for each pair of subnets.Since 5.1.0 the optional part after each subnet enclosed in square brackets specifies a protocol/port to restrictthe selector for that subnet. Examples: leftsubnet=10.0.0.1[tcp/http],10.0.0.2[6/80] or leftsubnet=fec1::1[udp],10.0.0.0/16[/53].Instead of omitting either value %any can be used to the same effect, e.g. leftsubnet=fec1::1[udp/%any],10.0.0.0/16[%any/53].Since 5.1.1, if the protocol is icmp or ipv6-icmp the port is interpreted as ICMP message type if it is less than 256,or as type and code if it greater or equal to 256, with the type in the most significant 8 bits and the code in theleast significant 8 bits.The port value can alternatively take the value %opaque for RFC 4301 OPAQUE selectors, or a numerical rangein the form 1024-65535. None of the kernel backends currently supports opaque or port ranges and uses %anyfor policy installation instead.Instead of specifying a subnet, %dynamic can be used to replace it with the IKE address, having the same effectas omitting left|rightsubnet completely. Using %dynamic can be used to define multiple dynamic selectors,each having a potentially different protocol/port definition.","className":"form-control","name":"rightsubnet","access":false,"subtype":"text","value": "'.$rightsubnet.'"},{"type":"text","required":false,"label":"ike","description":"Comma-separated list of IKE/ISAKMP SA encryption/authentication algorithms to be used, e.g.aes128-sha256-modp3072. The notation is encryption-integrity[-prf]-dhgroup. In IKEv2, multiple algorithmsand proposals may be included, such as aes128-aes256-sha1-modp3072-modp2048,3des-sha1-md5-modp1024.The ability to configure a PRF algorithm different to that defined for integrity protection was added with 5.0.2.If no PRF is configured, the algorithms defined for integrity are proposed as PRF. The prf keywords are the same asthe integrity algorithms, but have a prf prefix (such as prfsha1, prfsha256 or prfaesxcbc).","className":"form-control","name":"ike","access":false,"subtype":"text","value":"aes256-sha2_256-modp1024!"},{"type":"text","required":false,"label":"ikelifetime","description":"Absolute time after which an IKE SA expires. Examples: 1h, 3600s, 28800s","className":"form-control","name":"ikelifetime","access":false,"subtype":"text","value":"28800"},{"type":"select","required":false,"label":"keyexchange","description":"Method of key exchange; which protocol should be used to initialize the connection.","className":"form-control","name":"keyexchange","access":false,"multiple":false,"values":[{"label":"ikev2","value":"ikev2","selected":true},{"label":"ikev1","value":"ikev1"}]},{"type":"text","required":false,"label":"esp","description":"Comma-separated list of ESP encryption/authentication algorithms to be used for the connection, e.g.aes128-sha256. The notation is encryption-integrity[-dhgroup][-esnmode].For IKEv2, multiple algorithms (separated by -) of the same type can be included in a single proposal.IKEv1 only includes the first algorithm in a proposal. Only either the ah or the esp keyword maybe used, AH+ESP bundles are not supported.","className":"form-control","name":"esp","access":false,"subtype":"text","value":"aes256-sha2_256!"},{"type": "number","required": true,"label": "dpddelay","description": "Defines the period time interval with which R_U_THERE messages/INFORMATIONAL exchanges are sent to the peer.These are only sent if no other traffic is received. In IKEv2, a value of 0 sends no additional INFORMATIONALmessages and uses only standard messages (such as those to rekey) to detect dead peers.","className": "form-control","name": "dpddelay","access": true,"value": "30","min": 0,"max": 9000,"step": 5},{"type": "select","required": true,"label": "dpdaction","className": "form-control","name": "dpdaction","access": true,"multiple": false,"values": [{"label": "none","value": "none"},{"label": "clear","value": "clear"},{"label": "hold","value": "hold"},{"label": "restart","value": "restart","selected": true}]}]';
     $saveparams=json_decode($saveparams, true);
     $PARAMS=base64_encode(serialize($saveparams));
-    $sql="INSERT INTO strongswan_conns (`conn_name`,`params`,`order`,`enable`) VALUES ('{$_SESSION["WIZARDS2S"]["connection_name"]}','{$PARAMS}','0','1')";
+    // Pentest 2026-11-04 : connection_name et psk etaient concatenes dans la requete.
+    $sql="INSERT INTO strongswan_conns (`conn_name`,`params`,`order`,`enable`) VALUES (?,?,'0','1')";
 
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,array($_SESSION["WIZARDS2S"]["connection_name"],$PARAMS));
     if (!$q->ok) {
         echo $q->mysql_error;
     } else {
-        $lastid=$q->last_id;
+        $lastid=intval($q->last_id);
         $sql="INSERT INTO strongswan_auth (`conn_id`,`selector`,`type`,`cert`,`secret`,`order`,`enable`)
-			VALUES ('$lastid','','1','','{$_SESSION["WIZARDS2S"]["psk"]}','0','1');";
-        $q->QUERY_SQL($sql);
+			VALUES ('$lastid','','1','',?,'0','1');";
+        $q->QUERY_SQL_PARAMS($sql,array($_SESSION["WIZARDS2S"]["psk"]));
         $_SESSION["POSTFORMED"]=serialize($_POST);
         //$sock->getFrameWork("strongswan.php?build-auth=yes");
         //build_progress();
@@ -407,8 +415,9 @@ function wizard_rw_step3()
     $psk= shell_exec("head -c 24 /dev/urandom | base64");
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     $tunnelcert=$_SESSION["WIZARDRW"]["certificate"];
-    $sql="SELECT server_key FROM strongswan_certs WHERE `server_cert`='$tunnelcert'";
-    $usercert = $q->QUERY_SQL($sql);
+    // Pentest 2026-11-04 : certificate etait concatene dans la requete.
+    $sql="SELECT server_key FROM strongswan_certs WHERE `server_cert`=?";
+    $usercert = $q->QUERY_SQL_PARAMS($sql,array($tunnelcert));
 
     $tpl->field_hidden("WIZARDRW_TO_SAVE", 1);
     $form[]=$tpl->field_section("User {certificate}", "{RW_CERT_EXPLAIN_USER}");
@@ -461,20 +470,23 @@ function wizard_rw_save()
         $_SESSION["WIZARDRW"][$key]=$value;
     }
     if (isset($_POST["connection_name"])) {
-        $sql1=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_conns WHERE `conn_name`='{$_SESSION["WIZARDRW"]["connection_name"]}'");
+        // Pentest 2026-11-04 : connection_name, selector et usercert etaient concatenes dans la requete.
+        $r_sql1=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_conns WHERE `conn_name`=?",array($_SESSION["WIZARDRW"]["connection_name"]));
+        $sql1=isset($r_sql1[0]) ? $r_sql1[0] : array();
         $Items=$sql1['count'];
 
         if ($Items>0) {
-            echo "jserror: The connection name already exist, please choose a new one\n";
+            echo (new template_admin())->post_error("The connection name already exist, please choose a new one\n");
         }
     }
 
     if (isset($_POST["selector"])) {
-        $sql2=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_auth WHERE `selector`='{$_SESSION["WIZARDRW"]["selector"]}'");
+        $r_sql2=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_auth WHERE `selector`=?",array($_SESSION["WIZARDRW"]["selector"]));
+        $sql2=isset($r_sql2[0]) ? $r_sql2[0] : array();
         $Items2=$sql2['count'];
 
         if ($Items2>0) {
-            echo "jserror: The selector name is already in use by other tunnel, please choose a new one\n";
+            echo (new template_admin())->post_error("The selector name is already in use by other tunnel, please choose a new one\n");
         }
     }
 
@@ -489,7 +501,7 @@ function wizard_rw_save()
                         $_values= getVal($key["values"]);
                         //echo $_values;
                         if ($_values==$_SESSION["WIZARDRW"]["certificate"].'.pem') {
-                            echo "jserror: The certificate is already in use by the other tunnel, plese select a new one";
+                            echo (new template_admin())->post_error("The certificate is already in use by the other tunnel, plese select a new one");
                             return;
                         }
                     }
@@ -499,11 +511,12 @@ function wizard_rw_save()
     }
 
     if (isset($_POST["usercert"])) {
-        $sql3=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_auth WHERE `cert`='{$_SESSION["WIZARDRW"]["usercert"]}.pem'");
+        $r_sql3=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_auth WHERE `cert`=?",array($_SESSION["WIZARDRW"]["usercert"].".pem"));
+        $sql3=isset($r_sql3[0]) ? $r_sql3[0] : array();
         $Items3=$sql3['count'];
 
         if ($Items3>0) {
-            echo "jserror: The certificate is already in use by other tunnel, please choose a new one\n";
+            echo (new template_admin())->post_error("The certificate is already in use by other tunnel, please choose a new one\n");
         }
     }
 }
@@ -528,21 +541,22 @@ function wizard_rw_final_save()
     $saveparams='[{"type": "text","required": true,"label": "connection name","description": "Name of connection. Don`t use special characters or spaces. Example: siteX-to-siteY","className": "form-control","name": "conn","access": true,"value": "'.$conn_name.'","subtype": "text"},{"type": "select","required": true,"label": "auto","description": "What operation, if any, should be done automatically at IPsec startup. add loads a connection withoutstarting it. route loads a connection and installs kernel traps. If traffic is detected betweenleftsubnet and rightsubnet, a connection is established. start loads a connection and bringsit up immediately. ignore ignores the connection. This is equal to deleting a connection from the configfile. Relevant only locally, other end need not agree on it.","className": "form-control","name": "auto","access": true,"multiple": false,"values": [{"label": "ignore","value": "ignore"},{"label": "add","value": "add","selected": true},{"label": "route","value": "route"},{"label": "start","value": "start"}]},{"type": "select","required": true,"label": "compress","description": "Whether IPComp compression of content is proposed on the connection (link-level compression does not work onencrypted data, so to be effective, compression must be done before encryption). A value of yes causes the daemonto propose both compressed and uncompressed, and prefer compressed. A value of no prevents the daemon from proposing or accepting compression.","className": "form-control","name": "compress","access": true,"multiple": false,"values": [{"label": "yes","value": "yes"},{"label": "no","value": "no","selected": true}]},{"type": "select","required": true,"label": "type","description": "The type of the connection; currently the accepted values are Tunnel: signifying a host-to-host,host-to-subnet, or subnet-to-subnet tunnel;Transport: signifying host-to-host transport mode;Transport_proxy: signifying the special Mobile IPv6 transport proxy mode;Passthrough: signifying that no IPsec processing should be done at all;Drop, signifying that packetsshould be discarded.","className": "form-control","name": "type","access": true,"multiple": false,"values": [{"label": "tunnel","value": "tunnel","selected": true},{"label": "transport","value": "transport"},{"label": "transport_proxy","value": "transport_proxy"},{"label": "passthrough","value": "passthrough"},{"label": "drop","value": "drop"}]},{"type": "select","required": true,"label": "keyexchange","description": "Method of key exchange; which protocol should be used to initialize the connection.","className": "form-control","name": "keyexchange","access": true,"multiple": false,"values": [{"label": "ikev2","value": "ikev2","selected": true},{"label": "ikev1","value": "ikev1"}]},{"type": "select","required": true,"label": "fragmentation","description": "Fhether to use IKE fragmentation (proprietary IKEv1 extension or IKEv2 fragmentation as per RFC 7383).Fragmented messages sent by a peer are always processed irrespective of the value of this option (even when set to no).If set to yes (the default since 5.5.1) and the peer supports it, oversized IKE messages will be sent in fragments (themaximum fragment size can be configured in strongswan.conf). If set to accept (available since 5.5.3) support forfragmentation is announced to the peer but the daemon does not send its own messages in fragments.If set to force (only supported for IKEv1) the initial IKE message will already be fragmented if required.Available for IKEv1 connections since 5.0.2 and for IKEv2 connections since 5.2.1.","className": "form-control","name": "fragmentation","access": true,"multiple": false,"values": [{"label": "yes","value": "yes","selected": true},{"label": "no","value": "no"},{"label": "accept","value": "accept"},{"label": "force","value": "force"}]},{"type": "select","required": true,"label": "forceencaps","description": "Force UDP encapsulation for ESP packets even if no NAT situation is detected.This may help to surmount restrictive firewalls. In order to force the peer toencapsulate packets, NAT detection payloads are faked.Not supported for IKEv1 connections prior to 5.0.0.","className": "form-control","name": "forceencaps","access": true,"multiple": false,"values": [{"label": "yes","value": "yes","selected": true},{"label": "no","value": "no"}]},{"type": "select","required": true,"label": "dpdaction","className": "form-control","name": "dpdaction","access": true,"multiple": false,"values": [{"label": "none","value": "none"},{"label": "clear","value": "clear"},{"label": "hold","value": "hold"},{"label": "restart","value": "restart","selected": true}]},{"type": "number","required": true,"label": "dpddelay","description": "Defines the period time interval with which R_U_THERE messages/INFORMATIONAL exchanges are sent to the peer.These are only sent if no other traffic is received. In IKEv2, a value of 0 sends no additional INFORMATIONALmessages and uses only standard messages (such as those to rekey) to detect dead peers.","className": "form-control","name": "dpddelay","access": true,"value": "300","min": 0,"max": 9000,"step": 5},{"type": "select","required": true,"label": "rekey","description": "Whether a connection should be renegotiated when it is about to expire. The two ends need not agree, butwhile a value of no prevents the daemon from requesting renegotiation, it does not prevent respondingto renegotiation requested from the other end, so no will be largely ineffective unless both ends agree on it.","className": "form-control","name": "rekey","access": true,"multiple": false,"values": [{"label": "yes","value": "yes"},{"label": "no","value": "no","selected": true}]},{"type": "text","required": true,"label": "left","description": "The IP address of the participant`s public-network interface or one of several magic values.The value %any for the local endpoint signifies an address to be filled in(by automatic keying) during negotiation. If the local peer initiates the connection setup the routing tablewill be queried to determine the correct local IP address. In case the local peer is responding to a connectionsetup then any IP address that is assigned to a local interface will be accepted. The value %any4 restrictsaddress selection to IPv4 addresses, the value %any6 reistricts address selection to IPv6 addresses.Prior to 5.0.0 specifying %any for the local endpoint was not supported for IKEv1 connections, insteadthe keyword %defaultroute could be used, causing the value to be filled in automatically with the localaddress of the default-route interface (as determined at IPsec startup time and during configurationupdate). Either left or right may be %defaultroute, but not both.The prefix % in front of a fully-qualified domain name or an IP address will implicitly set left|rightallowany=yes.If %any is used for the remote endpoint it literally means any IP address.If an FQDN is assigned it is resolved every time a configuration lookup is done. If DNS resolution times out,the lookup is delayed for that time.Since 5.1.1 connections can be limited to a specific range of hosts. To do so a range (10.1.0.0-10.2.255.255)or a subnet (10.1.0.0/16) can be specified, and multiple addresses, ranges and subnets can be separated by commas.While one can freely combine these items, to initiate the connection at least one non-range/subnet is required.Please note that with the usage of wildcards multiple connection descriptions might match a given incomingconnection attempt. The most specific description is used in that case.","className": "form-control","name": "left","access": true,"value": "'.$left.'","subtype": "text"},{"type": "text","required": true,"label": "leftid","description": "How the left|right participant should be identified for authentication; defaults to left|right or the subject of the certificate configured with left|rightcert. If left|rightcert is configured the identity has to be confirmed by the certificate, that is, it has to match the full subject DN or one of the subjectAltName extensions contained in the certificate.Can be an IP address, a fully-qualified domain name, an email address or a Distinguished Name for which theID type is determined automatically and the string is converted to the appropriate encoding.","className": "form-control","name": "leftid","access": true,"value": "'.$left.'","subtype": "text"},{"type": "select","required": true,"label": "leftsendcert","description": "Accepted values are never or no, always or yes, and ifasked, the latter meaning thatthe peer must send a certificate request (CR) payload in order to get a certificate in return.","className": "form-control","name": "leftsendcert","access": true,"multiple": false,"values": [{"label": "never","value": "never"},{"label": "no","value": "no"},{"label": "ifasked","value": "ifasked"},{"label": "always","value": "always","selected": true},{"label": "yes","value": "yes"}]},{"type": "select","required": true,"label": "leftcert","description": "The path to the left|right participant`s X.509 certificate. The file can be coded either in PEM or DER format.","className": "form-control","name": "leftcert","access": true,"multiple": false,"values": [{"label": "MYCERT","value": "'.$cert.'","selected": true}]},{"type": "text","required": true,"label": "leftsubnet","description": "Private subnet behind the left participant, expressed as network/netmask; if omitted, essentially assumedto be left/32|128, signifying that the left|right end of the connection goes to the left|right participant only.The configured subnets of the peers may differ, the protocol narrows it to the greatest common subnet.Since 5.0.0 this is also done for IKEv1, but as this may lead to problems with other implementations,make sure to configure identical subnets in such configurations.IKEv2 supports multiple subnets separated by commas, IKEv1 only interprets the first subnet of such a definition,unless the Cisco Unity extension plugin is enabled (available since 5.0.1). This is due to a limitation of the IKEv1protocol, which only allows a single pair of subnets per CHILD_SA. So to tunnel several subnets a conn entry hasto be defined and brought up for each pair of subnets.Since 5.1.0 the optional part after each subnet enclosed in square brackets specifies a protocol/port to restrictthe selector for that subnet. Examples: leftsubnet=10.0.0.1[tcp/http],10.0.0.2[6/80] or leftsubnet=fec1::1[udp],10.0.0.0/16[/53].Instead of omitting either value %any can be used to the same effect, e.g. leftsubnet=fec1::1[udp/%any],10.0.0.0/16[%any/53].Since 5.1.1, if the protocol is icmp or ipv6-icmp the port is interpreted as ICMP message type if it is less than 256,or as type and code if it greater or equal to 256, with the type in the most significant 8 bits and the code in theleast significant 8 bits.The port value can alternatively take the value %opaque for RFC 4301 OPAQUE selectors, or a numerical rangein the form 1024-65535. None of the kernel backends currently supports opaque or port ranges and uses %anyfor policy installation instead.Instead of specifying a subnet, %dynamic can be used to replace it with the IKE address, having the same effectas omitting left|rightsubnet completely. Using %dynamic can be used to define multiple dynamic selectors,each having a potentially different protocol/port definition.","className": "form-control","name": "leftsubnet","access": true,"value": "'.$leftsubnet.'","subtype": "text"},{"type": "text","required": true,"label": "right","description": "The IP address of the participant`s public-network interface or one of several magic values.The value %any for the local endpoint signifies an address to be filled in(by automatic keying) during negotiation. If the local peer initiates the connection setup the routing tablewill be queried to determine the correct local IP address. In case the local peer is responding to a connectionsetup then any IP address that is assigned to a local interface will be accepted. The value %any4 restrictsaddress selection to IPv4 addresses, the value %any6 reistricts address selection to IPv6 addresses.Prior to 5.0.0 specifying %any for the local endpoint was not supported for IKEv1 connections, insteadthe keyword %defaultroute could be used, causing the value to be filled in automatically with the localaddress of the default-route interface (as determined at IPsec startup time and during configurationupdate). Either left or right may be %defaultroute, but not both.The prefix % in front of a fully-qualified domain name or an IP address will implicitly set left|rightallowany=yes.If %any is used for the remote endpoint it literally means any IP address.If an FQDN is assigned it is resolved every time a configuration lookup is done. If DNS resolution times out,the lookup is delayed for that time.Since 5.1.1 connections can be limited to a specific range of hosts. To do so a range (10.1.0.0-10.2.255.255)or a subnet (10.1.0.0/16) can be specified, and multiple addresses, ranges and subnets can be separated by commas.While one can freely combine these items, to initiate the connection at least one non-range/subnet is required.Please note that with the usage of wildcards multiple connection descriptions might match a given incomingconnection attempt. The most specific description is used in that case.","className": "form-control","name": "right","access": true,"value": "'.$right.'","subtype": "text"},{"type": "text","required": true,"label": "rightid","description": "How the left|right participant should be identified for authentication; defaults to left|right or the subject of the certificate configured with left|rightcert. If left|rightcert is configured the identity has to be confirmed by the certificate, that is, it has to match the full subject DN or one of the subjectAltName extensions contained in the certificate.Can be an IP address, a fully-qualified domain name, an email address or a Distinguished Name for which theID type is determined automatically and the string is converted to the appropriate encoding.","className": "form-control","name": "rightid","access": true,"value": "'.$right.'","subtype": "text"},{"type": "select","required": true,"label": "rightauth","description": "Authentication method to use locally (left) or require from the remote (right) side. Acceptable values are pubkeyfor public key encryption (RSA/ECDSA), psk for pre-shared key authentication, eap to [require the] use of the Extensible Authentication Protocol, and xauth for IKEv1 eXtended Authentication.","className": "form-control","name": "rightauth","access": true,"multiple": false,"values": [{"label": "pubkey","value": "pubkey"},{"label": "psk","value": "psk"},{"label": "eap","value": "eap"},{"label": "xauth","value": "xauth"},{"label": "eap-mschapv2","value": "eap-mschapv2","selected": true}]},{"type": "text","required": true,"label": "rightsourceip","description": "The internal source IP to use in a tunnel for the remote peer. If the value is config on the responderside, the initiator must propose an address which is then echoed back. Also supported are address poolsexpressed as / and - (since 5.2.2) or the use of an external IP address poolusing %poolname where poolname is the name of the IP address pool used for the lookup (see virtual IP for details).Since 5.0.1 a comma-separated list of IP addresses / pools is accepted, for instance, to define pools ofdifferent address families.","className": "form-control","name": "rightsourceip","access": true,"value": "'.$rightsubnet.'","subtype": "text"},{"type": "text","required": true,"label": "rightdns","description": "Comma separated list of DNS server addresses to exchange as configuration attributes. On the initiator,a server is a fixed IPv4/IPv6 address, or %config4/%config6 to request attributes without an address.On the responder, only fixed IPv4/IPv6 addresses are allowed and define DNS servers assigned to the client.","className": "form-control","name": "rightdns","access": true,"value": "8.8.8.8,8.8.4.4","subtype": "text"},{"type": "select","required": true,"label": "rightsendcert","description": "Accepted values are never or no, always or yes, and ifasked, the latter meaning thatthe peer must send a certificate request (CR) payload in order to get a certificate in return.","className": "form-control","name": "rightsendcert","access": true,"multiple": false,"values": [{"label": "never","value": "never","selected": true},{"label": "no","value": "no"},{"label": "ifasked","value": "ifasked"},{"label": "always","value": "always"},{"label": "yes","value": "yes"}]},{"type": "text","required": true,"label": "eap_identity","description": "Defines the identity the client uses to reply to an EAP Identity request. If defined on the EAP server, the defined identity will be used as peer identity during EAP authentication. The special value %identity uses the EAP Identity method to ask the client for a EAP identity. If not defined, the IKEv2 identity will be used as EAP identity.","className": "form-control","name": "eap_identity","access": true,"value": "%identity","subtype": "text"},{"type":"text","required":false,"label":"ike","description":"Comma-separated list of IKE/ISAKMP SA encryption/authentication algorithms to be used, e.g.aes128-sha256-modp3072. The notation is encryption-integrity[-prf]-dhgroup. In IKEv2, multiple algorithmsand proposals may be included, such as aes128-aes256-sha1-modp3072-modp2048,3des-sha1-md5-modp1024.The ability to configure a PRF algorithm different to that defined for integrity protection was added with 5.0.2.If no PRF is configured, the algorithms defined for integrity are proposed as PRF. The prf keywords are the same asthe integrity algorithms, but have a prf prefix (such as prfsha1, prfsha256 or prfaesxcbc).","className":"form-control","name":"ike","access":false,"subtype":"text","value":"aes128-sha1-modp1024,aes128-sha1-modp1536,aes128-sha1-modp2048,aes128-sha256-ecp256,aes128-sha256-modp1024,aes128-sha256-modp1536,aes128-sha256-modp2048,aes256-aes128-sha256-sha1-modp2048-modp4096-modp1024,aes256-sha1-modp1024,aes256-sha256-modp1024,aes256-sha256-modp1536,aes256-sha256-modp2048,aes256-sha256-modp4096,aes256-sha384-ecp384,aes256-sha384-modp1024,aes256-sha384-modp1536,aes256-sha384-modp2048,aes256-sha384-modp4096,aes256gcm16-aes256gcm12-aes128gcm16-aes128gcm12-sha256-sha1-modp2048-modp4096-modp1024,3des-sha1-modp1024!"},{"type":"text","required":false,"label":"esp","description":"Comma-separated list of ESP encryption/authentication algorithms to be used for the connection, e.g.aes128-sha256. The notation is encryption-integrity[-dhgroup][-esnmode].For IKEv2, multiple algorithms (separated by -) of the same type can be included in a single proposal.IKEv1 only includes the first algorithm in a proposal. Only either the ah or the esp keyword maybe used, AH+ESP bundles are not supported.","className":"form-control","name":"esp","access":false,"subtype":"text","value":"aes128-aes256-sha1-sha256-modp2048-modp4096-modp1024,aes128-sha1,aes128-sha1-modp1024,aes128-sha1-modp1536,aes128-sha1-modp2048,aes128-sha256,aes128-sha256-ecp256,aes128-sha256-modp1024,aes128-sha256-modp1536,aes128-sha256-modp2048,aes128gcm12-aes128gcm16-aes256gcm12-aes256gcm16-modp2048-modp4096-modp1024,aes128gcm16,aes128gcm16-ecp256,aes256-sha1,aes256-sha256,aes256-sha256-modp1024,aes256-sha256-modp1536,aes256-sha256-modp2048,aes256-sha256-modp4096,aes256-sha384,aes256-sha384-ecp384,aes256-sha384-modp1024,aes256-sha384-modp1536,aes256-sha384-modp2048,aes256-sha384-modp4096,aes256gcm16,aes256gcm16-ecp384,3des-sha1!"}]';
     $saveparams=json_decode($saveparams, true);
     $PARAMS=base64_encode(serialize($saveparams));
-    $sql="INSERT INTO strongswan_conns (`conn_name`,`params`,`order`,`enable`) VALUES ('{$_SESSION["WIZARDRW"]["connection_name"]}','{$PARAMS}','0','1')";
+    // Pentest 2026-11-04 : connection_name, selector, psk et usercert etaient concatenes dans la requete.
+    $sql="INSERT INTO strongswan_conns (`conn_name`,`params`,`order`,`enable`) VALUES (?,?,'0','1')";
 
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
 
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,array($_SESSION["WIZARDRW"]["connection_name"],$PARAMS));
     if (!$q->ok) {
         echo $q->mysql_error;
     } else {
-        $lastid=$q->last_id;
+        $lastid=intval($q->last_id);
         $sql="INSERT INTO strongswan_auth (`conn_id`,`selector`,`type`,`cert`,`secret`,`order`,`enable`)
-			VALUES ('$lastid','{$_SESSION["WIZARDRW"]["selector"]}','5','','{$_SESSION["WIZARDRW"]["psk"]}','1','1');";
+			VALUES ('$lastid',?,'5','',?,'1','1');";
         $sql2="INSERT INTO strongswan_auth (`conn_id`,`selector`,`type`,`cert`,`secret`,`order`,`enable`)
-		VALUES ('$lastid','','3','{$_SESSION["WIZARDRW"]["usercert"]}.pem','','0','1');";
-        $q->QUERY_SQL($sql);
-        $q->QUERY_SQL($sql2);
+		VALUES ('$lastid','','3',?,'','0','1');";
+        $q->QUERY_SQL_PARAMS($sql,array($_SESSION["WIZARDRW"]["selector"],$_SESSION["WIZARDRW"]["psk"]));
+        $q->QUERY_SQL_PARAMS($sql2,array($_SESSION["WIZARDRW"]["usercert"].".pem"));
         $_SESSION["POSTFORMED"]=serialize($_POST);
         //$sock->getFrameWork("strongswan.php?build-auth=yes");
         //build_progress();
@@ -578,7 +592,7 @@ function build_progress()
 
 
     $prgress=base64_encode(serialize($ARRAY)); // Array is compiled
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-strongswan-tunnels-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-strongswan-tunnels-restart')";
 
     echo $jsrestart;
 }
@@ -586,8 +600,9 @@ function build_progress()
 function conn_move()
 {
     $tpl=new template_admin();
-    $ID=$_GET["conn-rule-move"];
-    $TID=$_GET["tunnel-id"];
+    // Pentest 2026-11-04 : conn-rule-move etait concatene dans la requete.
+    $ID=intval($_GET["conn-rule-move"]);
+    $TID=intval($_GET["tunnel-id"]);
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     $sql="SELECT `order` FROM strongswan_conns WHERE `ID`='$ID'";
     $ligne=$q->mysqli_fetch_array($sql);
@@ -614,7 +629,7 @@ function conn_move()
     $results = $q->QUERY_SQL($sql);
 
     foreach ($results as $index=>$ligne) {
-        $q->QUERY_SQL("UPDATE strongswan_conns SET `order`=$c WHERE `ID`={$ligne["ID"]}");
+        $q->QUERY_SQL("UPDATE strongswan_conns SET `order`=$c WHERE `ID`=".intval($ligne["ID"]));
         $c++;
     }
     $page=CurrentPageName();
@@ -629,14 +644,16 @@ function conn_enable()
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     header("content-type: application/x-javascript");
-    $ligne=$q->mysqli_fetch_array("SELECT enable FROM strongswan_conns WHERE ID='{$_GET["enable-js"]}'");
+    // Pentest 2026-11-04 : enable-js etait concatene dans la requete.
+    $enableID=intval($_GET["enable-js"]);
+    $ligne=$q->mysqli_fetch_array("SELECT enable FROM strongswan_conns WHERE ID='$enableID'");
     if (intval($ligne["enable"])==0) {
         $enabled=1;
     } else {
         $enabled=0;
     }
 
-    $q->QUERY_SQL("UPDATE strongswan_conns SET enable='$enabled' WHERE ID='{$_GET["enable-js"]}'");
+    $q->QUERY_SQL("UPDATE strongswan_conns SET enable='$enabled' WHERE ID='$enableID'");
     if (!$q->ok) {
         echo "alert('".$q->mysql_error."')";
         return;
@@ -650,9 +667,11 @@ function export_conf(){
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     header("content-type: application/x-javascript");
-    $tunnel=$q->mysqli_fetch_array("SELECT * FROM strongswan_conns WHERE ID='{$_GET["download-js"]}'");
-    $auth="SELECT selector, FROM strongswan_auth WHERE conn_id='{$_GET["download-js"]}' ORDER BY `order` ASC";
-    @mkdir("/tmp/ipsec-conn-{$_GET["download-js"]}", 0755, true);
+    // Pentest 2026-11-04 : download-js etait concatene dans la requete (et dans le chemin).
+    $downloadID=intval($_GET["download-js"]);
+    $tunnel=$q->mysqli_fetch_array("SELECT * FROM strongswan_conns WHERE ID='$downloadID'");
+    $auth="SELECT selector, FROM strongswan_auth WHERE conn_id='$downloadID' ORDER BY `order` ASC";
+    @mkdir("/tmp/ipsec-conn-$downloadID", 0755, true);
 
 
 }
@@ -686,7 +705,8 @@ ss$t();
 }
 function delete_js()
 {
-    $ID=$_GET["delete-js"];
+    // Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+    $ID=intval($_GET["delete-js"]);
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     $tpl=new template_admin();
     $page=CurrentPageName();
@@ -701,7 +721,8 @@ function delete_confirm()
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     $t=time();
-    $ID=$_GET["delete-confirm"];
+    // Pentest 2026-11-04 : delete-confirm etait concatene dans la requete.
+    $ID=intval($_GET["delete-confirm"]);
     $types=Hash_method();
     $ligne=$q->mysqli_fetch_array("SELECT `conn_name` FROM strongswan_conns WHERE ID='$ID'");
     $title="{$ligne["conn_name"]}";
@@ -732,7 +753,8 @@ XHR.sendAndLoad('$page', 'POST',xPost$t);
 }
 function delete_remove()
 {
-    $ID=$_POST["delete-remove"];
+    // Pentest 2026-11-04 : delete-remove etait concatene dans la requete.
+    $ID=intval($_POST["delete-remove"]);
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
     $q->QUERY_SQL("DELETE FROM strongswan_conns WHERE ID='$ID'");
     if (!$q->ok) {
@@ -3282,7 +3304,8 @@ function rule_settings()
 
 function rule_save()
 {
-    $ID=$_POST["rule-save"];
+    // Pentest 2026-11-04 : rule-save et le nom de connexion etaient concatenes dans la requete.
+    $ID=intval($_POST["rule-save"]);
     $CONN_NAME='';
     $CONN_NAME_JSON=json_encode($_POST['x']);
     $CONN_NAME_ARRAY=json_decode($CONN_NAME_JSON, true);
@@ -3304,7 +3327,8 @@ function rule_save()
 
     $PARAMS=base64_encode(serialize($_POST["x"]));
     if ($ID==0) {
-        $sql1=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_conns WHERE `conn_name`='{$CONN_NAME}'");
+        $r_sql1=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_conns WHERE `conn_name`=?",array($CONN_NAME));
+        $sql1=isset($r_sql1[0]) ? $r_sql1[0] : array();
         $Items=$sql1['count'];
 
         if ($Items>0) {
@@ -3331,9 +3355,11 @@ function rule_save()
                 }
             }
         }
-        $sql="INSERT INTO strongswan_conns (`conn_name`,`params`,`order`,`enable`) VALUES ('{$CONN_NAME}','{$PARAMS}','0','1')";
+        $sql="INSERT INTO strongswan_conns (`conn_name`,`params`,`order`,`enable`) VALUES (?,?,'0','1')";
+        $sqlParams=array($CONN_NAME,$PARAMS);
     } else {
-        $sql1=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_conns WHERE conn_name='$CONN_NAME' AND ID NOT IN ('$ID')");
+        $r_sql1=$q->QUERY_SQL_PARAMS("SELECT COUNT(*) as count FROM strongswan_conns WHERE conn_name=? AND ID NOT IN ('$ID')",array($CONN_NAME));
+        $sql1=isset($r_sql1[0]) ? $r_sql1[0] : array();
         $Items=$sql1['count'];
 
         if ($Items>0) {
@@ -3359,10 +3385,11 @@ function rule_save()
                 }
             }
         }
-        $sql="UPDATE strongswan_conns SET `conn_name`='{$CONN_NAME}',`params`='{$PARAMS}' WHERE ID='$ID'";
+        $sql="UPDATE strongswan_conns SET `conn_name`=?,`params`=? WHERE ID='$ID'";
+        $sqlParams=array($CONN_NAME,$PARAMS);
     }
 
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$sqlParams);
     if (!$q->ok) {
         echo $q->mysql_error;
     }
@@ -3417,145 +3444,105 @@ function search()
 	 
 	 ");
 
-    $html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-
-
-    $TRCLASS=null;
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$order</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$hostname}</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text'>$uptime</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text'>$online_users</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text'>$enabled</th>";
-    $html[]="<th data-sortable=false class='text-capitalize' data-type='text'>$action</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-
-
     $search=$tpl->query_pattern(trim(strtolower($_GET["search"])));
-
     $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
-
-    $sql=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_conns");
-
-    if (!$q->ok) {
-        echo "<div class='alert alert-danger'>$q->mysql_error<br><strong></strong><br><strong><code>$sql</code></strong></div>";
+    $cnt=$q->mysqli_fetch_array("SELECT COUNT(*) as count FROM strongswan_conns");
+    if(!$q->ok){
+        // Ni la requete ni le message SQL ne partent au navigateur: la premiere
+        // decrit le schema, le second nomme des colonnes. Et pas de balise
+        // <code>, qui entre en conflit avec le theme (CLAUDE.md).
+        if(function_exists("writelogs")){writelogs("strongswan_conns: $q->mysql_error",__FUNCTION__,__FILE__,__LINE__);}
+        echo $tpl->_ENGINE_parse_body(@implode("\n",$html).$tpl->div_error("{error}"));
+        return;
     }
-    $Items=$sql['count'];
+    $Items=intval($cnt['count']);
 
     $types=Hash_method();
     $tpl2=new templates();
-    //writelogs("myrt: {$y}",__CLASS__.'/'.__FUNCTION__,__FILE__);
+    $results=$q->QUERY_SQL("SELECT * FROM strongswan_conns ORDER BY `order` ASC");
 
-    $sql="SELECT * FROM strongswan_conns ORDER BY `order` ASC";
-    $results = $q->QUERY_SQL($sql);
-//    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("strongswan.php?tunnel-statusall=yes");
-//    $statusall = file_get_contents("/etc/artica-postfix/settings/Daemons/ipsec_statusall");
-//    $pattern = "/(uptime:) ([0-9]+)( [a-z]+)/";
-//    if (preg_match($pattern, $statusall, $matches_)) {
-//        $statusall_result=$matches_[2].' '.$matches_[3];
-//    } else {
-//        $statusall_result= $tpl->_ENGINE_parse_body("{offline}");
-//    }
-    foreach ($results as $index=>$ligne) {
-        $MUTED=null;
-        if ($ligne["enable"]==0) {
-            $MUTED=" text-muted";
-        }
-        if ($TRCLASS=="footable-odd") {
-            $TRCLASS=null;
-        } else {
-            $TRCLASS="footable-odd";
-        }
+    $rows=array();
+    foreach($results as $ligne){
+        $id=intval($ligne["ID"]);
+        $conn=(string)$ligne["conn_name"];
+        $on=(intval($ligne["enable"])==1);
 
-
-        $url="<a href=\"javascript:blur();\" OnClick=\"Loadjs('$page?ruleid-js={$ligne["ID"]}');\"
-		style='text-decoration:underline;font-weight:bold'>";
-        $url2="<a href='#' OnClick=\"MenuRoot( $(this),'fw.strongswan.sessions.php');\">";
-
-        $jsedit="Loadjs('$page?ruleid-js={$ligne["ID"]}');";
+        $jsedit="Loadjs('$page?ruleid-js=$id');";
         $edit=$tpl->icon_parameters($jsedit);
-        $delete=$tpl->icon_delete("Loadjs('$page?delete-js={$ligne["ID"]}&js-after=$jsAfter')");
-        $download=$tpl->icon_download("Loadjs('$page?download-js={$ligne["ID"]}')");
+        // Le parametre js-after est retire: delete_js() ne le lit NULLE PART
+        // (il n'ouvre qu'une confirmation), et $jsAfter n'etait pas defini dans
+        // cette fonction -- on interpolait donc une variable inexistante dans
+        // une URL, ce qui est une notice PHP pour un parametre que personne ne
+        // consomme. Le rafraichissement se fait cote delete_remove().
+        $delete=$tpl->icon_delete("Loadjs('$page?delete-js=$id')");
+        $up=$tpl->icon_up("Loadjs('$page?conn-rule-move=$id&conn-rule-dir=1');");
+        $down=$tpl->icon_down("Loadjs('$page?conn-rule-move=$id&auth-rule-dir=0');");
+        $enable=$tpl->icon_check($ligne["enable"],"Loadjs('$page?enable-js=$id')",null,"AsFirewallManager");
 
-        $up=$tpl->icon_up("Loadjs('$page?conn-rule-move={$ligne["ID"]}&conn-rule-dir=1');");
-        $down=$tpl->icon_down("Loadjs('$page?conn-rule-move={$ligne["ID"]}&auth-rule-dir=0');");
-        $enable=$tpl->icon_check($ligne["enable"], "Loadjs('$page?enable-js={$ligne["ID"]}')", null, "AsFirewallManager");
-        // $GLOBALS["CLASS_SOCKETS"]->getFrameWork("strongswan.php?tunnel-status=yes&tunnel={$ligne["conn_name"]}");
-        // $status_tunnel = file_get_contents("/etc/artica-postfix/settings/Daemons/ipsec_status_{$ligne['conn_name']}");
-        // $pattern = "/([0-9]+) (up)/";
-        // if (preg_match($pattern, $status_tunnel, $matches_)) {
-        //     $status_tunnel_result=$matches_[1];
-        // } else {
-        //     $status_tunnel_result= '0';
-        // }
-        @unlink("/etc/artica-postfix/settings/Daemons/ipsec_status_{$ligne['conn_name']}");
-        @unlink("/etc/artica-postfix/settings/Daemons/ipsec_status_time_{$ligne['conn_name']}");
+        @unlink("/etc/artica-postfix/settings/Daemons/ipsec_status_$conn");
+        @unlink("/etc/artica-postfix/settings/Daemons/ipsec_status_time_$conn");
         $GLOBALS["CLASS_SOCKETS"]->getFrameWork("strongswan.php?refresh-sessions=yes");
 
-
-        $tunnel_time_file= file_get_contents("/etc/artica-postfix/settings/Daemons/ipsec_status_time_{$ligne['conn_name']}");
-        if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("ipsec_status_time_{$ligne['conn_name']}")) {
-            $tunnel_time='---';
-        } elseif (empty($tunnel_time_file)) {
-            $tunnel_time='---';
-        } else {
-            $tunnel_time=$tunnel_time_file;
+        $tunnel_time_file=@file_get_contents("/etc/artica-postfix/settings/Daemons/ipsec_status_time_$conn");
+        $tunnel_time="";
+        if($GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("ipsec_status_time_$conn") && !empty($tunnel_time_file)){
+            $tunnel_time=(string)$tunnel_time_file;
         }
-        //if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("
-
-
-        $status_tunnel = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("ipsec_status_{$ligne['conn_name']}");
-        if(!$GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("ipsec_status_{$ligne['conn_name']}")) {
-            $status_tunnel_result="0";
-        } elseif (empty($status_tunnel)) {
-            $status_tunnel_result="0";
-        } else {
-            $status_tunnel_result=$status_tunnel;
+        $status_tunnel=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ipsec_status_$conn");
+        $online=0;
+        if($GLOBALS["CLASS_SOCKETS"]->INFO_EXISTS("ipsec_status_$conn") && !empty($status_tunnel)){
+            $online=intval($status_tunnel);
         }
 
-        $html[]="<tr class='$TRCLASS{$MUTED}'  id='conn-{$ligne["ID"]}'>";
-        $html[]="<td nowrap>{$ligne["order"]}</td>";
-        $html[]="<td nowrap><span class='fa fa-desktop' ></span>&nbsp;$url{$ligne["conn_name"]}</td>";
-        $html[]="<td nowrap ><span class='fa fa-clock'> </span>&nbsp;$tunnel_time</td>";
-        $html[]="<td nowrap ><span class='fas fa-users'> </span>&nbsp;$url2$status_tunnel_result</td>";
-        $html[]="<td nowrap >$enable</td>";
-        $html[]="<td nowrap >$up&nbsp;$down&nbsp;$edit&nbsp;$delete</td>";
-        $html[]="</tr>";
+        $h ="<tr id='conn-$id'>";
+        $h.="<td><div class='awc-ident'>";
+        $h.="<span class='awc-ico".($on?"":" awc-ico-off")."'><i class='fas fa-shield-halved'></i></span>";
+        $h.="<span><span class='awc-name".($on?"":" awc-name-off")."'>"
+           ."<a href=\"javascript:blur();\" OnClick=\"$jsedit\">".htmlspecialchars($conn)."</a></span>";
+        // Le rang passe en sous-titre: les lignes sont deja rendues dans cet
+        // ordre (ORDER BY `order`) et les fleches de la colonne d'action le
+        // pilotent -- une colonne entiere pour le repeter ne dit rien de plus.
+        $h.="<div class='awc-meta'>#".intval($ligne["order"])."</div></span></div></td>";
+        $h.="<td class='awc-mono'>".($tunnel_time!==""?htmlspecialchars($tunnel_time)
+           :"<span class='awc-none'>&mdash;</span>")."</td>";
+        // Le nombre de sessions n'est un lien QUE s'il y en a: un "0" cliquable
+        // ouvre une liste vide et se lit comme une panne.
+        $h.="<td class='center'>".($online>0
+           ?"<a href=\"javascript:blur();\" OnClick=\"MenuRoot( $(this),'fw.strongswan.sessions.php');\">"
+            ."<span class='awc-badge awc-badge-on'>$online</span></a>"
+           :"<span class='awc-badge awc-badge-off'>0</span>")."</td>";
+        $h.="<td class='center'>$enable</td>";
+        $h.="<td><div class='awc-acts'>$up&nbsp;$down&nbsp;$edit&nbsp;$delete</div></td>";
+        $h.="</tr>";
+        $rows[]=$h;
     }
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $t2=array();
+    $t2[]="<div class='awc-wrap' style='margin-top:10px'><div class='awc-card'><div class='awc-scroll'>";
+    $t2[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $t2[]="<th>{$hostname}</th>";
+    $t2[]="<th nowrap>$uptime</th>";
+    $t2[]="<th class='center' nowrap>$online_users</th>";
+    $t2[]="<th class='center' nowrap>$enabled</th>";
+    $t2[]="<th style='text-align:right'>$action</th>";
+    $t2[]="</tr></thead><tbody id='sswt-rows'>";
+    if(count($rows)==0){
+        $t2[]="<tr><td colspan='5'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $t2[]=@implode("\n",$rows);
+    }
+    $t2[]="</tbody></table></div>";
+    $t2[]="<div class='awc-foot'><span>{showing} ".count($rows)." / $Items {items}</span>"
+         ."<span class='awc-pg' id='sswt-pager'></span></div>";
+    $t2[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='5'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="<div><i>$Items &laquo;$sql&raquo;</i></div>
-	<script>
-	NoSpinner();\n".@implode("\n", $tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable(
-	{
-	\"filtering\": {
-	\"enabled\": true
-	},
-	\"sorting\": {
-	\"enabled\": true
-	}
-	
-	}
-	
-	
-	); });
-	
-
-	</script>";
-
-    echo @implode("\n", $html);
+    // ICON_SCRIPTS_COMPILE() est IMPERATIF: ce tableau porte des icon_check(),
+    // dont les fonctions BtSwitch<id>() vivent dans un accumulateur global.
+    // $tpl->ICON_SCRIPTS est une propriete d'instance -- la case s'afficherait
+    // et ne repondrait a aucun clic, sans erreur PHP (CLAUDE.md, awc-* regle 2).
+    echo @implode("\n",$html)
+        .awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$t2))
+        ."<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>"
+        .awc_pager_js(25,"sswt-rows","sswt-pager");
 }

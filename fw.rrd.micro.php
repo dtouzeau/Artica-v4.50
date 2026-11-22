@@ -155,7 +155,7 @@ function chart_render():void{
     $h=[];
 
     // Chart.js must be in same HTML response
-    $h[]="<script src='angular/js/plugins/chartJs/Chart.min.js'></script>";
+    $h[]="";
 
     // ── CPU Chart ──
     $h[]="<div class='ibox'>";

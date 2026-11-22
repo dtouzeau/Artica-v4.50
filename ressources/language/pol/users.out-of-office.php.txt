@@ -1,4 +1,4 @@
-<ENABLE_OUT_OF_OFFICE>Activate auto-reply</ENABLE_OUT_OF_OFFICE>
-<ENABLE_OUT_OF_OFFICE_TEXT>If you turn the circle to green, the messaging server sends automatically e-mail auto-reply from your custom templates in response to incoming e-mails.</ENABLE_OUT_OF_OFFICE_TEXT>
-<OUT_OF_OFFICE_TEXT>This section helps you to automatically creates and sends e-mail auto-reply from your custom templates in response to incoming e-mails, based on your Status (Away, Out of Office, Vacation, custom Status Free/Busy time) even if you are away from your computer.</OUT_OF_OFFICE_TEXT>
-<vacation_message>vacation message</vacation_message>
+<ENABLE_OUT_OF_OFFICE>Aktywuj automatyczn&#261; odpowied&#378;</ENABLE_OUT_OF_OFFICE>
+<ENABLE_OUT_OF_OFFICE_TEXT>Je&#347;li ustawisz k&#243;&#322;ko na zielono, serwer wiadomo&#347;ci automatycznie wysy&#322;a automatyczne odpowiedzi e-mail z Twoich niestandardowych szablon&#243;w w odpowiedzi na przychodz&#261;ce wiadomo&#347;ci.</ENABLE_OUT_OF_OFFICE_TEXT>
+<OUT_OF_OFFICE_TEXT>Ta sekcja pomaga automatycznie tworzy&#263; i wysy&#322;a&#263; automatyczne odpowiedzi e-mail z Twoich niestandardowych szablon&#243;w w odpowiedzi na przychodz&#261;ce wiadomo&#347;ci, na podstawie Twojego statusu (Nieobecny, Poza biurem, Urlop, niestandardowy status Wolny/Zaj&#281;ty), nawet gdy jeste&#347; z dala od komputera.</OUT_OF_OFFICE_TEXT>
+<vacation_message>wiadomo&#347;&#263; urlopowa</vacation_message>

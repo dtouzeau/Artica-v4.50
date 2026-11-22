@@ -273,7 +273,7 @@ function build_ufdbguard_smooth(){
 		
 		$tar=$unix->find_program("tar");
 		build_progress("{extracting} $Tfile",5);
-		system("$tar -xvf $TMPDIR/$Tfile -C /");
+		system("$tar -xvf $TMPDIR/$Tfile --keep-directory-symlink --no-overwrite-dir -C /");
 		$ufdbguardd_path="/usr/bin/ufdbguardd";
 		
 		@unlink("$TMPDIR/$Tfile");
@@ -1610,7 +1610,6 @@ function ufdbguard_remote(){
 	}	
 	
 
-	shell_exec(LOCATE_PHP5_BIN2()."/usr/share/artica-postfix/exec.c-icap.php --maint-schedule");
 	
 	
 }

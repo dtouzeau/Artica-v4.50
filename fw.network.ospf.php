@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__) . "/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__) . "/ressources/class.sockets.inc");
 include_once(dirname(__FILE__) . "/ressources/class.computers.inc");
@@ -156,7 +157,7 @@ function restart_script(){
     $ARRAY["TITLE"]="{restarting}";
     $ARRAY["AFTER"]="LoadAjax('ospfd-section-status','$page?status2=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsafter="Loadjs('fw.progress.php?content=$prgress&mainid=ospfd-section-progress')";
+    $jsafter="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=ospfd-section-progress')";
     return $jsafter;
 }
 

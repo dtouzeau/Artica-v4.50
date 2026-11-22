@@ -1,25 +1,25 @@
-<ADDRESSBOOK>Address Book</ADDRESSBOOK>
-<ADDRESSBOOK_TEXT>Store your contacts addres on this server and ensure you can query them everywhere</ADDRESSBOOK_TEXT>
-<AntiSpam_parameters>Your anti-spam settings</AntiSpam_parameters>
-<AntiSpam_parameters_text>Personnalize your anti-spam settings according your needs</AntiSpam_parameters_text>
-<calendar>Web Calendar</calendar>
-<dotclear_user_intro>Manager your DotClear personal Blog</dotclear_user_intro>
+<ADDRESSBOOK>Rubrica</ADDRESSBOOK>
+<ADDRESSBOOK_TEXT>Memorizza gli indirizzi dei tuoi contatti su questo server e assicurati di poterli interrogare ovunque</ADDRESSBOOK_TEXT>
+<AntiSpam_parameters>Le tue impostazioni anti-spam</AntiSpam_parameters>
+<AntiSpam_parameters_text>Personalizza le tue impostazioni anti-spam in base alle tue esigenze</AntiSpam_parameters_text>
+<calendar>Calendario web</calendar>
+<dotclear_user_intro>Gestisci il tuo blog personale DotClear</dotclear_user_intro>
 <emailing>eMailing</emailing>
-<mailbox_rules>mailbox rules</mailbox_rules>
-<menu_account_text>Your account settings</menu_account_text>
-<menu_backup_text>Search messages in your backup storage</menu_backup_text>
-<menu_calendar_text>Access to your web groupware calendar, use the same account to login</menu_calendar_text>
-<menu_fetchmail_text>Import your mails from an ISP or other server</menu_fetchmail_text>
-<menu_messaging_text>Manage your mail server and all securites settings</menu_messaging_text>
-<menu_openvpn_text>Display informations about your Virtual Private Network</menu_openvpn_text>
-<menu_organizations_text>Manage users & Organizations</menu_organizations_text>
-<menu_OUT_OF_OFFICE_text>Enable auto-reply from in response to incoming e-mails, based on your Status (Away, Out of Office, Vacation, custom Status)</menu_OUT_OF_OFFICE_text>
-<menu_quarantine_text>See Your anti-spam and antivirus quarantine</menu_quarantine_text>
-<menu_share_text>Share your local folders over the network</menu_share_text>
-<menu_sieve_text>Manage your mailbox rules</menu_sieve_text>
-<menu_statistic_text>See your mailbox statistics</menu_statistic_text>
-<menu_system_text>Manage your system</menu_system_text>
-<menu_webmail_text>Access to your mailbox</menu_webmail_text>
-<menu_web_proxy_text>Manage your Internet Proxy Squid</menu_web_proxy_text>
-<YOUR_ADDRESSBOOK>Fill your personal Address Book</YOUR_ADDRESSBOOK>
-<YOUR_ADDRESSBOOK_TEXT>Store your contacts addresses on this server and ensure you can query them everywhere</YOUR_ADDRESSBOOK_TEXT>
+<mailbox_rules>regole della casella di posta</mailbox_rules>
+<menu_account_text>Le impostazioni del tuo account</menu_account_text>
+<menu_backup_text>Cerca i messaggi nel tuo archivio di backup</menu_backup_text>
+<menu_calendar_text>Accedi al tuo calendario groupware web, usa lo stesso account per accedere</menu_calendar_text>
+<menu_fetchmail_text>Importa le tue email da un ISP o altro server</menu_fetchmail_text>
+<menu_messaging_text>Gestisci il tuo server di posta e tutte le impostazioni di sicurezza</menu_messaging_text>
+<menu_openvpn_text>Visualizza le informazioni sulla tua rete privata virtuale</menu_openvpn_text>
+<menu_organizations_text>Gestisci utenti e organizzazioni</menu_organizations_text>
+<menu_OUT_OF_OFFICE_text>Abilita la risposta automatica alle email in arrivo, in base al tuo stato (Assente, Fuori sede, Vacanza, stato personalizzato)</menu_OUT_OF_OFFICE_text>
+<menu_quarantine_text>Visualizza la tua quarantena anti-spam e antivirus</menu_quarantine_text>
+<menu_share_text>Condividi le tue cartelle locali sulla rete</menu_share_text>
+<menu_sieve_text>Gestisci le regole della tua casella di posta</menu_sieve_text>
+<menu_statistic_text>Visualizza le statistiche della tua casella di posta</menu_statistic_text>
+<menu_system_text>Gestisci il tuo sistema</menu_system_text>
+<menu_webmail_text>Accesso alla tua casella di posta</menu_webmail_text>
+<menu_web_proxy_text>Gestisci il tuo proxy Internet Squid</menu_web_proxy_text>
+<YOUR_ADDRESSBOOK>Compila la tua rubrica personale</YOUR_ADDRESSBOOK>
+<YOUR_ADDRESSBOOK_TEXT>Memorizza gli indirizzi dei tuoi contatti su questo server e assicurati di poterli interrogare ovunque</YOUR_ADDRESSBOOK_TEXT>

@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.dnsfilter.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
@@ -7,8 +10,10 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 if(isset($_GET["table"])){table();exit;}
 if(isset($_POST["UfdbListenInterface"])){Save();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
-if(isset($_GET["ufdbdebug-popup"])){ufdbdebug_popup();exit;}
-if(isset($_GET["ufdbdebug"])){ufdbdebug_js();exit;}
+// (les dispatchs ?ufdbdebug-popup= et ?ufdbdebug= appelaient ufdbdebug_popup()
+// et ufdbdebug_js(), absentes de ce fichier ET de ses includes -- elles vivent
+// dans d'autres pages, donc dans d'autres requetes. Toute requete les portant
+// mourait sur un "Call to undefined function". Aucun appelant ici.)
 
 
 page();
@@ -87,7 +92,7 @@ function table(){
 	$ARRAY["TITLE"]="{restarting}";
 	$ARRAY["AFTER"]="LoadAjax('table-dnsfilterd','$page?tabs=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$dnsfilterd_restart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-dnsfilter-restart')";
+	$dnsfilterd_restart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-dnsfilter-restart')";
 	
 	
 	$mem=new lib_memcached();
@@ -127,33 +132,36 @@ function table(){
 	$ini->loadFile("/usr/share/artica-postfix/ressources/logs/dnsfilterd.status");
 	
 	if($CountOfPattern>0){
-		$CountOfPattern_text=$tpl->widget_h("green","fas fa-database",$CountOfPattern,"{loaded_databases}");
+		$CountOfPattern_text=$tpl->widget_h("green",ico_database,$CountOfPattern,"{loaded_databases}");
 	}
 	if($CountOfPattern==0){
 		$CountOfPattern_text=$tpl->widget_h("green","fas fa-engine-warning",0,"{no_database_selected}");
 	}
 	
+	// La colonne de gauche est assemblee A PART et n'est PAS reanalysee.
+	//
+	// SERVICE_STATUS() renvoie deja du contenu analyse, precede de sa feuille de
+	// style et suivi de son <script>; widget_h() et widget_style1() renvoient
+	// svctile_css() suivi de leur balisage. Tout cela partait dans $html, donc
+	// dans _ENGINE_parse_body(), dont la regex #{(.+?)}# lit chaque corps de
+	// regle CSS comme un {token} et declenche une recherche memcached par regle
+	// -- une collision corrompant la feuille entiere. Le premier appel de la
+	// serie est widget_h() (plus haut): c'est lui qui emet le <style>, la garde
+	// $GLOBALS["SVCTILE_CSS_DONE"] faisant taire les suivants.
+	$left =$CountOfPattern_text;
+	$left.=$tpl->SERVICE_STATUS($ini, "APP_DNSFILTERD",$dnsfilterd_restart);
+	$left.=$tpl->SERVICE_STATUS($ini, "APP_DNSFILTERD_TAIL",null);
+	$left.=$tpl->widget_style1("navy-bg","fas fa-filter","{requests}",$UFDB_CONNECTS);
+	$left.=$tpl->widget_style1("lazur-bg","fas fa-filter","{cached_requests}",$DNSFILTER_HITS);
+
+	// Le <table> imbrique de la colonne de gauche n'avait qu'une ligne et une
+	// cellule: il n'apportait aucune mise en page.
 	$html[]="<table style='width:100%'>";
 	$html[]="<tr>";
 	$html[]="<td style='width:260px;vertical-align:top'>";
-	$html[]="	<table style='width:100%'>";
-	$html[]="		<tr>
-						<td>
-							<div class=\"ibox\" style='border-top:0px'>
-    							<div class=\"ibox-content\" style='border-top:0px'>
-								$CountOfPattern_text
-								". $tpl->SERVICE_STATUS($ini, "APP_DNSFILTERD",$dnsfilterd_restart).
-								$tpl->SERVICE_STATUS($ini, "APP_DNSFILTERD_TAIL",null).
-								
-								
-								$tpl->widget_style1("navy-bg","fas fa-filter","{requests}",$UFDB_CONNECTS).
-								$tpl->widget_style1("lazur-bg","fas fa-filter","{cached_requests}",$DNSFILTER_HITS).
-								
-								"</div>
-							</div>
-    					</td>
-    			  </tr>";
-	$html[]="</table>";
+	$html[]="<div class=\"ibox\" style='border-top:0px'><div class=\"ibox-content\" style='border-top:0px'>";
+	$html[]="%%LEFTCOL%%";
+	$html[]="</div></div>";
 	$html[]="</td>";
 	$html[]="<td style='vertical-align:top'>";
 
@@ -187,24 +195,67 @@ function table(){
 	$html[]="</tr>";
 	$html[]="</table>";
 	
-	echo $tpl->_ENGINE_parse_body($html);
+	// Le marqueur est remplace APRES l'analyse: la colonne de gauche traverse
+	// ainsi le rendu sans que sa feuille de style ni ses scripts soient relus
+	// comme des {tokens}.
+	echo str_replace("%%LEFTCOL%%",$left,$tpl->_ENGINE_parse_body(@implode("\n",$html)));
+}
+
+/**
+ * Les SEULES cles que Save() accepte d'ecrire.
+ *
+ * La boucle d'origine parcourait TOUT $_POST: n'importe quel champ poste
+ * devenait un reglage du filtre DNS. Une liste blanche explicite est la seule
+ * facon de borner ce que ce formulaire peut toucher.
+ */
+function dnsfilterd_savable(){
+	return array(
+		"UfdbListenInterface"=>true,
+		"UfdbListenPort"=>true,
+		"UfdbGuardThreads"=>true,
+		"DebugFilter"=>true,
+		"SquidGuardClientEnableMemory"=>true,
+		"SquidGuardClientMaxMemorySeconds"=>true,
+		"UfdbgclientSockTimeOut"=>true,
+		"DefaultIpRedirection"=>true,
+		"dns_neg_ttl"=>true,
+	);
 }
 
 function Save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 
+	// Cette cle vit dans Valkey, pas dans la configuration du filtre.
 	if(isset($_POST["DNSFilterRESTFulAPIKey"])){
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DNSFilterRESTFulAPIKey",$_POST["DNSFilterRESTFulAPIKey"]);
         unset($_POST["DNSFilterRESTFulAPIKey"]);
     }
-	
+
+	$allowed=dnsfilterd_savable();
 	$dnsfiltersocks=new dnsfiltersocks();
+	$written=array();
+	$failed="";
 	foreach ($_POST as $key=>$value){
-		if(!$dnsfiltersocks->SET_INFO($key, $value)){return;}
-		
+		if(!isset($allowed[$key])){continue;}
+		if(!$dnsfiltersocks->SET_INFO($key, $value)){
+			// L'ancien code faisait un "return" nu au premier echec: la sauvegarde
+			// s'arretait a mi-chemin ET repondait une page vide, que form_outside
+			// interprete comme un SUCCES. L'operateur voyait la modale se fermer
+			// sur un enregistrement partiel.
+			$failed=$key;
+			break;
+		}
+		$written[]="$key=$value";
 	}
-	
+
+	if($failed!==""){
+		echo $tpl->post_error("{failed}: $failed");
+		return;
+	}
+	if(count($written)>0){
+		admin_tracks("DNS filtering settings: ".@implode(", ",$written));
+	}
 }
 
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'){$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}

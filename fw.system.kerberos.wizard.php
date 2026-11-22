@@ -3,6 +3,13 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.ActiveDirectoryRootDSE.inc");
 include_once(dirname(__FILE__)."/ressources/class.activedirectory.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+// Noeud de ferme HaCluster : la jonction vient du LB, l'assistant est refuse.
+include_once(dirname(__FILE__)."/ressources/class.hacluster.node.inc");
+hacluster_node_ad_gate(
+    array("WINDOWS_SERVER_ADMIN","LDAP_SSL","fullhosname","COMPUTER_BRANCH"),
+    array("js"),
+    array("step0","step1","step2","step3","step4","step5")
+);
 if(isset($_POST["WINDOWS_SERVER_ADMIN"])){Save();exit;}
 if(isset($_POST["LDAP_SSL"])){Save();exit;}
 if(isset($_POST["fullhosname"])){Save();exit;}

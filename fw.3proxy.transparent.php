@@ -1,5 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.3proxy.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -24,9 +25,8 @@ js();
 function js(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ID=$_GET["ruleid"];
-	$ligne=$q->mysqli_fetch_array("SELECT servicename FROM `3proxy_services` WHERE ID=$ID");
+	$ID=intval($_GET["ruleid"]);
+	$ligne=uproxy_service($ID);
 	$title="{$ligne["servicename"]}: {transparent}";
 	$tpl->js_dialog7($title,"$page?rule-tabs=$ID",950);
 }
@@ -34,7 +34,6 @@ function js(){
 function rule_tabs(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$ID=intval($_GET["rule-tabs"]);
 	
 	$array["{ports}"]="$page?rule-ports=$ID";
@@ -61,9 +60,8 @@ function rule_ports_save(){
 	}
 	
 	$newdata=base64_encode(@implode("\n", $newf));
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$q->QUERY_SQL("UPDATE `3proxy_services` SET `transparentport`='$newdata' WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;}
+	$e=uproxy_error(uproxy_service_save($ID,array("transparentport"=>$newdata)));
+	if($e!=""){echo $tpl->post_error($e);return;}
 	
 }
 function rule_sources_save(){
@@ -79,9 +77,8 @@ function rule_sources_save(){
 	}
 	
 	$newdata=base64_encode(@implode("\n", $newf));
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$q->QUERY_SQL("UPDATE `3proxy_services` SET `transparentin`='$newdata' WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;}
+	$e=uproxy_error(uproxy_service_save($ID,array("transparentin"=>$newdata)));
+	if($e!=""){echo $tpl->post_error($e);return;}
 
 }
 function rule_sourcesex_save(){
@@ -97,9 +94,8 @@ function rule_sourcesex_save(){
 	}
 	
 	$newdata=base64_encode(@implode("\n", $newf));
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$q->QUERY_SQL("UPDATE `3proxy_services` SET `excludetransparentin`='$newdata' WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;}	
+	$e=uproxy_error(uproxy_service_save($ID,array("excludetransparentin"=>$newdata)));
+	if($e!=""){echo $tpl->post_error($e);return;}	
 	
 }
 function rule_dstex_save(){
@@ -115,9 +111,8 @@ function rule_dstex_save(){
 	}
 
 	$newdata=base64_encode(@implode("\n", $newf));
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$q->QUERY_SQL("UPDATE `3proxy_services` SET `excludetransparentout`='$newdata' WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;}
+	$e=uproxy_error(uproxy_service_save($ID,array("excludetransparentout"=>$newdata)));
+	if($e!=""){echo $tpl->post_error($e);return;}
 
 }
 function rule_dst_save(){
@@ -133,17 +128,15 @@ function rule_dst_save(){
 	}
 
 	$newdata=base64_encode(@implode("\n", $newf));
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$q->QUERY_SQL("UPDATE `3proxy_services` SET `transparentout`='$newdata' WHERE ID=$ID");
-	if(!$q->ok){echo $q->mysql_error;}
+	$e=uproxy_error(uproxy_service_save($ID,array("transparentout"=>$newdata)));
+	if($e!=""){echo $tpl->post_error($e);return;}
 
 }
 function rule_dst(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$ID=intval($_GET["rule-dst"]);
-	$ligne=$q->mysqli_fetch_array("SELECT servicename,transparentout FROM `3proxy_services` WHERE ID=$ID");
+	$ligne=uproxy_service($ID);
 	$data=base64_decode($ligne["transparentout"]);
 	$tpl->field_hidden("rule-dst", $ID);
 	$form[]=$tpl->field_textareacode("data", null, $data);
@@ -154,9 +147,8 @@ function rule_dst(){
 function rule_dstex(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$ID=intval($_GET["rule-dstex"]);
-	$ligne=$q->mysqli_fetch_array("SELECT servicename,excludetransparentout FROM `3proxy_services` WHERE ID=$ID");
+	$ligne=uproxy_service($ID);
 	$data=base64_decode($ligne["excludetransparentout"]);
 	$tpl->field_hidden("rule-dstex", $ID);
 	$form[]=$tpl->field_textareacode("data", null, $data);
@@ -168,9 +160,8 @@ function rule_dstex(){
 function rule_sources(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$ID=intval($_GET["rule-sources"]);
-	$ligne=$q->mysqli_fetch_array("SELECT servicename,transparentin FROM `3proxy_services` WHERE ID=$ID");
+	$ligne=uproxy_service($ID);
 	$data=base64_decode($ligne["transparentin"]);	
 	$tpl->field_hidden("rule-sources", $ID);
 	$form[]=$tpl->field_textareacode("data", null, $data);
@@ -180,9 +171,10 @@ function rule_sources(){
 function rule_sourcesex(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ID=intval($_GET["rule-sources"]);
-	$ligne=$q->mysqli_fetch_array("SELECT servicename,excludetransparentin FROM `3proxy_services` WHERE ID=$ID");
+	// L'onglet est appele avec rule-sourcesex : lire rule-sources donnait ID=0,
+	// donc un formulaire vide et une sauvegarde sur un service inexistant.
+	$ID=intval($_GET["rule-sourcesex"]);
+	$ligne=uproxy_service($ID);
 	$data=base64_decode($ligne["excludetransparentin"]);
 	$tpl->field_hidden("rule-sourcesex", $ID);
 	$form[]=$tpl->field_textareacode("data", null, $data);
@@ -194,9 +186,8 @@ function rule_sourcesex(){
 function rule_ports(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
 	$ID=intval($_GET["rule-ports"]);
-	$ligne=$q->mysqli_fetch_array("SELECT servicename,transparentport FROM `3proxy_services` WHERE ID=$ID");
+	$ligne=uproxy_service($ID);
 	$data=base64_decode($ligne["transparentport"]);
 	
 	$tpl->field_hidden("rule-ports", $ID);

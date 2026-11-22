@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 $GLOBALS['TABLENAME']="spamasssin_baddomains";
 $GLOBALS["EXPLAIN"]="spamassassin_uris_explain";
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
@@ -14,7 +15,8 @@ page();
 
 function rule_js(){
 	$func=$_GET["func"];
-	$ID=$_GET["rule-js"];
+	// Pentest 2026-11-04 : rule-js etait recopie sans encodage dans la page (XSS).
+	$ID=intval($_GET["rule-js"]);
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$title="{rule} $ID";
@@ -24,7 +26,8 @@ function rule_js(){
 }
 
 function delete(){
-	$ID=$_GET["rule-delete"];
+	// Pentest 2026-11-04 : rule-delete etait concatene dans la requete.
+	$ID=intval($_GET["rule-delete"]);
 	$tpl=new template_admin();
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
 	$ligne=$q->mysqli_fetch_array("DELETE FROM {$GLOBALS['TABLENAME']} WHERE ID=$ID");
@@ -58,7 +61,8 @@ function popup(){
 }
 
 function save(){
-	$ID=$_POST["ID"];
+	// Pentest 2026-11-04 : ID etait concatene dans la requete.
+	$ID=intval($_POST["ID"]);
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
 	$q=new lib_sqlite("/home/artica/SQLITE/spamassassin.db");
@@ -74,15 +78,16 @@ function save(){
 		}
 		return;
 	}
-	$_POST["pattern"]=$q->sqlite_escape_string2($_POST["pattern"]);
-	$q->QUERY_SQL("UPDATE {$GLOBALS['TABLENAME']} SET pattern='{$_POST["pattern"]}' WHERE ID=$ID");
+	// Pentest 2026-11-04 : pattern etait concatene dans la requete.
+	$q->QUERY_SQL_PARAMS("UPDATE {$GLOBALS['TABLENAME']} SET pattern=? WHERE ID=?",array($_POST["pattern"],$ID));
 	
 }
 
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	if(!isset($_GET["t"])){$t=time();}else{$t=$_GET["t"];}
+	// Pentest 2026-11-04 : t etait recopie sans encodage dans la page (XSS).
+	if(!isset($_GET["t"])){$t=time();}else{$t=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["t"]);}
 	
 	
 	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/spamassassin.urls.progress";
@@ -90,7 +95,7 @@ function page(){
 	$ARRAY["CMD"]="milter-spamass.php?urls-database=yess";
 	$ARRAY["TITLE"]="{building_rules}";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-firehol-restart');";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-firehol-restart');";
 	
 	$add="Loadjs('$page?rule-js=0&func=ss$t')";
 	$html[]="	<div class=\"row\"> 
@@ -165,8 +170,9 @@ function table(){
 	$search=str_replace("**", "*", $search);
 	$search=str_replace("*", "%", $search);
 	
-	$sql="SELECT * FROM `{$GLOBALS['TABLENAME']}` WHERE pattern LIKE '$search' ORDER BY pattern LIMIT 150";
-	$results=$q->QUERY_SQL($sql);
+	// Pentest 2026-11-04 : search etait concatene dans la requete.
+	$sql="SELECT * FROM `{$GLOBALS['TABLENAME']}` WHERE pattern LIKE ? ORDER BY pattern LIMIT 150";
+	$results=$q->QUERY_SQL_PARAMS($sql,array($search));
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
 	
 	

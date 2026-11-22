@@ -1,21 +1,19 @@
-<BUILD_CLUSTER>Build cluster</BUILD_CLUSTER>
-<WIZARD_CLUSTER_CYRUS_EXPLAIN>This wizard will help you to create a mailbox server Active/passive on your network.[br]
-To set this structure you need a second running Artica server with IMAP service.[br]
-This second Artica server will be the mailboxes replica/slave.[br]
-It will receive notifications from this server in order to replicate mailboxes in realtime.[br]
-If the configuration is a success you will never loose mails.[br]
-[br]The first operation is to check if the slave server store mandatories elements for linking procedure.[br]
-If the link operation is a success the 2 artica servers (Master and slave) will change parameters and start the clustering production mode.[br]
-You will be able to return back to a standalone mode so you will not loose mail on a failed operation.[br][br]
-So, it's time to start the first procedure.[br]
-Fill the form below by setting the remote server credentials.[br]This will help Artica to talk to the remote server for checking it's status.[br]
-</WIZARD_CLUSTER_CYRUS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Slave/replica informations</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>The target server is ready</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>This server is ready to be a replica/slave after clicking on the "build cluster" button the Master and the Slave
-will be notified to be linked in order to build a cluster configuration.[br]
-Your Master should be behind a Firewall with NAT, it is necessary to define which IP address/Server name the replica must use.
-In the form below, put the Ip address of your server act has a Master. 
-</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_WELCOME>Welcome on the Wizard for Clustering mailboxes</WIZARD_CLUSTER_CYRUS_WELCOME>
-<WIZARD_CLUSTER_ERROR>The wizard is blocked, it encounter some error, try to fix it ans restart the operation</WIZARD_CLUSTER_ERROR>
+<BUILD_CLUSTER>Criar cluster</BUILD_CLUSTER>
+<WIZARD_CLUSTER_CYRUS_EXPLAIN>Este assistente ajudar&#225; voc&#234; a criar um servidor de caixas de correio Ativo/passivo na sua rede.[br]
+Para configurar esta estrutura voc&#234; precisa de um segundo servidor Artica em execu&#231;&#227;o com servi&#231;o IMAP.[br]
+Este segundo servidor Artica ser&#225; a r&#233;plica/escravo das caixas de correio.[br]
+Ele receber&#225; notifica&#231;&#245;es deste servidor para replicar as caixas de correio em tempo real.[br]
+Se a configura&#231;&#227;o for bem-sucedida voc&#234; nunca perder&#225; e-mails.[br]
+[br]A primeira opera&#231;&#227;o &#233; verificar se o servidor escravo armazena os elementos obrigat&#243;rios para o procedimento de vincula&#231;&#227;o.[br]
+Se a opera&#231;&#227;o de vincula&#231;&#227;o for bem-sucedida os 2 servidores artica (Mestre e escravo) trocar&#227;o par&#226;metros e iniciar&#227;o o modo de produ&#231;&#227;o de cluster.[br]
+Voc&#234; poder&#225; retornar ao modo aut&#244;nomo para n&#227;o perder e-mails em caso de opera&#231;&#227;o com falha.[br][br]
+Ent&#227;o, &#233; hora de iniciar o primeiro procedimento.[br]
+Preencha o formul&#225;rio abaixo definindo as credenciais do servidor remoto.[br]Isso ajudar&#225; o Artica a se comunicar com o servidor remoto para verificar seu status.[br]</WIZARD_CLUSTER_CYRUS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Informa&#231;&#245;es do escravo/r&#233;plica</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>O servidor de destino est&#225; pronto</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>Este servidor est&#225; pronto para ser uma r&#233;plica/escravo. Depois de clicar no bot&#227;o &quot;criar cluster&quot;, o Mestre e o Escravo
+ser&#227;o notificados para serem vinculados a fim de construir uma configura&#231;&#227;o de cluster.[br]
+O seu Mestre deve estar atr&#225;s de um firewall com NAT, &#233; necess&#225;rio definir qual o endere&#231;o IP/nome de servidor que a r&#233;plica deve usar.
+No formul&#225;rio abaixo, coloque o endere&#231;o IP do seu servidor que atua como Mestre.</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_WELCOME>Bem-vindo ao assistente para agrupar caixas de correio</WIZARD_CLUSTER_CYRUS_WELCOME>
+<WIZARD_CLUSTER_ERROR>O assistente est&#225; bloqueado, encontrou algum erro, tente corrigi-lo e reinicie a opera&#231;&#227;o</WIZARD_CLUSTER_ERROR>

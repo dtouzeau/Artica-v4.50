@@ -1,27 +1,27 @@
-<bogus-priv>bogus private</bogus-priv>
-<bogus-priv_text>Never forward addresses in the non-routed address spaces</bogus-priv_text>
-<cache-size>Size of local cache</cache-size>
-<code>zinc go to 192.168.1.30</code>
-<dnmasq_interface_text>If you want dnsmasq to listen for requests only on specified interfaces (and the loopback) give the name of the interface (eg eth0) here.</dnmasq_interface_text>
-<dnsmasq_address>address to force to an IP</dnsmasq_address>
-<dnsmasq_domain_text>Expand hosts</dnsmasq_domain_text>
-<dnsmasq_intro_settings>Dnsmasq caches internet addresses (A records and AAAA records) and address-to-name mappings (PTR records), reducing the load on upstream servers and improving performance (especially on modem connections)...</dnsmasq_intro_settings>
-<dnsmasq_listen_address>Or listen addresse(s)</dnsmasq_listen_address>
-<dnsmasq_listen_address_text>Or, which to listen on by address (remember to include 127.0.0.1 if you use this).</dnsmasq_listen_address_text>
-<domain-needed>Domain needed</domain-needed>
-<domain-needed_text>Never forward plain names (without a dot or domain part)</domain-needed_text>
-<domain_or_server>Domain or computer name</domain_or_server>
-<filterwin2k>filter useless windows-originated DNS</filterwin2k>
+<bogus-priv>privato falso</bogus-priv>
+<bogus-priv_text>Non inoltrare mai gli indirizzi negli spazi di indirizzi non instradati</bogus-priv_text>
+<cache-size>Dimensione della cache locale</cache-size>
+<code>zinc va a 192.168.1.30</code>
+<dnmasq_interface_text>Se vuoi che dnsmasq ascolti le richieste solo su interfacce specifiche (e il loopback), fornisci qui il nome dell'interfaccia (es. eth0).</dnmasq_interface_text>
+<dnsmasq_address>indirizzo da forzare a un IP</dnsmasq_address>
+<dnsmasq_domain_text>Espandi host</dnsmasq_domain_text>
+<dnsmasq_intro_settings>Dnsmasq memorizza nella cache gli indirizzi Internet (record A e record AAAA) e le mappature indirizzo-nome (record PTR), riducendo il carico sui server upstream e migliorando le prestazioni (specialmente sulle connessioni via modem)...</dnsmasq_intro_settings>
+<dnsmasq_listen_address>O indirizzi di ascolto</dnsmasq_listen_address>
+<dnsmasq_listen_address_text>Oppure, su quale indirizzo ascoltare (ricorda di includere 127.0.0.1 se usi questo).</dnsmasq_listen_address_text>
+<domain-needed>Dominio necessario</domain-needed>
+<domain-needed_text>Non inoltrare mai i nomi semplici (senza punto o parte di dominio)</domain-needed_text>
+<domain_or_server>Nome del dominio o del computer</domain_or_server>
+<filterwin2k>Filtra le query DNS inutili originate da Windows</filterwin2k>
 <ip>Indirizzo IP</ip>
-<li>Sets the "domain" DHCP option thereby potentially setting the domain of all systems configured by DHCP </li>
-<log-queries>Log queries</log-queries>
-<log-queries_text>For debugging purposes, log each DNS query as it passes through dnsmasq.</log-queries_text>
-<no-negcache>No negative cache</no-negcache>
-<no-negcache_text>If you want to disable negative caching, enable this</no-negcache_text>
-<no-poll>no pool</no-poll>
-<no-poll_text>If you don't want dnsmasq to poll resolv.conf or other resolv files for changes and re-read them then disable this.</no-poll_text>
-<no-resolv>no resolv</no-resolv>
-<no-resolv_text>If you don't want dnsmasq to read resolv.conf or any other file, getting its servers from this settings instead (see below), then uncomment this.</no-resolv_text>
-<resolv-file>resolv file location path</resolv-file>
-<resolv-file_text>Change this if you want dns to get its upstream servers from somewhere other that /etc/resolv.conf</resolv-file_text>
-<strict-order>strict order</strict-order>
+<li>Imposta l'opzione DHCP &quot;domain&quot; impostando cos&#236; potenzialmente il dominio di tutti i sistemi configurati tramite DHCP</li>
+<log-queries>Registra le query</log-queries>
+<log-queries_text>A scopo di debug, registra ogni query DNS mentre passa attraverso dnsmasq.</log-queries_text>
+<no-negcache>Nessuna cache negativa</no-negcache>
+<no-negcache_text>Se vuoi disabilitare il caching negativo, abilita questo</no-negcache_text>
+<no-poll>nessun polling</no-poll>
+<no-poll_text>Se non vuoi che dnsmasq interroghi resolv.conf o altri file resolv per le modifiche e li rilegga, disabilita questo.</no-poll_text>
+<no-resolv>nessun resolv</no-resolv>
+<no-resolv_text>Se non vuoi che dnsmasq legga resolv.conf o qualsiasi altro file, ottenendo i suoi server da queste impostazioni invece (vedi sotto), abilita questo.</no-resolv_text>
+<resolv-file>Percorso del file resolv</resolv-file>
+<resolv-file_text>Cambia questo se vuoi che dns ottenga i suoi server upstream da un posto diverso da /etc/resolv.conf</resolv-file_text>
+<strict-order>ordine rigoroso</strict-order>

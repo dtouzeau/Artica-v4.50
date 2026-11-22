@@ -16,11 +16,18 @@ $GLOBALS["LAYER_STATUS"]["L7STS"]="{protocol_error}";
 $GLOBALS["PEITYCONF"]="{ width:200,fill: [\"#eeeeee\"],stroke:\"#18a689\",strokeWidth: 2 }";
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.hacluster-backends.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.haproxy.inc");
+include_once(dirname(__FILE__)."/ressources/class.kerberos.spn.inc");
+include_once(dirname(__FILE__)."/ressources/class.hacluster.clock.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.manager.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : start-activate/stop-js/start-js/period/td-row-implode etaient recopies sans encodage dans la page (XSS).
+// Identifiants de backend (entier ou T-<n>), periode de graphe, liste d'entiers.
+foreach(array("start-activate","stop-js","start-js","period") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET[$k]);}}
+if(isset($_GET["td-row-implode"])){$_GET["td-row-implode"]=preg_replace('/[^0-9,]/','',(string)$_GET["td-row-implode"]);}
 if(isset($_GET["td-row-implode"])){td_rows();exit;}
 if(isset($_POST["backend-agent"])){backend_agent_save();exit;}
 if(isset($_GET["metrics"])){metrics();exit;}
@@ -48,9 +55,18 @@ if(isset($_GET["backend-agent"])){backend_agent();exit;}
 if(isset($_GET["refresh-table"])){refresh_table();exit;}
 if(isset($_GET["backend-tab"])){backend_tab();exit;}
 if(isset($_GET["backend-popup"])){backend_popup();exit;}
+if(isset($_GET["backend-reload-all"])){backends_reload_all();exit;}
 if(isset($_GET["backend-enable-js"])){backends_enable();exit;}
 if(isset($_GET["backend-delete-js"])){backend_delete_js();exit;}
 if(isset($_GET["backend-reboot-js"])){backend_reboot_js();exit;}
+if(isset($_GET["backend-ademergency-js"])){backend_ademergency_js();exit;}
+if(isset($_GET["backend-kerberos-js"])){backend_kerberos_js();exit;}
+if(isset($_GET["backend-kerberos-popup"])){backend_kerberos_popup();exit;}
+if(isset($_GET["backend-clock-js"])){backend_clock_js();exit;}
+if(isset($_GET["backend-clock-popup"])){backend_clock_popup();exit;}
+if(isset($_GET["backend-clock-content"])){backend_clock_content(intval($_GET["backend-clock-content"]));exit;}
+if(isset($_GET["backend-clock-resync"])){backend_clock_resync();exit;}
+if(isset($_POST["backend-ademergency"])){backend_ademergency();exit;}
 if(isset($_GET["backend-iperf3-js"])){backend_iperf3_js();exit;}
 if(isset($_GET["backend-cluster-force-js"])){backend_cluster_force_js();exit;}
 
@@ -106,20 +122,24 @@ function clusteragent_enable():bool{
         return true;
     }
     $ID=intval($_GET["clusteragent"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT clusteragent FROM hacluster_backends WHERE ID=$ID");
-    if(intval($ligne["clusteragent"])==0){
+    $ligne=hacluster_db_get_backend($ID);
+    $clusteragent=0;
+    if(isset($ligne["clusteragent"])) {
+        if (!is_null($ligne["clusteragent"])) {
+            $clusteragent = intval($ligne["clusteragent"]);
+        }
+    }
+    if($clusteragent==0){
         $clusteragent=1;
     }else{
         $clusteragent=0;
     }
 
-    $q->QUERY_SQL("UPDATE hacluster_backends SET clusteragent=$clusteragent WHERE ID=$ID");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
-    if(!$q->ok){
-        $tpl->js_error($q->mysql_error);
+    if(!hacluster_db_update_backend($ID, array("clusteragent"=>$clusteragent))){
+        $tpl->js_error("clusteragent update failed");
         return false;
     }
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/reconfigure");
     $page=currentPageName();
     echo "Loadjs('$page?btn-action=$ID')";
@@ -131,9 +151,8 @@ function clusteragent_enable():bool{
 
 function notify_backend(){
     $ID=intval($_GET["notify-backend"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title=$ligne["backendname"];
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
 
     $tpl=new template_admin();
 
@@ -154,16 +173,14 @@ function notify_backend(){
 }
 function notify_backend_log(){
     $ID=intval($_GET["notify-backend"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title=$ligne["backendname"];
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
 
 }
 
 function backend_agent():bool{
     $ID=intval($_GET["backend-agent"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT clusteragent,agentcfg FROM hacluster_backends WHERE ID=$ID");
+    $ligne=hacluster_db_get_backend($ID);
     $tpl        = new template_admin();
 
     if(!$q->ok){
@@ -214,10 +231,9 @@ function backend_agent_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $data=base64_encode(serialize($_POST));
-    $ID=$_POST["backend-agent"];
+    $ID=intval($_POST["backend-agent"]);
     $clusteragent=intval($_POST["clusteragent"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $q->QUERY_SQL("UPDATE hacluster_backends SET clusteragent=$clusteragent,agentcfg='$data' WHERE ID=$ID");
+    hacluster_db_update_backend($ID, array("clusteragent"=>$clusteragent, "agentcfg"=>$data));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
     $sock=new sockets();
     $sock->REST_API("/hacluster/server/reconfigure");
@@ -230,8 +246,13 @@ function start_tabs(){
 
     if(isset($_GET["main-page"])){page();exit;}
     $page       = CurrentPageName();
-    $html="<div id='hacluster-start-tabs' style='margin-top:15px'></div><script>LoadAjax('hacluster-start-tabs','$page?tabs=yes');</script>";
-echo $html;
+    $tpl        = new template_admin();
+    // Un vrai en-tete (titre, icone, #tiny-button) : sans lui, le TINY des
+    // onglets n'avait nulle part ou ecrire, et les filtres de l'onglet Metrics
+    // restaient dans le corps de la page.
+    $html=$tpl->page_header("{hb2_title}","fas fa-server","{hb2_explain}",
+        "$page?tabs=yes","hacluster-backends",false,false,"hacluster-start-tabs");
+    echo $tpl->_ENGINE_parse_body($html);
 
 }
 
@@ -241,9 +262,8 @@ function weight_js(){
     $page       = CurrentPageName();
     $tpl        = new template_admin();
     $ID=intval($_GET["weight-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     $tpl->js_dialog3("{weight}: $title","$page?weight-popup=$ID",890);
 }
 
@@ -251,9 +271,8 @@ function graphs_js(){
     $page       = CurrentPageName();
     $tpl        = new template_admin();
     $ID=intval($_GET["graphs"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     $tpl->js_dialog3("{statistics}: $title","$page?graph-tabs=$ID",1200);
 
 }
@@ -415,10 +434,9 @@ function backup_status():bool{
         $function = $_GET["function"];
     }
     $ID=intval($_GET["backend-status-popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $ligne=hacluster_db_get_backend($ID);
     $tpl        = new template_admin();
-    $enabled=$ligne["enabled"];
+    $enabled=$ligne["enabled"] ?? 0;
     $status=$ligne["status"];
     $isDisconnected=$ligne["isDisconnected"];
     $status_textin=StatusIntToStr($status);
@@ -450,7 +468,31 @@ function backup_status():bool{
     $status_textin="$status_textin&nbsp;&nbsp;<small>(<i class='$ico_cpu'></i>&nbsp;{$HaClusterMetrics["CPU_AVG"]}%&nbsp;&nbsp;<i class='$ico_load'></i> {$HaClusterMetrics["LOAD"]})</small>";
 
     if($ActiveDirectoryEmergency==1){
-        $tpl->table_form_field_text("{emergency}","{activedirectory_emergency_mode}",ico_bug,true);
+        // Le proxy du noeud laisse tout passer sans authentification : l'operateur
+        // doit pouvoir l'en sortir d'ici, le LB relaie la demande au noeud.
+        $page=CurrentPageName();
+        $tpl->table_form_field_js("Loadjs('$page?backend-ademergency-js=$ID')");
+        $tpl->table_form_field_text("{emergency}","{activedirectory_emergency_mode}||{leave_ad_emergency_explain}",ico_bug,true);
+        $tpl->table_form_field_js("");
+    }
+    // Erreur Kerberos prouvee par le noeud (rapport report.json, champ KerberosSPN) :
+    // sans elle, un SPN porte par un autre compte AD n'etait visible nulle part ici.
+    $krb=kerberos_spn_from_node_report($ID);
+    if(kerberos_spn_is_problem($krb)){
+        $page=CurrentPageName();
+        $krbtitles=kerberos_spn_titles($krb->state);
+        list($krbspn,,)=kerberos_spn_failing($krb);
+        $krbspn=kerberos_spn_h(preg_replace('#@.*$#','',$krbspn));
+        $tpl->table_form_field_js("Loadjs('$page?backend-kerberos-js=$ID')");
+        $tpl->table_form_field_text("Kerberos","$krbspn||{$krbtitles[0]}",ico_key,true);
+        $tpl->table_form_field_js("");
+    }
+    $clk=hacluster_clock_node(intval($ID));
+    if(is_object($clk) && !empty($clk->problem) && is_object($clk->clock ?? null)){
+        $page=CurrentPageName();
+        $tpl->table_form_field_js("Loadjs('$page?backend-clock-js=$ID')");
+        $tpl->table_form_field_text("{clock_out_of_sync}",hacluster_clock_skew_text(intval($clk->clock->skew_ms))."||{clock_out_of_sync_short}",ico_clock,true);
+        $tpl->table_form_field_js("");
     }
     $date="{never}";
     if(isset($HaClusterMetrics["TIME"])){
@@ -508,9 +550,10 @@ function backup_status():bool{
     if($certificateid==0){
         $tpl->table_form_field_text("{client_certificate}","{missing_certificate}",ico_certificate,true);
     }else{
-        $z=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-        $zline=$z->mysqli_fetch_array("SELECT commonName FROM subcertificates WHERE ID=$certificateid");
-        $commonName=$zline["commonName"];
+        include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $sub=$cdb->subGetById(intval($certificateid));
+        $commonName=is_object($sub)?(string)($sub->commonName ?? ""):"";
         $tpl->table_form_field_js("Loadjs('fw.certificates-center.php?show-server-certificate=$certificateid')");
         $tpl->table_form_field_text("{client_certificate}",$commonName,ico_certificate);
         $tpl->table_form_field_js("");
@@ -586,9 +629,8 @@ function backend_scope_js():bool{
     $page       = CurrentPageName();
     $tpl        = new template_admin();
     $ID=intval($_GET["backend-scope-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_dialog3("{scope}: $title","$page?backend-scope-popup=$ID",600);
 
 }
@@ -596,9 +638,8 @@ function backend_scope_popup():bool{
     $page       = CurrentPageName();
     $tpl        = new template_admin();
     $ID=intval($_GET["backend-scope-popup"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT scopes FROM hacluster_backends WHERE ID=$ID");
-    $scope=unserializeb64("{$ligne["scopes"]}");
+    $ligne=hacluster_db_get_backend($ID);
+    $scope=unserializeb64($ligne["scopes"] ?? "");
     $data=@implode("\n",$scope);
     $tpl->field_hidden("scopesid",$ID);
     $form[]=$tpl->field_textareacode("scopes", null, $data);
@@ -614,15 +655,16 @@ function backend_scope_popup():bool{
 function backend_scope_save():bool{
     $tpl        = new template_admin();
     $tpl->CLEAN_POST();
-    $q          = new lib_sqlite("/home/artica/SQLITE/haproxy.db");
     $ID         = intval($_POST["scopesid"]);
     $f          = explode("\n",$_POST["scopes"]);
-    $ligne      = $q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title      = "{$ligne["backendname"]}";
+    $ligne      = hacluster_db_get_backend($ID);
+    $title      = $ligne["backendname"] ?? "";
     $new        = base64_encode(serialize($f));
 
-    $q->QUERY_SQL("UPDATE hacluster_backends SET scopes='$new' WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->javascript_parse_text($q->mysql_error);return false;}
+    if(!hacluster_db_update_backend($ID, array("scopes"=>$new))){
+        echo $tpl->javascript_parse_text("scope save failed");
+        return false;
+    }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/reconfigure");
     return admin_tracks("{scope} {saved} for {backend} $title");
@@ -639,14 +681,9 @@ function backend_scope_table():bool{
     $tpl        = new template_admin();
     $ID         = intval($_GET["backend-scope-table"]);
     $t          = time();
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    if(!$q->FIELD_EXISTS("hacluster_backends","scopes")){
-        $q->QUERY_SQL("ALTER TABLE  hacluster_backends ADD scopes TEXT NULL");
-    }
-
-
-    $ligne=$q->mysqli_fetch_array("SELECT scopes FROM hacluster_backends WHERE ID=$ID");
-    $scopes=unserializeb64($ligne["scopes"]);
+    // scopes column is provisioned by articarest at startup (csqlite.FieldExistCreateTEXT)
+    $ligne=hacluster_db_get_backend($ID);
+    $scopes=unserializeb64($ligne["scopes"] ?? "");
 
     $html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:10px'>";
     $html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?backend-scope-js=$ID');\">";
@@ -756,9 +793,7 @@ function metrics_get_png($ID,$picture):string{
 function metrics_popup():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $sql="SELECT *  FROM `hacluster_backends` ORDER BY bweight DESC";
-    $results = $q->QUERY_SQL($sql);
+    $results=hacluster_db_list_backends("bweight", "DESC");
     $period=$_GET["period"];
     $function="";
     if(isset($_GET["function"])) {
@@ -818,8 +853,13 @@ function start_ready(){
 
     if(preg_match("#T-([0-9]+)#",$ID,$re)){
         $pname="Tproxy{$re[1]}";
-        $sock->getFrameWork("hacluster.php?start-socket=$pname");
-        $sock->getFrameWork("hacluster.php?start-socket=Zproxy{$re[1]}");
+        // /hacluster/tproxy/backend/{id}/start : Tproxy<n> + Zproxy<n> sortis de maintenance
+        // (portage de framework/hacluster.php?start-socket).
+        $json=json_decode((string)$sock->REST_API("/hacluster/tproxy/backend/".intval($re[1])."/start"));
+        if(!is_object($json) || empty($json->Status)){
+            $tpl->js_error((is_object($json) && isset($json->Error))?$json->Error:"articarest: no answer");
+            return false;
+        }
         header("content-type: application/x-javascript");
         echo "LoadAjaxSilent('backend-list','$page?table=yes');";
         return admin_tracks("hacluster: Start backend $pname");
@@ -845,8 +885,13 @@ function start_js():bool{
 
     if(preg_match("#T-([0-9]+)#",$ID,$re)){
         $pname="Tproxy{$re[1]}";
-        $sock->getFrameWork("hacluster.php?start-socket=$pname");
-        $sock->getFrameWork("hacluster.php?start-socket=Zproxy{$re[1]}");
+        // /hacluster/tproxy/backend/{id}/start : Tproxy<n> + Zproxy<n> sortis de maintenance
+        // (portage de framework/hacluster.php?start-socket).
+        $json=json_decode((string)$sock->REST_API("/hacluster/tproxy/backend/".intval($re[1])."/start"));
+        if(!is_object($json) || empty($json->Status)){
+            $tpl->js_error((is_object($json) && isset($json->Error))?$json->Error:"articarest: no answer");
+            return false;
+        }
         header("content-type: application/x-javascript");
         echo "LoadAjaxSilent('backend-list','$page?table=yes');";
         return admin_tracks("hacluster: Start backend $pname");
@@ -906,6 +951,11 @@ function page(){
     LoadAjax('backend-list','$page?table=yes');
     LoadAjaxSilent('checkCurStatus','$page?checkCurStatus=yes');
 </script>";
+    // Chaque onglet pose son en-tete : sans ce TINY, revenir de l'onglet Metrics
+    // laissait ses filtres affiches au-dessus de la liste des backends.
+    $TINY_ARRAY=array("TITLE"=>"{hb2_title}","ICO"=>"fas fa-server","EXPL"=>"{hb2_explain}",
+        "URL"=>"hacluster-backends","BUTTONS"=>"");
+    $html.="<script>Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');</script>";
 
 
     if(isset($_GET["main-page"])){
@@ -929,9 +979,8 @@ function backend_js():bool{
 
 
 	if($ID==0){$title="$new_backend";}else{
-        $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-	    $title="{$ligne["backendname"]}";
+        $ligne=hacluster_db_get_backend($ID);
+        $title=$ligne["backendname"] ?? "";
 	}
 
 	return $tpl->js_dialog2("#$ID $title", "$page?backend-tab=$ID&function=$function");
@@ -939,11 +988,10 @@ function backend_js():bool{
 function backends_enable():bool{
     $page=CurrentPageName();
 	$ID=intval($_GET["backend-enable-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT backendname,enabled FROM hacluster_backends WHERE ID=$ID");
-	if(intval($ligne["enabled"])==1){$enabled=0;}else{$enabled=1;}
-    $q->QUERY_SQL("UPDATE hacluster_backends SET enabled=$enabled WHERE ID=$ID");
-    $backendname=$ligne["backendname"];
+    $ligne=hacluster_db_get_backend($ID);
+	if(intval($ligne["enabled"] ?? 0)==1){$enabled=0;}else{$enabled=1;}
+    hacluster_db_update_backend($ID, array("enabled"=>$enabled));
+    $backendname=$ligne["backendname"] ?? "";
 
     header("content-type: application/x-javascript");
     $sock=new sockets();
@@ -965,9 +1013,8 @@ function backend_delete_js():bool{
     }
 	$tpl=new template_admin();
 	$ID=intval($_GET["backend-delete-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     header("content-type: application/x-javascript");
 	$js[]="$('#{$_GET["md"]}').remove()";
     if(strlen($function)>3){
@@ -981,20 +1028,79 @@ function backend_delete_js():bool{
 function backend_reboot_js():bool{
     $tpl=new template_admin();
     $ID=intval($_GET["backend-reboot-js"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_confirm_execute("{reboot} $title" , "backend-reboot", $ID);
 }
+function backend_kerberos_js():bool{
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $ID=intval($_GET["backend-kerberos-js"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
+    return $tpl->js_dialog2("Kerberos: $title","$page?backend-kerberos-popup=$ID");
+}
+// Detail de l'erreur Kerberos du noeud : meme tuile que la page AD du proxy.
+function backend_kerberos_popup():bool{
+    $tpl=new template_admin();
+    $ID=intval($_GET["backend-kerberos-popup"]);
+    $krb=kerberos_spn_from_node_report($ID);
+    if(!kerberos_spn_is_problem($krb)){
+        echo $tpl->div_explain("Kerberos||{success}");
+        return true;
+    }
+    echo $tpl->_ENGINE_parse_body(kerberos_spn_render($tpl,$krb,"node",""));
+    return true;
+}
+function backend_ademergency_js():bool{
+    $tpl=new template_admin();
+    $ID=intval($_GET["backend-ademergency-js"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
+    return $tpl->js_confirm_execute("{leave_ad_emergency} $title" , "backend-ademergency", $ID);
+}
+// Reponse lue par js_confirm_execute : vide = succes, sinon le texte s'affiche.
+function backend_ademergency():bool{
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $ID=intval($_POST["backend-ademergency"]);
+    if($ID<1){
+        echo $tpl->javascript_parse_text("{protocol_error}");
+        return false;
+    }
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/backend/$ID/ad-emergency/off");
+    $json=json_decode((string)$resp);
+    if(!is_object($json) || !property_exists($json,"Status")){
+        $raw=trim((string)$resp);
+        echo htmlspecialchars($raw==""?$tpl->javascript_parse_text("{protocol_error}"):substr($raw,0,300));
+        return false;
+    }
+    if(!$json->Status){
+        echo htmlspecialchars((string)($json->Error ?? ""));
+        return false;
+    }
+    return admin_tracks("HaCluster: ask $title to leave the Active Directory emergency mode");
+}
+function backends_reload_all():bool{
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/clients/reload-all"),true);
+    if(!isset($json["Status"])){
+        return $tpl->js_error("{protocol_error}");
+    }
+    return $tpl->js_ok("{hacluster_reload_all_explain}");
+}
+
+
 function backend_iperf3_js():bool{
     $tpl=new template_admin();
     $ID=intval($_GET["backend-iperf3-js"]);
     if($ID==0){
         return $tpl->js_error("ID == 0 ???");
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_confirm_execute("{speed_test} $title" , "backend-speed", $ID);
 }
 function backend_cluster_force_js():bool{
@@ -1003,9 +1109,8 @@ function backend_cluster_force_js():bool{
     if($ID==0){
         return $tpl->js_error("ID == 0 ???");
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_confirm_execute("{cluster_package} > {force_synchronization} > $title" , "backend-cluster", $ID);
 
 }
@@ -1017,9 +1122,8 @@ function backend_reconfigure_js():bool{
     if($ID==0){
         return $tpl->js_error("ID == 0 ???");
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_confirm_execute("{reconfigure} $title" , "backend-reconfigure", $ID);
 }
 function backend_reconfiguredns_js():bool{
@@ -1028,9 +1132,8 @@ function backend_reconfiguredns_js():bool{
     if($ID==0){
         return $tpl->js_error("ID == 0 ???");
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     return $tpl->js_confirm_execute("{dns_settings} $title" , "backend-reconfiguredns", $ID);
 }
 function backend_register():bool{
@@ -1079,12 +1182,11 @@ function backend_register():bool{
 function backend_reconfigure():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["backend-reconfigure"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ID=intval($_POST["backend-reconfigure"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
-    $q->QUERY_SQL("UPDATE hacluster_backends SET orderqueue=2 WHERE ID=$ID");
+    hacluster_db_update_backend($ID, array("orderqueue"=>2));
     $res=backend_common_notify($ID);
     if(strlen($res)>0){
         $tpl->js_error_stop($res);
@@ -1102,11 +1204,10 @@ function backend_reconfiguredns():bool{
         echo "ID is null ??\n";
         return false;
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
-    $q->QUERY_SQL("UPDATE hacluster_backends SET orderqueue=5 WHERE ID=$ID");
+    hacluster_db_update_backend($ID, array("orderqueue"=>5));
     $res=backend_common_notify($ID);
     if(strlen($res)>0){
         echo $res;
@@ -1138,22 +1239,20 @@ function backend_common_notify($ID):string{
 function backend_delete():bool{
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$ID=$_POST["backend-delete"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+	$ID=intval($_POST["backend-delete"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/nodes/remove/$ID");
     return admin_tracks("HaCluster {delete} backend $title");
 }
 function backend_reboot():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["backend-reboot"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ID=intval($_POST["backend-reboot"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
 
-    $q->QUERY_SQL("UPDATE hacluster_backends SET orderqueue=3 WHERE ID=$ID");
+    hacluster_db_update_backend($ID, array("orderqueue"=>3));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
     $res=backend_common_notify($ID);
     if(strlen($res)>0){
@@ -1166,14 +1265,12 @@ function backend_reboot():bool{
 function backend_speed():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["backend-speed"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ID=intval($_POST["backend-speed"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
 
-    $q->QUERY_SQL("UPDATE hacluster_backends SET orderqueue=4 WHERE ID=$ID");
-    if(!$q->ok){
-        echo $q->mysql_error;
+    if(!hacluster_db_update_backend($ID, array("orderqueue"=>4))){
+        echo "update failed";
         return false;
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
@@ -1188,15 +1285,13 @@ function backend_speed():bool{
 }
 function backend_cluster_perform():bool{
     $tpl=new template_admin();
-    $ID=$_POST["backend-cluster"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $title="{$ligne["backendname"]}";
+    $ID=intval($_POST["backend-cluster"]);
+    $ligne=hacluster_db_get_backend($ID);
+    $title=$ligne["backendname"] ?? "";
 
 
-    $q->QUERY_SQL("UPDATE hacluster_backends SET orderqueue=6 WHERE ID=$ID");
-    if(!$q->ok){
-        echo $q->mysql_error;
+    if(!hacluster_db_update_backend($ID, array("orderqueue"=>6))){
+        echo "update failed";
         return false;
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
@@ -1219,9 +1314,7 @@ function backend_popup():bool{
     }
     $ligne=array();
     if($ID>0) {
-        $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-        $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-
+        $ligne=hacluster_db_get_backend($ID);
     }
 
     $jsadd=null;
@@ -1285,18 +1378,23 @@ function backend_popup():bool{
 function backends_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ID=$_POST["ID"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
+    $ID=intval($_POST["ID"]);
+    if(hacluster_weight_refused($_POST["bweight"])){return false;}
 
-    if($ID>0){
-        if ($_POST["isMaster"] == 1) {
-            $q->QUERY_SQL("UPDATE hacluster_backends SET isMaster=0");
-        }
+    // Clear the master flag on every other backend before this save (insert or update).
+    // The gate used to be `if($ID>0)` only, which let a new isMaster=1 row coexist
+    // with a pre-existing master — producing two masters until the next edit.
+    if (intval($_POST["isMaster"]) == 1) {
+        hacluster_db_clear_master();
     }
     $backendname=$_POST["backendname"];
-    $backendname=$q->sqlite_escape_string2($backendname);
     $bweight=intval($_POST["bweight"]);
     $enabled=intval($_POST["enabled"]);
+    $isMaster=intval($_POST["isMaster"]);
+    $isDisconnected=intval($_POST["isDisconnected"]);
+    $listen_ip=$_POST["listen_ip"];
+    $listen_port=intval($_POST["listen_port"]);
+    $artica_port=intval($_POST["artica_port"]);
     $ComPort=intval($_POST["ComPort"]);
     $noauth_port=intval($_POST["noauth_port"]);
 
@@ -1312,73 +1410,71 @@ function backends_save():bool{
         $hostname="tmp-".time().".localhost.localdomain";
         $Username=urlencode($_POST["artica_username"]);
         $Password=urlencode($_POST["artica_password"]);
-        $artica_port=intval($_POST["artica_port"]);
-        $listen_ip=trim($_POST["listen_ip"]);
+        $listen_ip_trim=trim($listen_ip);
 
-        $sql="INSERT INTO hacluster_backends (backendname,listen_ip,listen_port,artica_port,status,enabled,isMaster,isDisconnected,bweight,hostname,ComPort,orderqueue,noauth_port)
-        VALUES('$backendname','{$_POST["listen_ip"]}',
-        '{$_POST["listen_port"]}','{$_POST["artica_port"]}',0,$enabled,{$_POST["isMaster"]},'{$_POST["isDisconnected"]}',$bweight,'$hostname',$ComPort,2,$noauth_port)";
+        $newID = hacluster_db_insert_backend(array(
+            "backendname"    => $backendname,
+            "listen_ip"      => $listen_ip,
+            "listen_port"    => $listen_port,
+            "artica_port"    => $artica_port,
+            "status"         => 0,
+            "enabled"        => $enabled,
+            "isMaster"       => $isMaster,
+            "isDisconnected" => $isDisconnected,
+            "bweight"        => $bweight,
+            "hostname"       => $hostname,
+            "ComPort"        => $ComPort,
+            "orderqueue"     => 2,
+            "noauth_port"    => $noauth_port,
+        ));
 
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){
-            $tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";
+        if($newID == 0){
+            echo (new template_admin())->post_error("". $tpl->javascript_parse_text("insert failed"));
             return false;
         }
 
-        $ligne=$q->mysqli_fetch_array("SELECT ID FROM hacluster_backends WHERE hostname='$hostname'");
+        $ID = $newID;
+        // Replace the placeholder hostname with the user-supplied backendname.
+        hacluster_db_update_backend($ID, array("hostname" => $backendname));
 
-        $ID=intval($ligne["ID"]);
-
-        if($ID==0){
-            echo $tpl->post_error("Backend hostname $hostname invalid, cannot found it's ID");
-            $q->QUERY_SQL("DELETE FROM hacluster_backends WHERE hostname='$hostname'");
-            $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
-            return false;
-        }
-
-        $q->QUERY_SQL("UPDATE hacluster_backends SET hostname='$backendname' WHERE ID=$ID");
-
-
-        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/register/node/$Username/$Password/$artica_port/$listen_ip/$ComPort/$ID"));
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/register/node/$Username/$Password/$artica_port/$listen_ip_trim/$ComPort/$ID"));
         if(!$json->Status){
-            $q->QUERY_SQL("DELETE FROM hacluster_backends WHERE ID='$ID'");
+            hacluster_db_delete_backend($ID);
             $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
             echo $tpl->post_error($json->Error);
             return false;
         }
 
-
-
-
         $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/clients/certificates"));
         if(!$json->Status){
             echo $tpl->post_error("clients/certificates: $json->Error");
-            $q->QUERY_SQL("DELETE FROM hacluster_backends WHERE ID=$ID");
+            hacluster_db_delete_backend($ID);
             $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
             return false;
         }
         return admin_tracks("HaCluster {add} {new} backend $backendname");
     }
 
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
-    $md5="{$ligne["listen_ip"]}{$ligne["listen_port"]}{$ligne["artica_port"]}";
-    $md52="{$_POST["listen_ip"]}{$_POST["listen_port"]}{$_POST["artica_port"]}";
-    if($md5<>$md52){$status=",status=0";}
+    $ligne=hacluster_db_get_backend($ID);
+    $md5=($ligne["listen_ip"] ?? "") . ($ligne["listen_port"] ?? "") . ($ligne["artica_port"] ?? "");
+    $md52=$listen_ip . $listen_port . $artica_port;
+    $update = array(
+        "backendname"    => $backendname,
+        "listen_ip"      => $listen_ip,
+        "listen_port"    => $listen_port,
+        "enabled"        => $enabled,
+        "isMaster"       => $isMaster,
+        "isDisconnected" => $isDisconnected,
+        "bweight"        => $bweight,
+        "ComPort"        => $ComPort,
+        "noauth_port"    => $noauth_port,
+        "artica_port"    => $artica_port,
+    );
+    // Reset status on address change so the watchdog re-probes.
+    if($md5 !== $md52){$update["status"] = 0;}
 
-    $sql="UPDATE hacluster_backends SET
-    backendname='$backendname',
-    listen_ip='{$_POST["listen_ip"]}',
-    listen_port='{$_POST["listen_port"]}',
-    enabled=$enabled,
-    isMaster='{$_POST["isMaster"]}',
-    isDisconnected='{$_POST["isDisconnected"]}',
-    bweight=$bweight,ComPort='$ComPort',
-    noauth_port=$noauth_port,
-    artica_port='{$_POST["artica_port"]}'$status WHERE ID=$ID";
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        $tpl=new template_admin();$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);echo "jserror:$q->mysql_error";
+    if(!hacluster_db_update_backend($ID, $update)){
+        echo (new template_admin())->post_error("". $tpl->javascript_parse_text("update failed"));
         return true;
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/flush");
@@ -1402,12 +1498,13 @@ function table(){
     td_prepare();
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $sql="SELECT *  FROM `hacluster_backends` ORDER BY bweight DESC";
     $jsSync=$tpl->framework_buildjs("/hacluster/server/notify/all",
     "hacluster.connect.progress",
     "hacluster.connect.txt","hacluster-backend-restart", ""
     );
+
+    $jsReloadAll="Loadjs('$page?backend-reload-all=yes');";
+
     $function="";
     if(isset($_GET["function"])) {
         $function = $_GET["function"];
@@ -1416,35 +1513,37 @@ function table(){
     $HaClusterUseAddr=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterUseAddr");
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/globalstats");
 
-	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style='margin-top:10px;margin-bottom:20px'>";
-    if(strlen($HaClusterUseAddr)>3){
-	    $html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?backend-js=0&function=$function');\">";
-	    $html[]="<i class='fa fa-plus'></i> {new_backend} </label>";
-    }else{
-        $html[]="<label class=\"btn btn btn-default\" OnClick=\"\">";
-        $html[]="<i class='fa fa-plus'></i> {new_backend} </label>";
-    }
 
-    $html[]="<label class=\"btn btn btn-info\" OnClick=\"$jsSync\">";
-    $html[]="<i class='fal fa-sync-alt'></i> {reconfigure}:{nodes} </label>";
+        if(strlen($HaClusterUseAddr)>3) {
+            $topbuttons[] = array("Loadjs('$page?backend-js=0&function=$function')", ico_plus, "{new_backend}");
+        }else{
+            $topbuttons[] = array("", ico_plus, "{new_backend}");
+        }
+    $topbuttons[] = array($jsSync, "fa-solid fa-bolt", "{reconfigure}:{nodes}");
+    $topbuttons[] = array($jsReloadAll, "fal fa-sync-alt", "{reload}:{nodes}");
+
 
     $HaClusterDeployArticaUpdates=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterDeployArticaUpdates"));
     if($HaClusterDeployArticaUpdates==1){
         $ico_down=ico_download;
         $jsDeploy="Loadjs('fw.meta.updates.php')";
-        $html[]="<label class=\"btn btn btn-primary\" OnClick=\"$jsDeploy\">";
-        $html[]="<i class='$ico_down'></i> {updates} </label>";
+        $topbuttons[] = array($jsDeploy, $ico_down, "{updates}");
     }
 
     $zip=ico_file_zip;
-    $html[]="<label class=\"btn btn btn-default\" OnClick=\"zBlur();\" id='masterPackageStatus-btn'>";
-    $html[]="<i class='$zip' id='masterPackageStatus-ico'></i> <span id='masterPackageStatus-text'>{cluster_package}</span> </label>";
-
-    $html[]="<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?refresh-table=yes');\">";
-    $html[]="<i class='fal fa-sync-alt'></i> {refresh} {table} </label>";
+    $topbuttons[] = array("", $zip, "{cluster_package}","ids:masterPackageStatus-btn,masterPackageStatus-ico,masterPackageStatus-text");
+    $topbuttons[] = array("Loadjs('$page?refresh-table=yes');", "fal fa-sync-alt", "{refresh} {table}");
 
 
-	$html[]="</div>";
+
+	$html[]=$tpl->th_buttons($topbuttons);
+    // Seul le LB porte le keytab du cluster : une erreur sur lui touche tous les noeuds.
+    $lbkrb=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/kerberos/spn"));
+    if(is_object($lbkrb) && !empty($lbkrb->problem) && isset($lbkrb->kerberos) && is_object($lbkrb->kerberos)){
+        $lbt=kerberos_spn_titles($lbkrb->kerberos->state);
+        $btn=$tpl->button_autnonome("{kerberos_cluster_keytab}","document.location.href='/hacluster-kerberos'",ico_key,null,0,"btn-danger");
+        $html[]=$tpl->div_error("{kerberos_cluster_keytab}||{$lbt[0]}||$btn");
+    }
 	$html[]="<table id='table-haproxy-backends' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
 	$html[]="<thead>";
 	$html[]="<tr>";
@@ -1471,8 +1570,8 @@ function table(){
 
 
 
-	$results = $q->QUERY_SQL($sql);
-	
+	$results = hacluster_db_list_backends("bweight", "DESC");
+
 	$TRCLASS=null;
 	$LoadStatus=LoadStatus();
     $jsAdd=array();
@@ -1652,9 +1751,8 @@ function getCurClient($ID){
 }
 function td_btnActionBack():bool{
     $tpl=new template_admin();
-    $ID=$_GET["btn-action"];
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $ID=intval($_GET["btn-action"]);
+    $ligne=hacluster_db_get_backend($ID);
     $mode=base64_encode($tpl->_ENGINE_parse_body(td_btnAction($ligne)));
     header("content-type: application/x-javascript");
     echo "document.getElementById('STATUS-MODE-$ID').innerHTML=base64_decode('$mode');";
@@ -1743,6 +1841,13 @@ function td_btnAction($ligne):string{
         $filters["{reconfigure} DNS"]=ico_retweet.":color:black||Loadjs('$page?backend-dnsreconfigure-js=$ID&md=$md')";
     }
 
+    if(intval($ligne["ActiveDirectoryEmergency"] ?? 0)==1){
+        $filters["{leave_ad_emergency}"]=ico_bug.":color:red||Loadjs('$page?backend-ademergency-js=$ID&md=$md')";
+    }
+    if(kerberos_spn_is_problem(kerberos_spn_from_node_report($ID))){
+        $filters["Kerberos {error}"]=ico_key.":color:red||Loadjs('$page?backend-kerberos-js=$ID')";
+    }
+    $filters["{resync_clock}"]=ico_clock.":color:".(hacluster_clock_is_problem(intval($ID))?"orange":"black")."||Loadjs('$page?backend-clock-js=$ID')";
     $filters["{reconfigure}"]=ico_cd.":color:black||Loadjs('$page?backend-reconfigure-js=$ID&md=$md')";
     $filters["{reboot}"]=ico_refresh.":color:red||Loadjs('$page?backend-reboot-js=$ID&md=$md')";
     $filters["{delete}"]=ico_trash.":color:red||Loadjs('$page?backend-delete-js=$ID&md=$md')";
@@ -1834,6 +1939,14 @@ function td_hostname($ligne):string{
     }
     if($ActiveDirectoryEmergency==1){
         $ToolTips[]="<span class='label $labelDanger'>{activedirectory_emergency_mode}</span>";
+    }
+    if(kerberos_spn_is_problem(kerberos_spn_from_node_report($ID))){
+        $ToolTips[]="<span class='label $labelDanger' style='cursor:pointer' OnClick=\"Loadjs('fw.hacluster.backends.php?backend-kerberos-js=$ID')\">Kerberos {error}</span>";
+    }
+    // Horloge du noeud ecartee de celle du LB (mesuree par le LB a chaque rapport).
+    $clocklabel=hacluster_clock_label(intval($ID));
+    if($clocklabel<>""){
+        $ToolTips[]=$clocklabel;
     }
 
     if($realname<>null){
@@ -2383,32 +2496,72 @@ function td_bweight($ligne):string{
 
 
 
-    $weight=strval($backends->{"proxy$ID"}->metrics->raw->weight);
-    $srv_uweight=strval($backends->{"proxy$ID"}->srv_uweight);
-    VERBOSE("proxy$ID srv_uweight == ".$backends->{"proxy$ID"}->srv_uweight."/ Weight: $weight",__LINE__);
+    $o=$backends->{"proxy$ID"};
+    $srv_uweight=isset($o->srv_uweight)?strval($o->srv_uweight):"";
+    VERBOSE("proxy$ID srv_uweight == $srv_uweight",__LINE__);
     $page=CurrentPageName();
     $tpl=new template_admin();
     $js="Loadjs('$page?weight-js=$ID')";
 
-    $weightText="&nbsp;<strong style='font-size:18px'>$weight&nbsp;/&nbsp;$srv_uweight</strong>";
-    if($weight==0){
-        return $tpl->button_inline($weightText,$js,ico_weight,"AsProxyMonitor",0,"btn-danger","small");
-
+    // On montre le poids CONFIGURE (bweight, 1, 2, 3...), pas le poids HAProxy (x10).
+    // Poids effectif nul = backend draine : ecrit en toutes lettres, pas seulement en couleur.
+    $bweight=intval(isset($ligne["bweight"])?$ligne["bweight"]:0);
+    $pct=isset($o->weight_effective_pct)?intval($o->weight_effective_pct):-1;
+    if($srv_uweight!==""){
+        $drained=intval($srv_uweight)==0;
+    }else{
+        $drained=isset($o->metrics->raw->weight) && intval($o->metrics->raw->weight)==0;
     }
-    return $tpl->button_inline($weightText,$js,ico_weight,"AsProxyMonitor",0,"btn-default","small");
+    $state=$drained?"{bti_drained}":"{bti_in_service}";
+    $txt=hacluster_weight_text($bweight,$pct);
+    $aria=$tpl->_ENGINE_parse_body("{weight}")." ".$txt;
+    if($pct>=0 && $pct<100){
+        $aria.=" (".$tpl->_ENGINE_parse_body("{hacluster_weight_effective_share}").")";
+    }
+    return $tpl->inline_metric($bweight,"",$js,ico_weight,"AsProxyMonitor",$state,$drained,$aria,$txt);
+}
+
+// Texte de la cellule poids : poids configure, plus la part annoncee par l'agent si elle est reduite.
+// $pct < 0 = inconnue (articarest ancien). Fonction pure.
+function hacluster_weight_text($bweight,$pct):string{
+    $bweight=intval($bweight);
+    if($bweight<=0){$bweight=1;}
+    $pct=intval($pct);
+    if($pct>=0 && $pct<100){return $bweight." &middot; ".$pct." %";}
+    return strval($bweight);
+}
+
+// Poids > 25 refuse tant que le poids gradue des agents est actif (HaClusterAgentDynamicWeight=1) :
+// le facteur HAProxy repasserait a 1 et les poids relatifs annonces seraient tronques a 0.
+// Rend true (et affiche l'erreur) si le poids est refuse.
+function hacluster_weight_refused($weight):bool{
+    if(intval($weight)<=25){return false;}
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAgentDynamicWeight"))!=1){return false;}
+    echo (new template_admin())->post_error("{hacluster_weight_over_25_dynamic}");
+    return true;
 }
 
 function weight_save():bool{
     $ID=intval($_POST["weightid"]);
     $weight=intval($_POST["weight"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $sql="UPDATE hacluster_backends SET bweight=$weight WHERE ID=$ID";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        writelogs("$q->mysql_error",__FUNCTION__,__FILE__,__LINE__);
+    if(hacluster_weight_refused($weight)){return false;}
+    if(!hacluster_db_update_backend($ID, array("bweight"=>$weight))){
+        writelogs("weight update failed for ID $ID",__FUNCTION__,__FILE__,__LINE__);
         return false;
     }
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/node/weight/$ID");
+    // La base est ecrite ; la route pose le poids dans HAProxy et rend l'echec (facteur illisible...).
+    // post_error echappe lui-meme le texte.
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/node/weight/$ID");
+    $json=json_decode((string)$resp);
+    if(!is_object($json) || !property_exists($json,"Status")){
+        $raw=trim((string)$resp);
+        echo (new template_admin())->post_error($raw==""?"{protocol_error}":substr($raw,0,300));
+        return false;
+    }
+    if(!$json->Status){
+        echo (new template_admin())->post_error((string)($json->Error ?? ""));
+        return false;
+    }
     return admin_tracks("Set Weight $weight for HaCluster node $ID");
 
 }
@@ -2433,7 +2586,9 @@ function weight_popup():bool{
         return false;
     }
 
-    $weight=intval(strval($backends->{"proxy$ID"}->srv_uweight));
+    $row=hacluster_db_get_backend($ID);
+    $weight=intval(is_array($row) && isset($row["bweight"])?$row["bweight"]:0);
+    if($weight<=0){$weight=1;}
     $after="dialogInstance3.close();";
     echo $tpl->BigFieldIntegerCheckbox("weight|weightid:$ID","{weight}",
         "{haproxy_weight_explain}",$weight,1,255,"$after");
@@ -2579,6 +2734,7 @@ function td_status_warningDB($ligne){
     }
     return "&nbsp;<i class='text-warning fas fa-exclamation-triangle'></i>";
 }
+//ptch 1
 function td_status_text($ligne):array{
     if(!isset($ligne["ID"])){
         $ligne["ID"]=0;
@@ -3201,7 +3357,7 @@ function __td_button_master():string{
 
     $master_id=intval($GLOBALS["__LocalClusterInfo"]["MasterID"]);
     if($master_id==0){
-        $f[]="$('#masterPackageStatus-btn').addClass('btn btn-default');";
+        $f[]="$('#masterPackageStatus-btn').addClass('btn abt abt-i abt-o abt-sm');";
         $f[]="$('#masterPackageStatus-text').html(base64_decode('$Inactive'))";
         return @implode("\n",$f);
     }
@@ -3211,14 +3367,15 @@ function __td_button_master():string{
 
     $ClusterVersion=$GLOBALS["__LocalClusterInfo"]["ClusterVersion"];
     if(strlen($ClusterVersion)<5) {
-        $f[]="$('#masterPackageStatus-btn').addClass('btn btn-default');";
+        $f[]="$('#masterPackageStatus-btn').addClass('btn abt abt-i abt-o abt-sm');";
         $text ="{cluster_package} ({none})";
         $bs64=base64_encode($tpl->_ENGINE_parse_body($text));
         $f[]="$('#masterPackageStatus-text').html(base64_decode('$bs64'))";
         return @implode("\n",$f);
     }
 
-    $f[]="$('#masterPackageStatus-btn').addClass('btn btn-blue');";
+    $f[]="$('#masterPackageStatus-btn').addClass('btn abt abt-i abt-c3 abt-sm');";
+    $f[]="$('#masterPackageStatus-btn').prop('disabled',false);";
     $text ="{cluster_package} $ClusterVersion";
     $bs64=base64_encode($tpl->_ENGINE_parse_body($text));
     $f[]="$('#masterPackageStatus-text').html(base64_decode('$bs64'))";
@@ -3271,8 +3428,7 @@ function td_row($ReturnID=0):string{
         return "";
     }
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM hacluster_backends WHERE ID=$ID");
+    $ligne=hacluster_db_get_backend($ID);
     VERBOSE("ligne=".count($ligne),__LINE__);
     if(count($ligne)==0){
         VERBOSE("No inside database ---------------- GHOST #$ID");
@@ -3380,11 +3536,12 @@ function td_row($ReturnID=0):string{
     $f[] = "\tdocument.getElementById('STATUS-INTERFACE2-$ID').innerHTML=base64_decode('$interface');";
     $f[] = "}";
 
+    // Le bouton "Action" porte l'etat du backend par sa couleur (button_dropdown_table) :
+    // vert actif, orange en alerte, rouge en erreur, blanc inactif.
+    $btnTones=array("btn-primary"=>"abt-s","btn-warning"=>"abt-c4","btn-danger"=>"abt-x");
+    $btnTone=isset($btnTones[$btnClass])?$btnTones[$btnClass]:"abt-o";
     $f[]="if(document.getElementById('BTN-ACTION-LIST-$ID') ){";
-    $f[] = "\t$('#BTN-ACTION-LIST-$ID').removeClass('btn-primary');";
-    $f[] = "\t$('#BTN-ACTION-LIST-$ID').removeClass('btn-default');";
-    $f[] = "\t$('#BTN-ACTION-LIST-$ID').removeClass('btn-warning');";
-    $f[] = "\t$('#BTN-ACTION-LIST-$ID').addClass('$btnClass');";
+    $f[] = "\t$('#BTN-ACTION-LIST-$ID').removeClass('abt-s abt-c2 abt-c3 abt-c4 abt-c5 abt-x abt-o').addClass('$btnTone');";
     $f[] = "}";
 
     $LoadLines=td_peity($ligne);
@@ -3479,12 +3636,11 @@ function td_sessions($ligne):string{
     if(!is_file($Path)){
         return "-";
     }
-    $json=json_decode(file_get_contents($Path));
-
-    if(!property_exists($json,"MetricsSessions")){
+    $json=json_decode(file_get_contents($Path),true);
+    if(!isset($json["MetricsSessions"])){
         return "-";
     }
-    return $tpl->FormatNumber($json->MetricsSessions->numberOfSessions);
+    return $tpl->FormatNumber($json["MetricsSessions"]["numberOfSessions"]);
 }
 function td_hacnx($ligne):string{
 

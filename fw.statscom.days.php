@@ -154,6 +154,7 @@ $html[]="</div>
 echo $tpl->_ENGINE_parse_body($html);
 }
 function chart_line_time(){
+    // Pentest 2026-11-04 : la date demandee (GET) etait concatenee dans la requete.
     $requested_date=$_GET["chart-line-time"];
     $t=$_GET["t"];
     $xtime=strtotime($requested_date);
@@ -162,8 +163,8 @@ function chart_line_time(){
     $bandwidth_text=$tpl->javascript_parse_text("{bandwidth}");
     $q=new postgres_sql();
 
-    $results=$q->QUERY_SQL("SELECT zdate, SUM(size) as size FROM statscom 
-        WHERE date(zdate)='$requested_date' group by zdate ORDER by zdate");
+    $results=$q->QUERY_SQL_PARAMS("SELECT zdate, SUM(size) as size FROM statscom 
+        WHERE date(zdate)=$1 group by zdate ORDER by zdate",array($requested_date));
     if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
 
 
@@ -201,13 +202,14 @@ function chart_line_time(){
 function top_users(){
     $tpl=new template_admin();
     $page=CurrentPageName();
+    // Pentest 2026-11-04 : la date demandee (GET) etait concatenee dans la requete.
     $requested_date=$_GET["top-users"];
     $t=$_GET["t"];
     $q=new postgres_sql();
     $xtime=strtotime($requested_date);
 
-    $results=$q->QUERY_SQL("SELECT SUM(size) as size,username,ipaddr,mac FROM statscom 
-        WHERE date(zdate)='$requested_date' group by username,ipaddr,mac ORDER BY size DESC LIMIT 15");
+    $results=$q->QUERY_SQL_PARAMS("SELECT SUM(size) as size,username,ipaddr,mac FROM statscom 
+        WHERE date(zdate)=$1 group by username,ipaddr,mac ORDER BY size DESC LIMIT 15",array($requested_date));
     if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
 
 
@@ -249,13 +251,14 @@ function top_users(){
 function top_rqs(){
     $tpl=new template_admin();
     $page=CurrentPageName();
+    // Pentest 2026-11-04 : la date demandee (GET) etait concatenee dans la requete.
     $requested_date=$_GET["top-rqs"];
     $t=$_GET["t"];
     $q=new postgres_sql();
     $xtime=strtotime($requested_date);
 
-    $results=$q->QUERY_SQL("SELECT SUM(hits) as size,username,ipaddr,mac FROM statscom 
-        WHERE date(zdate)='$requested_date' group by username,ipaddr,mac ORDER BY size DESC LIMIT 15");
+    $results=$q->QUERY_SQL_PARAMS("SELECT SUM(hits) as size,username,ipaddr,mac FROM statscom 
+        WHERE date(zdate)=$1 group by username,ipaddr,mac ORDER BY size DESC LIMIT 15",array($requested_date));
     if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return;}
 
 
@@ -295,13 +298,14 @@ function top_sites_size()
 {
     $tpl = new template_admin();
     $page = CurrentPageName();
+    // Pentest 2026-11-04 : la date demandee (GET) etait concatenee dans la requete.
     $requested_date = $_GET["top-sites-size"];
     $t = $_GET["t"];
     $q = new postgres_sql();
 
 
-    $results = $q->QUERY_SQL("SELECT SUM(size) as size,siteid FROM statscom 
-        WHERE date(zdate)='$requested_date' group by siteid ORDER BY size DESC LIMIT 15");
+    $results = $q->QUERY_SQL_PARAMS("SELECT SUM(size) as size,siteid FROM statscom 
+        WHERE date(zdate)=$1 group by siteid ORDER BY size DESC LIMIT 15",array($requested_date));
     if (!$q->ok) {
         echo $tpl->js_mysql_alert($q->mysql_error);
         return;
@@ -331,13 +335,14 @@ function top_sites_size()
 function top_sites_hits(){
     $tpl = new template_admin();
     $page = CurrentPageName();
+    // Pentest 2026-11-04 : la date demandee (GET) etait concatenee dans la requete.
     $requested_date = $_GET["top-sites-rqs"];
     $t = $_GET["t"];
     $q = new postgres_sql();
 
 
-    $results = $q->QUERY_SQL("SELECT SUM(hits) as hits,siteid FROM statscom 
-        WHERE date(zdate)='$requested_date' group by siteid ORDER BY hits DESC LIMIT 15");
+    $results = $q->QUERY_SQL_PARAMS("SELECT SUM(hits) as hits,siteid FROM statscom 
+        WHERE date(zdate)=$1 group by siteid ORDER BY hits DESC LIMIT 15",array($requested_date));
     if (!$q->ok) {
         echo $tpl->js_mysql_alert($q->mysql_error);
         return;
@@ -366,12 +371,13 @@ function top_sites_hits(){
 function top_cats_size(){
     $tpl = new template_admin();
     $page = CurrentPageName();
+    // Pentest 2026-11-04 : la date demandee (GET) etait concatenee dans la requete.
     $requested_date = $_GET["top-cats-size"];
     $t = $_GET["t"];
     $q = new postgres_sql();
     $catz=new mysql_catz();
 
-    $results = $q->QUERY_SQL("SELECT date(statscom.zdate) as date,SUM(statscom.size) as size,statscom_websites.category FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND  date(statscom.zdate)='$requested_date' GROUP BY category,date ORDER BY size DESC LIMIT 15");
+    $results = $q->QUERY_SQL_PARAMS("SELECT date(statscom.zdate) as date,SUM(statscom.size) as size,statscom_websites.category FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND  date(statscom.zdate)=$1 GROUP BY category,date ORDER BY size DESC LIMIT 15",array($requested_date));
 
     if (!$q->ok) {
         echo $tpl->js_mysql_alert($q->mysql_error);
@@ -402,12 +408,13 @@ function top_cats_size(){
 function top_cats_hits(){
     $tpl = new template_admin();
     $page = CurrentPageName();
+    // Pentest 2026-11-04 : la date demandee (GET) etait concatenee dans la requete.
     $requested_date = $_GET["top-cats-hits"];
     $t = $_GET["t"];
     $q = new postgres_sql();
     $catz=new mysql_catz();
 
-    $results = $q->QUERY_SQL("SELECT date(statscom.zdate) as date,SUM(statscom.hits) as hits,statscom_websites.category FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND  date(statscom.zdate)='$requested_date' GROUP BY category,date ORDER BY hits DESC LIMIT 15");
+    $results = $q->QUERY_SQL_PARAMS("SELECT date(statscom.zdate) as date,SUM(statscom.hits) as hits,statscom_websites.category FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND  date(statscom.zdate)=$1 GROUP BY category,date ORDER BY hits DESC LIMIT 15",array($requested_date));
 
     if (!$q->ok) {
         echo $tpl->js_mysql_alert($q->mysql_error);
@@ -438,6 +445,7 @@ function SiteIntegerToString($siteid){
 
     if(isset($GLOBALS[$siteid])){return $GLOBALS[$siteid];}
     $q = new postgres_sql();
+    $siteid=intval($siteid);
     $ligne=$q->mysqli_fetch_array("SELECT sitename FROM statscom_websites WHERE siteid=$siteid");
     $GLOBALS[$siteid]=$ligne["sitename"];
     return $GLOBALS[$siteid];

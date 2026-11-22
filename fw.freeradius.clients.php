@@ -51,7 +51,8 @@ function import_js():bool{
 
 }
 function import_popup(){
-    $function=$_GET["import-popup"];
+    // Pentest 2026-11-04 : import-popup etait recopie sans encodage dans la page (XSS).
+    $function=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["import-popup"]);
     $page=CurrentPageName();
     $tpl=new template_admin();
     $form[]=$tpl->field_textarea("import","","Friendly Name IP Address Device Manufacturer NAP-Capable Status");
@@ -86,13 +87,14 @@ function import_save():bool{
 
         }
 
+        // Pentest 2026-11-04 : import (shortname, nastype) etait concatene dans la requete.
         $sql="INSERT OR IGNORE INTO freeradius_clients
 		(`shortname`,`ipaddr` ,`nastype`,`secret`,`enabled`,`nap_capable`)
-		VALUES('$shortname','$ipaddr','$nastype','',$enabled,$nap)";
+		VALUES(?,?,?,'',$enabled,$nap)";
 
         admin_tracks("Add new NAS/Radius Client $shortname - $ipaddr");
 
-        $q->QUERY_SQL($sql);
+        $q->QUERY_SQL_PARAMS($sql,array($shortname,$ipaddr,$nastype));
         if(!$q->ok){
             echo $tpl->post_error($q->mysql_error);
             return false;
@@ -107,7 +109,8 @@ function import_save():bool{
 function client_js():bool{
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$title=$_GET["client-js"];
+	// Pentest 2026-11-04 : client-js etait recopie sans encodage dans la page (XSS).
+	$title=req_html(req_html($_GET["client-js"]));
 	if($_GET["client-js"]==null){$title="{new_radius_client}";}
     $client=urlencode($_GET["client-js"]);
     $function=$_GET["function"];
@@ -118,7 +121,8 @@ function client_js():bool{
 function delete_js():bool{
 	$tpl=new template_admin();
 	$ipaddr=$_GET["delete-js"];
-	$tpl->js_confirm_delete($ipaddr, "delete", $ipaddr,"$('#{$_GET["md"]}').remove()");
+	// Pentest 2026-11-04 : delete-js etait recopie sans encodage dans la page (XSS).
+	$tpl->js_confirm_delete(req_html($ipaddr), "delete", $ipaddr,"$('#{$_GET["md"]}').remove()");
     return true;
 }
 
@@ -127,7 +131,7 @@ function delete_perform():bool{
     $tpl->CLEAN_POST();
     admin_tracks("Remove NAS/Radius Client {$_POST["delete"]}");
 	$q=new lib_sqlite("/home/artica/SQLITE/radius.db");
-	$q->QUERY_SQL("DELETE FROM freeradius_clients WHERE ipaddr='{$_POST["delete"]}'");
+	$q->QUERY_SQL_PARAMS("DELETE FROM freeradius_clients WHERE ipaddr=?",array((string)$_POST["delete"]));
 	if(!$q->ok){echo $q->mysql_error;}
     return true;
 }
@@ -138,15 +142,17 @@ function client_enable_js():bool{
 	header("content-type: application/x-javascript");
 	$q=new lib_sqlite("/home/artica/SQLITE/radius.db");
 	
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM freeradius_clients WHERE ipaddr='{$_GET["enable-js"]}'");
+	$ipaddr=(string)$_GET["enable-js"];
+	$rows=$q->QUERY_SQL_PARAMS("SELECT enabled FROM freeradius_clients WHERE ipaddr=?",array($ipaddr));
+	$ligne=isset($rows[0])?$rows[0]:array();
 
 
 	if(intval($ligne["enabled"])==1){
-		$q->QUERY_SQL("UPDATE freeradius_clients SET enabled=0 WHERE ipaddr='{$_GET["enable-js"]}'");
+		$q->QUERY_SQL_PARAMS("UPDATE freeradius_clients SET enabled=0 WHERE ipaddr=?",array($ipaddr));
 		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}
         return true;
 	}
-    $q->QUERY_SQL("UPDATE freeradius_clients SET enabled=1 WHERE ipaddr='{$_GET["enable-js"]}'");
+    $q->QUERY_SQL_PARAMS("UPDATE freeradius_clients SET enabled=1 WHERE ipaddr=?",array($ipaddr));
 	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}
 
     return true;
@@ -169,10 +175,13 @@ function client_popup(){
 		$ligne["secret"]="secret";
 		$jsafter="$function();dialogInstance1.close();";
 	}else{
-		$title=$network;
+		// Pentest 2026-11-04 : client-popup etait recopie sans encodage dans la page (XSS).
+		$title=req_html($network);
 		$btname="{apply}";
 		$q=new lib_sqlite("/home/artica/SQLITE/radius.db");
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM freeradius_clients WHERE ipaddr='$network'");
+		// Pentest 2026-11-04 : client-popup etait concatene dans la requete.
+		$r=$q->QUERY_SQL_PARAMS("SELECT * FROM freeradius_clients WHERE ipaddr=?",array((string)$network));
+		$ligne=isset($r[0]) ? $r[0] : array();
 		$form[]=$tpl->field_info("ipaddr", "{address}", $ligne["ipaddr"]);
 		$jsafter="dialogInstance1.close();";
 	}
@@ -190,29 +199,36 @@ function client_save():bool{
 	$tpl->CLEAN_POST();
 	$q=new lib_sqlite("/home/artica/SQLITE/radius.db");
 	
-	$ligne=$q->mysqli_fetch_array("SELECT ipaddr FROM freeradius_clients WHERE ipaddr='{$_GET["ipaddr"]}'");
+	// Pentest 2026-11-04 : ipaddr, shortname, nastype et secret etaient concatenes dans la requete.
+	$r=$q->QUERY_SQL_PARAMS("SELECT ipaddr FROM freeradius_clients WHERE ipaddr=?",array(isset($_GET["ipaddr"]) ? (string)$_GET["ipaddr"] : ""));
+	$ligne=isset($r[0]) ? $r[0] : array();
 
-	if($ligne["ipaddr"]==null){
+	if(empty($ligne["ipaddr"])){
 		$sql="INSERT IGNORE INTO freeradius_clients
 		(`shortname`,`ipaddr` ,`nastype`,`secret`,`enabled`)
-		VALUES('{$_POST["shortname"]}','{$_POST["ipaddr"]}','{$_POST["nastype"]}','{$_POST["secret"]}',1)";
+		VALUES(?,?,?,?,1)";
+		$params=array((string)$_POST["shortname"],(string)$_POST["ipaddr"],(string)$_POST["nastype"],(string)$_POST["secret"]);
 
 	}else{
-	$sql="UPDATE freeradius_clients SET `shortname`='{$_POST["shortname"]}',`nastype`='{$_POST["nastype"]}',`secret`='{$_POST["secret"]}' WHERE `ipaddr`='{$_POST["ipaddr"]}'";
+	$sql="UPDATE freeradius_clients SET `shortname`=?,`nastype`=?,`secret`=? WHERE `ipaddr`=?";
+	$params=array((string)$_POST["shortname"],(string)$_POST["nastype"],(string)$_POST["secret"],(string)$_POST["ipaddr"]);
 	}
 
 	
-	$q->QUERY_SQL($sql);
+	$q->QUERY_SQL_PARAMS($sql,$params);
 	if(!$q->ok){echo $q->mysql_error;}
     return true;
 }
 
 function table():bool{
+	$page=CurrentPageName();
+	$tpl=new template_admin();
+    // L'assainissement etait fait AVANT la creation de $tpl, donc sur null:
+    // « Call to a member function CLEAN_BAD_XSS() on null », fatal des qu'une
+    // recherche etait saisie dans ce tableau.
     if(isset($_GET["search"])){$_GET["search"]=trim($tpl->CLEAN_BAD_XSS($_GET["search"]));}
     $search=$_GET["search"];
     $function=$_GET["function"];
-	$page=CurrentPageName();
-	$tpl=new template_admin();
 
     $jsrestart=$tpl->framework_buildjs("freeradius.php?reload=yes",
         "freeradius.restart.progress","freeradius.restart.log","progress-freeradius-clients-restart");
@@ -235,6 +251,7 @@ function table():bool{
 	$html[]="<tbody>";
 	
 	$sql="SELECT *  FROM `freeradius_clients` ORDER BY shortname";
+    $sqlParams=array();
     $q=new lib_sqlite("/home/artica/SQLITE/radius.db");
 
     if($search<>null){
@@ -243,7 +260,9 @@ function table():bool{
         $search=str_replace("**", "*", $search);
         $search=str_replace("*", "%", $search);
 
-        $sql="SELECT *  FROM `freeradius_clients` WHERE ((ipaddr LIKE '$search') OR (shortname LIKE '$search') OR (nastype LIKE '$search')) ORDER BY shortname";
+        // Pentest 2026-11-04 : search etait concatene dans la requete.
+        $sql="SELECT *  FROM `freeradius_clients` WHERE ((ipaddr LIKE ?) OR (shortname LIKE ?) OR (nastype LIKE ?)) ORDER BY shortname";
+        $sqlParams=array($search,$search,$search);
     }
 
 	$TRCLASS=null;
@@ -260,7 +279,7 @@ function table():bool{
 	$html[]="</tr>";
 	
 	
-	$results=$q->QUERY_SQL($sql);
+	$results=$q->QUERY_SQL_PARAMS($sql,$sqlParams);
     if(!$q->ok){
         echo $tpl->div_error($q->mysql_error);
     }

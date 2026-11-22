@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["table"])){table();exit;}
@@ -99,7 +102,7 @@ function table(){
     $ARRAY["TITLE"]="{APP_SNMPD} {restarting_service}";
     $ARRAY["AFTER"]="LoadAjaxSilent('snmpd-status','$page?snmpd-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-snmpd-restart')";
+    $jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-snmpd-restart')";
 
 
     $supporttool=$tpl->framework_buildjs("/snmpd/support",
@@ -145,7 +148,7 @@ function status(){
 	$ARRAY["TITLE"]="{APP_SNMPD} {restarting_service}";
 	$ARRAY["AFTER"]="LoadAjaxSilent('snmpd-status','$page?snmpd-status=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsRestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-snmpd-restart')";
+	$jsRestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-snmpd-restart')";
 	echo $tpl->SERVICE_STATUS($bsini, "APP_SNMPD",$jsRestart);
 }
 
@@ -158,7 +161,7 @@ function Save(){
     if($SNMPDDisablev2==1) {
         $lengh = strlen($_POST["SNMPDPassword"]);
         if ($lengh < 8) {
-            echo "jserror:" . $tpl->javascript_parse_text("{password_too_short}: 8 {items}");
+            echo (new template_admin())->post_error("" . $tpl->javascript_parse_text("{password_too_short}: 8 {items}"));
             return;
         }
     }

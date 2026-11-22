@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Apply DHCP config to all agents in a group (fan-out apply).
  * Each agent runs its own validate → backup → rename → reload pipeline.
@@ -115,7 +117,7 @@ function gconfig_apply(): void {
 
     // ── Per-agent results table ──
     if (!empty($results)) {
-        $h[] = "<table class='table table-striped table-condensed'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "  <thead><tr style='background:#f5f5f5'>";
         $h[] = "    <th style='width:1%'></th>";
         $h[] = "    <th>{hostname}</th>";
@@ -144,10 +146,10 @@ function gconfig_apply(): void {
             $h[] = "    <tr><td>$ico</td><td><strong>$hostname</strong></td><td>$cell</td></tr>";
         }
 
-        $h[] = "  </tbody></table>";
+        $h[] = "  </tbody></table></div></div></div>";
     }
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     admin_tracks("Group #$id: DHCP config applied to all agents ($success/$total success)");
 }
 

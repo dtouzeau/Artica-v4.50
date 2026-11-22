@@ -1,68 +1,63 @@
-<about>All informations are stored in 2 databases used by Artica.[br]
-LDAP is used for all settings and accounts. Mysql is used for events and product related that use MySQL.[br]
-Artica should backup these settings in order to restore them if this server crash</about>
-<add_folder>Add a new folder</add_folder>
-<add_has_backup>Add this disk has a backup storage disk</add_has_backup>
-<add_share_folder>Add a new remote share folder</add_share_folder>
-<add_share_folder_text>Give the remote parameters in order to help artica connect to he remode smb chare folder..</add_share_folder_text>
-<archives_files>files archive(s)</archives_files>
-<ArticaBackupMaxTimeToLiveInDay>Max Days a container live</ArticaBackupMaxTimeToLiveInDay>
-<available_disks>available disks</available_disks>
-<backup_now>Backup now</backup_now>
-<backup_now_text>Perform a new backup now</backup_now_text>
-<backup_path>Backup path</backup_path>
-<backup_time>Backup every day AT</backup_time>
-<browse_dar>Browse your DAR conteners..</browse_dar>
-<browse_dar_text>This section will help you to find and restore files backup in your contener.[br]Use the search field in order to find files you want to restore or to get status</browse_dar_text>
-<close_windows>All backup operations are executed... You can close windows now</close_windows>
-<compile_rules_ok>Saving settings OK...</compile_rules_ok>
-<connect_as>Connect as</connect_as>
-<connect_share>Connect this remode share folder</connect_share>
-<dar_is_not_installed>DAR is not installed !</dar_is_not_installed>
-<dar_is_not_installed_text>Disk Archive (DAR) application is not installed on your system.[br]This feature cannot be running on you system[br]
-Please install "dar" application using your favorite repository manager (or using artica repository manager)[br]Before using this feature...</dar_is_not_installed_text>
-<database_files_number>Number of files stored</database_files_number>
+<about>Wszystkie informacje s&#261; przechowywane w 2 bazach danych u&#380;ywanych przez Artica.[br]
+LDAP jest u&#380;ywany do wszystkich ustawie&#324; i kont. Mysql jest u&#380;ywany do zdarze&#324; i powi&#261;zanych produkt&#243;w korzystaj&#261;cych z MySQL.[br]
+Artica powinna tworzy&#263; kopi&#281; zapasow&#261; tych ustawie&#324;, aby je przywr&#243;ci&#263;, je&#347;li ten serwer ulegnie awarii</about>
+<add_folder>Dodaj nowy folder</add_folder>
+<add_has_backup>Adicionar este disco como disco de armazenamento de backup</add_has_backup>
+<add_share_folder>Dodaj nowy zdalny folder udost&#281;pniony</add_share_folder>
+<add_share_folder_text>Indique os par&#226;metros remotos para ajudar o artica a conectar-se &#224; pasta compartilhada smb remota..</add_share_folder_text>
+<archives_files>arquivo(s) de arquivos</archives_files>
+<ArticaBackupMaxTimeToLiveInDay>M&#225;ximo de dias de vida de um cont&#234;iner</ArticaBackupMaxTimeToLiveInDay>
+<available_disks>dost&#281;pne dyski</available_disks>
+<backup_now>Kopia zapasowa teraz</backup_now>
+<backup_now_text>Wykonaj now&#261; kopi&#281; zapasow&#261; teraz</backup_now_text>
+<backup_path>&#346;cie&#380;ka kopii zapasowej</backup_path>
+<backup_time>Kopia zapasowa codziennie O</backup_time>
+<browse_dar>Navegar pelos seus cont&#234;ineres DAR..</browse_dar>
+<browse_dar_text>Esta se&#231;&#227;o ajudar&#225; voc&#234; a encontrar e restaurar arquivos de backup no seu cont&#234;iner.[br]Use o campo de pesquisa para encontrar arquivos que deseja restaurar ou para obter o status</browse_dar_text>
+<close_windows>Wszystkie operacje kopii zapasowej s&#261; wykonywane... Mo&#380;esz teraz zamkn&#261;&#263; okno</close_windows>
+<compile_rules_ok>Zapisywanie ustawie&#324; OK...</compile_rules_ok>
+<connect_as>Po&#322;&#261;cz jako</connect_as>
+<connect_share>Conectar esta pasta compartilhada remota</connect_share>
+<dar_is_not_installed>DAR nie jest zainstalowany!</dar_is_not_installed>
+<dar_is_not_installed_text>Aplikacja Disk Archive (DAR) nie jest zainstalowana w systemie.[br]Ta funkcja nie mo&#380;e by&#263; uruchomiona w systemie[br]
+Zainstaluj aplikacj&#281; &quot;dar&quot; za pomoc&#261; ulubionego mened&#380;era repozytori&#243;w (lub mened&#380;era repozytori&#243;w artica)[br]Przed u&#380;yciem tej funkcji...</dar_is_not_installed_text>
+<database_files_number>Liczba przechowywanych plik&#243;w</database_files_number>
 <database_number>Baza danych</database_number>
-<disk_add_caption>This disk is added into possible backup storage.
-if this disk is plugged,
-artica will export automatically backups storages on this disk (include samba shared folders too).
-Do you Confirm this behavior ?
-</disk_add_caption>
-<disk_retranslation>Retranslation disk</disk_retranslation>
-<disk_retranslation_text>This feature allows you to backup more datas to an internal/external hard drive.[br]
-When standard backup is performed and if the external hard drive is plugged,[br]
-artica will duplicate standard backup and all mandatories datas to this storage (include samba shared directories, mailboxes and so on...).[br]
-Use this section to select your hard drive and target folder and all will be automatically performed.[br]
-plugg your disk before and select it, it will be discovered automatically</disk_retranslation_text>
-<enable_artica_backup>Enable Artica Backup features</enable_artica_backup>
+<disk_add_caption>Este disco &#233; adicionado como poss&#237;vel armazenamento de backup.
+Se este disco estiver conectado,
+o artica exportar&#225; automaticamente os armazenamentos de backup para este disco (incluindo tamb&#233;m as pastas compartilhadas samba).
+Voc&#234; confirma este comportamento?</disk_add_caption>
+<disk_retranslation>Disco de retransmiss&#227;o</disk_retranslation>
+<disk_retranslation_text>Ta funkcja umo&#380;liwia tworzenie kopii zapasowej wi&#281;kszej ilo&#347;ci danych na wewn&#281;trznym/zewn&#281;trznym dysku twardym.[br]
+Gdy wykonywana jest standardowa kopia zapasowa i je&#347;li zewn&#281;trzny dysk twardy jest pod&#322;&#261;czony,[br]
+artica zduplikuje standardow&#261; kopi&#281; zapasow&#261; i wszystkie wymagane dane na ten magazyn (w tym katalogi udost&#281;pnione samba, skrzynki pocztowe itd...).[br]
+U&#380;yj tej sekcji, aby wybra&#263; dysk twardy i folder docelowy, a wszystko zostanie wykonane automatycznie.[br]
+pod&#322;&#261;cz wcze&#347;niej dysk i wybierz go, zostanie wykryty automatycznie</disk_retranslation_text>
+<enable_artica_backup>Ativar os recursos de backup do Artica</enable_artica_backup>
 <evry_day_at>Codziennie o godz.</evry_day_at>
 <folder_size>Rozmiar folderu</folder_size>
-<howto_restore>
-Schedule task is stored in [b]/etc/cron.d/artica.cron.backups[/b][br]
-[H5]Restoring:[/H5]
-To restore a backup container, execute by command-line [br]
-[b]artica-ldap --restore (file path)[b][br]
-artica-ldap is located in /usr/share/artica-postfix</howto_restore>
+<howto_restore>Zadanie zaplanowane jest przechowywane w [b]/etc/cron.d/artica.cron.backups[/b][br]
+[H5]Przywracanie:[/H5]
+Aby przywr&#243;ci&#263; kontener kopii zapasowej, wykonaj z wiersza polece&#324; [br]
+[b]artica-ldap --restore (&#347;cie&#380;ka pliku)[b][br]
+artica-ldap znajduje si&#281; w /usr/share/artica-postfix</howto_restore>
 <info>info</info>
-<perform_restore>Perform restore process</perform_restore>
-<personal_folders>Personal folders</personal_folders>
-<restore_all_database>Restore all files of the database that store this file</restore_all_database>
-<restore_all_database_text>This operation will help you restoring all files stored in your selected file container,
-browse your server in order to specify wich folder will store restored files.</restore_all_database_text>
-<restore_full_database>Restore a full container</restore_full_database>
-<restore_single_file>Restore aonly this selected file</restore_single_file>
-<saved_date>Saved date</saved_date>
-<selected_disks>Selected disks</selected_disks>
-<select_this_disk>Select this disk has a backup disk</select_this_disk>
-<shares_list>Target remote folders list</shares_list>
-<share_folder>Share folder</share_folder>
-<share_retranslation>Retranslation shares</share_retranslation>
-<share_retranslation_text>This feature allows you to backup all datas in remote server using a share directory.
-All datas will be backuped on incremental mode.So you can retreive all files version time.[br]
-This feature running artica-backup-share tool. it send notifications if task is succeed or not
-
-</share_retranslation_text>
-<storage_list>Storage containers list</storage_list>
-<success_sendcommand>Send order to artica OK....</success_sendcommand>
-<target_restore_folder>Target restore folder</target_restore_folder>
-<usb_device_id>Source external device ID</usb_device_id>
+<perform_restore>Wykonaj proces przywracania</perform_restore>
+<personal_folders>Foldery osobiste</personal_folders>
+<restore_all_database>Restaurar todos os arquivos do banco de dados que armazena este arquivo</restore_all_database>
+<restore_all_database_text>Ta operacja pomo&#380;e przywr&#243;ci&#263; wszystkie pliki przechowywane w wybranym kontenerze plik&#243;w; przegl&#261;daj serwer, aby okre&#347;li&#263;, kt&#243;ry folder b&#281;dzie przechowywa&#322; przywr&#243;cone pliki.</restore_all_database_text>
+<restore_full_database>Restaurar um cont&#234;iner completo</restore_full_database>
+<restore_single_file>Restaurar apenas este arquivo selecionado</restore_single_file>
+<saved_date>Data zapisu</saved_date>
+<selected_disks>Wybrane dyski</selected_disks>
+<select_this_disk>Selecionar este disco como disco de backup</select_this_disk>
+<shares_list>Lista de pastas remotas de destino</shares_list>
+<share_folder>Udost&#281;pnij folder</share_folder>
+<share_retranslation>Compartilhamentos de retransmiss&#227;o</share_retranslation>
+<share_retranslation_text>Ta funkcja umo&#380;liwia tworzenie kopii zapasowej wszystkich danych na zdalnym serwerze przy u&#380;yciu katalogu udost&#281;pnionego.
+Wszystkie dane b&#281;d&#261; kopiowane w trybie przyrostowym. Dzi&#281;ki temu mo&#380;esz odzyska&#263; wszystkie wersje plik&#243;w w czasie.[br]
+Ta funkcja uruchamia narz&#281;dzie artica-backup-share. Wysy&#322;a powiadomienia, czy zadanie si&#281; powiod&#322;o, czy nie</share_retranslation_text>
+<storage_list>Lista de cont&#234;ineres de armazenamento</storage_list>
+<success_sendcommand>Ordem enviada ao artica OK....</success_sendcommand>
+<target_restore_folder>Pasta de destino da restaura&#231;&#227;o</target_restore_folder>
+<usb_device_id>ID &#378;r&#243;d&#322;owego urz&#261;dzenia zewn&#281;trznego</usb_device_id>

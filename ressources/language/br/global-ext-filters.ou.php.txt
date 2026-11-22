@@ -1,41 +1,28 @@
-<add_attachment_group_text>Give the name of your attachment group</add_attachment_group_text>
-<add_attachment_text>Add the deny extensions list separated by a comma</add_attachment_text>
-<add_attach_group>Add attachment group</add_attach_group>
-<add_a_new_block_ext>Add new extensions to deny</add_a_new_block_ext>
-<add_default_dangerous_extensions>Add predefined dangerous extensions list</add_default_dangerous_extensions>
-<add_subject>Add text to Subject (in any way)</add_subject>
-<add_subject_text>Add text to Subject if an attachment is filtered in any way.[br] This has lowest priority, and is only used if the previous "Add text to Subject (xxx)" are undefined.</add_subject_text>
-<attachments_explain>This section allows you to add deny attachments groups.[br]These group could be added to a user group or an a specific account.[br]eMails that match the deny attachments could be deleted, or quarantine</attachments_explain>
-<delete_default_dangerous_extensions>Delete predefined dangerous extensions list</delete_default_dangerous_extensions>
-<filters_list>Filters lists</filters_list>
-<groupslisttext>Here it is the list of all user's groups using this attachment policy</groupslisttext>
+<add_attachment_group_text>Indique o nome do seu grupo de anexos</add_attachment_group_text>
+<add_attachment_text>Adicionar a lista de extens&#245;es a negar separadas por uma v&#237;rgula</add_attachment_text>
+<add_attach_group>Adicionar grupo de anexos</add_attach_group>
+<add_a_new_block_ext>Adicionar novas extens&#245;es a negar</add_a_new_block_ext>
+<add_default_dangerous_extensions>Adicionar a lista predefinida de extens&#245;es perigosas</add_default_dangerous_extensions>
+<add_subject>Adicionar texto ao assunto (de qualquer forma)</add_subject>
+<add_subject_text>Adicionar texto ao assunto se um anexo for filtrado de qualquer forma.[br] Isto tem a prioridade mais baixa e s&#243; &#233; usado se os anteriores &quot;Adicionar texto ao assunto (xxx)&quot; n&#227;o estiverem definidos.</add_subject_text>
+<attachments_explain>Esta se&#231;&#227;o permite que voc&#234; adicione grupos de anexos proibidos.[br]Estes grupos podem ser adicionados a um grupo de usu&#225;rios ou a uma conta espec&#237;fica.[br]As mensagens que correspondem aos anexos proibidos podem ser exclu&#237;das ou colocadas em quarentena</attachments_explain>
+<delete_default_dangerous_extensions>Excluir a lista predefinida de extens&#245;es perigosas</delete_default_dangerous_extensions>
+<filters_list>Listas de filtros</filters_list>
+<groupslisttext>Aqui est&#225; a lista de todos os grupos de usu&#225;rios que usam esta pol&#237;tica de anexos</groupslisttext>
 <notifications>Configuraç%C3µes de notificaç%C3µes</notifications>
-<search_zip>Search for filenames within ZIP</search_zip>
-<search_zip_text>Search for filenames within ZIP archives using the internal ZIP parsing[br]Any filenames found are subject to the same checks, for instance Forbidden attachments or good list, with the
-notable difference that the rename action has no effect on ZIP files.[br]
-This is due to a shortcoming in this version of the filter; by the time the ZIP file is decoded, it is â€œtoo lateâ€ to rename the attachment. 
-[br]Only the delete or kill actions will modify ZIP files.[br]
-In order for search zip to have an effect, you must either:
-use Forbidden attachments mode  and specify in the Forbidden attachments the kill or delete  actions for select extensions.
-</search_zip_text>
-<subj_deleted>Add text to Subject (deleted)</subj_deleted>
+<search_zip>Procurar nomes de arquivos em ZIP</search_zip>
+<search_zip_text>Procura nomes de arquivos dentro de arquivos ZIP usando a an&#225;lise ZIP interna[br]Quaisquer nomes de arquivos encontrados est&#227;o sujeitos &#224;s mesmas verifica&#231;&#245;es, por exemplo anexos proibidos ou lista boa, com a not&#225;vel diferen&#231;a de que a a&#231;&#227;o de renomear n&#227;o tem efeito nos arquivos ZIP.[br]
+Isto deve-se a uma limita&#231;&#227;o nesta vers&#227;o do filtro; quando o arquivo ZIP &#233; decodificado, &#233; &quot;tarde demais&quot; para renomear o anexo.[br]Apenas as a&#231;&#245;es de excluir ou kill modificar&#227;o os arquivos ZIP.[br]
+Para que a busca zip tenha efeito, voc&#234; deve:
+usar o modo de anexos proibidos e especificar nos anexos proibidos as a&#231;&#245;es kill ou excluir para extens&#245;es selecionadas.</search_zip_text>
+<subj_deleted>Adicionar texto ao assunto (exclu&#237;do)</subj_deleted>
 <subj_deleted_text>Adiciona texto ao assunto (Subject) se um anexo for exclu%C3%ADdo por qualquer motivo.
 Por padr%C3£o, fica indefinido; assim, o processo cai na pr%C3%B3xima diretiva de assunto v%C3¡lida e, por fim, em add subject.</subj_deleted_text>
-<subj_renamed>Add text to Subject (renamed)</subj_renamed>
+<subj_renamed>Adicionar texto ao assunto (renomeado)</subj_renamed>
 <subj_renamed_text>Adiciona texto ao assunto (Subject) se um anexo for renomeado por qualquer motivo.[br]
 Por padr%C3£o, fica indefinido; assim, o processo cai em add subject.</subj_renamed_text>
-<users_groups_list>User's Groups list</users_groups_list>
-<warning_html>Body Html message notification</warning_html>
-<warning_html_text>Inserts a warning message into HTML portions of the email when
-filtering occurs. The HTML is inserted at a position determined by
-htmlwarn_pos (see above) which provides a good hope for adding a
-visible warning. Unfortunately, inserting arbitrary HTML is tricky due
-to the complexity of markup interactions. Inserting warnings in HTML
-may thoroughly disrupt the original message, so use with caution</warning_html_text>
-<warning_text>Body Text message notification</warning_text>
-<warning_text_text>
-If an attachment is filtered, this lets you specify some warning text that
-will be inserted into any plain text portion(s) of the email.[br] This is
-effective for informing users of filtered files, but the act of inserting
-arbitrary text into an email can cause new problems.[br] Use with caution.
-</warning_text_text>
+<users_groups_list>Lista de grupos de usu&#225;rios</users_groups_list>
+<warning_html>Notifica&#231;&#227;o de mensagem HTML no corpo</warning_html>
+<warning_html_text>Insere uma mensagem de aviso nas partes HTML do e-mail quando ocorre a filtragem. O HTML &#233; inserido em uma posi&#231;&#227;o determinada por htmlwarn_pos (ver acima), o que oferece boas chances de adicionar um aviso vis&#237;vel. Infelizmente, inserir HTML arbitr&#225;rio &#233; complicado devido &#224; complexidade das intera&#231;&#245;es de marca&#231;&#227;o. Inserir avisos em HTML pode perturbar completamente a mensagem original, por isso use com precau&#231;&#227;o</warning_html_text>
+<warning_text>Notifica&#231;&#227;o de mensagem de texto no corpo</warning_text>
+<warning_text_text>Se um anexo for filtrado, isto permite que voc&#234; especifique um texto de aviso que ser&#225; inserido em qualquer parte de texto simples do e-mail.[br] &#201; eficaz para informar os usu&#225;rios sobre os arquivos filtrados, mas o ato de inserir texto arbitr&#225;rio em um e-mail pode causar novos problemas.[br] Use com precau&#231;&#227;o.</warning_text_text>

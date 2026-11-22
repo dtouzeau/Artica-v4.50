@@ -7,10 +7,10 @@ Isso inclui sistema operativo, tipo de dispositivo, o tempo de atividade, softwa
 <add_network_text>Adicionar gama IP para digitalizar a fim de descobrir novos computadores remotos</add_network_text>
 <ip>Endereço TCP/IP</ip>
 <mask>M%C3¡scara de rede</mask>
-<networks_list>Networks list</networks_list>
-<NmapRotateMinutes>Pooling time (in minutes)</NmapRotateMinutes>
-<NmapScanEnabled>Enable scanning your network</NmapScanEnabled>
-<nmap_logs>NMAP events</nmap_logs>
-<nmap_logs_text>See events ordered by artica</nmap_logs_text>
-<perform_scan>Perform scan</perform_scan>
-<perform_scan_text>Perform a scan now and broacast your networks to discover nodes</perform_scan_text>
+<networks_list>Lista de redes</networks_list>
+<NmapRotateMinutes>Tempo de sondagem (em minutos)</NmapRotateMinutes>
+<NmapScanEnabled>Ativar a an&#225;lise da sua rede</NmapScanEnabled>
+<nmap_logs>Eventos NMAP</nmap_logs>
+<nmap_logs_text>Ver eventos ordenados pelo artica</nmap_logs_text>
+<perform_scan>Efetuar an&#225;lise</perform_scan>
+<perform_scan_text>Efetue uma an&#225;lise agora e difunda nas suas redes para descobrir n&#243;s</perform_scan_text>

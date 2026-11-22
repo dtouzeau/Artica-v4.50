@@ -71,7 +71,6 @@ class icontop{
     $SquidUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidUrgency"));
     $SquidUFDBUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidUFDBUrgency"));
     $UfdbGuardDisabledRedirectors=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UfdbGuardDisabledRedirectors"));
-    $Enablehacluster=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"));
     $DynamicACLUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DynamicACLUrgency"));
     $SquidSSLUrgency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidSSLUrgency"));
     $SizeQuotasCheckerEmergency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SizeQuotasCheckerEmergency"));
@@ -117,49 +116,8 @@ class icontop{
     }
 
 
-    $firstVer=0;
-    if(count($UPDATES_ARRAY)>0) {
-        $HideNewSquidVer = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewSquidVer"));
-        if ($HideNewSquidVer == 0) {
-            $AVAILABLE_SQUID = $tpl->SQUID_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-            if ($AVAILABLE_SQUID > 0) {
-                preg_match("#^([0-9])#",$AVAILABLE_SQUID,$re);
-                $firstVer=$re[1];
-                if($realFver==$firstVer) {
-                    VERBOSE("AVAILABLE_SQUID = $AVAILABLE_SQUID ($firstVer)", __LINE__);
-                    $NewVer = $UPDATES_ARRAY["APP_SQUID"][$AVAILABLE_SQUID]["VERSION"];
-                    $ERR[] = "{SQUID_NEWVERSION} $NewVer||{SQUID_NEWVERSION_TEXT}||WARN||js:Loadjs('fw.system.upgrade-software.php?product=APP_SQUID');||js:Loadjs('$page?SetToken=HideNewSquidVer');";
-                }
-            }
-        }
-    }
-
-    if(method_exists($tpl,"SQUID6_LATEST_AVAILABLE_VERSION")) {
-        if (isset($UPDATES_ARRAY["APP_SQUID6"])) {
-            $HideNewSquidVer6Upg = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewSquidVer6Upg"));
-            if ($HideNewSquidVer6Upg == 0) {
-                if ($realFver < 6) {
-                    $AVAILABLE_SQUID = $tpl->SQUID6_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-                    if ($AVAILABLE_SQUID > 0) {
-                        $NewVer = $UPDATES_ARRAY["APP_SQUID6"][$AVAILABLE_SQUID]["VERSION"];
-                        $ERR[] = "{SQUID_NEWVERSION} $NewVer||{SQUID_NEWVERSION_TEXT}||WARN||js:Loadjs('fw.system.upgrade-software.php?product=APP_SQUID6');||js:Loadjs('$page?SetToken=HideNewSquidVer6Upg');";
-                    }
-                }
-            }
-            $HideNewSquidVer6 = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HideNewSquidVer6"));
-            if ($HideNewSquidVer6 == 0) {
-                if ($realFver == 6) {
-                    $AVAILABLE_SQUID = $tpl->SQUID6_LATEST_AVAILABLE_VERSION($UPDATES_ARRAY);
-                    if ($AVAILABLE_SQUID > 0) {
-                        $NewVer = $UPDATES_ARRAY["APP_SQUID6"][$AVAILABLE_SQUID]["VERSION"];
-                        $ERR[] = "{SQUID_NEWVERSION} $NewVer||{SQUID_NEWVERSION_TEXT}||WARN||js:Loadjs('fw.system.upgrade-software.php?product=APP_SQUID6');||js:Loadjs('$page?SetToken=HideNewSquidVer6');";
-                    }
-                }
-            }
-        }
-    }
-
-
+    // Les nouvelles versions de Squid (series 4/5 et 6) sont des lignes de
+    // fw.updates.packages.php (pkgupd_squid() dans class.updates.packages.inc).
 
     $SQUID_ACLS_BUGS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUID_ACLS_BUGS"));
 
@@ -281,10 +239,12 @@ class icontop{
             $ERR[] = "{NEED_RESTART_SQUID}||js:Loadjs('fw.proxy.need.restart.php');";
         }
     }
+    VERBOSE("ERR=".count($ERR),__LINE__);
     $ERR=$this->proxy_checks_ports($ERR);
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NOTIFS_SQUID",serialize($ERR));
+    VERBOSE("ERR=".count($ERR),__LINE__);
     $ERR=$this->check_ufdbguard($ERR);
-
+    VERBOSE("ERR=".count($ERR),__LINE__);
 
 
     return $ERR;
@@ -470,136 +430,21 @@ private function proxy_is_not_configured_ldap():bool{
         return false;
     }
 
-    private function acls_adgroup():bool{
-        $superline=null;
-        $children_max=0;
-        $f=explode("\n",@file_get_contents("/etc/squid3/acls_adgroup.conf"));
-        foreach ($f as $line){
-
-            if(preg_match("#external_acl_type ads_group(.*?)\/(go-squid-auth|external_acl_squid_ldap|external_acls_ad_agent)#",$line,$re)){
-                $superline=$re[1];
-            }
-        }
-        if($superline==null){
-            return true;
-        }
-        if(preg_match("#children-max=([0-9]+)#",$superline,$re)){
-            $children_max=$re[1];
-        }
-
-        if($children_max<15){
-            return true;
-        }
-        return false;
-}
-
-    private function proxy_is_not_configured_adldap(){
-        $f=explode("\n", @file_get_contents("/etc/squid3/authenticate.conf"));
-
-        foreach ($f as $line){
-            $line = trim($line);
-            if ($line == null) {continue;}
-            if(preg_match("#^\##",$line)){continue;}
-            if (preg_match("#^auth_param basic program.*?artica-proxy-auth#",$line)) {
-                VERBOSE("OK FOUND, -$line-");
-                return  $this->acls_adgroup();
-            }
-        }
-        return true;
-    }
-
-
     public function proxy_is_not_configured_ad():bool{
+        // Logique portée dans le daemon (squid/ad_configured_check.go) :
+        // GET /proxy/ad/configured rejoue toute la chaîne (licence, modes AD,
+        // authenticate.conf, http_access_final.conf, acls_adgroup.conf) et
+        // renvoie {success,data:{not_configured,reason}}.
         if(!$GLOBALS["CLASS_SOCKETS"]->CORP_LICENSE()){return false;}
-        $ActiveDirectoryEmergency=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryEmergency"));
-        $EnableAdLDAPAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableAdLDAPAuth"));
-        VERBOSE("EnableAdLDAPAuth == $EnableAdLDAPAuth",__LINE__);
-        if($EnableAdLDAPAuth==1){
-            return $this->proxy_is_not_configured_adldap();
-        }
-        if($ActiveDirectoryEmergency==1){return false;}
-        $EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
-        $IS_AUTHENTICATED=false;
-        $UseNativeKerberosAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("UseNativeKerberosAuth"));
-        $LockActiveDirectoryToKerberos=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LockActiveDirectoryToKerberos"));
-        $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
-
-        if($HaClusterClient==1){
-            $HaClusterADContent=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterAD");
-            $HaClusterAD=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($HaClusterADContent);
-            if(!isset($HaClusterAD["kerberosActiveDirectoryHost"])){$HaClusterAD["kerberosActiveDirectoryHost"]=null;}
-            if($HaClusterAD["kerberosActiveDirectoryHost"]<>null) {
-                $LockActiveDirectoryToKerberos = 1;
-            }
-        }
-
-        if($EnableKerbAuth==1){
-            $IS_AUTHENTICATED=true;
-        }
-        if($UseNativeKerberosAuth==1){
-            $IS_AUTHENTICATED=true;
-        }
-        if($LockActiveDirectoryToKerberos==1){
-            $IS_AUTHENTICATED=true;
-        }
-
-        if(!$IS_AUTHENTICATED){return false;}
-
-        $f=explode("\n", @file_get_contents("/etc/squid3/authenticate.conf"));
-
-        foreach ($f as $line){
-            $line = trim($line);
-            if ($line == null) {continue;}
-            if(preg_match("#^\##",$line)){continue;}
-            if (preg_match("#^auth_param (negotiate|ntlm) program#",$line)) {
-                VERBOSE("OK FOUND, -->ACL_AUTHENTICATED()");
-                return  $this->ACL_AUTHENTICATED();
-            }
-        }
-
-        VERBOSE("proxy_is_not_configured_ad: auth_param (negotiate|ntlm) program not found in /etc/squid3/authenticate.conf",__LINE__);
-        return true;
-
-
-    }
-
-    private function ACL_AUTHENTICATED():bool{
-        if(!is_file("/etc/squid3/authenticate.conf")){
-            VERBOSE("HTTP_ACCESS_AUTHENTICATED  -->/etc/squid3/authenticate.conf not found");
+        $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/ad/configured"));
+        if(!isset($json->success) || !$json->success){
+            VERBOSE("proxy_is_not_configured_ad: /proxy/ad/configured unreachable, no warning",__LINE__);
             return false;
         }
-        $f=explode("\n",@file_get_contents("/etc/squid3/authenticate.conf"));
-        foreach ($f as $zline) {
-            $zline = trim($zline);
-            if ($zline == null) {continue;}
-            if(preg_match("#^\##",$zline)){continue;}
-            if (preg_match("#^acl AUTHENTICATED#", $zline)) {
-                VERBOSE("OK FOUND, -->HTTP_ACCESS_AUTHENTICATED()");
-                return $this->HTTP_ACCESS_AUTHENTICATED();
-            }
+        if(isset($json->data->reason)){
+            VERBOSE("proxy_is_not_configured_ad: ".$json->data->reason,__LINE__);
         }
-        VERBOSE("proxy_is_not_configured_ad: ^acl AUTHENTICATED /etc/squid3/authenticate.conf",__LINE__);
-        return true;
-    }
-
-    private function HTTP_ACCESS_AUTHENTICATED():bool{
-        $EnableSquidMicroHotSpot=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidMicroHotSpot"));
-        if($EnableSquidMicroHotSpot==1){return false;}
-        if(!is_file("/etc/squid3/http_access_final.conf")){
-            VERBOSE("HTTP_ACCESS_AUTHENTICATED  -->/etc/squid3/http_access_final.conf [BAD]: not found");
-            return true;}
-        $f=explode("\n", @file_get_contents("/etc/squid3/http_access_final.conf"));
-        foreach ($f as $line){
-            $line = trim($line);
-            if ($line == null) {continue;}
-            if(preg_match("#^\##",$line)){continue;}
-            if (preg_match("#^http_access deny.*?AUTHENTICATED#",$line)) {
-                VERBOSE("proxy_is_not_configured_ad: HTTP_ACCESS_AUTHENTICATED OK IN /etc/squid3/http_access_final.conf -->acls_adgroup()",__LINE__);
-                return $this->acls_adgroup();
-            }
-        }
-        VERBOSE("proxy_is_not_configured_ad: http_access deny.*?AUTHENTICATED /etc/squid3/http_access_final.conf",__LINE__);
-        return true;
+        return isset($json->data->not_configured) ? (bool)$json->data->not_configured : false;
     }
 
     public function filedescriptors_checking($nocache=false){

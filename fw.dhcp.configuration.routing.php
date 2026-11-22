@@ -2,8 +2,12 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
+include_once(dirname(__FILE__)."/ressources/class.dhcpd.meta.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : interface/popup/table/ruleid (noms d'interface) etaient recopies sans encodage dans la page (XSS).
+foreach(array("interface","popup","table","ruleid") as $xssk){if(isset($_GET[$xssk])){$_GET[$xssk]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET[$xssk]);}}
+if(isset($_POST["ruleid"])){$_POST["ruleid"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_POST["ruleid"]);}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["route-move-js"])){route_move_js();exit;}
 if(isset($_GET["route-delete-js"])){route_delete_js();exit;}
@@ -74,6 +78,7 @@ function rule_popup(){
     $js[]="LoadAjax('routing-table-dhcp-{$_GET["ruleid"]}','$page?table={$_GET["ruleid"]}');";
 
 
+    dhcpd_meta_lock_form($tpl);
     $html=$tpl->form_outside("$ruleid: $title {$ligne["network"]}", @implode("\n", $form),null,$btname,@implode("", $js),"ASDCHPAdmin");
     echo $html;
 
@@ -91,17 +96,23 @@ function popup(){
 
 }
 function route_delete_js(){
+    // Verrou Meta : les routes distribuees viennent de la politique.
+    if(dhcpd_meta_refuse_js()){return;}
     header("content-type: application/x-javascript");
     $q=new lib_sqlite("/home/artica/SQLITE/dhcpd.db");
     $tpl=new template_admin();
-    $q->mysqli_fetch_array("DELETE FROM dhcpd_routes WHERE ID='{$_GET["route-delete-js"]}'");
+    // Pentest 2026-11-04 : route-delete-js etait concatene dans la requete.
+    $routeID=intval($_GET["route-delete-js"]);
+    $q->QUERY_SQL("DELETE FROM dhcpd_routes WHERE ID='$routeID'");
     if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return;}
     echo "$('#{$_GET["md"]}').remove();\n";
 }
 function route_move_js(){
+    if(dhcpd_meta_refuse_js()){return null;}
     $tpl=new template_admin();
     header("content-type: application/x-javascript");
-    $ID=$_GET["route-move-js"];
+    // Pentest 2026-11-04 : route-move-js etait concatene dans la requete.
+    $ID=intval($_GET["route-move-js"]);
     $dir=$_GET["dir"];
     $q=new lib_sqlite("/home/artica/SQLITE/dhcpd.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM dhcpd_routes WHERE ID='$ID'");
@@ -121,7 +132,8 @@ function route_move_js(){
     $q->QUERY_SQL("UPDATE dhcpd_routes SET zOrder='$NewzOrder' WHERE ID='$ID'");
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return null;}
 
-    $results=$q->QUERY_SQL("SELECT * FROM dhcpd_routes WHERE interface='{$_GET["ruleid"]}' ORDER BY zOrder");
+    // Pentest 2026-11-04 : ruleid etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS("SELECT * FROM dhcpd_routes WHERE interface=? ORDER BY zOrder",array((string)$_GET["ruleid"]));
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return null;}
     $c=0;
     foreach ($results as $index=>$ligne){
@@ -134,6 +146,7 @@ return null;
 
 }
 function rule_save(){
+    if(dhcpd_meta_refuse_post()){return;}
 
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
@@ -145,20 +158,24 @@ function rule_save(){
         $q->QUERY_SQL("ALTER TABLE dhcpd_routes ADD zOrder INTEGER NOT NULL DEFAULT 0");
     }
 
+    // Pentest 2026-11-04 : gateway, network, ruleid et zOrder etaient concatenes dans la requete.
+    $zOrder=intval($_POST["zOrder"]);
     if($ID==0){
         $sql="INSERT INTO dhcpd_routes (`gateway`,`network`,`interface`,`zOrder`)
-		VALUES('{$_POST["gateway"]}','{$_POST["network"]}','{$_POST["ruleid"]}','{$_POST["zOrder"]}');";
+		VALUES(?,?,?,?);";
+        $params=array((string)$_POST["gateway"],(string)$_POST["network"],(string)$_POST["ruleid"],$zOrder);
     }else{
         $sql="UPDATE dhcpd_routes SET 
-		`zOrder`='{$_POST["zOrder"]}', 
-		`network`='{$_POST["network"]}',
-		`gateway`='{$_POST["gateway"]}' WHERE `ID`='$ID'";
+		`zOrder`=?, 
+		`network`=?,
+		`gateway`=? WHERE `ID`=?";
+        $params=array($zOrder,(string)$_POST["network"],(string)$_POST["gateway"],$ID);
 
     }
 
 
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    $q->QUERY_SQL_PARAMS($sql,$params);
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return;}
 
 }
 
@@ -183,14 +200,19 @@ function table(){
         "kea.service.log","progress-for-static-routes-$MAIN_ID","LoadAjax('dhcp-service','fw.dhcp.configuration.php?status=yes');","","","ASDCHPAdmin");
 
 
+    // Verrou Meta : bandeau, nouvelle route et application masquees.
+    $metaLocked=dhcpd_meta_locked();
+    $btnNew=$metaLocked?"":"<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?rule-js=0&ruleid=$MAIN_ID');\"><i class='fa fa-plus'></i> $new_rule </label>";
+    $btnApply=$metaLocked?"":"<label class=\"btn btn btn-warning\" OnClick=\"$jsafter\"><i class='fas fa-file-check'></i> {apply_configuration} </label>";
+    $html[]=dhcpd_meta_banner($tpl);
     $html[]=$tpl->_ENGINE_parse_body("
 <div id='progress-for-static-routes-$MAIN_ID'></div>
 			<div class=\"btn-group\" data-toggle=\"buttons\">
-			<label class=\"btn btn btn-primary\" OnClick=\"Loadjs('$page?rule-js=0&ruleid=$MAIN_ID');\"><i class='fa fa-plus'></i> $new_rule </label>
+			$btnNew
 			
 			<label class=\"btn btn btn-info\" OnClick=\"LoadAjax('routing-table-dhcp-$MAIN_ID','$page?table=$MAIN_ID');\"><i class='fas fa-redo'></i> {reload} </label>
 			
-			<label class=\"btn btn btn-warning\" OnClick=\"$jsafter\"><i class='fas fa-file-check'></i> {apply_configuration} </label>
+			$btnApply
 			</div>");
 
 
@@ -208,8 +230,9 @@ function table(){
     $html[]="<tbody>";
 
 
-    $sql="SELECT *  FROM `dhcpd_routes` WHERE interface='{$MAIN_ID}' ORDER BY zOrder";
-    $results = $q->QUERY_SQL($sql);
+    // Pentest 2026-11-04 : table etait concatene dans la requete.
+    $sql="SELECT *  FROM `dhcpd_routes` WHERE interface=? ORDER BY zOrder";
+    $results = $q->QUERY_SQL_PARAMS($sql,array($MAIN_ID));
 
     $TRCLASS=null;$ligne=null;
 
@@ -219,9 +242,10 @@ function table(){
         $md=md5(serialize($ligne));
         $network=$tpl->td_href($ligne["network"],null,"Loadjs('$page?rule-js={$ligne["ID"]}&ruleid=$MAIN_ID');");
 
-        $down=$tpl->icon_down("Loadjs('$page?route-move-js={$ligne["ID"]}&ruleid={$MAIN_ID}&dir=down');","ASDCHPAdmin");
-        $up=$tpl->icon_up("Loadjs('$page?route-move-js={$ligne["ID"]}&ruleid={$MAIN_ID}&dir=up');","ASDCHPAdmin");
-        $delete=$tpl->icon_delete("Loadjs('$page?route-delete-js={$ligne["ID"]}&ruleid={$MAIN_ID}&md=$md');","ASDCHPAdmin");
+        $msec=dhcpd_meta_sec("ASDCHPAdmin");
+        $down=$tpl->icon_down("Loadjs('$page?route-move-js={$ligne["ID"]}&ruleid={$MAIN_ID}&dir=down');",$msec);
+        $up=$tpl->icon_up("Loadjs('$page?route-move-js={$ligne["ID"]}&ruleid={$MAIN_ID}&dir=up');",$msec);
+        $delete=$tpl->icon_delete("Loadjs('$page?route-delete-js={$ligne["ID"]}&ruleid={$MAIN_ID}&md=$md');",$msec);
 
         if($ligne["gateway"]==null){$ligne["gateway"]=$tpl->icon_nothing();}
         $html[]="<tr class='$TRCLASS' id='$md'>";

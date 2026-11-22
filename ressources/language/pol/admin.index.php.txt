@@ -1,37 +1,32 @@
 <delete_all_events>Usu%u0144 wszystkie zdarzenia</delete_all_events>
 <emails_received>Odebrane emaile (w czasie rzeczywistym)</emails_received>
-<error_cyrus_pbconnect>[br][b][i]You need to check the cyrus-imap connection, it seems it stopped working.
-</error_cyrus_pbconnect>
-<error_cyrus_pbmailbox>[br][b][i]You need to check this mailbox, it seems it over quota.
-[br]Increase its quota or delete this user[/b][/i].
-</error_cyrus_pbmailbox>
+<error_cyrus_pbconnect>[br][b][i]Musisz sprawdzi&#263; po&#322;&#261;czenie cyrus-imap, wygl&#261;da na to, &#380;e przesta&#322;o dzia&#322;a&#263;.</error_cyrus_pbconnect>
+<error_cyrus_pbmailbox>[br][b][i]Musisz sprawdzi&#263; t&#281; skrzynk&#281; pocztow&#261;, wygl&#261;da na to, &#380;e przekroczy&#322;a limit.
+[br]Zwi&#281;ksz jej limit lub usu&#324; tego u&#380;ytkownika[/b][/i].</error_cyrus_pbmailbox>
 <error_kasmilter_stopped>Kaspersky Anti-spam serwer nie wystartowa%u0142. Prosz%u0119 sprawdzi%u0107 czy serwer jest uruchomiony i licencja jest prawid%u0142owa/wa%u017Cna</error_kasmilter_stopped>
-<error_kavmilter_licence>[br][b][i]You need to get a new licence key for Kaspersky antivirus for SendMail milter.
-[br]Or You must disable Kaspersky in Postfix/plugins section[/b][/i].
-</error_kavmilter_licence>
-<error_loopsbacktomyself>It seems that postfix is configured to relay emails that are directed to the internet to the same server that has postfix installed. Please check your configuration</error_loopsbacktomyself>
-<error_milter_grey_list_stopped>The Milter-greylist service stopped or ceased to function, please check configuration and service status.
-</error_milter_grey_list_stopped>
-<error_must_create_mailbox>[br][b][i]The mailbox is not created, and mail is refused by the imap server.
-[br]You need to create an user account or an users' alias to prevent this error[/b][/i]
-</error_must_create_mailbox>
-<error_relayhost>The master relay you have set for postfix is not available, change it or check your &quot;internet server relay&quot;</error_relayhost>
-<error_routing_postfix>Postifx was denied routing, please check your transports tables...</error_routing_postfix>
+<error_kavmilter_licence>[br][b][i]Musisz uzyska&#263; nowy klucz licencyjny dla programu Kaspersky antivirus for SendMail milter.
+[br]Lub musisz wy&#322;&#261;czy&#263; Kaspersky w sekcji Postfix/plugins[/b][/i].</error_kavmilter_licence>
+<error_loopsbacktomyself>Wygl&#261;da na to, &#380;e postfix jest skonfigurowany do przekazywania wiadomo&#347;ci kierowanych do internetu na ten sam serwer, na kt&#243;rym zainstalowany jest postfix. Sprawd&#378; swoj&#261; konfiguracj&#281;</error_loopsbacktomyself>
+<error_milter_grey_list_stopped>Us&#322;uga Milter-greylist zatrzyma&#322;a si&#281; lub przesta&#322;a dzia&#322;a&#263;, sprawd&#378; konfiguracj&#281; i stan us&#322;ugi.</error_milter_grey_list_stopped>
+<error_must_create_mailbox>[br][b][i]Skrzynka pocztowa nie zosta&#322;a utworzona, a poczta jest odrzucana przez serwer imap.
+[br]Musisz utworzy&#263; konto u&#380;ytkownika lub alias u&#380;ytkownika, aby zapobiec temu b&#322;&#281;dowi[/b][/i]</error_must_create_mailbox>
+<error_relayhost>Ustawiony przez Ciebie relay g&#322;&#243;wny dla postfix jest niedost&#281;pny, zmie&#324; go lub sprawd&#378; &amp;quot;internet server relay&amp;quot;</error_relayhost>
+<error_routing_postfix>Postfix odm&#243;wi&#322; routingu, sprawd&#378; swoje tabele transport...</error_routing_postfix>
 <error_routing_to>Postfix nie mo%u017Ce wytrasowa%u0107 tego emaila do nast%u0119pnego serwera przeznaczenia, prosz%u0119 sprawdzi%u0107 tablic%u0119 routingu</error_routing_to>
 <graphs>Wykresy i statystyki</graphs>
-<lines_number>Max lines</lines_number>
+<lines_number>Maks. wierszy</lines_number>
 <monitorix>Monitorix</monitorix>
-<mysql_not_root_configured>Error Mysql Access</mysql_not_root_configured>
-<mysql_not_root_configured_text>Artica report Access denied, you need to set the right account for mysql in order to get full artica features
-Go to Global settings/Mysql database to set this account</mysql_not_root_configured_text>
-<mysql_too_any_connections>MySQL server reports that there  are too many connections on Mysql server[br]you have to restart Mysql or to reboot your server</mysql_too_any_connections>
-<notification>Error detected</notification>
-<postfix_mynet_not_conf>Postfix Networks</postfix_mynet_not_conf>
-<postfix_mynet_not_conf_text>You need to set your networks in order to place Postfix in production mode.[br]
-Select Postfix/Postfix Network settings in the left panel</postfix_mynet_not_conf_text>
-<service>Application name</service>
-<smtp_notification_not_saved>eMail notifications are not set</smtp_notification_not_saved>
-<smtp_notification_not_saved_text>It is necessary for you to be informed if artica server failed or have successfully perform tasks.[br]
-Set notifications parameters in order to receive all information by mail</smtp_notification_not_saved_text>
-<too_many_lines_exceed>Too many lines, exceeded :</too_many_lines_exceed>
-<warnings>warning errors</warnings>
+<mysql_not_root_configured>B&#322;&#261;d dost&#281;pu Mysql</mysql_not_root_configured>
+<mysql_not_root_configured_text>Artica zg&#322;asza Odmow&#281; dost&#281;pu, musisz ustawi&#263; w&#322;a&#347;ciwe konto dla mysql, aby uzyska&#263; pe&#322;ne funkcje artica
+Przejd&#378; do Ustawienia globalne/Baza danych Mysql, aby ustawi&#263; to konto</mysql_not_root_configured_text>
+<mysql_too_any_connections>Serwer MySQL zg&#322;asza zbyt wiele po&#322;&#261;cze&#324; na serwerze Mysql[br]musisz ponownie uruchomi&#263; Mysql lub serwer</mysql_too_any_connections>
+<notification>Wykryto b&#322;&#261;d</notification>
+<postfix_mynet_not_conf>Sieci Postfix</postfix_mynet_not_conf>
+<postfix_mynet_not_conf_text>Musisz ustawi&#263; swoje sieci, aby prze&#322;&#261;czy&#263; Postfix w tryb produkcyjny.[br]
+Wybierz Postfix/Ustawienia sieci Postfix w panelu po lewej stronie</postfix_mynet_not_conf_text>
+<service>Nazwa aplikacji</service>
+<smtp_notification_not_saved>Powiadomienia e-mail nie s&#261; ustawione</smtp_notification_not_saved>
+<smtp_notification_not_saved_text>Konieczne jest, aby&#347; by&#322; informowany, je&#347;li serwer artica zawi&#243;d&#322; lub pomy&#347;lnie wykona&#322; zadania.[br]
+Ustaw parametry powiadomie&#324;, aby otrzymywa&#263; wszystkie informacje poczt&#261;</smtp_notification_not_saved_text>
+<too_many_lines_exceed>Zbyt wiele wierszy, przekroczono:</too_many_lines_exceed>
+<warnings>b&#322;&#281;dy ostrze&#380;e&#324;</warnings>

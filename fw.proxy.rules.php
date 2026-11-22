@@ -5,10 +5,12 @@ $GLOBALS["OBJTYPES"][2]="{srcdomain}";
 $GLOBALS["OBJTYPES"][3]="{member}";
 $GLOBALS["OBJTYPES"][4]="{dstdomain}";
 $GLOBALS["OBJTYPES"][5]="{categories}";
-
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.catz.inc");
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
 if(isset($_GET["rule-fill"])){rule_fill();exit;}
@@ -41,7 +43,6 @@ if(isset($_GET["rule-object-delete"])){rule_object_delete();exit;}
 
 
 
-if(isset($_GET["rule-tabs"])){rule_tabs();exit;}
 if(isset($_GET["object-button"])){object_button();exit;}
 
 if(isset($_GET["add-categories-js"])){categories_js();exit;}
@@ -65,11 +66,6 @@ if(isset($_GET["add-srcdomain-popup"])){srcdomain_popup();exit;}
 if(isset($_POST["add-srcdomain"])){srcdomain_save();exit;}
 
 
-if(isset($_GET["fill"])){fill();exit;}
-if(isset($_GET["delete"])){delete();exit;}
-if(isset($_GET["delete-all"])){delete_all();exit;}
-if(isset($_GET["delete-all-confirm"])){delete_all_confirm();exit;}
-if(isset($_GET["delete-all-confirm-ok"])){delete_all_confirm_ok();exit;}
 page();
 
 function reconfigure_js():bool{
@@ -108,14 +104,17 @@ function rule_fill():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["rule-fill"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT * FROM webfilters_simpleacls WHERE ID='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $aclname=base64_encode($tpl->td_href($ligne["aclname"],"","Loadjs('$page?rule-settings=$ID')"));
+    $ligne=acls_api_get("/proxy/simple-acls/$ID");
+    if(!is_array($ligne)){
+        header("content-type: application/x-javascript");
+        echo "console.error('rule_fill: could not load rule $ID');";
+        return false;
+    }
+    $aclname=base64_encode($tpl->td_href($ligne["aclName"],"","Loadjs('$page?rule-settings=$ID')"));
 
-    $zexplain=base64_encode($ligne["zExplain"]);
+    $zexplain=base64_encode($ligne["zExplain"] ?? "");
     $array_accesses=array_accesses();
-    $ruleaction=$ligne["ruleaction"];
+    $ruleaction=intval($ligne["ruleAction"] ?? 0);
 
     $fl=ico_arrow_right;
     $Cin=CountOfIN($ID);
@@ -130,7 +129,7 @@ function rule_fill():bool{
     $access=base64_encode($tpl->_ENGINE_parse_body($array_accesses[$ruleaction]));
 
     $PortDirectionS=method_list();
-    $aclport=$ligne["aclport"];
+    $aclport=intval($ligne["aclPort"] ?? 0);
     if(!isset($PortDirectionS[$aclport])){
         $PortDirectionS[$aclport]="{all}";
     }
@@ -150,7 +149,6 @@ function search():bool{
     $users=new usersMenus();
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $t=time();
     $function=$_GET["function"];
     $Go_Shield_Server_Enable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Go_Shield_Server_Enable"));
@@ -169,49 +167,45 @@ function search():bool{
 
 
     $limit=50;
-    $TRCLASS="";
     $data1="class='text-capitalize' style='width:1%;text-align:center'";
-    $TableClass="footable ";
 
-
-    $search=trim($_GET["search"]);
+    $search=trim($_GET["search"] ?? "");
     if(strlen($search)>1) {
         if(preg_match("#(rows|max|limit)=([0-9]+)#i",$search,$re)){
             $limit=intval($re[2]);
             $search=str_replace("$re[1]=$re[2]","",$search);
         }
-        $search = "*$search*";
-        $search = str_replace("**", "*", $search);
-        $search = str_replace("**", "*", $search);
-        $search = str_replace("*", "%", $search);
     }
     if($limit==0){$limit=30;}
-    $sql = "SELECT * FROM webfilters_simpleacls ORDER BY xORDER LIMIT $limit";
-    if(strlen($search)>0) {
-        $sql = "SELECT * FROM webfilters_simpleacls WHERE aclname LIKE '$search' ORDER BY xORDER LIMIT $limit";
-    }
-    writelogs("sql=$sql",__FUNCTION__,__FILE__,__LINE__);
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
+
+    $results=acls_api_get("/proxy/simple-acls");
+    if(!is_array($results)){
+        echo $tpl->div_error("Could not load simple ACL rules");
         return true;
     }
 
-    $html[]="<table id='table-simlefilters-rules-$t' class=\"{$TableClass}table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th $data1>{order}</th>";
-    $html[]="<th $data1>{status}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{rulename}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{method}</th>";
-    $html[]="<th data-sortable=false>IN/OUT</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // Client-side filter by name if search term provided
+    if(strlen(trim($search))>0){
+        $needle=strtolower(trim($search));
+        $results=array_values(array_filter($results, function($r) use($needle){
+            return stripos($r["aclName"] ?? "", $needle)!==false;
+        }));
+    }
+    // Limit results
+    if(count($results)>$limit){ $results=array_slice($results,0,$limit); }
+
+    writelogs("simple-acls: ".count($results)." rows",__FUNCTION__,__FILE__,__LINE__);
+
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th class='center'>{order}</th>";
+    $html[]="<th>{rulename}</th>";
+    $html[]="<th>{method}</th>";
+    $html[]="<th class='center'>IN/OUT</th>";
+    $html[]="<th class='center'>{status}</th>";
+    $html[]="<th class='center'>{enabled}</th>";
+    $html[]="<th class='center'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='pxrl-rows'>";
 
 
     $PortDirectionS=method_list();
@@ -220,13 +214,13 @@ function search():bool{
 
     foreach ($results as $index=>$ligne){
 
-        $ID=$ligne["ID"];
-        $aclname=$ligne["aclname"];
-        $enabled=$ligne["enabled"];
-        $xORDER=$ligne["xORDER"];
-        $aclport=$ligne["aclport"];
-        $zExplain=$ligne["zExplain"];
-        $ruleaction=$ligne["ruleaction"];
+        $ID=intval($ligne["id"] ?? 0);
+        $aclname=$ligne["aclName"] ?? "";
+        $enabled=intval($ligne["enabled"] ?? 0);
+        $xORDER=intval($ligne["xOrder"] ?? 0);
+        $aclport=intval($ligne["aclPort"] ?? 0);
+        $zExplain=$ligne["zExplain"] ?? "";
+        $ruleaction=intval($ligne["ruleAction"] ?? 0);
         $aclname=$tpl->td_href($aclname,"","Loadjs('$page?rule-settings=$ID')");
         $md=md5(serialize($ligne));
         if(!isset($PortDirectionS[$aclport])){
@@ -241,7 +235,6 @@ function search():bool{
                 }
             }
         }
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $priv="AsDansGuardianAdministrator";
         $enable=$tpl->icon_check($enabled,"Loadjs('$page?rule-settings-enable=$ID')","",$priv);
         $up=$tpl->icon_up("Loadjs('$page?rule-settings-move=$ID&dir=1');");
@@ -260,60 +253,59 @@ function search():bool{
             $ruleaction=999;
         }
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"center\" style='width:1%' nowrap >$xORDER</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  nowrap><span id='acls-$ID-access'>$array_accesses[$ruleaction]</span></td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  nowrap><span id='acls-$ID-aclname'>$aclname</span></td>";
-        $html[]="<td class='left' style='width:50%'><span id='acls-$ID-zexplain'>$zExplain</span></td>";
-        $html[]="<td style='vertical-align:middle;width:25%'><span id='acls-$ID-port'>$PortDirectionS[$aclport]</span></td>";
+        // $array_accesses ne definit que 0, 1, 2 et 999: toute autre valeur
+        // produisait un avertissement de cle indefinie.
+        $access=isset($array_accesses[$ruleaction])
+            ?$array_accesses[$ruleaction]
+            :"<span class='awc-badge awc-badge-off'>{unknown}</span>";
 
-        $html[]="<td style='vertical-align:middle;width:1%' nowrap><span id='acls-$ID-recs'>$Cin&nbsp;{records}&nbsp;<i class='$fl'></i>&nbsp;$Cout&nbsp;{records}</span></td>";
-
-        $html[]="<td class='center' style='width:1%' nowrap>$enable</td>";
-        $html[]="<td class='center' style='width:1%' nowrap>$up&nbsp;&nbsp;$down</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$delete</center></td>";
-        $html[]="</tr>";
+        $h ="<tr id='$md'>";
+        $h.="<td class='center awc-mono'>$xORDER</td>";
+        $h.="<td><div class='awc-ident'>";
+        $h.="<span class='".($enabled==1?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-shield-halved'></i></span>";
+        $h.="<span><span class='awc-name' id='acls-$ID-aclname'>$aclname</span>";
+        $h.="<div class='awc-meta' id='acls-$ID-zexplain'>$zExplain</div>";
+        $h.="</span></div></td>";
+        $h.="<td><span id='acls-$ID-port'>{$PortDirectionS[$aclport]}</span></td>";
+        $h.="<td class='center awc-nowrap'><span id='acls-$ID-recs'>"
+            ."$Cin&nbsp;{records}&nbsp;<i class='$fl'></i>&nbsp;$Cout&nbsp;{records}</span></td>";
+        $h.="<td class='center'><span id='acls-$ID-access'>$access</span></td>";
+        $h.="<td class='center'>$enable</td>";
+        // La cellule de suppression portait un "</center>" SANS ouvrant.
+        $h.="<td class='center'><div class='awc-acts'>$up$down$delete</div></td>";
+        $h.="</tr>";
+        $html[]=$h;
     }
 
 
     $toTiny="Loadjs('$page?tiny-js=yes&function=$function')";
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    // Le pied annoncait HUIT colonnes pour neuf.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} ".count($results)."</span>";
+    $html[]="<span class='awc-pg' id='pxrl-pager'></span>";
+    $html[]="</div></div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='8'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    // Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+    $script="<script>$toTiny\nNoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n"
+        ."LoadAjax('proxy-acls-bugs','$page?proxy-acls-bugs=yes');\n</script>";
 
-    $html[]="<script>";
-
-        $html[]="$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
-
-
-    $html[]="$toTiny
-    NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-    LoadAjax('proxy-acls-bugs','$page?proxy-acls-bugs=yes');
-</script>";
-
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n",$html))
+        .$script
+        .awc_pager_js(50,"pxrl-rows","pxrl-pager");
     return true;
 
 }
 function CountOfIN($ID):int{
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM webfilters_simpleaobjects WHERE aclid=$ID AND direction=0");
-    return intval($ligne["tcount"]);
-
+    $rows=acls_api_get("/proxy/simple-acls/$ID/objects?direction=0");
+    return is_array($rows) ? count($rows) : 0;
 }
 function CountOfOut($ID):int{
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne=$q->mysqli_fetch_array("SELECT COUNT(*) as tcount FROM webfilters_simpleaobjects WHERE aclid=$ID AND direction=1");
-    return intval($ligne["tcount"]);
-
+    $rows=acls_api_get("/proxy/simple-acls/$ID/objects?direction=1");
+    return is_array($rows) ? count($rows) : 0;
 }
 
 function array_accesses():array{
@@ -355,22 +347,20 @@ function rule_settings_js():bool{
     $page       = CurrentPageName();
     $tpl        = new template_admin();
     $ID         = intval($_GET["rule-settings"]);
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT aclname FROM webfilters_simpleacls WHERE ID='$ID'");
+    $ligne      = acls_api_get("/proxy/simple-acls/$ID");
     $function   = $_GET["function"];
-    $title      = $ligne["aclname"];
+    $title      = is_array($ligne) ? ($ligne["aclName"] ?? "") : "";
     return $tpl->js_dialog($title,"$page?rule-settings-tab=$ID&function=$function");
 }
 function rule_settings_tab():bool{
     $users=new usersMenus();
     $page       = CurrentPageName();
     $ID         = intval($_GET["rule-settings-tab"]);
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT ruleaction,aclname FROM webfilters_simpleacls WHERE ID='$ID'");
-    $title      = $ligne["aclname"];
+    $ligne      = acls_api_get("/proxy/simple-acls/$ID");
+    $title      = is_array($ligne) ? ($ligne["aclName"] ?? "") : "";
     $tpl=new template_admin();
     $function=$_GET["function"];
-    $ruleaction=intval($ligne["ruleaction"]);
+    $ruleaction=intval(is_array($ligne) ? ($ligne["ruleAction"] ?? 0) : 0);
     if($users->AsDansGuardianAdministrator) {
         $array[$title] = "$page?rule-settings-popup=$ID&function=$function";
     }
@@ -388,51 +378,10 @@ function rule_settings_tab():bool{
 }
 function rule_settings_move():bool{
     $tpl=new template_admin();
-    $ID=$_GET["rule-settings-move"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT xORDER FROM webfilters_simpleacls WHERE `ID`='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-    $xORDER_ORG=intval($ligne["xORDER"]);
-    $xORDER=$xORDER_ORG;
-
-
-    if($_GET["dir"]==1){$xORDER=$xORDER_ORG-1;}
-    if($_GET["dir"]==0){$xORDER=$xORDER_ORG+1;}
-    if($xORDER<0){$xORDER=0;}
-    $sql="UPDATE webfilters_simpleacls SET xORDER=$xORDER WHERE `ID`='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-    if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-    if($_GET["dir"]==1){
-        $xORDER2=$xORDER+1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE webfilters_simpleacls SET xORDER=$xORDER2 WHERE ID<>$ID AND xORDER=$xORDER";
-        $q->QUERY_SQL($sql);
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-    }
-    if($_GET["dir"]==0){
-        $xORDER2=$xORDER-1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE webfilters_simpleacls SET xORDER=$xORDER2 WHERE ID<>{$_GET["rule-settings-move"]} AND xORDER=$xORDER";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-    }
-
-    $c=0;
-    $sql="SELECT ID FROM webfilters_simpleacls ORDER BY xORDER";
-    $results = $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-
-    foreach($results as $index=>$ligne) {
-        $c++;
-        $q->QUERY_SQL("UPDATE webfilters_simpleacls SET xORDER=$c WHERE `ID`={$ligne["ID"]}");
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-
-    }
+    $ID=intval($_GET["rule-settings-move"]);
+    $dir=intval($_GET["dir"]);
+    [$ok,$err]=acls_api_send("PUT","/proxy/simple-acls/$ID/move",["dir"=>$dir]);
+    if(!$ok){echo "alert('".$tpl->javascript_parse_text($err)."');";return false;}
     return true;
 }
 function rule_object_table():bool{
@@ -441,46 +390,40 @@ function rule_object_table():bool{
     $aclid         = intval($_GET["rule-object-search"]);
     $dir        = intval($_GET["dir"]);
     $function   = $_GET["function"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $search=trim($_GET["search"]);
+    $search=trim($_GET["search"] ?? "");
+    $limit=30;
     if(strlen($search)>1) {
         if(preg_match("#(rows|max|limit)=([0-9]+)#i",$search,$re)){
             $limit=intval($re[2]);
             $search=str_replace("$re[1]=$re[2]","",$search);
         }
-        $search = "*$search*";
-        $search = str_replace("**", "*", $search);
-        $search = str_replace("**", "*", $search);
-        $search = str_replace("*", "%", $search);
     }
     if($limit==0){$limit=30;}
-    $sql = "SELECT * FROM webfilters_simpleaobjects WHERE aclid=$aclid AND direction=$dir ORDER BY xORDER LIMIT $limit";
-    if(strlen($search)>0) {
-        $sql = "SELECT * FROM webfilters_simpleacls WHERE (aclid=$aclid AND direction=$dir) AND pattern LIKE '$search' ORDER BY xORDER LIMIT $limit";
-    }
-    $results=$q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $tpl->div_error($q->mysql_error);
+
+    $results=acls_api_get("/proxy/simple-acls/$aclid/objects?direction=$dir");
+    if(!is_array($results)){
+        echo $tpl->div_error("Could not load objects for rule $aclid");
         return true;
     }
 
+    // Client-side filter by pattern if search term provided
+    if(strlen(trim($search))>0){
+        $needle=strtolower(trim($search));
+        $results=array_values(array_filter($results, function($r) use($needle){
+            return stripos($r["pattern"] ?? "", $needle)!==false;
+        }));
+    }
+    if(count($results)>$limit){ $results=array_slice($results,0,$limit); }
 
-    $data1="class='text-capitalize' style='width:1%;text-align:center'";
-    $html[]="<table id='table-object-$aclid-$dir' class=\"table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th $data1>{order}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{type}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{pattern}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=false>&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center'>&nbsp;</th>";
-    $html[]="<th data-sortable=false></th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th class='center'>{order}</th>";
+    $html[]="<th>{pattern}</th>";
+    $html[]="<th>{type}</th>";
+    $html[]="<th class='center'>{enabled}</th>";
+    $html[]="<th class='center'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='pxro-$aclid-$dir-rows'>";
 
-    $TRCLASS="";
     $users=new usersMenus();
     $priv="AsDansGuardianAdministrator";
     if(!$users->AsDansGuardianAdministrator){
@@ -490,14 +433,12 @@ function rule_object_table():bool{
     }
 
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $ID=$ligne["ID"];
-        $aclname=$ligne["aclname"];
-        $enabled=$ligne["enabled"];
-        $xORDER=$ligne["xORDER"];
-        $pattern=$ligne["pattern"];
-        $description=$ligne["description"];
-        $objecttype=$ligne["objecttype"];
+        $ID=intval($ligne["id"] ?? 0);
+        $enabled=intval($ligne["enabled"] ?? 0);
+        $xORDER=intval($ligne["xOrder"] ?? 0);
+        $pattern=$ligne["pattern"] ?? "";
+        $description=$ligne["description"] ?? "";
+        $objecttype=intval($ligne["objectType"] ?? 0);
         if($objecttype==5){
             $catz=new mysql_catz();
             $pattern=$catz->CategoryIntToStr(intval($pattern));
@@ -507,7 +448,7 @@ function rule_object_table():bool{
         if($pattern=="*"){
             $pattern="{all}";
         }
-        $pattern=$tpl->td_href($pattern,"","Loadjs('$page?object-settings=$ID&aclid=$aclid')");
+        $pattern="<strong>$pattern</strong>";
 
 
 
@@ -517,42 +458,42 @@ function rule_object_table():bool{
         $down=$tpl->icon_down("Loadjs('$page?rule-object-move=$ID&dir=0&aclid=$aclid');");
         $delete=$tpl->icon_delete("Loadjs('$page?rule-object-delete=$ID&aclid=$aclid&md=$md');",$priv);
 
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td class=\"center\" style='width:1%' nowrap >$xORDER</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  nowrap>{$GLOBALS["OBJTYPES"][$objecttype]}</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  nowrap>$pattern</td>";
-        $html[]="<td style='vertical-align:middle;'>$description</td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$enable</center></td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$up&nbsp;&nbsp;$down</center></td>";
-        $html[]="<td style='vertical-align:middle;width:1%'  class='center' nowrap>$delete</center></td>";
-        $html[]="</tr>";
+        // OBJTYPES peut ne pas couvrir un type ajoute cote daemon.
+        $typeLabel=isset($GLOBALS["OBJTYPES"][$objecttype])
+            ?$GLOBALS["OBJTYPES"][$objecttype]
+            :"<span class='awc-none'>&mdash;</span>";
+
+        $h ="<tr id='$md'>";
+        $h.="<td class='center awc-mono'>$xORDER</td>";
+        $h.="<td><div class='awc-ident'>";
+        $h.="<span class='".($enabled==1?"awc-ico":"awc-ico awc-ico-off")."'><i class='fas fa-filter'></i></span>";
+        $h.="<span><span class='awc-name'>$pattern</span>";
+        if(trim((string)$description)!==""){$h.="<div class='awc-meta'>$description</div>";}
+        $h.="</span></div></td>";
+        $h.="<td><span class='awc-tag'>$typeLabel</span></td>";
+        $h.="<td class='center'>$enable</td>";
+        // Les trois dernieres cellules portaient chacune un "</center>" SANS
+        // ouvrant, soit trois balises orphelines par ligne.
+        $h.="<td class='center'><div class='awc-acts'>$up$down$delete</div></td>";
+        $h.="</tr>";
+        $html[]=$h;
     }
 
 
     $buttons="LoadAjaxTiny('proxy-acls-simple-object-$aclid-$dir','$page?object-button=$aclid&function=$function&dir=$dir')";
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span>{showing} ".count($results)."</span>";
+    $html[]="<span class='awc-pg' id='pxro-$aclid-$dir-pager'></span>";
+    $html[]="</div></div>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='7'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
+    $script="<script>$buttons\nNoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n</script>";
 
-    $html[]="<script>";
-
-        $html[]="$(document).ready(function() { $('#table-object-$aclid-$dir').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
-
-
-    $html[]="$buttons
-    NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-    
-</script>";
-
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n",$html))
+        .$script
+        .awc_pager_js(50,"pxro-$aclid-$dir-rows","pxro-$aclid-$dir-pager");
 
     return true;
 }
@@ -560,77 +501,31 @@ function rule_object_delete():bool{
     $tpl=new template_admin();
     $ID         = intval($_GET["rule-object-delete"]);
     $md         = $_GET["md"];
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $q->QUERY_SQL("DELETE FROM webfilters_simpleaobjects WHERE ID='$ID'");
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
+    [$ok,$err]=acls_api_send("DELETE","/proxy/simple-acls/objects/$ID");
+    if(!$ok){echo "alert('".$tpl->javascript_parse_text($err)."');";return false;}
     echo "$('#$md').remove();\n";
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return true;
 }
 function rule_object_move():bool{
     $tpl=new template_admin();
-    $ID=$_GET["rule-object-move"];
-    $aclid=intval($_GET["aclid"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $sql="SELECT xORDER FROM webfilters_simpleaobjects WHERE `ID`='$ID'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    if($GLOBALS["VERBOSE"]){echo "$ID, order={$ligne["xORDER"]};\n";}
-    $xORDER_ORG=intval($ligne["xORDER"]);
-    $xORDER=$xORDER_ORG;
-
-
-    if($_GET["dir"]==1){$xORDER=$xORDER_ORG-1;}
-    if($_GET["dir"]==0){$xORDER=$xORDER_ORG+1;}
-    if($xORDER<0){$xORDER=0;}
-    $sql="UPDATE webfilters_simpleaobjects SET xORDER=$xORDER WHERE `ID`='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-    if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-
-    if($_GET["dir"]==1){
-        $xORDER2=$xORDER+1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE webfilters_simpleaobjects SET xORDER=$xORDER2 WHERE ID<>$ID AND aclid=$aclid AND xORDER=$xORDER";
-        $q->QUERY_SQL($sql);
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-    }
-    if($_GET["dir"]==0){
-        $xORDER2=$xORDER-1;
-        if($xORDER2<0){$xORDER2=0;}
-        $sql="UPDATE webfilters_simpleaobjects SET xORDER=$xORDER2 WHERE ID<>{$_GET["rule-object-move"]} AND aclid=$aclid AND xORDER=$xORDER";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-        if($GLOBALS["VERBOSE"]){echo "$sql\n";}
-    }
-
-    $c=0;
-    $sql="SELECT ID FROM webfilters_simpleaobjects WHERE aclid=$aclid ORDER BY xORDER";
-    $results = $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-
-    foreach($results as $index=>$ligne) {
-        $c++;
-        $q->QUERY_SQL("UPDATE webfilters_simpleaobjects SET xORDER=$c WHERE `ID`={$ligne["ID"]}");
-        if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."');";return false;}
-
-    }
+    $ID  = intval($_GET["rule-object-move"] ?? 0);
+    $dir = intval($_GET["dir"] ?? 0);
+    if($ID <= 0){ return false; }
+    [$ok,$err]=acls_api_send("PUT","/proxy/simple-acls/objects/$ID/move",["dir"=>$dir]);
+    if(!$ok){echo "alert('".$tpl->javascript_parse_text($err)."');";return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return true;
 }
 function rule_settings_enable():bool{
     $tpl=new template_admin();
     $ID         = intval($_GET["rule-settings-enable"]);
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT enabled FROM webfilters_simpleacls WHERE ID='$ID'");
-    $enabled    = intval($ligne["enabled"]);
-    if($enabled==1){
-        $enabled=0;
-    }else{
-        $enabled=1;
-    }
-    $q->QUERY_SQL("UPDATE webfilters_simpleacls SET enabled=$enabled WHERE ID='$ID'");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
+    $ligne      = acls_api_get("/proxy/simple-acls/$ID");
+    if(!is_array($ligne)){echo $tpl->js_error("Could not load rule $ID");return false;}
+    $enabled    = intval($ligne["enabled"] ?? 0);
+    $enabled    = ($enabled==1) ? 0 : 1;
+    [$ok,$err]=acls_api_send("PUT","/proxy/simple-acls/$ID",["enabled"=>$enabled]);
+    if(!$ok){echo $tpl->js_error($err);return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks("Enable/Disable=$enabled for Proxy simple ACL rule $ID");
 }
@@ -638,41 +533,29 @@ function rule_settings_delete():bool{
     $tpl=new template_admin();
     $md=$_GET["md"];
     $ID         = intval($_GET["rule-settings-delete"]);
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT aclname FROM webfilters_simpleacls WHERE ID='$ID'");
-    $aclname=$ligne["aclname"];
+    $ligne      = acls_api_get("/proxy/simple-acls/$ID");
+    $aclname    = is_array($ligne) ? ($ligne["aclName"] ?? "rule $ID") : "rule $ID";
     return $tpl->js_confirm_delete("$aclname","rule-settings-delete",$ID,"$('#$md').remove();");;
 }
 function rule_settings_delete_confirm():bool{
     $tpl=new template_admin();
     $ID         = intval($_POST["rule-settings-delete"]);
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT aclname FROM webfilters_simpleacls WHERE ID='$ID'");
-    $aclname=$ligne["aclname"];
-    $q->QUERY_SQL("DELETE FROM webfilters_simpleaobjects WHERE aclid='$ID'");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
-    $q->QUERY_SQL("DELETE FROM webfilters_simpleacls WHERE ID='$ID'");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
-    $q->QUERY_SQL("DELETE FROM webfilters_simpleacls_privs WHERE aclid=$ID");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
-
-
+    $ligne      = acls_api_get("/proxy/simple-acls/$ID");
+    $aclname    = is_array($ligne) ? ($ligne["aclName"] ?? "rule $ID") : "rule $ID";
+    [$ok,$err]=acls_api_send("DELETE","/proxy/simple-acls/$ID");
+    if(!$ok){echo $tpl->js_error($err);return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks("Delete Proxy simple ACL rule $aclname");
 }
 function rule_object_enable():bool{
     $tpl=new template_admin();
     $ID         = intval($_GET["rule-object-enable"]);
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT enabled FROM webfilters_simpleaobjects WHERE ID='$ID'");
-    $enabled    = intval($ligne["enabled"]);
-    if($enabled==1){
-        $enabled=0;
-    }else{
-        $enabled=1;
-    }
-    $q->QUERY_SQL("UPDATE webfilters_simpleaobjects SET enabled=$enabled WHERE ID='$ID'");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error);return false;}
+    $ligne      = acls_api_get("/proxy/simple-acls/objects/$ID");
+    if(!is_array($ligne)){echo $tpl->js_error("Could not load object $ID");return false;}
+    $enabled    = intval($ligne["enabled"] ?? 0);
+    $enabled    = ($enabled==1) ? 0 : 1;
+    [$ok,$err]=acls_api_send("PUT","/proxy/simple-acls/objects/$ID",["enabled"=>$enabled]);
+    if(!$ok){echo $tpl->js_error($err);return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks("Enable/Disable=$enabled for Proxy simple ACL object $ID");
 }
@@ -710,8 +593,8 @@ function rule_settings_popup():bool{
     $tpl=new template_admin();
     $page       = CurrentPageName();
     $ID         = intval($_GET["rule-settings-popup"]);
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT * FROM webfilters_simpleacls WHERE ID='$ID'");
+    $ligne      = acls_api_get("/proxy/simple-acls/$ID");
+    if(!is_array($ligne)){ $ligne=[]; }
     $function=$_GET["function"];
 
     $jsafter[]="BootstrapDialog1.close();";
@@ -725,10 +608,10 @@ function rule_settings_popup():bool{
     $array_access[2]="{acl_object}";
 
     $form[]=$tpl->field_hidden("rule-settings", $ID);
-    $form[]=$tpl->field_text("aclname", "{rule_name}", $ligne["aclname"],true);
-    $form[]=$tpl->field_array_hash($array_access, "access", "{type}", $ligne["ruleaction"]);
-    $form[]=$tpl->field_text("description", "{description}", $ligne["zExplain"]);
-    $form[]=$tpl->field_array_hash(method_list(), "PortDirection", "{method}", intval($ligne["aclport"]));
+    $form[]=$tpl->field_text("aclname", "{rule_name}", $ligne["aclName"] ?? "",true);
+    $form[]=$tpl->field_array_hash($array_access, "access", "{type}", intval($ligne["ruleAction"] ?? 0));
+    $form[]=$tpl->field_text("description", "{description}", $ligne["zExplain"] ?? "");
+    $form[]=$tpl->field_array_hash(method_list(), "PortDirection", "{method}", intval($ligne["aclPort"] ?? 0));
 
     $html=$tpl->form_outside("", @implode("\n", $form),"","{apply}",
         @implode(";",$jsafter),"AsDansGuardianAdministrator");
@@ -736,19 +619,21 @@ function rule_settings_popup():bool{
     return true;
 }
 function rule_settings_save():bool{
-    $q          =new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl        = new template_admin();
     $tpl->CLEAN_POST_XSS();
-    $ID=$_POST["rule-settings"];
-    $aclname    =$q->sqlite_escape_string2($_POST["aclname"]);
-    $description=sqlite_escape_string2($_POST["description"]);
-    $access=intval($_POST["access"]);
-    $PortDirection=intval($_POST["PortDirection"]);
+    $ID         = intval($_POST["rule-settings"]);
+    $aclname    = trim($_POST["aclname"] ?? "");
+    $description= trim($_POST["description"] ?? "");
+    $access     = intval($_POST["access"]);
+    $PortDirection = intval($_POST["PortDirection"]);
 
-
-    $sql="UPDATE webfilters_simpleacls SET aclname='$aclname',zExplain='$description',ruleaction=$access,aclport=$PortDirection WHERE ID='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $q->mysql_error_html(true);return false;}
+    [$ok,$err]=acls_api_send("PUT","/proxy/simple-acls/$ID",[
+        "aclName"        => $aclname,
+        "zExplain"       => $description,
+        "ruleAction"     => $access,
+        "portDirection"  => $PortDirection,
+    ]);
+    if(!$ok){echo $tpl->post_error($err);return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks("Update Proxy simple ACL rule $aclname");
 }
@@ -766,16 +651,16 @@ function method_list():array{
         $localport[$HaClusterProxyPort]="HaCluster LB";
     }
 
-    $ql=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $sql="SELECT port,PortName,xnote FROM proxy_ports WHERE enabled=1";
-    $resultsPorts = $ql->QUERY_SQL($sql);
-    foreach ($resultsPorts as $index=>$lignePorts) {
-        $port = intval($lignePorts["port"]);
-        if($port==0){continue;}
-        $PortName=$lignePorts["PortName"];
-        $xnote=$lignePorts["xnote"];
-        $PortName="{listen_port} $port $PortName $xnote";
-        $localport[$port]=trim($PortName);
+    $resultsPorts=acls_api_get("/proxy/ports/list");
+    if(is_array($resultsPorts)){
+        foreach ($resultsPorts as $lignePorts) {
+            $port = intval($lignePorts["port"] ?? 0);
+            if($port==0){continue;}
+            if(!intval($lignePorts["enabled"] ?? 0)){continue;}
+            $PortName=$lignePorts["portName"] ?? "";
+            $PortName="{listen_port} $port $PortName";
+            $localport[$port]=trim($PortName);
+        }
     }
     return $localport;
 }
@@ -812,35 +697,25 @@ function new_rule_popup():bool{
 return true;
 }
 function new_rule_save():bool{
-    $q          =new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl        = new template_admin();
     $tpl->CLEAN_POST_XSS();
-    $aclport    =intval($_POST["PortDirection"]);
-    $aclname    =sqlite_escape_string2($_POST["aclname"]);
-    $TempName   =md5(time());
-    $description=sqlite_escape_string2($_POST["description"]);
-    $access=intval($_POST["access"]);
+    $aclport    = intval($_POST["PortDirection"]);
+    $aclname    = trim($_POST["aclname"] ?? "");
+    $description= trim($_POST["description"] ?? "");
+    $access     = intval($_POST["access"]);
 
-    $sql="INSERT INTO webfilters_simpleacls (aclname,enabled,acltpl,xORDER,aclport,aclgroup,zExplain,ruleaction)
-	VALUES ('$TempName',1,'','0','$aclport','0','$description',$access)";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
+    [$ok,$data,$err]=array_pad((array)acls_api_send("POST","/proxy/simple-acls",[
+        "aclName"      => $aclname,
+        "portDirection"=> $aclport,
+        "ruleAction"   => $access,
+        "aclGroup"     => 0,
+        "zExplain"     => $description,
+    ]),3,null);
+    if(!$ok){echo $tpl->post_error(is_string($data) ? $data : ($err ?? "unknown error"));return false;}
 
+    $LASTID = is_array($data) ? intval($data["id"] ?? 0) : 0;
+    writelogs("Create a new Proxy simple ACL $aclname #$LASTID",__FUNCTION__,__FILE__,__LINE__);
 
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM webfilters_simpleacls WHERE aclname='$TempName'");
-    $LASTID=$ligne["ID"];
-    writelogs("Create a new Proxy simple ACL $aclname #$LASTID",__FUNCTION__,__FILE__,__LINE__);;
-
-    $q->QUERY_SQL("UPDATE webfilters_simpleacls SET aclname='$aclname' WHERE ID='$LASTID'");
-
-    $c=0;
-    $sql="SELECT ID FROM webfilters_simpleacls WHERE aclport=$aclport ORDER BY xORDER";
-    $results = $q->QUERY_SQL($sql);
-    foreach($results as $index=>$ligne) {
-        $q->QUERY_SQL("UPDATE webfilters_simpleacls SET xORDER=$c WHERE `ID`={$ligne["ID"]}");
-        if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
-        $c++;
-    }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks("Create a new Proxy simple ACL $aclname");
 }
@@ -924,33 +799,44 @@ function cleanDomain($www):string{
 function domain_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $page=CurrentPageName();
     $ruleid=intval($_POST["add-domain"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $uid=$_SESSION["uid"];
     if($_SESSION["uid"]==-100){
         $uid="Manager";
     }
     $description=date("Y-m-d H:i:s").$tpl->javascript_parse_text(" {domain} {added} by $uid");
 
-    $order=1;
-    $tb=explode("\n",$_POST["domain"]);
+    $tb=explode("\n",$_POST["domain"] ?? "");
     foreach ($tb as $index=>$domain) {
+        $domain=trim($domain);
         if($domain=="*"){
-            $q->QUERY_SQL("INSERT INTO webfilters_simpleaobjects (aclid,objecttype,pattern,enabled,description,xORDER,direction) 
-        values ($ruleid,4,'*',1,'$description',$order,1)");
+            [$ok,$data]=acls_api_send("POST","/proxy/simple-acls/objects",[
+                "aclid"       => $ruleid,
+                "direction"   => 1,
+                "objecttype"  => 4,
+                "pattern"     => "*",
+                "description" => $description,
+            ]);
+            if(!$ok){ echo $tpl->post_error("$index.[*] - $data"); return false; }
             continue;
         }
 
         $www=cleanDomain($domain);
-        $order++;
         if(strlen($www)<3){
-            echo $tpl->post_error("{domain} $index.[$domain] - {domain_too_short}");
-            return false;
+            if(strlen(trim($domain))>0){
+                echo $tpl->post_error("{domain} $index.[$domain] - {domain_too_short}");
+                return false;
+            }
+            continue;
         }
-        $q->QUERY_SQL("INSERT INTO webfilters_simpleaobjects (aclid,objecttype,pattern,enabled,description,xORDER,direction) 
-        values ($ruleid,4,'$www',1,'$description',$order,1)");
-        if(!$q->ok){echo $tpl->post_error("$index.[$www] - $q->mysql_error");return false;}
+        [$ok,$data]=acls_api_send("POST","/proxy/simple-acls/objects",[
+            "aclid"       => $ruleid,
+            "direction"   => 1,
+            "objecttype"  => 4,
+            "pattern"     => $www,
+            "description" => $description,
+        ]);
+        if(!$ok){ echo $tpl->post_error("$index.[$www] - $data"); return false; }
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks_post("Add domain(s) to Proxy simple ACL $ruleid");
@@ -959,26 +845,29 @@ function domain_save(){
 function srcdomain_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $ruleid=intval($_POST["srcdomain-mac"]);
+    $ruleid=intval($_POST["add-srcdomain"]);
     if($ruleid==0){
         echo $tpl->post_error("{no_rule_selected}");
         return false;
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $uid=$_SESSION["uid"];
     if($_SESSION["uid"]==-100){
         $uid="Manager";
     }
     $description=date("Y-m-d H:i:s").$tpl->javascript_parse_text(" {srcdomain} {added} by $uid");
 
-    $order=1;
-    $tb=explode("\n",$_POST["srcdomain"]);
+    $tb=explode("\n",$_POST["srcdomain"] ?? "");
     foreach ($tb as $index=>$domain) {
-        $order++;
+        $domain=trim($domain);
         if(strlen($domain)<3){continue;}
-        $q->QUERY_SQL("INSERT INTO webfilters_simpleaobjects (aclid,objecttype,pattern,enabled,description,xORDER,direction) 
-        values ($ruleid,2,'$domain',1,'$description',$order,0)");
-        if(!$q->ok){echo $tpl->post_error("$index.[$domain] - $q->mysql_error");return false;}
+        [$ok,$data]=acls_api_send("POST","/proxy/simple-acls/objects",[
+            "aclid"       => $ruleid,
+            "direction"   => 0,
+            "objecttype"  => 2,
+            "pattern"     => $domain,
+            "description" => $description,
+        ]);
+        if(!$ok){echo $tpl->post_error("$index.[$domain] - $data");return false;}
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks_post("Add Client Hostname to Proxy simple ACL $ruleid");
@@ -991,21 +880,24 @@ function mac_save():bool{
         echo $tpl->post_error("{no_rule_selected}");
         return false;
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $uid=$_SESSION["uid"];
     if($_SESSION["uid"]==-100){
         $uid="Manager";
     }
     $description=date("Y-m-d H:i:s").$tpl->javascript_parse_text(" {mac} {added} by $uid");
 
-    $order=1;
-    $tb=explode("\n",$_POST["mac"]);
+    $tb=explode("\n",$_POST["mac"] ?? "");
     foreach ($tb as $index=>$domain) {
-        $order++;
+        $domain=trim($domain);
         if(strlen($domain)<3){continue;}
-        $q->QUERY_SQL("INSERT INTO webfilters_simpleaobjects (aclid,objecttype,pattern,enabled,description,xORDER,direction) 
-        values ($ruleid,1,'$domain',1,'$description',$order,0)");
-        if(!$q->ok){echo $tpl->post_error("$index.[$domain] - $q->mysql_error");return false;}
+        [$ok,$data]=acls_api_send("POST","/proxy/simple-acls/objects",[
+            "aclid"       => $ruleid,
+            "direction"   => 0,
+            "objecttype"  => 1,
+            "pattern"     => $domain,
+            "description" => $description,
+        ]);
+        if(!$ok){echo $tpl->post_error("$index.[$domain] - $data");return false;}
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks_post("Add MAC(s) to Proxy simple ACL $ruleid");
@@ -1018,24 +910,27 @@ function src_save():bool{
         echo $tpl->post_error("{no_rule_selected}");
         return false;
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $uid=$_SESSION["uid"];
     if($_SESSION["uid"]==-100){
         $uid="Manager";
     }
     $description=date("Y-m-d H:i:s").$tpl->javascript_parse_text(" {src} {added} by $uid");
 
-    $order=1;
-    $tb=explode("\n",$_POST["src"]);
+    $tb=explode("\n",$_POST["src"] ?? "");
     foreach ($tb as $index=>$domain) {
-        $order++;
+        $domain=trim($domain);
         if(strlen($domain)<3){continue;}
-        $q->QUERY_SQL("INSERT INTO webfilters_simpleaobjects (aclid,objecttype,pattern,enabled,description,xORDER,direction) 
-        values ($ruleid,0,'$domain',1,'$description',$order,0)");
-        if(!$q->ok){echo $tpl->post_error("$index.[$domain] - $q->mysql_error");return false;}
+        [$ok,$data]=acls_api_send("POST","/proxy/simple-acls/objects",[
+            "aclid"       => $ruleid,
+            "direction"   => 0,
+            "objecttype"  => 0,
+            "pattern"     => $domain,
+            "description" => $description,
+        ]);
+        if(!$ok){echo $tpl->post_error("$index.[$domain] - $data");return false;}
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
-    return admin_tracks_post("Add domain(s) to Proxy simple ACL $ruleid");
+    return admin_tracks_post("Add source(s) to Proxy simple ACL $ruleid");
 }
 function domain_popup():bool{
     $tpl=new template_admin();
@@ -1140,10 +1035,9 @@ function categories_popup(){
     include_once(dirname(__FILE__)."/ressources/class.categories.inc");
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $ruleid=$_GET["add-categories-popup"];
+    $ruleid=intval($_GET["add-categories-popup"]);
     $function   = $_GET["function"];
     $Ccategories=new categories();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $EnableNRDS=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableNRDS"));
     if($ruleid==0){
         echo $tpl->div_error("{no_rule_selected}");
@@ -1159,11 +1053,15 @@ function categories_popup(){
         $priv=true;
     }
 
-
-    $sql="SELECT pattern FROM webfilters_simpleaobjects WHERE aclid=$ruleid AND objecttype=5 ORDER BY pattern";
-    $results = $q->QUERY_SQL($sql);
-    foreach ($results as $index=>$ligne) {
-        $ALREADY[intval($ligne["pattern"])]=true;
+    // Build set of already-assigned category IDs (objecttype=5, direction=1)
+    $ALREADY=[];
+    $existingObjs=acls_api_get("/proxy/simple-acls/$ruleid/objects?direction=1");
+    if(is_array($existingObjs)){
+        foreach($existingObjs as $obj){
+            if(intval($obj["objectType"] ?? 0)==5){
+                $ALREADY[intval($obj["pattern"] ?? 0)]=true;
+            }
+        }
     }
 
     $qPos=new postgres_sql();
@@ -1178,18 +1076,12 @@ function categories_popup(){
     $sql="SELECT *  FROM personal_categories ORDER BY categoryname ASC";
     $results = $qPos->QUERY_SQL($sql);
     if(!$qPos->ok){echo $qPos->mysql_error_html(true);}
-    $TRCLASS=null;
-    $html[]="<div class=\"btn-group\" data-toggle=\"buttons\" style=''>";
-    $html[]="<table id='table-category-add' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=false class='text-capitalize' >&nbsp;</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[]="<th data-sortable=false>&nbsp;</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    // Le <div class="btn-group"> ouvert ici n'etait JAMAIS referme.
+    $html[]="<div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{category}</th>";
+    $html[]="<th class='center'>{select}</th>";
+    $html[]="</tr></thead><tbody id='pxrc-rows'>";
     while ($ligne = pg_fetch_assoc($results)) {
         if(preg_match("#^reserved#",$ligne['categoryname'])){continue;}
         if($ligne["category_icon"]==null){$ligne["category_icon"]="img/20-categories-personnal.png";}
@@ -1226,67 +1118,71 @@ function categories_popup(){
             $button = "<button class='btn btn-primary btn-xs' OnClick=\"$js\">{select}</button>";
         }
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='width:1%'><img src='$img' alt='none'></td>";
-        $html[]="<td $styleText nowrap style='width:1%'>".$tpl->_ENGINE_parse_body("{$ligne['categoryname']}")."</td>";
-        $html[]="<td $styleText style='width:99%;'>".$tpl->_ENGINE_parse_body("{$ligne['category_description']}$remote_explain$license")."</td>";
-        $html[]=$tpl->_ENGINE_parse_body("<td>$button</td>");
-        $html[]="</tr>";
-
+        $html[]=pxrules_category_row(
+            "<img src='".htmlspecialchars($img)."' alt='' style='width:20px;height:20px'>",
+            $tpl->_ENGINE_parse_body("{$ligne['categoryname']}"),
+            $tpl->_ENGINE_parse_body("{$ligne['category_description']}$remote_explain$license"),
+            $tpl->_ENGINE_parse_body($button),$md,$styleText);
     }
     $TheShieldsCguard=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("TheShieldsCguard"));
     if($TheShieldsCguard==1) {
         $cguardico = "<i class='fa-solid fa-shield-quartered'></i>";
         $CGuard_categories = $Ccategories->CGuard_categories();
         foreach ($CGuard_categories as $category_id => $categoryname) {
-            if (isset($ALREADY[$ligne["category_id"]])) {
+            if (isset($ALREADY[$category_id])) {
                 continue;
-            }
-            if ($TRCLASS == "footable-odd") {
-                $TRCLASS = null;
-            } else {
-                $TRCLASS = "footable-odd";
             }
 
             $md = md5("$category_id$categoryname");
             $js = "Loadjs('$page?category-post-js=$category_id&ruleid=$ruleid&md=$md&function=$function')";
             $button = "<button class='btn btn-primary btn-xs' OnClick=\"$js\">{select}</button>";
-            $html[] = "<tr class='$TRCLASS' id='$md'>";
-            $html[] = "<td style='width:1%'>$cguardico</td>";
-            $html[] = "<td>$categoryname</td>";
-            $html[] = "<td>$categoryname</td>";
-            $html[] = $tpl->_ENGINE_parse_body("<td>$button</td>");
-            $html[] = "</tr>";
-
+            // Le nom etait rendu DEUX fois, dans la colonne "categorie" et dans
+            // la colonne "description".
+            $html[]=pxrules_category_row($cguardico,htmlspecialchars((string)$categoryname),"",
+                $tpl->_ENGINE_parse_body($button),$md,null);
         }
     }
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-category-add').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ) });";
-    $html[]="</script>";
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'>";
+    $html[]="<span class='awc-pg' id='pxrc-pager'></span>";
+    $html[]="</div></div>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+    // Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+    // _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+    $script="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+        .$script
+        .awc_pager_js(50,"pxrc-rows","pxrc-pager");
 
 
 
 }
+/**
+ * Une categorie proposee a la selection.
+ *
+ * Le tableau portait QUATRE colonnes dont deux sans libelle, et le bloc
+ * CGuard rendait le nom deux fois de suite (colonne "categorie" et colonne
+ * "description"). L'icone devient la pastille d'identite et la description
+ * passe en sous-titre.
+ */
+function pxrules_category_row($icon,$name,$description,$button,$md,$styleText):string{
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'>$icon</span>";
+    $h.="<span><span class='awc-name' $styleText>$name</span>";
+    if(trim((string)$description)!==""){$h.="<div class='awc-meta' $styleText>$description</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='center'>$button</td>";
+    $h.="</tr>";
+    return $h;
+}
+
 function category_post_js():bool{
-    $page=CurrentPageName();
     header("content-type: application/x-javascript");
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl=new template_admin();
-    $category=$_GET["category-post-js"];
+    $category=intval($_GET["category-post-js"]);
     $ruleid=intval($_GET["ruleid"]);
     $md=$_GET["md"];
     $function   = $_GET["function"];
@@ -1295,11 +1191,26 @@ function category_post_js():bool{
         $uid="Manager";
     }
     $description=date("Y-m-d H:i:s").$tpl->javascript_parse_text(" {category} {added} by $uid");
-    $q->QUERY_SQL("DELETE FROM webfilters_simpleaobjects WHERE aclid=$ruleid AND pattern='$category' AND objecttype=5");;
-    $q->QUERY_SQL("INSERT INTO webfilters_simpleaobjects (aclid,pattern,direction,objecttype,enabled,description) VALUES ('$ruleid','$category',1,5,1,'$description')");
-    if(!$q->ok){echo "alert('".$tpl->javascript_parse_text($q->mysql_error)."')";return false;}
 
-    header("content-type: application/x-javascript");
+    // Remove any existing entry for this category in this rule (idempotent add)
+    $existingObjs=acls_api_get("/proxy/simple-acls/$ruleid/objects?direction=1");
+    if(is_array($existingObjs)){
+        foreach($existingObjs as $obj){
+            if(intval($obj["objectType"] ?? 0)==5 && intval($obj["pattern"] ?? -1)==$category){
+                acls_api_send("DELETE","/proxy/simple-acls/objects/".intval($obj["id"] ?? 0));
+            }
+        }
+    }
+
+    [$ok,$data]=acls_api_send("POST","/proxy/simple-acls/objects",[
+        "aclid"       => $ruleid,
+        "direction"   => 1,
+        "objecttype"  => 5,
+        "pattern"     => (string)$category,
+        "description" => $description,
+    ]);
+    if(!$ok){ echo "alert('".$tpl->javascript_parse_text($data)."')"; return false; }
+
     echo "$('#$md').remove();\n";
     if(strlen($function)>0){
         echo "$function();\n";
@@ -1309,14 +1220,13 @@ function category_post_js():bool{
 }
 function notify_message():bool{
     $page=CurrentPageName();
-    $ID         = $_GET["notify-message"];
+    $ID         = intval($_GET["notify-message"]);
     $tpl        = new template_admin();
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
 
-    $ligne=$q->mysqli_fetch_array("SELECT zTemplate FROM webfilters_simpleacls WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
+    $ligne=acls_api_get("/proxy/simple-acls/$ID");
+    if(!is_array($ligne)){echo $tpl->div_error("Could not load rule $ID");return false;}
 
-    $zTemplate=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["zTemplate"]);
+    $zTemplate=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["zTemplate"] ?? "");
 
 
     if(!isset($zTemplate["ENABLE"])){$zTemplate["ENABLE"]=0;}
@@ -1335,36 +1245,35 @@ function notify_message():bool{
     $form[]=$tpl->field_text("TITLE", "{subject}", $tpl->utf8_decode($zTemplate["TITLE"]));
     $form[]=$tpl->field_textareacode("BODY","{content}",$tpl->utf8_decode($zTemplate["BODY"]));
     $tpl->form_add_button("{help}", "Loadjs('fw.proxy.templates.error.squid.php?help-js')");
-    $jsafter="LoadAjax('table-acls-rules','$page?table=yes');Loadjs('$page?fill=$ID');";
+    $jsafter="Loadjs('$page?rule-fill=$ID');";
     echo $tpl->form_outside("($ID): {NotifyMessage}", $form,null,"{apply}",$jsafter,"AsDansGuardianAdministrator",false);
     return true;
 }
 function notify_message_save():bool{
     $tpl        = new template_admin();
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
     $tpl->CLEAN_POST();
 
-    if($_POST["ENABLE"]==1){
+    if(($_POST["ENABLE"] ?? 0)==1){
         $_POST["ENABLE_ERROR_PAGE"]=0;
     }
 
-    $ID=$_POST["notify-message"];
+    $ID=intval($_POST["notify-message"]);
     if($ID==0){
         echo $tpl->post_error("ID === 0 !!");
         return false;
     }
-    $ligne=$q->QUERY_SQL("SELECT zTemplate,aclname FROM webfilters_simpleacls WHERE ID=$ID");
-    $aclname=$ligne["aclname"];
-    $zTemplate=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["zTemplate"]);
+    $ligne=acls_api_get("/proxy/simple-acls/$ID");
+    if(!is_array($ligne)){echo $tpl->post_error("Could not load rule $ID");return false;}
+    $aclname=$ligne["aclName"] ?? "";
+    $zTemplate=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["zTemplate"] ?? "");
     foreach ($_POST as $key=>$value){
         $zTemplate[$key]=$tpl->utf8_encode($value);
     }
 
     $zTemplateSer=serialize($zTemplate);
     $zTemplateNew=base64_encode($zTemplateSer);
-    $sql="UPDATE webfilters_simpleacls SET zTemplate='$zTemplateNew' WHERE ID='$ID'";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo $tpl->post_error($q->mysql_error);return false;}
+    [$ok,$err]=acls_api_send("PUT","/proxy/simple-acls/$ID",["zTemplate"=>$zTemplateNew]);
+    if(!$ok){echo $tpl->post_error($err);return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/simplerules");
     return admin_tracks("Modify notification page of $aclname rule");
 }

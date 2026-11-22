@@ -1,3 +1,3 @@
-<quarantine_domains>Quarantine domain senders</quarantine_domains>
-<quarantine_reports>Quarantine reports</quarantine_reports>
-<quarantine_reports_text>You will find here all mails stored in your quarantine area</quarantine_reports_text>
+<quarantine_domains>Mittenti di dominio in quarantena</quarantine_domains>
+<quarantine_reports>Report di quarantena</quarantine_reports>
+<quarantine_reports_text>Qui troverai tutte le email memorizzate nella tua area di quarantena</quarantine_reports_text>

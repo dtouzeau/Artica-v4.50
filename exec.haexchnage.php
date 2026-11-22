@@ -106,7 +106,7 @@ function build_errorpage($HTTPCODE,$title,$content){
     $f[]="   <style type=\"text/css\" >";
     $f[]="::after, ::before { -webkit-box-sizing: border-box;-moz-box-sizing: border-box; box-sizing: border-box; }";
     $f[]=".gray-bg, .bg-muted { background-color: #f3f3f4;}";
-    $f[]="body {color: #676a6c;font-family: 'lato','Trebuchet MS', 'Helvetica', sans-serif;font-size: 13px;background-color: #2f4050;overflow-x: hidden; margin: 0; }";
+    $f[]="body {color: #676a6c;font-size: 13px;background-color: #2f4050;overflow-x: hidden; margin: 0; }";
     $f[]="html, body {height: 100%;}";
     $f[]="* { -webkit-box-sizing: border-box;-moz-box-sizing: border-box; box-sizing: border-box; }";
     $f[]="html { font-family: sans-serif; -webkit-text-size-adjust: 100%; }";
@@ -1154,7 +1154,7 @@ function rotate(){
     squid_admin_mysql(2,"Backup source file {success}","$LogRotatePath/haproxy.log.$suffix_time",__FILE__,__LINE__);
 
     if($BackupSquidLogsUseNas==1){
-        shell_exec("$php /usr/share/artica-postfix/exec.squid.rotate.php --backup-haproxy");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/logrotate/movenas");
     }
 
 }

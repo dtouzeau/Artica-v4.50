@@ -60,10 +60,16 @@ function popup(){
 
 }
 
+// Pentest 2026-11-04 : field (nom de colonne) et record etaient concatenes dans la requete.
+function fortizoom_field():string{
+    $field=(string)($_GET["field"] ?? "");
+    if(in_array($field,array("srcip","dstip","service"),true)){return $field;}
+    return "srcip";
+}
 function graph_top_sources_query(){
-    $record=$_GET["record"];
+    $record=pg_escape_string2((string)$_GET["record"]);
     $time=$_GET["time"];
-    $field=$_GET["field"];
+    $field=fortizoom_field();
     if($time=="today") {
         return "SELECT SUM(rcvbytes) as tsize,$field as zfield FROM fortigate_access WHERE srcip='$record' GROUP BY $field ORDER BY tsize DESC LIMIT 15";
     }
@@ -154,9 +160,10 @@ function graph_table(){
 }
 
 function linear_query(){
-    $record=$_GET["record"];
+    // Pentest 2026-11-04 : field (nom de colonne) et record etaient concatenes dans la requete.
+    $record=pg_escape_string2((string)$_GET["record"]);
     $time=$_GET["time"];
-    $field=$_GET["field"];
+    $field=fortizoom_field();
     if($time=="today") {
         return "SELECT SUM(rcvbytes) as tsize,zdate FROM fortigate_access WHERE $field='$record' GROUP BY zdate ORDER by zdate";
     }

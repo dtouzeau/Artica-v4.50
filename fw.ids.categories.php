@@ -1,6 +1,27 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 //$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+// Les repartiteurs ?enable-signature= et ?enable-firewall= appelaient
+// enable_signature() et enable_firewall(), qui ne sont definies NI dans ce
+// fichier NI ailleurs: les deux URL repondaient un fatal « Call to undefined
+// function ». La paire appartient a la famille Suricata (elle bascule une
+// signature dans suricata-rules.db et un drapeau dans suricata_sig) et n'a
+// rien a faire ici; seul fw.ids.rules.php produit reellement
+// « ?enable-signature= ».
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["single-disable"])){single_disable();exit;}
@@ -17,15 +38,9 @@ if(isset($_GET["filter-categories-popup"])){filter_categories_popup();exit;}
 if(isset($_GET["filter-classifications-js"])){filter_classifications();exit;}
 if(isset($_GET["filter-classifications-popup"])){filter_classifications_popup();exit;}
 
-if(isset($_GET["disable-all-js"])){disable_all_js();exit;}
 if(isset($_GET["search"])){search();exit;}
-if(isset($_GET["enable-signature"])){enable_signature();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
 if(isset($_GET["rule-js"])){rule_js();exit;}
 if(isset($_GET["rule-popup"])){rule_popup();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 if(isset($_GET["enable"])){enable_all_rules();exit;}
 if(isset($_GET["disable"])){disable_all_rules();exit;}
 
@@ -44,7 +59,9 @@ function rule_popup():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM rules WHERE sid='$id'");
+    // Pentest 2026-11-04 : rule-popup (GET) etait concatene dans la requete.
+    $rows=$q->QUERY_SQL_PARAMS("SELECT * FROM rules WHERE sid=?",array($id));
+    $ligne=(is_array($rows) && isset($rows[0]))?$rows[0]:array();
 
     $tpl->table_form_field_text("{signature}",$ligne["sid"],ico_script);
     $tpl->table_form_field_text("{description}",$ligne["msg"],ico_infoi);
@@ -98,7 +115,8 @@ function enable_all_rules():bool{
     $classtype=$_GET["classtype"];
     $family=$_GET["family"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
-    $q->QUERY_SQL("UPDATE rules SET enabled=1 WHERE classtype='$classtype' AND source_file='$family'");
+    // Pentest 2026-11-04 : classtype/family (GET) etaient concatenes dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=1 WHERE classtype=? AND source_file=?",array($classtype,$family));
     if(!$q->ok){
         echo $tpl->js_error($q->mysql_error);
         return false;
@@ -126,7 +144,8 @@ function disable_all_rules():bool{
     $classtype=$_GET["classtype"];
     $family=$_GET["family"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
-    $q->QUERY_SQL("UPDATE rules SET enabled=0 WHERE classtype='$classtype' AND source_file='$family'");
+    // Pentest 2026-11-04 : classtype/family (GET) etaient concatenes dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=0 WHERE classtype=? AND source_file=?",array($classtype,$family));
     if(!$q->ok){
         echo $tpl->js_error($q->mysql_error);
         return false;
@@ -168,12 +187,12 @@ function browse_search():bool
     $classtype = $_GET["classtype"];
     $family = $_GET["family"];
     $t=time();
-    $html[] = "<table id='table-suricata-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[] = "<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[] = "<thead>";
     $html[] = "<tr>";
     $html[] = "<th data-sortable=true class='text-capitalize' data-type='text'>{rule}</th>";
     $html[] = "<th data-sortable=true class='text-capitalize' data-type='text'>{description}</th>";
-    $html[] = "<th data-sortable=true class='text-capitalize center' data-type='text'></center></th>";
+    $html[] = "<th data-sortable=true class='text-capitalize center' data-type='text'></th>";
     $html[] = "</thead>";
     $html[] = "<tbody>";
 
@@ -181,15 +200,19 @@ function browse_search():bool
 
 
     $search=$_GET["search"];
+    $searchq="";$searchBind="";
     if(strlen($search)>2){
         $SerchOrg=trim($search);
         $search="*$search*";
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $searchq="AND msg LIKE '$search'";
+        // Pentest 2026-11-04 : search/classtype/family (GET) etaient concatenes dans la requete.
+        $searchq="AND msg LIKE ?";
+        $searchBind=$search;
         if(intval($SerchOrg)>0){
-            $searchq="AND sid='$SerchOrg'";
+            $searchq="AND sid=?";
+            $searchBind=$SerchOrg;
         }
     }
     $prios[0]="<span class='label label-default'>{none}</span>";
@@ -198,15 +221,17 @@ function browse_search():bool
     $prios[3]="<span class='label label-info'>{low}</span>";
     $prios[4]="<span class='label label-default'>{info}</span>";
     $td1prc="style='vertical-align:middle;width=1%' class='center' nowrap";
-    $sql="SELECT * FROM rules WHERE classtype='$classtype' AND source_file='$family' AND enabled=$enabled $searchq ORDER BY sid LIMIT 512";
+    $sql="SELECT * FROM rules WHERE classtype=? AND source_file=? AND enabled=$enabled $searchq ORDER BY sid LIMIT 512";
+    $binds=array($classtype,$family);
+    if($searchq<>""){$binds[]=$searchBind;}
 
-    $results = $q->QUERY_SQL($sql);
+    $results = $q->QUERY_SQL_PARAMS($sql,$binds);
     if(!$q->ok){
         echo $tpl->div_error($q->mysql_error);
     }
     $TRCLASS=null;
     foreach ($results as $index=>$ligne) {
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $text_class=null;
         $description=$ligne["msg"];
         $priority=intval($ligne["priority"]);
@@ -239,14 +264,13 @@ function browse_search():bool
     $html[]="</td>";
     $html[]="</tr>";
     $html[]="</tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
     $html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-suricata-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$html));
     return true;
 
 }
@@ -257,12 +281,12 @@ function search(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 
-    $html[]="<table id='table-suricata-all-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{categories}</th>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{families}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{enabled}</center></th>";
+	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{enabled}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{rules}</th>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{action}</th>";
 	$html[]="</tr>";
@@ -288,7 +312,7 @@ function search(){
 
 	$TRCLASS=null;
     while ($ligne = pg_fetch_assoc($results)) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
         $classtype=$ligne["classtype"];
         $source_file=$ligne["source_file"];
 
@@ -322,7 +346,7 @@ function search(){
 	$html[]="</td>";
 	$html[]="</tr>";
 	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</table></div></div></div>";
 
     $jscompile=  $tpl->framework_buildjs(
         "suricata:/build/rules",
@@ -345,10 +369,9 @@ function search(){
 	$tt
 	$headsjs
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-suricata-all-rules').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
 
-			echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+			echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$html));
 return true;
 }
 
@@ -356,7 +379,8 @@ function single_disable():bool{
 
     $id=$_GET["single-disable"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
-    $q->QUERY_SQL("UPDATE rules SET enabled=0 WHERE sid='$id'");
+    // Pentest 2026-11-04 : single-disable (GET) etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=0 WHERE sid=?",array($id));
     if(!$q->ok){
         return false;
     }
@@ -368,7 +392,9 @@ function single_disable():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/categories/build");
     header("content-type: application/x-javascript");
     $q=new postgres_sql();
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_categories WHERE classtype='$classtype' AND source_file='$family'");
+    // Pentest 2026-11-04 : classtype/family (GET) etaient concatenes dans la requete.
+    $res=$q->QUERY_SQL_PARAMS("SELECT * FROM suricata_categories WHERE classtype=$1 AND source_file=$2",array($classtype,$family));
+    $ligne=$res?@pg_fetch_assoc($res):false;
     $Array=td_core($ligne);
     echo "// [$id] - - $classtype/$family\n";
     echo "$('#$md').remove();\n";
@@ -379,7 +405,8 @@ function single_enable():bool{
 
     $id=$_GET["single-enable"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
-    $q->QUERY_SQL("UPDATE rules SET enabled=1 WHERE sid='$id'");
+    // Pentest 2026-11-04 : single-enable (GET) etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=1 WHERE sid=?",array($id));
     if(!$q->ok){
         return false;
     }
@@ -397,8 +424,10 @@ function single_enable():bool{
 }
 function jsArray($classtype,$family):string{
     $q=new postgres_sql();
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_categories 
-         WHERE classtype='$classtype' AND source_file='$family'");
+    // Pentest 2026-11-04 : classtype/family (GET) etaient concatenes dans la requete.
+    $res=$q->QUERY_SQL_PARAMS("SELECT * FROM suricata_categories 
+         WHERE classtype=$1 AND source_file=$2",array($classtype,$family));
+    $ligne=$res?@pg_fetch_assoc($res):false;
     $Array=td_core($ligne);
     return $Array["JS"];
 }

@@ -49,7 +49,11 @@ function itchart_enable():bool{
     if(intval($ligne["enabled"])==1){$enabled=0;}else{$enabled=1;}
     $q->QUERY_SQL("UPDATE itcharters SET enabled='$enabled' WHERE ID='$ID'");
     if(!$q->ok){echo $tpl->js_mysql_alert($q->mysql_error);return false;}
-    itchart_compile();
+    // Contexte Loadjs: la reponse est evaluee comme du JavaScript, une erreur
+    // s'y affiche donc correctement.
+    if(!itchart_compile()){
+        return $tpl->js_error($GLOBALS["ITCHART_COMPILE_ERROR"]);
+    }
     return admin_tracks("Enabled ITChart $ID");
 
 }
@@ -99,11 +103,18 @@ function itchart_ad_save():bool{
         }else{$redis_server=$ClusterMaster;}
     }
 
+    // "new Redis()" sans extension chargee est un Error FATAL, pas une
+    // exception: le catch ne l'attrape pas et la reponse partait vide.
+    if(!class_exists("Redis")){
+        echo $tpl->js_mysql_alert("{REDIS_PHP_EXTENSION_NOT_LOADED}");
+        return false;
+    }
+
     $redis=new Redis();
     try {
         $redis->connect($redis_server,$redis_port);
     } catch (Exception $e) {
-        echo $tpl->js_mysql_alert($e->getMessage());
+        echo $tpl->js_mysql_alert("Redis $redis_server:$redis_port - ".$e->getMessage());
         return false;
     }
 
@@ -270,6 +281,10 @@ function itchart_delete_confirm(){
     $itchart_name=itchart_name($ID);
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $q->QUERY_SQL("DELETE FROM itcharters WHERE ID=$ID");
+    // Suppression voulue : sur un LB HaCluster, autorise la publication d'une table vide
+    // pendant une heure (ITCharter.emptyPublishAction). Sans elle, une table vide est
+    // prise pour une base perdue et le LB reprend la copie publiée.
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("ITChartLastDeleteTime",time());
 
     $ClusterEnabled=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartClusterEnabled"));
     $ClusterMaster=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ITChartClusterMaster"));
@@ -284,11 +299,19 @@ function itchart_delete_confirm(){
         }else{$redis_server=$ClusterMaster;}
     }
 
+    // Contrat js_confirm_delete: toute reponse non vide vaut erreur et la ligne
+    // n'est pas retiree du tableau. La suppression en base est deja faite plus
+    // haut; l'echec du menage Redis va au journal, pas a l'ecran.
+    if(!class_exists("Redis")){
+        writelogs("{REDIS_PHP_EXTENSION_NOT_LOADED}",__FUNCTION__,__FILE__,__LINE__);
+        return false;
+    }
+
     $redis=new Redis();
     try {
         $redis->connect($redis_server,$redis_port);
     } catch (Exception $e) {
-        echo $tpl->js_mysql_alert($e->getMessage());
+        writelogs("Redis $redis_server:$redis_port - ".$e->getMessage(),__FUNCTION__,__FILE__,__LINE__);
         return false;
     }
 
@@ -299,7 +322,12 @@ function itchart_delete_confirm(){
 
     admin_tracks("Removed ITChart $itchart_name");
 
-    itchart_compile();
+    // Contrat js_confirm_delete: toute reponse non vide vaut erreur et empeche
+    // le rafraichissement. La suppression en base a reussi; l'echec de
+    // publication se lit dans l'onglet {status}, on se contente du journal.
+    if(!itchart_compile()){
+        writelogs("itchart_compile: {$GLOBALS["ITCHART_COMPILE_ERROR"]}",__FUNCTION__,__FILE__,__LINE__);
+    }
 }
 
 function itchart_name($ID):string{
@@ -427,7 +455,8 @@ function itchart_pdf_uploaded():bool{
     $filename=str_replace(" ","_",$filename);
     $filename=str_replace("'","_",$filename);
 
-    $q->QUERY_SQL("UPDATE itcharters SET enablepdf=1,PdfFileName='$filename',PdfFileSize='$size',PdfContent='$data' WHERE ID=$ID");
+    // Pentest 2026-11-04 : le nom du fichier televerse etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE itcharters SET enablepdf=1,PdfFileName=?,PdfFileSize=?,PdfContent=? WHERE ID=?",array($filename,intval($size),$data,$ID));
     if(!$q->ok){echo $tpl->js_error($q->mysql_error); return false;}
     echo "LoadAjax('itcharter-pdf-$ID','$page?itchart-pdf2=$ID')\n";
     echo "LoadAjax('itcharters-table','$page?table=yes');";
@@ -510,7 +539,7 @@ function itchart_pdf_save():bool{
     $pdfheight=intval($_POST["pdfheight"]);
 
     $q->QUERY_SQL("UPDATE itcharters SET enablepdf=$enablepdf,pdfwidth=$pdfwidth,pdfheight=$pdfheight WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/reconfigure");
     return admin_tracks("Update ITChart with pdf enable=$enablepdf , $pdfwidth x $pdfheight");
@@ -523,7 +552,7 @@ function itchart_content_save():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $content=base64_encode($_POST["ChartContent"]);
     $q->QUERY_SQL("UPDATE itcharters SET ChartContent='$content' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/reconfigure");
     $len=strlen($content);
     return admin_tracks("Update ITChart #$ID with content $len bytes, ");
@@ -594,7 +623,7 @@ function itchart_headers_save():bool{
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $content=base64_encode($_POST["ChartHeaders"]);
     $q->QUERY_SQL("UPDATE itcharters SET ChartHeaders='$content' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
     return admin_tracks("Save IT Chart Headers #$ID");
 }
 
@@ -602,34 +631,47 @@ function itchart_settings_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ID=$_POST["itchart-settings"];
+    // Pentest 2026-11-04 : les NOMS des champs POST (colonnes) et l'ID etaient concatenes
+    // dans la requete : colonnes en liste blanche, valeurs et ID lies.
+    $ID=intval($_POST["itchart-settings"]);
+    $allowedColumns=array("title","TextButton","TextIntro");
+    $fields=array();$values=array();$edit=array();$binds=array();
 
     unset($_POST["itchart-settings"]);
     foreach ($_POST as $key=>$value){
+        if(!in_array($key,$allowedColumns,true)){continue;}
         $fields[]="`$key`";
-        $values[]="'".$q->sqlite_escape_string2($value)."'";
-        $edit[]="`$key`='".$q->sqlite_escape_string2($value)."'";
+        $values[]="?";
+        $edit[]="`$key`=?";
+        $binds[]=$value;
 
     }
+    if(count($fields)==0){return false;}
 
     if($ID>0){
-        $sql="UPDATE itcharters SET ".@implode(",", $edit)." WHERE ID='$ID'";
+        $sql="UPDATE itcharters SET ".@implode(",", $edit)." WHERE ID=?";
+        $binds[]=$ID;
     }else{
         $fields[]="`ChartHeaders`";
         $fields[]="`explain`";
         $values[]="''";
         $values[]="''";
         $sql="INSERT INTO itcharters (".@implode(",", $fields).") VALUES (".@implode(",", $values).")";
-        $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
-        itchart_compile();
+        $q->QUERY_SQL_PARAMS($sql,$binds);
+        if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
+        // Contrat form_outside: on n'echo rien quand l'enregistrement a reussi.
+        if(!itchart_compile()){
+            writelogs("itchart_compile: {$GLOBALS["ITCHART_COMPILE_ERROR"]}",__FUNCTION__,__FILE__,__LINE__);
+        }
         return admin_tracks_post("Create a new IT Chart");
     }
 
 
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return false;}
-    itchart_compile();
+    $q->QUERY_SQL_PARAMS($sql,$binds);
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));return false;}
+    if(!itchart_compile()){
+        writelogs("itchart_compile: {$GLOBALS["ITCHART_COMPILE_ERROR"]}",__FUNCTION__,__FILE__,__LINE__);
+    }
     return admin_tracks_post("Save IT Chart #$ID parameters");
 }
 
@@ -661,7 +703,13 @@ function table(){
     $html[]="</thead>";
     $html[]="<tbody>";
 
-    itchart_compile();
+    // itchart_compile() a ete retire d'ici: AFFICHER la liste ouvrait une
+    // connexion Redis et reecrivait itcharts.ids a chaque rendu. En panne, la
+    // fonction ecrivait un $.alert(...) JavaScript AVANT le tableau, dans un
+    // fragment injecte en HTML -- le code source s'affichait donc en clair au
+    // milieu de la page (signale le 2026-09-02). La compilation appartient aux
+    // quatre handlers de mutation, qui l'appellent deja; l'etat du service se
+    // lit dans l'onglet {status}.
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $results=$q->QUERY_SQL("SELECT ID,enabled,title,TextIntro,TextButton,enablepdf FROM itcharters ORDER BY ID DESC");
     if(!$q->ok){$tpl->div_error($q->mysql_error);}
@@ -679,7 +727,7 @@ function table(){
         if($enablepdf==1){$PDF="<i class='fas fa-check'></i>";}
         $md         = md5(serialize($ligne));
         $td1prc     = $tpl->table_td1prc($text_class);
-        $td_enable  = $tpl->icon_check($ligne["enabled"],"Loadjs('$page?itchart-enable=$ID}')","AsProxyMonitor");
+        $td_enable  = $tpl->icon_check($ligne["enabled"],"Loadjs('$page?itchart-enable=$ID')",null,"AsProxyMonitor");
         $delete     = $tpl->icon_delete("Loadjs('$page?itchart-delete=$ID&md=$md')");
 
         $html[]="<tr class='$TRCLASS' id='$md'>";
@@ -727,7 +775,22 @@ function table(){
 
 }
 
+/**
+ * Publie dans la base Redis DEDIEE du service (127.0.0.1:6123 -- instance
+ * propre a ITCharter, cf. articarest/ITCharter/ITCharter.go, ce n'est PAS la
+ * Valkey du systeme) la liste des chartes actives, puis demande au demon de se
+ * reconfigurer.
+ *
+ * N'ECHO RIEN. Elle est appelee depuis quatre contextes aux contrats
+ * incompatibles: un handler Loadjs (la reponse est du JavaScript), deux
+ * enregistrements form_outside / js_confirm_delete (ou toute reponse non vide
+ * vaut erreur et empeche la fermeture du dialogue) et le rendu HTML du
+ * tableau. Elle rend false et depose le motif dans
+ * $GLOBALS["ITCHART_COMPILE_ERROR"]; a l'appelant de le presenter dans la
+ * forme que SON contrat impose.
+ */
 function itchart_compile():bool{
+    $GLOBALS["ITCHART_COMPILE_ERROR"]="";
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $results=$q->QUERY_SQL("SELECT ID FROM itcharters WHERE enabled=1 ORDER BY ID DESC");
     $icharters=array();
@@ -751,12 +814,21 @@ function itchart_compile():bool{
         }else{$redis_server=$ClusterMaster;}
     }
 
+    // Sans l'extension, "new Redis()" est un Error fatal, pas une exception:
+    // la reponse partait vide et la page appelante restait blanche.
+    if(!class_exists("Redis")){
+        $GLOBALS["ITCHART_COMPILE_ERROR"]="{REDIS_PHP_EXTENSION_NOT_LOADED}";
+        return false;
+    }
+
     $redis=new Redis();
     try {
         $redis->connect($redis_server,$redis_port);
     } catch (Exception $e) {
-        $tpl=new template_admin();
-        echo $tpl->js_mysql_alert($e->getMessage());
+        // Nommer l'hote et le port: le message disait "SQL", l'administrateur
+        // partait chercher MySQL alors que c'est le Redis du service qui est
+        // arrete.
+        $GLOBALS["ITCHART_COMPILE_ERROR"]="Redis $redis_server:$redis_port - ".$e->getMessage();
         return false;
     }
 

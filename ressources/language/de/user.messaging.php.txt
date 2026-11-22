@@ -1,4 +1,4 @@
-<email_infos_query>The displayed query depend of emails listed below, if you not see some mails events according a specific inbound mail address that is not listed, add this email into your account.[br]
-especially if you have set mail-retreival rules.</email_infos_query>
-<user_fetchmail_explain>Import your mails stored in your Internet mailboxes in your local mailbox</user_fetchmail_explain>
-<user_mailman_explain>Manage email distributions lists, create email forums</user_mailman_explain>
+<email_infos_query>Die angezeigte Abfrage h&#228;ngt von den unten aufgef&#252;hrten E-Mails ab. Wenn Sie einige E-Mail-Ereignisse f&#252;r eine bestimmte eingehende E-Mail-Adresse nicht sehen, die nicht aufgef&#252;hrt ist, f&#252;gen Sie diese E-Mail zu Ihrem Konto hinzu.[br]
+Insbesondere, wenn Sie E-Mail-Abrufregeln festgelegt haben.</email_infos_query>
+<user_fetchmail_explain>Ihre in Ihren Internet-Postf&#228;chern gespeicherten E-Mails in Ihr lokales Postfach importieren</user_fetchmail_explain>
+<user_mailman_explain>E-Mail-Verteilerlisten verwalten, E-Mail-Foren erstellen</user_mailman_explain>

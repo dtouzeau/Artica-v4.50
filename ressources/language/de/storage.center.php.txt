@@ -1,19 +1,19 @@
-<ADD_NEW_DEPLOY_TASK>Add a new deploy task</ADD_NEW_DEPLOY_TASK>
-<ADD_NEW_DEPLOY_TASK_TEXT>Add a new task that will perform remote installation to this computer</ADD_NEW_DEPLOY_TASK_TEXT>
-<ADD_NEW_SOFTWARE>Add a new software</ADD_NEW_SOFTWARE>
-<ADD_NEW_SOFTWARE_TEXT>Create a new entry in order to perform deployment on target remote computers</ADD_NEW_SOFTWARE_TEXT>
-<APP_WINEXE_NOT_INSTALLED>Windows remote execution is not installed</APP_WINEXE_NOT_INSTALLED>
-<APP_WINEXE_NOT_INSTALLED_TEXT>if Windows remote execution is not installed you are not be able to perform remote softwares deployment trough Artica[br]
-Click on this icon to perform Windows remote execution installation</APP_WINEXE_NOT_INSTALLED_TEXT>
+<ADD_NEW_DEPLOY_TASK>Neue Bereitstellungsaufgabe hinzuf&#252;gen</ADD_NEW_DEPLOY_TASK>
+<ADD_NEW_DEPLOY_TASK_TEXT>F&#252;gen Sie eine neue Aufgabe hinzu, die eine Remote-Installation auf diesem Computer durchf&#252;hrt</ADD_NEW_DEPLOY_TASK_TEXT>
+<ADD_NEW_SOFTWARE>Neue Software hinzuf&#252;gen</ADD_NEW_SOFTWARE>
+<ADD_NEW_SOFTWARE_TEXT>Erstellen Sie einen neuen Eintrag, um die Bereitstellung auf Ziel-Remote-Computern durchzuf&#252;hren</ADD_NEW_SOFTWARE_TEXT>
+<APP_WINEXE_NOT_INSTALLED>Windows-Remote-Ausf&#252;hrung ist nicht installiert</APP_WINEXE_NOT_INSTALLED>
+<APP_WINEXE_NOT_INSTALLED_TEXT>Wenn die Windows-Remote-Ausf&#252;hrung nicht installiert ist, k&#246;nnen Sie keine Remote-Software-Bereitstellung &#252;ber Artica durchf&#252;hren[br]
+Klicken Sie auf dieses Symbol, um die Windows-Remote-Ausf&#252;hrung zu installieren</APP_WINEXE_NOT_INSTALLED_TEXT>
 <commandline>Befehlszeile</commandline>
-<ExecuteAfter>Execute after</ExecuteAfter>
-<MinutesToWait>Max minutes processing</MinutesToWait>
-<package>Package</package>
+<ExecuteAfter>Ausf&#252;hren nach</ExecuteAfter>
+<MinutesToWait>Maximale Verarbeitungsminuten</MinutesToWait>
+<package>Paket</package>
 <refresh>Aktualisieren</refresh>
-<remote_install>Remote install</remote_install>
-<remote_install_text>Create tasks in order to perform remote installations</remote_install_text>
-<resfresh_software_list>Refresh softwares list</resfresh_software_list>
-<resfresh_tasks_list>Refresh install tasks list</resfresh_tasks_list>
-<restart_task>Restart task</restart_task>
-<restart_task_text>Retry task execution another time</restart_task_text>
-<runas>Run as</runas>
+<remote_install>Remote-Installation</remote_install>
+<remote_install_text>Aufgaben erstellen, um Remote-Installationen durchzuf&#252;hren</remote_install_text>
+<resfresh_software_list>Software-Liste aktualisieren</resfresh_software_list>
+<resfresh_tasks_list>Liste der Installationsaufgaben aktualisieren</resfresh_tasks_list>
+<restart_task>Aufgabe neu starten</restart_task>
+<restart_task_text>Aufgabenausf&#252;hrung zu einem anderen Zeitpunkt wiederholen</restart_task_text>
+<runas>Ausf&#252;hren als</runas>

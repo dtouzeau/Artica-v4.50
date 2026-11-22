@@ -78,7 +78,7 @@ class Chartjs
             if($i>10){
                 $i=0;
             }
-            $labels[]="'$label'";
+            $labels[]="'".req_js($label)."'"; // Pentest 2026-11-04 : libelle issu des donnees (XSS stockee).
             $zData[]=$value;
 
             $BColors[]="'$bgcolors[$i]'";
@@ -183,7 +183,7 @@ class Chartjs
         $zData=array();
         $specLabels=array();
         foreach ($this->PieDatas as $label=>$value){
-            $labels[]="'$label'";
+            $labels[]="'".req_js($label)."'"; // Pentest 2026-11-04 : libelle issu des donnees (XSS stockee).
             $zData[]=$value;
 
             if($this->DataToSize){

@@ -12,20 +12,20 @@ Uma vez que s%C3%B3 precisamos da chave, o valor pode ser escolhido livremente, 
 [li]42:4A:62:71:DF:FC:3D:47:FA:27:77:D0:BB:46:8B:05 *[/li]
 [/blk]</client_certificate_fingerprints_text>
 <download_certificates>Descarregar certificados</download_certificates>
-<download_windows_certificate>Download Outlook certificate</download_windows_certificate>
-<enable_tls_postfix>Enable TLS in postfix...</enable_tls_postfix>
+<download_windows_certificate>Transferir o certificado do Outlook</download_windows_certificate>
+<enable_tls_postfix>Ativar TLS no postfix...</enable_tls_postfix>
 <encrypt_explain>Anunciam apoio STARTTLS a clientes SMTP, e exigem que os clientes utilizem encriptaç%C3£o TLS[br].
 Segundo o RFC 2487, isto N%C3%83O DEVE ser aplicado no caso de um servidor SMTP publicamente referenciado [br].
 Em vez disso, esta opç%C3£o deve ser utilizada apenas em servidores dedicados.</encrypt_explain>
-<fingerprint>Fingerprint</fingerprint>
+<fingerprint>Impress&#227;o digital</fingerprint>
 <generate_certificate>Gerar novo certificado</generate_certificate>
-<generate_cert_ok>Generating certificate order OK, testing it</generate_cert_ok>
+<generate_cert_ok>Gerar a ordem de certificado OK, a test&#225;-la</generate_cert_ok>
 <host>Host</host>
-<may_explain>Announce STARTTLS support to SMTP clients, but do not require that clients use TLS encryption</may_explain>
-<none_explain>TLS will not be used</none_explain>
-<restarting_postfix>Apply settings to postfix and restart it OK</restarting_postfix>
-<save_cert_ok>Saving certificate into disk OK</save_cert_ok>
-<smtpd_tls_ask_ccert>Ask a remote SMTP client for a client certificate</smtpd_tls_ask_ccert>
+<may_explain>Anunciar o suporte a STARTTLS aos clientes SMTP, mas n&#227;o exigir que os clientes usem criptografia TLS</may_explain>
+<none_explain>O TLS n&#227;o ser&#225; usado</none_explain>
+<restarting_postfix>Aplicar as configura&#231;&#245;es ao postfix e reinici&#225;-lo OK</restarting_postfix>
+<save_cert_ok>Guardar o certificado no disco OK</save_cert_ok>
+<smtpd_tls_ask_ccert>Pedir um certificado de cliente a um cliente SMTP remoto</smtpd_tls_ask_ccert>
 <smtpd_tls_ask_ccert_text>Esta informaç%C3£o é necess%C3¡ria para a transmiss%C3£o de correio baseado em certificados com, por exemplo, a caracter%C3%ADstica &quot;permit tls client certs&quot; [br].
 Alguns clientes como a Netscape reclamar%C3£o se n%C3£o houver certificado dispon%C3%ADvel (para a lista de CAs em $smtpd_tls_CAfile) ou
 oferecer m%C3%BAltiplos certificados de clientes à escolha [br].
@@ -39,7 +39,7 @@ b]Recebido: cabeçalhos de mensagem[/b] que incluem informaç%C3µes sobre o pro
 cliente CommonName e emissor do certificado de cliente CommonName[br].
 Isto é desativado por padr%C3£o, pois as informaç%C3µes podem ser modificadas em trânsito através de outros servidores de correio.[br]
 Somente as informaç%C3µes que foram registradas pelo destino final podem ser confi%C3¡veis.</smtpd_tls_received_header_text>
-<smtpd_tls_req_ccert>Mandatory client certificate</smtpd_tls_req_ccert>
+<smtpd_tls_req_ccert>Certificado de cliente obrigat&#243;rio</smtpd_tls_req_ccert>
 <smtpd_tls_req_ccert_text>Com encriptaç%C3£o TLS obrigat%C3%B3ria, é necess%C3¡rio um certificado de cliente SMTP remoto de confiança a fim de permitir que as ligaç%C3µes TLS prossigam.[br]
 Quando a encriptaç%C3£o TLS é opcional, esta configuraç%C3£o é ignorada com um aviso escrito no registo de correio.</smtpd_tls_req_ccert_text>
 <smtp_tls_mandatory_protocols>Protocolos obrigat%C3%B3rios</smtp_tls_mandatory_protocols>
@@ -56,11 +56,11 @@ Desde que a vers%C3£o 2 do SSL conhece fraquezas de protocolo e est%C3¡ agora 
 Isto significa que, por defeito, a vers%C3£o 2 do SSL n%C3£o ser%C3¡ utilizada ao n%C3%ADvel de segurança &quot;encriptar&quot; e superior.[br]
 Ver a documentaç%C3£o do parâmetro smtp_tls_policy_maps e TLS_README para mais informaç%C3µes sobre os n%C3%ADveis de segurança[br].</smtp_tls_mandatory_protocols_text>
 <test_cert_failed>Certificado de teste falhado</test_cert_failed>
-<test_cert_ok>Testing certificate OK</test_cert_ok>
-<test_TLS>Test Postfix TLS..</test_TLS>
+<test_cert_ok>Teste de certificado OK</test_cert_ok>
+<test_TLS>Testar o Postfix TLS..</test_TLS>
 <tls_encrypt>Encriptaç%C3£o TLS obrigat%C3%B3ria</tls_encrypt>
 <tls_label>N%C3%ADvel de segurança SMTP TLS</tls_label>
-<tls_may>Opportunistic TLS</tls_may>
-<tls_settings>Generate & advanced settings</tls_settings>
+<tls_may>TLS oportunista</tls_may>
+<tls_settings>Gerar e configura&#231;&#245;es avan&#231;adas</tls_settings>
 <you_can_close>Pode fechar esta janela... Todas as opera&ccedil;&otilde;es foram executadas</you_can_close>
 <_explain>TLS n&atilde;o ser&aacute; utilizado</_explain>

@@ -2,6 +2,9 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+// Pentest 2026-11-04 M-02 : file finissait dans du JavaScript et dans du SQL.
+// Valeurs reelles : un nom de script (proxy-after-reboot, exec.x.php...).
+if(isset($_GET["file"])){$_GET["file"]=preg_replace('/[^A-Za-z0-9_.-]/','',strval($_GET["file"]));}
 if(isset($_GET["table"])){table();exit;}
 js();
 
@@ -52,7 +55,7 @@ function table()
         $id = md5(serialize($ligne));
         $zdate = $tpl->time_to_date($ligne["zDate"], true);
         $severity_class = $severityCL[$ligne["severity"]];
-        $js = "Loadjs('$page?ShowID-js={$ligne["ID"]}&function={$_GET["function"]}')";
+        $js = "Loadjs('$page?ShowID-js=".intval($ligne["ID"])."&function=".req_url($_GET["function"] ?? "")."')";
         $link = "<span><i class='fa fa-search ' id='$id'></i>&nbsp;<a href=\"javascript:blur();\"
 		OnClick=\"$js\" class='{$severityTX[$ligne["severity"]]}' style='font-weight:bold'>";
         if (!isset($ligne["hostname"])) {
@@ -63,8 +66,10 @@ function table()
             $js = "blur()";
         }
 
-        $text = $link . $tpl->_ENGINE_parse_body($ligne["subject"] . "</a></span>
-		<div style='font-size:10px'>{host}:{$ligne["hostname"]} {function}:{$ligne["function"]}, {line}:{$ligne["line"]}</div>");
+        // Pentest 2026-11-04 : sujet/hote/fonction de l'evenement systeme (donnee externe) affiches sans encodage (XSS stockee).
+        // Le sujet peut porter une mise en forme ecrite par Artica : filtre HTML ; le reste en texte.
+        $text = $link . html_safe_fragment($tpl->_ENGINE_parse_body($ligne["subject"])) . $tpl->_ENGINE_parse_body("</a></span>
+		<div style='font-size:10px'>{host}:".req_html($ligne["hostname"])." {function}:".req_html($ligne["function"]).", {line}:".intval($ligne["line"])."</div>");
 
 
         $html[] = "<tr class='$TRCLASS'>";

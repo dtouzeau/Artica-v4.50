@@ -65,7 +65,7 @@ function rollback_to($sp_required){
         if($sp<$sp_required){continue;}
         $srcfile="$BaseWorkDir/$sp_required/package.tgz";
         build_progress($prc,"Restoring Service Pack $sp...");
-        shell_exec("$tar xf $srcfile -C /");
+        shell_exec("$tar xf $srcfile --keep-directory-symlink --no-overwrite-dir -C /");
         @file_put_contents("$BASE/SP/$VERSION",$sp);
     }
 

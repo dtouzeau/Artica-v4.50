@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 
+// Pentest 2026-11-04 : field-id/idOf* etaient recopies sans encodage dans la page (XSS). Ce sont des id de DOM.
+foreach(array("field-id","idOfServer","idOfPort","idOfUser","idOffPassword2","idOffpassword") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET[$k]);}}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_POST["ldap_server"])){saveRootdse();exit;}
 if(isset($_GET["results"])){results();exit;}
@@ -12,7 +14,10 @@ function js(){
 	$page=CurrentPageName();
 	
 	foreach ($_GET as $key=>$value){
+        // Pentest 2026-11-04 : le nom du parametre etait recopie sans encodage dans la page (XSS).
+        if(is_array($value)){continue;}
         $value=urlencode($value);
+        $key=urlencode($key);
 		$tt[]="$key=$value";
 	}
 	
@@ -26,12 +31,13 @@ function js(){
 function results(){
 	
 	header("content-type: application/x-javascript");
-	$target_field=$_SESSION["LDABROWSE"]["field-id"];
-	$ldap_server=$_SESSION["LDABROWSE"]["ldap_server"];
-	$ldap_port=$_SESSION["LDABROWSE"]["ldap_port"];
-	$suffix=$_SESSION["LDABROWSE"]["suffix"];
-	$idOfServer=$_SESSION["LDABROWSE"]["idOfServer"];
-	$idOfPort=$_SESSION["LDABROWSE"]["idOfPort"];
+	// Pentest 2026-11-04 : field-id/ldap_server/ldap_port/idOf* (POST recopie en session) etaient recopies sans encodage dans la page (XSS).
+	$target_field=req_js($_SESSION["LDABROWSE"]["field-id"] ?? "");
+	$ldap_server=req_js($_SESSION["LDABROWSE"]["ldap_server"] ?? "");
+	$ldap_port=req_js($_SESSION["LDABROWSE"]["ldap_port"] ?? "");
+	$suffix=req_js($_SESSION["LDABROWSE"]["suffix"] ?? "");
+	$idOfServer=req_js($_SESSION["LDABROWSE"]["idOfServer"] ?? "");
+	$idOfPort=req_js($_SESSION["LDABROWSE"]["idOfPort"] ?? "");
 	
 
 	$scr[]="if(document.getElementById('$idOfServer')){
@@ -88,19 +94,19 @@ function saveRootdse(){
 		
 		switch (ldap_errno($ldap_connection)) {
 			case 0x31:
-				echo "jserror:Bad username or password. Please try again.";
+				echo (new template_admin())->post_error("Bad username or password. Please try again.");
 				break;
 			case 0x32:
-				echo "jserror:Insufficient access rights.";
+				echo (new template_admin())->post_error("Insufficient access rights.");
 				break;
 			case 81:
-				echo "jserror:Unable to connect to the LDAP server<br>please,<br>verify if ldap daemon is running\n or the ldap server address";
+				echo (new template_admin())->post_error("Unable to connect to the LDAP server<br>please,<br>verify if ldap daemon is running\n or the ldap server address");
 				break;
 			case -1:
 	
 				break;
 			default:
-				echo "jserror:Could not bind to the LDAP server Err.$errornumber<br>". ldap_err2str(ldap_errno($ldap_connection));
+				echo (new template_admin())->post_error("Could not bind to the LDAP server Err.$errornumber<br>". ldap_err2str(ldap_errno($ldap_connection)));
 		}
 		@ldap_close($ldap_connection);
 		return;
@@ -112,7 +118,7 @@ function saveRootdse(){
 	if (!$result) {
 		$errornumber= ldap_errno($ldap_connection);
 		$error=ldap_err2str($errornumber);
-		echo "jserror:Err.$errornumber, $error";
+		echo (new template_admin())->post_error("Err.$errornumber, $error");
 		@ldap_close($ldap_connection);
 		return array();
 			
@@ -121,7 +127,7 @@ function saveRootdse(){
 	$hash=ldap_get_entries($ldap_connection,$result);
 	
 	if(!isset($hash[0]["namingcontexts"][0])){
-		echo "jserror: NamingContexts attribute not found...";
+		echo (new template_admin())->post_error("NamingContexts attribute not found...");
 		
 	}
 	

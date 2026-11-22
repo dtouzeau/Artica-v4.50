@@ -1,6 +1,16 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 //$users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+// awc_table_style()/awc_pager_js()/awc_search_bar()/awc_filter_js(): kit des
+// tableaux d'entites. Include au PREMIER NIVEAU obligatoire: place dans le bloc
+// if(!class_exists("sockets")) ci-dessus il ne s'executerait jamais.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["ids-rules-stats"])){top_rules_stats();exit;}
@@ -17,9 +27,6 @@ if(isset($_GET["enable-signature"])){enable_signature();exit;}
 if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
 if(isset($_GET["rule-js"])){rule_js();exit;}
 if(isset($_GET["rule-popup"])){rule_popup();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 if(isset($_GET["enable-all-rules"])){enable_all_rules();exit;}
 if(isset($_GET["disable-all-rules"])){disable_all_rules();exit;}
 if(isset($_GET["enable-all-family"])){enable_all_family();exit;}
@@ -34,7 +41,8 @@ function rule_js():bool{
     return $tpl->js_dialog2("$sid","$page?rule-popup=$sid");
 }
 function rule_popup():bool{
-    $id=$_GET["rule-popup"];
+    // Pentest 2026-11-04 : sid etait concatene dans la requete.
+    $id=intval($_GET["rule-popup"]);
     $tpl=new template_admin();
     $page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
@@ -58,7 +66,8 @@ return true;
 }
 function enable_signature():bool{
 	$t=time();
-	$id=$_GET["enable-signature"];
+	// Pentest 2026-11-04 : sid etait concatene dans la requete.
+	$id=intval($_GET["enable-signature"]);
     $tpl=new template_admin();
 	$page=CurrentPageName();
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
@@ -91,7 +100,8 @@ function enable_signature():bool{
 }
 function enable_firewall(){
 	$t=time();
-	$id=$_GET["enable-firewall"];
+	// Pentest 2026-11-04 : signature etait concatene dans la requete.
+	$id=intval($_GET["enable-firewall"]);
 	$rulefile=$_GET["cat"];
 	$page=CurrentPageName();
 	$q=new postgres_sql();
@@ -138,7 +148,8 @@ function enable_all_rules():bool{
     $cat=$_GET["enable-all-rules"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
 
-    $q->QUERY_SQL("UPDATE rules SET enabled=1 WHERE classtype='$cat'");
+    // Pentest 2026-11-04 : classtype etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=1 WHERE classtype=?",array($cat));
     if(!$q->ok){
         echo $tpl->js_error($q->mysql_error);
         return false;
@@ -171,7 +182,8 @@ function disable_all_rules():bool{
     $cat=$_GET["disable-all-rules"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
 
-    $q->QUERY_SQL("UPDATE rules SET enabled=0 WHERE classtype='$cat'");
+    // Pentest 2026-11-04 : classtype etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=0 WHERE classtype=?",array($cat));
     if(!$q->ok){
         echo $tpl->js_error($q->mysql_error);
         return false;
@@ -188,7 +200,8 @@ function enable_all_family():bool{
     $cat=$_GET["enable-all-family"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
 
-    $q->QUERY_SQL("UPDATE rules SET enabled=1 WHERE source_file='$cat'");
+    // Pentest 2026-11-04 : source_file etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=1 WHERE source_file=?",array($cat));
     if(!$q->ok){
         echo $tpl->js_error($q->mysql_error);
         return false;
@@ -204,7 +217,8 @@ function disable_all_family():bool{
     $cat=$_GET["enable-all-family"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata-rules.db");
 
-    $q->QUERY_SQL("UPDATE rules SET enabled=0 WHERE source_file='$cat'");
+    // Pentest 2026-11-04 : source_file etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("UPDATE rules SET enabled=0 WHERE source_file=?",array($cat));
     if(!$q->ok){
         echo $tpl->js_error($q->mysql_error);
         return false;
@@ -230,7 +244,9 @@ function filter_categories_popup():bool{
     $td1prc="style='vertical-align:middle;width=1%;text-align:right' nowrap";
 
     $TRCLASS=null;
-    $html[]="<table id='table-categories-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]=awc_search_bar("idscat-search","{search}");
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+           ."<table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{category}</th>";
@@ -240,7 +256,7 @@ function filter_categories_popup():bool{
     $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap></center></th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='idscat-rows'>";
     foreach ($catz as $cat=>$records){
         $select="LoadAjaxSilent('main-rules-section','$page?table=yes&category=$cat');dialogInstance1.close();";
         $enable_all="Loadjs('$page?enable-all-rules=$cat&function=$function');";
@@ -250,7 +266,7 @@ function filter_categories_popup():bool{
         $button_select="<button OnClick=\"$select\" class='btn btn-primary btn-xs' type='button'>{search}</button>";
         $button_enable="<button OnClick=\"$enable_all\" class='btn btn-primary btn-xs' type='button'>{enable_all}</button>";
         $button_disable="<button OnClick=\"$disable_all\" class='btn btn-danger btn-xs' type='button'>{disable_all}</button>";
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $text_class=null;
 
         $records=$tpl->FormatNumber($records);
@@ -263,22 +279,16 @@ function filter_categories_popup():bool{
         $html[]="</tr>";
     }
     $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='idscat-pager'></span></div></div></div>";
+    $html[]="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-categories-rules').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-</script>";
-
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    // Pagination et filtrage reprennent ceux de FooTable. Concatenes APRES le
+    // parse: la regex #{(.+?)}# du moteur lirait leurs blocs {...} en {token}.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n",$html))
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"idscat-rows","idscat-pager")
+        .awc_filter_js("idscat-search","idscat-rows","idscat-pager");
 
     return true;
 }
@@ -298,7 +308,9 @@ function filter_classifications_popup():bool{
     $td1prc="style='vertical-align:middle;width=1%;text-align:right' nowrap";
 
     $TRCLASS=null;
-    $html[]="<table id='table-categories-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]=awc_search_bar("idsfam-search","{search}");
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+           ."<table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{group}</th>";
@@ -308,7 +320,7 @@ function filter_classifications_popup():bool{
     $html[]="<th data-sortable=true class='text-capitalize center' data-type='text' nowrap></center></th>";
     $html[]="</tr>";
     $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<tbody id='idsfam-rows'>";
     foreach ($catz as $cat=>$records){
         if($cat=="whitelist.rules" OR $cat=="emerging-deleted.rules"){
             continue;
@@ -322,7 +334,7 @@ function filter_classifications_popup():bool{
 
 
 
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $text_class=null;
 
         $records=$tpl->FormatNumber($records);
@@ -335,22 +347,16 @@ function filter_classifications_popup():bool{
         $html[]="</tr>";
     }
     $html[]="</tbody>";
-    $html[]="<tfoot>";
+    $html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+           ."<span class='awc-pg' id='idsfam-pager'></span></div></div></div>";
+    $html[]="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
 
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-categories-rules').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-</script>";
-
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    // Pagination et filtrage reprennent ceux de FooTable. Concatenes APRES le
+    // parse: la regex #{(.+?)}# du moteur lirait leurs blocs {...} en {token}.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n",$html))
+        .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"idsfam-rows","idsfam-pager")
+        .awc_filter_js("idsfam-search","idsfam-rows","idsfam-pager");
 
     return true;
 }
@@ -398,7 +404,8 @@ function search(){
     $category=$_GET["category-filter"];
     $family=$_GET["family-filter"];
 
-    $html[]="<table id='table-suricata-all-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+           ."<table id='table-suricata-all-rules' class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
@@ -407,9 +414,11 @@ function search(){
 	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>$enabled</center></th>";
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='idsall-rows'>";
 
+    // Pentest 2026-11-04 : search/category/family etaient concatenes dans la requete.
     $searchq="WHERE 1";
+    $sqlparams=array();
     $search=$_GET["search"];
     if(strlen($search)>2){
         $SerchOrg=trim($search);
@@ -417,9 +426,11 @@ function search(){
         $search=str_replace("**","*",$search);
         $search=str_replace("**","*",$search);
         $search=str_replace("*","%",$search);
-        $searchq="WHERE msg LIKE '$search'";
+        $searchq="WHERE msg LIKE ?";
+        $sqlparams=array($search);
         if(intval($SerchOrg)>0){
-            $searchq="WHERE sid='$SerchOrg'";
+            $searchq="WHERE sid=?";
+            $sqlparams=array($SerchOrg);
         }
     }
 	
@@ -434,12 +445,15 @@ function search(){
 
 	$sql="SELECT * FROM rules $searchq ORDER BY sid LIMIT 500";
     if(strlen($category)>1){
-        $sql="SELECT * FROM rules $searchq AND classtype='$category' ORDER BY sid LIMIT 500";
+        $sql="SELECT * FROM rules $searchq AND classtype=? ORDER BY sid LIMIT 500";
+        $sqlparams[]=$category;
     }
     if(strlen($family)>1){
-        $sql="SELECT * FROM rules $searchq AND source_file='$family' ORDER BY sid LIMIT 500";
+        $sql="SELECT * FROM rules $searchq AND source_file=? ORDER BY sid LIMIT 500";
+        if(strlen($category)>1){array_pop($sqlparams);}
+        $sqlparams[]=$family;
     }
-	$results=$q->QUERY_SQL($sql);
+	$results=$q->QUERY_SQL_PARAMS($sql,$sqlparams);
     if(!$q->ok){
         echo $tpl->div_error($q->mysql_error."<br>$sql");
         return false;
@@ -454,7 +468,7 @@ function search(){
 
 	$TRCLASS=null;
 	foreach ($results as $index=>$ligne) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$text_class=null;
 		$color="black";
         $classtype=$ligne["classtype"];
@@ -480,15 +494,8 @@ function search(){
 	}
 
 	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='6'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</table></div><div class='awc-foot'><span>&nbsp;</span>"
+	       ."<span class='awc-pg' id='idsall-pager'></span></div></div></div>";
 
     $jscompile=  $tpl->framework_buildjs(
         "suricata:/build/rules",
@@ -515,11 +522,15 @@ function search(){
 	<script>
 	$tt
 	$headsjs
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-suricata-all-rules').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
+	NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."
 </script>";
 
-			echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    // La recherche est deja servie par search_block() cote serveur: seule la
+    // pagination avait besoin d'etre reprise de FooTable. Concatenee APRES le
+    // parse -- la regex #{(.+?)}# lirait ses blocs {...} comme des {token}.
+			echo awc_table_style()
+			    .$tpl->_ENGINE_parse_body(implode("\n",$html))
+			    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"idsall-rows","idsall-pager");
 return true;
 }
 function top_rules_stats():bool{
@@ -542,10 +553,12 @@ function enable(){
 	
 	$filename=$_POST["filename"];
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM suricata_rules_packages WHERE rulefile='$filename'");
+	// Pentest 2026-11-04 : filename etait concatene dans la requete.
+	$res=$q->QUERY_SQL_PARAMS("SELECT enabled FROM suricata_rules_packages WHERE rulefile=?",array($filename));
+	$ligne=isset($res[0])?$res[0]:array();
 	$enabled=intval($ligne["enabled"]);
 	if($enabled==0){$enabled=1;}else{$enabled=0;}
-	$q->QUERY_SQL("UPDATE suricata_rules_packages SET `enabled`='$enabled' WHERE rulefile='$filename'","artica_backup");
+	$q->QUERY_SQL_PARAMS("UPDATE suricata_rules_packages SET `enabled`=? WHERE rulefile=?",array($enabled,$filename));
 	if(!$q->ok){echo $q->mysql_error;}
     $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/build/acls");
 }

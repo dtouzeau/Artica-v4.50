@@ -37,7 +37,6 @@ class features{
         if($privileges=="AsSquidAdministrator"){if($this->users->AsSquidAdministrator){return true;}}
         if($privileges=="AsDansGuardianAdministrator"){if($this->users->AsDansGuardianAdministrator){return true;}}
         if($privileges=="AsDnsAdministrator"){if($this->users->AsDnsAdministrator){return true;}}
-
         if($privileges=="AsPostfixAdministrator"){if($this->users->AsPostfixAdministrator){return true;}}
         if($privileges=="AsFirewallManager"){if($this->users->AsFirewallManager){return true;}}
         if($privileges=="AsSystemWebMaster"){if($this->users->AsSystemWebMaster){return true;}}
@@ -198,7 +197,11 @@ class features{
             $ARRAY["TITLE"]="{$config["TITLE"]}:{enable_feature}";
             $ARRAY["AFTER"]=$this->JSAFTER;
             $prgress=base64_encode(serialize($ARRAY));
-            $jsrestart="Loadjs('fw.progress.modal.lock.php?content=$prgress&mainid=progress-$TOKEN-restart')";
+            // Confirm before install (js_confirm_execute via fw.progress.php confirm-before).
+            $jsrestart="Loadjs('fw.progress.modal.lock.php?".fw_progress_args_b64($prgress)."&mainid=progress-$TOKEN-restart')";
+            $tplConfirm=new template_admin();
+            $confirmText=$tplConfirm->_ENGINE_parse_body($ARRAY["TITLE"]);
+            $jsrestart="Loadjs('fw.progress.php?".fw_progress_confirm_args($confirmText,$jsrestart)."')";
             $label="<a href=\"javascript:blur()\" OnClick=\"$jsrestart\" class='btn $classbt btn-sm'>
 			<i class='fas fa-check'></i> $enable_feature </a>";
 
@@ -221,7 +224,11 @@ class features{
             $ARRAY["TITLE"]="{$config["TITLE"]}:{disable_feature}";
             $ARRAY["AFTER"]=$this->JSAFTER;
             $prgress=base64_encode(serialize($ARRAY));
-            $jsrestart="Loadjs('fw.progress.modal.lock.php?content=$prgress&mainid=progress-$TOKEN-restart')";
+            // Confirm before uninstall (js_confirm_execute via fw.progress.php confirm-before).
+            $jsrestart="Loadjs('fw.progress.modal.lock.php?".fw_progress_args_b64($prgress)."&mainid=progress-$TOKEN-restart')";
+            $tplConfirm=new template_admin();
+            $confirmText=$tplConfirm->_ENGINE_parse_body($ARRAY["TITLE"]);
+            $jsrestart="Loadjs('fw.progress.php?".fw_progress_confirm_args($confirmText,$jsrestart)."')";
             if($disable_feature<>null){
                 $label="<a href=\"javascript:blur()\" OnClick=\"$jsrestart\" class='btn btn-warning btn-sm'>
 			<i class='fas fa-check'></i> $disable_feature </a>";
@@ -268,11 +275,13 @@ class features{
                 $label="<a href=\"javascript:blur()\" OnClick=\"blur()\" class='btn btn-default btn-sm'>
 			<i class='fas fa-exclamation-triangle'></i> {require} ". $config["MEMMIN"]."GB {memory}</a>";
                 $color="#CCCCCC";
+                // Chacune de ces cellules portait DEUX attributs class: le second
+                // etait purement et simplement ignore par le navigateur.
                 $html[]="<tr>
-			<td class='project-status' $width1 nowrap class='center'></td>
-			<td class='project-title' >$strong{$config["TITLE"]}</strong>&nbsp;$moreinfo$EXPLAIN_TEXT</td>
-			<td class='project-actions' $width1 nowrap class='center'>$wiki_ico</td>
-			<td class='project-actions' $width1 nowrap>$label</td>
+			<td class='awc-nowrap'></td>
+			<td>$strong{$config["TITLE"]}</strong>&nbsp;$moreinfo$EXPLAIN_TEXT</td>
+			<td class='awc-nowrap'>$wiki_ico</td>
+			<td class='awc-nowrap'>$label</td>
 			</tr>";
                 return @implode("\n", $html);
             }
@@ -282,10 +291,10 @@ class features{
 
 
         $html[]="<tr>
-		<td class='project-status' $width1 class='center' nowrap>$application_status</td>
-		<td class='project-title'>$strong{$config["TITLE"]}</strong>&nbsp;$moreinfo$EXPLAIN_TEXT</td>
-		<td class='project-actions' $width1 class='center' nowrap>$wiki_ico</td>
-		<td class='project-actions' $width1  nowrap>$label</td>
+		<td class='awc-nowrap'>$application_status</td>
+		<td>$strong{$config["TITLE"]}</strong>&nbsp;$moreinfo$EXPLAIN_TEXT</td>
+		<td class='awc-nowrap'>$wiki_ico</td>
+		<td class='awc-nowrap'>$label</td>
 		</tr>";
 
         return @implode("\n", $html);
@@ -312,7 +321,7 @@ class features{
         $color="#CCCCCC";
         $wiki_ico="&nbsp;";
         $label="<a href=\"javascript:Blur()\" OnClick=\"Blur()\" class='btn btn-default btn-sm'>
-				<i class='fas fa-exclamation-triangle'></i> $button_name</strong></a>";
+				<i class='fas fa-exclamation-triangle'></i> $button_name</a>";   // le </strong> fermait une balise jamais ouverte
 
         $explain_text=null;
         if(isset($_GET["expand"])) {
@@ -327,10 +336,10 @@ class features{
 
 
         $html[]="<tr>
-		<td class='project-status' style='width:1%;color:$color' nowrap class='center'></td>
-		<td class='project-title'><strong style='color:$color'>$title</strong>$explain_text</td>
-		<td class='project-status' style='width:1%;color:$color' class='center' nowrap>$wiki_ico</td>
-		<td class='project-actions' style='width:1%' nowrap>$label</td>
+		<td class='awc-nowrap'></td>
+		<td><strong style='color:$color'>$title</strong>$explain_text</td>
+		<td class='awc-nowrap'>$wiki_ico</td>
+		<td class='awc-nowrap'>$label</td>
 		</tr>";
         return $tpl->_ENGINE_parse_body(@implode("\n", $html));
 
@@ -344,8 +353,8 @@ class features{
         $config["TOKEN"]="EnableBandwithCalculation";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/speedtests.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/speedtests.log";
-        $config["CMD_ON"]="speedtests.php?install=yes";
-        $config["CMD_OFF"]="speedtests.php?uninstall=yes";
+        $config["CMD_ON"]="/speedtests/install";
+        $config["CMD_OFF"]="/speedtests/uninstall";
         return $this->build_paragraph($config);
 
     }
@@ -364,19 +373,7 @@ class features{
         return $this->build_paragraph($config);
     }
 
-    public function OPENLDAP_REST(){
-        $config["LICENSE"]=true;
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_OPENLDAP_RESTFUL}";
-        $config["EXPLAIN"]="{APP_OPENLDAP_RESTFUL_EXPLAIN}";
-        $config["TOKEN"]="EnableOpenLDAPRestFul";
-        $config["TOKEN_REQUIRE_ENABLED"]="EnableOpenLDAP";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/openldap.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/openldap.log";
-        $config["CMD_ON"]="openldap.php?rest-enable=yes";
-        $config["CMD_OFF"]="openldap.php?rest-disable=yes";
-        return $this->build_paragraph($config);
-    }
+
 
 
 
@@ -447,18 +444,8 @@ class features{
     }
 
     public function MOD_SECURITY():string{
-        $config["TOKENS_REQUIRE_INSTALLED"]["EnableNginx"]="APP_NGINX";
-        $config["SECURITY"]="AsSystemWebMaster";
-        $config["TITLE"]="Web Application Firewall (reverse-proxy)";
-        $config["EXPLAIN"]="{ModSecurityExplain}";
-        $config["TOKEN_INSTALLED"]="MODSECURITY_INSTALLED";
-        $config["TOKEN_REQUIRE_ENABLED"]="EnableNginx";
-        $config["TOKEN"]="EnableModSecurityIngix";
-        $config["CMD_ON"]="nginx:/modsecurity/enable";
-        $config["CMD_OFF"]="nginx:/modsecurity/disable";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/modsecurity.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/modsecurity.progress.log";
-        return $this->build_paragraph($config);
+
+        return "";
     }
     public function APP_SNMPD(){
         $config["SECURITY"]="AsSystemAdministrator";
@@ -499,17 +486,10 @@ class features{
     }
 
     public function APP_CYBERCRIMEIPFEEDS(){
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["DEBIAN"]=true;
-        $config["TITLE"]="{CybercrimeIPFeeds}";
-        $config["TOKEN"]="ArticaPSnifferDaemon";
-        $config["EXPLAIN"]="{CybercrimeIPFeeds_explain}";
-        $config["CMD_ON"]="firehol.php?articapcap-install=yes";
-        $config["CMD_OFF"]="firehol.php?articapcap-uninstall=yes";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/articapcap.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/articapcap.log";
-        return $this->build_paragraph($config);
-
+        // Lot D pare-feu : ses boutons visaient les routes articapcap-install et
+        // -uninstall de l'ancien framework du pare-feu, qui n'ont jamais existé :
+        // l'interrupteur ne faisait rien. Masqué, comme APP_DNS_FIREWALL.
+        return "";
     }
     public function APP_DNSFILTERD_REST(){
         return "";
@@ -624,34 +604,9 @@ class features{
 
 
 
-    function APP_MULTIPATH_TCP():string{
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_MULTIPATH_TCP}";
-        $config["TOKEN"]="APP_MULTIPATH_TCP_ENABLED";
-        $config["EXPLAIN"]="{APP_MULTIPATH_TCP_EXPLAIN}";
-        $config["CMD_ON"]="tcpmultipath.php?install=yes";
-        $config["CMD_OFF"]="tcpmultipath.php?uninstall=yes";
-        $config["REBOOT"]=true;
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/tcpmultipath.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/tcpmultipath.progress.log";
-        return $this->build_paragraph($config);
-    }
 
 
 
-    function APP_MUNIN():string{
-        $config["SECURITY"]="AsSystemAdministrator";
-
-        $config["TITLE"]="{APP_MUNIN}";
-        $config["TOKEN_INSTALLED"]="MUNIN_CLIENT_INSTALLED";
-        $config["TOKEN"]="EnableMunin";
-        $config["EXPLAIN"]="{munin_service_explain}";
-        $config["CMD_ON"]="munin.php?install=yes";
-        $config["CMD_OFF"]="munin.php?uninstall=yes";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/munin.install.progress";
-        $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/munin.install.progress.log";
-        return $this->build_paragraph($config);
-    }
 
     public function APP_FREERADIUS():string{
         if($this->ASReverseProxyAppliance){
@@ -734,8 +689,8 @@ class features{
         $config["TOKEN_REQUIRE_ENABLED"]="EnableElasticSearch";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/kibana.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/kibana.log";
-        $config["CMD_ON"]="kibana.php?install=yes";
-        $config["CMD_OFF"]="kibana.php?uninstall=yes";
+        $config["CMD_ON"]="/kibana/install";
+        $config["CMD_OFF"]="/kibana/uninstall";
         $config["MEMMIN"]="3000";
         return $this->build_paragraph($config);
     }
@@ -820,6 +775,11 @@ class features{
         $config["CMD_ON"]="/unbound/service/install";
         $config["CONFLICT"]=$this->IFLOCALCACHE_CONFLICTS();
         $config["CMD_OFF"]="/unbound/service/uninstall";
+        // Load-balancer serving DNS for the farm: HaCluster DNS owns port 53 and
+        // the daemon refuses this install. Say so instead of offering "Install".
+        if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("Enablehacluster"))==1 && intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterServeDNS"))==1){
+            return $this->build_paragraphe_failed("{dns_served_by_hacluster_dns}",$config["TITLE"],$config["EXPLAIN"],$config["WIKI"]);
+        }
         return $this->build_paragraph($config);
     }
     public function NETWORKD():string{
@@ -898,18 +858,7 @@ class features{
     }
 
 
-    FUNCTION APP_GEOIP_UPDATES():string{
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_GEOIPUPDATE}";
-        $config["EXPLAIN"]="{APP_GEOIPUPDATE_ABOUT}";
-        $config["TOKEN"]="EnableGeoipUpdate";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/GeoipUpdate.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/GeoipUpdate.progress.log";
-        $config["CMD_ON"]="geoipupdate.php?install=yes";
-        $config["CMD_OFF"]="geoipupdate.php?uninstall=yes";
-        return $this->build_paragraph($config);
 
-    }
     public function APP_PDNS():string{
         if($this->ASReverseProxyAppliance){
             return "";
@@ -1092,7 +1041,21 @@ class features{
         return $this->build_paragraph($config);
     }
 
+    public function ARTICA_SIEM(){
 
+        $config["SECURITY"]="AsSystemAdministrator";
+        $config["TITLE"]="{APP_ARTICA_SIEM}";
+        $config["EXPLAIN"]="{APP_ARTICA_SIEM_EXPLAIN}";
+        $config["TOKEN"]="EnableArticaSiem";
+        $config["TOKEN_INSTALLED"]="CLICKHOUSE_INSTALLED";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/articasiem.progress";
+        $config["LOG_FILE"]=PROGRESS_DIR."/articasiem.progress.txt";
+        $config["CMD_ON"]="/articasiem/install";
+        $config["CMD_OFF"]="/articasiem/uninstall";
+        $config["MEMMIN"]="3999";
+        return $this->build_paragraph($config);
+
+    }
 
     public function SURICATA(){
 
@@ -1162,8 +1125,8 @@ class features{
         $config["TOKEN"]="EnableHaProxy";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/haproxy.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/haproxy.progress.txt";
-        $config["CMD_ON"]="haproxy.php?install=yes";
-        $config["CMD_OFF"]="haproxy.php?uninstall=yes";
+        $config["CMD_ON"]="/haproxy/install";
+        $config["CMD_OFF"]="/haproxy/uninstall";
         $config["MEMMIN"]="1900";
         return $this->build_paragraph($config);
     }
@@ -1275,8 +1238,8 @@ class features{
         $config["TOKEN"]="EnableLinkBalancer";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/LinkBalancer.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/LinkBalancer.progress.log";
-        $config["CMD_ON"]="firehol.php?install-link-balancer=yes";
-        $config["CMD_OFF"]="firehol.php?uninstall-link-balancer=yes";
+        $config["CMD_ON"]="/firewall/linkbalancer/install";
+        $config["CMD_OFF"]="/firewall/linkbalancer/uninstall";
         return $this->build_paragraph($config);
     }
 
@@ -1423,20 +1386,6 @@ class features{
         $config["CMD_OFF"]="ntopng.php?uninstall=yes";
         return $this->build_paragraph($config);
     }
-    public function ARPD():string{
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_ARPD}";
-        $config["EXPLAIN"]="{EnableArpDaemon_explain}";
-        $config["TOKEN"]="EnableArpDaemon";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/arpd.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/arpd.log";
-        $config["CMD_ON"]="arpd.php?install=yes";
-        $config["CMD_OFF"]="arpd.php?uninstall=yes";
-        return $this->build_paragraph($config);
-    }
 
 
 
@@ -1452,38 +1401,16 @@ class features{
         $config["TITLE"]="{APP_POSTFIX}";
         $config["EXPLAIN"]="{APP_POSTFIX_TEXT}";
         $config["TOKEN"]="EnablePostfix";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/postfix.install";
+        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/smtp-manager.progress";
         $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/postfix.install.txt";
-        $config["CMD_ON"]="postfix.php?install=yes";
-        $config["CMD_OFF"]="postfix.php?uninstall=yes";
+        $config["CMD_ON"]="/smtp-manager/install";
+        $config["CMD_OFF"]="/smtp-manager/uninstall";
         $config["WIKI"]="https://wiki.articatech.com/en/smtp-service";
         return $this->build_paragraph($config);
     }
 
 
-    public function APP_MAIL_SPY(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $DisableMessaging=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
-        if($DisableMessaging==1){return null;}
-        $config["TOKENS_REQUIRE_INSTALLED"]["PROCMAIL_INSTALLED"]="APP_PROCMAIL";
-        $config["TOKENS_REQUIRE_INSTALLED"]["POSTFIX_INSTALLED"]="APP_POSTFIX";
-        $config["TOKEN_REQUIRE_ENABLED"]="EnablePostfix";
 
-        $config["SECURITY"]="AsPostfixAdministrator";
-        $config["TOKEN_INSTALLED"]="MILTER_SPY_INSTALLED";
-        $config["TITLE"]="{APP_MAILSPY}";
-        $config["EXPLAIN"]="{APP_MAILSPY_EXPLAIN}";
-        $config["TOKEN"]="EnableMilterSpyDaemon";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/mailspy.install";
-        $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/mailspy.install.txt";
-        $config["CMD_ON"]="mailspy.php?install=yes";
-        $config["CMD_OFF"]="mailspy.php?uninstall=yes";
-        return $this->build_paragraph($config);
-
-
-    }
 
     public function APP_FILEBEAT():string{
 
@@ -1541,32 +1468,8 @@ class features{
         $config["CMD_OFF"]="milter-greylist.php?uninstall=yes";
         return $this->build_paragraph($config);
     }
-    public function APP_OPENDKIM(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["TOKENS_REQUIRE_INSTALLED"]["POSTFIX_INSTALLED"]="APP_POSTFIX";
-        $config["TOKEN_REQUIRE_ENABLED"]="EnablePostfix";
-        $config["SECURITY"]="AsPostfixAdministrator";
-        $config["TITLE"]="{APP_OPENDKIM}";
-        $config["EXPLAIN"]="{APP_OPENDKIM_TEXT}";
-        $config["TOKEN"]="EnableDKFilter";
-        $config["TOKEN_INSTALLED"]="OPENDKIM_INSTALLED";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/opendkim.install.progress";
-        $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/opendkim.install.log";
-        $config["CMD_ON"]="opendkim.php?install=yes";
-        $config["CMD_OFF"]="opendkim.php?uninstall=yes";
-        return $this->build_paragraph($config);
-    }
-    public function APP_SAMBA(){
 
-        $SAMBA_APPLIANCE=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SAMBA_APPLIANCE"));
-        if($SAMBA_APPLIANCE==0){
-            return "";
-        }
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
+    public function APP_SAMBA(){
         $config["SECURITY"]="AsSystemAdministrator";
         $config["TOKEN_INSTALLED"]="SAMBA_INSTALLED";
         $config["TITLE"]="{APP_SAMBA}";
@@ -1599,21 +1502,6 @@ class features{
 
 
 
-    public function FIREQOS(){
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TOKEN_INSTALLED"]="FIREQOS_INSTALLED";
-        $config["TITLE"]="{traffic_shapping}";
-        $config["EXPLAIN"]="{traffic_shapping_explain}";
-        $config["TOKEN"]="EnableFireQOS";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/fireqos.reconfigure.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/fireqos.reconfigure.progress.txt";
-        $config["CMD_OFF"]="firehol.php?qos-remove=yes";
-        $config["CMD_ON"]="firehol.php?qos-install=yes";
-        return $this->build_paragraph($config);
-    }
 
     public function OPENVPN(){
         if($this->ASReverseProxyAppliance){
@@ -1626,8 +1514,8 @@ class features{
         $config["TOKEN"]="EnableOpenVPNServer";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/openvpn.enable.progress";
         $config["LOG_FILE"]=PROGRESS_DIR."/openvpn.enable.log";
-        $config["CMD_ON"]="openvpn.php?enable=yes";
-        $config["CMD_OFF"]="openvpn.php?disable=yes";
+        $config["CMD_ON"]="/openvpn/service/enable";
+        $config["CMD_OFF"]="/openvpn/service/disable";
         return $this->build_paragraph($config);
     }
     public function APP_TAILSCALE(){
@@ -1644,6 +1532,21 @@ class features{
         $config["CMD_ON"]="tailscale.php?install=yes";
         $config["CMD_OFF"]="tailscale.php?uninstall=yes";
         $config["WIKI"]="https://wiki.articatech.com/en/network/vpn/tailscale-setup";
+        return $this->build_paragraph($config);
+    }
+    // WireGuard VPN Manager : daemon artica-wireguard pilote par le module
+    // articarest/wireguard. APP_WIREGUARD_INSTALLED = le noyau Linux sait faire du
+    // WireGuard (pose par le watchdog), EnableWireGuardManager = service actif.
+    public function APP_WIREGUARD_MANAGER():string{
+        $config["SECURITY"]="AsSystemAdministrator";
+        $config["TOKEN_INSTALLED"]="APP_WIREGUARD_INSTALLED";
+        $config["TITLE"]="{APP_WIREGUARD_MANAGER}";
+        $config["EXPLAIN"]="{APP_WIREGUARD_MANAGER_EXPLAIN}";
+        $config["TOKEN"]="EnableWireGuardManager";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/wireguard.progress";
+        $config["LOG_FILE"]=PROGRESS_DIR."/wireguard.log";
+        $config["CMD_ON"]="/wireguard/install";
+        $config["CMD_OFF"]="/wireguard/uninstall";
         return $this->build_paragraph($config);
     }
     public function APP_SYNO_BACKUP(){
@@ -1709,8 +1612,8 @@ class features{
         $config["PROGRESS_FILE"] = PROGRESS_DIR."/keepalived.progress";
         $config["LOG_FILE"] = PROGRESS_DIR."/keepalived.log";
         $config["LICENSE"] = true;
-        $config["CMD_ON"] = "keepalived.php?enable=yes";
-        $config["CMD_OFF"] = "keepalived.php?disable=yes";
+        $config["CMD_ON"] = "/keepalived/enable";
+        $config["CMD_OFF"] = "/keepalived/disable";
         return $this->build_paragraph($config);
     }
     //END KEEPALIVED
@@ -1726,8 +1629,8 @@ class features{
         $config["PROGRESS_FILE"] = PROGRESS_DIR."/keepalived.progress";
         $config["LOG_FILE"] = PROGRESS_DIR."/keepalived.log";
         $config["LICENSE"] = true;
-        $config["CMD_ON"] = "keepalived.php?enable-secondary_node=yes";
-        $config["CMD_OFF"] = "keepalived.php?disable-secondary_node=yes";
+        $config["CMD_ON"] = "/keepalived/secondary/enable";
+        $config["CMD_OFF"] = "/keepalived/secondary/disable";
         return $this->build_paragraph($config);
     }
 
@@ -1813,21 +1716,6 @@ class features{
 
 
 
-    public function IWLWIFI():string{
-        if($this->ASReverseProxyAppliance){
-            return "";
-        }
-        $config["SECURITY"]="AsSystemAdministrator";
-        $config["TOKEN_INSTALLED"]="IWLWIFI_INSTALLED";
-        $config["TITLE"]="{APP_WIFI_INTEL}";
-        $config["EXPLAIN"]="{APP_WIFI_INTEL_EXPLAIN}";
-        $config["TOKEN"]="EnableIwlwifi";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/iwlwifi.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/iwlwifi.progress.txt";
-        $config["CMD_ON"]="iwlwifi.php?install=yes";
-        $config["CMD_OFF"]="iwlwifi.php?uninstall=yes";
-        return $this->build_paragraph($config);
-    }
     public function PULSEREVERSE():string{
         $ShowPulseReverse=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ShowPulseReverse"));
         if($ShowPulseReverse==0){return "";}
@@ -1958,20 +1846,17 @@ class features{
         return $this->build_paragraph($config);
     }
     public function APP_DOCKER():string{
-
-            return "";
-
         $APP_DOCKER_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_DOCKER_INSTALLED"));
         if($APP_DOCKER_INSTALLED==0){return "";}
         $config["SECURITY"]="AsSystemAdministrator";
         $config["TOKEN_INSTALLED"]="APP_DOCKER_INSTALLED";
         $config["TITLE"]="{APP_DOCKER}";
         $config["EXPLAIN"]="{APP_DOCKER_EXPLAIN}";
-        $config["TOKEN"]="EnableDockerService";
-        $config["PROGRESS_FILE"]=PROGRESS_DIR."/docker.progress";
-        $config["LOG_FILE"]=PROGRESS_DIR."/docker.progress.logs";
-        $config["CMD_ON"]="docker.php?install=yes";
-        $config["CMD_OFF"]="docker.php?uninstall=yes";
+        $config["TOKEN"]="EnableDockerd";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/dockerd.progress";
+        $config["LOG_FILE"]=PROGRESS_DIR."/dockerd.progress.log";
+        $config["CMD_ON"]="/dockerd/install";
+        $config["CMD_OFF"]="/dockerd/uninstall";
         $config["MEMMIN"]="2000";
         return $this->build_paragraph($config);
 
@@ -2085,7 +1970,7 @@ class features{
 
     public function APP_ARTICA_META():string{
         $config["SECURITY"]="AsSystemAdministrator";
-        $config["TITLE"]="{APP_ARTICA_META} (Beta)";
+        $config["TITLE"]="{APP_ARTICA_META}";
         $config["EXPLAIN"]="{network_agents_explain}";
         $config["TOKEN"]="EnableArticaMeta";
         $config["PROGRESS_FILE"]=PROGRESS_DIR."/meta.progress";
@@ -2107,8 +1992,8 @@ class features{
         $config["TOKEN"]="SQUIDRESTFulEnabled";
         $config["PROGRESS_FILE"]=PROGRESS_DIR ."/squid.access.center.progress";
         $config["LOG_FILE"]=PROGRESS_DIR ."/squid.access.center.progress.log";
-        $config["CMD_ON"]="squid2.php?enable-restful-service=yes";
-        $config["CMD_OFF"]="squid2.php?disable-restful-service=yes";
+        $config["CMD_ON"]="/proxy/restful/on";
+        $config["CMD_OFF"]="/proxy/restful/off";
         return $this->build_paragraph($config);
     }
 
@@ -2136,10 +2021,10 @@ class features{
         $config["TITLE"]="{SYSTEM_RESTFULL}";
         $config["EXPLAIN"]="{SYSTEM_RESTFULL_EXPLAIN}";
         $config["TOKEN"]="EnableRESTFulSystem";
-        $config["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/system.restful";
-        $config["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/system.restful.log";
-        $config["CMD_ON"]="netdata.php?restfull-install=yes";
-        $config["CMD_OFF"]="netdata.php?restfull-uninstall=yes";
+        $config["PROGRESS_FILE"]=PROGRESS_DIR."/system.restful";
+        $config["LOG_FILE"]=PROGRESS_DIR."/system.restful.log";
+        $config["CMD_ON"]="/system/restful/on";
+        $config["CMD_OFF"]="/system/restful/off";
         return $this->build_paragraph($config);
     }
 
@@ -2160,9 +2045,6 @@ class features{
         return $this->build_paragraph($config);
     }
 
-    public function LM_SENSORS(){
-
-    }
 
     public function APP_WANPROXY(){
         if($this->ASReverseProxyAppliance){
@@ -2406,8 +2288,6 @@ class features{
         if($this->ASReverseProxyAppliance){
             return "";
         }
-        $SquidInRouterMode=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidInRouterMode"));
-        if($SquidInRouterMode==1){return "";}
         $config["SECURITY"]="AsSquidAdministrator";
         $config["TOKEN_INSTALLED"]="SQUID_INSTALLED";
         $config["TOKEN_REQUIRE"]="{proxy_service}";
@@ -2417,8 +2297,8 @@ class features{
         $config["TOKEN"]="SquidCachesProxyEnabled";
         $config["PROGRESS_FILE"]=PROGRESS_DIR ."/squid.access.center.progress";
         $config["LOG_FILE"]=PROGRESS_DIR ."/squid.access.center.progress.log";
-        $config["CMD_ON"]="squid2.php?install-cache-service=yes";
-        $config["CMD_OFF"]="squid2.php?disable-cache-service=yes";
+        $config["CMD_ON"]="/proxy/caches/feature/on";
+        $config["CMD_OFF"]="/proxy/caches/feature/off";
         $config["MEMMIN"]="1500";
         return $this->build_paragraph($config);
     }

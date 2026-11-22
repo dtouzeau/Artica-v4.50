@@ -6,7 +6,6 @@ if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1
 
 if(isset($_GET["table"])){features();exit;}
 if(isset($_POST["KerberosUsername"])){Save();exit;}
-if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 page();
 
 
@@ -53,14 +52,14 @@ function features(){
     $html[]="<center style='margin:50px'>";
     if($EnableFakeAuth==0) {
 
-        $check_js=$tpl->framework_buildjs("squid2.php?ntlmfake-enable=yes","squid.access.center.progress","squid.access.center.progress.log","virtual-ntlm-ad-restart","LoadAjax('table-virtual-ntlm','$page?table=yes');LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');");
+        $check_js=$tpl->framework_buildjs("/proxy/auth/fake-ntlm/on","squid.access.center.progress","squid.access.center.progress.log","virtual-ntlm-ad-restart","LoadAjax('table-virtual-ntlm','$page?table=yes');LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');");
 
         $html[]= $tpl->button_autnonome("{enable_fake_ntlm}", $check_js, "fab fa-windows", null, 400,
             "btn-primary");
 
     }else{
 
-        $check_js=$tpl->framework_buildjs("squid2.php?ntlmfake-disable=yes","squid.access.center.progress","squid.access.center.progress.log","virtual-ntlm-ad-restart","LoadAjax('table-virtual-ntlm','$page?table=yes');LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');");
+        $check_js=$tpl->framework_buildjs("/proxy/auth/fake-ntlm/off","squid.access.center.progress","squid.access.center.progress.log","virtual-ntlm-ad-restart","LoadAjax('table-virtual-ntlm','$page?table=yes');LoadAjaxSilent('left-barr','fw-left-menus.php?nothing=yes');");
 
         $html[]= $tpl->button_autnonome("{disable_fake_ntlm}", $check_js, "fab fa-windows", null, 400,
             "btn-danger");

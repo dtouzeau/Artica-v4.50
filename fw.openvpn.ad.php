@@ -34,7 +34,8 @@ function main_start():bool{
 }
 function delete_rule_js():bool{
     $tpl=new template_admin();
-    $ID=$_GET["delete-js"];
+    // Pentest 2026-11-04 : delete-js etait concatene dans la requete.
+    $ID=intval($_GET["delete-js"]);
     $md=$_GET["md"];
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $ligne=$q->mysqli_fetch_array("SELECT rulename FROM auths WHERE ID=$ID");
@@ -43,7 +44,8 @@ function delete_rule_js():bool{
 }
 function delete_rule_confirm():bool{
     $tpl=new template_admin();
-    $ID=$_POST["delete"];
+    // Pentest 2026-11-04 : delete etait concatene dans la requete.
+    $ID=intval($_POST["delete"]);
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM auths WHERE ID=$ID");
     $title=$ligne["rulename"];
@@ -81,14 +83,17 @@ function new_rule_save():bool{
     $Main["authtype"]=$_POST["ztype"];
 
 
+    // Pentest 2026-11-04 : rulename et ztype etaient concatenes dans la requete.
+    $fv=array();
     foreach ($Main as $key=>$val){
         $ff[]=$key;
-        $fd[]="'$val'";
+        $fd[]="?";
+        $fv[]=(string)$val;
     }
 
     $sql=sprintf("INSERT INTO auths (%s) VALUES (%s)",implode(",",$ff),implode(",",$fd));
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$fv);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;
@@ -138,6 +143,7 @@ function HasAdConns():array{
         $List[0]=$array["LDAP_SERVER"]." ({default}) ";
     }
     $ActiveDirectoryConnections=unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ActiveDirectoryConnections"));
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("ADLicenseRemoved"))==1){$ActiveDirectoryConnections=array();}
     if(!is_array($ActiveDirectoryConnections)){$ActiveDirectoryConnections=array();}
     foreach ($ActiveDirectoryConnections as $index=>$ligne){
         if ($index==0){continue;}
@@ -167,13 +173,16 @@ function auths_save():bool{
     $Main["connectionid"]=intval($_POST["connectionid"]);
     $Main["groupfilter"]=$_POST["groupfilter"];
 
+    // Pentest 2026-11-04 : groupfilter etait concatene dans la requete.
+    $fv=array();
     foreach ($Main as $key=>$val){
-        $fe[]="$key='$val'";
+        $fe[]="$key=?";
+        $fv[]=(string)$val;
     }
 
     $sql=sprintf("UPDATE auths SET %s WHERE ID=%s",implode(",",$fe),$ID);
     $q=new lib_sqlite("/home/artica/SQLITE/openvpn.db");
-    $q->QUERY_SQL($sql);
+    $q->QUERY_SQL_PARAMS($sql,$fv);
     if(!$q->ok){
         echo $tpl->post_error($q->mysql_error);
         return false;

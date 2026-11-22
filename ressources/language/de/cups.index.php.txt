@@ -1,27 +1,26 @@
-<ADD_NETWORK_PRINTER>Add a new network printer</ADD_NETWORK_PRINTER>
-<ADD_NETWORK_PRINTER_TEXT>If you printer is able to receive orders from network, use this area</ADD_NETWORK_PRINTER_TEXT>
-<add_this_printer>Add this printer</add_this_printer>
-<CONNECTED_PRINTERS>Connected printers</CONNECTED_PRINTERS>
-<CONNECTED_PRINTERS_TEXT>Scan your plugged printers on your system</CONNECTED_PRINTERS_TEXT>
-<delete_all_printers>Remove all printers</delete_all_printers>
-<drivers_in_collection>Printers drivers in your collection</drivers_in_collection>
+<ADD_NETWORK_PRINTER>Neuen Netzwerkdrucker hinzuf&#252;gen</ADD_NETWORK_PRINTER>
+<ADD_NETWORK_PRINTER_TEXT>Wenn Ihr Drucker Auftr&#228;ge &#252;ber das Netzwerk empfangen kann, verwenden Sie diesen Bereich</ADD_NETWORK_PRINTER_TEXT>
+<add_this_printer>Diesen Drucker hinzuf&#252;gen</add_this_printer>
+<CONNECTED_PRINTERS>Angeschlossene Drucker</CONNECTED_PRINTERS>
+<CONNECTED_PRINTERS_TEXT>Scannen Sie die an Ihrem System angeschlossenen Drucker</CONNECTED_PRINTERS_TEXT>
+<delete_all_printers>Alle Drucker entfernen</delete_all_printers>
+<drivers_in_collection>Druckertreiber in Ihrer Sammlung</drivers_in_collection>
 <found>Gefunden</found>
-<GENERATE_DRIVERS>Generate Drivers</GENERATE_DRIVERS>
-<GENERATE_DRIVERS_EXPLAIN>If you click on the button, Artica will download all known printers drivers database, it will build "gutenprint" drivers.[br]
-After this operation you will have the best drivers list in probablu found your right printer driver.[br]
-This operation should take a long time...[br]
-Read logs below in order to undertsand if there is some error during the process...
-</GENERATE_DRIVERS_EXPLAIN>
-<GENERATE_DRIVERS_TEXT>Build the drivers list in order to found the appriopriate driver for your printer</GENERATE_DRIVERS_TEXT>
-<INSTALLED_PRINTERS>Installed printers</INSTALLED_PRINTERS>
-<INSTALLED_PRINTERS_TEXT>Uninstall or get status of your installed printers</INSTALLED_PRINTERS_TEXT>
-<localization>localization</localization>
-<manufacturer>Manufacturer</manufacturer>
-<NO_CONNECTED_PRINTERS>No plugged printers on this computer</NO_CONNECTED_PRINTERS>
-<no_cups_drivers_scanned>There is no drivers-scanning operations executed.[br]Please execute drivers-scanning before this operation</no_cups_drivers_scanned>
-<printer_name>Printer name</printer_name>
-<QUERY_DRIVERS_COLLECTION>Query drivers Collection</QUERY_DRIVERS_COLLECTION>
-<QUERY_DRIVERS_COLLECTION_TEXT>Find and query your printer drivers collection</QUERY_DRIVERS_COLLECTION_TEXT>
-<search_drivers>Query the drivers database</search_drivers>
-<shared_printers>Shared printers</shared_printers>
-<share_this_printer>Share this printer</share_this_printer>
+<GENERATE_DRIVERS>Treiber generieren</GENERATE_DRIVERS>
+<GENERATE_DRIVERS_EXPLAIN>Wenn Sie auf die Schaltfl&#228;che klicken, l&#228;dt Artica die Datenbank aller bekannten Druckertreiber herunter und erstellt &quot;gutenprint&quot;-Treiber.[br]
+Nach diesem Vorgang verf&#252;gen Sie &#252;ber die beste Treiberliste, um wahrscheinlich Ihren richtigen Druckertreiber zu finden.[br]
+Dieser Vorgang kann lange dauern...[br]
+Lesen Sie die Protokolle unten, um zu verstehen, ob w&#228;hrend des Vorgangs ein Fehler aufgetreten ist...</GENERATE_DRIVERS_EXPLAIN>
+<GENERATE_DRIVERS_TEXT>Erstellen Sie die Treiberliste, um den passenden Treiber f&#252;r Ihren Drucker zu finden</GENERATE_DRIVERS_TEXT>
+<INSTALLED_PRINTERS>Installierte Drucker</INSTALLED_PRINTERS>
+<INSTALLED_PRINTERS_TEXT>Deinstallieren Sie Ihre installierten Drucker oder rufen Sie deren Status ab</INSTALLED_PRINTERS_TEXT>
+<localization>Lokalisierung</localization>
+<manufacturer>Hersteller</manufacturer>
+<NO_CONNECTED_PRINTERS>Keine angeschlossenen Drucker an diesem Computer</NO_CONNECTED_PRINTERS>
+<no_cups_drivers_scanned>Es wurden keine Treiber-Scan-Vorg&#228;nge ausgef&#252;hrt.[br]Bitte f&#252;hren Sie vor diesem Vorgang einen Treiber-Scan durch</no_cups_drivers_scanned>
+<printer_name>Druckername</printer_name>
+<QUERY_DRIVERS_COLLECTION>Treibersammlung abfragen</QUERY_DRIVERS_COLLECTION>
+<QUERY_DRIVERS_COLLECTION_TEXT>Finden und durchsuchen Sie Ihre Sammlung von Druckertreibern</QUERY_DRIVERS_COLLECTION_TEXT>
+<search_drivers>Treiberdatenbank abfragen</search_drivers>
+<shared_printers>Freigegebene Drucker</shared_printers>
+<share_this_printer>Diesen Drucker freigeben</share_this_printer>

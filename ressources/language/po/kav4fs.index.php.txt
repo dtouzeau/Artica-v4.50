@@ -1,12 +1,11 @@
-<APP_KAV4FS_ABOUT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.[br]
-Kaspersky Anti-Virus for Linux allows to:
+<APP_KAV4FS_ABOUT>O Kaspersky Anti-virus for Linux File Server foi concebido para proteger servidores de ficheiros que executam sistemas operativos Linux.[br]
+O Kaspersky Anti-Virus para Linux permite:
 [ul] 
-[li]Ensure real-time protection of the file system against malicious code:[br]
-intercept and analyze attempts to access files, disinfect and delete infected objects.[/li]
-[li]Scan objects on-demand: search infected and suspicious files (including files in the specified scan scopes); analyze files; disinfect or delete infected files.[/li]
-[li]Quarantine suspicious and infected files.[/li]
-[li]Create a copy of an infected object in the backup storage before disinfect or delete attempt to make it possible to restore such an object.[/li]
-[/ul]
-</APP_KAV4FS_ABOUT>
-<APP_KAV4FS_TEXT> Kaspersky Anti-virus for Linux File Server is designed to provide protection of file servers running Linux operating systems.</APP_KAV4FS_TEXT>
-<LICENSE_INSTALL>Install a license</LICENSE_INSTALL>
+[li]Garantir a prote&#231;&#227;o em tempo real do sistema de ficheiros contra c&#243;digo malicioso:[br]
+intercetar e analisar tentativas de acesso a ficheiros, desinfetar e eliminar objetos infetados.[/li]
+[li]Analisar objetos a pedido: procurar ficheiros infetados e suspeitos (incluindo ficheiros nos &#226;mbitos de an&#225;lise especificados); analisar ficheiros; desinfetar ou eliminar ficheiros infetados.[/li]
+[li]Colocar em quarentena ficheiros suspeitos e infetados.[/li]
+[li]Criar uma c&#243;pia de um objeto infetado no armazenamento de c&#243;pia de seguran&#231;a antes da tentativa de desinfe&#231;&#227;o ou elimina&#231;&#227;o, para possibilitar a restaura&#231;&#227;o de tal objeto.[/li]
+[/ul]</APP_KAV4FS_ABOUT>
+<APP_KAV4FS_TEXT>O Kaspersky Anti-virus for Linux File Server foi concebido para proteger servidores de ficheiros que executam sistemas operativos Linux.</APP_KAV4FS_TEXT>
+<LICENSE_INSTALL>Instalar uma licen&#231;a</LICENSE_INSTALL>

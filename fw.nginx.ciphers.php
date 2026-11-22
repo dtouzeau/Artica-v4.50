@@ -2,6 +2,10 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+// Pentest 2026-11-04 E-06 : la page ecrit la configuration TLS du reverse proxy.
+$users=new usersMenus(); if(!$users->AsWebMaster){exit();}
 define("rewrite_flags",
         array(
             "last"=>"{ngix_rwfl_last}",
@@ -177,6 +181,12 @@ function cipher_enable(){
 
 
 }
+// Syntaxe OpenSSL d'une liste de ciphers : noms, separateurs : et ,
+// prefixes ! + -, mots-cles @STRENGTH / @SECLEVEL=n.
+function cipher_string_valid($s):bool{
+    if(strlen($s)==0 || strlen($s)>2048){return false;}
+    return preg_match('#^[A-Za-z0-9_:,!+\-@=.]+$#',$s)==1;
+}
 function expert_save():bool{
     $tpl            = new template_admin();
     $tpl->CLEAN_POST();
@@ -185,8 +195,13 @@ function expert_save():bool{
     $ssl_cipher     = trim($_POST["expert"]);
     $ssl_cipher     = str_replace("\n","",$ssl_cipher);
     $ssl_cipher     = str_replace(" ","",$ssl_cipher);
+    // Pentest 2026-11-04 C-01 : la valeur allait telle quelle dans un shell.
+    if(!cipher_string_valid($ssl_cipher)){
+        echo "jserror:".htmlentities("Invalid cipher list");
+        return false;
+    }
 
-    exec("/usr/bin/openssl ciphers -v '$ssl_cipher' 2>&1",$results);
+    exec("/usr/bin/openssl ciphers -v ".escapeshellarg($ssl_cipher)." 2>&1",$results);
     foreach ($results as $line){
         if(preg_match("#:error:#",$line)){
             echo "jserror:".htmlentities($line);
@@ -227,7 +242,11 @@ function current_ciphers_table(){
     $ssl_ciphers_available=array();
 
 
-    exec("/usr/bin/openssl ciphers -v '$ssl_ciphers' 2>&1",$results);
+    // Valeur stockee : la reverifier, elle a pu etre ecrite avant la validation.
+    $results=array();
+    if(cipher_string_valid($ssl_ciphers)){
+        exec("/usr/bin/openssl ciphers -v ".escapeshellarg($ssl_ciphers)." 2>&1",$results);
+    }
     $stmamps["SSLv3"]="<span class='label label-danger'>&nbsp;SSLv3</span>";
     $stmamps["TLSv1"]="<span class='label label-warning'>&nbsp;TLSv1</span>";
     $stmamps["TLSv1.2"]="<span class='label label-info'>TLSv1.2</span>";
@@ -244,32 +263,24 @@ function current_ciphers_table(){
 
     }
 
-    $html[]="
-<table class=\"table table-hover\" id='table-$t'>
-	<thead>
-    	<tr>
-        	<th nowrap>{ssl_ciphers}</th>
-        	<th nowrap>&nbsp;</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
+    $html[]="<div class='awc-wrap' style='margin:0;padding:0'><div class='awc-card'><div class='awc-scroll'>"
+        ."<table class='awc-tbl awc-tbl-compact'><thead><tr>"
+        ."<th>{ssl_ciphers}</th>"
+        ."<th class='center'>&nbsp;</th>"
+        ."</tr></thead><tbody>";
 
 
 
     foreach ($ssl_ciphers_available as $cipher=>$level){
 
-        $html[]="<tr>
-                    <td width=50%><strong>$cipher&nbsp;</strong></td>
-                    <td style='width:1%' nowrap>$level</td>
-                    </tr>";
-
-
-
+        // width=50% etait un attribut NON QUOTE contenant un %, et le </tbody>
+        // n'etait jamais emis: seul </table> fermait le tableau.
+        $html[]="<tr><td class='awc-mono'><strong>".htmlspecialchars($cipher)."</strong></td>"
+               ."<td class='center awc-nowrap'>$level</td></tr>";
     }
 
-    $html[]="</table>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="</tbody></table></div></div></div>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
 
 }
 
@@ -368,18 +379,14 @@ function popup_table(){
 	<i class='fa fa-save'></i> {apply_parameters_to_the_system} </label>";
     $html[]="</div>";
 
-    $html[]="
-<table class=\"table table-hover\" id='$tableid'>
-	<thead>
-    	<tr>
-        	<th nowrap>{ssl_ciphers} - v{$openssl_nginx_version}</th>
-        	<th nowrap>&nbsp;</th>
-        	<th nowrap>{notfor}</th>
-        	<th nowrap>{enable}</small></th>
-        </tr>
-  	</thead>
-	<tbody>
-";
+    // L'intitule {enable} se fermait sur un </small> ORPHELIN.
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>"
+        ."<table class='awc-tbl awc-tbl-compact'><thead><tr>"
+        ."<th>{ssl_ciphers} - v".htmlspecialchars((string)$openssl_nginx_version)."</th>"
+        ."<th class='center'>&nbsp;</th>"
+        ."<th class='center'>{notfor}</th>"
+        ."<th class='center'>{enable}</th>"
+        ."</tr></thead><tbody id='ciph-rows'>";
 
 
 
@@ -392,15 +399,17 @@ function popup_table(){
         }
 
         $enablebt=$tpl->icon_check($enable,"Loadjs('$page?cipher-enable=$cipherencode&serviceid=$serviceid')","","AsWebMaster");
-        $notfor=$tpl->icon_check($ARRAY[$cipher],"Loadjs('$page?cipher-not=$cipherencode&serviceid=$serviceid')","","AsWebMaster");
+        // $ARRAY[$cipher] etait lu SANS garde alors que la ligne precedente
+        // teste justement son existence: avertissement en PHP 8 pour tout
+        // chiffrement non encore configure.
+        $notfor=$tpl->icon_check($ARRAY[$cipher] ?? 0,"Loadjs('$page?cipher-not=$cipherencode&serviceid=$serviceid')","","AsWebMaster");
 
-
-        $html[]="<tr>
-                    <td width=50%><strong>$cipher&nbsp;</strong></td>
-                    <td style='width:1%' nowrap>$level</td>
-                    <td style='width:1%' nowrap>$notfor</td>
-                    <td style='width:1%' nowrap>$enablebt</td>
-                    </tr>";
+        $html[]="<tr>"
+            ."<td class='awc-mono'><strong>".htmlspecialchars($cipher)."</strong></td>"
+            ."<td class='center awc-nowrap'>$level</td>"
+            ."<td class='center awc-nowrap'>$notfor</td>"
+            ."<td class='center awc-nowrap'>$enablebt</td>"
+            ."</tr>";
 
         unset($ARRAY[$cipher]);
 
@@ -412,30 +421,26 @@ function popup_table(){
         $notforbt       = $tpl->icon_check($notfor, "Loadjs('$page?cipher-not=$cipherencode&serviceid=$serviceid')", "", "AsWebMaster");
         $delete          =$tpl->icon_delete("Loadjs('$page?cipher-remove=$cipherencode&serviceid=$serviceid&md=$md')","AsWebMaster");
 
-        $html[]="<tr id='$md'>
-                    <td width=50%><strong>$cipher</strong></td>
-                    <td style='width:1%' nowrap>&nbsp;</td>
-                    <td style='width:1%' nowrap>$notforbt</td>
-                    <td style='width:1%' nowrap>$delete</td>
-                    </tr>";
+        $html[]="<tr id='$md'>"
+            ."<td class='awc-mono'><strong>".htmlspecialchars($cipher)."</strong></td>"
+            ."<td class='center awc-nowrap'>&nbsp;</td>"
+            ."<td class='center awc-nowrap'>$notforbt</td>"
+            ."<td><div class='awc-acts'>$delete</div></td>"
+            ."</tr>";
 
         
     }
 
-        $html[]="</tbody>";
-        $html[]="<tfoot>";
+        // L'ancien pied -- une <ul class='pagination'> dans un <tfoot> -- etait
+        // rempli par footable; le pager awc vit en dehors du tableau.
+        $html[]="</tbody></table></div>";
+        $html[]="<div class='awc-foot'><span>&nbsp;</span>"
+               ."<span class='awc-pg' id='ciph-pager'></span></div>";
+        $html[]="</div></div>";
 
-        $html[]="<tr>";
-        $html[]="<td colspan='4'>";
-        $html[]="<ul class='pagination pull-right'></ul>";
-        $html[]="</td>";
-        $html[]="</tr>";
-        $html[]="</tfoot>";
-        $html[]="</table>";
-        $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-        $html[]="$(document).ready(function() { $('#$tableid').footable( { \"filtering\": { \"enabled\": true";
-        $html[]="},\"sorting\": { \"enabled\": true },";
-        $html[]="\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
-        $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        // awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+        echo awc_table_style()
+            .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+            ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>"
+            .awc_pager_js(100,"ciph-rows","ciph-pager");
         }

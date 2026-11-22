@@ -1,4 +1,5 @@
 <?php
+// Versionnée pour le SP9 2026-10-10
 
 include_once(dirname(__FILE__)."/frame.class.inc"); 
 include_once(dirname(__FILE__)."/class.unix.inc");
@@ -7,16 +8,9 @@ if(isset($_GET["cloud-install"])){cloud_install();exit;}
 if(isset($_GET["uninstall"])){uninstall();exit;}
 if(isset($_GET["install"])){install();exit;}
 if(isset($_GET["status"])){status();exit;}
-if(isset($_GET["reload"])){reload();exit;}
-if(isset($_GET["restart"])){restart_progress();exit;}
-if(isset($_GET["restart-progress"])){restart_progress();exit;}
-if(isset($_GET["install-tgz"])){install_tgz();exit;}
-
 
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
-
-
 
 
 function cloud_install(){

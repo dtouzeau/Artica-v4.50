@@ -1,12 +1,12 @@
-<add_a_rule>Add a new rule</add_a_rule>
-<edit_a_rule>Edit rule</edit_a_rule>
-<error_header>Please select value in header field</error_header>
-<error_pattern>Please type a pattern to detect</error_pattern>
-<match_pattern>Match pattern</match_pattern>
-<only_regex_off>(Only if use regex pattern is switched off)</only_regex_off>
-<rules_list>Rules list</rules_list>
-<select_header_field>if in</select_header_field>
-<user_delete>Delete mail</user_delete>
-<user_quarantine>Put mail into quarantine</user_quarantine>
-<user_skip_antispam>Skip antispam process</user_skip_antispam>
-<use_regex>Use regex pattern</use_regex>
+<add_a_rule>Dodaj now&#261; regu&#322;&#281;</add_a_rule>
+<edit_a_rule>Edytuj regu&#322;&#281;</edit_a_rule>
+<error_header>Wybierz warto&#347;&#263; w polu nag&#322;&#243;wka</error_header>
+<error_pattern>Wpisz wzorzec do wykrycia</error_pattern>
+<match_pattern>Wzorzec dopasowania</match_pattern>
+<only_regex_off>(Tylko je&#347;li u&#380;ycie wzorca regex jest wy&#322;&#261;czone)</only_regex_off>
+<rules_list>Lista regu&#322;</rules_list>
+<select_header_field>je&#347;li w</select_header_field>
+<user_delete>Usu&#324; wiadomo&#347;&#263;</user_delete>
+<user_quarantine>Umie&#347;&#263; wiadomo&#347;&#263; w kwarantannie</user_quarantine>
+<user_skip_antispam>Pomi&#324; proces antyspamowy</user_skip_antispam>
+<use_regex>U&#380;yj wzorca regex</use_regex>

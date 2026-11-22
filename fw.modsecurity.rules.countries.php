@@ -1,16 +1,21 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.rtmm.tools.inc");
 
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["service-js"])){service_js();exit;}
 if(isset($_GET["popup-main"])){popup_main();exit;}
 if(isset($_GET["popup-table"])){popup_table();exit;}
 if(isset($_GET["popup-table2"])){popup_table2();exit;}
 if(isset($_GET["pattern-remove"])){rule_remove();exit;}
 if(isset($_GET["pattern-enable"])){rule_enable();exit;}
-if(isset($_GET["popup-rule"])){rule_popup();exit;}
-if(isset($_POST["Country"])){rule_save();exit;}
 if(isset($_GET["enable-rule-js"])){enable_feature();}
 if(isset($_GET["top-buttons"])){top_buttons();exit;}
 if(isset($_GET["disableall"])){rule_disable_all();exit;}
@@ -74,23 +79,6 @@ function rule_remove():bool{
 
 }
 
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
 function rule_enable():bool{
     $Country=$_GET["pattern-enable"];
     $serviceid=intval($_GET["serviceid"]);
@@ -268,11 +256,17 @@ function popup_table2():bool{
         echo $tpl->_ENGINE_parse_body($html);
         return true;
         }
+
 function GetDataSource($id):string{
-    $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-    $q->QUERY_SQL("PRAGMA wal_autocheckpoint=0");
-    $ligne=$q->mysqli_fetch_array("SELECT description FROM mod_security_patterns WHERE ID='$id'");
-    return strval($ligne["description"]);
+    $id=intval($id);
+    if($id<=0){return "";}
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/mod_security_patterns/ID/$id");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"]) || count($data["rows"])==0){
+        return "";
+    }
+    $row=$data["rows"][0];
+    return isset($row["description"]) ? strval($row["description"]) : "";
 }
 function SetDataSource($id,$value){
     $id=intval($id);

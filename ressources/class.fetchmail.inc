@@ -71,7 +71,6 @@ class fetchmail{
 		$sock=new sockets();
 		$sock->SET_INFO("FetchmailPoolingTime",$this->FetchmailPoolingTime);
 		$sock->SET_INFO("FetchmailDaemonPostmaster",$this->FetchmailDaemonPostmaster);
-		$sock->getFrameWork('fetchmail.php?reload-fetchmail=yes');
 	}
 	
 	
@@ -347,7 +346,6 @@ class Fetchmail_settings{
 		}
 		if(!$noreload){
 			$sock=new sockets();
-			$sock->getFrameWork('fetchmail.php?reload-fetchmail=yes');
 			if($sock->GET_INFO("ArticaMetaEnabled")==1){$sock->getFrameWork("cmd.php?artica-meta-fetchmail-rules=yes");}
 		}
 		return true;	
@@ -516,7 +514,6 @@ class Fetchmail_settings{
 		if(!$q->ok){echo $q->mysql_error;return false;}
 		$sock=new sockets();
 		if($sock->GET_INFO("ArticaMetaEnabled")==1){$sock->getFrameWork("cmd.php?artica-meta-fetchmail-rules=yes");}
-		$sock->getFrameWork('fetchmail.php?reload-fetchmail=yes');
 		return true; 
 	}
 	

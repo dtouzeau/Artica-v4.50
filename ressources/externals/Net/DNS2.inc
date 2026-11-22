@@ -271,7 +271,17 @@ class Net_DNS2
      * @access public
      *
      */
-    public function __construct(array $options = array()){
+    // ?array et non "array $options = array()": les trois sous-classes
+    // (Resolver, Updater, Notifier) transmettent ici leur propre $options, qui
+    // vaut null quand on les instancie sans argument -- ce que fait
+    // fw.system.ActiveDirectory.php avec "new Net_DNS2_Resolver()". Un type
+    // array NON nullable rejetait cet appel par un TypeError avant meme d'entrer
+    // dans le corps, ce qui rendait le is_null() ci-dessous inatteignable: le
+    // garde defensif etait du code mort et la page mourait, le TypeError
+    // n'etant pas un Net_DNS2_Exception, il traversait le catch de l'appelant.
+    // Reproduit a l'identique sous PHP 7.3 ET 8.4: ce n'est pas une regression
+    // liee a une version.
+    public function __construct(?array $options = null){
         if(is_null($options)){
             $options = array();
         }

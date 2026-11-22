@@ -846,7 +846,7 @@ function rotate(){
     squid_admin_mysql(2,"Backup source file {success}","$LogRotatePath/adagent.log.$suffix_time",__FILE__,__LINE__);
 
     if($BackupSquidLogsUseNas==1){
-        shell_exec("$php /usr/share/artica-postfix/exec.squid.rotate.php --backup-adagent");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/logrotate/movenas");
     }
 
 }

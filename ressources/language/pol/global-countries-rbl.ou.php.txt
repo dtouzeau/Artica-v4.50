@@ -1,12 +1,9 @@
-<action_100_pourc>Action when score up to 100%</action_100_pourc>
-<rbl_explain>
-This module use pourcent method to judge if a mail is sended by a black hole relay or spamer relay.[br]
-In the table below, you must reach 1OO% with a list of rbl servers database.[br]to increase the detection rate, you may exceed 100% of results[br]For example you can set[br]
+<action_100_pourc>Akcja, gdy wynik osi&#261;gnie 100%</action_100_pourc>
+<rbl_explain>Ten modu&#322; u&#380;ywa metody procentowej do oceny, czy wiadomo&#347;&#263; jest wysy&#322;ana przez relay typu black hole lub relay spamera.[br]
+W poni&#380;szej tabeli musisz osi&#261;gn&#261;&#263; 100% z list&#261; baz danych serwer&#243;w rbl.[br]aby zwi&#281;kszy&#263; wska&#378;nik wykrywania, mo&#380;esz przekroczy&#263; 100% wynik&#243;w[br]Na przyk&#322;ad mo&#380;esz ustawi&#263;[br]
 [ul]
-[li]blackhole.compu.net as 20%[/li]
-[li]sbl.spamhaus.org as 30%[/li]
-[li]relays.mail-abuse.org as 70%[/li]
-[/ul][br]
-
-</rbl_explain>
-<rbl_servers>RBL/RHSBL servers</rbl_servers>
+[li]blackhole.compu.net jako 20%[/li]
+[li]sbl.spamhaus.org jako 30%[/li]
+[li]relays.mail-abuse.org jako 70%[/li]
+[/ul][br]</rbl_explain>
+<rbl_servers>Serwery RBL/RHSBL</rbl_servers>

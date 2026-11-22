@@ -38,7 +38,8 @@ function popup(){
     "squid.articarest.nohup","squid.articarest.nohup.log","apply-configuration-$t",implode(";",$after));
 
     $html[]="<div id='apply-configuration-$t'>";
-    $html[]=$tpl->div_error("{WARN_OPE_RESTART_SQUID_ASK}");
+    // Avertissement, pas une erreur : div_error titrait la confirmation "System error".
+    $html[]=$tpl->div_warning("{WARN_OPE_RESTART_SQUID_ASK}");
     $html[]="<div style='margin-top:10px;text-align:right'>".$tpl->button_autnonome("{continue}",$jsrestart,"fas fa-shield-check")."</div>";
     $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);

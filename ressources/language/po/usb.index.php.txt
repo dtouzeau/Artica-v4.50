@@ -2,29 +2,31 @@
 Ao clicar num item pode delegar um dispositivo usb com o dispositivo usb de auto-backup[br]
 Isto significa que quando se liga o dispositivo ao computador, a artica monta-o automaticamente e executa a funç%C3£o de c%C3%B3pia de segurança [br].
 Se deixar este dispositivo permanentemente, a operaç%C3£o de backup ser%C3¡ realizada a cada 2 horas</about_usb>
-<automount>Auto-connect</automount>
-<automount_explain>Automatically connect this device when you plug it on the system</automount_explain>
+<automount>Liga&#231;&#227;o autom&#225;tica</automount>
+<automount_explain>Ligar automaticamente este dispositivo quando o ligar ao sistema</automount_explain>
 <automount_explain_text>Esta operaç%C3£o ligar%C3¡ automaticamente o dispositivo ao direct%C3%B3rio /automounts quando este estiver ligado ao sistema [br].
 a operaç%C3£o de ligaç%C3£o ser%C3¡ autom%C3¡tica quando o sistema quiser aceder a ela.</automount_explain_text>
-<auto_folder>Directory name point</auto_folder>
-<click_to_edit>Click to edit...</click_to_edit>
+<auto_folder>Nome do diret&#243;rio</auto_folder>
+<click_to_edit>Clique para editar...</click_to_edit>
 <connected>Conectado</connected>
-<dismount_text>[b]Disconnect this key[/b][br]Destroy the pointer to this usb storage in order to physically remove it from the computer</dismount_text>
-<error_understand_fs>Unable to understand filesystem type</error_understand_fs>
-<file_system>File system</file_system>
-<formatdevice>Format this device</formatdevice>
-<format_warning>Are you sure to perform this operation,all datas will be erased...</format_warning>
+<dismount_text>[b]Desligar esta chave[/b][br]destruir o apontador para este armazenamento USB para o remover fisicamente do computador</dismount_text>
+<error_understand_fs>N&#227;o &#233; poss&#237;vel reconhecer o tipo de sistema de ficheiros</error_understand_fs>
+<file_system>Sistema de ficheiros</file_system>
+<formatdevice>Formatar este dispositivo</formatdevice>
+<format_warning>Tem a certeza de que pretende efetuar esta opera&#231;&#227;o? Todos os dados ser&#227;o apagados...</format_warning>
 <local>local</local>
-<make_autobackup>Auto-backup device</make_autobackup>
-<manufacturer>manufacturer</manufacturer>
+<make_autobackup>Dispositivo de c&#243;pia autom&#225;tica</make_autobackup>
+<manufacturer>Fabricante</manufacturer>
 <model>Modelo</model>
-<mounted_on>mounted on</mounted_on>
-<mount_text>[b]Connect this key[/b][br]create a pointer to this usb storage in order to access it</mount_text>
-<not_applicable>Not applicable</not_applicable>
-<plugged>plugged</plugged>
+<mounted_on>Montado em</mounted_on>
+<mount_text>[b]Ligar esta chave[/b][br]criar um apontador para este armazenamento USB para lhe aceder</mount_text>
+<not_applicable>N&#227;o aplic&#225;vel</not_applicable>
+<plugged>ligado</plugged>
 <speed>Velocidade</speed>
 <system>Sistema</system>
-<umake_autobackup>Remove Auto-backup</umake_autobackup>
-<vendor>Vendor</vendor>
-<warnautoback>You choose that this device will be an auto-backup device.\nThis meens that when you plug this device on this computer,\nArtica will backup automatically mandatories datas on this device</warnautoback>
-<warnautobackremove>This device will be disconnected has an auto-backup device\nContinue?</warnautobackremove>
+<umake_autobackup>Remover c&#243;pia autom&#225;tica</umake_autobackup>
+<vendor>Fornecedor</vendor>
+<warnautoback>Escolheu que este dispositivo ser&#225; um dispositivo de c&#243;pia de seguran&#231;a autom&#225;tica.
+Isto significa que quando ligar este dispositivo a este computador, o Artica far&#225; automaticamente uma c&#243;pia de seguran&#231;a dos dados obrigat&#243;rios neste dispositivo</warnautoback>
+<warnautobackremove>Este dispositivo ser&#225; desligado como dispositivo de c&#243;pia de seguran&#231;a autom&#225;tica
+Continuar?</warnautobackremove>

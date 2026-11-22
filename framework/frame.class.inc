@@ -66,13 +66,6 @@ function Build_pid_func($file,$function){
 	
 }
 
-function CheckPID($pid,$base,$function,$file){
-	if(!isset($GLOBALS["CLASS_UNIX"])){ include_once(dirname(__FILE__)."/class.unix.inc");$GLOBALS["CLASS_UNIX"]=new unix();}
-   	if(!is_object($GLOBALS["CLASS_UNIX"])){include_once(dirname(__FILE__)."/class.unix.inc");$GLOBALS["CLASS_UNIX"]=new unix();}
-   	return $GLOBALS["CLASS_UNIX"]->process_exists($pid);
-	}
-
-
 function sys_THREAD_COMMAND_SET($zcommands){
 	 if(!isset($GLOBALS["CLASS_UNIX"])){ include_once(dirname(__FILE__)."/class.unix.inc");$GLOBALS["CLASS_UNIX"]=new unix();}
 	 if(!is_object($GLOBALS["CLASS_UNIX"])){include_once(dirname(__FILE__)."/class.unix.inc");$GLOBALS["CLASS_UNIX"]=new unix();}
@@ -90,22 +83,6 @@ function find_program($strProgram) {
    return $GLOBALS["CLASS_UNIX"]->find_program($strProgram);
    }
 
-function sys_CRON_CREATE_SCHEDULE($ProgrammedTime,$Croncommand,$filename){
-  $mailadmin=info_ADMIN_MAIL();
-  $conf="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/X11R6/bin:/usr/share/artica-postfix/bin\n";
-  $conf=$conf."MAILTO=\"$mailadmin\"\n";
-  $conf=$conf."$ProgrammedTime\troot\t$Croncommand >/dev/null 2>&1\n";
-  sys_events("sys_CRON_CREATE_SCHEDULE:: create new entry $filename");
-  file_put_contents("/etc/cron.d/$filename",$conf);
-  chmod("/etc/cron.d/$filename",0640);
-  chown("/etc/cron.d/$filename","root");
-}
-
-function info_ADMIN_MAIL(){
-	if(!is_file('/etc/artica-postfix/smtpnotif.conf')){return null;}
-	$ini=new iniFrameWork("/etc/artica-postfix/smtpnotif.conf");
-	return $ini->get("SMTP","smtp_dest");
-}
 function LOCATE_PHP5_BIN2(){
   if(!isset($GLOBALS["CLASS_UNIX"])){ include_once(dirname(__FILE__)."/class.unix.inc");$GLOBALS["CLASS_UNIX"]=new unix();}
   if(!is_object($GLOBALS["CLASS_UNIX"])){include_once(dirname(__FILE__)."/class.unix.inc");$GLOBALS["CLASS_UNIX"]=new unix();}

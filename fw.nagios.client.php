@@ -17,7 +17,6 @@ if(isset($_GET["status-start"])){status_start();exit;}
 if(isset($_POST["WazhuClientServer"])){Save();exit;}
 if(isset($_GET["nagios-client-status"])){status_client();exit;}
 if(isset($_GET["reset-js"])){reset_js();exit;}
-if(isset($_POST["reset"])){reset_save();exit;}
 if(isset($_GET["nagios-client-top"])){status_top();exit;}
 if(isset($_GET["events-start"])){events_start();exit;}
 if(isset($_GET["search"])){search_results();exit;}
@@ -58,7 +57,7 @@ function delete_manager_node_js():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $agent_id=$_GET["delete-manager-node"];
-    $infos=unserialize(base64_decode($_GET["infos"]));
+    $infos=unserialize(base64_decode($_GET["infos"]),array("allowed_classes"=>false));
     $hostname=$infos[0];
     $IP=$infos[1];
     $id=$_GET["id"];

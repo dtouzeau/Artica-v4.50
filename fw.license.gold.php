@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
@@ -32,10 +35,11 @@ function reset_js(){
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/artica_license.txt";
     $ARRAY["CMD"]="/register/license";
     $ARRAY["TITLE"]="{artica_license}";
-    $ARRAY["AFTER"]="dialogInstance4.close();LoadAjax('table-loader-license-service','fw.license.php?table=yes');";
+    $lic_page=$GLOBALS["CLASS_SOCKETS"]->USE_LICENSE_V2()?"fw.licensev2.php":"fw.license.php";
+    $ARRAY["AFTER"]="dialogInstance4.close();LoadAjax('table-loader-license-service','$lic_page?table=yes');";
 
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=gold');";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=gold');";
     $tpl->js_confirm_execute("{reset} Gold License ?","reset","yes","dialogInstance4.close();$jsrestart");
 
 }
@@ -59,15 +63,16 @@ function popup(){
 
 
     $form[]=$tpl->field_text("GOLD","{gold_license}",$APP_ARTICA_LIC_GOLD,true);
-
-    $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/artica.license.progress";
-    $ARRAY["LOG_FILE"]=PROGRESS_DIR."/artica_license.txt";
-    $ARRAY["CMD"]="/register/license";
-    $ARRAY["TITLE"]="{artica_license}";
-    $ARRAY["AFTER"]="dialogInstance4.close();LoadAjax('table-loader-license-service','fw.license.php?table=yes');";
-    $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=gold$time');";
     $html[]="<div id='gold$time'></div>";
+
+    $jsrestart=$tpl->framework_buildjs(
+        "/license/gold/verify",
+        "artica.gold.progress",
+        "artica.license.progress.log",
+        "gold$time",
+        "dialogInstance4.close();LoadAjax('table-loader-license-service','".
+        ($GLOBALS["CLASS_SOCKETS"]->USE_LICENSE_V2()?"fw.licensev2.php":"fw.license.php")."?table=yes');"
+    );
 
     if($APP_ARTICA_LIC_GOLD<>null){
         $tpl->form_add_button("{reset}", "Loadjs('$page?reset-js=yes')");

@@ -1,9 +1,9 @@
-<add_new_fetchmail_rule>Add a new fetchmail rule</add_new_fetchmail_rule>
-<add_new_fetchmail_rule_text>Create a rule that allow server to import your mails on your mailbox</add_new_fetchmail_rule_text>
-<and_send_to>and send emails to</and_send_to>
+<add_new_fetchmail_rule>Eine neue Fetchmail-Regel hinzuf&#252;gen</add_new_fetchmail_rule>
+<add_new_fetchmail_rule_text>Eine Regel erstellen, die es dem Server erlaubt, Ihre E-Mails in Ihr Postfach zu importieren</add_new_fetchmail_rule_text>
+<and_send_to>und E-Mails senden an</and_send_to>
 <confirm_delete>Diese Regel l%C3%B6schen?</confirm_delete>
-<fetch_address>Fetch address</fetch_address>
-<service_fetchmail_disabled_admin>Warning, the fetch mail service is currently disabled, your rules will not be in production mode...</service_fetchmail_disabled_admin>
-<using_ssl>using SSL</using_ssl>
-<view>View rule in source format</view>
-<with_port>with port</with_port>
+<fetch_address>Abrufadresse</fetch_address>
+<service_fetchmail_disabled_admin>Warnung, der Fetchmail-Dienst ist derzeit deaktiviert, Ihre Regeln werden nicht im Produktionsmodus sein...</service_fetchmail_disabled_admin>
+<using_ssl>mit SSL</using_ssl>
+<view>Regel im Quellformat anzeigen</view>
+<with_port>mit Port</with_port>

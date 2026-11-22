@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Central DHCP relay management (cluster_mode).
  * CRUD operations on the management server's central config JSON.
@@ -46,7 +48,7 @@ function crelays_page(): void {
         $h[] = "<div class='alert alert-info'><i class='fas fa-info-circle'></i> {no_relays_defined}</div>";
     } else {
         $t = time();
-        $h[] = "<table id='tbl-cr-$t' class='footable table table-stripped' data-page-size='50'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "<thead><tr>";
         $h[] = "  <th data-sortable=true data-type='text'>ID</th>";
         $h[] = "  <th data-sortable=true data-type='text'>{class_name}</th>";
@@ -54,12 +56,12 @@ function crelays_page(): void {
         $h[] = "  <th>{circuit_id}</th>";
         $h[] = "  <th>{remote_id}</th>";
         $h[] = "  <th>{actions}</th>";
-        $h[] = "</tr></thead><tbody>";
+        $h[] = "</tr></thead><tbody id='crelay-rows'>";
 
         $TRCLASS = null;
         foreach ($relays as $r) {
             if (!is_object($r)) continue;
-            if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+            $TRCLASS=null;
             $rid       = htmlspecialchars($r->id ?? '');
             $className = htmlspecialchars($r->class_name ?? '');
             $desc      = htmlspecialchars($r->description ?? '');
@@ -82,12 +84,8 @@ function crelays_page(): void {
             $h[] = "</tr>";
         }
         $h[] = "</tbody>";
-        $h[] = "<tfoot><tr><td colspan='6'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-        $h[] = "</table>";
-        $h[] = "<script>NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS);
-        $h[] = "$(document).ready(function(){ $('#tbl-cr-$t').footable({";
-        $h[] = "  \"filtering\":{\"enabled\":true},\"sorting\":{\"enabled\":true},\"paging\":{\"size\":50}";
-        $h[] = "}); });</script>";
+        $h[] = "</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='crelay-pager'></span></div></div></div>";
+        $h[] = "<script>NoSpinner();\n" . implode("\n", $tpl->ICON_SCRIPTS) . "</script>";
     }
 
     // Delete JS
@@ -106,7 +104,10 @@ function crelays_page(): void {
     $h[] = "</script>";
     $h[] = "<div id='crelays-container-$id'></div>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    // Pagination reprise de FooTable (jamais initialise depuis le passage awc-*).
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(implode("\n", $h))
+        .awc_pager_js(50,"crelay-rows","crelay-pager");
 }
 
 // ── Dialog opener ─────────────────────────────────────────────────────────────

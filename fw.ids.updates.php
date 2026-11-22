@@ -4,7 +4,6 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
 
-if(isset($_GET["upload-pattern-js"])){upload_pattern_js();exit;}
 
 page();
 

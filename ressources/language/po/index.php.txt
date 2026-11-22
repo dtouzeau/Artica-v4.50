@@ -5,6 +5,6 @@
 <srv_artica>Servi&ccedil;o Artica</srv_artica>
 <srv_kav_mail>Kaspersky Antivirus para Postfix</srv_kav_mail>
 <srv_postfix>Status do servi&ccedil;o Postfix</srv_postfix>
-<srv_postfix_infos>Postfix infos</srv_postfix_infos>
-<srv_postfix_version>Postfix major version</srv_postfix_version>
+<srv_postfix_infos>Informa&#231;&#245;es do Postfix</srv_postfix_infos>
+<srv_postfix_version>Vers&#227;o principal do Postfix</srv_postfix_version>
 <WELCOME>Bem vindo ao Artica-Postfix</WELCOME>

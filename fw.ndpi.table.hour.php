@@ -31,34 +31,32 @@ function popup(){
 
 function search(){
     $t=time();
-    $q=new postgres_sql();
     $tpl=new template_admin();
-    $hour1=date("Y-m-d H:00:00");
-    $hour2=date("Y-m-d H:59:59");
     $ipClass=new IP();
-
-    $search=$_GET["search"];
-
-    if($search==null) {
-        $sql = "SELECT src,dst,category,sum(download) as download,sum(upload) as upload FROM ndpi_main WHERE zdate>='$hour1' and zdate<='$hour2' GROUP BY src,dst,category ORDER BY download DESC LIMIT 500 ";
+    $search=trim($_GET["search"]);
+    $uri="/firewall/ndpi/flows/hour";
+    if($search<>null){
+        if(!$ipClass->isValid($search)){
+            echo $tpl->div_error("{invalid_ipaddr}");
+            return false;
+        }
+        $uri="$uri?search=".urlencode($search);
     }
-    if($ipClass->isValid($search)){
-
-        $sql = "SELECT src,dst,category,sum(download) as download,sum(upload) as upload FROM ndpi_main 
-        WHERE ( (src='$search') OR (dst='$search') ) AND (zdate>='$hour1' and zdate<='$hour2') GROUP BY src,dst,category ORDER BY download DESC LIMIT 500 ";
-
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API($uri));
+    if(json_last_error()>JSON_ERROR_NONE){
+        echo $tpl->div_error("{error}: ".json_last_error_msg());
+        return false;
     }
+    if(!property_exists($json,"success") || !$json->success){
+        $error="{error}";
+        if(property_exists($json,"error")){$error=htmlspecialchars($json->error,ENT_QUOTES);}
+        echo $tpl->div_error($error);
+        return false;
+    }
+    $rows=array();
+    if(property_exists($json,"data") && is_array($json->data)){$rows=$json->data;}
 
-
-
-    $results=$q->QUERY_SQL($sql);
-
-
-
-    if(!$q->ok){echo $q->mysql_error."\n";}
-
-
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{src}</th>";
@@ -69,27 +67,26 @@ function search(){
     $html[]="</tr>";
     $html[]="</thead>";
     $html[]="<tbody>";
+
     $TRCLASS=null;
-
-    while ($ligne = pg_fetch_assoc($results)) {
-        $src=$ligne["src"];
-        $dst=$ligne["dst"];
-        $category=$ligne["category"];
+    foreach ($rows as $ligne) {
+        $src=htmlspecialchars($ligne->src,ENT_QUOTES);
+        $dst=htmlspecialchars($ligne->dst,ENT_QUOTES);
+        $category=htmlspecialchars($ligne->app,ENT_QUOTES);
+        if($ligne->src=="0.0.0.0"){$src="{others}";$dst="{others}";}
         $js=null;
-        $download=FormatBytes($ligne["download"]/1024);
-        $upload=FormatBytes($ligne["upload"]/1024);
+        $download=FormatBytes($ligne->download/1024);
+        $upload=FormatBytes($ligne->upload/1024);
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
         $html[]="<tr class='$TRCLASS'>";
-        
         $html[]="<td><strong>". texttooltip($src,null,$js)."</strong></td>";
         $html[]="<td><strong>". texttooltip($dst,null,$js)."</strong></td>";
         $html[]="<td  width='1% nowrap'>". texttooltip($category,null,$js)."</td>";
         $html[]="<td  width='1% nowrap'>$download</td>";
         $html[]="<td  width='1% nowrap'>$upload</td>";
         $html[]="</tr>";
-
     }
+
     $html[]="</tbody>";
     $html[]="<tfoot>";
     $html[]="<tr>";
@@ -99,15 +96,12 @@ function search(){
     $html[]="</tr>";
     $html[]="</tfoot>";
     $html[]="</table>";
-
-
-
-
-$html[]="</div><div class='center' style='margin-top:10px;'><small>$sql</small></div>
+    $html[]="</div>
 	<script>
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
 $(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 </script>";
-echo $tpl->_ENGINE_parse_body($html);
 
+    echo $tpl->_ENGINE_parse_body($html);
+    return true;
 }

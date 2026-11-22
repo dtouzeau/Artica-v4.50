@@ -33,6 +33,10 @@ class artica_wizard{
     private $previous_js="";
     public $Telephone="";
     public $eMail="";
+    private $form_script="";
+    private $section_js=array();
+    private $has_sections=false;
+    private $card_opened=false;
 
     function __construct($title=null,$step=1){
         $this->title=$title;
@@ -75,7 +79,9 @@ class artica_wizard{
     function SnapshotDelete():bool{
         $this->savedsettings["snapshot_uploaded"]=0;
         unset($this->savedsettings["snapshot_fname"]);
-        $this->savedsettings["artica_method"]=0;
+        // Choix effacé, pas remis à 0 : 0 est la valeur du proxy Squid, qui
+        // serait alors pré-coché à l'étape 3 sans que personne l'ait choisi.
+        unset($this->savedsettings["artica_method"]);
         $GLOBALS["CLASS_SOCKETS"]->SET_INFO("TempWizard",base64_encode(serialize($this->savedsettings)));
         $GLOBALS["CLASS_SOCKETS"]->REST_API("/reset/cache");
         return true;
@@ -294,6 +300,30 @@ class artica_wizard{
 
 
 
+    // ---------------------------------------------------------------------
+    // Affichage — modèle stitch_artica_setup_wizard_redesign (2026-11-10).
+    // Les classes wz-* sont dans assets/css/bd-wizard.css (feuille globale).
+    // ---------------------------------------------------------------------
+
+    // Couleurs d'accent de la marque, posées en variables CSS : une appliance
+    // en marque blanche garde sa couleur dans l'assistant aussi.
+    private function brand_vars():string{
+        $accent="#10b981";
+        $soft="rgba(16,185,129,.12)";
+        $line="rgba(16,185,129,.35)";
+        if(function_exists("brand_ui_accents") && function_exists("brand_palette")){
+            $a=brand_ui_accents(brand_palette());
+            if(!empty($a["accent"])){$accent=$a["accent"];}
+            if(!empty($a["accent_soft"])){$soft=$a["accent_soft"];}
+            if(!empty($a["accent_line"])){$line=$a["accent_line"];}
+        }
+        $fill="#047857";
+        if(function_exists("abt_fill")){$fill=abt_fill($accent);}
+        $clean=function($v){ return preg_replace('/[^#0-9A-Za-z(),.% ]/','',(string)$v); };
+        return "<style>:root{--wz-accent:".$clean($accent).";--wz-fill:".$clean($fill).
+            ";--wz-text:".$clean($fill).";--wz-soft:".$clean($soft).";--wz-line:".$clean($line).";}</style>";
+    }
+
     private  function heads():string{
         $tpl=new template_admin();
         $this->title=$tpl->_ENGINE_parse_body($this->title);
@@ -310,9 +340,17 @@ class artica_wizard{
         $f[]="  <link rel=\"stylesheet\" href=\"/wizard/assets/css/materialdesignicons.min.css\">";
         $f[]="  <link rel=\"stylesheet\" href=\"/wizard/assets/css/bootstrap.min.css\">";
         $f[]="  <link rel=\"stylesheet\" href=\"/wizard/assets/css/bd-wizard.css\">";
+        $f[]="  ".$this->brand_vars();
+        // Font Awesome 6 en mode SVG+JS, comme le shell de la console.
+        $f[]="  <script src=\"/angular/font-awesome/js/all.min.js\"></script>";
         $f[]="  <script src=\"/angular/js/jquery/jquery-3.6.0.min.js\"></script>";
         $f[]="  <script src=\"/angular/js/file-upload/jquery.ui.widget.js\"></script>";
         $f[]="  <script src=\"/angular/js/file-upload/jquery.fileupload.js\"></script>";
+        // default.js appelle $('body').Wload('hide') sans garde (NoSpinner(),
+        // LoadAjax*) : le plugin doit être chargé avant lui, comme le fait le
+        // shell principal (class.heads.builder.inc). Sans lui, tout fragment
+        // AJAX du wizard (modale de migration) lève "Wload is not a function".
+        $f[]="  <script src=\"/js/jquery.Wload.js\"></script>";
         $fa[] = "mouse.js";
         $fa[] = "default.js";
         $fa[] = "XHRConnection.js";
@@ -328,152 +366,179 @@ class artica_wizard{
     private function subheader():string{
         $blank="target=\"_blank\" rel=\"noopener noreferrer\"";
         $f[]="<body>";
-        $f[]="  <header>";
-        $f[]="    <nav class=\"navbar navbar-expand-sm navbar-light bg-white\">";
-        $f[]="      <div class=\"container\">";
-        $f[]="        <a class=\"navbar-brand\" href=\"#\"><img src=\"/wizard/assets/images/LogoHeaderArtica.png\" alt=\"logo\"></a>";
-        $f[]="        <button class=\"navbar-toggler d-lg-none\" type=\"button\" data-toggle=\"collapse\" data-target=\"#collapsibleNavId\"";
-        $f[]="          aria-controls=\"collapsibleNavId\" aria-expanded=\"false\" aria-label=\"Toggle navigation\">";
-        $f[]="          <span class=\"navbar-toggler-icon\"></span>";
-        $f[]="        </button>";
-        $f[]="        <div class=\"collapse navbar-collapse\" id=\"collapsibleNavId\">";
-        $f[]="          <ul class=\"navbar-nav ml-auto mt-2 mt-lg-0\">";
-        $f[]="            <li class=\"nav-item\">";
-        $f[]="              <a class=\"nav-link\" href=\"https://www.articatech.com\" $blank>Artica Tech</a>";
-        $f[]="            </li>";
-        $f[]="            <li class=\"nav-item\">";
-        $f[]="              <a class=\"nav-link\" href=\"https://wiki.articatech.com\" $blank>Wiki</a>";
-        $f[]="            </li>";
-        $f[]="            <li class=\"nav-item\">";
-        $f[]="              <a class=\"nav-link\" href=\"https://www.articatech.com/support.php\" $blank>Contact</a>";
-        $f[]="            </li>";
-        $f[]="          </ul>";
-        $f[]="        </div>";
-        $f[]="      </div>";
-        $f[]="    </nav>";
+        $f[]="  <header class=\"wz-top\">";
+        $f[]="    <div class=\"wz-wrap\">";
+        $f[]="      <div class=\"wz-brand\"><img src=\"/wizard/assets/images/LogoHeaderArtica.png\" alt=\"Artica\">";
+        $f[]="        <span class=\"wz-chip\">{wizard_chip}</span></div>";
+        $f[]="      <nav class=\"wz-nav\" aria-label=\"{wizard_links}\">";
+        $f[]="        <a href=\"#\" onclick=\"WizMigOpen();return false;\">";
+        $f[]="          <span class=\"wz-nav-ico\"><i class=\"fas fa-server\" aria-hidden=\"true\"></i></span>{migration_wizard_nav_link}</a>";
+        $f[]="        <span class=\"wz-nav-sep\" aria-hidden=\"true\"></span>";
+        $f[]="        <a class=\"wz-nav-ext\" href=\"https://www.articatech.com\" $blank>Artica Tech</a>";
+        $f[]="        <a class=\"wz-nav-ext\" href=\"https://wiki.articatech.com\" $blank>Wiki</a>";
+        $f[]="        <a class=\"wz-nav-ext\" href=\"https://www.articatech.com/support.php\" $blank>{wizard_contact}</a>";
+        $f[]="      </nav>";
+        $f[]="    </div>";
         $f[]="  </header>";
 
-        return @implode("\n",$f);
+        // Modale de migration. Le JS chargé par Footer() est Bootstrap 4.4
+        // alors que le CSS est Bootstrap 5.3 : l'ouverture passe donc par
+        // l'API jQuery de BS4, et le bouton de fermeture combine la classe
+        // d'apparence BS5 (btn-close) avec l'attribut de comportement BS4
+        // (data-dismiss) — data-bs-dismiss serait ignoré.
+        $f[]="  <div class=\"modal fade\" id=\"wiz-mig-modal\" tabindex=\"-1\" role=\"dialog\">";
+        $f[]="    <div class=\"modal-dialog modal-lg\" role=\"document\">";
+        $f[]="      <div class=\"modal-content\">";
+        $f[]="        <div class=\"modal-header\">";
+        $f[]="          <h5 class=\"modal-title\">{migration_wizard_modal_title}</h5>";
+        $f[]="          <button type=\"button\" class=\"btn-close\" data-dismiss=\"modal\" aria-label=\"Close\"></button>";
+        $f[]="        </div>";
+        $f[]="        <div class=\"modal-body\" id=\"wiz-mig-body\"></div>";
+        $f[]="      </div>";
+        $f[]="    </div>";
+        $f[]="  </div>";
+
+        $tpl=new template_admin();
+        $js[]="<script>";
+        $js[]="  function WizMigOpen(){";
+        $js[]="    LoadAjaxSilent('wiz-mig-body','/wizard/wiz.migration.php?entry=yes');";
+        $js[]="    $('#wiz-mig-modal').modal('show');";
+        $js[]="  }";
+        $js[]="</script>";
+        return $tpl->_ENGINE_parse_body(@implode("\n",$f))."\n".@implode("\n",$js);
 
     }
 
+    // Rail horizontal des 5 étapes. Les étapes sautées (VM Firecracker,
+    // appliance reverse-proxy ou SMTP) gardent leur numéro : l'assistant
+    // affiche toujours la même échelle.
     public function Step($stepnum=1):string{
-        $f[]="<ul role=\"tablist\">";
+        $tpl=new template_admin();
+        $stepnum=intval($stepnum);
+        $labels=array(1=>"{wizard_step_welcome}",2=>"{wizard_step_network}",3=>"{wizard_step_role}",
+            4=>"{wizard_step_admin}",5=>"{wizard_step_install}");
         $Max=5;
+        $f[]="<ol class=\"wz-steps\" aria-label=\"{wizard_progress}\">";
         for($i=1;$i<$Max+1;$i++) {
-            $ariaDis="true";
-            $araSel="false";
-            $class=null;
-            $class2="disabled";
-            if($i==$stepnum){
-                $ariaDis="false";
-                $araSel="true";
-                $class2="current";
+            $class="wz-st";
+            $num="$i";
+            $aria="";
+            if($i<$stepnum){
+                $class.=" wz-st-done";
+                $num="<i class=\"fas fa-check\" aria-hidden=\"true\"></i>";
             }
-            if($i==1){$class="first";}
-            if($i==$Max){$class="last";}
-
-            $f[] = "<li role=\"tab\" class=\"$class $class2\" aria-disabled=\"$ariaDis\" aria-selected=\"$araSel\">";
-            $f[]="    <a id=\"wizard-t-$i\" href=\"#wizard-h-$i\" aria-controls=\"wizard-p-$i\">";
-            $f[]="            <span class=\"number\">$i</span></a>";
-            $f[]="        </li>";
+            if($i==$stepnum){
+                $class.=" wz-st-cur";
+                $aria=" aria-current=\"step\"";
+            }
+            if($i>1){
+                $lc="wz-st-line";
+                if($i<=$stepnum){$lc.=" wz-st-line-done";}
+                $f[]="<li class=\"$lc\" aria-hidden=\"true\"></li>";
+            }
+            $k="{wizard_step} $i";
+            $f[]="<li class=\"$class\"$aria>";
+            $f[]="  <span class=\"wz-st-n\">$num</span>";
+            $f[]="  <span><span class=\"wz-st-k\">$k</span><span class=\"wz-st-l\">{$labels[$i]}</span></span>";
+            $f[]="</li>";
         }
-        $f[]="        </ul>";
-        return @implode("\n",$f);
+        $f[]="</ol>";
+        return $tpl->_ENGINE_parse_body(@implode("\n",$f));
 
     }
-    
+
     public function StepNumber($Number){
         $this->StepNumberApply=$Number;
     }
 
+    // Le JS du formulaire est concaténé APRÈS la traduction : ses blocs {…}
+    // seraient sinon lus comme des {tokens} par _ENGINE_parse_body().
     public function BuildSection($title,$explain,$html):string{
 
-        $f[]="<section id=\"wizard-p-0\" role=\"tabpanel\"
-                style='margin-top:10px' 
-                aria-labelledby=\"wizard-h-0\" class=\"body current\" aria-hidden=\"false\">";
-        $f[]="<h2 class=\"section-heading\">$title</h2>";
-        $f[]="<p>$explain</p>";
+        $f[]="<section class=\"wz-sec\" aria-labelledby=\"wz-h1\">";
+        $f[]="<h1 class=\"wz-h1\" id=\"wz-h1\">$title</h1>";
+        if(strlen(trim($explain))>0){
+            $f[]="<p class=\"wz-lead\">$explain</p>";
+        }
         if(is_array($html)){
             $f[]=@implode("\n",$html);
         }else{
             $f[]=$html;
         }
+        $f[]="</section>";
 
         $tpl=new template_admin();
-        return $tpl->_ENGINE_parse_body($f);
+        $script=$this->form_script;
+        $this->form_script="";
+        return $tpl->_ENGINE_parse_body($f).$script;
 
 
     }
 
-    public function multi_fieldtext($array):bool{
-        $tpl=new template_admin();
-        $f[]="<div class='row'>";
+    // Ouvre une carte titrée : les champs ajoutés ensuite s'y rangent jusqu'à
+    // la carte suivante ou build_form().
+    public function card_open($title,$subtitle="",$icon="fas fa-gear"):bool{
+        $this->card_close();
+        $sub="";
+        if(strlen($subtitle)>0){$sub="<span class=\"wz-card-s\">$subtitle</span>";}
+        $this->html_fields[]="<div class=\"wz-card\"><div class=\"wz-card-h\"><span class=\"wz-tile\"><i class=\"$icon\" aria-hidden=\"true\"></i></span><span><span class=\"wz-card-t\">$title</span><br>$sub</span></div>";
+        $this->card_opened=true;
+        return true;
+    }
+    private function card_close():bool{
+        if($this->card_opened){
+            $this->html_fields[]="</div>";
+            $this->card_opened=false;
+        }
+        return true;
+    }
 
-
+    // Champs côte à côte (une carte d'interface réseau : adresse, masque, passerelle).
+    public function multi_fieldtext($array,$title="",$subtitle="",$icon="fas fa-ethernet"):bool{
+        if(strlen($title)>0){
+            $this->card_open($title,$subtitle,$icon);
+        }
+        $f[]="<div class=\"wz-row\">";
         foreach ($array as $name=>$settings){
-            $f[]="<div class='col'>";
             $label=$settings["LABEL"];
-            $value=$settings["VALUE"];
+            $value=htmlspecialchars((string)$settings["VALUE"],ENT_QUOTES);
             $VALID=$settings["VALID"];
-            $f[]="<div class='form-floating mb-3' style='margin-top:10px'>";
-            $f[]="<input type='text' name='$name' id='$name' class=\"form-control form-control-lg\"  value='$value'>";
-            $f[]=" <label for='$name' style='padding-top:6px' id='label-$name'>$label</label>";
+            $f[]="<div class=\"wz-f\" id=\"f-$name\">";
+            $f[]="<label for=\"$name\" id=\"label-$name\">$label</label>";
+            $f[]="<input type=\"text\" name=\"$name\" id=\"$name\" class=\"wz-in\" value=\"$value\" autocomplete=\"off\" spellcheck=\"false\">";
             $f[]="</div>";
-            $f[]="</div>";
-
             $this->field_js($name,$VALID);
-
         }
         $f[]="</div>";
         $this->html_fields[]=@implode("\n",$f);
-return true;
+        return true;
     }
 
+    // Validation côté navigateur : le champ fautif est marqué (bordure et
+    // libellé rouges), reçoit le focus et un message s'affiche au-dessus de
+    // la barre d'actions. Le premier champ fautif arrête l'envoi.
     private function js_validate($name,$validate):bool{
-        $black=".style.color='rgb(31, 35, 38)'";
-        $scolor=".style.color='#d30038'";
-        $bblack=".style.borderColor ='#ececec'";
-        $bscolor=".style.borderColor='#d30038'";
-
-        $label_color_red[] = "\t\tif( document.getElementById('label-$name') ){";
-        $label_color_red[] = "\t\t\tdocument.getElementById('label-$name')$scolor;";
-        $label_color_red[] = "\t\t}";
-
-        $this->form_js[] = "\tif( ! document.getElementById('$name') ){alert('$name not found');}";
-        $this->form_js[]="\tdocument.getElementById('$name')$black;";
-        $this->form_js[]="\tdocument.getElementById('$name')$bblack;";
-        $this->form_js[] = "\tif( document.getElementById('label-$name') ){";
-        $this->form_js[] = "\t\tdocument.getElementById('label-$name')$black;";
-        $this->form_js[]="\t}";
+        $bad[]="\t\tWzFieldBad('$name');";
+        $bad[]="\t\treturn;";
+        $this->form_js[]="\tif( ! document.getElementById('$name') ){console.error('$name not found');return;}";
+        $this->form_js[]="\tWzFieldOk('$name');";
         $this->form_js[]="\tTestString=document.getElementById('$name').value;";
 
         if($validate=="text"){
             $this->form_js[]="\tif(TestString.length<2){";
-            $this->form_js[] = "console.log('$name: no data!');";
-            $this->form_js[]="\t\tdocument.getElementById('$name')$scolor;";
-            $this->form_js[]="\t\tdocument.getElementById('$name')$bscolor;";
-            $this->form_js[] = @implode("\n",$label_color_red);
-            $this->form_js[]="\t\treturn;";
+            $this->form_js[]=@implode("\n",$bad);
             $this->form_js[]="\t}";
             return true;
         }
         if($validate=="ipaddr") {
-            $this->form_js[] = "console.log('ValidateIPAddress: '+TestString);";
             $this->form_js[] = "\tif(!ValidateIPAddress(TestString) ){";
-            $this->form_js[]="\t\tdocument.getElementById('$name')$scolor;";
-            $this->form_js[]="\t\tdocument.getElementById('$name')$bscolor;";
-            $this->form_js[] = @implode("\n",$label_color_red);
-            $this->form_js[] = "\t\treturn;";
+            $this->form_js[]=@implode("\n",$bad);
             $this->form_js[] = "\t}";
             return true;
         }
         if($validate=="mail") {
             $this->form_js[] = "\tif(!ValidateEmail(TestString)){";
-            $this->form_js[]="\t\tdocument.getElementById('$name')$scolor;";
-            $this->form_js[]="\t\tdocument.getElementById('$name')$bscolor;";
-            $this->form_js[] = @implode("\n",$label_color_red);
-            $this->form_js[] = "\t\treturn;";
+            $this->form_js[]=@implode("\n",$bad);
             $this->form_js[] = "\t}";
             return true;
         }
@@ -484,30 +549,27 @@ return true;
     private function field_js($FieldID,$validate):bool{
 
         $this->form_js[] = "";
-        $this->form_js[] = "console.log('$FieldID start');";
-
-        $this->form_js[] = "\ttry {";
-        if(strlen($validate)<>null){
+        if(strlen($validate)>0){
             $this->js_validate($FieldID,$validate);
         }
+        $this->form_js[] = "\ttry {";
         $this->form_js[]="\t\tFieldString=document.getElementById('$FieldID').value;";
         $this->form_js[]="\t\tXHR.appendData('$FieldID',  encodeURIComponent(FieldString));";
         $this->form_js[]="\t}catch (error) {";
-        $this->form_js[]="\t\talert(error +' On $FieldID');";
+        $this->form_js[]="\t\tconsole.error(error +' On $FieldID');";
         $this->form_js[]="\t}";
-        $this->form_js[] = "console.log('$FieldID end');";
         return true;
     }
 
     public function field_info_button($label,$value,$btname,$js):bool{
         $id=md5("$label,$value,$js");
-        $f[]="<div class='form-floating mb-3' style='margin-top:10px;width:663px'>";
-        $f[]="<div class=\"input-group-append\">";
-        $f[]="<button style='min-height:58px;float:right' class=\"btn btn-danger\" id='bt_$id' type=\"button\">$btname</button>";
+        $value=htmlspecialchars((string)$value,ENT_QUOTES);
+        $f[]="<div class=\"wz-f\">";
+        $f[]="<label for=\"$id\" id=\"label-$id\">$label</label>";
+        $f[]="<div class=\"wz-inline\">";
+        $f[]="<input type=\"text\" id=\"$id\" class=\"wz-in\" value=\"$value\" readonly>";
+        $f[]="<button class=\"wz-btn wz-btn-danger\" id=\"bt_$id\" type=\"button\"><i class=\"fas fa-trash-can\" aria-hidden=\"true\"></i> $btname</button>";
         $f[]="</div>";
-        $f[]="<input type='text' name='$id' id='$id' class=\"form-control form-control-lg\"  value='$value' aria-describedby=\"basic-addon2\" disabled>";
-
-        $f[]=" <label for='$id' style='padding-top:6px' id='label-$id'>$label</label>";
         $f[]="</div>";
         $f[]="<script>$( '#bt_$id' ).click(function() { $js });</script>";
         $this->html_fields[]=@implode("\n",$f);
@@ -516,32 +578,38 @@ return true;
 
     public function field_info_text($label,$value):bool{
         $id=md5("$label,$value");
-        $f[]="<div class='form-floating mb-3' style='margin-top:10px;width:663px'>";
-        $f[]="<input type='text' name='$id' id='$id' class=\"form-control form-control-lg\"  value='$value' aria-describedby=\"basic-addon2\" disabled>";
-        $f[]=" <label for='$id' style='padding-top:6px' id='label-$id'>$label</label>";
+        $value=htmlspecialchars((string)$value,ENT_QUOTES);
+        $f[]="<div class=\"wz-f\">";
+        $f[]="<label for=\"$id\" id=\"label-$id\">$label</label>";
+        $f[]="<input type=\"text\" id=\"$id\" class=\"wz-in\" value=\"$value\" readonly>";
         $f[]="</div>";
         $this->html_fields[]=@implode("\n",$f);
         return true;
     }
 
-    public function field_text($label,$name,$value,$validate=""):bool{
+    private function field_input($type,$label,$name,$value,$validate,$autocomplete):bool{
         $tpl=new template_admin();
         $label=$tpl->_ENGINE_parse_body($label);
-        $f[]="<div class='form-floating mb-3' style='margin-top:10px'>";
-        $f[]="<input type='text' name='$name' id='$name' class=\"form-control form-control-lg\"  value='$value'>";
-        $f[]=" <label for='$name' style='padding-top:6px' id='label-$name'>$label</label>";
+        $value=htmlspecialchars((string)$value,ENT_QUOTES);
+        $f[]="<div class=\"wz-f\" id=\"f-$name\">";
+        $f[]="<label for=\"$name\" id=\"label-$name\">$label</label>";
+        $f[]="<input type=\"$type\" name=\"$name\" id=\"$name\" class=\"wz-in\" value=\"$value\" autocomplete=\"$autocomplete\">";
         $f[]="</div>";
-
         $this->html_fields[]=@implode("\n",$f);
         $this->field_js($name,$validate);
         return true;
     }
+
+    public function field_text($label,$name,$value,$validate=""):bool{
+        $auto="off";
+        if($validate=="mail"){$auto="email";}
+        return $this->field_input("text",$label,$name,$value,$validate,$auto);
+    }
     public function field_check($label,$name,$value):bool{
         $checked=null;
         if(intval($value)==1){$checked="checked";}
-        $f[]="<div class=\"form-check form-switch\">";
-        $f[]="<input class=\"form-check-input\" type=\"checkbox\" id=\"$name\" $checked>";
-        $f[]="<label class=\"form-check-label\" for=\"$name\">$label</label>";
+        $f[]="<div class=\"wz-f\">";
+        $f[]="<label class=\"wz-check\" for=\"$name\"><input type=\"checkbox\" id=\"$name\" $checked><span>$label</span></label>";
         $f[]="</div>";
         $this->form_js[]="\tif( document.getElementById('$name').checked ){";
         $this->form_js[]="\tXHR.appendData('$name',  '1');";
@@ -554,16 +622,7 @@ return true;
     }
 
     public function field_password($label,$name,$value):bool{
-        $tpl=new template_admin();
-        $label=$tpl->_ENGINE_parse_body($label);
-        $f[]="<div class='form-floating mb-3' style='margin-top:10px'>";
-        $f[]="<input type='password' name='$name' id='$name' class=\"form-control form-control-lg\"  value='$value'>";
-        $f[]=" <label for='$name' style='padding-top:6px' id='label-$name'>$label</label>";
-        $f[]="</div>";
-
-        $this->html_fields[]=@implode("\n",$f);
-        $this->form_js[]=$this->field_js($name,"text");
-        return true;
+        return $this->field_input("password",$label,$name,$value,"text","new-password");
     }
 
     public function ReturnMainAjax($js):string{
@@ -579,11 +638,11 @@ return true;
 
         $tpl=new template_admin();
         $t=time();
+        $label=$tpl->_ENGINE_parse_body($label);
 
-        $OnChange=null;
-        $f[]="<div class='form-floating' style='margin-top:10px'>";
-        $f[]="<!-- Sended value = $value -->";
-        $f[]="<select name=\"$name\" class=\"form-select form-select-lg\" aria-label=\"Floating label select example\" id='$name-$t' $OnChange> ";
+        $f[]="<div class=\"wz-f\" id=\"f-$name\">";
+        $f[]="<label for=\"$name-$t\" id=\"label-$name\">$label</label>";
+        $f[]="<select name=\"$name\" class=\"wz-in\" id=\"$name-$t\">";
         $f[]="\t<option value=\"\" disabled selected>$label</option>";
         $selected=false;
         if($value==null){$selected=true;}
@@ -593,19 +652,18 @@ return true;
             if(strpos($key, "}")>0){$key=$tpl->javascript_parse_text($key);}
             $lenght=strlen($key);
             if($lenght>50){$key=substr($key, 0,47)."...";}
-
+            $vala=htmlspecialchars($val,ENT_QUOTES);
             if(!$selected){
                 if(strtolower($val)==strtolower($value)){
                     $selected=true;
-                    $f[]="\t<option value=\"$val\" selected>$key</option>";
+                    $f[]="\t<option value=\"$vala\" selected>$key</option>";
                     continue;
                 }
             }
-            $f[]="\t<option value=\"$val\">$key</option>";
+            $f[]="\t<option value=\"$vala\">$key</option>";
         }
 
         $f[]="</select>";
-        $f[]=" <label for='$name'>$label</label>";
         $f[]="</div>";
 
         $this->html_fields[]=@implode("\n",$f);
@@ -615,56 +673,77 @@ return true;
 
     }
 
+    // Corps du formulaire + barre d'actions collante (Previous / résumé / Next).
+    // Le <script> est mis de côté et ajouté par BuildSection() après la traduction.
     public function build_form():string{
-        $tpl=new template_admin();
-        $previous=$tpl->_ENGINE_parse_body("{previous}");
-        $next=$tpl->_ENGINE_parse_body("{next}");
-        $f[]=@implode("\n",$this->html_fields);
-        $f[]="<div class=\"actions clearfix\" style='float: right;margin-top: 20px'>";
-        $f[]="   <ul role='menu' aria-label='Pagination'>";
-        if(strlen($this->previous_js)>3) {
-            $f[] = "   <li class=\"\" aria-disabled=\"false\">";
-            $f[] = "   <a href=\"javascript:blur()\" 
-                       OnClick=\"$this->previous_js\"
-                        role=\"menuitem\">$previous</a>";
-            $f[] = "   </li>";
+        $this->card_close();
+        $f=array();
+        if($this->has_sections){
+            $f[]=@implode("\n",$this->html_fields);
+        }else{
+            $fields=@implode("\n",$this->html_fields);
+            if(strpos($fields,"wz-card")===false){
+                $fields="<div class=\"wz-card\">$fields</div>";
+            }
+            $f[]="<div class=\"wz-form\">$fields</div>";
         }
-        $f[]="<li aria-hidden=\"false\" aria-disabled=\"false\">";
-        $f[]="   <a href=\"javascript:blur()\" role=\"menuitem\" OnClick=\"PostForm();\">$next</a>";
-        $f[]="</li>";
-       // $f[]="<li style="display: none;" aria-hidden="true"><a href="#finish" role="menuitem">Finish</a></li></ul>
-        $f[]="</div>";
+        $f[]="<div class=\"wz-msg wz-msg-err\" id=\"wz-form-msg\" role=\"alert\" hidden>";
+        $f[]="<i class=\"fas fa-triangle-exclamation\" aria-hidden=\"true\"></i><span id=\"wz-form-msg-t\">{wizard_check_fields}</span></div>";
 
-        $f[]="<script>";
+        $f[]="<div class=\"wz-bar\"><div class=\"wz-wrap\">";
+        if(strlen($this->previous_js)>3) {
+            $f[]="<button type=\"button\" class=\"wz-btn\" id=\"wz-prev\" onclick=\"$this->previous_js\"><i class=\"fas fa-arrow-left\" aria-hidden=\"true\"></i> {wizard_btn_previous}</button>";
+        }else{
+            $f[]="<span class=\"wz-spacer\"></span>";
+        }
+        if($this->has_sections){
+            $f[]="<div class=\"wz-sum\" id=\"wz-sum\" aria-live=\"polite\"></div>";
+        }else{
+            $f[]="<div class=\"wz-sum\"></div>";
+        }
+        $f[]="<button type=\"button\" class=\"wz-btn wz-btn-primary\" id=\"wz-next\" onclick=\"PostForm();\">{wizard_btn_next} <i class=\"fas fa-arrow-right\" aria-hidden=\"true\"></i></button>";
+        $f[]="</div></div>";
+
+        $s[]="<script>";
         if($this->StepNumberApply>0){
-            $f[]="LoadAjaxSilent('vertical-steps','wiz.wizard.php?step=$this->StepNumberApply');";
+            $s[]="LoadAjaxSilent('vertical-steps','wiz.wizard.php?step=$this->StepNumberApply');";
         }
-        $f[]="var x_PostForm= function (obj) {";
-        $f[]="\tvar tempvalue=obj.responseText;";
+        $s[]="function WzFieldOk(id){var e=document.getElementById(id);if(!e){return;}e.classList.remove('wz-bad');e.removeAttribute('aria-invalid');var w=document.getElementById('f-'+id);if(w){w.classList.remove('wz-f-bad');}}";
+        $s[]="function WzFieldBad(id){var e=document.getElementById(id);if(!e){return;}e.classList.add('wz-bad');e.setAttribute('aria-invalid','true');var w=document.getElementById('f-'+id);if(w){w.classList.add('wz-f-bad');}var m=document.getElementById('wz-form-msg');if(m){m.hidden=false;}e.focus();}";
+        $s[]="function WzBusy(on){var b=document.getElementById('wz-next');if(!b){return;}b.disabled=on;b.setAttribute('aria-busy',on?'true':'false');}";
+        $s[]="var x_PostForm= function (obj) {";
+        $s[]="\tvar tempvalue=String(obj.responseText||'').trim();";
+        $s[]="\tif(tempvalue.length>3){";
+        $s[]="\t\tvar m=document.getElementById('wz-form-msg');var t=document.getElementById('wz-form-msg-t');";
+        $s[]="\t\tif(m&&t){t.textContent=tempvalue.replace(/<[^>]*>/g,' ').substring(0,400);m.hidden=false;}";
+        $s[]="\t\tWzBusy(false);return;";
+        $s[]="\t}";
         if(strlen($this->form_after)>3) {
-            $f[] = "$this->form_after;";
+            $s[] = "\t$this->form_after;";
         }
-        $f[]="}";
-        $f[]="function PostForm(){";
-        $f[] = "\tvar FieldString='';";
-        $f[]="console.log('Form posted');";
-        $f[]="\tvar XHR = new XHRConnection();";
-        $f[]="console.log('XHRConnection posted');";
-        $f[]=@implode("\n", $this->form_js);
-        $f[]="console.log('Form END');";
-        $f[]="\tXHR.sendAndLoad('wiz.wizard.php', 'POST',x_PostForm);";
-        $f[]="}";
-        $f[]="</script>";
+        $s[]="}";
+        $s[]="function PostForm(){";
+        $s[]="\tvar FieldString='';";
+        $s[]="\tvar TestString='';";
+        $s[]="\tvar m=document.getElementById('wz-form-msg');if(m){m.hidden=true;}";
+        $s[]="\tvar XHR = new XHRConnection();";
+        $s[]=@implode("\n", $this->form_js);
+        $s[]="\tWzBusy(true);";
+        $s[]="\tXHR.sendAndLoad('wiz.wizard.php', 'POST',x_PostForm);";
+        $s[]="}";
+        $s[]=@implode("\n",$this->section_js);
+        $s[]="</script>";
+        $this->form_script=@implode("\n",$s);
         return @implode("\n",$f);
 
     }
-    
+
     public function form_previous($js=null):bool{
         $this->previous_js="LoadAjaxSilent('main-step','$js');";
         return true;
     }
 
-    public function button_upload($label="{upload_a_file}",$name,$currentpage=null,$addedparams=null,$field_name=null):bool{
+    public function button_upload($label="{upload_a_file}",$name="",$currentpage=null,$addedparams=null,$field_name=null):bool{
         $tpl=new template_admin();
         $ffname="file-uploaded";
         if($name<>null){$ffname=$name;}
@@ -672,8 +751,10 @@ return true;
         $btname=$tpl->_ENGINE_parse_body($label);
         $Uploading=$tpl->javascript_parse_text("{uploading}");
 
-        $this->html_fields[]="<label for=\"fileupload$btid\" id='label$btid' class=\"form-label\">$label</label>";
-        $this->html_fields[]="<input class=\"form-control form-control-lg\" id=\"fileupload$btid\" type=\"file\" name=\"files\"/>";
+        $this->html_fields[]="<div class=\"wz-f\">";
+        $this->html_fields[]="<label for=\"fileupload$btid\" id=\"label$btid\" class=\"wz-lbl\">$label</label>";
+        $this->html_fields[]="<input class=\"wz-file\" id=\"fileupload$btid\" type=\"file\" name=\"files\"/>";
+        $this->html_fields[]="</div>";
 
         $this->form_js[]="\tif( document.getElementById('fileupload$btid') ){";
         $this->form_js[]="\tXHR.appendData('$name',  document.getElementById('fileupload$btid').value);";
@@ -701,56 +782,92 @@ return true;
 
     }
 
-    public function field_sections($field,$config):bool{
+    // Choix unique parmi des cartes regroupées. Chaque entrée de $config :
+    // LABEL, EXPLAIN, ICON (Font Awesome), GROUP (titre du groupe, ordre
+    // d'apparition) ; ALT=true sort l'entrée des groupes (carte en pointillés
+    // sous les groupes) et TAG lui donne une étiquette.
+    // $selected : la valeur déjà enregistrée, null quand rien n'a été choisi.
+    public function field_sections($field,$config,$selected=null):bool{
         $tpl=new template_admin();
-
-        $f[]="<div class=\"purpose-radios-wrapper\" style='width:1150px'>";
-        $this->form_js[]="\tvar selected_field_$field=0;";
+        $this->has_sections=true;
+        $groups=array();
+        $alts=array();
+        $selLabel="";
         foreach ($config as $value=>$SET) {
             $LABEL=$tpl->_ENGINE_parse_body($SET["LABEL"]);
             $EXPLAIN=$tpl->_ENGINE_parse_body($SET["EXPLAIN"]);
-            $PIC=$SET["PIC"];
-            $FieldID=md5("$field$value$LABEL");
-
-            $f[] = "<div class=\"purpose-radio\">";
-            $f[] = "<input type=\"radio\" name=\"purpose\" id=\"$FieldID\" class=\"purpose-radio-input\" value=\"$value\">";
-            $f[] = "    <label for=\"$FieldID\" class=\"purpose-radio-label\">";
-            $f[] = "        <span class=\"label-icon\">";
-            $f[] = "            <img src=\"assets/images/$PIC-grey-30.png\" alt=\"$LABEL\" class=\"label-icon-default\">";
-            $f[] = "            <img src=\"assets/images/$PIC-30.png\" alt=\"$LABEL\" class=\"label-icon-active\">";
-            $f[] = "         </span>";
-            $f[] = "        <span class=\"label-text\"><strong>$LABEL</strong></span>";
-            $f[] = "        <p class=\"label-text\" style='margin-top:5px;font-size:12px;min-height:75px;margin-left:20px;margin-right:20px;margin-bottom:20px'>$EXPLAIN</p>";
-            $f[] = "     </label>";
-            $f[] = "</div>";
-
-
-            $this->form_js[]="\tif( document.getElementById('$FieldID').checked ){";
-            $this->form_js[]="\tselected_field_$field=1;";
-            $this->form_js[]="\tXHR.appendData('$field',  '$value');";
-            $this->form_js[]="}";
-
+            $ICON=isset($SET["ICON"])?$SET["ICON"]:"fas fa-server";
+            $on=(!is_null($selected) && strval($selected)===strval($value));
+            if($on){$selLabel=$LABEL;}
+            $tag="";
+            if(!empty($SET["TAG"])){$tag="<span class=\"wz-tag\">".$tpl->_ENGINE_parse_body($SET["TAG"])."</span>";}
+            $alt=!empty($SET["ALT"]);
+            $cls="wz-role";
+            if($alt){$cls.=" wz-role-alt";}
+            $chk=$on?"true":"false";
+            $lab=htmlspecialchars(strip_tags($LABEL),ENT_QUOTES);
+            $card="<button type=\"button\" role=\"radio\" class=\"$cls\" aria-checked=\"$chk\" tabindex=\"-1\" data-v=\"".intval($value)."\" data-l=\"$lab\">".
+                "<span class=\"wz-tile\"><i class=\"$ICON\" aria-hidden=\"true\"></i></span>".
+                "<span><span class=\"wz-role-t\">$LABEL$tag</span><span class=\"wz-role-d\">$EXPLAIN</span></span>".
+                "<span class=\"wz-radio\" aria-hidden=\"true\"><span class=\"wz-radio-ok\"><i class=\"fas fa-check\"></i></span></span>".
+                "</button>";
+            if($alt){$alts[]=$card;continue;}
+            $g=isset($SET["GROUP"])?$SET["GROUP"]:"";
+            if(!isset($groups[$g])){$groups[$g]=array();}
+            $groups[$g][]=$card;
         }
-        $this->form_js[]="\tif( selected_field_$field==0){";
-        $this->form_js[]="\talert('Please Choose something');";
-        $this->form_js[]="\treturn;";
-        $this->form_js[]="\t}";
 
+        $selv=is_null($selected)?"":intval($selected);
+        $f[]="<input type=\"hidden\" id=\"wz-sel-$field\" value=\"".($selLabel==""?"":$selv)."\">";
+        $f[]="<div class=\"wz-roles\" role=\"radiogroup\" aria-labelledby=\"wz-h1\" id=\"wz-roles-$field\">";
+        $n=0;
+        foreach ($groups as $title=>$cards){
+            $n++;
+            $f[]="<div class=\"wz-grp\" role=\"group\" aria-labelledby=\"wz-grp-$n\">";
+            if($title!=""){$f[]="<h2 class=\"wz-grp-h\" id=\"wz-grp-$n\">$title</h2>";}
+            $f[]="<div class=\"wz-grid\">".@implode("",$cards)."</div>";
+            $f[]="</div>";
+        }
+        if(count($alts)>0){
+            $f[]="<div class=\"wz-grp\">".@implode("",$alts)."</div>";
+        }
         $f[]="</div>";
+        $f[]="<span id=\"wz-sum-sel\" hidden>{wizard_selected}</span><span id=\"wz-sum-none\" hidden>{wizard_no_role}</span>";
+        $f[]="<span id=\"wz-msg-role\" hidden>{wizard_choose_role}</span>";
         $this->html_fields[]=@implode("\n",$f);
+
+        $this->form_js[]="\tvar v_$field=document.getElementById('wz-sel-$field').value;";
+        $this->form_js[]="\tif(v_$field===''){WzRoleMissing();return;}";
+        $this->form_js[]="\tXHR.appendData('$field', v_$field);";
+
+        // Un seul radiogroup pour toutes les cartes : les flèches passent d'une
+        // carte à l'autre, Espace/Entrée choisit (bouton natif).
+        $this->section_js[]="(function(){";
+        $this->section_js[]=" var root=document.getElementById('wz-roles-$field'); if(!root){return;}";
+        $this->section_js[]=" var hid=document.getElementById('wz-sel-$field');";
+        $this->section_js[]=" var cards=root.querySelectorAll('.wz-role');";
+        $this->section_js[]=" function txt(id){var e=document.getElementById(id);return e?e.textContent:'';}";
+        $this->section_js[]=" function sum(){var s=document.getElementById('wz-sum'),nx=document.getElementById('wz-next');var cur=root.querySelector('.wz-role[aria-checked=\"true\"]');";
+        $this->section_js[]="  if(s){s.innerHTML='';if(cur){s.className='wz-sum';s.appendChild(document.createTextNode(txt('wz-sum-sel')+' '));var b=document.createElement('b');b.textContent=cur.getAttribute('data-l');s.appendChild(b);}else{s.className='wz-sum wz-sum-none';s.textContent=txt('wz-sum-none');}}";
+        $this->section_js[]="  if(nx){nx.disabled=!cur;}";
+        $this->section_js[]="  var first=cur||cards[0];for(var i=0;i<cards.length;i++){cards[i].tabIndex=(cards[i]===first)?0:-1;}}";
+        $this->section_js[]=" function pick(c){for(var i=0;i<cards.length;i++){cards[i].setAttribute('aria-checked',cards[i]===c?'true':'false');}hid.value=c.getAttribute('data-v');var m=document.getElementById('wz-form-msg');if(m){m.hidden=true;}sum();}";
+        $this->section_js[]=" for(var i=0;i<cards.length;i++){(function(c,idx){";
+        $this->section_js[]="  c.addEventListener('click',function(){pick(c);});";
+        $this->section_js[]="  c.addEventListener('keydown',function(e){var k=e.key,j=-1;";
+        $this->section_js[]="   if(k==='ArrowRight'||k==='ArrowDown'){j=(idx+1)%cards.length;}";
+        $this->section_js[]="   if(k==='ArrowLeft'||k==='ArrowUp'){j=(idx-1+cards.length)%cards.length;}";
+        $this->section_js[]="   if(j<0){return;}e.preventDefault();cards[j].focus();pick(cards[j]);});";
+        $this->section_js[]=" })(cards[i],i);}";
+        $this->section_js[]=" window.WzRoleMissing=function(){var m=document.getElementById('wz-form-msg'),t=document.getElementById('wz-form-msg-t');if(m&&t){t.textContent=txt('wz-msg-role');m.className='wz-msg';m.hidden=false;}var f=cards[0];if(f){f.focus();}};";
+        $this->section_js[]=" sum();";
+        $this->section_js[]="})();";
         return true;
     }
 
     private function Body():string{
-        $clear="wizard clearfix vertical";
-        $f[]="<main class=\"d-flex align-items-center\">";
-        $f[]="    <div class=\"container\">";
-        $f[]="        <div id=\"wizard\" role=\"application\" class=\"$clear\">";
-        $f[]="            <div class=\"steps clearfix\" id='vertical-steps'></div>";
-        $f[]="            <div class=\"content clearfix\" id='main-step'></div>";
-        $f[]="        </div>";
-        $f[]="   </div>";
-        $f[]="</main>";
+        $f[]="<div class=\"wz-rail\"><div class=\"wz-wrap\" id=\"vertical-steps\"></div></div>";
+        $f[]="<main class=\"wz-main\"><div class=\"wz-wrap\" id=\"main-step\"></div></main>";
         $f[]="<script>";
         $f[]="LoadAjaxSilent('vertical-steps','wiz.wizard.php?step=1');";
         $f[]="LoadAjaxSilent('main-step','wiz.wizard.php?body-step=1');";

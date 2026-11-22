@@ -1,21 +1,19 @@
-<BUILD_CLUSTER>Build cluster</BUILD_CLUSTER>
-<WIZARD_CLUSTER_CYRUS_EXPLAIN>This wizard will help you to create a mailbox server Active/passive on your network.[br]
-To set this structure you need a second running Artica server with IMAP service.[br]
-This second Artica server will be the mailboxes replica/slave.[br]
-It will receive notifications from this server in order to replicate mailboxes in realtime.[br]
-If the configuration is a success you will never loose mails.[br]
-[br]The first operation is to check if the slave server store mandatories elements for linking procedure.[br]
-If the link operation is a success the 2 artica servers (Master and slave) will change parameters and start the clustering production mode.[br]
-You will be able to return back to a standalone mode so you will not loose mail on a failed operation.[br][br]
-So, it's time to start the first procedure.[br]
-Fill the form below by setting the remote server credentials.[br]This will help Artica to talk to the remote server for checking it's status.[br]
-</WIZARD_CLUSTER_CYRUS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Slave/replica informations</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>The target server is ready</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
-<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>This server is ready to be a replica/slave after clicking on the "build cluster" button the Master and the Slave
-will be notified to be linked in order to build a cluster configuration.[br]
-Your Master should be behind a Firewall with NAT, it is necessary to define which IP address/Server name the replica must use.
-In the form below, put the Ip address of your server act has a Master. 
-</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
-<WIZARD_CLUSTER_CYRUS_WELCOME>Welcome on the Wizard for Clustering mailboxes</WIZARD_CLUSTER_CYRUS_WELCOME>
-<WIZARD_CLUSTER_ERROR>The wizard is blocked, it encounter some error, try to fix it ans restart the operation</WIZARD_CLUSTER_ERROR>
+<BUILD_CLUSTER>Crea cluster</BUILD_CLUSTER>
+<WIZARD_CLUSTER_CYRUS_EXPLAIN>Questa procedura guidata ti aiuter&#224; a creare un server di mailbox Attivo/passivo sulla tua rete.[br]
+Per configurare questa struttura hai bisogno di un secondo server Artica in esecuzione con servizio IMAP.[br]
+Questo secondo server Artica sar&#224; la replica/slave delle mailbox.[br]
+Ricever&#224; notifiche da questo server per replicare le mailbox in tempo reale.[br]
+Se la configurazione ha successo non perderai mai le email.[br]
+[br]La prima operazione consiste nel verificare se il server slave memorizza gli elementi obbligatori per la procedura di collegamento.[br]
+Se l'operazione di collegamento ha successo i 2 server artica (Master e slave) scambieranno i parametri e avvieranno la modalit&#224; produzione cluster.[br]
+Potrai tornare a una modalit&#224; standalone in modo da non perdere le email in caso di operazione fallita.[br][br]
+Quindi, &#232; ora di avviare la prima procedura.[br]
+Compila il modulo sottostante impostando le credenziali del server remoto.[br]Questo aiuter&#224; Artica a comunicare con il server remoto per verificarne lo stato.[br]</WIZARD_CLUSTER_CYRUS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>Informazioni slave/replica</WIZARD_CLUSTER_CYRUS_REPLICA_INFOS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>Il server di destinazione &#232; pronto</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS>
+<WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>Questo server &#232; pronto per essere una replica/slave. Dopo aver cliccato sul pulsante &quot;crea cluster&quot;, il Master e lo Slave
+verranno notificati per essere collegati al fine di costruire una configurazione cluster.[br]
+Il tuo Master dovrebbe essere dietro un firewall con NAT, &#232; necessario definire quale indirizzo IP/nome del server deve usare la replica.
+Nel modulo sottostante, inserisci l'indirizzo IP del tuo server che funge da Master.</WIZARD_CLUSTER_CYRUS_REPLICA_SUCCESS_EXPLAIN>
+<WIZARD_CLUSTER_CYRUS_WELCOME>Benvenuto nella procedura guidata per il clustering delle mailbox</WIZARD_CLUSTER_CYRUS_WELCOME>
+<WIZARD_CLUSTER_ERROR>La procedura guidata &#232; bloccata, ha riscontrato un errore, prova a correggerlo e riavvia l'operazione</WIZARD_CLUSTER_ERROR>

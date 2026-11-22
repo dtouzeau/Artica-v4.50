@@ -1,2 +1,2 @@
-<folders_statistics>Folders statistics</folders_statistics>
-<parameters_text>You can modify/add folders you want to see in the statistics pie</parameters_text>
+<folders_statistics>Estat&#237;sticas de pastas</folders_statistics>
+<parameters_text>Pode modificar/adicionar pastas que deseja ver no gr&#225;fico circular de estat&#237;sticas</parameters_text>

@@ -1,13 +1,13 @@
-<all_quarantines_text>You are a full system administrator and you can query quarantine trough all organizations</all_quarantines_text>
-<build_report_for>Build report for</build_report_for>
-<enable_artica_quarantine_robots_explain>This robot is used to send to your users an HTML report of quarantines stored on this server</enable_artica_quarantine_robots_explain>
-<enable_artica_report_robots_explain>This robot is used to send to your users a report of all current white & black lists address stored on this server</enable_artica_report_robots_explain>
-<enable_html_reports>Enable HTML email reports</enable_html_reports>
-<explain>Explain</explain>
-<externalLink>External link</externalLink>
-<ou_quarantine_reports_explain>If you turn to green this feature, all users stored by your organization will receive automatically an eMail with a reports of their quarantine storage status.[br]
-In this case, they could be restore, delete, display email trough this sended report</ou_quarantine_reports_explain>
-<quarantine_reports_text>Send quarantine/backup HTML emails reports to your users</quarantine_reports_text>
-<quarantine_robots>On-Demand Reports</quarantine_robots>
-<quarantine_robots_text>Set email addresses that users can send to in order to receive their quarantine report</quarantine_robots_text>
-<timetosendreport>Send report each day AT</timetosendreport>
+<all_quarantines_text>&#201; um administrador de sistema completo e pode consultar a quarentena atrav&#233;s de todas as organiza&#231;&#245;es</all_quarantines_text>
+<build_report_for>Criar relat&#243;rio para</build_report_for>
+<enable_artica_quarantine_robots_explain>Este rob&#244; &#233; utilizado para enviar aos seus utilizadores um relat&#243;rio HTML das quarentenas armazenadas neste servidor</enable_artica_quarantine_robots_explain>
+<enable_artica_report_robots_explain>Este rob&#244; &#233; utilizado para enviar aos seus utilizadores um relat&#243;rio de todos os endere&#231;os das listas brancas e negras atuais armazenados neste servidor</enable_artica_report_robots_explain>
+<enable_html_reports>Ativar relat&#243;rios de e-mail HTML</enable_html_reports>
+<explain>Explica&#231;&#227;o</explain>
+<externalLink>Liga&#231;&#227;o externa</externalLink>
+<ou_quarantine_reports_explain>Se colocar a verde esta funcionalidade, todos os utilizadores armazenados pela sua organiza&#231;&#227;o receber&#227;o automaticamente um e-mail com um relat&#243;rio do estado do seu armazenamento de quarentena.[br]
+Neste caso, poder&#227;o restaurar, eliminar e exibir o e-mail atrav&#233;s deste relat&#243;rio enviado</ou_quarantine_reports_explain>
+<quarantine_reports_text>Envie aos seus utilizadores relat&#243;rios HTML por e-mail de quarentena/c&#243;pia de seguran&#231;a</quarantine_reports_text>
+<quarantine_robots>Relat&#243;rios a pedido</quarantine_robots>
+<quarantine_robots_text>Defina os endere&#231;os de e-mail para os quais os utilizadores podem enviar para receber o seu relat&#243;rio de quarentena</quarantine_robots_text>
+<timetosendreport>Enviar relat&#243;rio todos os dias &#192;S</timetosendreport>

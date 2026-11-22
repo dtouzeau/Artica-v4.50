@@ -15,7 +15,8 @@ function entity_js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $q=new postgres_sql();
-    $ID=$_GET["entity-js"];
+    // Pentest 2026-11-04 : entityid etait concatene dans la requete.
+    $ID=intval($_GET["entity-js"]);
     $ligne=$q->mysqli_fetch_array("SELECT * FROM statscom_entity WHERE entityid=$ID");
     $entityname=$ligne["entityname"];
 
@@ -27,7 +28,8 @@ function entity_del(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $q=new postgres_sql();
-    $ID=$_GET["entity-del"];
+    // Pentest 2026-11-04 : entityid etait concatene dans la requete.
+    $ID=intval($_GET["entity-del"]);
     $ligne=$q->mysqli_fetch_array("SELECT * FROM statscom_entity WHERE entityid=$ID");
     $entityname=$ligne["entityname"];
     $tpl->js_confirm_delete($entityname,"entity-del",$ID,"LoadAjax('statscom-entities','$page?table=yes');");
@@ -35,7 +37,8 @@ function entity_del(){
 
 function entity_del_perform(){
 
-    $ID=$_POST["entity-del"];
+    // Pentest 2026-11-04 : entityid etait concatene dans la requete.
+    $ID=intval($_POST["entity-del"]);
     $q=new postgres_sql();
     $q->QUERY_SQL("DELETE FROM statscom_proxies WHERE uniqueid=$ID");
     $q->QUERY_SQL("DELETE FROM statscom_hsites WHERE uniqueid=$ID");
@@ -47,12 +50,16 @@ function entity_del_perform(){
 }
 
 function fill(){
-    $ID=$_GET["fill"];
+    // Pentest 2026-11-04 : entityid etait concatene dans la requete.
+    $ID=intval($_GET["fill"]);
     $q=new postgres_sql();
     $ligne=$q->mysqli_fetch_array("SELECT * FROM statscom_entity WHERE entityid=$ID");
 $entitylabel=$ligne["entitylabel"];
     echo "FootableRemoveEmpty();\n";
     echo "if( document.getElementById('entitylabel-$ID') ){\n";
+    // Pentest 2026-11-04 : entitylabel (donnee externe) affiche sans encodage (XSS stockee).
+    $entitylabel=req_js(req_html($entitylabel));
+    $ID=intval($ID);
     echo "\tdocument.getElementById('entitylabel-$ID').innerHTML='$entitylabel';\n}\n";
 
 
@@ -62,7 +69,8 @@ function entity_popup(){
     $page=CurrentPageName();
     $tpl=new template_admin();
     $q=new postgres_sql();
-    $ID=$_GET["entity-popup"];
+    // Pentest 2026-11-04 : entityid etait concatene dans la requete.
+    $ID=intval($_GET["entity-popup"]);
     $ligne=$q->mysqli_fetch_array("SELECT * FROM statscom_entity WHERE entityid=$ID");
     $entityname=$ligne["entityname"];
     $form[]=$tpl->field_text("entitylabel","{name}",$ligne["entitylabel"],true);
@@ -74,10 +82,11 @@ function entity_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $q=new postgres_sql();
-    $ID=$_POST["entityid"];
+    // Pentest 2026-11-04 : entityid et entitylabel etaient concatenes dans la requete.
+    $ID=intval($_POST["entityid"]);
     $entitylabel=$_POST["entitylabel"];
-    $q->QUERY_SQL("UPDATE statscom_entity SET entitylabel='$entitylabel' WHERE entityid=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);}
+    $q->QUERY_SQL_PARAMS("UPDATE statscom_entity SET entitylabel=$1 WHERE entityid=$2",array((string)$entitylabel,$ID));
+    if(!$q->ok){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));}
 
 }
 
@@ -111,7 +120,8 @@ function table(){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
         $ID=$ligne["entityid"];
         $entityname=$tpl->td_href($ligne["entityname"],null,"Loadjs('$page?entity-js=$ID');");
-        $entitylabel=$ligne["entitylabel"];
+        // Pentest 2026-11-04 : entitylabel (donnee externe) affiche sans encodage (XSS stockee).
+        $entitylabel=req_html($ligne["entitylabel"]);
         $hits=$tpl->FormatNumber($ligne["hits"]);
         $size=FormatBytes($ligne["size"]/1024);
         $del=$tpl->icon_delete("Loadjs('$page?entity-del=$ID')");

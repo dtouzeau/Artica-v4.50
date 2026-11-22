@@ -839,12 +839,14 @@ class mysql_catz{
 
 	public function ufdbcat_dns($sitename){
 
-        if(function_exists("debug_backtrace")){
+        // The backtrace went to syslog for EVERY site: 4 lines each, ~16,000
+        // sites a night from exec.statscom-stats.php --catz. Debug only now.
+        if(!empty($GLOBALS["VERBOSE"]) && function_exists("debug_backtrace")){
             $trace=@debug_backtrace();
             foreach ($trace as $ligne){
-                    $file=$ligne["file"];
-                    $function=$ligne["function"];
-                    $line=$ligne["line"];
+                    $file=$ligne["file"] ?? "";
+                    $function=$ligne["function"] ?? "";
+                    $line=$ligne["line"] ?? "";
                     $this->ToSyslog("By $file {$function}() in line $line");
             }
         }
@@ -853,18 +855,20 @@ class mysql_catz{
         $this->THESHIELD_MAIN=null;
         $array=$GLOBALS["CLASS_SOCKETS"]->ksrn_sockets($sitename);
 
-        if(!$array["STATUS"]) {
+        // ksrn_sockets() sets STATUS only on failure. Its success answer carries
+        // "category" (the id) and "RESPONSE" (the engine NAME, not JSON). Testing
+        // STATUS and decoding RESPONSE made every successful lookup a failure.
+        if(isset($array["STATUS"]) && !$array["STATUS"]) {
             VERBOSE("$sitename {$array["ERROR"]}", __LINE__);
             $this->ok=false;
             return false;
         }
-        $response=$array["RESPONSE"];
-        $main=$response;
-        $this->THESHIELD_MAIN=$main;
-
-        $json = json_decode($main,true);
-        if(!isset($json["category_id"])){return 0;}
-        return intval($json["category_id"]);
+        if(!isset($array["category"])){
+            $this->ok=false;
+            return false;
+        }
+        $this->THESHIELD_MAIN=$array["RESPONSE"] ?? null;
+        return intval($array["category"]);
     }
 
 

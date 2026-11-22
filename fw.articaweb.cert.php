@@ -21,7 +21,7 @@ function remove() {
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LighttpdServerCertificate","");
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("LighttpdManagerEnforce",0);
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/webconsole/reconfigure");
-    echo "LoadAjaxSilent('client-certificate-status','fw.articaweb.status.php?status=yes');\n";
+    echo "LoadAjaxSilent('client-certificate-status','fw.articaweb.php?aw-sslc=yes');\n";
 }
 
 function js(){
@@ -35,7 +35,7 @@ function js(){
 function popup(){
     $page=CurrentPageName();
     $security="AsSystemAdministrator";
-    $jsRefresh="LoadAjaxSilent('client-certificate-status','fw.articaweb.status.php?status=yes')";
+    $jsRefresh="LoadAjaxSilent('client-certificate-status','fw.articaweb.php?aw-sslc=yes')";
     $tpl=new template_admin();
     $title=null;
     $explain=null;
@@ -66,7 +66,7 @@ function popup(){
         if(!isset($array["subject"]["O"])){
             $explain="{certificate_server_paste}";
             $html[]="<div id='server-certificate-progress'></div>";
-            $build=$tpl->framework_buildjs("webconsole.php?server-certificate=yes",
+            $build=$tpl->framework_buildjs("/webconsole/client-ca/create",
                 "manager-certificate.progress",
                 "manager-certificate.log",
                 "server-certificate-progress",
@@ -96,7 +96,7 @@ function Save(){
 
 
 
-    $MAIN=unserialize(base64_decode($_POST["LighttpdServerCertificate"]));
+    $MAIN=unserialize(base64_decode($_POST["LighttpdServerCertificate"]),array("allowed_classes"=>false));
     $crt_data=base64_decode($MAIN["crt_data"]);
     $array=openssl_x509_parse($crt_data);
     if(!isset($array["subject"])){echo "jserror:Corrupted data";return false;}

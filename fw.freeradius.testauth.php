@@ -3,6 +3,8 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : nas-name etait recopie sans encodage dans la page (XSS) ; c'est une adresse/nom de client NAS.
+if(isset($_GET["nas-name"])){$_GET["nas-name"]=preg_replace('#[^A-Za-z0-9_.:/-]#','',(string)$_GET["nas-name"]);}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_POST["authtype"])){save();exit;}
 
@@ -36,7 +38,12 @@ function popup(){
 	}else{
 		$form[]=$tpl->field_info("nas-name", "{simulate_client_ip}", $_GET["nas-name"]);
 		$q=new mysql();
-		$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT secret FROM freeradius_clients WHERE ipaddr='{$_GET["nas-name"]}'","artica_backup"));
+		// Pentest 2026-11-04 : nas-name etait concatene dans la requete.
+		$nasName=strval($_GET["nas-name"]);
+		$ligne=array("secret"=>"");
+		if(preg_match('/^[A-Za-z0-9_.:\/-]+$/',$nasName)){
+			$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT secret FROM freeradius_clients WHERE ipaddr='$nasName'","artica_backup"));
+		}
 		$tpl->field_hidden("secret", $ligne["secret"]);
 	}
 	$form[]=$tpl->field_text("username", "{username}", $FreeRadiusRadTest["username"]);

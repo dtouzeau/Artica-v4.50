@@ -7,7 +7,6 @@ if(isset($_GET["start"])){start();exit;}
 if(isset($_GET["search"])){table();exit;}
 if(isset($_GET["member-js"])){member_js();exit;}
 if(isset($_GET["member-popup"])){member_popup();exit;}
-if(isset($_POST["id"])){member_save();exit;}
 if(isset($_POST["adduser"])){member_create();exit;}
 if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["delete"])){delete();exit;}
@@ -17,7 +16,6 @@ page();
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$GLOBALS["CLASS_SOCKETS"]->getFrameWork("proftpd.php?systemusers=yes");
 
     $html=$tpl->page_header("{APP_MATTERMOST} {members}","far fa-users",
         "{APP_MATTERMOST_EXPLAIN}",
@@ -318,40 +316,4 @@ function ParseRoles($role):array{
     return $t;
 }
 
-function member_save(){
-	$tpl=new template_admin();
-	
-	$tpl->CLEAN_POST();
-
-    foreach ($_POST as $num=>$line){
-		$_POST[$num]=mysql_escape_string2($line);
-	
-	}
-	
-	$tt=explode(":",$_POST["uid"]);
-	$uid=$tt[0];
-	$gid=$tt[1];
-	$id=$_POST["id"];
-	$userid=$_POST["userid"];
-	$passwd=$_POST["passwd"];
-	$homedir=$_POST["homedir"];
-	$date=date("Y-m-d H:i:s");
-	if($id==0){
-		$sql="INSERT INTO `ftpuser` ( `userid`, `passwd`, `uid`, `gid`, `homedir`, `shell`, `count`, `accessed` , `modified`, `LoginAllowed` )
-		VALUES ('$userid', '$passwd', '$uid', '$gid', '$homedir', '/bin/false', '0', '$date', '$date', 'true' );";
-	}else{
-		$sql="UPDATE `ftpuser` SET
-		`userid`='$userid',
-		`passwd`='$passwd',
-		`uid`=$uid,
-		`gid`=$gid,
-		`homedir`='$homedir' WHERE id=$id";
-	}
-	
-	$q=new lib_sqlite("/home/artica/SQLITE/ftpusers.db");
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error."<br>$sql";return;}
-	$sock=new sockets();
-	$sock->getFrameWork("proftpd.php?chowndirs=yes");
-}
 function FormatNumber($number, $decimals = 0, $thousand_separator = '&nbsp;', $decimal_point = '.'):string{$tmp1 = round((float) $number, $decimals); while (($tmp2 = preg_replace('/(\d+)(\d\d\d)/', '\1 \2', $tmp1)) != $tmp1)$tmp1 = $tmp2; return strtr($tmp1, array(' ' => $thousand_separator, '.' => $decimal_point));}

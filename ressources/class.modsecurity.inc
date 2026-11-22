@@ -225,13 +225,30 @@ class mod_security{
 
     }
 
+    private function fetch_modsec_whitelist_for_service($serviceid,$desc=false):array{
+        $serviceid=intval($serviceid);
+        $sock=$GLOBALS["CLASS_SOCKETS"];
+        $merged=array();
+        foreach (array($serviceid, 0) as $sid){
+            $resp=$sock->REST_API_NGINX("/modsec/whitelist?serviceid=$sid");
+            $data=json_decode($resp,true);
+            if(!is_array($data) || empty($data["Status"]) || !isset($data["entries"]) || !is_array($data["entries"])){continue;}
+            foreach($data["entries"] as $e){$merged[]=$e;}
+            if($sid===0){break;} // serviceid==0 already pulled both branches
+        }
+        usort($merged,function($a,$b)use($desc){
+            $sa=isset($a["spath"])?$a["spath"]:"";
+            $sb=isset($b["spath"])?$b["spath"]:"";
+            return $desc ? strcmp($sb,$sa) : strcmp($sa,$sb);
+        });
+        return $merged;
+    }
+
     function whitelists_globals():string{
         $RULES=array();
         $UAS=array();
         $f[]="# GLobal Whitelists";
-        $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $sql="SELECT * FROM `modsecurity_whitelist` WHERE serviceid=$this->SERVICE_ID OR serviceid=0 ORDER BY spath";
-        $results=$q->QUERY_SQL($sql);
+        $results=$this->fetch_modsec_whitelist_for_service($this->SERVICE_ID,false);
         $f[]="# ".count($results)." rule(s)";
         foreach ($results as $index=>$ligne){
             $enabled=intval($ligne["enabled"]);
@@ -294,9 +311,7 @@ class mod_security{
             @file_put_contents($nginx_locations,@implode("\n",$zlog));
             return true;
         }
-        $sql="SELECT * FROM `modsecurity_whitelist` WHERE serviceid=$this->SERVICE_ID OR serviceid=0 ORDER BY spath DESC";
-        $q=new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $results=$q->QUERY_SQL($sql);
+        $results=$this->fetch_modsec_whitelist_for_service($this->SERVICE_ID,true);
         $zlog=array();
         $nginx_xpaths=array();
         $GlobalRulesIDArray=array();

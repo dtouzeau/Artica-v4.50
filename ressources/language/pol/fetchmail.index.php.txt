@@ -1,5 +1,5 @@
-<add_new_fetchmail_rule>New fetch rule</add_new_fetchmail_rule>
-<add_new_fetchmail_rule_text>Add a new rule in order to receive mails from your Internet eMail provider</add_new_fetchmail_rule_text>
-<enable_fetchmail>Enable fetchmail</enable_fetchmail>
-<enable_fetchmail_text>If you turn to green, you will be able to retreive mails from your ISP or other mailbox server.</enable_fetchmail_text>
-<fetchmail_rules_text>View, edit, add your fetch mails rules</fetchmail_rules_text>
+<add_new_fetchmail_rule>Nowa regu&#322;a pobierania</add_new_fetchmail_rule>
+<add_new_fetchmail_rule_text>Dodaj now&#261; regu&#322;&#281;, aby odbiera&#263; wiadomo&#347;ci od swojego dostawcy poczty internetowej</add_new_fetchmail_rule_text>
+<enable_fetchmail>W&#322;&#261;cz fetchmail</enable_fetchmail>
+<enable_fetchmail_text>Je&#347;li ustawisz na zielono, b&#281;dziesz m&#243;g&#322; pobiera&#263; wiadomo&#347;ci od swojego ISP lub innego serwera skrzynek pocztowych.</enable_fetchmail_text>
+<fetchmail_rules_text>Wy&#347;wietl, edytuj, dodawaj swoje regu&#322;y pobierania poczty</fetchmail_rules_text>

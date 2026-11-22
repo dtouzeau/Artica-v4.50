@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 	include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 	include_once('ressources/class.ldap.inc');
 	include_once('ressources/class.users.menus.inc');
@@ -111,7 +114,7 @@ function popup(){
 		$ARRAY["TITLE"]="{empty_swap}";
 		$ARRAY["AFTER"]="LoadAjaxSilent('MainContent','fw.index.php?content=yes');";
 		$prgress=base64_encode(serialize($ARRAY));
-		$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-mem-restart')";
+		$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-mem-restart')";
 		$tpl->form_add_button("{empty_swap}", $jsrestart);
 	
 	}
@@ -150,5 +153,5 @@ function save(){
 	$sock->SaveConfigFile(base64_encode(serialize($ARRAY)),"kernel_values");
 	
 	$sock->getFrameWork("cmd.php?restart-artica-status=yes");
-	$sock->getFrameWork("system.php?swap-init=yes");
+
 }

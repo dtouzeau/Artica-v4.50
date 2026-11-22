@@ -78,20 +78,12 @@ if ($argv[1]=="--unlink-auth-file") {
     exit();
 }
 
-if ($argv[1]=="--unlink-cert-file") {
-    cert_file_remove($argv[2]);
-    exit();
-}
 
 if ($argv[1]=="--unlink-conf-file") {
     conf_file_remove($argv[2]);
     exit();
 }
 
-if ($argv[1]=="--build-cert") {
-    build_cert($argv[2], $argv[3], $argv[4]);
-    exit();
-}
 
 if ($argv[1]=="--stop") {
     $GLOBALS["OUTPUT"]=true;
@@ -580,83 +572,8 @@ function build_progress_str($pourc, $text)
     }
 }
 
-function build_cert($name, $cn, $id)
-{
-    $unix=new unix();
-    $ipsec=$unix->find_program("ipsec");
-    
-    $q=new lib_sqlite("/home/artica/SQLITE/strongswan.db");
-    $ca_key = "ca-".$name."-key";
-    $ca_cert = "ca-".$name."-cert";
-    $server_key = "server-".$name."-key";
-    $server_cert = "server-".$name."-cert";
-    build_progress("{rebuild}:{certificate}", 15);
-    shell_exec("$ipsec pki --gen --type rsa --size 4096 --outform pem > /etc/ipsec.d/private/{$ca_key}.pem");
-    if (!file_exists("/etc/ipsec.d/private/{$ca_key}.pem")) {
-        build_progress("{failed} to create CA key", 110);
-        return false;
-    }
-    build_progress("{rebuild}:{certificate}", 30);
-    shell_exec("$ipsec pki --self --ca --lifetime 3650 --in /etc/ipsec.d/private/{$ca_key}.pem --type rsa --dn \"CN={$cn}\" --outform pem > /etc/ipsec.d/cacerts/{$ca_cert}.pem");
-    if (!file_exists("/etc/ipsec.d/cacerts/{$ca_cert}.pem")) {
-        build_progress("{failed} to create CA Cert", 110);
-        return false;
-    }
-    build_progress("{rebuild}:{certificate}", 45);
-    shell_exec("$ipsec pki --gen --type rsa --size 4096 --outform pem > /etc/ipsec.d/private/{$server_key}.pem");
-    if (!file_exists("/etc/ipsec.d/private/{$server_key}.pem")) {
-        build_progress("{failed} to create Server Key", 110);
-        return false;
-    }
-    build_progress("{rebuild}:{certificate}", 60);
-    shell_exec("$ipsec pki --pub --in /etc/ipsec.d/private/{$server_key}.pem --type rsa | ipsec pki --issue --lifetime 1825 --cacert /etc/ipsec.d/cacerts/{$ca_cert}.pem --cakey /etc/ipsec.d/private/{$ca_key}.pem --dn \"CN={$cn}\" --san \"{$cn}\" --san \"@{$cn}\" --flag serverAuth --flag ikeIntermediate --outform pem >  /etc/ipsec.d/certs/{$server_cert}.pem");
-    if (!file_exists("/etc/ipsec.d/certs/{$server_cert}.pem")) {
-        build_progress("{failed} to create Server Cert", 110);
-        return false;
-    }
-    if (intval($id)==0) {
-        $ca_cert_content = file_get_contents("/etc/ipsec.d/cacerts/{$ca_cert}.pem");
-        $ca_cert_content_base64=base64_encode(serialize($ca_cert_content));
-        $sql="INSERT INTO strongswan_certs (`name`,`cn`,`ca_key`,`ca_cert`,`ca_cert_content`,`server_key`,`server_cert`) VALUES ('{$name}','{$cn}','{$ca_key}','{$ca_cert}','{$ca_cert_content_base64}','{$server_key}','{$server_cert}');";
-        $q->QUERY_SQL($sql);
-        if (!$q->ok) {
-            build_progress("{failed} $q->mysql_error", 110);
-            return false;
-        }
-        shell_exec("$ipsec rereadall");
-        sleep(2);
-        
-        build_progress("{rebuild}:{certificate} {done}", 100);
-    }
-
-    if (intval($id)>0) {
-        $ca_cert_content = file_get_contents("/etc/ipsec.d/cacerts/{$ca_cert}.pem");
-        $ca_cert_content_base64=base64_encode(serialize($ca_cert_content));
-        $sql="UPDATE strongswan_certs SET `name`='$name', `cn`='$cn', `ca_key`='$ca_key',`ca_cert`='$ca_cert',`ca_cert_content`='$ca_cert_content_base64',`server_key`='$server_key',`server_cert`='$server_cert' WHERE ID='$id'";
-
-        $q->QUERY_SQL($sql);
-        if (!$q->ok) {
-            build_progress("{failed} $q->mysql_error", 110);
-            return false;
-        }
-        shell_exec("$ipsec rereadall");
-        sleep(2);
-        
-        build_progress("{rebuild}:{certificate} {done}", 100);
-    }
-}
-
-function cert_file_remove($name)
-{
-    $ca_key = "ca-".$name."-key";
-    $ca_cert = "ca-".$name."-cert";
-    $server_key = "server-".$name."-key";
-    $server_cert = "server-".$name."-cert";
-    @unlink("/etc/ipsec.d/private/{$ca_key}.pem");
-    @unlink("/etc/ipsec.d/cacerts/{$ca_cert}.pem");
-    @unlink("/etc/ipsec.d/private/{$server_key}.pem");
-    @unlink("/etc/ipsec.d/certs/{$server_cert}.pem");
-}
+// build_cert() and cert_file_remove() were ported to articarest (module strongswancerts,
+// routes /strongswan/certificates/build|delete) on 2026-11-22: do not bring them back here.
 
 function build_tunnels($force=true)
 {

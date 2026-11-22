@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * System Internet Proxy configuration pushed to every enabled agent in a group.
  * Hostname is NOT changed.
@@ -161,7 +163,7 @@ function gproxy_save(): void {
         return;
     }
 
-    echo $tpl->_ENGINE_parse_body(gproxy_results_html($json));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(gproxy_results_html($json));
     admin_tracks("Group #$id: system proxy pushed to {$json->total} agents ({$json->success} success, {$json->failed} failed)");
 }
 
@@ -182,7 +184,7 @@ function gproxy_delete(): void {
         return;
     }
 
-    echo $tpl->_ENGINE_parse_body(gproxy_results_html($json));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(gproxy_results_html($json));
     admin_tracks("Group #$id: system proxy removed from {$json->total} agents ({$json->success} success, {$json->failed} failed)");
 }
 
@@ -206,7 +208,7 @@ function gproxy_results_html(object $json): string {
 
     // ── Per-agent results table ──
     if (!empty($results)) {
-        $h[] = "<table class='table table-striped table-condensed'>";
+        $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $h[] = "  <thead><tr style='background:#f5f5f5'>";
         $h[] = "    <th style='width:1%'></th>";
         $h[] = "    <th>{hostname}</th>";
@@ -225,7 +227,7 @@ function gproxy_results_html(object $json): string {
             }
             $h[] = "    <tr><td>$ico</td><td><strong>$hostname</strong></td><td>$cell</td></tr>";
         }
-        $h[] = "  </tbody></table>";
+        $h[] = "  </tbody></table></div></div></div>";
     }
 
     return implode("\n", $h);

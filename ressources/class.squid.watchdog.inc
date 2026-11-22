@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 include_once(dirname(__FILE__)."/class.sockets.inc");
 
 class squid_watchdog{
@@ -39,7 +40,7 @@ class squid_watchdog{
 	private function watchdog_config_default($MonitConfig){
 		
 	
-		if(!is_file("/etc/artica-postfix/settings/Daemons/DisableLogFileDaemonMySQL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableLogFileDaemonMySQL", 1);}
+		if(!artica_setting_exists("DisableLogFileDaemonMySQL")){$GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisableLogFileDaemonMySQL", 1);}
 	
 		if(!isset($MonitConfig["MEMORY_TEST"])){$MonitConfig["MEMORY_TEST"]=1;}
 		

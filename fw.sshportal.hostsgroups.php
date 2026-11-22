@@ -18,7 +18,6 @@ if($usersmenus->AsArticaAdministrator==false){header('location:users.index.php')
 if(isset($_GET["start"])){table_start();exit;}
 if(isset($_GET["group-js"])){group_js();exit;}
 if(isset($_GET["group-tabs"])){group_tabs();exit;}
-if(isset($_GET["add-popup"])){add_popup();exit;}
 if(isset($_GET["group-popup"])){group_popup();exit;}
 if(isset($_POST["id"])){group_save();exit;}
 if(isset($_GET["group-delete"])){group_delete();exit;}
@@ -78,10 +77,12 @@ function group_delete(){
 
 function group_delete_real(){
     $q      =   new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
-    $q->QUERY_SQL("DELETE FROM host_groups WHERE id='{$_POST["id"]}'");
+    // Pentest 2026-11-04 : id etait concatene dans la requete.
+    $id     =   intval($_POST["id"]);
+    $q->QUERY_SQL("DELETE FROM host_groups WHERE id='$id'");
     if(!$q->ok){echo $q->mysql_error;return;}
-    $q->QUERY_SQL("DELETE FROM host_host_groups WHERE host_group_id='{$_POST["id"]}'");
-    $q->QUERY_SQL("DELETE FROM host_group_acls WHERE host_group_id='{$_POST["id"]}'");
+    $q->QUERY_SQL("DELETE FROM host_host_groups WHERE host_group_id='$id'");
+    $q->QUERY_SQL("DELETE FROM host_group_acls WHERE host_group_id='$id'");
 
 
 }
@@ -120,7 +121,8 @@ function group_save(){
     $tpl        = new template_admin();
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $tpl->CLEAN_POST();
-    $comment    = $q->sqlite_escape_string2($_POST["comment"]);
+    // Pentest 2026-11-04 : comment/name (et uid de session) etaient concatenes dans la requete.
+    $comment    = $_POST["comment"];
     $name       = $_POST["name"];
     $id         = intval($_POST["id"]);
     $name       = replace_accents($name);
@@ -154,17 +156,18 @@ function group_save(){
     }
 
     if($id==0){
-        $q->QUERY_SQL("INSERT INTO host_groups (comment,name) VALUES ('$comment','$name')");
+        $q->QUERY_SQL_PARAMS("INSERT INTO host_groups (comment,name) VALUES (?,?)",array($comment,$name));
         if(!$q->ok){echo $q->mysql_error;}
         return true;
     }
 
-    $q->QUERY_SQL("UPDATE host_groups SET `comment`='$comment',`name`='$name' WHERE id='$id'");
+    $q->QUERY_SQL_PARAMS("UPDATE host_groups SET `comment`=?,`name`=? WHERE id=?",array($comment,$name,$id));
     if(!$q->ok){echo $q->mysql_error;}
 
 }
 function group_fill(){
-    $id         = $_GET["fill"];
+    // Pentest 2026-11-04 : fill etait concatene dans la requete.
+    $id         = intval($_GET["fill"]);
     $q          = new lib_sqlite("/home/artica/SQLITE/sshdportal.db");
     $ligne      = $q->mysqli_fetch_array("SELECT * FROM host_groups WHERE id='$id'");
     $name       = $ligne["name"];
@@ -214,7 +217,7 @@ function table(){
     $TRCLASS=null;
     foreach ($results as $index=>$ligne){
         if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $ID         = $ligne["id"];
+        $ID         = intval($ligne["id"]);
         $md         = md5(serialize($ligne));
         $name       = $ligne["name"];
         $comment    = $ligne["comment"];

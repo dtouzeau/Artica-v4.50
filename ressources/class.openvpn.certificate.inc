@@ -80,22 +80,22 @@ class openvpn_certificate{
 	private function load_certificate(){
 		
 		if($GLOBALS["AS_ROOT"]){echo "Starting......: ".date("H:i:s")." OpenVPN loading certificate $this->CommonName\n";}
-		
-		$q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-		
-		$sql="SELECT `CommonName`,`password`,`UsePrivKeyCrt`,`crt`,`csr`,`srca`,`clientkey`,`clientcert`,`DynamicCert`,`privkey`,`SquidCert`,`Squidkey`,`bundle`
-		FROM sslcertificates WHERE CommonName='$this->CommonName'";
-		$ligne=$q->mysqli_fetch_array($sql);
-		
-		if($ligne["CommonName"]==null){
+
+		include_once(dirname(__FILE__)."/class.certificates-db.inc");
+		$cdb=new CertificatesDB();
+		$row=$cdb->getByCommonName($this->CommonName);
+
+		if(!is_object($row)){
 			if($GLOBALS["AS_ROOT"]){echo "Starting......: ".date("H:i:s")." OpenVPN Certificate $this->CommonName was not created, create a new one\n";}
 			$this->CreateCertificate($this->CommonName);
+			$row=$cdb->getByCommonName($this->CommonName);
+			if(!is_object($row)){
+				if($GLOBALS["AS_ROOT"]){echo "Starting......: ".date("H:i:s")." OpenVPN loading certificate Failed: $cdb->lastError\n";}
+				$this->LOGS[]="#".str_replace("\n", " ", $cdb->lastError);
+				return;
+			}
 		}
-		
-		if(!$q->ok){
-			if($GLOBALS["AS_ROOT"]){echo "Starting......: ".date("H:i:s")." OpenVPN loading certificate Failed: $q->mysql_error\n";}
-			$this->LOGS[]="#".str_replace("\n", " ", $q->mysql_error);
-		}
+		$ligne=(array)$row;
 		$this->LOGS[]="# $this->CommonName UsePrivKeyCrt={$ligne["UsePrivKeyCrt"]}";
 		
 		$this->UsePrivKeyCrt=intval($ligne["UsePrivKeyCrt"]);
@@ -146,13 +146,29 @@ class openvpn_certificate{
 		$values[]="''";
 		$values[]="'$certificatename'";
 		$values[]="'0'";
-		$sql="INSERT OR IGNORE INTO `sslcertificates` (".@implode(",", $fields).") VALUES (".@implode(",", $values).")";
-		$q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-		$q->QUERY_SQL($sql);
-		if(!$q->ok){return;}
-		$unix=new unix();
-		$php5=$unix->LOCATE_PHP5_BIN();
-		system("$php5 /usr/share/artica-postfix/exec.openssl.php --easyrsa $certificatename");
+		include_once(dirname(__FILE__)."/class.certificates-db.inc");
+		$cdb=new CertificatesDB();
+		// INSERT OR IGNORE → check exists first, then insert (best-effort; idempotent)
+		[$exists,$existsId]=$cdb->exists($certificatename);
+		if(!$exists){
+			$newId=$cdb->insert([
+				"CountryName"=>"US",
+				"stateOrProvinceName"=>"New York",
+				"CertificateMaxDays"=>730,
+				"OrganizationName"=>"IT",
+				"OrganizationalUnit"=>"IT service",
+				"emailAddress"=>"root@$certificatename",
+				"localityName"=>"Brooklin",
+				"levelenc"=>2048,
+				"password"=>"",
+				"CommonName"=>$certificatename,
+				"UsePrivKeyCrt"=>0,
+			]);
+			if($newId<=0){return;}
+		}
+		$sock=new sockets();
+		$sock->REST_API_TIMEOUT=120;
+		$sock->REST_API_POST_JSON("/certificate/build-csr",array("common_name"=>$certificatename));
 		
 	}
 	

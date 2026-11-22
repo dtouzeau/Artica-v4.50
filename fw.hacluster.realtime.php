@@ -1,6 +1,7 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -134,10 +135,14 @@ function zoom(){
         if(!property_exists($ev,$field)){continue;}
         $val=$ev->$field;
         if($val==="-" || $val==="" || is_null($val)){continue;}
+        // Pentest 2026-11-04 : data etait recopie sans encodage dans la page (XSS).
+        // L'evenement vient de l'URL (base64 JSON) : chaque valeur est encodee, sauf le HTML construit ici.
+        $safe=false;
 
         if($field=="reply_size"){
             $kb=intval($val)/1024;
             $val=FormatBytes($kb);
+            $safe=true;
         }
         if($field=="response_time_ms"){
             $val="{$val}ms";
@@ -146,7 +151,8 @@ function zoom(){
         if($field=="http_status"){
             $code=intval($val);
             if($code>=400){
-                $val="<span class='text-danger'><strong>$val</strong></span>";
+                $val="<span class='text-danger'><strong>".req_html($val)."</strong></span>";
+                $safe=true;
             }
         }
         if($field=="note" && strlen($val)>1){
@@ -154,6 +160,7 @@ function zoom(){
         }
 
         $html[]="<tr><td class='text-capitalize' style='text-align:right;width:30%'>$label:</td>";
+        if(!$safe){$val=is_scalar($val)?req_html($val):"";}
         $html[]="<td><strong>$val</strong></td></tr>";
     }
 
@@ -163,6 +170,7 @@ function zoom(){
 
 function search(){
     $tpl=new template_admin();
+    $GLOBALS["TPLZ"]=$tpl;
     $page=CurrentPageName();
 
     if($_GET["search"]==null){$_GET["search"]="50 events";}
@@ -253,7 +261,7 @@ function search(){
     $whitelist_text=$tpl->_ENGINE_parse_body("<strong style='color:#19937a'>$alido&nbsp;{whitelist}</strong>");
     $theshield  = "The Shields";
 
-    $html[]="<table class='table table-hover footable'>";
+    $html[]="<table class='table table-hover'>";
     $html[]="<thead><tr>";
     $html[]="<th>$zdate</th>";
     $html[]="<th>{source}</th>";
@@ -269,12 +277,11 @@ function search(){
     $html[]="</tr></thead><tbody>";
 
     $SIMPLERULES=array();
-    $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $results=$q->QUERY_SQL("SELECT ID,aclname FROM webfilters_simpleacls");
-    foreach ($results as $index => $ligne) {
-        VERBOSE("$index]: ID: $ligne[ID] aclname: $ligne[aclname]",__LINE__);
-        $ID = $ligne["ID"];
-        $rulename = $ligne["aclname"];
+    $rows = acls_api_get("/proxy/simple-acls") ?? [];
+    foreach ($rows as $index => $ligne) {
+        $ID = intval($ligne["id"] ?? 0);
+        $rulename = $ligne["aclName"] ?? "";
+        VERBOSE("$index]: ID: $ID aclname: $rulename",__LINE__);
         $SIMPLERULES[$ID]=$rulename;
     }
 
@@ -289,6 +296,12 @@ function search(){
         $category="";
         $accessrule="";
         $simplerule="";
+        // Remis a zero a chaque ligne : sinon une requete sans categorie
+        // affichait celle de la ligne PRECEDENTE (et « Undefined variable »
+        // sur la premiere).
+        $categoryDisplay="";
+
+
 
         // Color coding
         if($method=="CONNECT"){$color="#BAB700";}
@@ -314,12 +327,17 @@ function search(){
         // Client + user
         $clientIp=trim($ev->client_ip ?? "-");
         $username=trim($ev->username ?? "-");
-        $userText="";
+        $eui=trim($ev->eui ?? "-");
+        if($eui=="00:00:00:00:00:00"){$eui="";}
+        $userText="";$euiText="";
         if($username!="-" && strlen($username)>0){
             $userText="/<strong>$username</strong>";
         }
+        if($eui!="-" && strlen($eui)>0){
+            $euiText="<br><small><i class='".ico_nic."'></i>&nbsp;$eui</small>";
+        }
         $ico=($username!="-" && strlen($username)>0) ? ico_user : ico_computer;
-        $memberText="<i class='$ico'></i>&nbsp;$clientIp$userText";
+        $memberText="<i class='$ico'></i>&nbsp;$clientIp$userText$euiText";
 
         // Status + squid code
         $statusText=$squidStatus;
@@ -354,6 +372,7 @@ function search(){
         if($serverPort>0 && $serverPort!=80 && $serverPort!=443){
             $destText.=":$serverPort";
         }
+
 
         // Size
         $replySize=intval($ev->reply_size ?? 0);
@@ -425,7 +444,7 @@ function search(){
         if(isset($xTAGS["simplerule"])){
             $RuleNumber=intval($xTAGS["simplerule"]);
             VERBOSE("RuleNumber: $RuleNumber",__LINE__);
-            $simplerule=$SIMPLERULES[$RuleNumber];
+            $simplerule="&nbsp;".$SIMPLERULES[$RuleNumber];
         }
         if (isset($xTAGS["bandwidth"])) {
             $bandwidth = "&nbsp;<i class='text-warning fas fa-sort-amount-down'></i>";
@@ -465,6 +484,7 @@ function search(){
             $SRN["CLOUDFLARE"] = "$theshield:Cloudflare";
             $SRN["MALWAREURL_MALWARES"] = "$theshield:MalwareURL";
             $SRN["MALWAREURL_PHISHING"] = "$theshield:MalwareURL";
+            $SRN["IDN_HOMOGRAPH"] = "$theshield:IDN homograph";
             $SRN["ARTICA"] = "$theshield:Artica";
             $SRN["EMERGENCY"] = "$theshield:$emergency_text";
             $SRN["WHITELIST"] = "$theshield:$whitelist_text";
@@ -558,11 +578,14 @@ function search(){
                 $statusDisplay="$statusDisplay/$ev->error_code";
             }
         }
+        if(strlen($accessrule)>2){
+            $accessrule="&nbsp;$accessrule";
+        }
 
         $html[]="<tr>";
         $html[]="<td><span style='color:$color'>$dateDisplay</span></td>";
         $html[]="<td><small>$sourceHost</small></td>";
-        $html[]="<td><span style='color:$color'>$memberText</span></td>";
+        $html[]="<td><span style='color:$color' nowrap>$memberText</span></td>";
         $html[]="<td><span style='color:$color'>$statusDisplay$theshield_ico$zCode0$codeToString$category$accessrule$simplerule</span></td>";
         $html[]="<td><span style='color:$color'>$protoDisplay</span></td>";
         $html[]="<td><span style='color:$color'>$categoryDisplay</span></td>";
@@ -584,8 +607,23 @@ function search(){
 
     $html[]="<script>";
     $html[]="NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('.footable').footable({ \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } }); });";
     $html[]="</script>";
 
     echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+}
+function categoryCodeTocatz($category){
+    if(preg_match("#P([0-9]+)#", $category,$re)){$category=$re[1];}
+    $category=intval($category);
+    if($category==0){return "($category) Unknown(0)";}
+
+    $catz=new mysql_catz(true);
+    $categories_descriptions=$catz->categories_descriptions();
+    if(!isset($categories_descriptions[$category]["categoryname"])){
+        return "($category) <strong>Unkown</strong>";
+    }
+
+    $name=$categories_descriptions[$category]["categoryname"];
+    $category_description=$categories_descriptions[$category]["category_description"];
+    $js="Loadjs('fw.ufdb.categories.php?category-js=$category')";
+    return $GLOBALS["TPLZ"]->td_href($name,$category_description,$js);
 }

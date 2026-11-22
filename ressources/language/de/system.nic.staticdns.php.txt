@@ -1,14 +1,14 @@
-<add_nameserver>Add a name server</add_nameserver>
-<add_nameserver_text>Give IP address or hostname of your DNS server</add_nameserver_text>
-<add_search_domains>Add a search domain</add_search_domains>
-<add_search_domain_text>Give a domain name</add_search_domain_text>
-<infos_dnsmasq>[br][b]Note: DNSMASQ is installed[/b], in this case, DNS settings will drive DNSMASQ local configuration instead your network configuration.
-[br]Your network DNS servers configuration will just point to your DNSMASQ local process[br]</infos_dnsmasq>
-<nic_dns_search>Search list for host-name lookup</nic_dns_search>
-<nic_dns_search_text>The search list is normally determined from the local domain name; by default, it contains only the local domain name.&lt;br&gt; This may be changed by listing the desired domain search path.&lt;br&gt;
-If you refer to another server just by its name without the domain added on, DNS on your client will append the server name 
-to each domain in this list and do an DNS lookup on each to get the remote servers IP address.&lt;br&gt;
-This is a handy time saving feature to have so that you can refer to servers in the same domain by only their servername without having to specify the domain.
-&lt;br&gt;&lt;strong&gt;The first domain listed must be the home domain of your network and The search list is currently limited to six domains with a total of 256 characters.</nic_dns_search_text>
+<add_nameserver>Einen Nameserver hinzuf&#252;gen</add_nameserver>
+<add_nameserver_text>Geben Sie die IP-Adresse oder den Hostnamen Ihres DNS-Servers an</add_nameserver_text>
+<add_search_domains>Eine Suchdom&#228;ne hinzuf&#252;gen</add_search_domains>
+<add_search_domain_text>Geben Sie einen Dom&#228;nennamen an</add_search_domain_text>
+<infos_dnsmasq>[br][b]Hinweis: DNSMASQ ist installiert[/b], in diesem Fall steuern die DNS-Einstellungen die lokale DNSMASQ-Konfiguration anstelle Ihrer Netzwerkkonfiguration.
+[br]Ihre Netzwerk-DNS-Server-Konfiguration verweist einfach auf Ihren lokalen DNSMASQ-Prozess[br]</infos_dnsmasq>
+<nic_dns_search>Suchliste f&#252;r Hostnamen-Aufl&#246;sung</nic_dns_search>
+<nic_dns_search_text>Die Suchliste wird normalerweise aus dem lokalen Dom&#228;nennamen bestimmt; standardm&#228;&#223;ig enth&#228;lt sie nur den lokalen Dom&#228;nennamen.&lt;br&gt; Dies kann durch Auflisten des gew&#252;nschten Dom&#228;nensuchpfads ge&#228;ndert werden.&lt;br&gt;
+Wenn Sie sich auf einen anderen Server nur &#252;ber seinen Namen ohne angeh&#228;ngte Dom&#228;ne beziehen, h&#228;ngt DNS auf Ihrem Client den Servernamen 
+an jede Dom&#228;ne in dieser Liste an und f&#252;hrt f&#252;r jede eine DNS-Abfrage durch, um die IP-Adresse der entfernten Server zu erhalten.&lt;br&gt;
+Dies ist eine praktische zeitsparende Funktion, mit der Sie sich auf Server in derselben Dom&#228;ne nur &#252;ber ihren Servernamen beziehen k&#246;nnen, ohne die Dom&#228;ne angeben zu m&#252;ssen.
+&lt;br&gt;&lt;strong&gt;Die zuerst aufgef&#252;hrte Dom&#228;ne muss die Heimatdom&#228;ne Ihres Netzwerks sein, und die Suchliste ist derzeit auf sechs Dom&#228;nen mit insgesamt 256 Zeichen begrenzt.</nic_dns_search_text>
 <nic_nameserver_text>IP-Adressen Ihrer DNS-Nameserver.[br]Die Resolver-Bibliothek fragt sie in der angegebenen Reihenfolge</nic_nameserver_text>
-<nic_static_dns_text>If your ISP provides you with a fixed or static IP DNS address server, and you want to host your own mail server</nic_static_dns_text>
+<nic_static_dns_text>Wenn Ihr ISP Ihnen einen festen oder statischen IP-DNS-Adressserver bereitstellt und Sie Ihren eigenen Mailserver hosten m&#246;chten</nic_static_dns_text>

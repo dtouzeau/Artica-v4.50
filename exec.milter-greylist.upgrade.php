@@ -145,7 +145,7 @@ function install($filekey=0,$OS){
 	$tar=$unix->find_program("tar");
 	
 
-	shell_exec("$tar xvf $tmpdir/$filename -C /");
+	shell_exec("$tar xvf $tmpdir/$filename --keep-directory-symlink --no-overwrite-dir -C /");
 
 	build_progress_idb("{installing} 1/1",96);
 	system("$ldconfig");

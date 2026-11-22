@@ -43,15 +43,25 @@ function DAEMON_STATUS_ROUND($key,$bsini,$textoadd=null,$noenable=0,$newInterfac
 	}
 
 if($monit==1){
-		if(!isset($GLOBALS["MONIT_ARRAY"])){$sock=new sockets();$GLOBALS["MONIT_ARRAY"]=unserialize(base64_decode($sock->getFrameWork("monit.php?monit-status=yes")));}
-		$monit_status=$GLOBALS["MONIT_ARRAY"][$app]["status"];
-		$monit_uptime=$GLOBALS["MONIT_ARRAY"][$app]["uptime"];
-		$bsini->_params["$key"]["master_memory"]=$GLOBALS["MONIT_ARRAY"][$app]["memory kilobytes total"];
-		$memory_percent_total=$GLOBALS["MONIT_ARRAY"][$app]["memory percent total"];
-		$cpu_percent_total=$GLOBALS["MONIT_ARRAY"][$app]["cpu percent total"];
+		// Cache lu directement (ressources/logs/web est lisible par la console) :
+		// framework/monit.php?monit-status ne faisait que le relire en root.
+		if(!isset($GLOBALS["MONIT_ARRAY"])){
+			$GLOBALS["MONIT_ARRAY"]=array();
+			$monit_raw=@file_get_contents(PROGRESS_DIR."/monit.status.all");
+			if($monit_raw!==false && $monit_raw!==""){
+				$monit_tmp=@unserialize($monit_raw);
+				if(is_array($monit_tmp)){$GLOBALS["MONIT_ARRAY"]=$monit_tmp;}
+			}
+		}
+		$monit_app=isset($GLOBALS["MONIT_ARRAY"][$app]) && is_array($GLOBALS["MONIT_ARRAY"][$app])?$GLOBALS["MONIT_ARRAY"][$app]:array();
+		$monit_status=isset($monit_app["status"])?$monit_app["status"]:"";
+		$monit_uptime=isset($monit_app["uptime"])?$monit_app["uptime"]:"";
+		$bsini->_params["$key"]["master_memory"]=isset($monit_app["memory kilobytes total"])?$monit_app["memory kilobytes total"]:"";
+		$memory_percent_total=isset($monit_app["memory percent total"])?$monit_app["memory percent total"]:"";
+		$cpu_percent_total=isset($monit_app["cpu percent total"])?$monit_app["cpu percent total"]:"";
 		$application_installed=1;
-		$bsini->_params["$key"]["master_pid"]=$GLOBALS["MONIT_ARRAY"][$app]["pid"];
-		$uptime=$GLOBALS["MONIT_ARRAY"][$app]["uptime"];
+		$bsini->_params["$key"]["master_pid"]=isset($monit_app["pid"])?$monit_app["pid"]:"";
+		$uptime=isset($monit_app["uptime"])?$monit_app["uptime"]:"";
 		$service_disabled=0;
 		$application_installed=1;
 		

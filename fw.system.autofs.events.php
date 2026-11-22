@@ -67,11 +67,12 @@ function search_results():bool{
         $class=null;
 
         if(!preg_match("#^(.*?)\s+([0-9]+)\s+([0-9:]+).*?\[([0-9]+)\]:(.*)#",$line,$re)){continue;}
-        $Month=$re[1];
+        // Pentest 2026-11-04 : ligne de journal autofs (donnee externe) affiche sans encodage (XSS stockee).
+        $Month=req_html($re[1]);
         $Day=$re[2];
-        $time=$re[3];
-        $pid=$re[4];
-        $line=trim($re[5]);
+        $time=req_html($re[3]);
+        $pid=req_html($re[4]);
+        $line=req_html(trim($re[5]));
 
 
 

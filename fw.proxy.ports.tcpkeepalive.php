@@ -28,7 +28,7 @@ function Save(){
     $data=$q->sqlite_escape_string2(serialize($Params));
     $q->QUERY_SQL("UPDATE proxy_ports SET `Params`='$data' WHERE ID=$ID");
     if(!$q->ok){
-        echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text($q->mysql_error));
         return false;
     }
     $tt=array();
@@ -42,8 +42,12 @@ function Save(){
 function page_final(){
     $tpl=new template_admin();
     $sock=new sockets();
-    $sock->getFrameWork("squid2.php?tcpkeepalive-defaults=yes");
-    $Defaults=unserialize(@file_get_contents(PROGRESS_DIR."/kernel_tcp_keepalive"));
+    // Valeurs du noyau : /proc/sys est lisible sans privilege, plus besoin du framework.
+    $Defaults=array(
+        "ide"=>intval(@file_get_contents("/proc/sys/net/ipv4/tcp_keepalive_time")),
+        "interval"=>intval(@file_get_contents("/proc/sys/net/ipv4/tcp_keepalive_intvl")),
+        "probe"=>intval(@file_get_contents("/proc/sys/net/ipv4/tcp_keepalive_probes")),
+    );
     $ID=intval($_GET["exit"]);
     $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $ligne=$q->mysqli_fetch_array("SELECT `Params` FROM proxy_ports WHERE ID=$ID");

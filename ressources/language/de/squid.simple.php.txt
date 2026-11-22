@@ -1,27 +1,26 @@
-<acl_is_allowed>is allowed to pass trought the proxy</acl_is_allowed>
-<dansguardian_listen_port>DansGuardian Listen port</dansguardian_listen_port>
+<acl_is_allowed>darf den Proxy passieren</acl_is_allowed>
+<dansguardian_listen_port>DansGuardian-Listen-Port</dansguardian_listen_port>
 <deny_ext>Dateien blockieren</deny_ext>
-<deny_ext_add>Add an extension file</deny_ext_add>
-<deny_ext_add_text>This section restrict users to download remote files by specific extension name (exe,vbs,shs...). it is usefull to protect against malicious programs </deny_ext_add_text>
-<enable_kav4proxy>Enable Kaspersky For SQUID</enable_kav4proxy>
-<enable_kav4proxy_text>Kaspersky For SQUID use ICAP protocol to hook requests from SQUID.[br]If you disable this option, SQUID will
-not send requests to Kaspersky and protocols will pass directly trought SQUID
-</enable_kav4proxy_text>
-<enable_kav_macro>Build performances rules</enable_kav_macro>
-<enable_kav_macro_text>To prevent freeze, low downloads on specific streams and big files, push the button in order to bypass the antivirus</enable_kav_macro_text>
+<deny_ext_add>Eine Dateierweiterung hinzuf&#252;gen</deny_ext_add>
+<deny_ext_add_text>Dieser Abschnitt verhindert, dass Benutzer entfernte Dateien mit bestimmten Erweiterungen (exe, vbs, shs...) herunterladen. Er ist n&#252;tzlich zum Schutz vor sch&#228;dlichen Programmen</deny_ext_add_text>
+<enable_kav4proxy>Kaspersky For SQUID aktivieren</enable_kav4proxy>
+<enable_kav4proxy_text>Kaspersky For SQUID verwendet das ICAP-Protokoll, um Anfragen von SQUID abzufangen.[br]Wenn Sie diese Option deaktivieren, sendet SQUID
+keine Anfragen an Kaspersky und die Protokolle passieren direkt durch SQUID</enable_kav4proxy_text>
+<enable_kav_macro>Leistungsregeln erstellen</enable_kav_macro>
+<enable_kav_macro_text>Um Einfrieren und langsame Downloads bei bestimmten Streams und gro&#223;en Dateien zu verhindern, klicken Sie auf die Schaltfl&#228;che, um den Antivirus zu umgehen</enable_kav_macro_text>
 <info>Infos</info>
-<listen_port_chain>Give the local port of SQUID.This port will be used by DansGuardian in order to forward clients requests to SQUID</listen_port_chain>
-<listen_port_text>Give the listen port that users must set in their web clients</listen_port_text>
-<Safe_ports>Allow web ports</Safe_ports>
-<Safe_ports_add>Add access port</Safe_ports_add>
-<Safe_ports_text>Set here a list of remote ports allowed to pass trought the proxy</Safe_ports_text>
-<squid_ip_client_text>Add TCP/IP addresses group or single address in order to allow them to surf</squid_ip_client_text>
+<listen_port_chain>Geben Sie den lokalen Port von SQUID an. Dieser Port wird von DansGuardian verwendet, um Client-Anfragen an SQUID weiterzuleiten</listen_port_chain>
+<listen_port_text>Geben Sie den Listen-Port an, den die Benutzer in ihren Web-Clients einstellen m&#252;ssen</listen_port_text>
+<Safe_ports>Web-Ports zulassen</Safe_ports>
+<Safe_ports_add>Zugriffsport hinzuf&#252;gen</Safe_ports_add>
+<Safe_ports_text>Legen Sie hier eine Liste der entfernten Ports fest, die den Proxy passieren d&#252;rfen</Safe_ports_text>
+<squid_ip_client_text>TCP/IP-Adressgruppe oder Einzeladresse hinzuf&#252;gen, um ihnen das Surfen zu erlauben</squid_ip_client_text>
 <squid_ldap_auth>LDAP-Authentifizierung</squid_ldap_auth>
-<squid_ldap_auth_text>If you enable this option, Users stored in yours organizations will be authenticated in order to allow them to surf</squid_ldap_auth_text>
-<squid_listen_port>Squid Listen port</squid_listen_port>
-<squid_network> Web Access</squid_network>
-<squid_network_ex>These users can access all the websites</squid_network_ex>
-<squid_network_text>Specify here IP address, subnet that allow to access</squid_network_text>
-<squid_simple_intro>This section allow you to define simple rules according standards Squid needs, It use predefined acl, somes rules that you have saved in advanced configuration
-could be deleted or corrupted.</squid_simple_intro>
-<tcp_address_text>Wich interface DansGuardian must use to listen connections ?</tcp_address_text>
+<squid_ldap_auth_text>Wenn Sie diese Option aktivieren, werden die in Ihren Organisationen gespeicherten Benutzer authentifiziert, um ihnen das Surfen zu erlauben</squid_ldap_auth_text>
+<squid_listen_port>Squid-Listen-Port</squid_listen_port>
+<squid_network>Web-Zugriff</squid_network>
+<squid_network_ex>Diese Benutzer k&#246;nnen auf alle Websites zugreifen</squid_network_ex>
+<squid_network_text>Geben Sie hier die IP-Adresse oder das Subnetz an, das Zugriff erlaubt</squid_network_text>
+<squid_simple_intro>In diesem Abschnitt k&#246;nnen Sie einfache Regeln gem&#228;&#223; den Standardanforderungen von Squid definieren. Er verwendet vordefinierte ACLs; einige Regeln, die Sie in der erweiterten Konfiguration gespeichert haben,
+k&#246;nnten gel&#246;scht oder besch&#228;digt werden.</squid_simple_intro>
+<tcp_address_text>Welche Schnittstelle muss DansGuardian zum Abh&#246;ren von Verbindungen verwenden ?</tcp_address_text>

@@ -4,10 +4,7 @@ include_once(dirname(__FILE__)."/class.unix.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}if(!isset($GLOBALS["ARTICALOGDIR"])){$GLOBALS["ARTICALOGDIR"]=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("ArticaLogDir"); if($GLOBALS["ARTICALOGDIR"]==null){ $GLOBALS["ARTICALOGDIR"]="/var/log/artica-postfix"; } }
 ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
 
-
-
 if(isset($_GET["build-server-config"])){build_config_server();exit;}
-if(isset($_GET["volumes"])){volumes();exit;}
 if(isset($_GET["iscsi-search"])){iscsi_search();exit;}
 if(isset($_GET["iscsi-sessions"])){iscsi_client_sessions();exit;}
 if(isset($_GET["install"])){iscsi_install();exit;}
@@ -15,16 +12,9 @@ if(isset($_GET["uninstall"])){iscsi_uninstall();exit;}
 if(isset($_GET["delete-client"])){iscsi_delete();exit;}
 if(isset($_GET["remove-server-config"])){iscsi_remove_lun();exit;}
 
-
 foreach ($_GET as $num=>$line){$f[]="$num=$line";}
 writelogs_framework("unable to understand query !!!!!!!!!!!..." .@implode(",",$f),"main()",__FILE__,__LINE__);
-die("DIE " .__FILE__." Line: ".__LINE__);
-
-
-function volumes(){
-@file_put_contents("/usr/share/artica-postfix/ressources/logs/web/proc.net.iet.volume",@file_get_contents("/proc/net/iet/volume"));
-@chmod("/usr/share/artica-postfix/ressources/logs/web/proc.net.iet.volume",0755);
-}
+die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");
 
 
 function build_config_server(){
@@ -62,7 +52,7 @@ function iscsi_remove_lun(){
 	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
 	@chmod($GLOBALS["LOG_FILE"], 0755);
 	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.iscsi.php --remove-lun $ID --progress >{$GLOBALS["LOGSFILES"]} 2>&1 &";;
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.iscsi.php --remove-lun ".fw_shell_quote($ID)." --progress >{$GLOBALS["LOGSFILES"]} 2>&1 &";;
 	system($cmd);
 	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);
 	
@@ -119,7 +109,7 @@ function iscsi_delete(){
 	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
 	@chmod($GLOBALS["LOG_FILE"], 0755);
 	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.iscsi.php --delete-client {$_GET["delete-client"]} >{$GLOBALS["LOGSFILES"]} 2>&1 &";;
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.iscsi.php --delete-client ".fw_shell_quote($_GET["delete-client"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";;
 	system($cmd);
 	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);	
 	
@@ -143,7 +133,7 @@ function iscsi_search(){
 	@chmod($GLOBALS["PROGRESS_FILE"], 0755);
 	@chmod($GLOBALS["LOG_FILE"], 0755);
 	
-	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.iscsi.php --search \"{$_GET["iscsi-search"]}\" >{$GLOBALS["LOGSFILES"]} 2>&1 &";;
+	$cmd="$nohup $php5 /usr/share/artica-postfix/exec.iscsi.php --search ".fw_shell_quote($_GET["iscsi-search"])." >{$GLOBALS["LOGSFILES"]} 2>&1 &";;
 	system($cmd);
 	writelogs_framework($cmd,__FUNCTION__,__FILE__,__LINE__);	
 	
@@ -188,53 +178,3 @@ function iscsi_client_sessions(){
 
 }
 
-function searchInSyslog(){
-	$unix=new unix();
-	$grep=$unix->find_program("grep");
-	$tail=$unix->find_program("tail");
-	$MAIN=unserialize(base64_decode($_GET["syslog"]));
-	$PROTO_P=null;
-
-	foreach ($MAIN as $val=>$key){
-		$MAIN[$key]=str_replace(".", "\.", $MAIN[$key]);
-		$MAIN[$key]=str_replace("*", ".*?", $MAIN[$key]);
-
-	}
-
-	$max=intval($MAIN["MAX"]);if($max>1500){$max=1500;}
-	$date=$MAIN["DATE"];
-	$PROTO=$MAIN["PROTO"];
-	$SRC=$MAIN["SRC"];
-	$DST=$MAIN["DST"];
-	$SRCPORT=$MAIN["SRCPORT"];
-	$DSTPORT=$MAIN["DSTPORT"];
-	$IN=$MAIN["IN"];
-	$OUT=$MAIN["OUT"];
-	$MAC=$MAIN["MAC"];
-	$PID=$MAIN["PID"];
-	if($MAIN["TERM"]<>null){$TERM=".*?{$MAIN["TERM"]}";}
-
-	if($PID<>null){$PID_P=".*?\[$PID\].*?";}
-	if($IN<>null){$IN_P="(from|to)\s+.*?$IN.*?";}
-	if($SRC<>null){$IN_P="(from|to)\s+.*?$SRC.*?";}
-	if($DST<>null){$IN_P="(from|to)\s+.*?$DST.*?";}
-	if($MAIN["C"]==0){$TERM_P=$TERM;}
-
-
-	$mainline="{$PID_P}{$TERM_P}{$IN_P}";
-	if($TERM<>null){
-		if($MAIN["C"]>0){
-			$mainline="($mainline|$TERM)";
-		}
-	}
-
-
-
-	$search="$date.*?$mainline";
-	$search=str_replace(".*?.*?",".*?",$search);
-	$cmd="$grep --binary-files=text -i -E '$search' /var/log/iscsid.log |tail -n $max >/usr/share/artica-postfix/ressources/logs/web/iscsi.syslog 2>&1";
-	writelogs_framework("$cmd",__FUNCTION__,__FILE__,__LINE__);
-	@file_put_contents("/usr/share/artica-postfix/ressources/logs/web/iscsi.syslog.pattern", $search);
-	shell_exec($cmd);
-
-}

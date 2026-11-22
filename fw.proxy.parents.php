@@ -1,5 +1,9 @@
 <?php
+// stamp 01/11/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.acls.backend.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $users=new usersMenus();if(!$users->AsProxyMonitor){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
@@ -40,13 +44,17 @@ function page():bool{
 }
 
 function enabled_js():bool{
-	$aclid=$_GET["enabled-js"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT enabled FROM squid_parents_acls WHERE aclid='$aclid'");
-	$enabled=$ligne["enabled"];
-	if($enabled==1){$enabled=0;}else{$enabled=1;}
-	$q->QUERY_SQL("UPDATE squid_parents_acls SET enabled=$enabled WHERE aclid=$aclid");
-	if(!$q->ok){echo $q->mysql_error;}
+	$aclid=intval($_GET["enabled-js"]);
+
+    $row = acls_api_get("/proxy/parents/acls/$aclid");
+    if(!is_array($row)){
+        echo "alert('rule $aclid not found');";
+        return false;
+    }
+    $enabled = intval($row["enabled"] ?? 1) == 0 ? 1 : 0;
+    [$ok, $err] = acls_api_send("PUT", "/proxy/parents/acls/$aclid", ["enabled" => $enabled]);
+    if(!$ok){ echo "alert('".addslashes($err)."');"; return false; }
+
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/parents/compile");
     return admin_tracks("Proxy Parent, activate rule $aclid");
 }
@@ -57,40 +65,38 @@ function rule_delete_js():bool{
 	$aclid=intval($_GET["delete-rule-js"]);
 	header("content-type: application/x-javascript");
 
-	$delete_personal_cat_ask=$tpl->javascript_parse_text("{delete} {$_GET["name"]} ?");
+	// Pentest 2026-11-04 : name etait recopie sans encodage dans la page (XSS).
+	$delete_personal_cat_ask=$tpl->javascript_parse_text("{delete} ".req_js($_GET["name"] ?? "")." ?");
 	$t=time();
 	$html="
-	
+
 	var xDelete$t= function (obj) {
 	var results=obj.responseText;
 	if(results.length>3){alert(results);return;};
 	$('#row-parent-$aclid').remove();
 	}
-	
+
 function Action$t(){
 	if(!confirm('$delete_personal_cat_ask')){return;}
 	var XHR = new XHRConnection();
 	XHR.appendData('delete-rule','$aclid');
 	XHR.sendAndLoad('$page', 'POST',xDelete$t);
 	}
-	
+
 	Action$t();";
 	echo $html;
     return true;
 }
 
 function rule_delete():bool{
-	$aclid      = $_POST["delete-rule"];
-    $q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
-    $ligne      = $q->mysqli_fetch_array("SELECT rulename FROM squid_parents_acls WHERE aclid='$aclid'");
-    $rulename   = $ligne["rulename"];
+	$aclid = intval($_POST["delete-rule"]);
 
-	$q->QUERY_SQL("DELETE FROM parents_sqacllinks WHERE aclid=$aclid");
-	if(!$q->ok){echo $q->mysql_error;return false;}
-	$q->QUERY_SQL("DELETE FROM squid_parents_acls WHERE aclid=$aclid");
-	if(!$q->ok){echo $q->mysql_error;return false;}
-    $q->QUERY_SQL("DELETE FROM parents_white_sqacllinks WHERE aclid=$aclid");
-    if(!$q->ok){echo $q->mysql_error;return false;}
+    $row = acls_api_get("/proxy/parents/acls/$aclid");
+    $rulename = is_array($row) ? ($row["ruleName"] ?? $aclid) : $aclid;
+
+    [$ok, $err] = acls_api_send("DELETE", "/proxy/parents/acls/$aclid");
+    if(!$ok){ echo $err; return false; }
+
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/parents/compile");
     return admin_tracks("DELETE PROXY Parent rule $rulename");
 
@@ -102,7 +108,8 @@ function proxy_fiche_js():bool{
 	$tpl=new template_admin();
 	$proxname=urlencode($_GET["proxname"]);
 	$title=$proxname;
-	$aclid=$_GET["aclid"];
+	// Pentest 2026-11-04 : aclid etait recopie sans encodage dans la page (XSS).
+	$aclid=intval($_GET["aclid"]);
 	if($proxname==null){$title=$tpl->javascript_parse_text("{new_proxy}");}
 	return $tpl->js_dialog1($title,"$page?fiche-proxy=$proxname&aclid=$aclid");
 }
@@ -110,24 +117,25 @@ function proxy_fiche_js():bool{
 function proxy_delete_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$proxname=$_GET["delete-proxy-js"];
-	$aclid=$_GET["aclid"];
+	// Pentest 2026-11-04 : delete-proxy-js/aclid etait recopie sans encodage dans la page (XSS).
+	$proxname=req_js($_GET["delete-proxy-js"]);
+	$aclid=intval($_GET["aclid"]);
     $md=$_GET["md"];
 	header("content-type: application/x-javascript");
 
 	$delete_personal_cat_ask=$tpl->javascript_parse_text("{delete} $proxname ?");
 	$t=time();
 	$html="
-	
+
 var xDelete$t= function (obj) {
 	var results=obj.responseText;
 	if(results.length>3){alert(results);return;};
 	$('#$md').remove();
-	if(document.getElementById('table-loader-proxy-parents') ){ 
-	    LoadAjax('table-loader-proxy-parents','fw.proxy.parents.php?table=yes'); 
+	if(document.getElementById('table-loader-proxy-parents') ){
+	    LoadAjax('table-loader-proxy-parents','fw.proxy.parents.php?table=yes');
 	}
 }
-	
+
 function Action$t(){
 	if(!confirm('$delete_personal_cat_ask')){return;}
 	var XHR = new XHRConnection();
@@ -135,7 +143,7 @@ function Action$t(){
 	XHR.appendData('aclid','$aclid');
 	XHR.sendAndLoad('$page', 'POST',xDelete$t);
 }
-	
+
 Action$t();";
 echo $html;
 }
@@ -150,14 +158,15 @@ function rule_id_js():bool{
         return false;
     }
 
-
-	$id=$_GET["ruleid-js"];
+	$id=intval($_GET["ruleid-js"]);
 	$title="{new_rule}";
 
 	if($id>0){
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-		$ligne=$q->mysqli_fetch_array("SELECT rulename FROM squid_parents_acls WHERE aclid='$id'");
-		$title="{rule}: $id {$ligne["rulename"]}";
+        $row = acls_api_get("/proxy/parents/acls/$id");
+        if(is_array($row)){
+            $rulename = $row["ruleName"] ?? "";
+            $title="{rule}: $id $rulename";
+        }
 	}
 	$title=$tpl->javascript_parse_text($title);
 	$tpl->js_dialog($title,"$page?rule-popup=$id");
@@ -165,15 +174,18 @@ function rule_id_js():bool{
 }
 
 function proxy_delete():bool{
-	$aclid=$_POST["aclid"];
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT proxies FROM squid_parents_acls WHERE aclid='$aclid'");
-	$MAIN=unserialize(base64_decode($ligne["proxies"]));
-	unset($MAIN[$_POST["delete-proxy"]]);
-	$MAIN_FINAL=base64_encode(serialize($MAIN));
-	$sql="UPDATE squid_parents_acls SET proxies='$MAIN_FINAL' WHERE aclid='$aclid'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error;return false;}
+	$aclid=intval($_POST["aclid"]);
+
+    $row = acls_api_get("/proxy/parents/acls/$aclid");
+    if(!is_array($row)){ echo "rule $aclid not found"; return false; }
+
+    $MAIN = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($row["proxies"] ?? "");
+    if(!is_array($MAIN)){ $MAIN = []; }
+    unset($MAIN[$_POST["delete-proxy"]]);
+    $MAIN_FINAL = base64_encode(serialize($MAIN));
+
+    [$ok, $err] = acls_api_send("PUT", "/proxy/parents/acls/$aclid", ["proxies" => $MAIN_FINAL]);
+    if(!$ok){ echo $err; return false; }
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/parents/compile");
     return admin_tracks("Delete proxy parent rule #$aclid");
@@ -183,18 +195,19 @@ function proxy_fiche(){
 	$proxname=$_GET["fiche-proxy"];
 	$title=$proxname;
 	$btname="{apply}";
-	$aclid=$_GET["aclid"];
+	$aclid=intval($_GET["aclid"]);
 	$BootstrapDialog=null;
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT proxies,use_lb FROM squid_parents_acls WHERE aclid='$aclid'");
-	if(!isset($ligne["proxies"])){
-        $ligne["proxies"]=base64_encode(serialize(array()));
+
+    $row = acls_api_get("/proxy/parents/acls/$aclid");
+    if(!is_array($row)){
+        $row = ["proxies" => base64_encode(serialize([])), "useLb" => 0];
     }
 
-    $MAIN=$GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["proxies"]);
-    $useLB=intval($ligne["use_lb"]);
+    $MAIN = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($row["proxies"] ?? "");
+    if(!is_array($MAIN)){ $MAIN = []; }
+    $useLB = intval($row["useLb"] ?? 0);
 
 	if($proxname==null){
 		$title="{new_proxy}";
@@ -249,7 +262,8 @@ function proxy_fiche(){
 	$explain["no-tproxy"] ="{parent_options_no_tproxy}";
 	$explain["connect-timeout"] ="{parent_options_connect_timeout}";
 
-    $explain_form="{proxy}:$proxname";
+    // Pentest 2026-11-04 : fiche-proxy etait recopie sans encodage dans la page (XSS).
+    $explain_form="{proxy}:".req_html($proxname);
 
     if($proxname==null){$explain_form=null;}
 
@@ -307,9 +321,13 @@ function proxy_fiche_save():bool{
 	if(!$users->AsSquidAdministrator){echo $tpl->javascript_parse_text("{ERROR_NO_PRIVS2}");return false;}
 
 	$aclid=intval($_POST["proxy-aclid"]);
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne=$q->mysqli_fetch_array("SELECT proxies FROM squid_parents_acls WHERE aclid='$aclid'");
-	$MAIN=unserialize(base64_decode($ligne["proxies"]));
+
+    $row = acls_api_get("/proxy/parents/acls/$aclid");
+    if(!is_array($row)){ echo "rule $aclid not found"; return false; }
+
+    $MAIN = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($row["proxies"] ?? "");
+    if(!is_array($MAIN)){ $MAIN = []; }
+
 	$hostname=url_decode_special_tool($_POST["hostname"]).":".$_POST["port"];
 	$hostname=strtolower($hostname);
     $verification_token=url_decode_special_tool($_POST['verification_token']);
@@ -335,9 +353,9 @@ function proxy_fiche_save():bool{
     }
 
 	$MAIN_FINAL=base64_encode(serialize($MAIN));
-	$sql="UPDATE squid_parents_acls SET proxies='$MAIN_FINAL' WHERE aclid='$aclid'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error_html(true);return false;}
+
+    [$ok, $err] = acls_api_send("PUT", "/proxy/parents/acls/$aclid", ["proxies" => $MAIN_FINAL]);
+    if(!$ok){ echo $err; return false; }
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/parents/compile");
     return admin_tracks_post("Save parent proxy $hostname");
@@ -349,21 +367,37 @@ function rule_settings(){
 	$aclid=intval($_GET["rule-settings"]);
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne["enabled"]=1;
-	$ligne["zorder"]=1;
+	$ligne=["enabled"=>1,"zorder"=>1,"ruleName"=>"","neverDirect"=>0,"alwaysDirect"=>0,"proxyProxy"=>0,"useLb"=>0];
 	$btname="{add}";
 	$title="{parent_proxies_rule}: {new_rule}";
 	$BootstrapDialog="BootstrapDialog1.close();LoadAjax('table-loader-proxy-parents','$page?table=yes');";
-    $ligneCheck = $q->mysqli_fetch_array("SELECT * FROM squid_parents_acls WHERE enabled=1 AND use_lb=1");
-    $oldid = intval($ligneCheck["aclid"]);
-    $VIEWLB=True;
-    if($oldid>0){ if($oldid<>$aclid){$VIEWLB=false;} }
+
+    // Check if any OTHER rule already uses LB
+    $allRules = acls_api_get("/proxy/parents/acls") ?? [];
+    $VIEWLB = true;
+    foreach($allRules as $r){
+        if(intval($r["enabled"] ?? 0)==1 && intval($r["useLb"] ?? 0)==1){
+            $oldid = intval($r["id"] ?? 0);
+            if($oldid > 0 && $oldid != $aclid){ $VIEWLB = false; break; }
+        }
+    }
 
 	if($aclid>0){
+        $row = acls_api_get("/proxy/parents/acls/$aclid");
+        if(is_array($row)){
+            $ligne = [
+                "enabled"      => intval($row["enabled"]      ?? 1),
+                "zorder"       => intval($row["xOrder"]       ?? 1),
+                "rulename"     => $row["ruleName"]             ?? "",
+                "ruleName"     => $row["ruleName"]             ?? "",
+                "neverDirect"  => intval($row["neverDirect"]  ?? 0),
+                "alwaysDirect" => intval($row["alwaysDirect"] ?? 0),
+                "proxyproxy"   => intval($row["proxyProxy"]   ?? 0),
+                "use_lb"       => intval($row["useLb"]        ?? 0),
+            ];
+        }
 		$btname="{apply}";
-		$ligne=$q->mysqli_fetch_array("SELECT * FROM squid_parents_acls WHERE aclid='$aclid'");
-		$title=$ligne["rulename"];
+		$title=$ligne["ruleName"] ?? $ligne["rulename"] ?? "";
 		$BootstrapDialog=null;
         $add="Loadjs('$page?fiche-proxy-js=yes&proxname=&aclid=$aclid')";
         $form[]=$tpl->form_add_button("{new_proxy}",$add);
@@ -371,44 +405,54 @@ function rule_settings(){
 
 
 	$tpl->field_hidden("rule-save", $aclid);
-	$form[]=$tpl->field_text("rulename","{rulename}",$ligne["rulename"],true);
+	$form[]=$tpl->field_text("rulename","{rulename}",$ligne["rulename"] ?? $ligne["ruleName"] ?? "",true);
 	$form[]=$tpl->field_checkbox("enabled","{enabled}",$ligne["enabled"],true);
-    $form[]=$tpl->field_checkbox("always_direct","{do_not_use_parent_proxy}",$ligne["always_direct"],false,"{do_not_use_parent_proxy}");
-	$form[]=$tpl->field_checkbox("never_direct","{never_direct}",$ligne["never_direct"],false,"{never_direct_explain}");
-    $form[]=$tpl->field_checkbox("proxyproxy","{AuthParentPort}",$ligne["proxyproxy"],false,"{proxyproxy_explain}");
+    $form[]=$tpl->field_checkbox("always_direct","{do_not_use_parent_proxy}",$ligne["alwaysDirect"] ?? $ligne["always_direct"] ?? 0,false,"{do_not_use_parent_proxy}");
+	$form[]=$tpl->field_checkbox("never_direct","{never_direct}",$ligne["neverDirect"] ?? $ligne["never_direct"] ?? 0,false,"{never_direct_explain}");
+    $form[]=$tpl->field_checkbox("proxyproxy","{AuthParentPort}",$ligne["proxyproxy"] ?? $ligne["proxyProxy"] ?? 0,false,"{proxyproxy_explain}");
 
     if($VIEWLB) {
-        $form[] = $tpl->field_checkbox("use_lb", "{use_lb_system}", $ligne["use_lb"], false, "{use_lb_system_explain}");
+        $form[] = $tpl->field_checkbox("use_lb", "{use_lb_system}", $ligne["use_lb"] ?? $ligne["useLb"] ?? 0, false, "{use_lb_system_explain}");
     }else{
         $tpl->field_hidden("use_lb",0);
     }
 
 
-	$form[]=$tpl->field_numeric("zorder","{order}",$ligne["zorder"]);
+	$form[]=$tpl->field_numeric("zorder","{order}",$ligne["zorder"] ?? $ligne["xOrder"] ?? 1);
 	echo $tpl->form_outside($title,@implode("\n", $form),"",$btname,"LoadAjax('table-loader-proxy-parents','$page?table=yes');$BootstrapDialog");
 }
 
 function rule_main_save():bool{
-	$tpl    = new template_admin();
-    $q      = new lib_sqlite("/home/artica/SQLITE/acls.db");
+	$tpl = new template_admin();
 
     if($_POST["always_direct"]==1){$_POST["never_direct"]=0;}
-	$aclid=$_POST["rule-save"];
+	$aclid=intval($_POST["rule-save"]);
 	$rulename=url_decode_special_tool($_POST["rulename"]);
-	$rulename=mysql_escape_string2($rulename);
+
 	if($aclid==0){
-		$sqlB="INSERT INTO `squid_parents_acls` (`rulename`,`enabled` ,`zorder`,`never_direct`,`always_direct`,`proxyproxy`,`use_lb`) VALUES ('$rulename','{$_POST["enabled"]}','{$_POST["zorder"]}','{$_POST["never_direct"]}','{$_POST["always_direct"]}','{$_POST["proxyproxy"]}','{$_POST["use_lb"]}')";
+        // CREATE
+        $body = [
+            "ruleName"     => $rulename,
+            "neverDirect"  => intval($_POST["never_direct"]  ?? 0),
+            "alwaysDirect" => intval($_POST["always_direct"] ?? 0),
+            "proxyProxy"   => intval($_POST["proxyproxy"]    ?? 0),
+            "useLb"        => intval($_POST["use_lb"]        ?? 0),
+        ];
+        [$ok, $data] = acls_api_send("POST", "/proxy/parents/acls", $body);
+        if(!$ok){ echo $data; return false; }
 	}else{
-		$sqlB="UPDATE `squid_parents_acls` SET `rulename`='$rulename',`enabled`='{$_POST["enabled"]}',`zorder`='{$_POST["zorder"]}',never_direct='{$_POST["never_direct"]}',
-                                always_direct='{$_POST["always_direct"]}',
-                                proxyproxy = '{$_POST["proxyproxy"]}',
-                                use_lb = '{$_POST["use_lb"]}'
-                                WHERE aclid='$aclid'";
+        // UPDATE
+        $body = [
+            "ruleName"     => $rulename,
+            "enabled"      => intval($_POST["enabled"]       ?? 1),
+            "neverDirect"  => intval($_POST["never_direct"]  ?? 0),
+            "alwaysDirect" => intval($_POST["always_direct"] ?? 0),
+            "proxyProxy"   => intval($_POST["proxyproxy"]    ?? 0),
+            "useLb"        => intval($_POST["use_lb"]        ?? 0),
+        ];
+        [$ok, $err] = acls_api_send("PUT", "/proxy/parents/acls/$aclid", $body);
+        if(!$ok){ echo $err; return false; }
 	}
-
-
-    $q->QUERY_SQL($sqlB);
-	if(!$q->ok){echo $q->mysql_error_html(true);return false;}
 
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/parents/compile");
     return admin_tracks("INSERT/UPDATE parent rule $rulename never_direct={$_POST["never_direct"]} always_direct={$_POST["always_direct"]}");
@@ -420,13 +464,17 @@ function rule_tab(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$aclid=intval($_GET["rule-popup"]);
-	$q              = new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$ligne          = $q->mysqli_fetch_array("SELECT rulename,always_direct FROM squid_parents_acls WHERE aclid='$aclid'");
-	$rulename       = $ligne["rulename"];
-	$always_direct  = $ligne["always_direct"];
-	$ppage          = "fw.proxy.objects.php";
+	$ppage="fw.proxy.objects.php";
+	$rulename="{new_rule}";
+	$always_direct=0;
 
-    if($aclid==0){$rulename="{new_rule}";}
+	if($aclid>0){
+        $row = acls_api_get("/proxy/parents/acls/$aclid");
+        if(is_array($row)){
+            $rulename      = $row["ruleName"]     ?? "{new_rule}";
+            $always_direct = intval($row["alwaysDirect"] ?? 0);
+        }
+    }
 
 	$array[$rulename]="$page?rule-settings=$aclid";
 	if($aclid>0){
@@ -448,21 +496,26 @@ function proxies(){
 	$page=CurrentPageName();
 	$aclid=intval($_GET["proxies"]);
 	echo "<div id='proxies-list-$aclid' style='margin-top:20px'></div>
-	<script>LoadAjax('proxies-list-$aclid','$page?proxies-list=$aclid');</script>	
+	<script>LoadAjax('proxies-list-$aclid','$page?proxies-list=$aclid');</script>
 	";
 
 }
 function proxies_list(){
 	$aclid=intval($_GET["proxies-list"]);
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 	$tpl=new template_admin();
 	$users=new usersMenus();
 	$page=CurrentPageName();
 	$t=time();
 	$hostname=$tpl->_ENGINE_parse_body("{hostname}");
-	$ligne=$q->mysqli_fetch_array("SELECT proxies FROM squid_parents_acls WHERE aclid='$aclid'");
-	if(!$q->ok){echo $q->mysql_error_html(true);return;}
-	$proxies=unserialize(base64_decode($ligne["proxies"]));
+
+    $row = acls_api_get("/proxy/parents/acls/$aclid");
+    if(!is_array($row)){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("rule $aclid not found"));
+        return;
+    }
+    $proxies = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($row["proxies"] ?? "");
+    if(!is_array($proxies)){ $proxies = []; }
+
 	$add="Loadjs('$page?fiche-proxy-js=yes&proxname=&aclid=$aclid')";
 
 
@@ -471,88 +524,69 @@ function proxies_list(){
 
 
 	$html[]=$tpl->_ENGINE_parse_body($tpl->th_buttons($topbuttons));
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$hostname</th>";
-	$html[]="<th data-sortable=false>DEL.</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	$TRCLASS=null;
-    $icon_srv="<i class='".ico_server." fa-2x'></i>";
-	foreach ($proxies as $hostname => $array){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$rulename=urlencode($hostname);
-		$md=md5($hostname.serialize($array));
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>$hostname</th>";
+    $html[]="<th class='center'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='pl-rows'>";
+
+    $c=0;
+	foreach ($proxies as $proxyhost => $array){
+		// $hostname servait A LA FOIS de libelle d'en-tete traduit et de
+		// variable de boucle: la seconde ecrasait le premier.
+		$c++;
+		$rulename=urlencode($proxyhost);
+		$md=md5($proxyhost.serialize($array));
 		$js="Loadjs('$page?fiche-proxy-js=yes&proxname=$rulename&aclid=$aclid')";
 		$delete=$tpl->icon_delete("Loadjs('$page?delete-proxy-js=$rulename&aclid=$aclid&md=$md')");
 		if(!$users->AsSquidAdministrator){$delete=$tpl->icon_delete("blur()");}
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:99%'>$icon_srv&nbsp;<a href=\"javascript:blur();\" OnClick=\"$js\" style='font-weight:bold;font-size: 25px;'>$hostname</span></td>";
-		$html[]="<td class='center' style='width:1%'>$delete</td>";
-		$html[]="</tr>";
+		$html[]=parents_proxy_row($md,$proxyhost,$js,$delete);
 
 	}
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
+	if($c==0){
+		$html[]="<tr><td colspan='2' class='awc-empty'>{no_data}</td></tr>";
+	}
 
-	$html[]="<tr>";
-	$html[]="<td colspan='2'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]=$tpl->table_footable_footer("table-$t",false);
-	echo $tpl->_ENGINE_parse_body($html);
+	// L'ancienne version placait le pied A L'INTERIEUR du corps du tableau.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $c</span>";
+	$html[]="<span class='awc-pg' id='pl-pager'></span>";
+	$html[]="</div></div></div>";
+
+	// Feuille de style et pager concatenes APRES l'analyse: la regex #{(.+?)}#
+	// de _ENGINE_parse_body prend chaque corps d'accolade CSS ou JavaScript
+	// pour un {token}.
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+	    .awc_pager_js(50,"pl-rows","pl-pager");
 }
 
 function rule_move_js():bool{
 
-    $users      = new usersMenus();
+    $users = new usersMenus();
     if(!$users->AsSquidAdministrator){
-        $tpl    = new template_admin();
+        $tpl = new template_admin();
         $tpl->js_error("{ERROR_NO_PRIVS2}");
         return false;
     }
 
     header("content-type: application/x-javascript");
-	$q      = new lib_sqlite("/home/artica/SQLITE/acls.db");
-	$tpl    = new template_admin();
-    $dir    = $_GET["dir"];
-	$aclid  = intval($_GET["aclid"]);
-	$ligne  = $q->mysqli_fetch_array("SELECT zorder FROM squid_parents_acls WHERE aclid='$aclid'");
-	$zorder = intval($ligne["zorder"]);
+	$tpl   = new template_admin();
+    $dir   = $_GET["dir"];
+	$aclid = intval($_GET["aclid"]);
 
+    // API: dir=1 means move up (decrease zorder), dir=0 means move down
+    $apiDir = ($dir == "up") ? 1 : 0;
 
+    [$ok, $err] = acls_api_send("PUT", "/proxy/parents/acls/$aclid/move", ["dir" => $apiDir]);
+    if(!$ok){
+        $msg = $tpl->javascript_parse_text($err);
+        echo "alert('$msg');";
+        return false;
+    }
 
-		echo "// Current order = $zorder\n";
-
-		if($dir=="up"){
-			$zorder=$zorder-1;
-			if($zorder<0){$zorder=0;}
-
-		}
-		else{
-			$zorder=$zorder+1;
-		}
-		echo "// New order = $zorder\n";
-		$q->QUERY_SQL("UPDATE squid_parents_acls SET zorder='$zorder' WHERE aclid='$aclid'");
-		if(!$q->ok){
-			$q->mysql_error=$tpl->javascript_parse_text($q->mysql_error);
-			echo "alert('$q->mysql_error');";return false;
-		}
-
-		$c=0;
-		$results=$q->QUERY_SQL("SELECT aclid FROM squid_parents_acls ORDER BY zorder");
-		foreach($results as $index=>$ligne) {
-			$aclid=$ligne["aclid"];
-			echo "// $index $aclid New order = $c";
-			$q->QUERY_SQL("UPDATE squid_parents_acls SET zorder='$c' WHERE aclid='$aclid'");
-			$c++;
-		}
-
+    echo "LoadAjax('table-loader-proxy-parents','fw.proxy.parents.php?table=yes');";
 	return true;
 
 }
@@ -560,7 +594,6 @@ function rule_move_js():bool{
 function table():bool{
 	$tpl=new template_admin();
 	$page=CurrentPageName();
-	$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
 	$rulename=$tpl->_ENGINE_parse_body("{rulename}");
 	$add="Loadjs('$page?ruleid-js=0',true);";
 
@@ -572,46 +605,45 @@ function table():bool{
     $topbuttons[] = array($add, ico_plus, "{new_rule}");
     $topbuttons[] = array($jsrestart, ico_save, "{apply_rules}");
 
-    $html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-
-
-
-	$html[]="<th data-sortable=false style='width:1%'></th>";
-	$html[]="<th data-sortable=true style='width:1%'></th>";
-    $html[]="<th data-sortable=true style='width:1%'>{status}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$rulename</th>";
-	$html[]="<th data-sortable=false>{move}</th>";
-	$html[]="<th data-sortable=false>DEL.</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-    if(!isset($_GET["eth"])){$_GET["eth"]="";}
-	$jsAfter="LoadAjax('table-loader-proxy-parents','$page?table=yes&eth={$_GET["eth"]}');";
-	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
-
+    // Six colonnes dont deux sans libelle et deux d'une icone chacune. Le nom
+    // de la regle et son explication tiennent dans la colonne d'identite;
+    // edition, deplacement et suppression dans une colonne d'actions.
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>$rulename</th>";
+    $html[]="<th class='center'>{status}</th>";
+    $html[]="<th class='center'>{enabled}</th>";
+    $html[]="<th class='center'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='pr-rows'>";
+	// $GLOBALS["jsAfterEnc"] etait construit ici a partir de $_GET["eth"] et
+	// n'etait relu NULLE PART -- ni dans ce fichier, ni dans les classes.
 	$isRights=isRights();
-	$results=$q->QUERY_SQL("SELECT * FROM squid_parents_acls ORDER BY zorder");
-	$TRCLASS=null;
 
-    $GLOBALS["CLASS_SOCKETS"]->getFrameWork("squid-parents.php?rules-status=yes");
-    $peer_stat=PROGRESS_DIR."/cache.peer.status.arr";
-    $peer_status=unserialize(@file_get_contents($peer_stat));
+    $results = acls_api_get("/proxy/parents/acls") ?? [];
+	$ROWS=0;
 
-	foreach($results as $index=>$ligne) {
-		$square_class="text-navy";
+    // Rules really written in /etc/squid3/acls_peer.conf, keyed by rule id.
+    $peer_status=array();
+    $peer_json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/parents/rules/active"));
+    if(is_object($peer_json) && !empty($peer_json->Status) && isset($peer_json->Rules) && is_object($peer_json->Rules)){
+        foreach($peer_json->Rules as $peer_id=>$peer_on){
+            if($peer_on){$peer_status[intval($peer_id)]=true;}
+        }
+    }
+
+	foreach($results as $ligne) {
 		$pproxy=array();
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$ROWS++;
             $use_lb_txt     = null;
-			$rulename       = $ligne["rulename"];
+			$rulename       = $ligne["ruleName"]     ?? "";
 			$rulenameenc    = urlencode($rulename);
-			$aclid          = $ligne["aclid"];
-			$enabled        = $ligne["enabled"];
-			$never_direct   = intval($ligne["never_direct"]);
-			$always_direct  = intval($ligne["always_direct"]);
-            $use_lb         = intval($ligne["use_lb"]);
-			$MAIN           = unserialize(base64_decode($ligne["proxies"]));
+			$aclid          = intval($ligne["id"]    ?? 0);
+			$enabled        = intval($ligne["enabled"]      ?? 1);
+			$never_direct   = intval($ligne["neverDirect"]  ?? 0);
+			$always_direct  = intval($ligne["alwaysDirect"] ?? 0);
+            $use_lb         = intval($ligne["useLb"]        ?? 0);
+			$MAIN           = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($ligne["proxies"] ?? "");
+            if(!is_array($MAIN)){ $MAIN = []; }
             $up             = $tpl->icon_up("Loadjs('$page?move-js=yes&aclid=$aclid&dir=up')");
             $down           = $tpl->icon_down("Loadjs('$page?move-js=yes&aclid=$aclid&dir=down')");
             $pproxy_text    = null;
@@ -624,9 +656,11 @@ function table():bool{
             $array_help["ico"]="fa fa-question";
             $scontent=base64_encode(serialize($array_help));
 
-            $status=$tpl->td_href("<span class='label'>{inactive2}</span>","{explain}","LoadAjax('artica-modal-dialog','fw.popup.php?array=$scontent')");
+            // Les <span class=label> Bootstrap sans color:#fff rendaient un
+            // texte gris sur fond sombre.
+            $status=$tpl->td_href("<span class='awc-badge awc-badge-off'>{inactive2}</span>","{explain}","LoadAjax('artica-modal-dialog','fw.popup.php?array=$scontent')");
             if(isset($peer_status[$aclid])){
-                $status="<span class='label label-primary'>{active2}</span>";
+                $status="<span class='awc-badge awc-badge-on'>{active2}</span>";
             }
 
             if($use_lb==1){
@@ -641,7 +675,7 @@ function table():bool{
                 }
 			}
 
-			$check=$tpl->icon_check($ligne["enabled"],"Loadjs('$page?enabled-js=$aclid')");
+			$check=$tpl->icon_check($enabled,"Loadjs('$page?enabled-js=$aclid')");
 			if($always_direct==1){$never_direct=0;}
 
 			if($enabled==1){
@@ -654,6 +688,8 @@ function table():bool{
 
 
 			$js="Loadjs('$page?ruleid-js=$aclid',true);";
+			// Ce bouton occupait une colonne entiere sans en-tete.
+			$edit=$tpl->icon_edit_field($js,"AsSquidAdministrator");
 			$delete=$tpl->icon_delete("Loadjs('$page?delete-rule-js=$aclid&name=$rulenameenc')");
             if($never_direct==0){$white=proxy_objects($aclid,"parents_white_sqacllinks");}
 			if($white<>null){$white="<br>{and} <strong>{notfor}</strong>: $white";}
@@ -676,29 +712,30 @@ function table():bool{
 				$up=null;
 				$down=null;
 				$delete=null;
+				$edit=null;
 			}
 
-			$html[]="<tr class='$TRCLASS' id='row-parent-$aclid'>";
-			$html[]="<td class=\"center\"><button type='button' class='btn btn-default btn-bitbucket' OnClick=\"$js\" ><i class='fa fa-paste'></i></button></td>";
-			$html[]="<td class=\"center\">$check</td>";
-            $html[]="<td class=\"center\">$status</td>";
-			$html[]="<td style='vertical-align:middle'>&laquo;&nbsp;<a href=\"javascript:blur();\" OnClick=\"$js\" style='font-weight:bold'>$rulename:</a>&nbsp;&raquo;&nbsp;$explain</span></td>";
-			$html[]="<td class=\"center\" width='1%' nowrap>$up&nbsp;&nbsp;$down</td>";
-			$html[]="<td class=center width='1%' nowrap>$delete</td>";
-			$html[]="</tr>";
+			// Le nom de la regle vient de la base et partait BRUT dans le HTML.
+			$html[]=parents_rule_row(array(
+				"id"      =>"row-parent-$aclid",
+				"name"    =>"<a href=\"javascript:blur();\" OnClick=\"$js\">".htmlspecialchars($rulename)."</a>",
+				"meta"    =>$explain,
+				"status"  =>$status,
+				"enabled" =>$check,
+				"actions" =>"$edit$up$down$delete"));
 
 	}
+	if($ROWS==0){
+		$html[]="<tr><td colspan='4' class='awc-empty'>{no_data}</td></tr>";
+	}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='5'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	// L'ancienne version placait le pied A L'INTERIEUR du corps du tableau, avec
+	// un colspan de 5 pour 6 colonnes.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $ROWS</span>";
+	$html[]="<span class='awc-pg' id='pr-pager'></span>";
+	$html[]="</div></div></div>";
 
     $TINY_ARRAY["TITLE"]="{parent_proxies} &raquo;&raquo; {rules}";
     $TINY_ARRAY["ICO"]="fa fa-sitemap";
@@ -707,14 +744,10 @@ function table():bool{
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-$jstiny
-</script>";
-
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n", $html))
+	    ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."\n$jstiny</script>"
+	    .awc_pager_js(50,"pr-rows","pr-pager");
     return true;
 }
 function isRights():bool{
@@ -727,32 +760,22 @@ function isRights():bool{
 function proxy_objects($aclid,$tablelink="parents_sqacllinks",$returndef=true):string{
 
     $tt         = array();
-	$q          = new lib_sqlite("/home/artica/SQLITE/acls.db");
 	$qProxy     = new mysql_squid_builder(true);
 
-	$sql="SELECT
-	$tablelink.gpid,
-	$tablelink.zmd5,
-	$tablelink.negation,
-	$tablelink.zOrder,
-	webfilters_sqgroups.GroupType,
-	webfilters_sqgroups.GroupName,
-	webfilters_sqgroups.ID
-	FROM $tablelink,webfilters_sqgroups
-	WHERE $tablelink.gpid=webfilters_sqgroups.ID
-	AND $tablelink.aclid=$aclid
-	ORDER BY $tablelink.zorder";
+    $links = acls_api_get("/proxy/acls/sqlite/links?table=$tablelink&aclid=$aclid");
+    if(!is_array($links)){ return $returndef ? "{all}" : ""; }
 
-	$results=$q->QUERY_SQL($sql);
-	if(!$q->ok){return "";}
-
-	foreach($results as $index=>$ligne) {
-		$gpid=$ligne["gpid"];
+	foreach($links as $ligne) {
+		$gpid=intval($ligne["gpid"] ?? 0);
+        if($gpid == 0){ continue; }
+        $group = acls_api_get("/proxy/acls/sqlite/group/$gpid");
+        if(!is_array($group)){ continue; }
 		$js="Loadjs('fw.proxy.objects.php?object-js=yes&gpid=$gpid')";
 		$neg_text="{is}";
-		if($ligne["negation"]==1){$neg_text="{is_not}";}
-		$GroupName=$ligne["GroupName"];
-		$tt[]=$neg_text." <a href=\"javascript:blur();\" OnClick=\"javascript:$js\" style='font-weight:bold'>$GroupName</a> <small>(".$qProxy->acl_GroupType[$ligne["GroupType"]].")</small>";
+		if(intval($ligne["negation"] ?? 0)==1){$neg_text="{is_not}";}
+		$GroupName=htmlspecialchars($group["GroupName"] ?? "");
+        $GroupType=$group["GroupType"] ?? "";
+		$tt[]=$neg_text." <a href=\"javascript:blur();\" OnClick=\"$js\" style='font-weight:bold'>$GroupName</a> <small>(".$qProxy->acl_GroupType[$GroupType].")</small>";
 	}
 
 	if(count($tt)>0){
@@ -765,4 +788,44 @@ function proxy_objects($aclid,$tablelink="parents_sqacllinks",$returndef=true):s
 
 
 
+}
+
+/**
+ * Un proxy parent d'une regle.
+ * L'ancienne version ouvrait un <a> et le refermait par un </span>, et rendait
+ * le nom d'hote -- qui vient de la configuration -- BRUT dans le HTML. Le nom
+ * etait par ailleurs affiche en font-size:25px, ce qui faisait deborder la
+ * ligne des qu'il etait long.
+ */
+function parents_proxy_row($md,$host,$js,$delete):string{
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-server'></i></span>";
+    $h.="<span class='awc-name'><a href=\"javascript:blur();\" OnClick=\"$js\">"
+       .htmlspecialchars($host)."</a></span>";
+    $h.="</div></td>";
+    $h.="<td><div class='awc-acts'>$delete</div></td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/**
+ * Une regle de proxy parent.
+ * L'ancienne version refermait le lien du nom par un </span> orphelin.
+ * $meta contient l'explication deja construite et traduite par l'appelant
+ * (objets, exceptions, proxies retenus): elle ne peut pas etre echappee ici.
+ */
+function parents_rule_row($r):string{
+    $meta=trim((string)$r["meta"]);
+    $h ="<tr id='{$r["id"]}'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-sitemap'></i></span>";
+    $h.="<span><span class='awc-name'>{$r["name"]}</span>";
+    if($meta<>""){$h.="<div class='awc-meta'>$meta</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='center awc-nowrap'>{$r["status"]}</td>";
+    $h.="<td class='center'>{$r["enabled"]}</td>";
+    $h.="<td><div class='awc-acts'>{$r["actions"]}</div></td>";
+    $h.="</tr>";
+    return $h;
 }

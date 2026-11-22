@@ -1,8 +1,17 @@
 <?php
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+//refactorisé
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
 include_once(dirname(__FILE__)."/ressources/class.nginx.templates.inc");
-if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["template-import"])){template_import_js();exit;}
 if(isset($_GET["template-import-popup"])){template_import_popup();exit;}
@@ -14,19 +23,15 @@ if(isset($_GET["restore-popup"])){restore_popup();exit;}
 if(isset($_GET["restore-saved"])){restore_saved();exit;}
 
 if(isset($_GET["popup-main"])){popup_main();exit;}
-if(isset($_GET["popup-table"])){popup_table();exit;}
 if(isset($_GET["search"])){search();exit;}
 if(isset($_GET["template-remove"])){template_remove_js();exit;}
 if(isset($_POST["template-remove"])){template_remove_perform();exit;}
-if(isset($_GET["pattern-enable"])){rule_enable();exit;}
 if(isset($_GET["template-js"])){template_js();exit;}
 if(isset($_GET["template-popup"])){template_popup();exit;}
 if(isset($_POST["templateid"])){template_save();exit;}
 if(isset($_GET["enable-rule-js"])){enable_feature();}
 if(isset($_GET["top-buttons"])){top_buttons();exit;}
 if(isset($_GET["disableall"])){rule_disable_all();exit;}
-if(isset($_GET["enableall"])){rule_enable_all();exit;}
-if(isset($_GET["OnlyActive"])){OnlyActive();exit;}
 if(isset($_GET["download"])){download();exit;}
 service_js();
 
@@ -65,19 +70,14 @@ function template_js():bool{
 
 function template_remove_js():bool{
     $tpl        = new template_admin();
-    $page       = CurrentPageName();
     $md=$_GET["md"];
     $tplid=intval($_GET["template-remove"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT tpname FROM nginx_templates WHERE ID=$tplid");
-    $tpname=$ligne["tpname"];
+    $tpname=fetch_tpname($tplid);
     return $tpl->js_confirm_delete($tpname,"template-remove",$tplid,"$('#$md').remove();");
 }
 function template_remove_perform():bool{
     $tplid=intval($_POST["template-remove"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT tpname FROM nginx_templates WHERE ID=$tplid");
-    $tpname=$ligne["tpname"];
+    $tpname=fetch_tpname($tplid);
     $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"nginx_templates","where"=>["ID"=>$tplid]]);
     return admin_tracks("Removed reverse-proxy template $tpname configuration");
 }
@@ -124,44 +124,23 @@ function get_servicename($ID):string{
     $sock=new socksngix($ID);
     return $sock->GetServiceName();
 }
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}
 function restore_popup():bool{
     $page=CurrentPageName();
-    $function=$_GET["function"];
     $function0=$_GET["function0"];
-    $tplid     = intval($_GET["restore-popup"]);
-    $tpl        = new template_admin();
-    $q=new lib_sqlite(NginxGetDB());
+    $tplid=intval($_GET["restore-popup"]);
+    $tpl=new template_admin();
 
-    $ligne=$q->mysqli_fetch_array("SELECT tpname,tpdesc  FROM nginx_templates WHERE ID=$tplid");
-    $tpname=$ligne["tpname"];
-    $tpdesc="<H2>{restore} $tpname</H2>{$ligne["tpdesc"]}";
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/template/$tplid");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"unknown";
+        return $tpl->js_error("Template $tplid: $err",__FUNCTION__,__FILE__,__LINE__);
+    }
+    $tpname=$data["Tpname"];
+    $tpdesc="<H2>{restore} $tpname</H2>".$data["Tpdesc"];
 
     $form[]=$tpl->field_hidden("restore",$tplid);
-    $sql="SELECT ID,servicename FROM nginx_services ORDER BY zorder";
-    $results=$q->QUERY_SQL($sql);
-    $MAIN=array();
-    foreach ($results as $index=>$ligne){
-        $servicename=$ligne["servicename"];
-        $ServiceID=$ligne["ID"];
-        $MAIN[$ServiceID]=$servicename;
-    }
+    $MAIN=fetch_sites_map();
 
     $form[]=$tpl->field_array_hash($MAIN,"serviceid","nonull:{website} ({target})",null);
     $html[]="<div id='restore-$tplid'></div>";
@@ -171,14 +150,12 @@ function restore_popup():bool{
     return true;
 }
 function restore_save():bool{
-    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;$tpl->CLUSTER_CLI=true;
+    $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $tpl->CLEAN_POST();
     $tplid=intval($_POST["restore"]);
     $_SESSION["NEWNGINXAFTER"]["TPLID"]=$_POST["restore"];
     $_SESSION["NEWNGINXAFTER"]["SITEID"]=$_POST["serviceid"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT tpname FROM nginx_templates WHERE ID=$tplid");
-    $tpname=$ligne["tpname"];
+    $tpname=fetch_tpname($tplid);
     $sitname=get_servicename($_POST["serviceid"]);
     return admin_tracks("Restored template $tpname parameters for reversed website $sitname");
 }
@@ -198,7 +175,7 @@ function restore_saved():bool{
     $tmplid=intval($_SESSION["NEWNGINXAFTER"]["TPLID"]);
     $serviceid=intval($_SESSION["NEWNGINXAFTER"]["SITEID"]);
     $js="dialogInstance5.close();$function0()";
-    echo  $tpl->framework_buildjs("nginx.php?apply-template=$tmplid&serviceid=$serviceid",
+    echo  $tpl->framework_buildjs("nginx-pjson:/template/restore/$tmplid/$serviceid",
         "nginx.replic.$serviceid.progress",
         "nginx.replic.$serviceid.log",
         "restore-$tmplid",$js
@@ -207,32 +184,25 @@ function restore_saved():bool{
 }
 function template_popup():bool{
     $function=$_GET["function"];
-    $tplid     = intval($_GET["template-popup"]);
-    $tpl        = new template_admin();
+    $tplid=intval($_GET["template-popup"]);
+    $tpl=new template_admin();
     $bt="{apply}";
     $form[]=$tpl->field_hidden("templateid",$tplid);
 
-    $q=new lib_sqlite(NginxGetDB());
-    $sql="SELECT ID,servicename FROM nginx_services ORDER BY zorder";
-    $results=$q->QUERY_SQL($sql);
-    $MAIN=array();
-    foreach ($results as $index=>$ligne){
-        $servicename=$ligne["servicename"];
-        $ServiceID=$ligne["ID"];
-        $MAIN[$ServiceID]=$servicename;
+    $MAIN=fetch_sites_map();
 
-
+    $tpname="New template";
+    $tpdesc="My new template for replicating parameters";
+    if($tplid>0){
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/template/$tplid");
+        $data=json_decode($resp,true);
+        if(is_array($data) && !empty($data["Status"])){
+            $tpname=$data["Tpname"];
+            $tpdesc=$data["Tpdesc"];
+        }
     }
+
     $js="dialogInstance5.close();$function()";
-    $ligne=$q->mysqli_fetch_array("SELECT tpname,tpdesc  FROM nginx_templates WHERE ID=$tplid");
-    if(!isset($ligne["tpname"])){
-        $ligne["tpname"]="New template";
-        $ligne["tpdesc"]="My new template for replicating parameters";
-    }
-
-    $tpname=$ligne["tpname"];
-    $tpdesc=$ligne["tpdesc"];
-
     $form[]=$tpl->field_text("tpname","{template_name}",$tpname,true);
     $form[]=$tpl->field_text("tpdesc","{description}",$tpdesc,true);
     if($tplid==0){
@@ -246,65 +216,61 @@ function template_popup():bool{
     return true;
 }
 function template_save():bool{
-    $tpl        = new template_admin();
+    $tpl=new template_admin();
     $tpl->CLEAN_POST();
-
-    $q=new lib_sqlite(NginxGetDB());
-
-    $sql="CREATE TABLE IF NOT EXISTS `nginx_templates` ( 
-    `ID` INTEGER PRIMARY KEY AUTOINCREMENT, 
-    `tpname` TEXT NOT NULL DEFAULT '' ,
-    `tpdate` INTEGER NOT NULL DEFAULT 0 ,
-    `serviceid` INTEGER NOT NULL DEFAULT 0 ,
-    `tpdata` TEXT NOT NULL DEFAULT '' ,
-    `tpdesc` TEXT NOT NULL DEFAULT '' )";
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){
-        echo $q->mysql_error."<hr>$sql";
-        return false;
-    }
 
     $tpname=$_POST["tpname"];
     $tpdesc=$_POST["tpdesc"];
-
-    $add_fields[]="tpname";
-    $add_fields[]="tpdesc";
-    $add_fields[]="tpdata";
-    $add_fields[]="serviceid";
-    $add_fields[]="tpdate";
-
-
-    $add_data[]="'".$q->sqlite_escape_string2($tpname)."'";
-    $add_data[]="'".$q->sqlite_escape_string2($tpdesc)."'";
-
-    $upd[]=sprintf("%s='%s'","tpname",$q->sqlite_escape_string2($tpname));
-    $upd[]=sprintf("%s='%s'","tpdesc",$q->sqlite_escape_string2($tpdesc));
-
-
     $templateid=intval($_POST["templateid"]);
-    $serviceid=intval($_POST["serviceid"]);
-    $domains=intval($_POST["domains"]);
-    $backends=intval($_POST["backends"]);
-    if($templateid==0){
-        $get_servicename=get_servicename($serviceid);
-        $templateData=GetTemplateData($serviceid,$domains,$backends);
-        if(strlen($templateData)<10){
-            echo $tpl->post_error("Failed {$GLOBALS["GetTemplateData_ERROR"]}");
-        }
 
-        $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"insert","table"=>"nginx_templates","values"=>["tpname"=>$tpname,"tpdesc"=>$tpdesc,"tpdata"=>$templateData,"serviceid"=>$serviceid,"tpdate"=>time()]]);
+    if($templateid==0){
+        $serviceid=intval($_POST["serviceid"]);
+        $domains=intval($_POST["domains"]);
+        $backends=intval($_POST["backends"]);
+        $get_servicename=get_servicename($serviceid);
+        // POST /template builds tpdata from $serviceid server-side and INSERTs
+        // in one roundtrip — the (potentially 100KB+) blob never crosses the wire.
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/template",[
+            "tpname"=>$tpname,
+            "tpdesc"=>$tpdesc,
+            "serviceid"=>$serviceid,
+            "domains"=>$domains,
+            "backends"=>$backends,
+        ]);
+        $data=json_decode($resp,true);
+        if(!is_array($data) || empty($data["Status"])){
+            $err=is_array($data)&&isset($data["Error"])?$data["Error"]:"unknown";
+            echo $tpl->post_error("Failed: $err");
+            return false;
+        }
         return admin_tracks("Create a new template $tpname based on $get_servicename");
     }
 
-    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"update","table"=>"nginx_templates","set"=>["tpname"=>$tpname,"tpdesc"=>$tpdesc],"where"=>["ID"=>$templateid]]);
+    // Update name/description only — generic /nginx-db/exec UPDATE matches
+    // the existing pattern used elsewhere in this file (delete, import insert).
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",["action"=>"update","table"=>"nginx_templates","set"=>["tpname"=>$tpname,"tpdesc"=>$tpdesc],"where"=>["ID"=>$templateid]]);
     return admin_tracks("Update template #$templateid $tpname");
 }
 function download():bool{
-    $tplid=$_GET["download"];
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT *  FROM nginx_templates WHERE ID=$tplid");
-    $tpname=$ligne["tpname"];
-    $tpname=strtolower(str_replace(" ","-",$tpname));
+    $tplid=intval($_GET["download"]);
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/template/$tplid/data");
+    $data=json_decode($resp,true);
+    if(!is_array($data) || empty($data["Status"])){
+        return false;
+    }
+    // Reconstruct the row in the format that lib_sqlite's mysqli_fetch_array
+    // (PDO::FETCH_ASSOC) used to return — keeps the on-disk file format
+    // backwards-compatible with existing .tpl exports and the import path
+    // (template_import_uploaded → unserialize).
+    $ligne=array(
+        "ID"=>$data["ID"],
+        "tpname"=>$data["Tpname"],
+        "tpdate"=>$data["Tpdate"],
+        "serviceid"=>$data["Serviceid"],
+        "tpdata"=>$data["Tpdata"],
+        "tpdesc"=>$data["Tpdesc"],
+    );
+    $tpname=strtolower(str_replace(" ","-",$ligne["tpname"]));
     $tpdata=base64_encode(serialize($ligne));
     $size=strlen($tpdata);
     header('Content-Description: File Transfer');
@@ -312,62 +278,12 @@ function download():bool{
     header('Content-Disposition: attachment; filename="' . $tpname . '.tpl"');
     header('Cache-Control: must-revalidate');
     header('Pragma: public');
-    header('Content-Length: ' . $size); // Tells the browser the size of the file
-    header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT'); // Helps with caching
+    header('Content-Length: ' . $size);
+    header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
     ob_clean();
     flush();
     echo $tpdata;
     return true;
-}
-function GetTemplateData($serviceid,$domains=1,$backends=1):string{
-    $q=new lib_sqlite(NginxGetDB());
-    // Get Main Config
-    // Get Ports
-    $results=$q->QUERY_SQL("SELECT * FROM stream_ports WHERE serviceid='$serviceid'");
-    $MAIN["stream_ports"]=serialize($results);
-
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM nginx_services WHERE ID=$serviceid");
-    if($domains==0){
-        unset($ligne["hosts"]);
-    }
-    $MAIN["nginx_services"]=serialize($ligne);
-    if($backends==1){
-    $results=$q->QUERY_SQL("SELECT * FROM backends WHERE serviceid='$serviceid'");
-        $MAIN["backends"]=serialize($results);
-    }
-
-    $results=$q->QUERY_SQL("SELECT * FROM ngx_directories WHERE serviceid=$serviceid");
-    if(!$q->ok){
-        $GLOBALS["GetTemplateData_ERROR"]=$q->mysql_error;
-        return "";
-    }
-    foreach ($results as $index=>$ligne){
-        $KeyData=serialize($ligne);
-        $ID=$ligne["ID"];
-        $results2=$q->QUERY_SQL("SELECT * FROM ngx_subdir_items WHERE directoryid=$ID");
-        foreach ($results2 as $index=>$ligne) {
-            $MAIN["ngx_directories"][$KeyData]["ngx_subdir_items"][] = serialize($ligne);
-        }
-
-        $results2=$q->QUERY_SQL("SELECT * FROM directories_backends WHERE directory_id=$ID");
-        foreach ($results2 as $index=>$ligne) {
-            $MAIN["ngx_directories"][$KeyData]["directories_backends"][] = serialize($ligne);
-        }
-    }
-
-    $results=$q->QUERY_SQL("SELECT * FROM ngx_stream_access_module WHERE serviceid=$serviceid");
-    $MAIN["ngx_stream_access_module"]=serialize($results);
-
-    $results=$q->QUERY_SQL("SELECT * FROM modsecurity_whitelist WHERE serviceid=$serviceid");
-    $MAIN["modsecurity_whitelist"]=serialize($results);
-
-    $results=$q->QUERY_SQL("SELECT * FROM service_parameters WHERE serviceid=$serviceid");
-    $MAIN["service_parameters"]=serialize($results);
-
-    return base64_encode(serialize($MAIN));
-
-    
-
 }
 function popup_main():bool{
     $page       = CurrentPageName();
@@ -420,49 +336,50 @@ function search():bool{
     $search=$_GET["search"];
 
     $html[]="
-<table class=\"table table-hover\" id='$tableid'>
+<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>
+<table class='awc-tbl awc-tbl-compact'>
 	<thead>
     	<tr>
         	<th nowrap>{templates}</th>
-        	<th nowrap>{description}</small></th>
-        	<th nowrap>{based_on}</small></th>
         	<th nowrap>{created}</th>
-        	<th nowrap>&nbsp;</small></th>
-        	<th nowrap>&nbsp;</small></th>
-        	<th nowrap>{delete}</small></th>
+        	<th nowrap>&nbsp;</th>
+        	<th nowrap>&nbsp;</th>
+        	<th nowrap>{delete}</th>
         </tr>
   	</thead>
 	<tbody>
 ";
 
-    $q=new lib_sqlite(NginxGetDB());
-    $results=$q->QUERY_SQL("SELECT *  FROM nginx_templates");
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/templates/list");
+    $data=json_decode($resp,true);
+    $results=is_array($data)&&isset($data["List"])&&is_array($data["List"])?$data["List"]:array();
 
     foreach ($results as $index=>$ligne){
         $ID=intval($ligne["ID"]);
-        $tpname=$ligne["tpname"];
-        $tpdate=$ligne["tpdate"];
-        $tpdesc=$ligne["tpdesc"];
-        $tpdata=$ligne["tpdata"];
-        $bytes=strlen($tpdata);
+        $tpname=$ligne["Tpname"];
+        $tpdate=$ligne["Tpdate"];
+        $tpdesc=$ligne["Tpdesc"];
+        $bytes=intval($ligne["TpdataSize"]);
         $bytes=FormatBytes($bytes/1024);
 
-        $x=unserialize(base64_decode($tpdata));
-        //$MAIN=unserialize($x["ngx_directories"]);
-       // print_r($x["ngx_directories"]);
-
-        $serviceid=$ligne["serviceid"];
+        $serviceid=$ligne["Serviceid"];
         $servicename=get_servicename($serviceid);
-        $md=md5(serialize($ligne));
+        $md=md5($ID."-".$tpdate);
         $delete=$tpl->icon_delete("Loadjs('$page?template-remove=$ID&md=$md')","AsWebMaster");
         $tpname=$tpl->td_href($tpname,"","Loadjs('$page?template-js=$ID&function=$function')");
         $down=$tpl->icon_download("document.location.href='$page?download=$ID'","AsWebMaster");
         $restore=$tpl->icon_restore("Loadjs('$page?restore-js=$ID&function=$function&function0=$function0')","AsWebMaster");
 
+        $tpdesc_text="";
+        if(strlen($tpdesc)>2){
+            $tpdesc_text="<br><small>{description}: <i>$tpdesc</small></i>";
+        }
+
+        $servicename="<br><small><strong>{based_on}:</strong> <i>$servicename</i></small>";
+
+
         $html[]="<tr id='$md'>
-				<td style='width:1%' nowrap><i class='fas fa-file-alt'></i>&nbsp;$tpname ($bytes)</td>
-				<td width=99% ><i>$tpdesc</i></td>
-				<td style='width:1%' nowrap>$servicename</td>
+				<td style='width:99%' nowrap><i class='fas fa-file-alt'></i>&nbsp;$tpname ($bytes)$tpdesc_text$servicename</td>
 				<td style='width:1%' nowrap>".$tpl->time_to_date($tpdate)."</td>
 				<td style='width:1%' nowrap>$down</td>
 				<td style='width:1%' nowrap>$restore</td>
@@ -471,11 +388,10 @@ function search():bool{
 
     }
 
-        $html[]="</tbody>";
-        $html[]="</table>";
+        $html[]="</tbody></table></div></div></div>";
         $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS);
         $html[]="LoadAjax('tplnames-nginx-btns','$page?top-buttons=yes&function=$function&function0=$function0');";
         $html[]="</script>";
-        echo $tpl->_ENGINE_parse_body($html);
+        echo awc_table_style().$tpl->_ENGINE_parse_body($html);
         return true;
         }

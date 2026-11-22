@@ -63,11 +63,6 @@ class iniFrameWork {
   * @param  int $mode (see constants)
   * @return void
   */
-  function setQuoteHandling($mode=BS_INIHANDLER_UNQUOTE_ALL) {
-    $this->unQuote = $mode;
-  }
-  
-  
   /**
   * gets called from loadFile() and loadString() to parse the data.
   * @access private

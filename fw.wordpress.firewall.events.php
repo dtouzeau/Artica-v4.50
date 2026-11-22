@@ -16,28 +16,31 @@ page();
 
 function white_js(){
     $q=new lib_sqlite("/home/artica/SQLITE/wordpress.db");
-    $address=$_GET["white-js"];
+    // Pentest 2026-11-04 : white-js etait recopie sans encodage dans la page (XSS) ; c'est une adresse IP.
+    $address=preg_replace('#[^0-9A-Fa-f.:/]#','',(string)$_GET["white-js"]);
     $port=intval($_GET["port"]);
     $bt=htmlentities(base64_decode($_GET["bt"]));
     $tpl=new template_admin();
     $_GET["bt"]=str_replace("&nbsp;"," ",$_GET["bt"]);
 
-    $ligne=$q->mysqli_fetch_array("SELECT ID FROM wp_firewall WHERE address='$address' AND port='$port'");
+    // Pentest 2026-11-04 : address/port/description etaient concatenes dans la requete.
+    $r=$q->QUERY_SQL_PARAMS("SELECT ID FROM wp_firewall WHERE address=? AND port=?",array($address,$port));
+    $ligne=isset($r[0])?$r[0]:array();
     if(intval($ligne["ID"])>0){
         echo $tpl->js_error("$address:$port {alreadyexists}");
         return false;
     }
 
     $description="Added on ". date("Y-m-d H:i:s"). " $bt";
-    $sql="INSERT INTO wp_firewall (address,port,description) VALUES('$address','$port','$description')";
-     $q->QUERY_SQL("$sql");
+    $sql="INSERT INTO wp_firewall (address,port,description) VALUES(?,?,?)";
+     $q->QUERY_SQL_PARAMS($sql,array($address,$port,$description));
         if(!$q->ok){
             writelogs($q->mysql_error." $sql",__FUNCTION__,__FILE__,__LINE__);
             echo $tpl->js_error($q->mysql_error);
             return;
         }
     admin_tracks("Add a new whitelisted destination for Web Firewall $address:$port");
-    $GLOBALS["CLASS_SOCKETS"]->REST_API("/reverse-proxy/firewall/ipsets");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/reverse-proxy/firewall/ipsets");
     echo $tpl->js_display_results("{success}");
     return true;
 }
@@ -212,8 +215,9 @@ function search(){
 
         }
         $ipinfo_enc=$_SESSION["IPINFO"][$KEYS["DST"]];
-		$resolved=$_SESSION["RESOLV"][$KEYS["SRC"]];
-        $resolvedd=$_SESSION["RESOLV"][$KEYS["DST"]];
+		// Pentest 2026-11-04 : nom PTR resolu / infos ipinfo / champs du journal noyau (donnee externe) affiche sans encodage (XSS stockee).
+		$resolved=req_html($_SESSION["RESOLV"][$KEYS["SRC"]]);
+        $resolvedd=req_html($_SESSION["RESOLV"][$KEYS["DST"]]);
         $IpsDesc=array();
         $IpsDesc_text=null;
 		if($OUT==null){$OUT=" - ";}
@@ -228,17 +232,17 @@ function search(){
             $ipinfo_dec=json_decode($ipinfo_enc);
             if (property_exists($ipinfo_dec, "continent")) {
                 if($ipinfo_dec->continent<>null) {
-                    $IpsDesc[] = $ipinfo_dec->continent;
+                    $IpsDesc[] = req_html($ipinfo_dec->continent);
                 }
             }
             if (property_exists($ipinfo_dec, "countryName")) {
                 if($ipinfo_dec->countryName<>null) {
-                    $IpsDesc[] = $ipinfo_dec->countryName;
+                    $IpsDesc[] = req_html($ipinfo_dec->countryName);
                 }
             }
             if (property_exists($ipinfo_dec, "isp")) {
                 if($ipinfo_dec->isp<>null) {
-                    $IpsDesc[] = $ipinfo_dec->isp;
+                    $IpsDesc[] = req_html($ipinfo_dec->isp);
                 }
             }
 
@@ -250,7 +254,7 @@ function search(){
             $IpsDesc_button=base64_encode($IpsDesc_text);
         }
 
-        $js = "Loadjs('$page?white-js={$KEYS["DST"]}&port={$KEYS["DPT"]}&bt=$IpsDesc_button')";
+        $js = "Loadjs('$page?white-js=".req_url($KEYS["DST"])."&port=".req_url($KEYS["DPT"])."&bt=".req_url($IpsDesc_button)."')";
         $button = "<button class='btn btn-primary btn-xs' OnClick=\"$js\">{whitelist}</button>";
 
         if($CyberIPFeed){
@@ -267,6 +271,7 @@ function search(){
         $fff=array();
         if($SRCINFO){
             $ipinfoApi=$ip2host->ipinfoApi($KEYS["SRC"]);
+            foreach(array("flag","country","countryName","city","isp") as $ipk){ if(isset($ipinfoApi[$ipk])){$ipinfoApi[$ipk]=req_html($ipinfoApi[$ipk]);} }
             if($ipinfoApi["flag"]==null){$ipinfoApi["flag"]="flags/info.png";}
             $flag="<img src='/img/{$ipinfoApi["flag"]}'>&nbsp;&nbsp;";
             $ipinfos[]="<strong>{country}</strong>:&nbsp;{$ipinfoApi["country"]}/{$ipinfoApi["countryName"]}";
@@ -281,6 +286,8 @@ function search(){
             $resolved=@implode(" / ",$fff);
         }
 
+		foreach(array("SRC","DST","SPT","DPT") as $kk){ if(isset($KEYS[$kk])&&$KEYS[$kk]!==true){$KEYS[$kk]=req_html($KEYS[$kk]);} }
+		$IN=req_html($IN);$OUT=req_html($OUT);
 		$html[]="<tr>
 				<td width='1%' nowrap>$FTime</td>
 				<td width='1%' nowrap>$ACTION</td>
@@ -296,7 +303,8 @@ function search(){
 		
 	}
 
-    $TINY_ARRAY["TITLE"]="{firewall_events} {deny} &laquo;{$_GET["search"]}&raquo; ({threats})";
+    // Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+    $TINY_ARRAY["TITLE"]="{firewall_events} {deny} &laquo;".req_html($_GET["search"] ?? "")."&raquo; ({threats})";
     $TINY_ARRAY["ICO"]=ico_eye;
     $TINY_ARRAY["EXPL"]="{APP_NGINX_FW_EXPLAIN}";
     $TINY_ARRAY["URL"]="nginx-status";

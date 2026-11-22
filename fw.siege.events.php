@@ -87,11 +87,12 @@ function search(){
 		$line=trim($line);
         if($line==null){continue;}
 		if(!preg_match("#^(.+?)\s+\[(.+?)\] (.+?):(.+?):(.+)#", $line,$re)) {continue;}
-        $zdate = $re[1];
-        $Type = $re[2];
-        $file = $re[3];
-        $function=$re[4];
-        $line=$re[5];
+        // Pentest 2026-11-04 : ligne de journal siege (donnee externe) affiche sans encodage (XSS stockee).
+        $zdate = req_html($re[1]);
+        $Type = req_html($re[2]);
+        $file = req_html($re[3]);
+        $function=req_html($re[4]);
+        $line=req_html($re[5]);
         $text=null;
         if(preg_match("#(error|failed|unable)#i",$line)){
             $text="text-danger";

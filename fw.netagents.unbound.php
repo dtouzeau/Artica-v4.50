@@ -16,7 +16,7 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 if (!isset($GLOBALS["CLASS_SOCKETS"])) { $GLOBALS["CLASS_SOCKETS"] = new sockets(); }
 $users = new usersMenus();
-if (!$users->AsSystemAdministrator) { exit(); }
+if (!meta_node_admin($users)) { exit(); }
 
 if (isset($_GET["unbound-js"]))      { unbound_js();             exit; }
 if (isset($_GET["health-badge"]))    { unbound_health_badge();   exit; }
@@ -78,6 +78,7 @@ function unbound_form(): void {
     }
 
     // ── Tab shell ──
+    echo $tpl->_ENGINE_parse_body(unbound_artica_banner($id, $tpl));
     $tabs = [];
     $tabs["{status}"]          = "$page?health=$id&id=$id";
     $tabs["{dns_records}"]     = "fw.netagents.unbound.records.php?id=$id";
@@ -88,6 +89,22 @@ function unbound_form(): void {
 
     echo $tpl->tabs_default($tabs);
     echo "</div>";
+}
+
+/**
+ * On an Artica appliance, says who writes Unbound: the agent (settings of this
+ * dialog, not visible in the node's own console) or Artica through a DNS Cache
+ * policy (the agent then refuses every change made here with a 409).
+ */
+function unbound_artica_banner(int $id, $tpl): string {
+    $st = json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/netagents/status/$id"));
+    if (!is_object($st) || empty($st->artica)) { return ""; }
+    if (!isset($st->unbound) || !is_object($st->unbound)) { return ""; }
+    $delegation = strval(isset($st->unbound->delegation) ? $st->unbound->delegation : "");
+    if ($delegation === "delegated" || $delegation === "pending") {
+        return $tpl->div_warning("{netagents_unbound_delegated_title}||{netagents_unbound_delegated}");
+    }
+    return $tpl->div_explain("{netagents_unbound_agent_writer_title}||{netagents_unbound_agent_writer}");
 }
 
 /** Install panel shown when Unbound is not installed. */
@@ -255,6 +272,18 @@ function unbound_js_block(int $id, string $page): string {
     $l = [];
     $l[] = "<script>";
 
+    // Poll helpers: an error answered by Meta ({Status:false,Error}) or a failed
+    // request ends the polling and is shown, never an endless spinner.
+    $l[] = "function UnboundEsc_$id(s){ return \$('<div>').text(String(s)).html(); }";
+    $l[] = "function UnboundPollErr_$id(poll,box,d){";
+    $l[] = "  if(d && d.Status===false){ clearInterval(poll); \$(box).html('<div class=\"alert alert-danger\">'+UnboundEsc_$id(d.Error||'{error}')+'</div>'); return true; }";
+    $l[] = "  return false;";
+    $l[] = "}";
+    $l[] = "function UnboundPollFail_$id(poll,box,x){";
+    $l[] = "  clearInterval(poll);";
+    $l[] = "  \$(box).html('<div class=\"alert alert-danger\">{error}: '+UnboundEsc_$id((x&&x.status?x.status+' ':'')+(x&&x.statusText?x.statusText:''))+'</div>');";
+    $l[] = "}";
+
     // Install
     $l[] = "function UnboundInstall_$id(){";
     $l[] = "  \$('#unbound-install-result-$id').html('<div class=\"alert alert-info\"><i class=\"fas fa-spinner fa-spin\"></i> {unbound_installing}</div>');";
@@ -262,14 +291,15 @@ function unbound_js_block(int $id, string $page): string {
     $l[] = "    if(r!=='INSTALLING'){ \$('#unbound-install-result-$id').html(r); return; }";
     $l[] = "    var poll=setInterval(function(){";
     $l[] = "      \$.getJSON('$page',{'install-status':'install',id:$id},function(d){";
+    $l[] = "        if(UnboundPollErr_$id(poll,'#unbound-install-result-$id',d)) return;";
     $l[] = "        if(!d.done) return;";
     $l[] = "        clearInterval(poll);";
     $l[] = "        if(d.ok){ LoadAjax('unbound-main-$id','$page?id=$id'); }";
     $l[] = "        else{";
     $l[] = "          var msg=(d.logs&&d.logs.length)?d.logs[d.logs.length-1]:'{error}';";
-    $l[] = "          \$('#unbound-install-result-$id').html('<div class=\"alert alert-danger\">'+msg+'</div>');";
+    $l[] = "          \$('#unbound-install-result-$id').html('<div class=\"alert alert-danger\">'+UnboundEsc_$id(msg)+'</div>');";
     $l[] = "        }";
-    $l[] = "      });";
+    $l[] = "      }).fail(function(x){ UnboundPollFail_$id(poll,'#unbound-install-result-$id',x); });";
     $l[] = "    },2000);";
     $l[] = "  });";
     $l[] = "}";
@@ -284,14 +314,15 @@ function unbound_js_block(int $id, string $page): string {
     $l[] = "      if(r!=='UNINSTALLING'){ \$('#unbound-action-result-$id').html(r); return; }";
     $l[] = "      var poll=setInterval(function(){";
     $l[] = "        \$.getJSON('$page',{'install-status':'uninstall',id:$id},function(d){";
+    $l[] = "          if(UnboundPollErr_$id(poll,'#unbound-action-result-$id',d)) return;";
     $l[] = "          if(!d.done) return;";
     $l[] = "          clearInterval(poll);";
     $l[] = "          if(d.ok){ LoadAjax('unbound-main-$id','$page?id=$id'); }";
     $l[] = "          else{";
     $l[] = "            var msg=(d.logs&&d.logs.length)?d.logs[d.logs.length-1]:'{error}';";
-    $l[] = "            \$('#unbound-action-result-$id').html('<div class=\"alert alert-danger\">'+msg+'</div>');";
+    $l[] = "            \$('#unbound-action-result-$id').html('<div class=\"alert alert-danger\">'+UnboundEsc_$id(msg)+'</div>');";
     $l[] = "          }";
-    $l[] = "        });";
+    $l[] = "        }).fail(function(x){ UnboundPollFail_$id(poll,'#unbound-action-result-$id',x); });";
     $l[] = "      },2000);";
     $l[] = "    });";
     $l[] = "  });";
@@ -304,6 +335,7 @@ function unbound_js_block(int $id, string $page): string {
     $l[] = "    if(r!=='RESTARTING'){ \$('#unbound-action-result-$id').html(r); return; }";
     $l[] = "    var poll=setInterval(function(){";
     $l[] = "      \$.getJSON('$page',{'install-status':'restart',id:$id},function(d){";
+    $l[] = "        if(UnboundPollErr_$id(poll,'#unbound-action-result-$id',d)) return;";
     $l[] = "        if(!d.done) return;";
     $l[] = "        clearInterval(poll);";
     $l[] = "        if(d.ok){";
@@ -311,11 +343,11 @@ function unbound_js_block(int $id, string $page): string {
     $l[] = "          LoadAjaxSilent('unbound-health-$id','$page?health=$id');";
     $l[] = "        } else {";
     $l[] = "          var msg=(d.logs&&d.logs.length)?d.logs[d.logs.length-1]:'{error}';";
-    $l[] = "          \$('#unbound-action-result-$id').html('<div class=\"alert alert-danger\">'+msg+'</div>');";
+    $l[] = "          \$('#unbound-action-result-$id').html('<div class=\"alert alert-danger\">'+UnboundEsc_$id(msg)+'</div>');";
     $l[] = "        }";
-    $l[] = "      });";
+    $l[] = "      }).fail(function(x){ UnboundPollFail_$id(poll,'#unbound-action-result-$id',x); });";
     $l[] = "    },2000);";
-    $l[] = "  });";
+    $l[] = "  }).fail(function(x){ UnboundPollFail_$id(null,'#unbound-action-result-$id',x); });";
     $l[] = "}";
 
     $l[] = "</script>";

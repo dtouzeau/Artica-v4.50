@@ -1,14 +1,18 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_*() (awc_table_style/awc_pager_js/awc_filter_js): helpers partages des
+// tableaux d'entites, definis dans class.statistics_appliance.inc.
+// L'include DOIT rester INCONDITIONNEL. Place dans le bloc
+// if(!class_exists("sockets")){...}, il n'etait jamais evalue -- class.template-admin.inc
+// charge deja class.sockets.inc -- d'ou un fatal "Call to undefined function
+// awc_table_style()" des que la page rendait son tableau.
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");
+}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsVPNManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["search"])){search();exit;}
-if(isset($_GET["delete-js"])){delete_rule_js();exit;}
 if(isset($_GET["ruleid-js"])){rule_js();exit;}
-if(isset($_GET["rule-popup"])){rule_popup();exit;}
-if(isset($_GET["main"])){main();exit;}
-if(isset($_REQUEST["GenerateProgress"])){GenerateProgress();exit;}
 if(isset($_POST["connection_name"])){buildconfig();exit;}
 page();
 
@@ -52,7 +56,7 @@ function search(){
 	$website=$tpl->_ENGINE_parse_body("{website}");
 	$Items_text=$tpl->_ENGINE_parse_body("{items}");
 	$hostname=$tpl->_ENGINE_parse_body("{hostname}");
-	$html[]="<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	
@@ -60,16 +64,16 @@ function search(){
 	
 	
 	$TRCLASS=null;
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$date}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$events}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$hostname}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$website}</th>";
+	$html[]="<th>{$date}</th>";
+	$html[]="<th>{$events}</th>";
+	$html[]="<th>{$hostname}</th>";
+	$html[]="<th>{$website}</th>";
 	
 	
 	
 	$html[]="</tr>";
 	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<tbody id='cicapdetecti-rows'>";
 	
 	$_SESSION["AVTHREATS_SEARCH2"]=$_GET["search"];
 	$aliases["src_ip"]="hostname";
@@ -80,7 +84,9 @@ function search(){
         $search = $tpl->query_pattern(trim(strtolower($_GET["search"])), $aliases);
         VERBOSE("{$_GET["search"]} = '{$search["Q"]}'");
         if($search["Q"]<>null){
-            $pattern=$search["Q"];
+            // Pentest 2026-11-04 : la clause query_pattern etait concatenee DANS le litteral ILIKE (la saisie
+            // sortait du litteral) : le motif est la recherche saisie, echappee.
+            $pattern=pg_escape_string2("%{$_GET["search"]}%");
             $search["Q"]="WHERE ( (hostname ILIKE '$pattern') OR ( website ILIKE '$pattern') OR (category ILIKE '$pattern') OR (why ILIKE '$pattern') )";
         }
     }
@@ -97,12 +103,13 @@ function search(){
 	$results=$q->QUERY_SQL($sql);
 	$Items=pg_num_rows($results);
 	
-	if(!$q->ok){echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";}
+	// Pentest 2026-11-04 : search etait recopie sans encodage dans la page (XSS).
+	if(!$q->ok){echo "<div class='alert alert-danger'>".req_html($q->mysql_error)."<br><strong><code>".req_html($_GET["search"])."</code></strong><br><strong><code>".req_html($sql)."</code></strong></div>";}
 
 	
 	$tpl2=new templates();
 	while ($ligne = pg_fetch_assoc($results)) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$date=$tpl2->time_to_date(strtotime($ligne["zdate"]),true);
 		$md=md5(serialize($ligne));
 		$fuser="fa-user";
@@ -124,31 +131,11 @@ function search(){
 	}
 	
 	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="";
+	$html[]="</table></div><div class='awc-foot'><span>&nbsp;</span><span class='awc-pg' id='cicapdetecti-pager'></span></div></div></div>";
 	$html[]="<div><i>$Items $Items_text &laquo;$sql&raquo;</i></div>
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable(
-	{
-	\"filtering\": {
-	\"enabled\": false
-	},
-	\"sorting\": {
-	\"enabled\": true
-	}
-	
-	}
-	
-	
-	); });
 	
 function CreateNewVPNClient(){
 	Loadjs('$page?ruleid-js=');
@@ -167,7 +154,9 @@ function XGenerateVPNConfig(uid){
 
 	</script>";
 	
-	echo @implode("\n", $html);	
+	echo awc_table_style()
+	    .@implode("\n", $html)
+	    .awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"cicapdetecti-rows","cicapdetecti-pager");	
 }
 function findlocalIP($ROUTING,$ipaddr){
 	if(isset($GLOBALS["findlocalIP"][$ipaddr])){return $GLOBALS["findlocalIP"][$ipaddr];}

@@ -1,24 +1,24 @@
-<anti_spam_rate>% Rate</anti_spam_rate>
-<anti_spam_results>Detect infos</anti_spam_results>
-<by_other>Other</by_other>
-<by_sender>By sender</by_sender>
-<by_subject>By subject</by_subject>
-<delete_mails>Delete eMails</delete_mails>
-<delete_mails_text>Delete all mails stored from the sender of this eMail</delete_mails_text>
-<extra_infos>Extra informations</extra_infos>
-<extra_infos_text>Get more technical informations of this email by clicking on this icon</extra_infos_text>
-<last_quarantine_files>Last emails saved into your quarantine area</last_quarantine_files>
+<anti_spam_rate>% Tasso</anti_spam_rate>
+<anti_spam_results>Info di rilevamento</anti_spam_results>
+<by_other>Altro</by_other>
+<by_sender>Per mittente</by_sender>
+<by_subject>Per oggetto</by_subject>
+<delete_mails>Elimina email</delete_mails>
+<delete_mails_text>Elimina tutte le email memorizzate dal mittente di questa email</delete_mails_text>
+<extra_infos>Informazioni aggiuntive</extra_infos>
+<extra_infos_text>Ottieni maggiori informazioni tecniche su questa email cliccando su questa icona</extra_infos_text>
+<last_quarantine_files>Ultime email salvate nella tua area di quarantena</last_quarantine_files>
 <mail_servers_ip>Server</mail_servers_ip>
-<messages_in_quarantine>Message(s) in your quarantine area[br]</messages_in_quarantine>
-<release_mail>Release email</release_mail>
-<release_mail_text>Send this email to your mailbox[br]This eMail will no pass trought filters</release_mail_text>
+<messages_in_quarantine>Messaggio/i nella tua area di quarantena[br]</messages_in_quarantine>
+<release_mail>Rilascia email</release_mail>
+<release_mail_text>Invia questa email alla tua casella di posta[br]Questa email non passer&#224; attraverso i filtri</release_mail_text>
 <search>Ricerca</search>
-<search_text>Find messages in your quarantine area</search_text>
+<search_text>Trova messaggi nella tua area di quarantena</search_text>
 <size>Dimensione</size>
-<star_supported>Special caracter stars '*' is supported in queries, if you know "Regex" expressions, you can use it in your queries.</star_supported>
+<star_supported>Il carattere speciale asterisco '*' &#232; supportato nelle query; se conosci le espressioni &quot;Regex&quot;, puoi usarle nelle tue query.</star_supported>
 <subject>Oggetto</subject>
-<time>Time</time>
-<total_mails>Mails in your area</total_mails>
+<time>Ora</time>
+<total_mails>Email nella tua area</total_mails>
 <view>Vista</view>
-<white_list_email_text>Add sender of this eMail into your White list database and release this eMail</white_list_email_text>
-<your_query>Your query</your_query>
+<white_list_email_text>Aggiungi il mittente di questa email al tuo database di whitelist e rilascia questa email</white_list_email_text>
+<your_query>La tua query</your_query>

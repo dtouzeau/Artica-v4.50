@@ -1,8 +1,13 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/class.rbldnsd.tools.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
+// Pentest 2026-11-04 : identifiants de base (database, tableid, ...) et adresses IP etaient recopies sans encodage dans la page (XSS).
+foreach (array("database","tableid","rbldnsd-table-search","delete-database","select-database","db-key","database-key","database-key-tab","database-key-popup","database-key-sources","database-export") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^0-9.]#','',(string)$_GET[$xk]);}}
+if(isset($_GET["database-export-download"])){$_GET["database-export-download"]=preg_replace('#[^0-9]#','',(string)$_GET["database-export-download"]);}
+foreach (array("ipaddr-js","ipaddr-popup","delete") as $xk){if(isset($_GET[$xk])){$_GET[$xk]=preg_replace('#[^A-Fa-f0-9.:/]#','',(string)$_GET[$xk]);}}
 if(isset($_POST["delete-database"])){delete_database_confirm();exit;}
 if(isset($_GET["delete-database"])){delete_database();exit;}
 if(isset($_GET["rbldnsd-table-search"])){database_search_form();exit;}
@@ -54,7 +59,8 @@ function database_empty_js():bool{
     return $tpl->js_confirm_empty("$tableid/$TableName/$title","database-empty",$tableid,"$function()");
 }
 function database_empty_perform():bool{
-    $tableid=$_POST["database-empty"];
+    // Pentest 2026-11-04 : database-empty etait concatene dans la requete.
+    $tableid=preg_replace('#[^0-9]#','',(string)$_POST["database-empty"]);
     $Array=GetTableArray($tableid);
     $TableName=$Array["tablename"];
     $title=$Array["title"];
@@ -145,9 +151,11 @@ function database_export_js():bool{
     return $tpl->js_dialog1("{export} $key", "$page?database-export-popup=$key&function=$function",550);
 }
 function database_export_popup():bool{
+    if(!fw_progress_page_priv("AsDnsAdministrator")){return false;}   // task link signed for this session: built only for whom may run it
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $key=$_GET["database-export-popup"];
+    $key=fw_progress_seg($_GET["database-export-popup"] ?? "");
+    if($key===""){return fw_progress_bad_value("database-export-popup");}
     $html[]="<div id='database-export-popup'></div>";
 
     $After="dialogInstance1.close();document.location.href='$page?database-export-download=$key';";
@@ -375,11 +383,12 @@ return true;
 function database_key_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $key=$_POST["keytable"];
+    // Pentest 2026-11-04 : keytable et ttl etaient concatenes dans la requete (keytable sert aussi de nom de table).
+    $key=preg_replace('#[^0-9]#','',(string)$_POST["keytable"]);
     $q=new postgres_sql();
     $description=pg_escape_string2($_POST["description"]);
     $enabled=intval($_POST["enabled"]);
-    $ttl=$_POST["ttl"];
+    $ttl=intval($_POST["ttl"]);
     $OldDB=$_SESSION["RBLDNSD"]["DB-CHOOSE"];
     $sqlCrteate="";
     $ligne=$q->mysqli_fetch_array("SELECT response FROM rbl_tables WHERE response='$key'");
@@ -440,7 +449,8 @@ function delete_database():bool{
     return $tpl->js_confirm_delete("$tableTitle ($tableName)","delete-database",$tableid,"$('#$md').remove();");
 }
 function delete_database_confirm():bool{
-    $tableid=$_POST["delete-database"];
+    // Pentest 2026-11-04 : delete-database etait concatene dans la requete.
+    $tableid=preg_replace('#[^0-9]#','',(string)$_POST["delete-database"]);
     $Array=GetTableArray($tableid);
     if(!isset($Array["tablename"])){
         echo "No table id found";
@@ -621,8 +631,10 @@ function ipaddr_save():bool{
         $_POST["description"]=gethostbyaddr($_POST["ipaddr"])." ".$_POST["description"];
     }
 
-	$ipaddr=$_POST["ipaddr"];
-    $tableid=$_POST["tableid"];
+	// Pentest 2026-11-04 : ipaddr, tableid et description etaient concatenes dans la requete.
+	$ipaddr=trim((string)$_POST["ipaddr"]);
+	if(!preg_match('#^[A-Fa-f0-9.:/]+$#',$ipaddr)){return $tpl->post_error("Invalid address $ipaddr");}
+    $tableid=preg_replace('#[^0-9]#','',(string)$_POST["tableid"]);
     $Array=GetTableArray($tableid);
     $tableName=$Array["tablename"];
     if(strlen($tableName)<4){
@@ -632,8 +644,8 @@ function ipaddr_save():bool{
 	$description=$_POST["description"];
 	$date=date("Y-m-d H:i:s");
 	$q=new postgres_sql();
-	$q->QUERY_SQL("DELETE FROM $tableName WHERE ipaddr='$ipaddr'");
-	$q->QUERY_SQL("INSERT INTO $tableName (ipaddr,description,zDate) VALUES ('$ipaddr','$description','$date')");
+	$q->QUERY_SQL_PARAMS("DELETE FROM $tableName WHERE ipaddr=$1",array($ipaddr));
+	$q->QUERY_SQL_PARAMS("INSERT INTO $tableName (ipaddr,description,zDate) VALUES ($1,$2,$3)",array($ipaddr,$description,$date));
 	if(!$q->ok){echo $q->mysql_error . "<br>$ipaddr -> $description";return false;}
 	return admin_tracks("Add item $ipaddr into reputation table $tableName ($tableTitle)");
 	
@@ -642,7 +654,9 @@ function import_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $tb=explode("\n",$_POST["import"]);
-    $session=$_POST["session"];
+    $session=(string)$_POST["session"];
+    // Pentest 2026-11-04 : session formait le nom du fichier ecrit dans PROGRESS_DIR (traversee en ecriture) ; c'est un horodatage.
+    if(!preg_match('/^[0-9]{1,20}$/',$session)){echo $tpl->post_error("Invalid session");return false;}
     $f=array();
     foreach($tb as $item) {
         $item=trim($item);
@@ -750,10 +764,13 @@ function search(){
         return false;
     }
 
+	$MAX=intval($MAX);
 	$sql="SELECT * FROM $tableName {$querys["Q"]} ORDER BY zdate DESC LIMIT $MAX";
 	
 	if(preg_match("#^([0-9\.]+)#", $search)){
-		$sql="SELECT * FROM $tableName WHERE ipaddr='$search' ORDER BY zdate DESC LIMIT $MAX";
+		// Pentest 2026-11-04 : search etait concatene dans la requete (motif non ancre).
+		$esearch=pg_escape_string2($search);
+		$sql="SELECT * FROM $tableName WHERE ipaddr='$esearch' ORDER BY zdate DESC LIMIT $MAX";
 	}
 	
 	$results = $q->QUERY_SQL($sql);

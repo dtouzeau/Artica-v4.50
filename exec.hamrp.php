@@ -34,10 +34,11 @@ function uninstall():bool{
 function install():bool{
     $unix=new unix();
     build_progress(25, "{installing}");
-    $php=$unix->LOCATE_PHP5_BIN();
-    shell_exec("$php /usr/share/artica-postfix/exec.wizards.php --uninstall-all");
+    // articarest wizards module (ex exec.wizards.php --uninstall-all), run to its end.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API_TIMEOUT=1800;
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/wizards/uninstall-all?wait=1");
     build_progress(30, "{installing}");
-    $unix->framework_exec("exec.convert-to-sqlite.php --hamrp");
+
     $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableManagedReverseProxy",1);
     return build_progress(100, "{installing} {success}");
 }

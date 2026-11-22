@@ -1,9 +1,24 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : scriptname, method, eth, filename et line etaient recopies sans encodage dans la page (XSS).
+// scriptname est une liste de noms de scripts separes par des virgules.
+if(isset($_GET["scriptname"])){$_GET["scriptname"]=preg_replace('/[^A-Za-z0-9_.,-]/','',strval($_GET["scriptname"]));}
+if(isset($_GET["method"])){$_GET["method"]=preg_replace('/[^A-Za-z0-9_]/','',strval($_GET["method"]));}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',strval($_GET["eth"]));}
+if(isset($_GET["filename"])){$_GET["filename"]=preg_replace('#[^A-Za-z0-9_.:@/ -]#','',strval($_GET["filename"]));}
+if(isset($_GET["line"])){$_GET["line"]=intval($_GET["line"]);}
 if(isset($_GET["myevents"])){myevents();exit;}
 if(isset($_GET["search-myevents"])){myevents_search();exit;}
 if(isset($_POST["SquidWatchDownSize"])){proxy_watchdog_file_size_save();exit;}
@@ -49,26 +64,22 @@ if(isset($_GET["search-admin"])){search_admins();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["ShowID-js"])){ShowID_js();exit;}
 if(isset($_GET["ShowID"])){ShowID();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
 if(isset($_GET["remove-events"])){remove_events_js();exit;}
 if(isset($_GET["empty-js"])){empty_js();exit;}
 if(isset($_POST["empty"])){empty_table();exit;}
-if(isset($_GET["smtp-js"])){smtp_js();exit;}
-if(isset($_GET["smtp-popup"])){smtp_popup();exit;}
-if(isset($_POST["ENABLED_SQUID_WATCHDOG"])){smtp_save();exit;}
 if(isset($_POST["remove-events"])){remove_events_perform();exit;}
 if(isset($_GET["sys-events"])){search_system();exit;}
 if(isset($_GET["sys-events-block"])){search_system_block();exit;}
-if(isset($_GET["button-fw-system-watchdog"])){echo base64_decode($_GET["button-fw-system-watchdog"]);exit;}
+if(isset($_GET["button-fw-system-watchdog"])){watchdog_buttons_output();exit;}
 page();
 
 function ShowID_js():bool{
 	$id=$_GET["ShowID-js"];
 	if(!is_numeric($id)){
 		return false;
-	}$tpl=new template_admin();
+	}
+	// Pentest 2026-11-04 : ShowID-js etait concatene dans la requete.
+	$id=intval($id);$tpl=new template_admin();
 	$page=CurrentPageName();
 	$sql="SELECT subject FROM squid_admin_mysql WHERE ID=$id";
 	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
@@ -280,13 +291,40 @@ function empty_table(){
 	
 }
 
+// Nom d'une fonction JavaScript de rappel : identifiant seulement.
+function watchdog_callback_name($v):string{
+    $v=trim(strval($v));
+    if(!preg_match('#^[A-Za-z0-9_]{1,128}$#',$v)){return "";}
+    return $v;
+}
+function watchdog_buttons_output():bool{
+    if($_GET["button-fw-system-watchdog"]==""){return true;}
+    $users=new usersMenus();
+    if(!$users->AsSystemAdministrator){return false;}
+    $tpl=new template_admin();
+    $page=CurrentPageName();
+    $function=watchdog_callback_name($_GET["function"] ?? "");
+    $topbuttons=array();
+    $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
+    if($SQUIDEnable==1) {
+        $js="LoadAjaxSilent('search-block','$page?sys-events-block=yes&method=squid');";
+        $topbuttons[] = array($js, ico_filter, "{APP_SQUID}");
+    }
+    $topbuttons[]=array("Loadjs('fw.export.sqlite.php?table=squid_admin_mysql&file=system_events');",ico_csv,"{export}");
+    $topbuttons[]=array("Loadjs('$page?empty-js=yes&function=$function')",ico_trash,"{empty}");
+    echo $tpl->table_buttons($topbuttons);
+    return true;
+}
 function ShowID(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$sql="SELECT * FROM squid_admin_mysql WHERE ID={$_GET["ShowID"]}";
+	// Pentest 2026-11-04 E-01 : ShowID etait concatene sans guillemets (UNION SELECT).
+	$ShowID=intval($_GET["ShowID"]);
+	$sql="SELECT * FROM squid_admin_mysql WHERE ID=$ShowID";
 	$q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
 	$ligne=$q->mysqli_fetch_array($sql);
-	$content=$tpl->_ENGINE_parse_body($ligne["content"]);
+	// Pentest 2026-11-04 : contenu de l evenement (donnee externe) affiche sans encodage (XSS stockee).
+	$content=html_safe_fragment($tpl->_ENGINE_parse_body($ligne["content"]));
 	$content=nl2br($content);
 	echo "<p>$content</p>";
 
@@ -324,7 +362,8 @@ function remove_events_perform(){
     $filename=$tt[0];
     $line=intval($tt[1]);
 
-    $q->QUERY_SQL("DELETE FROM squid_admin_mysql WHERE filename='$filename' AND line='$line'");
+    // Pentest 2026-11-04 : remove-events (filename) etait concatene dans la requete.
+    $q->QUERY_SQL_PARAMS("DELETE FROM squid_admin_mysql WHERE filename=? AND line=?",array((string)$filename,(string)$line));
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/system/frontend/notifications");
     admin_tracks("Removed all system events with $filename filename and line $line");
 
@@ -366,7 +405,7 @@ function search_admin(){
     }
 
     $html[]="<div style='margin-top:15px'>";
-    $html[]=$tpl->search_block($page,"sqlite:/home/artica/SQLITE/admins.db","admintracks","table-sysadmin","&search-admin=yes$scriptanme$method");
+    $html[]=$tpl->search_block($page,null,null,"table-sysadmin","&search-admin=yes$scriptanme$method");
     $html[]="<div id='table-sysadmin'></div>";
     $html[]="</div>";
     $html[]="<script>LoadAjaxSilent('button-fw-system-watchdog','$page?button-fw-system-watchdog=');</script>";
@@ -392,59 +431,39 @@ function failed_logging_search(){
     $q=new lib_sqlite("/home/artica/SQLITE/system_events.db");
     $tpl=new template_admin();
     $t=time();
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{member}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{ipaddr}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{service}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{member}</th>";
+    $html[]="<th>{ipaddr}</th>";
+    $html[]="<th>{date}</th>";
+    $html[]="</tr></thead><tbody id='pxwd-btmp-rows'>";
 
     $search=$tpl->query_pattern(trim(strtolower($_GET["search"])));
     if(intval($search["MAX"])>1500){$search["MAX"]=1500;}
     $ZZZ="";
+    // Pentest 2026-11-04 : search etait concatene dans la requete.
+    $binds=array();
     if(strlen($search["Q"])>1){
         $s=$search["Q"];
-        $ZZZ="WHERE (user LIKE '$s' OR terminal LIKE '$s' OR timestamp LIKE '$s' OR host LIKE '$s')";
+        $ZZZ="WHERE (user LIKE ? OR terminal LIKE ? OR timestamp LIKE ? OR host LIKE ?)";
+        $binds=array($s,$s,$s,$s);
     }
+    $smax=intval($search["MAX"]);
 
-    $sql="SELECT *  FROM btmp_records $ZZZ ORDER BY timestamp DESC LIMIT {$search["MAX"]}";
-    $results=$q->QUERY_SQL($sql);
+    $sql="SELECT *  FROM btmp_records $ZZZ ORDER BY timestamp DESC LIMIT $smax";
+    $results=$q->QUERY_SQL_PARAMS($sql,$binds);
 
-    $TRCLASS=null;
+    $n=0;
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $text_class=null;
-        $id=md5(serialize($ligne));
-        $timestamp=strtotime($ligne["timestamp"]);
-        $zdate=$tpl->time_to_date($timestamp,true);
-        $username=$ligne["user"];
-        $ipaddr=$ligne["host"];
-        $terminal=$ligne["terminal"];
-        $cloock=ico_clock;
-        $useri=ico_user;
-        $comp=ico_computer;
-        $Serv=ico_server;
-        $html[]="<tr class='$TRCLASS' id='$id'>";
-        $html[]="<td class=\"$text_class\" style='width:1%' nowrap><i class='$cloock'></i>&nbsp;$zdate</td>";
-        $html[]="<td class=\"$text_class\" style='width:1%' nowrap><i class='$useri'></i>&nbsp;$username</td>";
-        $html[]="<td class=\"$text_class\" style='width:1%' nowrap><i class='$comp'></i>&nbsp;$ipaddr</td>";
-        $html[]="<td class=\"$text_class\" style='width:99%'><i class='$Serv'></i>&nbsp;$terminal</td>";
-        $html[]="</tr>";
+        $html[]=pxwd_btmp_row(md5(serialize($ligne)),
+            (string)$ligne["user"],(string)$ligne["host"],(string)$ligne["terminal"],
+            $tpl->time_to_date(strtotime($ligne["timestamp"]),true));
+        $n++;
     }
-
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table><div><i></i></div>";
+    if($n==0){$html[]="<tr><td colspan='3'><div class='awc-empty'>{no_data}</div></td></tr>";}
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} $n / $n</span>";
+    $html[]="<span class='awc-pg' id='pxwd-btmp-pager'></span></div></div></div>";
     $headsjs="";
     if(isset($_GET["tiny"])){
         $TINY_ARRAY["TITLE"]="{failedloginattempts}";
@@ -458,79 +477,88 @@ function failed_logging_search(){
 	<script>
 	$headsjs
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-
 </script>";
 
-    echo $tpl->_ENGINE_parse_body($html);
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js(50,"pxwd-btmp-rows","pxwd-btmp-pager");
+}
+
+/**
+ * Extracts the legacy "NNN events" / "limit NNN" / "max NNN" row-count
+ * directives from a search string (same regexes as query_pattern()) and
+ * returns array(cleaned search text, max). Filtering itself now runs in
+ * articarest GET /localadmins/admintracks.
+ */
+function admintracks_search_params($search){
+    $search=trim(strtolower($search));
+    $max=200;
+    if(preg_match("#([0-9]+)(\s+|=)events#i",$search,$re)){
+        $search=trim(str_ireplace("{$re[1]}{$re[2]}events","",$search));
+        $max=intval($re[1]);
+    }
+    if(preg_match("#limit(\s+|=)([0-9]+)#i",$search,$re)){
+        $search=trim(str_ireplace("limit{$re[1]}{$re[2]}","",$search));
+        $max=intval($re[2]);
+    }
+    if(preg_match("#max(\s+|=)([0-9]+)#i",$search,$re)){
+        $search=trim(str_ireplace("max{$re[1]}{$re[2]}","",$search));
+        $max=intval($re[2]);
+    }
+    if($max<1){$max=200;}
+    if($max>1500){$max=1500;}
+    return array($search,$max);
 }
 
 function search_admins(){
     $tpl=new template_admin();
-    $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
     $t=$_GET["t"];
     if(!is_numeric($t)){$t=time();}
     $date=$tpl->_ENGINE_parse_body("{date}");
 
     $t=time();
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$date</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{member}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{events}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{events}</th>";
+    $html[]="<th>$date</th>";
+    $html[]="</tr></thead><tbody id='pxwd-adm-rows'>";
 
 
-    $search=$tpl->query_pattern(trim(strtolower($_GET["search"])));
-    if(intval($search["MAX"])>1500){$search["MAX"]=1500;}
-    $sql="SELECT *  FROM admintracks {$search["Q"]} ORDER BY time DESC LIMIT {$search["MAX"]}";
-    $results=$q->QUERY_SQL($sql);
+    list($searchText,$max)=admintracks_search_params(strval($_GET["search"] ?? ""));
+    $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API(
+        "/localadmins/admintracks?search=".urlencode($searchText)."&max=$max")),true);
+    $results=array();
+    $apierror=null;
+    if(!is_array($resp) || empty($resp["success"])){
+        $apierror=is_array($resp)?strval($resp["error"] ?? "unknown error"):"daemon unreachable";
+    }else{
+        $results=is_array($resp["data"] ?? null)?$resp["data"]:array();
+    }
+    $sql="search: $searchText (max $max)";
 
 
-   if(!$q->ok){
+   if($apierror!==null){
 
-        echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+        echo "<div class='alert alert-danger'>".htmlspecialchars($apierror)."<br><strong><span style='font-family:monospace'>".htmlspecialchars(strval($_GET["search"]))."</span></strong></div>";
     }
 
 
-    $TRCLASS=null;
+    $n=0;
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $text_class=null;
-        $id=md5(serialize($ligne));
-        $zdate=$tpl->time_to_date($ligne["time"],true);
-        //time,username,ipaddr,operation
-
-        $username=$ligne["username"];
-        $ipaddr=$ligne["ipaddr"];
-        $text=$tpl->_ENGINE_parse_body($ligne["operation"]);
-
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$zdate</td>";
-        $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$username - $ipaddr</td>";
-        $html[]="<td class=\"$text_class\" style='width:99%'>$text</td>";
-        $html[]="</tr>";
-
-
+        // Pentest 2026-11-04 : operation (donnee externe) affiche sans encodage (XSS stockee).
+        $html[]=pxwd_admin_row(html_safe_fragment($tpl->_ENGINE_parse_body($ligne["operation"])),
+            (string)$ligne["username"],(string)$ligne["ipaddr"],
+            $tpl->time_to_date($ligne["time"],true));
+        $n++;
     }
-
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='3'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table><div><i>$sql</i></div>";
+    if($n==0){$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";}
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} $n / $n</span>";
+    $html[]="<span class='awc-pg' id='pxwd-adm-pager'></span></div></div></div>";
     $html[]="
 	<script>
 	
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 
 </script>";
 
@@ -580,12 +608,13 @@ function widget_bandwidth():string{
 function top_status():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $html[]="<table style='width:100%;margin-top:-5px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:33%;vertical-align: top'>";
+    // Mise en page en flex: trois tuiles figees a 33% se compressaient sur un
+    // ecran etroit au lieu de se replier.
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:5px;margin-top:-5px;align-items:flex-start'>";
+    $html[]="<div style='flex:1 1 280px;min-width:0'>";
     $html[]=widget_bandwidth();
-    $html[] ="</td>";
-    $html[]="<td style='width:33%;vertical-align: top;padding-left:5px'>";
+    $html[] ="</div>";
+    $html[]="<div style='flex:1 1 280px;min-width:0'>";
 
     $btn["ico"]=ico_chart_line;
     $btn["name"]="{statistics}";
@@ -630,14 +659,11 @@ function table_incidents_search():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
     $t=time();
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\" style='margin-top:10px'>";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{events}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{events}</th>";
+    $html[]="<th>{date}</th>";
+    $html[]="</tr></thead><tbody id='pxwd-perf-rows'>";
 
     $q=new lib_sqlite("/home/artica/SQLITE_TEMP/system.perf.queue.db");
 
@@ -647,44 +673,30 @@ function table_incidents_search():bool{
     $results=$q->QUERY_SQL($sql);
 
     if(!$q->ok){
-        echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+        // $_GET partait BRUT dans la page, et <code> est proscrit par le theme.
+        echo "<div class='alert alert-danger'>".htmlspecialchars((string)$q->mysql_error)
+            ."<br><strong><span style='font-family:monospace'>"
+            .htmlspecialchars((string)($_GET["search"] ?? ""))."</span></strong></div>";
         return false;
     }
 
-    $xtype[0]="<span class='label label-danger'>{issue}</span>";
-    $xtype[1]="<span class='label label-primary'>[&nbsp;&nbsp;&nbsp;OK&nbsp;&nbsp;]</span>";
-
-    $TRCLASS=null;
+    $n=0;
     foreach ($results as $index=>$ligne){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-        $text_class=null;
-        $zdate=$tpl->time_to_date($ligne["zDate"],true);
-        $sfunction=$ligne["sfunction"];
-        $ztype=$xtype[$ligne["ztype"]];
-        $text=$tpl->_ENGINE_parse_body($ligne["subject"]);
-
-        $html[]="<tr class='$TRCLASS'>";
-        $html[]="<td class=\"$text_class\" style='width:1%' nowrap>$zdate</td>";
-        $html[]="<td class=\"$text_class\" style='width:99%'>$ztype&nbsp;&nbsp;$text <i>($sfunction)</i></td>";
-        $html[]="</tr>";
+        // Pentest 2026-11-04 : sujet (donnee externe) affiche sans encodage (XSS stockee).
+        $html[]=pxwd_perf_row(html_safe_fragment($tpl->_ENGINE_parse_body($ligne["subject"])),
+            (string)$ligne["sfunction"],intval($ligne["ztype"]),
+            $tpl->time_to_date($ligne["zDate"],true));
+        $n++;
     }
-
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-    $html[]="<tr>";
-    $html[]="<td colspan='2'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="
-	<script>
-	
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-
-</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    if($n==0){$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";}
+    // Le </table> manquait: le tableau restait ouvert dans le DOM.
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} $n / $n</span>";
+    $html[]="<span class='awc-pg' id='pxwd-perf-pager'></span></div></div></div>";
+    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js(50,"pxwd-perf-rows","pxwd-perf-pager");
     return true;
 
 }
@@ -692,16 +704,15 @@ $(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"ena
 function table():bool{
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $html[]="<table style='width:100%;margin-top:10px'>";
-    $html[]="<tr>";
-    $html[]="<td style='width:240px;vertical-align: top'>";
-    $html[]="<div id='proxy-watchdog-status'></div>";
-    $html[]="</td>";
-    $html[]="<td style='width:99%;vertical-align: top;padding-left:15px'>";
+    // Mise en page en flex. La colonne de gauche etait figee a 240px alors que la
+    // tuile de service qu'elle recoit en mesure 335, et le </td> de droite manquait.
+    $html[]="<div style='display:flex;flex-wrap:wrap;gap:15px;align-items:flex-start;margin-top:10px'>";
+    $html[]="<div style='flex:0 0 auto'><div id='proxy-watchdog-status'></div></div>";
+    $html[]="<div style='flex:1 1 420px;min-width:0'>";
     $html[]="<div id='proxy-watchdog-top'></div>";
     $html[]="<div id='proxy-watchdog-flat'></div>";
-    $html[]="</tr>";
-    $html[]="</table>";
+    $html[]="</div>";
+    $html[]="</div>";
     $html[]="<script>";
     $Ping=$tpl->RefreshInterval_js("proxy-watchdog-status",$page,"proxy-watchdog-status=yes");
     $html[]="LoadAjaxSilent('proxy-watchdog-flat','$page?proxy-watchdog-flat=yes');";
@@ -914,22 +925,11 @@ function search(){
 
     //LoadAjaxSilent('search-block','$page?sys-events-block=yes&scriptname=$scriptname');
 
-    $SQUIDEnable=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
-    if($SQUIDEnable==1) {
-        $js="LoadAjaxSilent('search-block','$page?sys-events-block=yes&method=squid');";
-        $topbuttons[] = array($js, ico_filter, "{APP_SQUID}");
-    }
-
-
-
-    $topbuttons[]=array("Loadjs('fw.export.sqlite.php?table=squid_admin_mysql&file=system_events');",ico_csv,"{export}");
-    $topbuttons[]=array("Loadjs('$page?empty-js=yes&function={$_GET["function"]}')",ico_trash,"{empty}");
-
-
-
-    $buttons=$tpl->table_buttons($topbuttons);
-
-    $buttons_encoded=urlencode(base64_encode($buttons));
+    // Pentest 2026-11-04 M-01 : les boutons faisaient l'aller-retour par le
+    // client en base64 et la page renvoyait ce HTML tel quel. Le client ne
+    // transmet plus que le nom de la fonction de rappel, les boutons sont
+    // reconstruits par watchdog_buttons_output().
+    $buttons_encoded="yes&function=".urlencode(watchdog_callback_name($_GET["function"] ?? ""));
     $users=new usersMenus();
     if(!$users->AsSystemAdministrator){
         $buttons_encoded=null;
@@ -937,10 +937,8 @@ function search(){
 
 
 
-	$html[]=$tpl->_ENGINE_parse_body("
-			<table id='table-firewall-rules' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
-	$html[]="<thead>";
-	$html[]="<tr>";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
 
 	$aliases["src_ip"]="ipaddr";
 	$aliases["ipaddr"]="ipaddr";
@@ -997,9 +995,13 @@ function search(){
     }
 	
 	if($_GET["scriptname"]<>null){
-		$WHERE="WHERE filename='{$_GET["scriptname"]}'";
-		if(strpos($_GET["scriptname"], ",")>0){
-			$scripts=explode(",",$_GET["scriptname"]);
+		// $_GET partait BRUT dans le WHERE. Un nom de fichier ne contient que ces
+		// caracteres; tout le reste est retire avant la construction de la requete.
+		$sn=preg_replace('/[^A-Za-z0-9_.,\-]/','',(string)$_GET["scriptname"]);
+		$WHERE="WHERE filename='$sn'";
+		if(strpos($sn, ",")>0){
+			$scripts=explode(",",$sn);
+			$OR=array();
 			foreach ($scripts as $ffile){$OR[]="(filename='{$ffile}')";}
 			$WHERE="WHERE (".@implode(" OR ", $OR).")";
 		}
@@ -1013,12 +1015,10 @@ function search(){
 	
 
 	
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$date</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$events</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>$daemon</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<th>$events</th>";
+	$html[]="<th>$daemon</th>";
+	$html[]="<th>$date</th>";
+	$html[]="</tr></thead><tbody id='pxwd-sq-rows'>";
 
 	$jsAfter="LoadAjax('table-loader','$page?table=yes&eth={$_GET["eth"]}');";
 	$GLOBALS["jsAfterEnc"]=base64_encode($jsAfter);
@@ -1027,7 +1027,10 @@ function search(){
 	
 	if(!$q->ok){
 		
-		echo "<div class='alert alert-danger'>$q->mysql_error<br><strong><code>{$_GET["search"]}</code></strong><br><strong><code>$sql</code></strong></div>";
+		// $_GET partait BRUT dans la page, et <code> est proscrit par le theme.
+		echo "<div class='alert alert-danger'>".htmlspecialchars((string)$q->mysql_error)
+			."<br><strong><span style='font-family:monospace'>"
+			.htmlspecialchars((string)($_GET["search"] ?? ""))."</span></strong></div>";
 	}
 	
 	$severityCL[0]="label-danger";
@@ -1041,7 +1044,7 @@ function search(){
 	
 	$TRCLASS=null;
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$text_class=null;
 		$id=md5(serialize($ligne));
 		$zdate=$tpl->time_to_date($ligne["zDate"],true);
@@ -1061,38 +1064,26 @@ function search(){
 		
 		
 		
-		$text=$link.$tpl->_ENGINE_parse_body($ligne["subject"]."</a></span>
-		<div style='font-size:10px'>{host}:{$ligne["hostname"]} {function}:{$ligne["function"]}, {line}:{$ligne["line"]}</div>");
+		// Pentest 2026-11-04 : sujet, hote, fonction (donnee externe) affiche sans encodage (XSS stockee).
+		$text=$link.html_safe_fragment($tpl->_ENGINE_parse_body($ligne["subject"]))."</a></span>
+		<div style='font-size:10px'>".$tpl->_ENGINE_parse_body("{host}").":".req_html($ligne["hostname"])." ".$tpl->_ENGINE_parse_body("{function}").":".req_html($ligne["function"]).", ".$tpl->_ENGINE_parse_body("{line}").":".req_html($ligne["line"])."</div>";
 		if(strpos(" ".$ligne["filename"], "/")>0){$ligne["filename"]=basename($ligne["filename"]);}
 		
-		$html[]="<tr class='$TRCLASS'>";
-		$html[]="<td class=\"$text_class\" style='width:1%' nowrap><div class='label $severity_class' style='font-size:13px;padding:10px;width:100%' $curs OnClick=\"$js\" >$zdate</a></div></td>";
-		$html[]="<td class=\"$text_class\" style='width:99%'>$text</td>";
-		$html[]="<td class=\"$text_class\" style='width:1%' nowrap>{$ligne["filename"]}</a></td>";
-		$html[]="</tr>";
-		
-
+		$html[]=pxwd_squid_row($text,(string)$ligne["filename"],intval($ligne["severity"]),$zdate,$js);
 	}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='5'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table><div><i>$sql</i></div>";
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span class='awc-pg' id='pxwd-sq-pager'></span></div></div></div>";
+	// La requete SQL etait affichee sous le tableau: reste de mise au point.
 	$html[]="
 	<script>
 	LoadAjaxSilent('button-fw-system-watchdog','$page?button-fw-system-watchdog=$buttons_encoded');
 NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-
 </script>";
 
-			echo @implode("\n", $html);
+			echo awc_table_style().@implode("\n", $html)
+				.awc_pager_js(50,"pxwd-sq-rows","pxwd-sq-pager");
 
 }
 function myevents():bool{
@@ -1104,17 +1095,12 @@ function myevents():bool{
 }
 function myevents_search(){
     $tpl=new template_admin();
-    $html[]="
-<table class=\"table table-hover\">
-	<thead>
-    	<tr>
-        	<th>{date}</th>
-        	<th>&nbsp;</th>
-        	<th>{events}</th>
-        </tr>
-  	</thead>
-	<tbody>
-";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{events}</th>";
+    $html[]="<th class='center'>{level}</th>";
+    $html[]="<th>{date}</th>";
+    $html[]="</tr></thead><tbody id='pxwd-ev-rows'>";
 
     $MAIN=$tpl->format_search_protocol($_GET["search"]);
 
@@ -1131,12 +1117,13 @@ function myevents_search(){
     if(!$json->Status){
         echo $tpl->div_error("{error}<br>Framework return false!<hr>$json->Error");
     }
-    $LEVELS["info"]="<span class='label label-default'>INFO</span>";
-    $LEVELS["warn"]="<span class='label label-warning'>WARN.</span>";
-    $LEVELS["error"]="<span class='label label-danger'>ERROR</span>";
-    $LEVELS["fatal"]="<span class='label label-danger'>ERROR</span>";
-    $LEVELS["debug"]="<span class='label label-default'>DEBUG</span>";
-    $LEVELS["trace"]="<span class='label label-default'>TRACE</span>";
+    // Le fond porte seul le sens: awc-badge impose deja color:#fff.
+    $LEVELS["info"] ="<span class='awc-badge awc-badge-off'>INFO</span>";
+    $LEVELS["warn"] ="<span class='awc-badge' style='background:#865300'>WARN</span>";
+    $LEVELS["error"]="<span class='awc-badge' style='background:#ba1a1a'>ERROR</span>";
+    $LEVELS["fatal"]="<span class='awc-badge' style='background:#ba1a1a'>FATAL</span>";
+    $LEVELS["debug"]="<span class='awc-badge awc-badge-off'>DEBUG</span>";
+    $LEVELS["trace"]="<span class='awc-badge awc-badge-off'>TRACE</span>";
 
     $st1="style='width:1%' nowrap";
 
@@ -1161,10 +1148,12 @@ function myevents_search(){
         if(!property_exists($jsonline,"message")){
             continue;
         }
+        // Pentest 2026-11-04 : message du journal (donnee externe) affiche sans encodage (XSS stockee).
         $line=$jsonline->message;
         if(is_null($line)){
             continue;
         }
+        $line=req_html($line);
         $class=null;
 
         if(preg_match("#(Failed password|Invalid user|user unknown|fatal|error)#i", $line)){
@@ -1212,15 +1201,10 @@ function myevents_search(){
             $line="<span class='label label-default'>Daemon</span>&nbsp;$line";
         }
 
-        $html[]="<tr>
-				<td $st1><span class='$class'>$FTime</span></td>
-				<td $st1>$zico</td>
-				<td>$line</td>
-				</tr>";
-
+        $html[]=pxwd_event_row($line,$zico,$FTime,$class);
     }
     $jstiny="";
-    $html[]="</tbody></table>";
+    $html[]="</tbody></table></div></div></div>";
 /*
     $TINY_ARRAY["TITLE"]="{legal_logs}: {events} &laquo;$search&raquo;";
     $TINY_ARRAY["ICO"]="fas fa-eye";
@@ -1231,6 +1215,102 @@ function myevents_search(){
 
 */
 
-    $html[]="<script>$jstiny</script>";
-    echo $tpl->_ENGINE_parse_body($html);
+    $html[]="<script>NoSpinner();$jstiny</script>";
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body($html)
+        .awc_pager_js(100,"pxwd-ev-rows","pxwd-ev-pager");
 }
+
+/**
+ * Une tentative de connexion refusee (btmp): identifiant en identite, terminal et
+ * adresse en sous-titre. Ces trois champs viennent du journal systeme -- donc
+ * d'un tiers -- et etaient rendus BRUTS.
+ */
+// Pentest 2026-11-04 : utilisateur, terminal, adresse, fonction, fichier (donnee externe) affiche sans encodage (XSS stockee).
+function pxwd_btmp_row($id,$username,$ipaddr,$terminal,$zdate):string{
+    $h ="<tr id='$id'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico awc-ico-off'><i class='fas fa-user-lock'></i></span>";
+    $h.="<span><span class='awc-name'>".req_html($username)."</span>";
+    if(trim($terminal)!==""){$h.="<div class='awc-meta'>".req_html($terminal)."</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='awc-mono'>".req_html($ipaddr)."</td>";
+    $h.="<td class='awc-mono'>".req_html($zdate)."</td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/**
+ * Une operation d'administration: l'operation est l'identite (c'est ce qu'on
+ * lit), l'auteur et son adresse passent en sous-titre. Le libelle est deja
+ * traduit par l'appelant, d'ou l'absence d'echappement.
+ */
+function pxwd_admin_row($text,$username,$ipaddr,$zdate):string{
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-user-shield'></i></span>";
+    $h.="<span><span class='awc-name' style='font-weight:400'>$text</span>";
+    $h.="<div class='awc-meta'>".req_html(trim($username." - ".$ipaddr," -"))."</div>";
+    $h.="</span></div></td>";
+    $h.="<td class='awc-mono'>".req_html($zdate)."</td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/**
+ * Un evenement de surveillance: le sujet est l'identite, la fonction d'origine
+ * passe en sous-titre. $ztype vaut 1 pour un controle passe, 0 pour un incident.
+ */
+function pxwd_perf_row($text,$sfunction,$ztype,$zdate):string{
+    $ok=($ztype==1);
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='".($ok?"awc-ico":"awc-ico awc-ico-off")."'>";
+    $h.="<i class='fas ".($ok?"fa-circle-check":"fa-triangle-exclamation")."'></i></span>";
+    $h.="<span><span class='awc-name' style='font-weight:400'>";
+    $h.=($ok?"<span class='awc-badge awc-badge-on'>OK</span>":"<span class='awc-badge' style='background:#ba1a1a'>{issue}</span>");
+    $h.=" $text</span>";
+    if(trim($sfunction)!==""){$h.="<div class='awc-meta'>".req_html($sfunction)."</div>";}
+    $h.="</span></div></td>";
+    $h.="<td class='awc-mono'>".req_html($zdate)."</td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/**
+ * Un evenement du journal du proxy: le sujet est l'identite, le fichier source
+ * et la date suivent. La date etait rendue dans une pastille de severite occupant
+ * toute la colonne -- le code couleur porte maintenant sur la puce d'identite.
+ * $text est deja mis en forme (lien de zoom, contexte) par l'appelant.
+ */
+function pxwd_squid_row($text,$filename,$severity,$zdate,$js):string{
+    $bg=($severity==0)?"#ba1a1a":(($severity==1)?"#865300":"#006a62");
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico' style='background:$bg;color:#fff'><i class='fas fa-triangle-exclamation'></i></span>";
+    $h.="<span><span class='awc-name' style='font-weight:400'>$text</span></span>";
+    $h.="</div></td>";
+    $h.="<td class='awc-mono'>".req_html($filename)."</td>";
+    $h.="<td class='awc-mono'><a href=\"javascript:blur();\" style='color:inherit' OnClick=\"$js\">"
+        .req_html($zdate)."</a></td>";
+    $h.="</tr>";
+    return $h;
+}
+
+/**
+ * Une ligne du journal du service: le message est l'identite (c'est ce qu'on lit),
+ * le niveau et l'horodatage suivent. $line est deja mis en forme par l'appelant
+ * (mise en evidence des erreurs, etiquettes de sous-systeme).
+ */
+function pxwd_event_row($line,$level,$ftime,$class):string{
+    $h ="<tr>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-file-lines'></i></span>";
+    $h.="<span><span class='awc-name $class' style='font-weight:400'>$line</span></span>";
+    $h.="</div></td>";
+    $h.="<td class='center'>$level</td>";
+    $h.="<td class='awc-mono'>".req_html((string)$ftime)."</td>";
+    $h.="</tr>";
+    return $h;
+}
+

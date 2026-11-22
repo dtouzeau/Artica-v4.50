@@ -1255,13 +1255,13 @@ function startx(){
 	$GLOBALS["CLASS_SOCKETS"]->SET_INFO("LogsWarninStop", 0);
 	
 	build_progress("Rotate logs...",92);
-	system("$php /usr/share/artica-postfix/exec.squid.rotate.php --force");
+	$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/rotate");
 	if(is_file("/etc/init.d/apache2")){
 		system("/etc/init.d/apache2 restart");
 	}
 	
 	build_progress("{reconfiguring}",96);
-	system("$php /usr/share/artica-postfix/exec.squid.php --build --force");
+	system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy");
 	build_progress("{done}",100);
 	
 	

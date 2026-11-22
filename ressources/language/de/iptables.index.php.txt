@@ -1,45 +1,42 @@
-<about>IPTables is a firewall program.[br]
-It can restrict access by port, by IP address, or by the properties of packets.[br]
-Firewalls aren't everything you need for security, but they're an excellent first step.</about>
-<ACCEPT>Allow connections</ACCEPT>
-<add_inboundrule>Inbound rule</add_inboundrule>
-<add_inboundrule_text>Add a rule to Allow or deny connections from others to your server</add_inboundrule_text>
-<close_windows>All iptables Firewall operations completed, You can close the windows now</close_windows>
-<compile>Compile rules</compile>
-<compile_rules_ok>Rule compilation OK...</compile_rules_ok>
-<compile_text>Compile rule and save it to the system in order to make them in production mode</compile_text>
-<DROP>Reject (without notify)</DROP>
-<enable_iptables>Enable your IpTables Firewall</enable_iptables>
-<from_help>
-Should be:[br]
-An IP range : [br]
+<about>IPTables ist ein Firewall-Programm.[br]
+Es kann den Zugriff nach Port, nach IP-Adresse oder nach den Eigenschaften von Paketen einschr&#228;nken.[br]
+Firewalls sind nicht alles, was Sie f&#252;r die Sicherheit brauchen, aber sie sind ein ausgezeichneter erster Schritt.</about>
+<ACCEPT>Verbindungen erlauben</ACCEPT>
+<add_inboundrule>Eingangsregel</add_inboundrule>
+<add_inboundrule_text>Eine Regel hinzuf&#252;gen, um Verbindungen von anderen zu Ihrem Server zu erlauben oder zu verweigern</add_inboundrule_text>
+<close_windows>Alle iptables-Firewall-Vorg&#228;nge abgeschlossen, Sie k&#246;nnen das Fenster jetzt schlie&#223;en</close_windows>
+<compile>Regeln kompilieren</compile>
+<compile_rules_ok>Regelkompilierung OK...</compile_rules_ok>
+<compile_text>Regel kompilieren und im System speichern, um sie in den Produktionsmodus zu versetzen</compile_text>
+<DROP>Ablehnen (ohne Benachrichtigung)</DROP>
+<enable_iptables>Ihre IpTables-Firewall aktivieren</enable_iptables>
+<from_help>Sollte sein:[br]
+Ein IP-Bereich: [br]
 [blk]192.168.1.12-192.168.1.56[/blk]
-One IP address:[br]
+Eine IP-Adresse:[br]
 [blk]192.168.1.12[/blk]
-One IP address with netmask cdir:[br]
+Eine IP-Adresse mit CIDR-Netzmaske:[br]
 [blk]192.168.1.12/24[/blk]
-An hostname:[br]
-[blk]proxy.p19.ovh.net[/blk]
-</from_help>
-<insert_default>Defaults rules</insert_default>
-<insert_default_text>Add pre-defined rules to secure your artica server</insert_default_text>
-<iptablesconf>Show configuration</iptablesconf>
-<iptablescurrules>Current rules status</iptablescurrules>
-<iptables_from>From</iptables_from>
-<iptables_frommac>Or From MAC Address</iptables_frommac>
-<iptables_INPUT>Inbound</iptables_INPUT>
+Ein Hostname:[br]
+[blk]proxy.p19.ovh.net[/blk]</from_help>
+<insert_default>Standardregeln</insert_default>
+<insert_default_text>Vordefinierte Regeln hinzuf&#252;gen, um Ihren Artica-Server zu sichern</insert_default_text>
+<iptablesconf>Konfiguration anzeigen</iptablesconf>
+<iptablescurrules>Aktueller Regelstatus</iptablescurrules>
+<iptables_from>Von</iptables_from>
+<iptables_frommac>Oder von MAC-Adresse</iptables_frommac>
+<iptables_INPUT>Eingehend</iptables_INPUT>
 <iptables_nic>NIC</iptables_nic>
-<iptables_ports>Should be:[br]
-A single port : [br]
+<iptables_ports>Sollte sein:[br]
+Ein einzelner Port: [br]
 [blk]80[/blk]
-A range port:[br]
+Ein Portbereich:[br]
 [blk]500:600[/blk]
-ports list:[br]
-[blk]80,21,443,9000,143,993[/blk]
-</iptables_ports>
-<iptables_results>Result</iptables_results>
-<local_port>Local port</local_port>
-<log_this_event>Log this rule if match</log_this_event>
+Portliste:[br]
+[blk]80,21,443,9000,143,993[/blk]</iptables_ports>
+<iptables_results>Ergebnis</iptables_results>
+<local_port>Lokaler Port</local_port>
+<log_this_event>Diese Regel bei &#220;bereinstimmung protokollieren</log_this_event>
 <proto>Protokoll</proto>
-<REJECT>Reject (notify)</REJECT>
-<save_toserver_ok>Saving order to server OK...</save_toserver_ok>
+<REJECT>Ablehnen (benachrichtigen)</REJECT>
+<save_toserver_ok>Befehl wird auf dem Server gespeichert OK...</save_toserver_ok>

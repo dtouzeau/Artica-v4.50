@@ -2,6 +2,8 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : interface-js/interface-popup/interface-layer etaient recopies sans encodage dans la page (XSS). Ce sont des noms d'interface.
+foreach(array("interface-js","interface-popup","interface-layer") as $k){if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9._:@-]/','',(string)$_GET[$k]);}}
 
 if(isset($_GET["enable-js"])){enable_js();exit;}
 if(isset($_GET["main-js"])){main_js();exit;}
@@ -73,33 +75,23 @@ function interface_popup():bool{
     return true;
 }
 function enable_js():bool{
-    $field=$_GET["field"];
-    $iface=$_GET["enable-js"];
+    // Le nom de colonne venait de $_GET et partait tel quel dans le SQL.
+    $allowed=array("enable","WantIPv6","WhiteInternalNets","NoBrodcast","NoMulticast","NoARP","OnlyNewTCP");
+    $field=(string)($_GET["field"] ?? "");
+    if(!in_array($field,$allowed,true)){return false;}
+    $iface=preg_replace('/[^A-Za-z0-9._:@-]/','',(string)($_GET["enable-js"] ?? ""));
+    if($iface===""){return false;}
     $tpl=new template_admin();
-    $add=false;
     $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_interfaces WHERE interface='$iface'");
     if(!isset($ligne["interface"])){
-        $add=true;
-    }
-    if(!isset($ligne[$field])){
-        $ligne[$field]=0;
-    }
-    if($ligne[$field]==0) {
-        $upd = "UPDATE suricata_interfaces SET $field=1 WHERE interface='$iface'";
-        $sqladd="INSERT INTO suricata_interfaces (interface, $field,PortsUDP,PortsTCP) VALUES ('$iface', 1,'*','*');";
+        $q->QUERY_SQL_PARAMS("INSERT INTO suricata_interfaces (interface,$field,PortsUDP,PortsTCP) VALUES (?,1,'*','*')",array($iface));
     }else{
-        $upd = "UPDATE suricata_interfaces SET $field=0 WHERE interface='$iface'";
-        $sqladd="INSERT INTO suricata_interfaces (interface, $field,PortsUDP,PortsTCP) VALUES ('$iface', 1,'*','*');";
+        $new=intval($ligne[$field] ?? 0)==0?1:0;
+        $q->QUERY_SQL_PARAMS("UPDATE suricata_interfaces SET $field=? WHERE interface=?",array($new,$iface));
     }
-    $sql=$upd;
-    if($add){
-        $sql=$sqladd;
-    }
-    //writelogs( "Interface $iface $field $ligne[$field] $sql",__FUNCTION__,__FILE__,__LINE__);
-    $q->QUERY_SQL($sql);
     if(!$q->ok){
-        echo $tpl->js_error($q->mysql_error);
+        $tpl->js_error($q->mysql_error);
         return false;
     }
     $page=CurrentPageName();
@@ -108,12 +100,15 @@ function enable_js():bool{
     $GLOBALS["CLASS_SOCKETS"]->REST_API_SURICATA("/reconrestart");
     return admin_tracks_post("Save IDS settings for $iface");
 }
+
 function interface_layer():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $iface=$_GET["interface-layer"];
     $q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-    $ligne=$q->mysqli_fetch_array("SELECT * FROM suricata_interfaces WHERE interface='$iface'");
+    // Pentest 2026-11-04 : interface-layer etait concatene dans la requete.
+    $r=$q->QUERY_SQL_PARAMS("SELECT * FROM suricata_interfaces WHERE interface=?",array((string)$iface));
+    $ligne=isset($r[0]) ? $r[0] : array();
     if(!isset($ligne["enable"])){
         $ligne["enable"]=0;
     }
@@ -250,16 +245,6 @@ function DataShieldIPv4Blocklist_save():bool{
 }
 
 
-function nic_settings(){
-	$nic=new system_nic($_POST["nic-settings"]);
-	$nic->firewall_policy=$_POST["firewall_policy"];
-	$nic->firewall_behavior=$_POST["firewall_behavior"];
-	$nic->firewall_masquerade=$_POST["firewall_masquerade"];
-	$nic->firewall_artica=$_POST["firewall_artica"];
-	//$nic->DenyCountries=$_POST["DenyCountries"];
-	$nic->SaveNic();
-	
-}
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -457,6 +442,8 @@ function main(){
 	$threads=$tpl->javascript_parse_text("{threads}");
 	$enabled=$tpl->_ENGINE_parse_body("{enabled}");
 	if(!isset($_GET["eth"])){$_GET["eth"]=null;}
+	// Pentest 2026-11-04 : eth etait recopie sans encodage dans la page (XSS). C'est un nom d'interface.
+	if($_GET["eth"]!==null){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
     $pattern_exclude    ="^(dummy|teql|ip6tnl|tunl|gre|ifb|sit|gretap|erspan)[0-9]+";
 	$t=time();
 
@@ -505,7 +492,8 @@ function main(){
 				$html[]="<td><span style='font-size:14px'>$val $nic->NICNAME $nic->IPADDR&nbsp;$mirror</span></td>";
 				$html[]=$tpl->field_hidden("nic-settings", $val);
 				
-				$ligne=$q->mysqli_fetch_array("SELECT interface,threads,enable FROM suricata_interfaces WHERE interface='$val'");
+				// Pentest 2026-11-04 : nom d'interface (liste systeme) concatene dans la requete.
+				$ligne=$q->mysqli_fetch_array("SELECT interface,threads,enable FROM suricata_interfaces WHERE interface='".$q->sqlite_escape_string2(strval($val))."'");
 				if(intval($ligne["threads"])==0){$ligne["threads"]=5;}
 				$html[]=$tpl->field_checkbox("enable", "1$val", $ligne["enable"]);
                 if(!$AsNDPI) {
@@ -537,14 +525,17 @@ function main(){
 						
 }
 function Save_nic():bool{
+	$iface=preg_replace('/[^A-Za-z0-9._:@-]/','',(string)($_POST["nic-settings"] ?? ""));
+	if($iface===""){return false;}
 	$q=new lib_sqlite("/home/artica/SQLITE/suricata.db");
-	$q->QUERY_SQL("DELETE FROM suricata_interfaces WHERE interface='{$_POST["nic-settings"]}'");
+	$q->QUERY_SQL_PARAMS("DELETE FROM suricata_interfaces WHERE interface=?",array($iface));
 	if(!$q->ok){echo $q->mysql_error_html(true);return false;}
-	if($_POST["enable"]==0){return false;}
-	$q->QUERY_SQL("INSERT INTO suricata_interfaces (interface,threads,enable) VALUES ('{$_POST["nic-settings"]}','{$_POST["threads"]}',1)");
+	if(intval($_POST["enable"] ?? 0)==0){return false;}
+	$q->QUERY_SQL_PARAMS("INSERT INTO suricata_interfaces (interface,threads,enable) VALUES (?,?,1)",array($iface,intval($_POST["threads"] ?? 0)));
 	if(!$q->ok){echo $q->mysql_error_html(true);}
-    return true;
+	return true;
 }
+
 function Save_gen(){
 	$sock=new sockets();
 	$sock->SET_INFO("SnortRulesCode", $_POST["SnortRulesCode"]);

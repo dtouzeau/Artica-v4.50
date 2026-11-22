@@ -95,25 +95,13 @@ function squid_running_schedules(){
 	
 	
 	
-	$filetimeF="/etc/artica-postfix/pids/exec.squid.watchdog.php.start_watchdog.time";
-	$filetime=$GLOBALS["CLASS_UNIX"]->file_time_min($filetimeF);
-	_statussquid(basename($filetimeF).": {$filetime}Mn");
-	if($filetime>5){
-		shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} $BASEDIR/exec.squid.watchdog.php >/dev/null 2>&1 &");
-        RestartTime($filetimeF);
-	}
+	// Supprime : ce bloc lancait exec.squid.watchdog.php, porte dans articarest
+	// (squid.LegacyWatchdog, toutes les 5 minutes).
 
 	
-	$filetimeF='/etc/artica-postfix/pids/EnableKerbAuth.time';
-	$EnableKerbAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableKerbAuth"));
-	if($EnableKerbAuth==1){
-		$filetime=$GLOBALS["CLASS_UNIX"]->file_time_min($filetimeF);
-		_statussquid(basename($filetimeF).": {$filetime}Mn");
-		if($filetime>5){
-			shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} $BASEDIR/exec.kerbauth.php --pinglic >/dev/null 2>&1 &");
-            RestartTime($filetimeF);
-		}
-	}
+	// Supprime : ce bloc lancait toutes les 5 minutes, en nohup, un
+	// exec.kerbauth.php --pinglic dont la fonction pinglic() etait
+	// litteralement « return true; ». Aucun effet, jamais.
 
 
 
@@ -125,7 +113,7 @@ function squid_running_schedules(){
 	$filetime=$GLOBALS["CLASS_UNIX"]->file_time_min($filetimeF);
 	_statussquid(basename($filetimeF).": {$filetime}Mn");
 	if($filetime>120){
-		shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} $BASEDIR/exec.squid.php --defaults-schedules");
+		$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/schedule/apply");
         RestartTime($filetimeF);
 	}
 	
@@ -174,13 +162,6 @@ function squid_running_schedules(){
 
 
 	
-	$filetimeF="/etc/artica-postfix/pids/exec.squid.rotate.php.build.time";
-	$filetime=$GLOBALS["CLASS_UNIX"]->file_time_min($filetimeF);
-	_statussquid(basename($filetimeF).": {$filetime}Mn");
-	if($filetime>120){
-		shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} $BASEDIR/exec.squid.rotate.php >/dev/null 2>&1 &");
-        RestartTime($filetimeF);
-	}
 
 	if($SquidPerformance<2){
 		$filetimeF="/etc/artica-postfix/pids/exec.squid.interface-size.php.CachedOrNot.time";

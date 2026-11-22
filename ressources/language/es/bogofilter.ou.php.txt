@@ -12,8 +12,8 @@ En este caso, es necesario crear 2 robots usuarios. [Br] [br]
 <bogo_quarantine>cuarentena de correo electronico</bogo_quarantine>
 <bogo_robots>A&ntilde;adir robots Bogofilter</bogo_robots>
 <bogo_spam>utiliza para enviar spam</bogo_spam>
-<if_bogo_prepend>If prepend selected, prepend subject with</if_bogo_prepend>
+<if_bogo_prepend>Si se selecciona anteponer, anteponer al asunto</if_bogo_prepend>
 <robot>robots bogofiler</robot>
 <spam_action>Acci&oacute;n spam detectado</spam_action>
-<spam_action_text>When bogofilter detected mails as score exceed </spam_action_text>
+<spam_action_text>Cuando bogofilter detecta correos cuyo puntaje supera</spam_action_text>
 <type>tipo</type>

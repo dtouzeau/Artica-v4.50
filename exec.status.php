@@ -138,8 +138,7 @@ if (isset($argv[1])) {
     }
 
     if ($argv[1] == "--squid") {
-        echo squid_master_status();
-        echo "\n";
+
         exit;
     }
 
@@ -187,10 +186,6 @@ if (isset($argv[1])) {
         echo netdata();
         exit;
     }
-    if ($argv[1] == "--fsm") {
-        echo APP_ARTICAFSMON();
-        exit;
-    }
 
     if ($argv[1] == "--sealion") {
         echo sealion_agent();
@@ -213,16 +208,8 @@ if (isset($argv[1])) {
         echo wpa_supplicant();
         exit;
     }
-    if ($argv[1] == "--fetchmail") {
-        echo fetchmail();
-        exit;
-    }
     if ($argv[1] == "--milter-greylist") {
         echo milter_greylist() . "\n";
-        exit;
-    }
-    if ($argv[1] == "--framework") {
-        echo framework();
         exit;
     }
     if ($argv[1] == "--dnsfilterd") {
@@ -343,13 +330,7 @@ if (isset($argv[1])) {
         echo ipsec_vici_parser() . "\n";
         exit;
     }
-    //KEEPALIVED
-    if ($argv[1] == "--keepalived") {
-        echo keepalived() . "\n";
-        exit;
-    }
 
-    //END KEEPALIVED
     if ($argv[1] == "--squid-tail-size") {
         echo SQUID_TAIL_SIZE() . "\n" . SQUID_TAIL_SIZE_HELPERS() . "\n";
         exit;
@@ -359,11 +340,6 @@ if (isset($argv[1])) {
         exit;
     }
 
-    if ($argv[1] == "--dockerd") {
-        include_once(dirname(__FILE__) . "/ressources/class.status.dockerd.inc");
-        echo "\n" . dockerd();
-        exit;
-    }
     if ($argv[1] == "--rustdesk") {
         include_once(dirname(__FILE__) . "/ressources/class.status.rustdesk.inc");
         echo "\n" . rustdesk();
@@ -473,19 +449,10 @@ if (isset($argv[1])) {
         exit;
     }
 
-    if ($argv[1] == "--opendkim") {
-        echo "\n" . opendkim();
-        exit;
-    }
     if ($argv[1] == "--ufdbguardd") {
-        $ufdbguardd = ufdbguardd();
-        echo $ufdbguardd . "\n";
         exit;
     }
-    if ($argv[1] == "--dkim-milter") {
-        echo "\n" . milter_dkim();
-        exit;
-    }
+
     if ($argv[1] == "--dropbox") {
         echo "\n" . dropbox();
         exit;
@@ -509,10 +476,6 @@ if (isset($argv[1])) {
     }
     if ($argv[1] == "--pptpd-clients") {
         echo "\n" . pptp_clients();
-        exit;
-    }
-    if ($argv[1] == "--lsm") {
-        echo "\n" . lsm();
         exit;
     }
 
@@ -599,7 +562,7 @@ if (isset($argv[1])) {
         exit;
     }
     if ($argv[1] == "--ufdb-ver") {
-        echo _ufdbguardd_version();
+
         exit;
     }
 
@@ -608,10 +571,7 @@ if (isset($argv[1])) {
         echo "\"{$GLOBALS["CLASS_UNIX"]->EXEC_NICE()}\"\n";
         exit();
     }
-    if ($argv[1] == "--arpd") {
-        echo arpd();
-        exit();
-    }
+
     if ($argv[1] == "--netatalk") {
         echo netatalk();
         exit();
@@ -636,19 +596,12 @@ if (isset($argv[1])) {
 
 
 
-    if ($argv[1] == "--lighttpd-all") {
-        echo framework();
-        exit();
-    }
     if ($argv[1] == "--arkeia") {
         echo arkwsd() . "\n";
         echo arkeiad();
         exit();
     }
-    if ($argv[1] == "--haproxy") {
-        echo haproxy();
-        exit();
-    }
+
     if ($argv[1] == "--adagent") {
         echo adagent();
         exit();
@@ -660,11 +613,9 @@ if (isset($argv[1])) {
     }
 
     if ($argv[1] == "--articadb") {
-        articadb();
         exit();
     }
     if ($argv[1] == "--maillog") {
-        maillog_watchdog();
         exit();
     }
     if ($argv[1] == "--freeradius") {
@@ -672,7 +623,6 @@ if (isset($argv[1])) {
         exit();
     }
     if ($argv[1] == "--php-pfm") {
-        echo php_fpm();
         exit();
     }
 
@@ -704,8 +654,6 @@ if (isset($argv[1])) {
         exit();
     }
     if ($argv[1] == "--ufdb") {
-        $ufdbguardd = ufdbguardd();
-        echo $ufdbguardd . "\n";
          exit;
     }
      if ($argv[1] == "--ucarp") {
@@ -769,11 +717,10 @@ if (isset($argv[1])) {
         exit();
     }
     if ($argv[1] == "--itcharter") {
-        echo itcharter();
+
         exit;
     }
     if ($argv[1] == "--itchart") {
-        echo itcharter();
         exit;
     }
 
@@ -821,62 +768,6 @@ if (isset($argv[1])) {
     }
 
 
-    if ($argv[1] == "--all-squid") {
-        if(system_is_overloaded(basename(__FILE__))){die();}
-        $GLOBALS["CLASS_UNIX"] = new unix();
-        $processes = $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN_ALL(basename(__FILE__) . ".*?{$argv[1]}");
-        events(count($processes) . " Running  " . @implode(";", $processes), "{$argv[1]}", __LINE__);
-
-
-        if (count($processes) > 2) {
-            foreach ($processes as $num => $pid) {
-                events("Killing pid $pid  ", "MAIN", __LINE__);
-                $GLOBALS["CLASS_UNIX"]->KILL_PROCESS($pid, 9);
-            }
-            $processes = $GLOBALS["CLASS_UNIX"]->PIDOF_PATTERN_ALL(basename(__FILE__) . ".*?{$argv[1]}");
-            events(count($processes) . " Running  " . @implode(";", $processes), "{$argv[1]}", __LINE__);
-        }
-
-        if (count($processes) > 0) {
-            events("ALL_SQUID: Processes already exists, aborting", "{$argv[1]}", __LINE__);
-            exit();
-        }
-
-        $cachefile = "/usr/share/artica-postfix/ressources/databases/ALL_SQUID_STATUS";
-        $GLOBALS["DISABLE_WATCHDOG"] = true;
-        $TimeFile = $cachefile;
-
-        include_once(dirname(__FILE__) . '/ressources/class.status.squid.inc');
-
-       $func=array("ntlm_auth_path","squid_master_status","proxypac","squidguardweb","ufdbguardd","articadb","ftp_proxy","cntlm","cntlm_parent","ucarp","squid_nat","ziproxy","killstrangeprocesses","iptables_transparent");
-
-
-
-        foreach ($func as $function){
-            if(is_null($function)){continue;}
-            if(!function_exists($function)){continue;}
-
-            try {
-                $conf[] = call_user_func($function);
-            } catch (Exception $e) {
-                events("Fatal while running function $function ($e)", __FUNCTION__, __LINE__);
-                _statussquid("Fatal while running function $function ($e)");
-            }
-            if(system_is_overloaded(basename(__FILE__))){
-                squid_admin_mysql(1, "{OVERLOADED_SYSTEM}, aborting the task after call $function()...", ps_report(), __FILE__, __LINE__);
-                exit();
-            }
-        }
-
-        if (is_file($cachefile)) {
-            @unlink($cachefile);
-        }
-        @file_put_contents($cachefile, @implode("\n", $conf));
-        @chmod($cachefile, 0755);
-        echo @implode("\n", $conf);
-        exit();
-
-    }
     if ($argv[1] == "--amavis-full") {
         exit();
     }
@@ -1143,10 +1034,10 @@ function LoadIncludes(){
     $RESSOURCES=array("class.mysql.inc","class.system.network.inc","class.os.system.inc","mysql.status.inc","class.status.manticore.inc",
         "class.status.schedules.php","class.process.inc","class.status.unifi.inc","class.status.irqbalance.inc",
         "class.status.statistics.inc","class.status.defaults.inc","class.status.cgroups.inc","class.status.bandwidthd.inc",
-        "class.status.haproxy.inc","class.status.adagent.inc","class.status.sealion.inc",
+        "class.status.adagent.inc","class.status.sealion.inc",
         "class.status.watchdog.me.inc","class.status.splunk.inc","class.status.elasticsearch.inc","class.status.prads.inc",
         "class.status.videocache.inc","class.status.squid.inc","class.status.postfix.inc","class.status.pdns.inc","class.status.defaults.inc","class.status.xapian.inc","class.status.elasticsearch.inc","class.status.wordpress.inc","class.status.dwagent.inc","class.status.quagga.inc",
-        "class.status.saslauthd.inc","class.status.wanproxy.inc","class.status.fsm.inc","class.status.haexchange.inc","class.status.vasd.inc");
+        "class.status.saslauthd.inc","class.status.wanproxy.inc","class.status.haexchange.inc","class.status.vasd.inc");
 
     foreach ($RESSOURCES as $ressource){
         $fname=$GLOBALS["BASE_ROOT"] . "/ressources/$ressource";
@@ -1495,7 +1386,7 @@ function SwapWatchdog()
         if (function_exists("WriteToSyslogMail")) {
             WriteToSyslogMail("SwapWatchdog:: reloading Squid after purging the Swap file", basename(__FILE__));
         }
-        shell_exec2("$nohup $php5 /usr/share/artica-postfix/exec.squid.php --reload-squid --bywatchdog >/dev/null 2>&1 &");
+        $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/reload");
     }
 
 
@@ -1539,7 +1430,13 @@ function CleanLogs()
         if ($size > 150) {
             @unlink("/var/log/php.log");
             @file_put_contents("/var/log/php.log", "#");
-            @chmod("/var/log/php.log", 0777);
+            // 0660 root:www-data, PAS 0777: meme constat CIS 6.1.10 que
+            // global.status.ini ci-dessous, et en plus 4.2.3 (permissions des
+            // journaux). php-fpm ecrit ce journal en www-data, ce que le groupe
+            // couvre; en 0777 tout utilisateur local pouvait y injecter ou en
+            // effacer des lignes, donc falsifier une trace d'incident.
+            @chmod("/var/log/php.log", 0660);
+            @chgrp("/var/log/php.log", "www-data");
         }
     }
 
@@ -1629,7 +1526,6 @@ function launch_all_status_cmdline()
     }
     @file_put_contents($CacheFileTime, "\n");
     events("-> launch_all_status()", __FUNCTION__, __LINE__);
-    $GLOBALS["CLASS_UNIX"]->framework_exec("exec.verif.packages.php --checks &");
     launch_all_status();
 }
 
@@ -1763,15 +1659,6 @@ function launch_all_status($force = false){
     }
 
 
-    if (is_file("/home/artica/SQLITE/bugzilla.db")) {
-        $TimeF = "/etc/artica-postfix/pids/exec.bugzilla.php.get_bugs.time";
-        $timefile = $GLOBALS["CLASS_UNIX"]->file_time_min($TimeF);
-        if ($timefile > 60) {
-            $cmd = trim("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.bugzilla.php --get-bugs --schedule >/dev/null 2>&1 &");
-            events($cmd);
-            shell_exec2($cmd);
-        }
-    }
 
 
 
@@ -1801,18 +1688,17 @@ function launch_all_status($force = false){
         "APP_WHAZU_AGENT","APP_ARTICAPCAP",
         "philesight", "cron",  "disks_monitor",    "netdata","TAILSCALE_STATUS","VASD_STATUS","ZEBRA_STATUS","OSPF_STATUS","APP_URBACKUP","rustdesk","MANTICORE_STATUS",
         "CleanLogs",   "wpa_supplicant","sqlite_dbs",
-        "fetchmail", "milter_greylist", "irqbalance",
+        "milter_greylist", "irqbalance",
         "framework", "pdns_server", "pdns_recursor",  "saslauthd",   "clamscan",  "spamassassin_milter", "spamassassin",   "ksrn", "DWAGENT_STATUS","CIESCACHE_STATUS",        "mailman", "rpcbind",  "ntlm_auth_path", "scanned_only", "roundcube", "cups",
         "gdm",  "hamachi",  "artica_notifier", "pure_ftpd",
-        "ocs_agent",  "wanproxy","sshportal", "gluster", "auditd", "milter_dkim", "dropbox", "killstrangeprocesses", "dockerd",
-         "tftpd",  "bandwith", "lsm", "Build_default_values",
-        "pptpd", "pptp_clients", "ddclient",  "proftpd_status", "splunk",
-         "openvpn", "vboxguest",    "SwapWatchdog", "APP_ARTICAFSMON",        "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
+        "ocs_agent",  "wanproxy","sshportal", "gluster", "auditd",  "dropbox", "killstrangeprocesses",
+         "tftpd",  "bandwith", "Build_default_values","pptpd", "pptp_clients", "ddclient",  "proftpd_status", "splunk",
+         "openvpn", "vboxguest",    "SwapWatchdog", "OpenVPNClientsStatus", "stunnel", "avahi_daemon", "CheckCurl", "NetAdsWatchdog", "munin",  "greyhole",
         "iscsi", "netatalk", "smartd",   "greyhole_watchdog", "tomcat",
-        "cgroups",  "arpd", "ps_mem", "ipsec", "openvpn", "ifconfig_network",
-        "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster",  "ad_rest", "CleanLogs", "checksyslog", "freeradius", "maillog_watchdog", "arp_spoof","go_squid_auth",
+        "cgroups",   "ps_mem", "ipsec", "openvpn", "ifconfig_network",
+        "udevd_daemon",  "arkwsd", "arkeiad", "haproxy", "hacluster",  "ad_rest", "CleanLogs", "checksyslog", "freeradius",  "arp_spoof","go_squid_auth",
          "CleanCloudCatz",   "Scheduler", "exim4", "ntopng",   "XMail",  "iptables", "wordpress",
-         "vde_all", "sealion_agent", "syncthing", "killstrangeprocesses","keepalived");
+         "vde_all", "sealion_agent", "syncthing", "killstrangeprocesses");
 
     ToSyslog("launch_all_status(): " . count($functions));
 
@@ -2039,7 +1925,19 @@ function launch_all_status($force = false){
         @unlink("/usr/share/artica-postfix/ressources/logs/global.status.ini");
     }
     file_put_contents("/usr/share/artica-postfix/ressources/logs/global.status.ini", @implode("\n", $conf));
-    @chmod("/usr/share/artica-postfix/ressources/logs/global.status.ini", 0777);
+    // 0660 root:www-data, PAS 0777 (CIS 6.1.10 world-writable file, constat releve
+    // sur 192.168.90.88 le 2026-07-25). Ce fichier est ECRIT uniquement ici, en
+    // root (ce script meurt si posix_getuid() <> 0), et seulement LU ailleurs:
+    // fw.icon.top.php via $ini->loadFile() (php-fpm, www-data) et le support tool
+    // (root). Le groupe www-data suffit donc a la console; personne n'a besoin
+    // d'ecrire en "other". A 0777 n'importe quel utilisateur local pouvait
+    // falsifier l'etat de tous les services affiche dans la console.
+    // Le unlink + file_put_contents ci-dessus RECREE le fichier a chaque passe:
+    // c'est pourquoi le durcissement cote daemon (aperms HardenWebConsoleTree,
+    // qui remet 0660) ne suffisait pas — le mode doit etre correct A LA SOURCE,
+    // sinon les deux se courent apres indefiniment.
+    @chmod("/usr/share/artica-postfix/ressources/logs/global.status.ini", 0660);
+    @chgrp("/usr/share/artica-postfix/ressources/logs/global.status.ini", "www-data");
     @file_put_contents("/etc/artica-postfix/cache.global.status", @implode("\n", $conf));
 
     $sock = new sockets();
@@ -2139,44 +2037,6 @@ function OpenVPNClientsStatus()
 
 }
 
-function maillog_watchdog(){
-    if (!isset($GLOBALS["CLASS_USERS"])) {
-        CheckCallable();
-    }
-    $POSTFIX_INSTALLED=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("POSTFIX_INSTALLED"));
-    if($POSTFIX_INSTALLED==0){
-        return;
-    }
-    $PostfixEnable=intval($GLOBALS['CLASS_SOCKETS']->GET_INFO("EnablePostfix"));
-    if($PostfixEnable==0){
-        return;
-    }
-
-    $EnableStopPostfix = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableStopPostfix"));
-    if ($EnableStopPostfix == 1) {
-        return;
-    }
-    $maillog_path = $GLOBALS["CLASS_USERS"]->maillog_path;
-    if ($GLOBALS["VERBOSE"]) { echo "maillog_path --> ??? filesize(`$maillog_path`)\n"; }
-    if(!is_null($maillog_path)) {if (trim($maillog_path) == null) { return; } }
-
-    $maillog_size = @filesize($maillog_path);
-
-    if ($GLOBALS["VERBOSE"]) {
-        echo "maillog_path --> $maillog_size bytes\n";
-    }
-    if ($GLOBALS["VERBOSE"]) {
-        echo "$maillog_path: $maillog_size Bytes...\n";
-    }
-    if ($maillog_size < 50) {
-        $GLOBALS["CLASS_UNIX"]->send_email_events("Warning, Log path:$maillog_path Size:$maillog_size bytes.. restarting syslog", "Suspicious size on maillog, restarting system log daemon", "postfix");
-        $GLOBALS["CLASS_UNIX"]->RESTART_SYSLOG(true);
-    }
-    if ($GLOBALS["VERBOSE"]) {
-        echo "maillog_watchdog finish --> ???\n";
-    }
-
-}
 
 
 
@@ -2299,166 +2159,14 @@ function wpa_supplicant()
 
 
 // ========================================================================================================================================================
-function fetchmail_version()
-{
-    if (isset($GLOBALS["fetchmail_version"])) {
-        return $GLOBALS["fetchmail_version"];
-    }
-    $fetchmail = $GLOBALS["CLASS_UNIX"]->find_program("fetchmail");
-    if (!is_file($fetchmail)) {
-        return "0.0.0";
-    }
-    exec("$fetchmail -V 2>&1", $results);
-
-    foreach ($results as $md => $line) {
-        if (preg_match("#release\s+([0-9\.]+)#", $line, $re)) {
-            $GLOBALS["fetchmail_version"] = $re[1];
-            return $re[1];
-        }
-        if (preg_match("#version\s+([0-9\.]+)#", $line, $re)) {
-            $GLOBALS["fetchmail_version"] = $re[1];
-            return $re[1];
-        }
-    }
-
-    return "0.0.0";
-}
 
 
 
 
 
-function fetchmail()
-{
 
-
-    if (!$GLOBALS["CLASS_USERS"]->fetchmail_installed) {
-        return null;
-    }
-    $EnablePostfixMultiInstance = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePostfixMultiInstance");
-    $EnableFetchmailScheduler = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFetchmailScheduler");
-    $enabled = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableFetchmail");
-    if (!is_numeric($enabled)) {
-        $enabled = 0;
-    }
-    if (!is_numeric($EnableFetchmailScheduler)) {
-        $EnableFetchmailScheduler = 0;
-    }
-    if ($EnableFetchmailScheduler == 1) {
-        return null;
-    }
-    $DisableMessaging = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisableMessaging"));
-    if ($DisableMessaging == 1) {
-        $enabled = 0;
-    }
-
-
-    if ($EnablePostfixMultiInstance <> 1) {
-        if (!is_file("/etc/fetchmailrc")) {
-            $enabled = 0;
-        }
-        $master_pid = trim(@file_get_contents("/var/run/fetchmail.pid"));
-        if (preg_match("#^([0-9]+)#", $master_pid, $re)) {
-            $master_pid = $re[1];
-        }
-        $l[] = "[FETCHMAIL]";
-        $l[] = "service_name=APP_FETCHMAIL";
-        $l[] = "master_version=" . fetchmail_version();
-        $l[] = "service_cmd=/etc/init.d/fetchmail";
-        $l[] = "service_disabled=$enabled";
-        $l[] = "watchdog_features=1";
-        $l[] = "family=mailbox";
-
-        if ($enabled == 1) {
-            $fetchmail_count_server = fetchmail_count_server();
-            if ($GLOBALS["VERBOSE"]) {
-                echo "fetchmail_count_server: $fetchmail_count_server\n";
-            }
-
-            if ($fetchmail_count_server > 0) {
-                if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-                    if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-                        shell_exec2("{$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.initslapd.php --fetchmail >/dev/null 2>&1");
-                        shell_exec2("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.fetchmail.php --start >/dev/null 2>&1 &");
-                    }
-                    $l[] = "running=0\ninstalled=1";
-                    $l[] = "";
-                    return implode("\n", $l);
-
-                }
-            }
-        }
-
-        if ($enabled == 0) {
-            return implode("\n", $l);
-        }
-        if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-            $l[] = "running=0";
-        } else {
-            $l[] = "running=1";
-            $l[] = GetMemoriesOf($master_pid);
-        }
-        $l[] = "";
-    } else {
-        $enabled = 1;
-    }
-
-    $master_pid = trim(@file_get_contents("/etc/artica-postfix/exec.fetmaillog.php.pid"));
-    $l[] = "[FETCHMAIL_LOGGER]";
-    $l[] = "service_name=APP_FETCHMAIL_LOGGER";
-    $l[] = "master_version=" . fetchmail_version();
-    $l[] = "service_cmd=fetchmail-logger";
-    $l[] = "service_disabled=$enabled";
-    $l[] = "watchdog_features=1";
-
-    if ($enabled == 1) {
-        if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-            $fetchmail_count_server = fetchmail_count_server();
-            if ($GLOBALS["VERBOSE"]) {
-                echo "fetchmail_count_server: $fetchmail_count_server\n";
-            }
-            if ($fetchmail_count_server > 0) {
-                WATCHDOG("APP_FETCHMAIL_LOGGER", "fetchmail-logger");
-                $l[] = "running=0\ninstalled=1";
-                $l[] = "";
-                return implode("\n", $l);
-                return;
-            } else {
-                return implode("\n", $l);
-            }
-        }
-    }
-
-    if ($enabled == 0) {
-        return implode("\n", $l);
-    }
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-    return implode("\n", $l);
-}
-
-function fetchmail_count_server()
-{
-    $f = explode("\n", @file_get_contents("/etc/fetchmailrc"));
-    $count = 0;
-    foreach ($f as $line) {
-        if (preg_match("#^poll\s+(.+)#", $line)) {
-            $count = $count + 1;
-        }
-    }
-    return $count;
-}
 
 //========================================================================================================
-function framework():bool{
-
-    if(is_file("/etc/init.d/artica-framework")){
-        squid_admin_mysql(1,"{start_migration} 4.40/4.50 {removing} {APP_FRAMEWORK}","Not a necessary service",__FILE__,__LINE__);
-        $GLOBALS["CLASS_UNIX"]->framework_exec("exec.framework.php --migration");
-    }
-    return true;
-}
 
 //================================================================================================
 
@@ -2807,90 +2515,7 @@ function ipsec_vici_stats_binpath():string{
     return "";
 }
 
-//KEEPALIVED
-function keepalived_binpath(){
-    if (is_file("/usr/sbin/keepalived")) {
-        return "/usr/sbin/keepalived";
-    }
-}
 
-function keepalived_pid_path():string{
-    if (is_file("/var/run/keepalived/keepalived.pid")) {
-        return "/var/run/keepalived/keepalived.pid";
-    }
-
-    return "/var/run/keepalived/keepalived.pid";
-}
-
-function keepalived_init()
-{
-    if (is_file("/etc/init.d/keepalived")) {
-        return "/etc/init.d/keepalived";
-    }
-}
-
-function keepalived()
-{
-    $bin_path = keepalived_binpath();
-    if (!is_file((string) $bin_path)) {
-        return;
-    }
-    $APP_KEEPALIVED_ENABLE = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE");
-    if (!is_numeric($APP_KEEPALIVED_ENABLE)) {
-        $APP_KEEPALIVED_ENABLE = 0;
-    }
-    if ($APP_KEEPALIVED_ENABLE == 0) {
-        $APP_KEEPALIVED_ENABLE = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("APP_KEEPALIVED_ENABLE_SLAVE");
-        if (!is_numeric($APP_KEEPALIVED_ENABLE)) {
-            $APP_KEEPALIVED_ENABLE = 0;
-        }
-    }
-    $pid_path = keepalived_pid_path();
-    $master_pid = trim(@file_get_contents($pid_path));
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF($bin_path);
-    }
-
-    $l[] = "[APP_KEEPALIVED]";
-    $l[] = "service_name=APP_KEEPALIVED";
-    $l[] = "master_version=0.00";
-    $l[] = "service_cmd=";
-    $l[] = "service_disabled=$APP_KEEPALIVED_ENABLE";
-    $l[] = "pid_path=$pid_path";
-    $l[] = "family=system";
-    $l[] = "watchdog_features=1";
-
-    $l[] = "";
-
-    if ($APP_KEEPALIVED_ENABLE == 0) {
-        if ($GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-            $init = keepalived_init();
-            if (!is_null($init)) {
-                if (is_file($init))
-                    $GLOBALS["CLASS_UNIX"]->THREAD_COMMAND_SET("$init stop");
-            }
-        }
-    }
-
-    if ($APP_KEEPALIVED_ENABLE == 0) {
-        $l[] = "";
-        return implode("\n", $l);
-    }
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        $l[] = "";
-        return implode("\n", $l);
-        return;
-    }
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-
-
-    return implode("\n", $l);
-}
-
-
-//END KEEPALIVED
 
 function iptables()
 {
@@ -3105,86 +2730,7 @@ function ipsec()
     return implode("\n", $l);
 }
 
-function c_icap_master_enabled()
-{
-    $cicapbin = $GLOBALS["CLASS_UNIX"]->find_program("c-icap");
 
-    if (!is_file($cicapbin)) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("C_ICAP_INSTALLED", 0);
-        return 0;
-    }
-
-
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("C_ICAP_INSTALLED", 1);
-    if (is_file("/usr/lib/c_icap/dnsbl_tables.so")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("C_ICAP_DNSBL", 1);
-    } else {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("C_ICAP_DNSBL", 0);
-    }
-
-
-    $SQUIDEnable = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
-    $SquidDisableAllFilters = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("SquidDisableAllFilters");
-    if (!is_numeric($SQUIDEnable)) {
-        $SQUIDEnable = 1;
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SQUIDEnable", 1);
-    }
-
-
-    $CicapEnabled = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("CicapEnabled");
-    $UnlockWebStats = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("UnlockWebStats");
-    if (!is_numeric($UnlockWebStats)) {
-        $UnlockWebStats = 0;
-    }
-
-
-    if (is_file("/etc/artica-postfix/WEBSTATS_APPLIANCE")) {
-        $EnableStatisticsCICAPService = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableStatisticsCICAPService");
-        if (!is_numeric($EnableStatisticsCICAPService)) {
-            $EnableStatisticsCICAPService = 1;
-        }
-        $CicapEnabled = 1;
-        if ($EnableStatisticsCICAPService == 0) {
-            $CicapEnabled = 0;
-        }
-    }
-
-    if ($SQUIDEnable == 0) {
-        $CicapEnabled = 0;
-    }
-    if (!is_numeric($CicapEnabled)) {
-        $CicapEnabled = 0;
-    }
-    if (!is_numeric($SquidDisableAllFilters)) {
-        $SquidDisableAllFilters = 0;
-    }
-
-    if ($GLOBALS["CLASS_USERS"]->APP_KHSE_INSTALLED) {
-        $KavMetascannerEnable = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("KavMetascannerEnable");
-        if (!is_numeric($KavMetascannerEnable)) {
-            $KavMetascannerEnable = 0;
-        }
-        if ($KavMetascannerEnable == 1) {
-            $CicapEnabled = 1;
-        }
-    }
-
-    if ($SquidDisableAllFilters == 1) {
-        $CicapEnabled = 0;
-    }
-
-    if (!$GLOBALS["CLASS_USERS"]->MEM_HIGER_1G) {
-        if ($GLOBALS["VERBOSE"]) {
-            echo "MEM_HIGER_1G !!! FALSE\n";
-        }
-        if ($CicapEnabled == 1) {
-            $GLOBALS["CLASS_SOCKETS"]->SET_INFO("CicapEnabled", 0);
-        }
-        $CicapEnabled = 0;
-    }
-
-    return $CicapEnabled;
-}
 
 
 
@@ -3350,61 +2896,7 @@ function smartd()
 
 //========================================================================================================================================================
 
-function milter_dkim()
-{
 
-
-    if (!$GLOBALS["CLASS_USERS"]->MILTER_DKIM_INSTALLED) {
-        return;
-    }
-    $EnableDKFilter = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableDkimMilter");
-    if (!is_numeric($EnableDKFilter)) {
-        $EnableDKFilter = 0;
-    }
-    $DisconnectDKFilter = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("DisconnectDKFilter");
-    if (!is_numeric($DisconnectDKFilter)) {
-        $DisconnectDKFilter = 0;
-    }
-
-
-    $pid_path = "/var/run/dkim-milter/dkim-milter.pid";
-    $master_pid = trim(@file_get_contents($pid_path));
-
-
-    $l[] = "[APP_MILTER_DKIM]";
-    $l[] = "service_name=APP_MILTER_DKIM";
-    $l[] = "master_version=" . GetVersionOf("milterdkim");
-    $l[] = "service_cmd=dkim-milter";
-    $l[] = "service_disabled=$EnableDKFilter";
-    $l[] = "pid_path=$pid_path";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=postfix";
-
-    if ($EnableDKFilter == 0) {
-        $l[] = "";
-        return implode("\n", $l);
-    }
-
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        $binpath = $GLOBALS["CLASS_UNIX"]->find_program("dkim-filter");
-        $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF($binpath);
-    }
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        if ($DisconnectDKFilter == 0) {
-            WATCHDOG("APP_MILTER_DKIM", "dkim-milter");
-        }
-        $l[] = "";
-        return implode("\n", $l);
-        return;
-    }
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-
-    return implode("\n", $l);
-
-}
 
 //========================================================================================================================================================
 
@@ -3981,49 +3473,7 @@ function syncthing()
 
 //============================================================================================
 
-function arpd():string{
-    $bin = $GLOBALS["CLASS_UNIX"]->find_program("arpd");
-    $EnableArpDaemon = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArpDaemon"));
 
-    if ($EnableArpDaemon == 0) {
-        if (is_file("/etc/init.d/arpd")) {
-            squid_admin_mysql(1, "{uninstalling}} {APP_ARPD} ({disabled})", null, __FILE__, __LINE__);
-            shell_exec(PHPART . "/exec.arpd.php --uninstall >/dev/null 2>&1 &");
-            return "";
-        }
-        return "";
-    } else {
-        if (!is_file("/etc/init.d/arpd")) {
-            squid_admin_mysql(1, "{installing} {APP_ARPD} ({enabled})", null, __FILE__, __LINE__);
-            shell_exec(PHPART . "/exec.arpd.php --install >/dev/null 2>&1 &");
-            return "";
-        }
-    }
-    $master_pid = $GLOBALS["CLASS_UNIX"]->PIDOF($bin, true);
-
-
-    $l[] = "[APP_ARPD]";
-    $l[] = "service_name=APP_ARPD";
-    $l[] = "master_version=No";
-    $l[] = "service_disabled=$EnableArpDaemon";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=system";
-
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-            squid_admin_mysql(1, "Starting {APP_ARPD} (not running)", null, __FILE__, __LINE__);
-            $cmd = trim(PHPART."/exec.arpd.php --start >/dev/null 2>&1 &");
-            shell_exec2($cmd);
-        }
-        $l[] = "";
-        return implode("\n", $l);
-    }
-    $l[] = "running=1";
-    $l[] = GetMemoriesOf($master_pid);
-    $l[] = "";
-    return implode("\n", $l);
-}
 
 //===========================================================================================
 //
@@ -4575,49 +4025,7 @@ function lsm_pid()
 
 }
 
-function lsm()
-{
-    if (!is_file("/usr/share/artica-postfix/bin/foolsm")) {
-        return null;
-    }
-    if (!is_file("/etc/init.d/foolsm")) {
-        return null;
-    }
-    $l[] = "[LinkStatusMonitor]";
-    $l[] = "service_name=LinkStatusMonitor";
-    $l[] = "master_version=" . lsm_version();
-    $l[] = "service_cmd=/etc/init.d/foolsm";
-    $l[] = "service_disabled=1";
-    $l[] = "pid_path=/var/run/foolsm.pid";
-    $l[] = "watchdog_features=1";
-    $l[] = "family=system";
-    $l[] = "installed=1";
 
-    $master_pid = lsm_pid();
-
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($master_pid)) {
-        if (!$GLOBALS["DISABLE_WATCHDOG"]) {
-            if ($GLOBALS["CLASS_UNIX"]->ServerRunSince() > 3) {
-                squid_admin_mysql(0, "Link Status Monitor stopped [ {action} = {restart} ]", null, __FILE__, __LINE__);
-            }
-            $cmd = trim("{$GLOBALS["nohup"]} {$GLOBALS["NICE"]} {$GLOBALS["PHP5"]} /usr/share/artica-postfix/exec.lsm.php --restart >/dev/null 2>&1");
-            shell_exec2($cmd);
-
-        }
-        $l[] = "running=0";
-        $l[] = "installed=1";
-        return implode("\n", $l);
-
-    }
-
-    $l[] = GetMemoriesOf($master_pid,"LinkStatusMonitor");
-    $l[] = "";
-
-    return implode("\n", $l);
-
-
-}
 
 //========================================================================================================================================================
 function mailman()
@@ -5822,11 +5230,9 @@ function CheckCallable():bool{
     $Callables[]="/framework/class.status.hardware.inc";
     $Callables[]="/ressources/class.status.ftp-proxy.inc";
     $Callables[]="/ressources/class.status.firehol.inc";
-    $Callables[]="/ressources/class.status.dockerd.inc";
     $Callables[]="/ressources/class.status.rustdesk.inc";
     $Callables[]="/ressources/class.status.defaults.inc";
     $Callables[]="/ressources/class.status.bandwidthd.inc";
-    $Callables[]="/ressources/class.status.haproxy.inc";
     $Callables[]="/ressources/class.status.adagent.inc";
     $Callables[]="/ressources/class.status.sealion.inc";
     $Callables[]="/ressources/class.status.openvpn.inc";
@@ -5837,7 +5243,6 @@ function CheckCallable():bool{
     $Callables[]="/ressources/class.status.categories-cache.inc";
     $Callables[]="/ressources/class.status.wanproxy.inc";
     $Callables[]="/ressources/class.status.apt-mirror.inc";
-    $Callables[]="/ressources/class.status.fsm.inc";
     $Callables[]="/ressources/class.status.haexchange.inc";
     $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
@@ -6114,176 +5519,13 @@ function shell_exec2($cmdline){
 }
 
 
-
-
-function isSquidOldDbExists()
-{
-    if (!is_file("/etc/init.d/squid-db")) {
-        return;
-    }
-    squid_admin_mysql(1, "Remove old 3.x MySQL database service", "Detected /etc/init.d/squid-db", __FILE__, __LINE__);
-    remove_service("/etc/init.d/squid-db");
-    if (is_file("/usr/share/artica-postfix/exec.squid-db.php")) {
-        @unlink("/usr/share/artica-postfix/exec.squid-db.php");
-    }
-}
-
-function isSquidRunning()
-{
-
-    isSquidOldDbExists();
-    $pid = $GLOBALS["CLASS_UNIX"]->PIDOF("/usr/sbin/squid");
-    $SQUIDEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
-
-
-    if (!$GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-        return;
-    }
-    if ($SQUIDEnable == 1) {
-        return;
-    }
-
-    squid_admin_mysql(1, "Proxy service running but currently disabled, kill it", "Detected pid $pid", __FILE__, __LINE__);
-    for ($i = 0; $i < 10; $i++) {
-        $pid = $GLOBALS["CLASS_UNIX"]->PIDOF("/usr/sbin/squid");
-        if (!$GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-            return;
-        }
-        $GLOBALS["CLASS_UNIX"]->KILL_PROCESS($pid, 9);
-    }
-
-
-}
-
-
-function Default_values(){
-    isSquidRunning();
-
-    $nohup = $GLOBALS["CLASS_UNIX"]->find_program("nohup");
-    $php = $GLOBALS["CLASS_UNIX"]->LOCATE_PHP5_BIN();
-    $ifconfig=$GLOBALS["CLASS_UNIX"]->find_program("ifconfig");
-
-
-    if (is_file("/etc/init.d/php7.0-fpm")) {
-        squid_admin_mysql(1, "Removing unecessary service php7.0-fpm", null, __FILE__, __LINE__);
-        remove_service("/etc/init.d/php7.0-fpm");
-    }
-
-    if(strlen($ifconfig)>5){
-        $cmd="$ifconfig -a 2>&1";
-        exec($cmd,$results);
-        @file_put_contents(PROGRESS_DIR."/ifconfig.a.arr",base64_encode(serialize($results)));
-    }
-
-    $ziproxy = $GLOBALS["CLASS_UNIX"]->find_program("ziproxy");
-    if(!is_null($ziproxy)) {
-        $EnableProxyCompressor = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableProxyCompressor"));
-        if ($EnableProxyCompressor == 0) {
-            if (is_file($ziproxy)) {
-                $pid = $GLOBALS["CLASS_UNIX"]->PIDOF($ziproxy);
-                if ($GLOBALS["CLASS_UNIX"]->process_exists($pid)) {
-                    squid_admin_mysql(0, "Killing bad Process ziproxy (not enabled)",
-                        @file_get_contents("/var/run/$pid/cmdline"), __FILE__, __LINE__);
-                    $GLOBALS["CLASS_UNIX"]->KILL_PROCESS($pid, 9);
-                }
-
-                if (is_file("/etc/init.d/ziproxy")) {
-                    squid_admin_mysql(0, "Uninstall ziproxy (not enabled)",
-                        "/etc/init.d/ziproxy exists ", __FILE__, __LINE__);
-                    shell_exec("$nohup $php /usr/share/artica-postfix/exec.zipproxy.php --uninstall >/dev/null 2>&1 &");
-                }
-            }
-        }
-    }
-    if (is_file(base64_decode("L3Vzci9sb2NhbC9zaGFyZS9hcnRpY2EvLmxpYw=="))) {
-        @file_put_contents(base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL01haW5TZXJ2ZXJUeXBleg=="), 1);
-    } else {
-        @file_put_contents(base64_decode("L2V0Yy9hcnRpY2EtcG9zdGZpeC9zZXR0aW5ncy9EYWVtb25zL01haW5TZXJ2ZXJUeXBleg=="), 0);
-    }
-
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("fixed_hostname", $GLOBALS["CLASS_UNIX"]->hostname_simple());
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("fqdn_hostname", $GLOBALS["CLASS_UNIX"]->hostname_g());
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("netbiosname", $GLOBALS["CLASS_UNIX"]->hostname_simple());
-
-    if (!is_file("/etc/artica-postfix/settings/Daemons/NetDataListenPort")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("NetDataListenPort", 19999);
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/php5MemoryLimit")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("php5MemoryLimit", 1024);
-
-    }
-
-    if (!is_file("/etc/artica-postfix/settings/Daemons/WindowsUpdateUseLocalProxy")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("WindowsUpdateUseLocalProxy", 1);
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/UnlockWebStats")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UnlockWebStats", 0);
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/EnableIntelCeleron")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("EnableIntelCeleron", 0);
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/SquidDisableAllFilters")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SquidDisableAllFilters", 0);
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/CicapEnabled")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("CicapEnabled", 0);
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/ArticaLogDir")) {
-        @touch("/etc/artica-postfix/settings/Daemons/ArticaLogDir");
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/DisksBenchs")) {
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("DisksBenchs", 6);
-    }
-    if (!is_file("/etc/artica-postfix/settings/Daemons/SessionPathInMemory")) {
-        $memoire = $GLOBALS["CLASS_UNIX"]->MEM_TOTAL_INSTALLEE();
-        $memoire = round($memoire / 1024);
-        if ($memoire > 512) {
-            $SessionPathInMemory = 50;
-        }
-        if ($memoire > 699) {
-            $SessionPathInMemory = 90;
-        }
-        if ($memoire > 999) {
-            $SessionPathInMemory = 128;
-        }
-        if ($memoire > 1499) {
-            $SessionPathInMemory = 256;
-        }
-        if ($memoire > 1999) {
-            $SessionPathInMemory = 320;
-        }
-        if ($memoire > 2599) {
-            $SessionPathInMemory = 512;
-        }
-        if ($memoire > 4999) {
-            $SessionPathInMemory = 728;
-        }
-        $GLOBALS["CLASS_SOCKETS"]->SET_INFO("SessionPathInMemory", $SessionPathInMemory);
-
-    }
-
-
-}
-
-
-
-
-
-
 function Popuplate_cron():bool{
 
     if(!is_dir("/etc/cron.d")){@mkdir("/etc/cron.d",0755,true);}
 
 
     $EnableSquidQuotasBandwidth = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableSquidQuotasBandwidth"));
-    $SQUIDEnable = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable"));
-    $ASQUID = true;
-    $squidbin = $GLOBALS["CLASS_UNIX"]->LOCATE_SQUID_BIN();
-    if (!is_file($squidbin)) {$ASQUID = false;$SQUIDEnable=0;}
 
-    if ($SQUIDEnable == 0) {
-        $ASQUID = false;
-    }
 
     $CRON_RELOAD = false;
 
@@ -6307,18 +5549,6 @@ function Popuplate_cron():bool{
         }
 
     }
-
-
-    if (!is_file("/etc/cron.d/PostgreSQL-failed")) {
-        Popuplate_cron_make("PostgreSQL-failed", "0,5,10,15,20,25,30,35,40,45,50,55 * * * *", "exec.PostgreSQL-failed.php");
-        $CRON_RELOAD = true;
-    }
-
-    if (!is_file("/etc/cron.d/PostgreSQL-count")) {
-        Popuplate_cron_make("PostgreSQL-count", "0,30 * * * *", "exec.PostgreSQL-failed.php --count-files");
-        $CRON_RELOAD = true;
-    }
-
 
     if (is_file("/etc/cron.d/artica-rxtx-stats")) {
         @unlink("/etc/cron.d/artica-rxtx-stats");
@@ -6352,33 +5582,12 @@ function Popuplate_cron():bool{
         $CRON_RELOAD = true;
     }
 
-    if (!is_file("/etc/cron.d/postgres-monthly")) {
-        Popuplate_cron_make("postgres-monthly", "5 4 1,5,10,15,20,25,30 * *", "exec.postgres.clean.php");
-        $CRON_RELOAD = true;
-    }
-
-
-    if (!is_file("/etc/cron.d/artica-clean-logs")) {
-        Popuplate_cron_make("artica-clean-logs", "30 0,4,6,12 * * *", "exec.clean.logs.php --clean-tmp1");
-        $CRON_RELOAD = true;
-    }
-
-    if (!is_file("/etc/cron.d/artica-clean-tmp")) {
-        Popuplate_cron_make("artica-clean-logs", "30 1,6,20,23 * * *", "exec.clean.logs.php --clean-logs");
-        $CRON_RELOAD = true;
-    }
-    if (!is_file("/etc/cron.d/artica-clean-syslog")) {
-        Popuplate_cron_make("artica-clean-syslog", "30 5 * * *", "exec.clean.logs.php --varlog");
-        $CRON_RELOAD = true;
-    }
-
-
-    if (!is_file("/etc/cron.d/artica-clean-RTTSize")) {
-        if(is_file("/etc/init.d/squid")) {
-            Popuplate_cron_make("artica-clean-RTTSize", "30 4 * * *", "exec.clean.logs.php --rttsize");
-            $CRON_RELOAD = true;
-        }
-    }
+    // exec.clean.logs.php est abandonne : ses chaines (--clean-tmp1, --clean-logs,
+    // --varlog) sont planifiees par articarest lui-meme (cron.go ->
+    // logrotate.CleanTmpPath / CleanLogsTask / VarLog) et les anciens fichiers
+    // artica-clean-tmp / artica-clean-logs / artica-clean-syslog /
+    // artica-clean-RTTSize (--rttsize n a jamais existe) sont retires par
+    // SystemTasks (retiredCronFiles). Ne plus rien ecrire ici.
 
     if (!is_file("/etc/cron.d/artica-interface-size")) {
         Popuplate_cron_make("artica-interface-size", "0,15,30,45 * * * *", "exec.squid.interface-size.php");

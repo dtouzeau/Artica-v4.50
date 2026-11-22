@@ -1,6 +1,8 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.squid.templates-simple.inc");
+include_once(dirname(__FILE__)."/ressources/class.3proxy.inc");
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -16,8 +18,7 @@ function error_js(){
 	$page=CurrentPageName();
 	$ID=$_GET["error"];
 	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ligne=$q->mysqli_fetch_array("SELECT `explain` FROM `3proxy_acls_templates` WHERE ID=$ID");
+	$ligne=uproxy_template($ID);
 	$title=$ligne["explain"];
 	
 	$tpl->js_dialog1($title, "$page?error-content=$ID");
@@ -28,8 +29,7 @@ function error_popup(){
 	$page=CurrentPageName();
 	$ID=$_GET["error-content"];
 	$tpl=new template_admin();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ligne=$q->mysqli_fetch_array("SELECT * FROM `3proxy_acls_templates` WHERE ID=$ID");
+	$ligne=uproxy_template($ID);
 	$title=$ligne["explain"];
 	$tpl->field_hidden("error-id", $ID);
 	$form[]=$tpl->field_text("title", "{subject}", $ligne["title"]);
@@ -40,14 +40,11 @@ function error_popup(){
 function error_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$ID=$_POST["error-id"];
-	$title=$q->sqlite_escape_string2($_POST["title"]);
-	$content=$q->sqlite_escape_string2($_POST["content"]);
-	
-	$sql="UPDATE `3proxy_acls_templates` SET `title`='$title', content='$content' WHERE ID=$ID";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $q->mysql_error;}
+	$ID=intval($_POST["error-id"]);
+	$e=uproxy_error(uproxy_template_save($ID,array(
+		"title"=>$_POST["title"],
+		"content"=>$_POST["content"])));
+	if($e!=""){echo $tpl->post_error($e);return;}
 	
 	
 }
@@ -122,13 +119,10 @@ function parameters(){
 	$form[]=$tpl->field_templates("3ProxyTemplateID", "{template}", $ProxyTemplateID);
 	
 		
-	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/3proxy.progress";
-	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/3proxy.progress.log";
-	$ARRAY["CMD"]="3proxy.php?reload=yes";
-	$ARRAY["TITLE"]="{reloading_service}";
-	//$ARRAY["AFTER"]="LoadAjax('table-3proxy-status','$page?table=yes');";
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-pxtempl-restart');";
+	$jsrestart=$tpl->framework_buildjs("/3proxy/reload",
+		"3proxy.progress",
+		"3proxy.progress.log",
+		"progress-pxtempl-restart");
 	
 
 	echo $tpl->form_outside("{proxy_error_pages}", $form,null,"{apply}",$jsrestart,
@@ -149,20 +143,14 @@ function table(){
 	$t=time();
 	$ruleid=intval($_GET["table"]);
 	
-	$q=new lib_sqlite("/home/artica/SQLITE/firewall.db");
-	$sql="SELECT * FROM `3proxy_acls_templates` ORDER BY ID";
-	$results=$q->QUERY_SQL($sql);
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
+	$results=uproxy_templates();
 	
 	
 	
-	$ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/3proxy.progress";
-	$ARRAY["LOG_FILE"]=PROGRESS_DIR."/3proxy.progress.log";
-	$ARRAY["CMD"]="3proxy.php?reload=yes";
-	$ARRAY["TITLE"]="{reloading_service}";
-	//$ARRAY["AFTER"]="LoadAjax('table-3proxy-status','$page?table=yes');";
-	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-pxtempl-restart');";
+	$jsrestart=$tpl->framework_buildjs("/3proxy/reload",
+		"3proxy.progress",
+		"3proxy.progress.log",
+		"progress-pxtempl-restart");
 	
 	$add="Loadjs('$page?rule-js=0&ruleid=$ruleid')";
 	
@@ -171,46 +159,36 @@ function table(){
 	$html[]="</div>";
 	$html[]="<div class=\"btn-group\" data-toggle=\"buttons\"></div>";
 	
-	$html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{type}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{subject}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	$nothing=$tpl->icon_nothing();
-	
-	/*`explain` TEXT,
-	`title` TEXT,
-	`content` TEXT)";
-	*/
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{type}</th><th>{subject}</th>";
+	$html[]="</tr></thead><tbody id='awc-rows-$t'>";
+
+	if(count($results)==0){
+		$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$ID=$ligne["ID"];
-		$md=md5(serialize($ligne));
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td style='width:1%' nowrap>". $tpl->td_href($ligne["explain"],null,"Loadjs('$page?error=$ID')")."</td>";
-		$html[]="<td>{$ligne["title"]}</td>";
+		$title=trim((string)$ligne["title"]);
+		if($title==""){$title="<span class='awc-none'>{no_subject}</span>";}else{$title=htmlspecialchars($title);}
+		$html[]="<tr>";
+		$html[]="<td><div class='awc-ident'>".
+			"<span class='awc-ico'><i class='fas fa-file-lines'></i></span>".
+			"<span><span class='awc-name'>".
+			"<a href=\"javascript:blur();\" onclick=\"Loadjs('$page?error=$ID')\">".htmlspecialchars((string)$ligne["explain"])."</a>".
+			"</span></span></div></td>";
+		$html[]="<td class='awc-mono'>$title</td>";
 		$html[]="</tr>";
 	}
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	$html[]="<tr>";
-	$html[]="<td colspan='2'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable({\"filtering\": { \"enabled\": true },\"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	
-	echo $tpl->_ENGINE_parse_body($html);	
-	
+
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>".count($results)." {items}</span>";
+	$html[]="<span class='awc-pg' id='awc-pager-$t'></span>";
+	$html[]="</div></div></div>";
+
+	$iconjs="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$iconjs.awc_pager_js($GLOBALS["FOOTABLE_PSIZE"],"awc-rows-$t","awc-pager-$t");
+
 }
 

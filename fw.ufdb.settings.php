@@ -4,11 +4,19 @@ include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.system.network.inc");
 include_once(dirname(__FILE__)."/ressources/class.dhcpd.inc");
+include_once(dirname(__FILE__)."/ressources/class.ufdbrules.meta.inc");
+// Verrou Artica Meta : un formulaire dont tous les champs sont tenus ne poste que des champs
+// en lecture seule ; rien a ecrire, reponse vide (succes) au lieu de tomber sur page().
+if(count($_POST)>0 && count(ufdbrules_meta_strip_post($_POST))==0){exit;}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["tabs"])){tabs();exit;}
 
 if(isset($_POST["UfdbUsersTimeout"])){query_timeout_save();exit;}
+// Champs tenus par Meta absents du POST : ces formulaires restent aiguilles par un autre champ.
+if(isset($_POST["UFDBPerEntryTimeout"])){query_timeout_save();exit;}
+if(isset($_POST["WebFilteringCategoriesToLogTimeOut"])){save();exit;}
+if(isset($_POST["UfdbGuardThreads"])){save();exit;}
 if(isset($_GET["query-timeout-js"])){query_timeout_js();exit;}
 if(isset($_GET["query-timeout-popup"])){query_timeout_popup();exit;}
 if(isset($_POST["WebFilteringCategoriesToLogRecipient"])){save();exit;}
@@ -47,8 +55,8 @@ function query_timeout_popup():bool{
     if($UfdbUsersTimeout==0){$UfdbUsersTimeout=10;}
     if($UFDBPerEntryTimeout==0){$UFDBPerEntryTimeout=10;}
 
-    $form[]=$tpl->field_numeric("UfdbUsersTimeout","{total_query_budget}",$UfdbUsersTimeout);
-    $form[]=$tpl->field_numeric("UFDBPerEntryTimeout","{per_connection_budget}",$UFDBPerEntryTimeout);
+    $form[]=ufdbrules_meta_fld($tpl,"field_numeric","UfdbUsersTimeout","{total_query_budget}",$UfdbUsersTimeout);
+    $form[]=ufdbrules_meta_fld($tpl,"field_numeric","UFDBPerEntryTimeout","{per_connection_budget}",$UFDBPerEntryTimeout);
     $html=$tpl->form_outside(null,
         $form,
         null,"{apply}",
@@ -58,9 +66,16 @@ function query_timeout_popup():bool{
     return true;
 }
 function query_timeout_save():bool{
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UfdbUsersTimeout",$_POST["UfdbUsersTimeout"]);
-    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("UFDBPerEntryTimeout",$_POST["UFDBPerEntryTimeout"]);
-    return admin_tracks("Save URL-Filter timeout service Total {$_POST["UfdbUsersTimeout"]}s, Per connection {$_POST["UFDBPerEntryTimeout"]}s");
+    // Verrou Artica Meta, relu cote serveur : une cle tenue postee (forgee) = refus, rien d'ecrit.
+    $_POST=ufdbrules_meta_strip_post($_POST);
+    if(count(ufdbrules_meta_locked_keys(array_keys($_POST)))>0){ return ufdbrules_meta_refuse_post(); }
+    $track=array();
+    foreach(array("UfdbUsersTimeout","UFDBPerEntryTimeout") as $k){
+        if(!isset($_POST[$k])){continue;}
+        $GLOBALS["CLASS_SOCKETS"]->SET_INFO($k,$_POST[$k]);
+        $track[]="$k=".intval($_POST[$k])."s";
+    }
+    return admin_tracks("Save URL-Filter timeout service ".implode(", ",$track));
 }
 
 function parameters_js():bool{
@@ -111,8 +126,8 @@ function notifications_settings_popup():bool{
 
     if($WebFilteringCategoriesToLogTimeOut==0){$WebFilteringCategoriesToLogTimeOut=15;}
 
-    $form[]=$tpl->field_email("WebFilteringCategoriesToLogRecipient","{recipient}",$WebFilteringCategoriesToLogRecipient);
-    $form[]=$tpl->field_numeric("WebFilteringCategoriesToLogTimeOut","{scan_each} {minutes}",$WebFilteringCategoriesToLogTimeOut);
+    $form[]=ufdbrules_meta_fld($tpl,"field_email","WebFilteringCategoriesToLogRecipient","{recipient}",$WebFilteringCategoriesToLogRecipient);
+    $form[]=ufdbrules_meta_fld($tpl,"field_numeric","WebFilteringCategoriesToLogTimeOut","{scan_each} {minutes}",$WebFilteringCategoriesToLogTimeOut);
 
 
     $html=$tpl->form_outside(null, @implode("\n", $form),null,"{apply}",
@@ -148,7 +163,8 @@ function notifications_build():bool{
 function notifications_add_save():bool{
     $tpl = new template_admin();
     $page = CurrentPageName();
-    $id = $_GET["notifications-add-save"];
+    // Pentest 2026-11-04 : notifications-add-save etait recopie sans encodage dans la page (XSS).
+    $id = intval($_GET["notifications-add-save"]);
     $md = $_GET["md"];
 
     $q = new lib_sqlite("/home/artica/SQLITE/webfilter.db");
@@ -167,7 +183,7 @@ function notifications_add_save():bool{
     return notifications_build();
 }
 function notifications_del():bool{
-    $id = $_GET["notif-category-del"];
+    $id = intval($_GET["notif-category-del"]);
     $md = $_GET["md"];
     $q = new lib_sqlite("/home/artica/SQLITE/webfilter.db");
     $q->QUERY_SQL("DELETE FROM webfilter_notifications WHERE category=$id");
@@ -435,6 +451,9 @@ function table():bool{
         }
 
 
+    // Reglages tenus par une politique Artica Meta : bandeau (les champs sont en lecture seule
+    // dans les formulaires, voir ufdbrules_meta_fld()).
+    echo ufdbrules_meta_banner($tpl,"settings");
     echo $tpl->table_form_compile();
     return true;
 }
@@ -470,32 +489,32 @@ function parameters_popup():bool{
         $UFDMallocArenaMax=4;
     }
 
-	$form[]=$tpl->field_checkbox("UfdbReloadBySchedule","{reload_byschedule}",$UfdbReloadBySchedule,false,"{ufdb_reload_byschedule_explain}");
-	$form[]=$tpl->field_checkbox("EnforceHttpsWithHostname","{enforce-https-with-hostname}",$EnforceHttpsWithHostname,false,"{UFDBGUARD_SSL_OPTS}");
-	$form[]=$tpl->field_checkbox("EnforceHttpsOfficialCertificate","{enforce-https-official-certificate}",$EnforceHttpsOfficialCertificate,false,"{UFDBGUARD_SSL_OPTS}");
-	$form[]=$tpl->field_checkbox("HttpsProhibitInsecureSslv2","{https-prohibit-insecure-sslv2}",$HttpsProhibitInsecureSslv2,false,"{UFDBGUARD_SSL_OPTS}");
-	$form[]=$tpl->field_checkbox("AllowUnknownProtocolOverHttps","{allow-unknown-protocol-over-https}",$AllowUnknownProtocolOverHttps,false,"{UFDBGUARD_SSL_OPTS}");
-	$form[]=$tpl->field_checkbox("CheckProxyTunnel","{check-proxy-tunnel}",$CheckProxyTunnel,false,"");
-	$form[]=$tpl->field_checkbox("NoMalwareUris","{NoMalwareUris}",$NoMalwareUris,false,"{NoMalwareUris_explain}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","UfdbReloadBySchedule","{reload_byschedule}",$UfdbReloadBySchedule,false,"{ufdb_reload_byschedule_explain}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","EnforceHttpsWithHostname","{enforce-https-with-hostname}",$EnforceHttpsWithHostname,false,"{UFDBGUARD_SSL_OPTS}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","EnforceHttpsOfficialCertificate","{enforce-https-official-certificate}",$EnforceHttpsOfficialCertificate,false,"{UFDBGUARD_SSL_OPTS}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","HttpsProhibitInsecureSslv2","{https-prohibit-insecure-sslv2}",$HttpsProhibitInsecureSslv2,false,"{UFDBGUARD_SSL_OPTS}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","AllowUnknownProtocolOverHttps","{allow-unknown-protocol-over-https}",$AllowUnknownProtocolOverHttps,false,"{UFDBGUARD_SSL_OPTS}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","CheckProxyTunnel","{check-proxy-tunnel}",$CheckProxyTunnel,false,"");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","NoMalwareUris","{NoMalwareUris}",$NoMalwareUris,false,"{NoMalwareUris_explain}");
     if($RefreshUserList==0){$RefreshUserList=15;}
     if($RefreshDomainList==0){$RefreshDomainList=15;}
 	
 	$form[]=$tpl->field_section("{UFDBGUARD_SERVICE_OPTS}");
-	$form[]=$tpl->field_interfaces("UfdbGuardInterface", "{interface}", $UfdbGuardInterface);
-	$form[]=$tpl->field_numeric("UfdbGuardPort","{listen_port}",$UfdbGuardPort);
-    $form[]=$tpl->field_numeric("UFDMallocArenaMax","Malloc Arena",$UFDMallocArenaMax);
+	$form[]=ufdbrules_meta_fld($tpl,"field_interfaces","UfdbGuardInterface", "{interface}", $UfdbGuardInterface);
+	$form[]=ufdbrules_meta_fld($tpl,"field_numeric","UfdbGuardPort","{listen_port}",$UfdbGuardPort);
+    $form[]=ufdbrules_meta_fld($tpl,"field_numeric","UFDMallocArenaMax","Malloc Arena",$UFDMallocArenaMax);
 	
-	$form[]=$tpl->field_checkbox("UfdbDatabasesInMemory","{UfdbDatabasesInMemory}",$UfdbDatabasesInMemory,false,"{UfdbDatabasesInMemory_explain}");
-	$form[]=$tpl->field_checkbox("DisableExpressionList","{DisableExpressionLists}",$DisableExpressionList,false,"{DisableExpressionLists_explain}");
-	$form[]=$tpl->field_checkbox("UfdbDebugAll","{verbose_mode}",$UfdbDebugAll,false,"");
-	$form[]=$tpl->field_numeric("ufdbguardReloadTTL","{minimum_reload_interval} {minutes}",$ufdbguardReloadTTL);
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","UfdbDatabasesInMemory","{UfdbDatabasesInMemory}",$UfdbDatabasesInMemory,false,"{UfdbDatabasesInMemory_explain}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","DisableExpressionList","{DisableExpressionLists}",$DisableExpressionList,false,"{DisableExpressionLists_explain}");
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","UfdbDebugAll","{verbose_mode}",$UfdbDebugAll,false,"");
+	$form[]=ufdbrules_meta_fld($tpl,"field_numeric","ufdbguardReloadTTL","{minimum_reload_interval} {minutes}",$ufdbguardReloadTTL);
 	$form[]=$tpl->field_numeric("UfdbGuardThreads","Threads",$UfdbGuardThreads);
-	$form[]=$tpl->field_numeric("UfdbGuardMaxUrisize","{urls_max_size}",$UfdbGuardMaxUrisize);
+	$form[]=ufdbrules_meta_fld($tpl,"field_numeric","UfdbGuardMaxUrisize","{urls_max_size}",$UfdbGuardMaxUrisize);
 	
 	
-	$form[]=$tpl->field_numeric("RefreshUserList","{refreshuserlist} {minutes}",$RefreshUserList);
-	$form[]=$tpl->field_numeric("RefreshDomainList","{refreshdomainlist} {minutes}",$RefreshDomainList);
-	$form[]=$tpl->field_checkbox("StripDomainFromUsername","{strip-domain-from-username}",$StripDomainFromUsername,false,"");
+	$form[]=ufdbrules_meta_fld($tpl,"field_numeric","RefreshUserList","{refreshuserlist} {minutes}",$RefreshUserList);
+	$form[]=ufdbrules_meta_fld($tpl,"field_numeric","RefreshDomainList","{refreshdomainlist} {minutes}",$RefreshDomainList);
+	$form[]=ufdbrules_meta_fld($tpl,"field_checkbox","StripDomainFromUsername","{strip-domain-from-username}",$StripDomainFromUsername,false,"");
 
 
 
@@ -516,6 +535,10 @@ function parameters_popup():bool{
 
 function save():bool{
     $tpl=new template_admin();
+    // Verrou Artica Meta, relu cote serveur : champs en lecture seule et cles de verrou retires ;
+    // une cle tenue postee (forgee) = refus, rien d'ecrit.
+    $_POST=ufdbrules_meta_strip_post($_POST);
+    if(count(ufdbrules_meta_locked_keys(array_keys($_POST)))>0){ return ufdbrules_meta_refuse_post(); }
     $tpl->SAVE_POSTs();
     notifications_build();
     return true;

@@ -1,5 +1,5 @@
-<ENABLE_MAILMAN>Enable Mailing list service</ENABLE_MAILMAN>
-<ENABLE_MAILMAN_TEXT>Turn this feature to green in order to enable the Mailman mailing list distribution list</ENABLE_MAILMAN_TEXT>
+<ENABLE_MAILMAN>Ativar o servi&#231;o de lista de distribui&#231;&#227;o</ENABLE_MAILMAN>
+<ENABLE_MAILMAN_TEXT>Coloque esta funcionalidade a verde para ativar a lista de distribui&#231;&#227;o Mailman</ENABLE_MAILMAN_TEXT>
 <mailman_intro>Mailman is free software for managing electronic mail discussion and e-newsletter lists.[br]
 Mailman is integrated with the web, making it easy for users to manage their accounts and for list owners to administer their lists.[br]
 Mailman supports built-in archiving, automatic bounce processing, content filtering, digest delivery, spam filters, and more.[br]

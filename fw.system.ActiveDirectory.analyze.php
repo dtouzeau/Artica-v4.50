@@ -3,6 +3,8 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset
 
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : time etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["time"])){$_GET["time"]=intval($_GET["time"]);}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["test-nettestjoin"])){test_testjoin();exit;}
 if(isset($_GET["test-netadsinfo"])){test_netadsinfo();exit;}
@@ -69,9 +71,14 @@ function test_netadsinfo(){
 		$test_results=test_results($datas);
 	
 	}else{
-		$sock=new sockets();
-		$sock->getFrameWork("squid2.php?cached-kerberos-tickets=yes");
-		$dataZ=unserialize(@file_get_contents(PROGRESS_DIR."/kerberos-tickets-squid"));
+		// articarest /proxy/kerberos/keytab/entries : klist -k du keytab du proxy.
+		$dataZ=array();
+		$json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/kerberos/keytab/entries"));
+		if(is_object($json) && isset($json->Entries) && is_array($json->Entries)){
+			foreach($json->Entries as $entry){
+				$dataZ[]=array("NUM"=>$entry->kvno,"DATE"=>$entry->date,"ticket"=>$entry->principal);
+			}
+		}
 
 		if(count($dataZ)<2){
 			$datas[]="Kerberos tickets {failed}";

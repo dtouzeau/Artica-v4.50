@@ -1,45 +1,43 @@
-<access_mailman_config>Access to Mailman site configuration</access_mailman_config>
-<add_mailman>Add a new list</add_mailman>
-<add_mailman_pdns>Add this list to local DNS</add_mailman_pdns>
-<add_mailman_prompt>Give the name of your new distribution list</add_mailman_prompt>
-<add_mailman_text>This operation add a new distribution lits in mailman</add_mailman_text>
-<adminweb_mailman>Mailing list parameters</adminweb_mailman>
-<building_robots>Building robots email list</building_robots>
-<confirm_delete_mailman>Confirm deletion of this distribution list ?</confirm_delete_mailman>
-<DEFAULT_URL_PATTERN>Default url pattern</DEFAULT_URL_PATTERN>
-<emailhost>list's email domain name</emailhost>
+<access_mailman_config>Acesso &#224; configura&#231;&#227;o do site Mailman</access_mailman_config>
+<add_mailman>Adicionar uma nova lista</add_mailman>
+<add_mailman_pdns>Adicionar esta lista ao DNS local</add_mailman_pdns>
+<add_mailman_prompt>Indique o nome da sua nova lista de distribui&#231;&#227;o</add_mailman_prompt>
+<add_mailman_text>Esta opera&#231;&#227;o adiciona uma nova lista de distribui&#231;&#227;o no mailman</add_mailman_text>
+<adminweb_mailman>Par&#226;metros da lista de distribui&#231;&#227;o</adminweb_mailman>
+<building_robots>Construindo a lista de e-mail de rob&#244;s</building_robots>
+<confirm_delete_mailman>Confirmar a exclus&#227;o desta lista de distribui&#231;&#227;o?</confirm_delete_mailman>
+<DEFAULT_URL_PATTERN>Padr&#227;o de URL padr&#227;o</DEFAULT_URL_PATTERN>
+<emailhost>Nome de dom&#237;nio de e-mail da lista</emailhost>
 <global_settings>Configuraç%C3µes globais</global_settings>
-<global_settings_text>Define parameters of all mailman lists</global_settings_text>
-<listname>Distribution list name</listname>
-<MailManListAdministrator_text>Give the email address of the administrator of this new list</MailManListAdministrator_text>
-<MailManListAdminPassword_text>Give the password of the administrator list</MailManListAdminPassword_text>
-<mailman_admin>This an alias of -owner that reaches the list owner and list moderators directly.</mailman_admin>
-<mailman_admin_not_exists>This email address didn't exists, no such user</mailman_admin_not_exists>
-<mailman_bounces>This address receives bounces from members whose addresses have become either temporarily or permanently inactive.[br]
- The -bounces address is also a mail robot that processes bounces and automatically disables or removes members as configured 
- in the bounce processing settings.[br]
- Any bounce messages that are either unrecognized, or do not seem to contain member addresses, are forwarded to the list administrators.</mailman_bounces>
-<mailman_confirm>This address is another email robot, which processes confirmation messages for subscription and unsubscription requests.</mailman_confirm>
-<mailman_global_options>Global Mailman settings</mailman_global_options>
-<mailman_join>by sending a message to this address, a new member can request subscription to the list.[br]
- Both the Subject: header and body of such a message are ignored.[br]
-Note that mylist-subscribe@example.com is an alias for the -join address.</mailman_join>
-<mailman_leave>by sending a message to this address, a member can request unsubscription from the list.[br]
- As with the -join address, the Subject: header and body of the message is ignored.[br]
- Note that mylist-unsubscribe@example.com is an alias for the -leave address.
-</mailman_leave>
-<mailman_lists>Mailman lists</mailman_lists>
-<mailman_owner>This address reaches the list owner and list moderators directly.[br]
- This is the address you use if you need to contact the person or people in charge.</mailman_owner>
-<mailman_request>This address reaches a mail robot which processes email commands that can be used to set member subscription options, as well as process other commands.[br]</mailman_request>
-<mailman_subscribe>by sending a message to this address, a new member can request subscription to the list.</mailman_subscribe>
-<mailman_unsubscribe>by sending a message to this address, a member can request unsubscription from the list.</mailman_unsubscribe>
-<mailman_waiting_replication>This mailling list wait replication from the artica service</mailman_waiting_replication>
-<mailman_web_site>Mailman Web site</mailman_web_site>
-<mailman_web_site_text>Web Mailman administration console</mailman_web_site_text>
-<pdns_mailman_explain>This feature will add the Mailman front-end interface to the DNS managed by Artica.[br]
-If you use this server has your DNS, you will be able to browse the Mailman web interface after selecting the right IP address</pdns_mailman_explain>
-<PUBLIC_ARCHIVE_URL>Public Archive url</PUBLIC_ARCHIVE_URL>
-<subject_prefix>Subject prefix</subject_prefix>
-<urlhost>List's web interface host name</urlhost>
-<view_list_mailman>Display web interface</view_list_mailman>
+<global_settings_text>Definir os par&#226;metros de todas as listas mailman</global_settings_text>
+<listname>Nome da lista de distribui&#231;&#227;o</listname>
+<MailManListAdministrator_text>Indique o endere&#231;o de e-mail do administrador desta nova lista</MailManListAdministrator_text>
+<MailManListAdminPassword_text>Indique a senha do administrador da lista</MailManListAdminPassword_text>
+<mailman_admin>Este &#233; um alias de -owner que chega diretamente ao propriet&#225;rio da lista e aos moderadores da lista.</mailman_admin>
+<mailman_admin_not_exists>Este endere&#231;o de e-mail n&#227;o existe, n&#227;o existe tal usu&#225;rio</mailman_admin_not_exists>
+<mailman_bounces>Este endere&#231;o recebe os bounces dos membros cujos endere&#231;os se tornaram tempor&#225;ria ou permanentemente inativos.[br]
+ O endere&#231;o -bounces tamb&#233;m &#233; um rob&#244; de correio que processa os bounces e desativa ou remove automaticamente os membros conforme configurado nas configura&#231;&#245;es de processamento de bounces.[br]
+ Quaisquer mensagens de bounce que n&#227;o sejam reconhecidas, ou que n&#227;o pare&#231;am conter endere&#231;os de membros, s&#227;o encaminhadas para os administradores da lista.</mailman_bounces>
+<mailman_confirm>Este endere&#231;o &#233; outro rob&#244; de correio que processa as mensagens de confirma&#231;&#227;o para os pedidos de inscri&#231;&#227;o e cancelamento.</mailman_confirm>
+<mailman_global_options>Configura&#231;&#245;es globais do Mailman</mailman_global_options>
+<mailman_join>Ao enviar uma mensagem para este endere&#231;o, um novo membro pode solicitar a inscri&#231;&#227;o na lista.[br]
+ Tanto o cabe&#231;alho Subject: como o corpo de tal mensagem s&#227;o ignorados.[br]
+Note que mylist-subscribe@example.com &#233; um alias do endere&#231;o -join.</mailman_join>
+<mailman_leave>Ao enviar uma mensagem para este endere&#231;o, um membro pode solicitar o cancelamento da inscri&#231;&#227;o da lista.[br]
+ Tal como com o endere&#231;o -join, o cabe&#231;alho Subject: e o corpo da mensagem s&#227;o ignorados.[br]
+ Note que mylist-unsubscribe@example.com &#233; um alias do endere&#231;o -leave.</mailman_leave>
+<mailman_lists>Listas Mailman</mailman_lists>
+<mailman_owner>Este endere&#231;o chega diretamente ao propriet&#225;rio da lista e aos moderadores da lista.[br]
+ Este &#233; o endere&#231;o que voc&#234; usa se precisar contatar a pessoa ou pessoas respons&#225;veis.</mailman_owner>
+<mailman_request>Este endere&#231;o chega a um rob&#244; de correio que processa comandos de e-mail que podem ser usados para definir as op&#231;&#245;es de inscri&#231;&#227;o dos membros, bem como processar outros comandos.[br]</mailman_request>
+<mailman_subscribe>Ao enviar uma mensagem para este endere&#231;o, um novo membro pode solicitar a inscri&#231;&#227;o na lista.</mailman_subscribe>
+<mailman_unsubscribe>Ao enviar uma mensagem para este endere&#231;o, um membro pode solicitar o cancelamento da inscri&#231;&#227;o da lista.</mailman_unsubscribe>
+<mailman_waiting_replication>Esta lista de distribui&#231;&#227;o aguarda a replica&#231;&#227;o do servi&#231;o artica</mailman_waiting_replication>
+<mailman_web_site>Site Mailman</mailman_web_site>
+<mailman_web_site_text>Console de administra&#231;&#227;o web do Mailman</mailman_web_site_text>
+<pdns_mailman_explain>Este recurso adicionar&#225; a interface de front-end do Mailman ao DNS gerenciado pelo Artica.[br]
+Se usar este servidor como o seu DNS, poder&#225; navegar na interface web do Mailman ap&#243;s selecionar o endere&#231;o IP correto</pdns_mailman_explain>
+<PUBLIC_ARCHIVE_URL>URL do arquivo p&#250;blico</PUBLIC_ARCHIVE_URL>
+<subject_prefix>Prefixo do assunto</subject_prefix>
+<urlhost>Nome de host da interface web da lista</urlhost>
+<view_list_mailman>Exibir interface web</view_list_mailman>

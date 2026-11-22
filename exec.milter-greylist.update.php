@@ -79,7 +79,7 @@ function malware_patrol(){
 	$php=$unix->LOCATE_PHP5_BIN();
 	@unlink("/etc/postfix/malwarepatrol.db");
 	@copy($tmpfile, "/etc/postfix/malwarepatrol.db");
-	shell_exec("/usr/sbin/artica-phpfpm-service -smtpd-restrictions");
+	shell_exec("/usr/local/sbin/artica-postfix -smtpd-restrictions");
 }
 
 

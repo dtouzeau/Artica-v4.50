@@ -1,21 +1,21 @@
 <application>Software</application>
-<are_you_sure_to_install>Are you sure you want to install </are_you_sure_to_install>
-<check_installer>Checking installation initialization</check_installer>
-<control_center>Control center</control_center>
-<downloading_packages>Downloading packages...</downloading_packages>
-<failed_downloading_file>Failed downloading package</failed_downloading_file>
-<failed_parsing_file>Failed reading the configuration file</failed_parsing_file>
-<go_in_status>You can now select - Installations status -
-tab to see the installation progression</go_in_status>
-<installation_status>Installations status</installation_status>
-<install_roundcube>Install RoundCubeMail Now</install_roundcube>
-<only_debian_supported>Currently, only debian systems is supported... coming soon for others...</only_debian_supported>
-<operation_completed>Operation completed... see logs</operation_completed>
-<order_already_launched>Order already launched, delete logs to restart operation...</order_already_launched>
-<order_launched>Order added into queue, waiting process</order_launched>
-<perform_installation>Perform local installation...</perform_installation>
-<remove_roundcube>Remove RoundCubeMail</remove_roundcube>
-<roundcube_is_installed>RoundCubeMail is installed...</roundcube_is_installed>
-<roundcube_not_installed>RoundCube is not installed, Use the right button in order to install it or upgrade it in your system</roundcube_not_installed>
-<sendorder>Send order to artica process</sendorder>
-<text_refresh_index>The index file will be synchronize with artica web site...Please wait few seconds</text_refresh_index>
+<are_you_sure_to_install>Tem certeza de que deseja instalar</are_you_sure_to_install>
+<check_installer>Verificando a inicializa&#231;&#227;o da instala&#231;&#227;o</check_installer>
+<control_center>Central de controle</control_center>
+<downloading_packages>Baixando pacotes...</downloading_packages>
+<failed_downloading_file>Falha ao baixar o pacote</failed_downloading_file>
+<failed_parsing_file>Falha ao ler o arquivo de configura&#231;&#227;o</failed_parsing_file>
+<go_in_status>Agora voc&#234; pode selecionar a aba - Status das instala&#231;&#245;es -
+para ver o progresso da instala&#231;&#227;o</go_in_status>
+<installation_status>Status das instala&#231;&#245;es</installation_status>
+<install_roundcube>Instalar RoundCubeMail agora</install_roundcube>
+<only_debian_supported>Atualmente, apenas sistemas debian s&#227;o suportados... em breve para outros...</only_debian_supported>
+<operation_completed>Opera&#231;&#227;o conclu&#237;da... ver logs</operation_completed>
+<order_already_launched>Ordem j&#225; lan&#231;ada, exclua os logs para reiniciar a opera&#231;&#227;o...</order_already_launched>
+<order_launched>Ordem adicionada &#224; fila, aguardando processamento</order_launched>
+<perform_installation>Realizar instala&#231;&#227;o local...</perform_installation>
+<remove_roundcube>Remover RoundCubeMail</remove_roundcube>
+<roundcube_is_installed>RoundCubeMail est&#225; instalado...</roundcube_is_installed>
+<roundcube_not_installed>O RoundCube n&#227;o est&#225; instalado. Use o bot&#227;o &#224; direita para instal&#225;-lo ou atualiz&#225;-lo no seu sistema</roundcube_not_installed>
+<sendorder>Enviar ordem ao processo Artica</sendorder>
+<text_refresh_index>O arquivo de &#237;ndice ser&#225; sincronizado com o site da Artica... Aguarde alguns segundos</text_refresh_index>

@@ -1,34 +1,32 @@
-<add_new_poll>And new fetch rule</add_new_poll>
-<aka>Alternate DNS names of mailserver</aka>
-<ChangeFetchMailUserText>Give the recipient email address</ChangeFetchMailUserText>
-<cliktochange>Click to change the recipient</cliktochange>
-<doesntexists>Does not exists</doesntexists>
-<edit_rules>Edit user rules</edit_rules>
-<fetchall>Fetch all mess</fetchall>
-<fetchmail_explain>This section allows you to add rules in order to retrieve messages stored on your ISP mail server</fetchmail_explain>
-<get_mails_isp>Fetch mails from your ISP</get_mails_isp>
-<hotmail_text>You have choose "hotmail", the GotMail tool will be used for this rule, please give the full eMail address you used eg (username@hotmail.com,username@hotmail.fr...)</hotmail_text>
-<hotwayd_text>You have choose "HTTP", fetchmail will use local pop3 hotwayd proxy to get messages, Use your full username (e.g. hotmailuser@hotmail.com or
-      msnuser@msn.com) and password that you normally use when
-      accessing hotmail/msn/lycos/spray (eg username@lycos.fr...)</hotwayd_text>
-<import1>You find here rules found in your server, select one and import it to Artica database</import1>
-<import_local_rules>Import local fetchmail rules</import_local_rules>
-<install_fetchmail>Install Fetchmail Daemon</install_fetchmail>
-<interval>interval</interval>
-<keepmess>Keep messages</keepmess>
-<load_user_rules>Find users rules</load_user_rules>
-<load_user_rules_text>Give the email address of the user you want to find
-* caracter is supported</load_user_rules_text>
-<localuser>Local account</localuser>
+<add_new_poll>Neue Abrufregel hinzuf&#252;gen</add_new_poll>
+<aka>Alternative DNS-Namen des Mailservers</aka>
+<ChangeFetchMailUserText>Geben Sie die E-Mail-Adresse des Empf&#228;ngers an</ChangeFetchMailUserText>
+<cliktochange>Klicken Sie, um den Empf&#228;nger zu &#228;ndern</cliktochange>
+<doesntexists>Existiert nicht</doesntexists>
+<edit_rules>Benutzerregeln bearbeiten</edit_rules>
+<fetchall>Alle Nachrichten abrufen</fetchall>
+<fetchmail_explain>Dieser Abschnitt erm&#246;glicht es Ihnen, Regeln hinzuzuf&#252;gen, um auf Ihrem ISP-Mailserver gespeicherte Nachrichten abzurufen</fetchmail_explain>
+<get_mails_isp>Mails von Ihrem ISP abrufen</get_mails_isp>
+<hotmail_text>Sie haben &quot;hotmail&quot; gew&#228;hlt; das GotMail-Tool wird f&#252;r diese Regel verwendet. Bitte geben Sie die vollst&#228;ndige E-Mail-Adresse an, die Sie verwendet haben, z. B. (username@hotmail.com, username@hotmail.fr...)</hotmail_text>
+<hotwayd_text>Sie haben &quot;HTTP&quot; gew&#228;hlt; Fetchmail verwendet den lokalen pop3-hotwayd-Proxy, um Nachrichten abzurufen. Verwenden Sie Ihren vollst&#228;ndigen Benutzernamen (z. B. hotmailuser@hotmail.com oder msnuser@msn.com) und das Passwort, das Sie normalerweise f&#252;r den Zugriff auf hotmail/msn/lycos/spray verwenden (z. B. username@lycos.fr...)</hotwayd_text>
+<import1>Hier finden Sie die auf Ihrem Server gefundenen Regeln; w&#228;hlen Sie eine aus und importieren Sie sie in die Artica-Datenbank</import1>
+<import_local_rules>Lokale Fetchmail-Regeln importieren</import_local_rules>
+<install_fetchmail>Fetchmail-Daemon installieren</install_fetchmail>
+<interval>Intervall</interval>
+<keepmess>Nachrichten behalten</keepmess>
+<load_user_rules>Benutzerregeln finden</load_user_rules>
+<load_user_rules_text>Geben Sie die E-Mail-Adresse des Benutzers an, den Sie finden m&#246;chten
+Das *-Zeichen wird unterst&#252;tzt</load_user_rules_text>
+<localuser>Lokales Konto</localuser>
 <multidrop>Multidrop</multidrop>
-<no_users_in_database>No users found in database</no_users_in_database>
-<remoteuser>remote username</remoteuser>
+<no_users_in_database>Keine Benutzer in der Datenbank gefunden</no_users_in_database>
+<remoteuser>Remote-Benutzername</remoteuser>
 <rules>Regeln</rules>
-<select_user>Change the target user email</select_user>
-<server>Mailbox server</server>
-<server_options>Server Options</server_options>
+<select_user>Die Ziel-E-Mail des Benutzers &#228;ndern</select_user>
+<server>Postfachserver</server>
+<server_options>Serveroptionen</server_options>
 <ssl>SSL verwenden</ssl>
 <timeout>Auszeit</timeout>
-<timeout_text>Configures Fetchmail to give up after a certain interval of server inactivity.[br] If this value is not set, a default of 300 seconds is assumed</timeout_text>
-<tracepolls>Trace all polls</tracepolls>
-<user_option>user options</user_option>
+<timeout_text>Konfiguriert Fetchmail so, dass es nach einem bestimmten Intervall der Serverinaktivit&#228;t aufgibt.[br] Wenn dieser Wert nicht festgelegt ist, wird ein Standardwert von 300 Sekunden angenommen</timeout_text>
+<tracepolls>Alle Abfragen verfolgen</tracepolls>
+<user_option>Benutzeroptionen</user_option>

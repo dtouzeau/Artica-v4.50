@@ -1,6 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["addprivs"])){switchsitename();exit;}
@@ -19,13 +22,17 @@ function table_start():bool{
 	<script>LoadAjax('adminprivs-$ID','$page?gpid=$ID')</script>";
     return true;
 }
+
+
 function switchsitename():bool{
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
-	$serverid=$_GET["addprivs"];
+    $serverid=intval($_GET["addprivs"]);
     $group=$_GET["gpid"];
-    $q=new lib_sqlite(NginxGetDB());
-	$ligne=$q->mysqli_fetch_array("SELECT ID FROM adminprivs WHERE serviceid=$serverid AND item='$group'");
-    $ID=intval($ligne["ID"]);
+    $rows=fetch_adminprivs_for_group($group);
+    $ID=0;
+    foreach($rows as $r){
+        if(intval($r["serviceid"])===$serverid){$ID=intval($r["ID"]);break;}
+    }
     if($ID>0){
         $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec", ["action"=>"delete","table"=>"adminprivs","where"=>["ID"=>$ID]]);
         return true;
@@ -58,38 +65,32 @@ function table():bool{
 	$tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $gpid=$_GET["gpid"];
     $gpidMd5=md5($gpid);
-	$html[]="<table id='table-adminprivs-$gpidMd5' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{websites}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{allow}</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{websites}</th>";
+	$html[]="<th class='center'>{allow}</th>";
+	$html[]="</tr></thead><tbody id='priv-rows'>";
 
 	
 
-	$q=new lib_sqlite(NginxGetDB());
-	
-	
-	$sql="CREATE TABLE IF NOT EXISTS `adminprivs` ( `ID` INTEGER PRIMARY KEY AUTOINCREMENT, serviceid INTEGER, item text )";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "$q->mysql_error (".__LINE__.")\n$sql\n";}
-	$q->QUERY_SQL("CREATE INDEX IF NOT EXISTS KeyService ON adminprivs (serviceid,item)");
+    // Daemon owns the adminprivs schema (nginxsites/DBConf.go FixTables).
     $services=array();
-	$results=$q->QUERY_SQL("SELECT * FROM adminprivs WHERE item='$gpid'");
-    foreach ($results as $index=>$ligne){
-        $services[$ligne["serviceid"]]=$ligne["ID"];
+    $rows=fetch_adminprivs_for_group($gpid);
+    foreach ($rows as $ligne){
+        $services[intval($ligne["serviceid"])]=$ligne["ID"];
     }
-    if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return false;}
-
 
     $gpidEnc=urlencode($gpid);
-    $results=$q->QUERY_SQL("SELECT * FROM nginx_services ORDER BY zorder");
+    // Daemon's /nginx-db/list endpoint accepts ?order=col for ORDER BY.
+    $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/list/nginx_services?order=zorder");
+    $data=json_decode($resp,true);
+    $results=array();
+    if(is_array($data) && !empty($data["Status"]) && isset($data["rows"]) && is_array($data["rows"])){
+        $results=$data["rows"];
+    }
 	$TRCLASS=null;
 	foreach ($results as $index=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		$md5=md5(serialize($ligne));
 		$ID=$ligne["ID"];
         $Enabled=0;
@@ -101,48 +102,31 @@ function table():bool{
 
         $check=$tpl->icon_check($Enabled,"Loadjs('$page?addprivs=$ID&gpid=$gpidEnc')",null,"AsWebMaster");
 
-		$html[]="<tr class='$TRCLASS' id='$md5'>";
-        $html[]="<td style='width:1%;vertical-align: top !important;' nowrap><i class='".ico_earth."'></i>";
-		$html[]="<td><strong style='font-size:larger'>$servicename</strong>$serversnames</td>";
-		$html[]="<td style='width:1%' nowrap>$check</td>";
+		// La cellule d'icone ouvrait un <td> qu'elle ne fermait JAMAIS -- le
+		// navigateur avalait la cellule suivante dans la meme colonne.
+		$html[]="<tr id='$md5'>"
+		    ."<td><div class='awc-ident'>"
+		    ."<span class='awc-ico'><i class='".ico_earth."'></i></span>"
+		    ."<span><div class='awc-name'>".htmlspecialchars((string)$servicename)."</div>"
+		    ."<div class='awc-meta'>$serversnames</div></span>"
+		    ."</div></td>"
+		    ."<td class='center awc-nowrap'>$check</td>";
 		$html[]="</tr>";
 	}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
+	// L'ancien pied donnait colspan='3' a un tableau de DEUX colonnes.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>{showing} ".count($results)."</span>"
+	       ."<span class='awc-pg' id='priv-pager'></span></div>";
+	$html[]="</div></div>";
 
-	$html[]="<tr>";
-	$html[]="<td colspan='3'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-adminprivs-$gpidMd5').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-	</script>";
-	echo $tpl->_ENGINE_parse_body($html);
+	// awc_pager_js() APRES le tableau: les <tr> doivent exister dans le DOM.
+	echo awc_table_style()
+	    .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+	    ."<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>"
+	    .awc_pager_js(100,"priv-rows","priv-pager");
     return true;
 
-}
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
 }
 function extract_hosts($hosts):string{
     $f=array();

@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Artica Meta console
  * Tools to push any file from the repository by giving the type and the file path
@@ -6,6 +8,7 @@
 $GLOBALS["ALLOWED_TYPES"]=array("official"=>true, "servicepack"=>true, "hotfix"=>true, "software"=>true);
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 include_once dirname(__FILE__) . '/ressources/class.sockets.inc';
+include_once dirname(__FILE__) . '/ressources/class.netagent.label.inc';
 
 if(isset($_GET["byagent"])){byagent();exit;}
 if(isset($_GET["byagent-search"])){byagent_search();exit;}
@@ -25,7 +28,7 @@ function js():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_can_push($users)){
         return $tpl->js_error("{no_privileges}");
     }
     $type=$_GET["type"];
@@ -90,7 +93,7 @@ function byagent_search(){
     $html[]="<a href='javascript:void(0)' onclick=\"$('.agent-checkbox').prop('checked',false);\"><i class='far fa-square'></i> {deselect_all}</a>";
     $html[]="</div>";
 
-    $html[]="<table id='table-agents-$t' class='table table-stripped' data-page-size='100' data-paging='true'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=false style='width:1%'>&nbsp;</th>";
@@ -111,7 +114,7 @@ function byagent_search(){
                     continue;
                 }
             }
-            if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+            $TRCLASS=null;
             $id=$agent->id;
             $hostname=$agent->hostname;
             $ip=$agent->ip_address;
@@ -135,7 +138,7 @@ function byagent_search(){
             $sp=isset($agent->artica_service_pack) && $agent->artica_service_pack > 0 ? " SP{$agent->artica_service_pack}" : "";
             $html[]="<tr class='$TRCLASS'>";
             $html[]="<td style='width:1%'><input type='checkbox' class='agent-checkbox' value='$id'></td>";
-            $html[]="<td style='width:1%' nowrap>$hostname - $ip</td>";
+            $html[]="<td style='width:1%' nowrap>".netagent_pick_label($agent)."</td>";
             $html[]="<td style='width:99%' nowrap>$version$sp$hotfix</td>";
             $html[]="</tr>";
             $count++;
@@ -144,7 +147,7 @@ function byagent_search(){
 
     $html[]="</tbody>";
     $html[]="<tfoot><tr><td colspan='3'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
 
     if($count==0){
         $html[]=$tpl->div_warning("{no_agents_online}");
@@ -173,11 +176,12 @@ function byagent_search(){
     $html[]="}";
     $html[]="</script>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n",$html));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n",$html));
 }
 
 function push_to_agents(){
     $tpl=new template_admin();
+    if(!meta_can_push()){echo $tpl->post_error("{ERROR_NO_PRIVS}");return false;}   // infogerant, ou tenant vers SES noeuds
     $tpl->CLEAN_POST();
     $sock=new sockets();
     $type=isset($_POST["type"]) ? trim($_POST["type"]) : "";
@@ -239,7 +243,7 @@ function bygroups_search(){
     $html[]="<a href='javascript:void(0)' onclick=\"$('.group-checkbox').prop('checked',false);\"><i class='far fa-square'></i> {deselect_all}</a>";
     $html[]="</div>";
 
-    $html[]="<table id='table-groups-$t' class='table table-stripped' data-page-size='100' data-paging='true'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th data-sortable=false style='width:1%'>&nbsp;</th>";
@@ -261,7 +265,7 @@ function bygroups_search(){
                     continue;
                 }
             }
-            if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+            $TRCLASS=null;
             $id=$group->id;
             $name=$group->name;
             $desc=isset($group->description) ? $group->description : "";
@@ -278,7 +282,7 @@ function bygroups_search(){
 
     $html[]="</tbody>";
     $html[]="<tfoot><tr><td colspan='4'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
 
     if($count==0){
         $html[]=$tpl->div_warning("{no_groups_found}");
@@ -322,6 +326,7 @@ function bygroups_search(){
 
 function push_to_group(){
     $tpl=new template_admin();
+    if(!meta_can_push()){echo $tpl->post_error("{ERROR_NO_PRIVS}");return false;}   // infogerant, ou tenant vers SES noeuds
     $tpl->CLEAN_POST();
     $sock=new sockets();
     $type=isset($_POST["type"]) ? trim($_POST["type"]) : "";
@@ -391,7 +396,7 @@ function tasks_search(){
     $w="style='width:1%' nowrap";
 
     $html=array();
-    $html[]="<table class='table table-striped table-hover'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead>";
     $html[]="<tr>";
     $html[]="<th>{status}</th>";
@@ -442,7 +447,7 @@ function tasks_search(){
     }
 
     $html[]="</tbody>";
-    $html[]="</table>";
+    $html[]="</table></div></div></div>";
 
     if($hasRunning){
         $html[]="<script>setTimeout(function(){ LoadAjax('push-tasks-list','$page?tasks-search=yes&type=$type&path=$pathEnc'); },5000);</script>";
@@ -453,6 +458,7 @@ function tasks_search(){
 
 function task_delete(){
     $tpl=new template_admin();
+    if(!meta_can_push()){$tpl->js_error("{ERROR_NO_PRIVS}");return false;}
     $sock=new sockets();
     $id=$_GET["task-delete"];
     $type=isset($_GET["type"]) ? $_GET["type"] : "";
@@ -531,7 +537,7 @@ function task_details_popup():bool{
     $f[]="<div class='panel panel-default'>";
     $f[]="<div class='panel-heading'><strong>{operation_summary}</strong></div>";
     $f[]="<div class='panel-body'>";
-    $f[]="<table class='table table-condensed'>";
+    $f[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $f[]="<tr><td $w><strong>{status}:</strong></td><td style='width:99%'>$statusBadge</td></tr>";
     $f[]="<tr><td $w><strong>{file}:</strong></td><td nowrap>$filename</td></tr>";
     if($groupId>0){
@@ -542,7 +548,7 @@ function task_details_popup():bool{
     $f[]="<tr><td $w><strong>{failed}:</strong></td><td class='text-danger'><strong>$failCount</strong></td></tr>";
     $f[]="<tr><td $w><strong>{started}:</strong></td><td>$startedAt</td></tr>";
     $f[]="<tr><td $w><strong>{completed_at}:</strong></td><td>$completedAt</td></tr>";
-    $f[]="</table>";
+    $f[]="</table></div></div></div>";
     $f[]="</div></div></div></div>";
 
     if(isset($op->results) && is_array($op->results) && count($op->results)>0){
@@ -551,7 +557,7 @@ function task_details_popup():bool{
         $f[]="<div class='panel panel-default'>";
         $f[]="<div class='panel-heading'><strong>{agent_results}</strong></div>";
         $f[]="<div class='panel-body' style='max-height:400px;overflow-y:auto;'>";
-        $f[]="<table class='table table-striped table-condensed'>";
+        $f[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
         $f[]="<thead><tr><th>ID</th><th>{hostname}</th><th>{result}</th><th>{message}</th></tr></thead>";
         $f[]="<tbody>";
 
@@ -572,7 +578,7 @@ function task_details_popup():bool{
             $f[]="</tr>";
         }
 
-        $f[]="</tbody></table>";
+        $f[]="</tbody></table></div></div></div>";
         $f[]="</div></div></div></div>";
     }
 

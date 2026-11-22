@@ -1,19 +1,19 @@
-<about>Nmap is a security scanner originally written by Gordon Lyon (Fyodor).[br]
-It may be used to discover computers and services on a computer network,
-thus creating a "map" of the network.[br]
-Just like many simple port scanners, Nmap is capable of discovering passive services on a network despite
-the fact that such services aren't advertising themselves with a service discovery protocol.[br]
-In addition Nmap may be able to determine various details about the remote computers.[br]
-These include operating system, device type, uptime, software product used to run a service,
-exact version number of that product, presence of some firewall techniques and, on a local area network, even vendor of the remote network card.</about>
-<add_network>Add a new network to scan</add_network>
-<add_network_text>add IP range to scan in order to discover new remote computers</add_network_text>
-<ip>TCP/IP Address</ip>
-<mask>Network mask</mask>
-<networks_list>Networks list</networks_list>
-<NmapRotateMinutes>Pooling time (in minutes)</NmapRotateMinutes>
-<NmapScanEnabled>Enable scanning your network</NmapScanEnabled>
-<nmap_logs>NMAP events</nmap_logs>
-<nmap_logs_text>See events ordered by artica</nmap_logs_text>
-<perform_scan>Perform scan</perform_scan>
-<perform_scan_text>Perform a scan now and broacast your networks to discover nodes</perform_scan_text>
+<about>O Nmap &#233; um scanner de seguran&#231;a originalmente escrito por Gordon Lyon (Fyodor).[br]
+Pode ser usado para descobrir computadores e servi&#231;os em uma rede de computadores,
+criando assim um &quot;mapa&quot; da rede.[br]
+Assim como muitos scanners de portas simples, o Nmap &#233; capaz de descobrir servi&#231;os passivos em uma rede apesar
+do fato de tais servi&#231;os n&#227;o se anunciarem com um protocolo de descoberta de servi&#231;os.[br]
+Al&#233;m disso, o Nmap pode determinar v&#225;rios detalhes sobre os computadores remotos.[br]
+Estes incluem o sistema operacional, o tipo de dispositivo, o tempo de atividade, o produto de software usado para executar um servi&#231;o,
+o n&#250;mero exato da vers&#227;o desse produto, a presen&#231;a de algumas t&#233;cnicas de firewall e, em uma rede local, at&#233; mesmo o fabricante da placa de rede remota.</about>
+<add_network>Adicionar uma nova rede para varrer</add_network>
+<add_network_text>Adicione um intervalo de IP para varrer a fim de descobrir novos computadores remotos</add_network_text>
+<ip>Endere&#231;o TCP/IP</ip>
+<mask>M&#225;scara de rede</mask>
+<networks_list>Lista de redes</networks_list>
+<NmapRotateMinutes>Tempo de sondagem (em minutos)</NmapRotateMinutes>
+<NmapScanEnabled>Ativar a varredura da sua rede</NmapScanEnabled>
+<nmap_logs>Eventos NMAP</nmap_logs>
+<nmap_logs_text>Ver eventos ordenados pelo artica</nmap_logs_text>
+<perform_scan>Realizar varredura</perform_scan>
+<perform_scan_text>Realize uma varredura agora e difunda nas suas redes para descobrir n&#243;s</perform_scan_text>

@@ -1,28 +1,26 @@
-<add_local_domain_form>Give the local domain you want to store on this server</add_local_domain_form>
-<add_local_domain_text>Local domains are stored on this computer and must be deliver in it`s mailbox server.</add_local_domain_text>
+<add_local_domain_form>Geben Sie die lokale Dom&#228;ne an, die Sie auf diesem Server speichern m&#246;chten</add_local_domain_form>
+<add_local_domain_text>Local domains are stored on this computer and must be deliver in it's mailbox server.</add_local_domain_text>
 <add_relay_domain>Neue weitergeleitete Dom%C3%A4ne hinzuf%C3%BCgen</add_relay_domain>
-<add_relay_domain_text>All emails for a "relay domain" will be forwarded to an other dedicated server.</add_relay_domain_text>
-<autoaliases>Auto-aliase</autoaliases>
-<autoaliases_text>If you enable this feature, each user will have automatically a new aliase with this domain when you update it on create a new one</autoaliases_text>
-<duplicate_domain>Duplicate domain</duplicate_domain>
-<duplicate_domain_text>If you enable this feature, mails will be forwared to the local mailbox AND be duplicated to a remote target mail server</duplicate_domain_text>
-<introduction>
-This section help you to create smtp domains in your organization.[br]
-You have 2 ways to create your domains[br]
+<add_relay_domain_text>Alle E-Mails f&#252;r eine &quot;Relay-Dom&#228;ne&quot; werden an einen anderen dedizierten Server weitergeleitet.</add_relay_domain_text>
+<autoaliases>Auto-Alias</autoaliases>
+<autoaliases_text>Wenn Sie diese Funktion aktivieren, erh&#228;lt jeder Benutzer automatisch einen neuen Alias mit dieser Dom&#228;ne, wenn Sie sie aktualisieren oder eine neue erstellen</autoaliases_text>
+<duplicate_domain>Dom&#228;ne duplizieren</duplicate_domain>
+<duplicate_domain_text>Wenn Sie diese Funktion aktivieren, werden E-Mails an die lokale Mailbox weitergeleitet UND auf einen entfernten Ziel-Mailserver dupliziert</duplicate_domain_text>
+<introduction>Dieser Bereich hilft Ihnen, SMTP-Dom&#228;nen in Ihrer Organisation zu erstellen.[br]
+Sie haben 2 M&#246;glichkeiten, Ihre Dom&#228;nen zu erstellen[br]
 [ul]
-[li][strong]Local domain[/strong][br]
-local domains are stored on this computer and must be deliver in it's mailbox server.[/li]
-[li][strong]Relay domains[/strong][br]
-All emails for a "relay domain" will be forwarded to an other dedicated server.[/li][/ul]
-</introduction>
-<local_domain_map>Local domains used by your organization</local_domain_map>
-<mx_look>[b]MX lookup[/b][ul]
-[li][b]Red[/b]:disable resolve the computer in DNS[/li]
-[li][b]Green[/b]:Enable resolving the computer by DNS[/li]
+[li][strong]Lokale Dom&#228;ne[/strong][br]
+Lokale Dom&#228;nen werden auf diesem Computer gespeichert und m&#252;ssen auf seinem Mailbox-Server zugestellt werden.[/li]
+[li][strong]Relay-Dom&#228;nen[/strong][br]
+Alle E-Mails f&#252;r eine &quot;Relay-Dom&#228;ne&quot; werden an einen anderen dedizierten Server weitergeleitet.[/li][/ul]</introduction>
+<local_domain_map>Von Ihrer Organisation verwendete lokale Dom&#228;nen</local_domain_map>
+<mx_look>[b]MX-Abfrage[/b][ul]
+[li][b]Rot[/b]: Aufl&#246;sung des Computers im DNS deaktivieren[/li]
+[li][b]Gr&#252;n[/b]: Aufl&#246;sung des Computers &#252;ber DNS aktivieren[/li]
 [/ul]</mx_look>
-<mx_look_text>MX lookup</mx_look_text>
-<no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
-<relay_domain_map>others relayed domains used by your organization</relay_domain_map>
+<mx_look_text>MX-Abfrage</mx_look_text>
+<no_remote_domain_here>Derzeit ist keine Relay-Dom&#228;ne festgelegt</no_remote_domain_here>
+<relay_domain_map>andere von Ihrer Organisation verwendete Relay-Dom&#228;nen</relay_domain_map>
 <roundrobin>Round Robin</roundrobin>
 <roundrobin_text>DNS Round Robin ist eine Technik zur Lastverteilung, zum Lastausgleich oder zur Ausfallsicherheit, bei der mehrere redundante Mail-Dienst-Hosts bereitgestellt werden,[br]
 indem die Antworten des Domain Name Systems (DNS) auf Adressanfragen von Mailservern nach einem geeigneten statistischen Modell gesteuert werden.[br]
@@ -31,5 +29,5 @@ sondern mit einer Liste von IP-Adressen mehrerer Server, die identische Dienste 
 Die Reihenfolge, in der die IP-Adressen zur%C3%BCckgegeben werden, ist die Grundlage des Begriffs Round Robin.[br]
 Bei jeder DNS-Antwort wird die Reihenfolge der IP-Adressen rotiert.[br]
 In der Regel versuchen IP-Clients, sich mit der zuerst zur%C3%BCckgegebenen Adresse zu verbinden, sodass sich die Gesamtlast auf mehrere Server verteilt.</roundrobin_text>
-<target_computer_name>Target server name or IP</target_computer_name>
+<target_computer_name>Name oder IP des Zielservers</target_computer_name>
 <target_computer_port>Port</target_computer_port>

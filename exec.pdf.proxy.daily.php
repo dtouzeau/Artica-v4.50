@@ -472,18 +472,15 @@ function build_daily_report($requested_date,$subject,$description,$targetpath){
 
     $text=$subject;
     $pdf->Cell( 0, 10, $text, 0, 0, 'R' );
-    $pdf->SetX($pdf->LMargin);
     //$pdf->Text(116,30,$text);
     $pdf->Ln();
     $pdf->SetFont('Lato-Thin','',16);
     //$pdf->Text(165,40,"$requested_date");
     $pdf->Cell( 0, 15, $requested_date, 0, 0, 'R' );
-    $pdf->SetX($pdf->LMargin);
     $pdf->Ln();
     $pdf->SetFont('Lato-Thin','',14);
     //$pdf->Text(50,60,"$description");
     $pdf->Cell(0,70,$description,0,0,'C');
-    $pdf->SetX($pdf->LMargin);
     $logo="/usr/share/artica-postfix/img/logo-doc.png";
     $pdf->Image($logo,112,198);
     $pdf->Ln();
@@ -1121,7 +1118,7 @@ function top_blocked_sites_why($requested_date){
     if(!$q->ok){echo $q->mysql_error."\n";}
 
     while ($ligne = pg_fetch_assoc($results)) {
-        $why=$BLOCKED_TYPES[$ligne["block"]];
+        $why=$BLOCKED_TYPES[$ligne["block"]] ?? "HTTP {$ligne["block"]}";
         $hits=$ligne["hits"];
         $graph->ydata[]=$why;
         $graph->xdata[]=$hits;

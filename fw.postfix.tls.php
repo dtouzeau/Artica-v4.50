@@ -92,16 +92,11 @@ function Static_form():bool{
 
 
     if(preg_match("#SUB:([0-9]+)#",$PostFixMasterCertificate,$re)){
-        $db="/home/artica/SQLITE/certificates.db";
-        if(isset($_SESSION["HARMPID"])){
-            $gpid=intval($_SESSION["HARMPID"]);
-            if($gpid>0){
-                $db="/home/artica/SQLITE/certificates.$gpid.db";
-            }
-        }
-        $q=new lib_sqlite($db);
-        $ligne=$q->mysqli_fetch_array("SELECT commonName FROM subcertificates WHERE ID=$re[1]");
-        $PostFixMasterCertificate=$ligne["commonName"]."-$re[1]";
+        include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
+        $sub=$cdb->subGetById(intval($re[1]));
+        $cn=is_object($sub)?(string)($sub->commonName ?? ""):"";
+        $PostFixMasterCertificate=$cn."-$re[1]";
     }
 
     $fleche="&nbsp;<i class='".ico_arrow_right."'></i>&nbsp;";
@@ -118,15 +113,16 @@ function Static_form():bool{
         $tpl->table_form_field_text("TLS {remote_servers}", $tls, ico_certificate);
         $exlude="";
 
+        // Pentest 2026-11-04 : listes de chiffrements / certificat (configuration) affiches sans encodage (XSS stockee).
         if(strlen($smtp_tls_exclude_ciphers)>2) {
-            $exlude="&nbsp;{exclude} <span style='text-transform:initial'>$smtp_tls_exclude_ciphers</span>";
+            $exlude="&nbsp;{exclude} <span style='text-transform:initial'>".req_html($smtp_tls_exclude_ciphers)."</span>";
         }
 
         $tpl->table_form_field_text("{smtpd_tls_mandatory_ciphers}",
             "{".$smtp_tls_mandatory_ciphers."}$exlude", ico_certificate);
         if(strlen($smtp_cipherlist)>2){
             $tpl->table_form_field_text("Ciphers",
-                "<span style='text-transform:initial;font-size:12px'>$smtp_cipherlist</span>", ico_certificate);
+                "<span style='text-transform:initial;font-size:12px'>".req_html($smtp_cipherlist)."</span>", ico_certificate);
         }
     }
 
@@ -147,19 +143,19 @@ function Static_form():bool{
         $opts[] = "{timeout} $smtpd_tls_session_cache_timeout {seconds}";
 
         $opts_text=@implode(", ",$opts);
-        $tpl->table_form_field_text("{certificate}", " &laquo;$PostFixMasterCertificate&raquo;, $smtpd_tls_protocols, $opts_text", ico_certificate);
+        $tpl->table_form_field_text("{certificate}", " &laquo;".req_html($PostFixMasterCertificate)."&raquo;, ".req_html($smtpd_tls_protocols).", $opts_text", ico_certificate);
         $tpl->table_form_field_js("Loadjs('$page?tlsserv-ciphers-js=yes&instance-id=$instance_id')");
 
         if(strlen($smtpd_tls_exclude_ciphers)<2) {
             $smtpd_tls_exclude_ciphers = "EXP, MEDIUM, LOW, DES, 3DES, SSLv2";
         }
-        $exlude="&nbsp;{exclude} <span style='text-transform:initial'>$smtpd_tls_exclude_ciphers</span>";
+        $exlude="&nbsp;{exclude} <span style='text-transform:initial'>".req_html($smtpd_tls_exclude_ciphers)."</span>";
 
         $tpl->table_form_field_text("{smtpd_tls_mandatory_ciphers}",
             "{".$smtpd_tls_mandatory_ciphers."}$exlude", ico_certificate);
         if(strlen($tls_high_cipherlist)>2){
             $tpl->table_form_field_text("Ciphers",
-            "<span style='text-transform:initial;font-size:12px'>$tls_high_cipherlist</span>", ico_certificate);
+            "<span style='text-transform:initial;font-size:12px'>".req_html($tls_high_cipherlist)."</span>", ico_certificate);
         }
 
         $tpl->table_form_field_bool("{tls_preempt_cipherlist}",$tls_preempt_cipherlist,ico_server);
@@ -189,7 +185,7 @@ function Static_form():bool{
     $TINY_ARRAY["TITLE"]="TLS/SSL <small>$instancename</small>";
     $TINY_ARRAY["ICO"]="fa-brands fa-expeditedssl";
     $TINY_ARRAY["EXPL"]="{APP_POSTFIX_TEXT}";
-    $TINY_ARRAY["URL"]="instance-postffix-settings-$instance_id";
+    $TINY_ARRAY["URL"]="postfix-tls-$instance_id";
     $TINY_ARRAY["BUTTONS"]=null;
     $jstiny="Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
 
@@ -471,6 +467,6 @@ function save() {
     $tpl->CLEAN_POST();
     $main->SAVE_POSTS();
     $sock=new sockets();
-    $sock->REST_API("/postfix/tls/$instance_id");
+    $sock->REST_API_POSTFIX("/postfix/tls/$instance_id");
 
 }

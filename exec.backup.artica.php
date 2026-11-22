@@ -36,11 +36,8 @@ if(isset($argv[1])){
     if($argv[1]=="--snapshot-file"){snapshot_restore($argv[2]);exit();}
     if($argv[1]=="--snapshot-import"){snapshot_import();exit();}
     if($argv[1]=="--snapshot-retreive"){snapshot_retreive();exit();}
-    if($argv[1]=="--snapshot-remove"){snapshot_remove($argv[2]);exit();}
     if($argv[1]=="--test-nas"){$GLOBALS["VERBOSE"]=true;TestNas(null);exit();}
-    if($argv[1]=="--prepare-download"){snapshot_download($argv[2]);exit;}
     if($argv[1]=="--snapshot-uploaded"){snapshot_uploaded($argv[2]);exit;}
-    if($argv[1]=="--set-schedule"){set_schedule();exit;}
     if($argv[1]=="--replicate"){replicate_services_after_restoring();exit;}
 
 
@@ -48,25 +45,6 @@ if(isset($argv[1])){
 }
     backupevents("Depreciated....");
     exit();
-
-function set_schedule():bool{
-    $unix=new unix();
-    $BackupArticaSnaps=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupArticaSnaps"));
-
-    if($BackupArticaSnaps==0){
-        if(is_file("/etc/cron.d/backup-snaphosts")){
-            @unlink("/etc/cron.d/backup-snaphosts");
-            $unix->go_exec("/etc/init.d/cron reload");
-            return true;
-        }
-    }
-
-    $Array     = unserialize($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupArticaSnapsSched"));
-    $unix->Popuplate_cron_make("backup-snaphosts",
-        "{$Array["MIN"]} {$Array["HOUR"]} */{$Array["DAY"]} * *","/usr/sbin/artica-phpfpm-service  -create-snapshot");
-    return true;
-
-}
 
 function backupevents($text):bool{
 	$unix=new unix();
@@ -747,8 +725,12 @@ function snapshot_syslog($text):bool{
     return true;
 }
 
+// Seul appelant restant : un ancien cron backup-snaphosts migré par
+// exec.convert-to-sqlite.php. Le daemon réécrit ce cron (backup.ConvergeSnapshotSchedule).
 function snapshot(){
-    system("/usr/sbin/artica-phpfpm-service -create-snapshot");
+    $cmd="/usr/sbin/artica-phpfpm-service -create-snapshot";
+    if(is_file("/usr/sbin/artica-launch")){$cmd="/usr/sbin/artica-launch rest /snapshots/create $cmd";}
+    system($cmd);
 }
 
 function snapshot_to_nas($TargetFileName){
@@ -785,65 +767,7 @@ function snapshot_to_nas($TargetFileName){
 
 }
 
-function snapshot_download($filename){
-	$unix=new unix();
-	$SnapShotsStorageDirectory=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SnapShotsStorageDirectory"));
-	if($SnapShotsStorageDirectory==null){$SnapShotsStorageDirectory="/home/artica/snapshots";}
-	$BackupArticaBackUseNas=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupArticaBackUseNas"));
-	
-	progress(20,"{mounting}: $filename");
-	
-	if($BackupArticaBackUseNas==1){
-		progress(30,"{mounting}");
-		$mountPoint="/mnt/BackupArticaBackNAS";
-		if(!mount_nas()){return false;}
-		$hostname=$unix->hostname_g();
-		$SharedWorkdir="$mountPoint/$hostname/snapshots";
-		$SnapShotsStorageDirectory=$SharedWorkdir;
-	}
-	
-	if(!is_file("$SnapShotsStorageDirectory/$filename")){
-		echo "$SnapShotsStorageDirectory/$filename no such file\n";
-		progress(110,"$filename {failed}");
-		if($BackupArticaBackUseNas==1){$mount=new mount();if($mount->ismounted($mountPoint)){ $mount->umount($mountPoint);}}
-		return;
-	}
-	
-	progress(50,"$filename {copy}");
-	$targetf="/usr/share/artica-postfix/ressources/web/logs/$filename";
-	$Sourcef="$SnapShotsStorageDirectory/$filename";
-	$md5source=md5_file($Sourcef);
-	
-	
-	
-	if(is_file($targetf)){@unlink($targetf);}
-	if(!@copy("$SnapShotsStorageDirectory/$filename", $targetf)){
-		echo "$SnapShotsStorageDirectory/$filename copy failed\n";
-		$errors= error_get_last();
-		echo "COPY ERROR: ".$errors['type'];
-    	echo "\n".$errors['message'];
-    	echo "\nTarget: $targetf";
-		progress(110,"$filename {copy} {failed}");
-		if($BackupArticaBackUseNas==1){$mount=new mount();if($mount->ismounted($mountPoint)){ $mount->umount($mountPoint);}}
-		return false;
-	}
-	
-	$md5Dest=md5_file($targetf);
-	if($md5source<>$md5Dest){
-		echo "Source.....: $md5source\n";
-		echo "Destination: $md5Dest\n";
-		echo "----------------------------------\n";
-		echo "Match failed\n";
-		progress(110,"$filename {corrupted}");
-		@unlink($md5Dest);
-		return;
-	}
-	
-	@chmod($targetf,0755);
-    echo "[OK]: $targetf\n";
-	progress(100,"$filename {copy} {success}");
-	if($BackupArticaBackUseNas==1){$mount=new mount();if($mount->ismounted($mountPoint)){ $mount->umount($mountPoint);}}
-}
+
 
 function mount_nas(){
 	$BackupArticaBackLocalFolder=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupArticaBackLocalFolder"));
@@ -856,43 +780,6 @@ function mount_nas(){
 
 
 
-function snapshot_remove($filename){
-	$unix=new unix();
-	$BackupArticaBackUseNas=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("BackupArticaBackUseNas"));
-	$SnapShotsStorageDirectory=trim($GLOBALS["CLASS_SOCKETS"]->GET_INFO("SnapShotsStorageDirectory"));
-	if($SnapShotsStorageDirectory==null){$SnapShotsStorageDirectory="/home/artica/snapshots";}
-	progress(15,"{removing} $filename");
-	if($BackupArticaBackUseNas==1){
-		progress(30,"{mounting}");
-		$mountPoint="/mnt/BackupArticaBackNAS";
-		if(!mount_nas()){
-			progress(110,"{failed}");
-			return false;}
-		$hostname=$unix->hostname_g();
-		$SharedWorkdir="$mountPoint/$hostname/snapshots";
-		$SnapShotsStorageDirectory=$SharedWorkdir;
-	}
-	
-	if(!is_file("$SnapShotsStorageDirectory/$filename")){
-		progress(110,"{removing} $filename {failed} No FILE");
-		echo "$SnapShotsStorageDirectory/$filename no such file\n";
-		if($BackupArticaBackUseNas==1){$mount=new mount();if($mount->ismounted($mountPoint)){ $mount->umount($mountPoint);}}
-		return false;
-	}
-		
-	progress(90,"{removing} $filename");
-    $md5=md5_file("$SnapShotsStorageDirectory/$filename");
-    if($md5<>null){
-        $q=new lib_sqlite("/home/artica/SQLITE/snapshots.db");
-        $q->QUERY_SQL("DELETE FROM snapshots WHERE zmd5='$md5'");
-    }
-	@unlink("$SnapShotsStorageDirectory/$filename"); 
-	
-	progress(95,"{scanning} $SnapShotsStorageDirectory");
-    system("/usr/share/artica-postfix/bin/articarest -scan-snapshot");
-	progress(100,"{scanning} {success}");
-    return true;
-}
 function backup_mysql_artica_backup($BaseWorkDir){
 	$unix=new unix();
 	$password=null;
@@ -1137,7 +1024,7 @@ function restore(){
 	
 	$squidbin=$unix->LOCATE_SQUID_BIN();
 	$php=$unix->LOCATE_PHP5_BIN();
-	if(is_file($squidbin)){shell_exec("$php /usr/share/artica-postfix/exec.squid.php --build --force"); }
+	if(is_file($squidbin)){system(is_file("/usr/sbin/artica-launch")?"/usr/sbin/artica-launch rest /proxy/reconfigure/wait /usr/sbin/artica-phpfpm-service -reconfigure-proxy":"/usr/sbin/artica-phpfpm-service -reconfigure-proxy"); }
 	progress(100,"{success}");
 	$mount=new mount("/var/log/artica-postfix/backup.debug");
 	if($mount->ismounted($mountPoint)){ $mount->umount($mountPoint);}

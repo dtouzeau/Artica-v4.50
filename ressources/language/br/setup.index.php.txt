@@ -1,21 +1,21 @@
-<available_version>Available version</available_version>
-<CONNEXIONS_FILTERS_PRODUCTS>connections filters softwares</CONNEXIONS_FILTERS_PRODUCTS>
-<CONTENTS_FILTERS_PRODUCTS>contents filters sofwtares</CONTENTS_FILTERS_PRODUCTS>
-<CORE_PRODUCTS>core softwares</CORE_PRODUCTS>
-<current_version>Current version</current_version>
-<installation_lauched>Installation has been launched in background,
-you will see the status of the setup in few times</installation_lauched>
+<available_version>Vers&#227;o dispon&#237;vel</available_version>
+<CONNEXIONS_FILTERS_PRODUCTS>Software de filtros de conex&#245;es</CONNEXIONS_FILTERS_PRODUCTS>
+<CONTENTS_FILTERS_PRODUCTS>Software de filtros de conte&#250;do</CONTENTS_FILTERS_PRODUCTS>
+<CORE_PRODUCTS>Software de n&#250;cleo</CORE_PRODUCTS>
+<current_version>Vers&#227;o atual</current_version>
+<installation_lauched>A instala&#231;&#227;o foi iniciada em segundo plano,
+voc&#234; ver&#225; o status da configura&#231;&#227;o em breve</installation_lauched>
 <install_upgrade>Instalaç%C3£o ou Upgrade</install_upgrade>
-<LICENSED_FILTERS_PRODUCTS>Commercial filters softwares</LICENSED_FILTERS_PRODUCTS>
-<MAIL_TOOLS>Mail tools</MAIL_TOOLS>
-<proxy_packages>Proxy softwares</proxy_packages>
-<refresh_index_file>Refresh index file (test connection)</refresh_index_file>
-<setup_index_explain>This section allow you to install applications that is not compiled or not installed correctly by your distribution[br]
-In some cases softwares must be comiled with specifics tokens to be more usefull.[br]
-This section allow you to send order to install softwares...</setup_index_explain>
-<smtp_packages>Messaging softwares</smtp_packages>
+<LICENSED_FILTERS_PRODUCTS>Software de filtros comerciais</LICENSED_FILTERS_PRODUCTS>
+<MAIL_TOOLS>Ferramentas de e-mail</MAIL_TOOLS>
+<proxy_packages>Software de proxy</proxy_packages>
+<refresh_index_file>Atualizar arquivo de &#237;ndice (testar conex&#227;o)</refresh_index_file>
+<setup_index_explain>Esta se&#231;&#227;o permite que voc&#234; instale aplica&#231;&#245;es que n&#227;o est&#227;o compiladas ou n&#227;o est&#227;o instaladas corretamente pela sua distribui&#231;&#227;o[br]
+Em alguns casos, o software deve ser compilado com tokens espec&#237;ficos para ser mais &#250;til.[br]
+Esta se&#231;&#227;o permite que voc&#234; envie a ordem de instalar software...</setup_index_explain>
+<smtp_packages>Software de mensagens</smtp_packages>
 <software>Software</software>
-<STATS_TOOLS>Statistics softwares</STATS_TOOLS>
-<stat_packages>Statistics softwares</stat_packages>
+<STATS_TOOLS>Software de estat&#237;sticas</STATS_TOOLS>
+<stat_packages>Software de estat&#237;sticas</stat_packages>
 <system_packages>Pacotes de sistemas</system_packages>
-<web_packages>web/groupware softwares</web_packages>
+<web_packages>Software web/groupware</web_packages>

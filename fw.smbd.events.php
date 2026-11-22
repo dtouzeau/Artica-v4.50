@@ -94,6 +94,8 @@ function search(){
 		if(preg_match("#(Warning)#i", $line)){$class="text-warning";}
 		if(preg_match("#(starting|listening)#i", $line)){$class="text-success";}
 		
+		// Pentest 2026-11-04 : ligne de journal smbd (donnee externe) affichee sans encodage (XSS stockee).
+		$line=req_html($line);
 		$html[]="<tr>
 				<td class='$class'>$line</td>
 				</tr>";
@@ -101,7 +103,7 @@ function search(){
 	}
 	
 	$html[]="</tbody></table>";
-	$html[]="<div><i>".@file_get_contents(PROGRESS_DIR."/smbd.syslog.pattern")."</i></div>";
+	$html[]="<div><i>".req_html(@file_get_contents(PROGRESS_DIR."/smbd.syslog.pattern"))."</i></div>";
 	echo @implode("\n", $html);
 	
 	

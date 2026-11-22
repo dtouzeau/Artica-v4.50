@@ -11,14 +11,11 @@ if(isset($_POST["connection-delete"])){connection_delete_perform();exit;}
 if(isset($_GET["connection-popup"])){connection_popup();exit;}
 if(isset($_GET["connection-popup1"])){connection_popup1();exit;}
 if(isset($_POST["connexion_name"])){connection_save();exit;}
-if(isset($_GET["build-status"])){build_status();exit;}
 if(isset($_GET["refresh"])){refesh_js();exit;}
-if(isset($_GET["refresh-tr"])){refresh_tr();exit;}
 if(isset($_GET["start-vpn"])){start_vpn();exit;}
 if(isset($_GET["stop-vpn"])){stop_vpn_ask();exit;}
 if(isset($_POST["stop-vpn"])){stop_vpn_perform();exit;}
 if(isset($_GET["connection-enable"])){connection_enable();exit;}
-if(isset($_GET["searchlogs"])){searchlogs();exit;}
 if(isset($_GET["routing-start"])){routing_start();exit;}
 if(isset($_POST["routes"])){routing_save();exit;}
 
@@ -72,7 +69,7 @@ function stop_vpn_ask(){
 }
 
 function stop_vpn_perform(){
-    $ID=$_POST["stop-vpn"];
+    $ID=intval($_POST["stop-vpn"]);
     $sock=new sockets();
     $sock->getFrameWork("pptp.client.php?stop-vpn=$ID");
 
@@ -101,7 +98,7 @@ function connection_js(){
 function start_vpn(){
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $ID=$_GET["start-vpn"];
+    $ID=intval($_GET["start-vpn"]);
     $sock=new sockets();
     $sock->getFrameWork("pptp.client.php?start-vpn=$ID");
     header("content-type: application/x-javascript");
@@ -383,7 +380,8 @@ function table(){
 
 function refesh_js(){
     header("content-type: application/x-javascript");
-    $ID=$_GET["refresh"];
+    // Pentest 2026-11-04 : refresh etait concatene dans la requete.
+    $ID=intval($_GET["refresh"]);
     $GLOBALS["CLASS_SOCKETS"]->getFrameWork("pptp.client.php?status=yes");
     $q=new lib_sqlite("/home/artica/SQLITE/pptp.db");
     $ligne=$q->mysqli_fetch_array("SELECT * FROM connections WHERE ID=$ID");
@@ -484,10 +482,13 @@ function build_tr($ligne){
 function connection_save(){
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$ID=$_POST["ID"];
+	// Pentest 2026-11-04 : ID et les noms de champs de $_POST etaient concatenes dans la requete.
+	$ID=intval($_POST["ID"]);
 	unset($_POST["ID"]);
     $q=new lib_sqlite("/home/artica/SQLITE/pptp.db");
 	foreach ($_POST as $key=>$val){
+        $key=preg_replace('/[^A-Za-z0-9_]/','',strval($key));
+        if($key==""){continue;}
         $val=$q->sqlite_escape_string2($val);
 	    $fields[]="$key";
 	    $add[]="'$val'";
@@ -502,7 +503,7 @@ function connection_save(){
         $add[]="'$md5'";
         $sql="INSERT INTO connections (".@implode(",",$fields).") VALUES (".@implode(",",$add).")";
         $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "jserror:$q->mysql_error{$sql}";return true;}
+        if(!$q->ok){echo (new template_admin())->post_error("$q->mysql_error{$sql}");return true;}
         $ligne=$q->mysqli_fetch_array("SELECT ID FROM connections WHERE `md5`='$md5'");
         $ID=$ligne["ID"];
         $sock=new sockets();
@@ -511,7 +512,7 @@ function connection_save(){
     }
 
 	$q->QUERY_SQL("UPDATE connections SET ".@implode(",",$upd)." WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:$q->mysql_error";return true;}
+    if(!$q->ok){echo (new template_admin())->post_error("$q->mysql_error");return true;}
     return true;
 
 	

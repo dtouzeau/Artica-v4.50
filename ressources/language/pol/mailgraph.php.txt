@@ -1,2 +1,2 @@
-<ERROR_NO_IMG>Sorry currently there is no mailgraph pictures in img folder, try later</ERROR_NO_IMG>
-<title>Postfix statistics</title>
+<ERROR_NO_IMG>Przepraszamy, obecnie w folderze img nie ma obraz&#243;w mailgraph, spr&#243;buj p&#243;&#378;niej</ERROR_NO_IMG>
+<title>Statystyki Postfix</title>

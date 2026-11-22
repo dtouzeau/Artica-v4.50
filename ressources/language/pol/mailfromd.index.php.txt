@@ -1,14 +1,14 @@
-<about>Mailfromd is a general-purpose mail filtering daemon. It is able to interact with any MTA that supports milter or pmilter protocol,
-such as Sendmail , Postfix and MeTA1..[br]
-It is able to filter both incoming and outgoing messages using criteria of arbitrary complexity,[br]
-supplied by the administrator in the form of a script file.</about>
-<apply_to_server>Apply settings</apply_to_server>
-<close_windows>All operations are completed, you can close this windows...</close_windows>
-<enabled_plugins>Plugins Enabled</enabled_plugins>
-<global_settings>Plugins & settings</global_settings>
-<save_to_ldap_success> save settings to LDAP server</save_to_ldap_success>
-<save_to_server_success>Success Send order to framework </save_to_server_success>
-<script>Mailfromd user script</script>
-<service_mailfromd_failed>Failed !!! the service did not respond in time,check your script</service_mailfromd_failed>
-<service_mailfromd_suc>Success,  all settings are now in production mode</service_mailfromd_suc>
-<USE_CLIENT_SCRIPT>Use your script instead artica script</USE_CLIENT_SCRIPT>
+<about>Mailfromd to demon filtrowania poczty og&#243;lnego przeznaczenia. Potrafi wsp&#243;&#322;pracowa&#263; z dowolnym MTA obs&#322;uguj&#261;cym protok&#243;&#322; milter lub pmilter,
+takim jak Sendmail, Postfix i MeTA1.[br]
+Potrafi filtrowa&#263; zar&#243;wno wiadomo&#347;ci przychodz&#261;ce, jak i wychodz&#261;ce, u&#380;ywaj&#261;c kryteri&#243;w o dowolnej z&#322;o&#380;ono&#347;ci,[br]
+dostarczonych przez administratora w postaci pliku skryptu.</about>
+<apply_to_server>Zastosuj ustawienia</apply_to_server>
+<close_windows>Wszystkie operacje zosta&#322;y zako&#324;czone, mo&#380;esz zamkn&#261;&#263; to okno...</close_windows>
+<enabled_plugins>W&#322;&#261;czone wtyczki</enabled_plugins>
+<global_settings>Wtyczki i ustawienia</global_settings>
+<save_to_ldap_success>zapisz ustawienia na serwerze LDAP</save_to_ldap_success>
+<save_to_server_success>Sukces, polecenie wys&#322;ane do frameworka</save_to_server_success>
+<script>Skrypt u&#380;ytkownika Mailfromd</script>
+<service_mailfromd_failed>Niepowodzenie!!! us&#322;uga nie odpowiedzia&#322;a na czas, sprawd&#378; sw&#243;j skrypt</service_mailfromd_failed>
+<service_mailfromd_suc>Sukces, wszystkie ustawienia s&#261; teraz w trybie produkcyjnym</service_mailfromd_suc>
+<USE_CLIENT_SCRIPT>U&#380;yj swojego skryptu zamiast skryptu artica</USE_CLIENT_SCRIPT>

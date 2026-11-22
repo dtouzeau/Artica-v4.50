@@ -2,6 +2,7 @@
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 include_once(dirname(__FILE__)."/ressources/class.ldap-extern.inc");
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
@@ -124,31 +125,32 @@ function member_profile(){
 	
 	
 	
-	$html[]="<table class='table table-striped'>";
-	$html[]="<thead>";
-	$html[]="<tr><th align='right'>{field}</th><th>{value}</th></tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-	$MAIN=$HASH[0];
+	$rows=array();
+	$MAIN=isset($HASH[0])?$HASH[0]:array();
 	foreach ($attrs as $attribute){
 		$attribute=strtolower($attribute);
 		if(!isset($MAIN[$attribute])){continue;}
-		$count=$MAIN[$attribute]["count"];
+		$count=intval($MAIN[$attribute]["count"]);
 		if($count==0){continue;}
-		$html[]="<tr>";
-		$html[]="<td align='right'><strong>$attribute:</strong></td>";
 		$pp=array();
 		for($i=0;$i<$count;$i++){
-			$pp[]=$MAIN[$attribute][$i];
+			$pp[]=htmlspecialchars((string)$MAIN[$attribute][$i]);
 		}
-		$html[]="<td>".@implode(", " ,$pp)."</td></tr>";
-		
+		$rows[]="<tr><td class='awc-mono'><strong>".htmlspecialchars($attribute)."</strong></td>"
+			   ."<td>".@implode(", ",$pp)."</td></tr>";
 	}
-	$html[]="</tbody>";
-	$html[]="</table>";
-	
-	echo $tpl->_ENGINE_parse_body($html);
+
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
+	$html[]="<thead><tr><th>{field}</th><th>{value}</th></tr></thead><tbody>";
+	if(count($rows)==0){
+		$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div></div></div>";
+
+	echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
 }
 
 function group_members(){
@@ -160,32 +162,43 @@ function group_members(){
 	VERBOSE("->HashUsersFromGroupDN($dn)",__LINE__);
 	$Members=$ldap->HashUsersFromGroupDN($dn);
 	
-	$html[]="<table class='table table-striped'>";
-	$html[]="<thead>";
-	$html[]="<tr><th align='left'>&nbsp;</th><th align='left'>{member}</th><th>{path}</th></tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-
 	$suffix=$ldap->ldap_suffix;
-	
+	$rows=array();
+	if(!is_array($Members)){$Members=array();}
 	foreach ($Members as $uid=>$none){
-		if(trim($uid)==null){continue;}
+		if(trim((string)$uid)==null){continue;}
 		$DN=$ldap->GETDN_FROM_UID($uid);
 		$DNEnc=urlencode($DN);
-        $DN=str_replace($suffix,"",$DN);
-
-		$jsGRP="Loadjs('$page?member-js=$DNEnc')";
+		$DN=str_replace($suffix,"",$DN);
 		if(strlen($DN)>70){$DN=substr($DN,0,67)."...";}
-		$html[]="<tr>";
-        $html[]="<td align='left' width='1%' nowrap><i class='fa fa-user'></i>&nbsp;</td>";
-		$html[]="<td align='left' width='1%' nowrap><strong>$uid</strong></td>";
-		$html[]="<td>".$tpl->td_href($DN,null,$jsGRP)."</td></tr>";
+		$jsGRP="Loadjs('$page?member-js=$DNEnc')";
+
+		$h ="<tr>";
+		$h.="<td><div class='awc-ident'>";
+		$h.="<span class='awc-ico'><i class='fas fa-user'></i></span>";
+		$h.="<span><span class='awc-name'>".$tpl->td_href(htmlspecialchars((string)$uid),"{click_to_edit}",$jsGRP)."</span></span>";
+		$h.="</div></td>";
+		$h.="<td class='awc-mono'>".htmlspecialchars($DN)."</td>";
+		$h.="</tr>";
+		$rows[]=$h;
 	}
-	$html[]="</tbody>";
-	$html[]="</table>";
-	
-	echo $tpl->_ENGINE_parse_body($html);
+
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
+	$html[]="<thead><tr><th>{member}</th><th>{path}</th></tr></thead><tbody id='extgrpm-rows'>";
+	if(count($rows)==0){
+		$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_members}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span>";
+	$html[]="<span class='awc-pg' id='extgrpm-pager'></span></div>";
+	$html[]="</div></div>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.awc_pager_js(25,"extgrpm-rows","extgrpm-pager");
 }
 
 function member_groups(){
@@ -194,27 +207,40 @@ function member_groups(){
 	$dn=$_GET["member-groups"];
 	$ldap=new ldap_extern();
 
-	$html[]="<table class='table table-striped'>";
-	$html[]="<thead>";
-	$html[]="<tr><th align='right'>{group2}</th><th>{path}</th></tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
 	$Groups=$ldap->GetGroupsFromuser($dn);
-	
-	
+	if(!is_array($Groups)){$Groups=array();}
+
+	$rows=array();
 	foreach ($Groups as $GroupDN=>$GroupName){
-		if(trim($GroupName)==null){continue;}
-		$jsGRP="Loadjs('$page?group-js=".urlencode($GroupDN)."')";
-		$html[]="<tr>";
-		$html[]="<td align='right'><strong>$GroupName</strong></td>";
-		$html[]="<td>".$tpl->td_href($GroupDN,null,$jsGRP)."</td></tr>";
+		if(trim((string)$GroupName)==null){continue;}
+		$jsGRP="Loadjs('$page?group-js=".urlencode((string)$GroupDN)."')";
+
+		$h ="<tr>";
+		$h.="<td><div class='awc-ident'>";
+		$h.="<span class='awc-ico'><i class='far fa-users'></i></span>";
+		$h.="<span><span class='awc-name'>".$tpl->td_href(htmlspecialchars((string)$GroupName),"{click_to_edit}",$jsGRP)."</span></span>";
+		$h.="</div></td>";
+		$h.="<td class='awc-mono'>".htmlspecialchars((string)$GroupDN)."</td>";
+		$h.="</tr>";
+		$rows[]=$h;
 	}
-	$html[]="</tbody>";
-	$html[]="</table>";
-	
-	echo $tpl->_ENGINE_parse_body($html);
-	
+
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
+	$html[]="<thead><tr><th>{group2}</th><th>{path}</th></tr></thead><tbody id='extmbrg-rows'>";
+	if(count($rows)==0){
+		$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'><span>{showing} ".count($rows)." {items}</span>";
+	$html[]="<span class='awc-pg' id='extmbrg-pager'></span></div>";
+	$html[]="</div></div>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.awc_pager_js(25,"extmbrg-rows","extmbrg-pager");
 }
 
 
@@ -294,162 +320,132 @@ function table(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$ldap=new ldap_extern();
-	$t=time();
 	$stringtofind=url_decode_special_tool($_GET["search"]);
 	$stringtofind="*$stringtofind*";
 	$stringtofind=str_replace("**", "*", $stringtofind);
 	$stringtofind=str_replace("**", "*", $stringtofind);
-	
-	$MAIN_HASH=$ldap->UserAndGroupSearch($stringtofind,200);
-	
-	/*$html[]=$tpl->_ENGINE_parse_body("
-			<div class=\"btn-group\" data-toggle=\"buttons\">". 
-			$tpl->button_label_table("{new_member}", "Loadjs('$page?new-js=yes')", "far fa-user-plus","AllowAddUsers")."
 
-			</div>");
-	*/
-	$html[]=$tpl->_ENGINE_parse_body("
-			<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=false class='text-capitalize' data-type='text' width=1%>&nbsp;</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{displayname}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{email}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{phone}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{groups2}</th>";
-	
-	
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-	
-//	print_r($hash_full);
-	$TRCLASS=null;
+	$MAIN_HASH=$ldap->UserAndGroupSearch($stringtofind,200);
+	if(!is_array($MAIN_HASH)){$MAIN_HASH=array();}
+	if(!isset($MAIN_HASH["count"])){$MAIN_HASH["count"]=0;}
+
+	// Design awc-* : une fonction par type de ligne, assemblees dans $rows.
+	// Plus de footable ici: il reecrit les classes du <table> et ajoute son
+	// propre pager Bootstrap, etranger a la carte.
+	$rows=array();
 	for($i=0;$i<$MAIN_HASH["count"];$i++){
-		$description=null;
-		
+		if(!isset($MAIN_HASH[$i])){continue;}
 		$ligne=$MAIN_HASH[$i];
-		$objectclass=$ligne["objectclass"];
-		if(in_array("posixGroup", $objectclass)){
-			$displayname=$ligne["cn"][0];
-			$gidnumber=$ligne["gidnumber"][0];
-			if(isset($ligne["displayname"][0])){$displayname=$ligne["displayname"][0];}
-			if(isset($ligne["description"][0])){$description=$ligne["description"][0];}else{VERBOSE("description: Not found...",__LINE__);}
-			if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-			$js="Loadjs('$page?group-js=".urlencode($ligne["dn"])."')";
-			
-			if($description<>null){
-				VERBOSE("description: $description.",__LINE__);
-				$description="<br><small>{$description}</small>";
-			}else{
-				VERBOSE("$displayname: description: NULL",__LINE__);
-			}
-			
-			
-			$html[]="<tr class='$TRCLASS'>";
-			$html[]="<td class=\"center\"><div><i class='far fa-users'></i></div></td>";
-			$html[]="<td class=\"\">". $tpl->td_href($displayname,"{click_to_edit}",$js)."$description</td>";
-			$html[]="<td class=\"\">". $tpl->icon_nothing()."</td>";
-			$html[]="<td class=\"\">". $tpl->icon_nothing()."</td>";
-			$html[]="<td class=\"\">". $tpl->icon_nothing()."</td>";
-			$html[]="</tr>";
+		$objectclass=isset($ligne["objectclass"])?$ligne["objectclass"]:array();
+		if(!is_array($objectclass)){$objectclass=array();}
+		if(in_array("posixGroup",$objectclass)){
+			$rows[]=extldap_group_row($ligne,$tpl,$page);
 			continue;
 		}
-		
-		
-		
-		
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$displayname=null;
-		$givenname=null;
-		$uid=null;
-		$email_address=array();
-		$telephonenumber=array();
-		$GroupsTableau=null;
-		$sn=null;
-		$gps=array();
-		$text_class=null;
-		$description=null;
-		if(strpos($ligne["dn"],"dc=pureftpd,dc=organizations")>0){continue;}
-		if(isset($ligne["samaccountname"][0])){$uid=$ligne["samaccountname"][0];}
-		if(isset($ligne["userprincipalname"][0])){$email_address[]="<div>{$ligne["userprincipalname"][0]}</div>";}
-		if(isset($ligne["telephonenumber"][0])){$telephonenumber[]="<div>{$ligne["telephonenumber"][0]}</div>";}
-		if(isset($ligne["mobile"][0])){$telephonenumber[]="<div>{$ligne["mobile"][0]}</div>";}
-		if(isset($ligne["uid"][0])){$uid=$ligne["uid"][0];}
-		if(isset($ligne["mail"][0])){$email_address[]="{$ligne["mail"][0]}";}
-		if(isset($ligne["givenname"][0])){$givenname=$ligne["givenname"][0];}
-		if(isset($ligne["sn"][0])){$sn=$ligne["sn"][0];}
-		if(isset($ligne["description"][0])){$description=$ligne["description"][0];}else{VERBOSE("description: Not found...",__LINE__);}
-			
-		if($givenname<>null){if($sn<>null){ $displayname=" $givenname $sn"; }}
-		if($description<>null){
-			VERBOSE("description: $description.",__LINE__);
-			$description="<br><small>{$description}</small>";
-		}else{
-			VERBOSE("$displayname: description: NULL",__LINE__);
-		}
-			
-				
-		$Groups=$ldap->GetGroupsFromuser($uid);
-		
-		
-		foreach ($Groups as $GroupDN=>$GroupName){
-			if(trim($GroupName)==null){continue;}
-			
-			$jsGRP="Loadjs('$page?group-js=".urlencode($GroupDN)."')";
-				
-			$gps[]="<div><a href=\"javascript:blur();\" OnClick=\"javascript:$jsGRP\" style='text-decoration:underline'>$GroupName</a>$description</div>";
-			if(count($gps)>5){$gps[]="...";break;}
-				
-		}
-		$GroupsTableau=@implode(", ", $gps);
-        if(isset($ligne["displayname"][0])) {
-            if ($displayname == null) {
-                $displayname = trim($ligne["displayname"][0]);
-            }
-        }
-		if($displayname==null){$displayname=$uid;}
-		$dnenc=urlencode($ligne["dn"]);
-		$js="Loadjs('$page?member-js=$dnenc')";
-		
-		if(count($telephonenumber)==0){$telephonenumber[]=$tpl->icon_nothing();}
-		if(count($email_address)==0){$email_address[]=$tpl->icon_nothing();}
-		if($description<>null){
-			VERBOSE("description: $description.",__LINE__);
-			$description="<br><small>{$description}</small>";
-		}else{
-			VERBOSE("$displayname: description: NULL",__LINE__);
-		}
-		
-		$html[]="<tr class='$TRCLASS'>";
-		$html[]="<td class=\"center\"><div><i class='fa fa-user'></i></div></td>";
-		$html[]="<td class=\"$text_class\">". $tpl->td_href($displayname,"{click_to_edit}",$js)."$description</td>";
-		$html[]="<td class=\"$text_class\">". $tpl->td_href(@implode("", $email_address),"{click_to_edit}",$js)."</td>";
-		$html[]="<td class=\"$text_class\">". @implode("", $telephonenumber)."</td>";
-		$html[]="<td class=\"$text_class\">".@implode("",$gps)."</td>";
-		$html[]="</tr>";
+		if(isset($ligne["dn"]) && strpos((string)$ligne["dn"],"dc=pureftpd,dc=organizations")>0){continue;}
+		$rows[]=extldap_user_row($ligne,$ldap,$tpl,$page);
+	}
+	$c=count($rows);
 
-	
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl'>";
+	$html[]="<thead><tr>";
+	$html[]="<th>{displayname}</th>";
+	$html[]="<th>{email}</th>";
+	$html[]="<th>{phone}</th>";
+	$html[]="<th>{groups2}</th>";
+	$html[]="</tr></thead><tbody id='extldap-rows'>";
+	if($c==0){
+		$html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $c {items}</span>";
+	$html[]="<span class='awc-pg' id='extldap-pager'></span>";
+	$html[]="</div></div></div>";
+
+	// Le <script> est concatene APRES l'analyse: la regex #{(.+?)}# de
+	// _ENGINE_parse_body prendrait chaque accolade JavaScript pour un {token}.
+	$script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.$script
+		.awc_pager_js(50,"extldap-rows","extldap-pager");
+}
+
+// Un groupe de l'annuaire distant. La description passait en <small> collee au
+// nom; elle devient le sous-titre de la pastille d'identite.
+function extldap_group_row($ligne,$tpl,$page):string{
+	$displayname=isset($ligne["cn"][0])?(string)$ligne["cn"][0]:"";
+	if(isset($ligne["displayname"][0])){$displayname=(string)$ligne["displayname"][0];}
+	$description=isset($ligne["description"][0])?(string)$ligne["description"][0]:"";
+	$js="Loadjs('$page?group-js=".urlencode((string)$ligne["dn"])."')";
+
+	$h ="<tr>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='far fa-users'></i></span>";
+	$h.="<span><span class='awc-name'>".$tpl->td_href(htmlspecialchars($displayname),"{click_to_edit}",$js)."</span>";
+	if($description!==""){$h.="<div class='awc-meta'>".htmlspecialchars($description)."</div>";}
+	$h.="</span></div></td>";
+	$h.="<td><span class='awc-none'>&mdash;</span></td>";
+	$h.="<td><span class='awc-none'>&mdash;</span></td>";
+	$h.="<td><span class='awc-none'>&mdash;</span></td>";
+	$h.="</tr>";
+	return $h;
+}
+
+// Un membre de l'annuaire distant. Tous ces attributs partaient BRUTS dans le
+// HTML; la description etait meme reinjectee dans CHAQUE lien de groupe.
+function extldap_user_row($ligne,$ldap,$tpl,$page):string{
+	$uid="";
+	if(isset($ligne["samaccountname"][0])){$uid=(string)$ligne["samaccountname"][0];}
+	if(isset($ligne["uid"][0])){$uid=(string)$ligne["uid"][0];}
+
+	$email_address=array();
+	$telephonenumber=array();
+	if(isset($ligne["userprincipalname"][0])){$email_address[]=(string)$ligne["userprincipalname"][0];}
+	if(isset($ligne["mail"][0])){$email_address[]=(string)$ligne["mail"][0];}
+	if(isset($ligne["telephonenumber"][0])){$telephonenumber[]=(string)$ligne["telephonenumber"][0];}
+	if(isset($ligne["mobile"][0])){$telephonenumber[]=(string)$ligne["mobile"][0];}
+
+	$displayname=null;
+	$givenname=isset($ligne["givenname"][0])?(string)$ligne["givenname"][0]:null;
+	$sn=isset($ligne["sn"][0])?(string)$ligne["sn"][0]:null;
+	$description=isset($ligne["description"][0])?(string)$ligne["description"][0]:"";
+	if($givenname<>null){if($sn<>null){$displayname=trim("$givenname $sn");}}
+	if($displayname==null && isset($ligne["displayname"][0])){$displayname=trim((string)$ligne["displayname"][0]);}
+	if($displayname==null){$displayname=$uid;}
+
+	$gps=array();
+	$Groups=$ldap->GetGroupsFromuser($uid);
+	if(!is_array($Groups)){$Groups=array();}
+	foreach($Groups as $GroupDN=>$GroupName){
+		if(trim((string)$GroupName)==null){continue;}
+		$jsGRP="Loadjs('$page?group-js=".urlencode((string)$GroupDN)."')";
+		$gps[]="<span class='awc-chip'><span class='awc-chip-ico'><i class='fas fa-users'></i></span>"
+			  ."<a href=\"javascript:blur();\" OnClick=\"$jsGRP\">".htmlspecialchars((string)$GroupName)."</a></span>";
+		if(count($gps)>5){$gps[]="<span class='awc-none'>&hellip;</span>";break;}
 	}
 
+	$js="Loadjs('$page?member-js=".urlencode((string)$ligne["dn"])."')";
+	$mails=array();
+	foreach($email_address as $m){$mails[]="<div>".htmlspecialchars($m)."</div>";}
+	$phones=array();
+	foreach($telephonenumber as $p){$phones[]="<div>".htmlspecialchars($p)."</div>";}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='6'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-	<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-$t').footable({ \"filtering\": { \"enabled\": true },\"sorting\": {\"enabled\": true } } ); });
-
-</script>";
-
-			echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-
+	$h ="<tr>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fas fa-user'></i></span>";
+	$h.="<span><span class='awc-name'>".$tpl->td_href(htmlspecialchars($displayname),"{click_to_edit}",$js)."</span>";
+	if($description!==""){$h.="<div class='awc-meta'>".htmlspecialchars($description)."</div>";}
+	elseif($uid!==""){$h.="<div class='awc-meta awc-mono'>".htmlspecialchars($uid)."</div>";}
+	$h.="</span></div></td>";
+	$h.="<td class='awc-mono'>".(count($mails)>0?@implode("",$mails):"<span class='awc-none'>&mdash;</span>")."</td>";
+	$h.="<td class='awc-mono'>".(count($phones)>0?@implode("",$phones):"<span class='awc-none'>&mdash;</span>")."</td>";
+	$h.="<td>".(count($gps)>0?"<div class='awc-chips'>".@implode("",$gps)."</div>":"<span class='awc-none'>{no_members}</span>")."</td>";
+	$h.="</tr>";
+	return $h;
 }

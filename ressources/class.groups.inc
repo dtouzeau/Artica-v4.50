@@ -354,21 +354,11 @@ private function seems_utf8($Str) {
 			$res["dn_ou"]=str_replace("cn={$res["cn"]},","",$res["dn"]);
 			$res["gid"]=$attrs["gidNumber"][0];
 			$res["description"]=stripslashes($attrs["description"][0]);
-			$res["ArticaDansGuardianGroupRuleEnabled"]=null;
+
 			
 
 			if(isset($attrs["DefaultGroupPassword"][0])){$this->DefaultGroupPassword=$attrs["DefaultGroupPassword"][0];}
-			if(isset($attrs["ArticaDansGuardianGroupRuleEnabled"][0])){$res["ArticaDansGuardianGroupRuleEnabled"]=$attrs["ArticaDansGuardianGroupRuleEnabled"][0];}
-			
-			
-			
-			if($res["ArticaDansGuardianGroupRuleEnabled"]==null){
-				$upd["ArticaDansGuardianGroupRuleEnabled"]="0";
-				if(!$hasSambaGroup){$ldap->Ldap_add_mod($dn,$upd);}
-				unset($upd);
-				$res["ArticaDansGuardianGroupRuleEnabled"]=0;
-				}
-			
+
 			if(isset($attrs["memberUid"])){	
 			for($i=0;$i<$attrs["memberUid"]["count"];$i++){
 				$res["ARRAY_MEMBERS"][]=$attrs["memberUid"][$i];
@@ -570,11 +560,11 @@ private function seems_utf8($Str) {
 	}
 	
 	private function UpdatePlugins(){
-		$users=new usersMenus();
-		if($users->DANSGUARDIAN_INSTALLED){
-			$sock=new sockets();
-			$sock->getFrameWork("cmd.php?reload-dansguardian=yes");
-		}
+		// Ne rechargeait que DansGuardian, via framework/cmd.php?reload-dansguardian
+		// dont la fonction n'existe plus -- et sous une garde DANSGUARDIAN_INSTALLED
+		// qui n'est jamais vraie. La methode est conservee: quatre appelants dans
+		// cette classe, et c'est le point d'accroche naturel si un filtre doit un
+		// jour etre notifie d'un changement de groupe.
 	}
 		
 		

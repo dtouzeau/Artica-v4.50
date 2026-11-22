@@ -5,7 +5,7 @@ include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 $tpl=new template_admin();
-if(!$tpl->xPrivs()){die("DIE " .__FILE__." Line: ".__LINE__);}
+if(!$tpl->xPrivs()){die(error_log("DIE ".__FILE__." Line: ".__LINE__)?"DIE":"DIE");}
 
 
 clean_xss_deep();

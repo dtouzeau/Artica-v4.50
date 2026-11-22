@@ -1,16 +1,15 @@
-<about>Dotclear is an open-source web publishing software created in 2002 by Olivier Meunier.[br]
-A one man's project at first, Dotclear soon gathered a team comprising different personalities with various backgrounds.[br]
-The project's purpose is to provide a user-friendly tool allowing anyone to publish on the web, regardless of their technical skills.
-</about>
-<blog_access>Your blog access</blog_access>
-<blog_access_text>Access to your blog web site</blog_access_text>
-<blog_settings>Your Blog Administration</blog_settings>
-<blog_settings_text>Manage your Blog website by access to the central interface</blog_settings_text>
-<DotClearExternalAdminUri>External URI to Dotclear Administration interface</DotClearExternalAdminUri>
-<DotClearExternalWebUri>External URI to access port</DotClearExternalWebUri>
-<DotClearHttpListenPort>HTTP service listen port</DotClearHttpListenPort>
-<EnableDotClearHTTPService>Enable HTTP service for DotClear</EnableDotClearHTTPService>
-<rebuild_tables>Rebuild tables</rebuild_tables>
-<tables_error>Mysql Tables errors</tables_error>
-<tables_error_text>It seems that some tables missing in database[br]Click on the button bellow in order to install them</tables_error_text>
-<user_dotclear_access>Access to your DotClear area</user_dotclear_access>
+<about>Dotclear to oprogramowanie do publikacji w sieci o otwartym kodzie &#378;r&#243;d&#322;owym, stworzone w 2002 roku przez Oliviera Meuniera.[br]
+Pocz&#261;tkowo projekt jednej osoby, Dotclear wkr&#243;tce zgromadzi&#322; zesp&#243;&#322; sk&#322;adaj&#261;cy si&#281; z r&#243;&#380;nych osobowo&#347;ci o r&#243;&#380;nym do&#347;wiadczeniu.[br]
+Celem projektu jest dostarczenie przyjaznego dla u&#380;ytkownika narz&#281;dzia, kt&#243;re pozwala ka&#380;demu publikowa&#263; w sieci, niezale&#380;nie od umiej&#281;tno&#347;ci technicznych.</about>
+<blog_access>Dost&#281;p do Twojego bloga</blog_access>
+<blog_access_text>Dost&#281;p do Twojej witryny blogowej</blog_access_text>
+<blog_settings>Administracja Twojego bloga</blog_settings>
+<blog_settings_text>Zarz&#261;dzaj swoj&#261; witryn&#261; Blog, uzyskuj&#261;c dost&#281;p do centralnego interfejsu</blog_settings_text>
+<DotClearExternalAdminUri>Zewn&#281;trzny URI do interfejsu administracji Dotclear</DotClearExternalAdminUri>
+<DotClearExternalWebUri>Zewn&#281;trzny URI dost&#281;pu do portu</DotClearExternalWebUri>
+<DotClearHttpListenPort>Port nas&#322;uchu us&#322;ugi HTTP</DotClearHttpListenPort>
+<EnableDotClearHTTPService>W&#322;&#261;cz us&#322;ug&#281; HTTP dla DotClear</EnableDotClearHTTPService>
+<rebuild_tables>Przebuduj tabele</rebuild_tables>
+<tables_error>B&#322;&#281;dy tabel Mysql</tables_error>
+<tables_error_text>Wygl&#261;da na to, &#380;e w bazie danych brakuje niekt&#243;rych tabel[br]Kliknij przycisk poni&#380;ej, aby je zainstalowa&#263;</tables_error_text>
+<user_dotclear_access>Dost&#281;p do Twojego obszaru DotClear</user_dotclear_access>

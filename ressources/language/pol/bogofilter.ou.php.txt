@@ -1,21 +1,19 @@
-<add_bogo_spam>SPAM bogo user</add_bogo_spam>
-<bogo_delete>Delete mail</bogo_delete>
-<bogo_ham>used to send good mails</bogo_ham>
-<bogo_intro>
-Bogofilter is a mail filter that classifies mail as spam or ham (non-spam) by a statistical analysis of the message's header and content (body).[br]
-The program is able to learn from the user's classifications and corrections.[br]
-The statistical technique is known as the Bayesian technique and its use for spam.[br]
-Bogofilter will create a words database for each internal user.[br]
-To classify messages as ham (non-spam) or spam, bogofilter needs to learn from your users mails[br]
-In this case you need to create 2 robots users.[br][br]
-[ul][li]One for learn SPAM that your users judge[/li][li] One for Ham (not spam) that bogofilter could detect.[/li][/ul]
-</bogo_intro>
-<bogo_prepend>prepend subject</bogo_prepend>
-<bogo_quarantine>quarantine mail</bogo_quarantine>
-<bogo_robots>Add Bogofilter robots</bogo_robots>
-<bogo_spam>used to send spam</bogo_spam>
-<if_bogo_prepend>If prepend selected, prepend subject with</if_bogo_prepend>
-<robot>bogofiler robots</robot>
-<spam_action>Detected spam action</spam_action>
-<spam_action_text>When bogofilter detected mails as score exceed </spam_action_text>
+<add_bogo_spam>U&#380;ytkownik SPAM bogo</add_bogo_spam>
+<bogo_delete>Usu&#324; wiadomo&#347;&#263;</bogo_delete>
+<bogo_ham>u&#380;ywany do wysy&#322;ania dobrych wiadomo&#347;ci</bogo_ham>
+<bogo_intro>Bogofilter to filtr poczty, kt&#243;ry klasyfikuje wiadomo&#347;ci jako spam lub ham (nie-spam) na podstawie statystycznej analizy nag&#322;&#243;wka i tre&#347;ci (body) wiadomo&#347;ci.[br]
+Program potrafi uczy&#263; si&#281; na podstawie klasyfikacji i poprawek u&#380;ytkownika.[br]
+Technika statystyczna znana jest jako technika bayesowska i jej zastosowanie do spamu.[br]
+Bogofilter utworzy baz&#281; danych s&#322;&#243;w dla ka&#380;dego u&#380;ytkownika wewn&#281;trznego.[br]
+Aby klasyfikowa&#263; wiadomo&#347;ci jako ham (nie-spam) lub spam, bogofilter musi uczy&#263; si&#281; na podstawie wiadomo&#347;ci Twoich u&#380;ytkownik&#243;w[br]
+W takim przypadku musisz utworzy&#263; 2 u&#380;ytkownik&#243;w-roboty.[br][br]
+[ul][li]Jednego do nauki SPAM-u ocenianego przez Twoich u&#380;ytkownik&#243;w[/li][li] Jednego dla Ham (nie spam), kt&#243;ry bogofilter m&#243;g&#322;by wykry&#263;.[/li][/ul]</bogo_intro>
+<bogo_prepend>poprzed&#378; temat</bogo_prepend>
+<bogo_quarantine>poddaj wiadomo&#347;&#263; kwarantannie</bogo_quarantine>
+<bogo_robots>Dodaj roboty Bogofilter</bogo_robots>
+<bogo_spam>u&#380;ywany do wysy&#322;ania spamu</bogo_spam>
+<if_bogo_prepend>Je&#347;li wybrano poprzedzanie, poprzed&#378; temat</if_bogo_prepend>
+<robot>Roboty bogofilter</robot>
+<spam_action>Akcja dla wykrytego spamu</spam_action>
+<spam_action_text>Gdy bogofilter wykryje wiadomo&#347;ci, kt&#243;rych wynik przekracza</spam_action_text>
 <type>typ</type>

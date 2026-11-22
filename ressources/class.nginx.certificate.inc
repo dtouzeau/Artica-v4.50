@@ -61,17 +61,26 @@ class nginx_certificate{
         system("/bin/cp $this->ssl_path/default/privkey.pem $this->ssl_path/default/privkey.cp.pem");
         system("$openssl rsa -passin pass:$password -in $this->ssl_path/default/privkey.cp.pem -out $this->ssl_path/default/privkey.pem");
     }
+
+    private function fetch_nginx_server_cert($ID):array{
+        $ID=intval($ID);
+        if($ID==0){return [];}
+        $resp=$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX("/nginx-db/query/nginx_servers_certs/ID/$ID");
+        $data=json_decode($resp,true);
+        if(!is_array($data) || empty($data["Status"]) || !isset($data["rows"]) || !is_array($data["rows"]) || count($data["rows"])==0){return [];}
+        return $data["rows"][0];
+    }
+
     public function client_certificate():string{
-        $q= new lib_sqlite("/home/artica/SQLITE/nginx.db");
-        $ligne=$q->mysqli_fetch_array("SELECT CertificateName,ca_crt FROM nginx_servers_certs WHERE ID='$this->certificate'");
-        $CertificateName=$ligne["CertificateName"];
+        $ligne=$this->fetch_nginx_server_cert($this->certificate);
+        $CertificateName=isset($ligne["CertificateName"])?$ligne["CertificateName"]:"";
         $ssl_client_certificate[]="# Use ssl_client_certificate with <$this->certificate> / $CertificateName [".__CLASS__."/".__LINE__."]";
         if(intval($this->certificate)==0){
             $ssl_client_certificate[]="# Bad ID! [".__CLASS__."/".__LINE__."]";
             return @implode("\n",$ssl_client_certificate);
         }
 
-        $CA=base64_decode($ligne["ca_crt"]);
+        $CA=base64_decode(isset($ligne["ca_crt"])?$ligne["ca_crt"]:"");
         if(strlen($CA)<20){
             $ssl_client_certificate[]="# Bad length! [".__CLASS__."/".__LINE__."]";
             return @implode("\n",$ssl_client_certificate);
@@ -86,18 +95,17 @@ class nginx_certificate{
         return @implode("\n",$ssl_client_certificate);
     }
     private function load_certificate():bool{
-        $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
+        include_once(dirname(__FILE__)."/class.certificates-db.inc");
+        $cdb=new CertificatesDB();
         $SUBID=0;
-        $sql="SELECT * FROM sslcertificates WHERE CommonName='$this->certificate'";
-
         if(preg_match("#SUB:([0-9]+)#",$this->certificate,$re)){
-            $SUBID=$re[1];
-            $sql="SELECT * FROM subcertificates WHERE ID=$SUBID";
+            $SUBID=intval($re[1]);
+            $row=$cdb->subGetById($SUBID);
+        }else{
+            $row=$cdb->getByCommonName($this->certificate);
         }
-        if($GLOBALS["VERBOSE"]){
-            echo "Using SQL: \"$sql\"\n";
-        }
-        $ligne=$q->mysqli_fetch_array($sql);
+        if(!is_object($row)){return false;}
+        $ligne=(array)$row;
 
         $this->UsePrivKeyCrt=$ligne["UsePrivKeyCrt"];
         $this->crt_content=str_replace("\\n","\n",$ligne["crt"]);

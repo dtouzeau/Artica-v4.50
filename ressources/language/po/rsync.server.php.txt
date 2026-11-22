@@ -1,7 +1,7 @@
-<ENABLE_RSYNC_SERVER>Enable rsync server mode</ENABLE_RSYNC_SERVER>
-<ENABLE_RSYNC_SERVER_TEXT>If you trun to green this feature your server will be able to receive backup files from others server[br]
-You must add users that will be able to push backup files to this server</ENABLE_RSYNC_SERVER_TEXT>
-<RsyncBwlimit>limit I/O bandwidth</RsyncBwlimit>
+<ENABLE_RSYNC_SERVER>Ativar o modo servidor rsync</ENABLE_RSYNC_SERVER>
+<ENABLE_RSYNC_SERVER_TEXT>Se esta opç%C3£o estiver ativa, o seu servidor poder%C3¡ receber ficheiros de c%C3%B3pia de segurança de outros servidores.[br]
+Deve adicionar os utilizadores autorizados a enviar ficheiros de c%C3%B3pia de segurança para este servidor.</ENABLE_RSYNC_SERVER_TEXT>
+<RsyncBwlimit>Limitar a largura de banda de E/S</RsyncBwlimit>
 <RsyncEnableStunnel>Activar SSL</RsyncEnableStunnel>
 <RsyncEnableStunnelPort>Porta SSL</RsyncEnableStunnelPort>
-<storage_path>Storage path</storage_path>
+<storage_path>Caminho de armazenamento</storage_path>

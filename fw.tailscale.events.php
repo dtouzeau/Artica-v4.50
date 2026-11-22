@@ -4,11 +4,6 @@ $users=new usersMenus();if(!$users->AsVPNManager){exit();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 if(isset($_GET["search"])){search();exit;}
-if(isset($_GET["delete-js"])){delete_rule_js();exit;}
-if(isset($_GET["ruleid-js"])){rule_js();exit;}
-if(isset($_GET["rule-popup"])){rule_popup();exit;}
-if(isset($_GET["main"])){main();exit;}
-if(isset($_REQUEST["GenerateProgress"])){GenerateProgress();exit;}
 if(isset($_POST["connection_name"])){buildconfig();exit;}
 page();
 
@@ -133,6 +128,9 @@ function search(){
         }
 
 
+		// Pentest 2026-11-04 : ligne de journal tailscale (donnee externe) affichee sans encodage (XSS stockee).
+		$Month=req_html($Month);
+		$event=req_html($event);
 		$html[]="<tr class='$TRCLASS' id='$md'>";
 		$html[]="<td nowrap style='width:1%' $font nowrap><span class='fa fa-clock'> </span>&nbsp;$Month $day $time</td>";
 		$html[]="<td $font nowrap>$event</td>";

@@ -1,5 +1,6 @@
 <?php
 include_once(dirname(__FILE__)."/class.user.inc");
+include_once(dirname(__FILE__)."/class.acls.backend.inc");
 
 class dynamic_acls_auth{
 	private $uid=null;
@@ -14,14 +15,7 @@ class dynamic_acls_auth{
 		if(isset($_GET["VERBOSE"])){$this->verbose=true;}
 		if(isset($_GET["verbose"])){$this->verbose=true;}
 
-        $q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-        $sql="CREATE TABLE IF NOT EXISTS `webfilter_aclsdynamic_rights` (
-			`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-			`gpid` INTEGER,
-			`type` INTEGER,
-			`pattern` TEXT  )";
-        $q->QUERY_SQL($sql);
+        // acls.db schema is owned by articarest (EnsureAclsSqliteSchema); no PHP table creation.
 		
 		$this->writelogs("$userid",__FUNCTION__,__LINE__);
 		
@@ -104,21 +98,10 @@ class dynamic_acls_auth{
 	
 	private function webfilters_sqitems_sql(){
 		if(isset($GLOBALS["webfilters_sqitems_sql"])){return $GLOBALS["webfilters_sqitems_sql"];}
-		$q=new lib_sqlite("/home/artica/SQLITE/acls.db");
-
-		$sql="SELECT webfilter_aclsdynamic_rights.pattern,webfilter_aclsdynamic_rights.type,webfilters_sqgroups.ID
-		FROM webfilter_aclsdynamic_rights, webfilters_sqgroups
-		WHERE webfilter_aclsdynamic_rights.gpid = webfilters_sqgroups.ID
-		AND webfilters_sqgroups.GroupType = 'dynamic_acls'
-		AND webfilters_sqgroups.enabled =1";
-		
-		$results = $q->QUERY_SQL($sql);
-		if(!$q->ok){
-			VERBOSE("dynamic_acls_auth: $q->mysql_error", __LINE__);
-			$this->writelogs("$q->mysql_error",__FUNCTION__,__LINE__);
-			echo $q->mysql_error_html();
-			return;
-		}
+		// acls.db is API-only — active dynamic-acl rights via the acls backend.
+		$results = acls_api_get("/proxy/acls/sqlite/dynamic-acls/active");
+		if(!is_array($results)){$results=array();}
+		foreach($results as $ri=>$rr){$results[$ri]["ID"]=intval($rr["gpid"] ?? 0);}
 		$CountDerules=count($results);
 		$this->writelogs("$sql",__FUNCTION__,__LINE__);
 		$this->writelogs("$CountDerules rules...",__FUNCTION__,__LINE__);
@@ -130,7 +113,7 @@ class dynamic_acls_auth{
 	
 	public function CountDeRules(){
 		$results=$this->webfilters_sqitems_sql();
-		return mysqli_num_rows($results);
+		return is_array($results)?count($results):0;
 		
 	}
 	

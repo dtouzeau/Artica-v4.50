@@ -41,7 +41,8 @@ function rule_settings(){
 	$tpl=new template_admin();
 	$page=CurrentPageName();
 	$q=new postgres_sql();
-	$signature=$_GET["rule-settings"];
+	// Pentest 2026-11-04 : rule-settings etait concatene dans la requete.
+	$signature=intval($_GET["rule-settings"]);
 	$ligne=pg_fetch_assoc($q->QUERY_SQL("SELECT * FROM suricata_sig WHERE signature='$signature'"));
 	$title="{signature} {ID} <strong>$signature</strong>";
 	$description=$ligne["description"];
@@ -66,7 +67,10 @@ function rule_settings_save(){
 	$sig=intval($_POST["signature"]);
 	if($sig==0){echo "No signature ID\n";return;}
 	$q->suricata_tables();
-	$q->QUERY_SQL("UPDATE suricata_sig SET enabled='{$_POST["enabled"]}',firewall='{$_POST["firewall"]}' 
+	// Pentest 2026-11-04 : enabled et firewall etaient concatenes dans la requete.
+	$enabled=intval($_POST["enabled"]);
+	$firewall=intval($_POST["firewall"]);
+	$q->QUERY_SQL("UPDATE suricata_sig SET enabled='$enabled',firewall='$firewall' 
 	WHERE signature='$sig'");
 	if(!$q->ok){echo $q->mysql_error;return;}
 	

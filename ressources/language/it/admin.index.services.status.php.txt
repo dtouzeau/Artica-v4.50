@@ -1,11 +1,10 @@
-<artica_services>Artica Core services</artica_services>
-<mail_services>Mailbox services</mail_services>
-<postfix_services>Postfix SMTP services</postfix_services>
-<samba_services>Samba services</samba_services>
-<services_status_text>This is an overview of all applications on your system.[br]Application name, Memory used (VmRSS) of master process and all sub-process used by the master PID, the main version and the execution status.
-</services_status_text>
-<squid_services>SQUID services</squid_services>
+<artica_services>Servizi Artica Core</artica_services>
+<mail_services>Servizi di mailbox</mail_services>
+<postfix_services>Servizi SMTP Postfix</postfix_services>
+<samba_services>Servizi Samba</samba_services>
+<services_status_text>Questa &#232; una panoramica di tutte le applicazioni sul tuo sistema.[br]Nome dell'applicazione, memoria utilizzata (VmRSS) del processo master e di tutti i sotto-processi usati dal PID master, la versione principale e lo stato di esecuzione.</services_status_text>
+<squid_services>Servizi SQUID</squid_services>
 <start>Inizio</start>
-<start_this_service>[H5]Start this service[/H5]Click on the round image[br] to start the service.</start_this_service>
+<start_this_service>[H5]Avvia questo servizio[/H5]Clicca sull'immagine rotonda[br] per avviare il servizio.</start_this_service>
 <stop>Ferma</stop>
-<stop_this_service>[H5]Stop this service[/H5]Click on the round image[br] to stop the service.</stop_this_service>
+<stop_this_service>[H5]Arresta questo servizio[/H5]Clicca sull'immagine rotonda[br] per arrestare il servizio.</stop_this_service>

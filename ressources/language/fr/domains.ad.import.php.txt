@@ -3,7 +3,7 @@
 <admin_dn_text>Donnez le compte d'Administrateur d'Annuaire Actif et le mot de passe. [Br] D'habitude, l'Administrateur fait stocker le nom &quot;d'Administrateur&quot; dans cn = &quot;l'Administrateur, cn=Users...&quot; [br] Vous pouvez donner ici le nom de l'Administrateur ou le chemin &quot;DN&quot; complet [br] le suffixe est la premi&egrave;re branche de votre Branche d'Annuaire Active. [Br] D'habitude si votre serveur est nomm&eacute; a server.domain.tld, le suffixe sera &quot;dc=server, dc=domain, dc=tld&quot;</admin_dn_text>
 <ad_server>Adresse du serveur Active Directory</ad_server>
 <ad_server_text>Donnez ici l'adresse IP ou le nom du serveur  d'Annuaire Active Directory/serveur MS  Exchange</ad_server_text>
-<bdu>Nom d`utilisateur ou mot de passe incorrect</bdu>
+<bdu>Nom d'utilisateur ou mot de passe incorrect</bdu>
 <cls>Ne pouvait pas &ecirc;tre lier au serveur d'Annuaire Active Directory.</cls>
 <connected>Connexion r&eacute;ussie</connected>
 <err_unkown>Avertissement si incapable d'ouvrir une session</err_unkown>

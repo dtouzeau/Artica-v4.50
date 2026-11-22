@@ -5,7 +5,11 @@ include_once(dirname(__FILE__)."/ressources/class.user.inc");
 include_once(dirname(__FILE__)."/ressources/class.external.ad.inc");
 include_once(dirname(__FILE__)."/ressources/class.contacts.inc");
 include_once(dirname(__FILE__).'/ressources/class.groups.inc');
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
+// Pentest 2026-11-04 : connection-id etait recopie sans encodage dans la page (XSS).
+if(isset($_GET["connection-id"])){$_GET["connection-id"]=intval($_GET["connection-id"]);}
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["profile"])){profile();exit;}
 if(isset($_GET["profile-dump"])){profile_dump_js();exit;}
@@ -31,10 +35,15 @@ function profile_dump_js(){
     $urlExtension   = urlExtension();
     $ct             = new external_ad_search(null,ActiveDirectoryIndex());
     $hash           = $ct->member_infos($dn);
-    $DisplayName=$hash[0]["samaccountname"][0];
+    // $hash[0] etait lu sans garde: annuaire injoignable ou DN inconnu
+    // declenchait trois avertissements et un titre de modale vide.
+    $DisplayName=madm_attr($hash,"samaccountname");
+    if($DisplayName===""){$DisplayName=(string)$dn;}
     $tpl=new template_admin();
     $dn=urlencode($dn);
-    $tpl->js_dialog5($DisplayName, "$page?profile-dump-popup=$dn$urlExtension");
+    // Pentest 2026-11-04 : profile-dump etait recopie sans encodage dans la page (XSS).
+    // Le titre est decode une fois (html_entity_decode) par javascript_parse_text puis rendu en HTML.
+    $tpl->js_dialog5(req_html(req_html($DisplayName)), "$page?profile-dump-popup=$dn$urlExtension");
 
 }
 
@@ -45,7 +54,10 @@ function urlExtension():string{
         $urlExtension="&connection-id=$ActiveDirectoryIndex";
     }
     if(isset($_GET["function"])){
-        $urlExtension=$urlExtension."&function={$_GET["function"]}";
+        // $_GET["function"] part BRUT dans une chaine JavaScript (LoadAjaxTiny, OnClick):
+    // liste blanche a la lecture. search_block n'engendre que des noms en ss<time>.
+    $fname=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["function"]);
+        if($fname!==""){$urlExtension=$urlExtension."&function=$fname";}
     }
 
     return $urlExtension;
@@ -66,10 +78,15 @@ function js(){
     $urlExtension   = urlExtension();
     $ct             = new external_ad_search(null,ActiveDirectoryIndex());
 	$hash           = $ct->member_infos($dn);
-	$DisplayName=$hash[0]["samaccountname"][0];
+	// Dernier des quatre acces non gardes a $hash[0]: sans annuaire joignable,
+	// la modale s'ouvrait avec un titre vide apres trois avertissements.
+	$DisplayName=madm_attr($hash,"samaccountname");
+	if($DisplayName===""){$DisplayName=(string)$dn;}
 	$tpl=new template_admin();
 	$dn=urlencode($dn);
-	$tpl->js_dialog4($DisplayName, "$page?tabs=$dn$urlExtension");
+	// Pentest 2026-11-04 : dn etait recopie sans encodage dans la page (XSS).
+	// Le titre est decode une fois (html_entity_decode) par javascript_parse_text puis rendu en HTML.
+	$tpl->js_dialog4(req_html(req_html($DisplayName)), "$page?tabs=$dn$urlExtension");
 }
 function new_group_js(){
 	$page=CurrentPageName();
@@ -80,9 +97,11 @@ function new_group_js(){
 	$uid=$_GET["uid"];
 	if($uid<>null){
 		$uidenc=urlencode($uid);
-		$uid_title=" &raquo; {member} $uid";
+		// Pentest 2026-11-04 : uid et ou etait recopie sans encodage dans la page (XSS).
+		$uid_title=" &raquo; {member} ".req_html(req_html($uid));
 	}
-	$tpl->js_dialog5("{new_group} &raquo; {organization} $ou{$uid_title}","$page?new-group-popup=yes&ou=$ouenc&uid=$uidenc");
+	$ou_title=req_html(req_html($ou));
+	$tpl->js_dialog5("{new_group} &raquo; {organization} $ou_title{$uid_title}","$page?new-group-popup=yes&ou=$ouenc&uid=$uidenc");
 }
 
 function link_group_js(){
@@ -94,15 +113,19 @@ function link_group_js(){
 	$uid=$_GET["uid"];
 	if($uid<>null){
 		$uidenc=urlencode($uid);
-		$uid_title=" &raquo; {member} $uid";
+		// Pentest 2026-11-04 : uid et ou etait recopie sans encodage dans la page (XSS).
+		$uid_title=" &raquo; {member} ".req_html(req_html($uid));
 	}
-	$tpl->js_dialog5("{link_group} &raquo; {organization} $ou{$uid_title}","$page?link-group-popup=yes&ou=$ouenc&uid=$uidenc");
+	$ou_title=req_html(req_html($ou));
+	$tpl->js_dialog5("{link_group} &raquo; {organization} $ou_title{$uid_title}","$page?link-group-popup=yes&ou=$ouenc&uid=$uidenc");
 	
 }
 function link_group_perform(){
+    if(mbrad_membership_denied("add a member to a group",false)){return false;}
 	header("content-type: application/x-javascript");
 	$gpid=$_GET["link-group-perform"];
-	$md=$_GET["md"];
+	// $md est reinjecte dans $('#<md>').remove(): c'est toujours un md5.
+	$md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
 	$uid=$_GET["uid"];
 	$page=CurrentPageName();
 	$uidenc=urlencode($uid);
@@ -117,8 +140,10 @@ function link_group_perform(){
 }
 
 function group_js_unlink(){
+    if(mbrad_membership_denied("remove a member from a group",false)){return false;}
 	$gpid=$_GET["unlink-js"];
-	$md=$_GET["md"];
+	// $md est reinjecte dans $('#<md>').remove(): c'est toujours un md5.
+	$md=preg_replace('/[^a-f0-9]/','',(string)($_GET["md"] ?? ""));
 	$uid=$_GET["uid"];
 	$ldap=new clladp();
 	if($ldap->GroupDeleteUser($gpid, $uid)){
@@ -129,6 +154,22 @@ function group_js_unlink(){
 	
 }
 
+
+/**
+ * Lit un attribut LDAP renvoye par external_ad_search::member_infos().
+ *
+ * member_infos() renvoie un tableau VIDE quand le DN est introuvable ou que
+ * l'annuaire est injoignable, et l'annuaire omet les attributs non renseignes.
+ * Quatre fonctions de ce fichier lisaient $hash[0]["attr"][0] sans garde.
+ */
+function madm_attr($hash,$key,$default=""){
+    if(!is_array($hash) || !isset($hash[0]) || !is_array($hash[0])){return $default;}
+    if(!isset($hash[0][$key])){return $default;}
+    $v=$hash[0][$key];
+    if(is_array($v)){return isset($v[0])?(string)$v[0]:$default;}
+    return (string)$v;
+}
+
 function link_group_table(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -137,50 +178,60 @@ function link_group_table(){
 	$uidenc=urlencode($uid);
 	$group = new groups ( );
 	$hash_group = $group->list_of_groups ( $ou, 1 );
+	if(!is_array($hash_group)){$hash_group=array();}
 	$users = new user($uid);
 	$usergroups = $users->Groups_list();
-	
+	if(!is_array($usergroups)){$usergroups=array();}
 
-	
-	$html[]=$tpl->_ENGINE_parse_body("
-<table id='table-link-userid-groups' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
-	$html[]="<thead>";
-	$html[]="<tr>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{groupname}</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
-    $TRCLASS=null;
+	$rows=array();
 	foreach ($hash_group as $gpid=>$GroupName){
 		if(isset($usergroups[$gpid])){continue;}
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-		$md5=md5($gpid);
-		$html[]="<tr class='$TRCLASS' id='$md5'>";
-		$html[]="<td>$GroupName</td>";
-		$html[]="<td style='width:1%' nowrap>".$tpl->icon_select("Loadjs('$page?link-group-perform=$gpid&uid=$uidenc&md=$md5')","AllowAddGroup") ."</td>";
-		$html[]="</tr>";
-		
+		$rows[]=madm_linkgroup_row($gpid,$GroupName,$page,$uidenc,$tpl);
 	}
-	
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-	
-	$html[]="<tr>";
-	$html[]="<td colspan='2'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-link-userid-groups').footable({ \"filtering\": { \"enabled\": true },\"sorting\": {\"enabled\": true } } ); });
-</script>";
-	
-	echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
-	
+	$shown=count($rows);
+
+	$html=array();
+	$html[]="<div class='awc-card'><div class='awc-scroll'>";
+	$html[]="<table class='awc-tbl'><thead><tr>";
+	$html[]="<th>{groupname}</th>";
+	$html[]="<th class='center'>{add}</th>";
+	$html[]="</tr></thead><tbody id='madm-link-rows'>";
+	if($shown==0){
+		$html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown</span>";
+	$html[]="<span class='awc-pg' id='madm-link-pager'></span>";
+	$html[]="</div></div>";
+
+	// Le bloc de script est concatene APRES l'analyse: la regex #{(.+?)}# de
+	// _ENGINE_parse_body prendrait chaque accolade JavaScript pour un jeton.
+	$script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
+
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.$script
+		.awc_pager_js(50,"madm-link-rows","madm-link-pager");
+
+}
+
+/** Un groupe auquel le membre peut etre rattache. */
+function madm_linkgroup_row($gpid,$GroupName,$page,$uidenc,$tpl):string{
+	$md5=md5($gpid);
+	// Le nom du groupe vient de l'annuaire et partait BRUT dans le HTML.
+	$h ="<tr id='$md5'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='far fa-users'></i></span>";
+	$h.="<span class='awc-name'>".htmlspecialchars((string)$GroupName)."</span>";
+	$h.="</div></td>";
+	$h.="<td class='center'><div class='awc-acts'>"
+		.$tpl->icon_select("Loadjs('$page?link-group-perform=".urlencode($gpid)."&uid=$uidenc&md=$md5')","AllowAddGroup")
+		."</div></td>";
+	$h.="</tr>";
+	return $h;
 }
 
 function link_group_popup(){
@@ -204,8 +255,9 @@ function new_group_popup(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	if($_GET["uid"]<>null){
-		$uid_title=" {member} &raquo; {$_GET["uid"]}";
+		$uid_title=" {member} &raquo; ".req_html($_GET["uid"]);
 		$uidenc=urlencode($_GET["uid"]);}
+	// Pentest 2026-11-04 : valeur encodee au centre par field_hidden/field_info/js_confirm_delete (XSS).
 	$form[]=$tpl->field_info("ou", "{organization}", $_GET["ou"]);
 	if($_GET["uid"]<>null){$form[]=$tpl->field_info("uid", "{member}", $_GET["uid"]);}
 	$form[]=$tpl->field_text("NewGroup", "{groupname}", null,true);
@@ -219,6 +271,7 @@ function new_group_popup(){
 }
 
 function new_group_save(){
+    if(mbrad_membership_denied("create a group for a member",true)){return false;}
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
@@ -262,14 +315,24 @@ function tabs(){
 	$dnenc=urlencode($_GET["tabs"]);
 	$ActiveDirectoryIndex="None";$urlExtension=null;
 	if(isset($_GET["connection-id"])){$ActiveDirectoryIndex=$_GET["connection-id"];$urlExtension="&connection-id=$ActiveDirectoryIndex";}
-	if(isset($_GET["function"])){$urlExtension=$urlExtension."&function={$_GET["function"]}";}
+	if(isset($_GET["function"])){
+		// Meme liste blanche que dans urlExtension(): ce nom finit dans du JS.
+		$fname=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["function"]);
+		if($fname!==""){$urlExtension=$urlExtension."&function=$fname";}
+	}
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$ct=new external_ad_search(null,$ActiveDirectoryIndex);
 	$hash=$ct->member_infos($dn);
-	
-	$DisplayName=$hash[0]["samaccountname"][0];
-	$array[$DisplayName]="$page?profile=$dnenc$urlExtension";
+
+	// Un libelle d'onglet vide rend l'onglet invisible: on retombe sur le nom
+	// commun puis sur le DN.
+	$DisplayName=madm_attr($hash,"samaccountname");
+	if($DisplayName===""){$DisplayName=madm_attr($hash,"cn");}
+	if($DisplayName===""){$DisplayName=(string)$dn;}
+	$array=array();
+	// Pentest 2026-11-04 : tabs etait recopie sans encodage dans la page (XSS).
+	$array[req_html($DisplayName)]="$page?profile=$dnenc$urlExtension";
 	$array["{groups2}"]="$page?groups=$dnenc$urlExtension";
     $LighttpdArticaClientAuth=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("LighttpdArticaClientAuth"));
     if($LighttpdArticaClientAuth==1){
@@ -285,39 +348,72 @@ function tabs(){
 
 function profile_dump_popup(){
     $dn=$_GET["profile-dump-popup"];
-    $dnenc=urlencode($dn);
-    $page=CurrentPageName();
     $tpl=new template_admin();
     $ct=new external_ad_search();
-    $urlExtension=urlExtension();
     $hash=$ct->member_infos($dn);
 
+    // $hash[0] etait lu sans garde, puis parcouru: foreach() sur autre chose
+    // qu'un tableau est FATAL sous PHP 8.
+    if(!isset($hash[0]) || !is_array($hash[0])){
+        echo $tpl->_ENGINE_parse_body($tpl->div_error("{user_not_found}: ".htmlspecialchars((string)$dn)));
+        return;
+    }
     $array=$hash[0];
-    $html[]="<table>";
-   foreach ($array as $index=>$minz){
-       if($index=="count"){continue;}
-       if($index=="dn"){continue;}
-       if($index=="objectsid"){continue;}
-       if($index=="objectguid"){continue;}
-       if(is_numeric($index)){continue;}
-       $html[]="<tr>";
-       $html[]="<td align='right' valign='top'><strong>$index:</strong></td>";
-       $html[]="<td valign='top'>";
-       if(!isset($minz["count"])){continue;}
-       for($i=0;$i<$minz["count"]+1;$i++){
-           if(!isset($minz[$i])){continue;}
-           $minz[$i]=htmlspecialchars($minz[$i]);
-           $html[]="<div style='margin-left:15px'>{$minz[$i]}</div>";
-       }
-       $html[]="</td>";
-       $html[]="</tr>";
 
+    // Attributs de service, sans interet pour l'administrateur.
+    $skip=array("count"=>true,"dn"=>true,"objectsid"=>true,"objectguid"=>true);
 
+    $rows=array();
+    foreach ($array as $index=>$minz){
+        if(isset($skip[$index])){continue;}
+        if(is_numeric($index)){continue;}
+        // Ce test venait APRES l'emission de "<tr><td>...</td><td>": un
+        // attribut sans compteur laissait une ligne ouverte et une cellule
+        // pendante dans le tableau.
+        if(!is_array($minz) || !isset($minz["count"])){continue;}
+        $rows[]=madm_dump_row($index,$minz);
+    }
 
-   }
-    $html[]="</table>";
-    $tpl=new template_admin();
-   echo $tpl->_ENGINE_parse_body($html);
+    $html=array();
+    $html[]="<div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl awc-tbl-compact'><thead><tr>";
+    $html[]="<th>{attribute}</th>";
+    $html[]="<th>{value}</th>";
+    $html[]="</tr></thead><tbody>";
+    if(count($rows)==0){
+        $html[]="<tr><td colspan='2'><div class='awc-empty'>{no_data}</div></td></tr>";
+    }else{
+        $html[]=@implode("\n",$rows);
+    }
+    $html[]="</tbody></table></div></div>";
+
+    // Le <script> est concatene APRES l'analyse, comme partout ailleurs: la
+    // regex #{(.+?)}# de _ENGINE_parse_body lit toute accolade JavaScript comme
+    // un {token}.
+    echo awc_table_style()
+        .$tpl->_ENGINE_parse_body(@implode("\n",$html))
+        ."<script>NoSpinner();</script>";
+}
+
+/**
+ * Un attribut LDAP brut et ses valeurs. La boucle allait jusqu'a "count+1" --
+ * un cran de trop, rattrape par un isset() a chaque tour.
+ */
+function madm_dump_row($index,$minz):string{
+    $values=array();
+    $count=intval($minz["count"]);
+    for($i=0;$i<$count;$i++){
+        if(!isset($minz[$i])){continue;}
+        $values[]=htmlspecialchars((string)$minz[$i]);
+    }
+
+    $h ="<tr>";
+    $h.="<td class='awc-right awc-nowrap'><strong>".htmlspecialchars((string)$index)."</strong></td>";
+    $h.="<td class='awc-mono'>".(count($values)>0
+        ?@implode("<br>",$values)
+        :"<span class='awc-none'>&mdash;</span>")."</td>";
+    $h.="</tr>";
+    return $h;
 }
 
 function profile(){
@@ -328,6 +424,11 @@ function profile(){
 	$ct=new external_ad_search();
 	$urlExtension=urlExtension();
 	$hash=$ct->member_infos($dn);
+	// $hash[0] etait lu sans garde, puis chacun de ses attributs.
+	if(!isset($hash[0]) || !is_array($hash[0])){
+		echo $tpl->_ENGINE_parse_body($tpl->div_error("{user_not_found}: ".htmlspecialchars((string)$dn)));
+		return;
+	}
 	$array=$hash[0];
 
 
@@ -391,7 +492,16 @@ function profile(){
     }
     if(intval($array["pwdlastset"][0])>0){
         $pwdlastset=convertWindowsTimestamp($array["pwdlastset"][0]);
-        $lastlogon=$tpl->time_to_date($lastlogon)." <small>(".distanceOfTimeInWords($lastlogon,time())."</small>)";
+        // Une ligne recalculant $lastlogon trainait ici: copier-coller du bloc
+        // lastlogon ci-dessus. Elle etait fausse dans les deux cas de figure.
+        //  - compte deja connecte: $lastlogon contenait deja la date FORMATEE,
+        //    qu'elle reformatait une seconde fois;
+        //  - compte jamais connecte (lastlogon=0, donc tout compte fraichement
+        //    cree): $lastlogon valait encore icon_nothing(), soit
+        //    "<i class='fa fa-minus'></i>". time_to_date() prenait le tiret de
+        //    "fa-minus" pour une date, appelait new DateTime() dessus et
+        //    l'exception non attrapee renvoyait un 500 a corps vide.
+        // pwdlastset est deja calcule juste au-dessus: rien d'autre a faire ici.
         $pwdlastset=$tpl->time_to_date($pwdlastset)." <small>(".distanceOfTimeInWords($pwdlastset,time())."</small>)";
     }
 
@@ -411,9 +521,21 @@ function profile(){
         $array["accountexpires"][0]=0;
     }
     $smtype="";
-    $accountexpires=convertWindowsTimestamp($array["accountexpires"][0]);
     $samaccounttype=intval($array["samaccounttype"][0]);
-$accountexpires=$tpl->time_to_date($accountexpires)." <small>(".distanceOfTimeInWords($accountexpires,time())."</small>)";
+
+    // "N'expire jamais" a DEUX representations dans Active Directory: accountExpires
+    // vaut 0, ou la valeur maximale d'un entier signe 64 bits (0x7FFFFFFFFFFFFFFF =
+    // 9223372036854775807). Converties comme une date reelle, elles s'affichaient en
+    // "30828 Thursday September 14 (over 28821 years)". La comparaison se fait en
+    // flottant plutot qu'en entier: la sentinelle est a la limite de PHP_INT_MAX et
+    // certains annuaires renvoient une valeur voisine.
+    $rawexpires=trim((string)$array["accountexpires"][0]);
+    if($rawexpires==="" || $rawexpires==="0" || (float)$rawexpires>=9.2233720368547758e18){
+        $accountexpires="{never}";
+    }else{
+        $accountexpires=convertWindowsTimestamp($rawexpires);
+        $accountexpires=$tpl->time_to_date($accountexpires)." <small>(".distanceOfTimeInWords($accountexpires,time())."</small>)";
+    }
     if(isset($UserAccountControl[$samaccounttype])) {
         $smtype="{".$UserAccountControl[$samaccounttype]."}";
     }
@@ -432,7 +554,8 @@ $accountexpires=$tpl->time_to_date($accountexpires)." <small>(".distanceOfTimeIn
 
 
     $tpl->table_form_section("{options}");
-    $tpl->table_form_field_text("{DN}","<small>$dn</small>",ico_microsoft);
+    // Pentest 2026-11-04 : profile etait recopie sans encodage dans la page (XSS).
+    $tpl->table_form_field_text("{DN}","<small>".req_html($dn)."</small>",ico_microsoft);
     $tpl->table_form_field_text("{uid}",$array["samaccountname"][0],ico_member);
     $tpl->table_form_field_text("{lastlogon}"," <small>$lastlogon {or} $lastlogontimestamp</small>",ico_timeout);
     $tpl->table_form_field_text("{lastlogoff}",$lastlogoff,"fa-solid fa-arrow-up-left-from-circle");
@@ -448,7 +571,7 @@ $accountexpires=$tpl->time_to_date($accountexpires)." <small>(".distanceOfTimeIn
 
 	
 	$tpl->table_form_button("{more}","Loadjs('$page?profile-dump=$dnenc{$urlExtension}')","AllowAddUsers");
-	echo $tpl->table_form_compile();
+	echo $tpl->table_form_compile(2);
 }
 function convertWindowsTimestamp($wintime) {
     return $wintime / 10000000 - 11644477200;
@@ -459,8 +582,12 @@ function groups(){
 	$page=CurrentPageName();
 	$ActiveDirectoryIndex="None";$urlExtension=null;
 	if(isset($_GET["connection-id"])){$ActiveDirectoryIndex=$_GET["connection-id"];$urlExtension="&connection-id=$ActiveDirectoryIndex";}
-	if(isset($_GET["function"])){$urlExtension=$urlExtension."&function={$_GET["function"]}";}
-	echo "<div id='user-groups-table'></div>
+	if(isset($_GET["function"])){
+		// Meme liste blanche que dans urlExtension(): ce nom finit dans du JS.
+		$fname=preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["function"]);
+		if($fname!==""){$urlExtension=$urlExtension."&function=$fname";}
+	}
+	echo "<div id='user-groups-table' style='margin-top:10px'></div>
 	<script>LoadAjaxTiny('user-groups-table','$page?groups-table=$uid$urlExtension');</script>		
 	";
 	
@@ -468,60 +595,88 @@ function groups(){
 
 function groups_table(){
 	$dn=$_GET["groups-table"];
-	$ActiveDirectoryIndex="None";$urlExtension=null;
-	if(isset($_GET["connection-id"])){$ActiveDirectoryIndex=$_GET["connection-id"];$urlExtension="&connection-id=$ActiveDirectoryIndex";}
-	if(isset($_GET["function"])){$urlExtension=$urlExtension."&function={$_GET["function"]}";}
+	$ActiveDirectoryIndex="None";$urlExtension="";
+	if(isset($_GET["connection-id"])){
+		$ActiveDirectoryIndex=$_GET["connection-id"];
+		$urlExtension="&connection-id=".intval($ActiveDirectoryIndex);
+	}
+	if(isset($_GET["function"])){
+		// Ce nom est reinjecte dans des attributs OnClick.
+		$urlExtension.="&function=".preg_replace('/[^A-Za-z0-9_]/','',(string)$_GET["function"]);
+	}
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$md5=md5($dn);
-	
-$html[]=$tpl->_ENGINE_parse_body("
-<table id='table-membersGroupof-$md5' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">");
-$html[]="<thead>";
-$html[]="<tr>";
 
+	$ct=new external_ad_search(null,$ActiveDirectoryIndex);
+	$groups=$ct->GroupsOfMember($dn);
+	if(!is_array($groups)){$groups=array();}
 
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>&nbsp;</th>";
-$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{displayname}</th>";
-$html[]="</tr>";
-$html[]="</thead>";
-$html[]="<tbody>";
+	$rows=array();
+	// La boucle nommait sa cle $dn -- la MEME variable que le parametre de la
+	// fonction, qui se retrouvait ecrasee par le dernier groupe parcouru.
+	foreach ($groups as $groupDN=>$GroupName){
+		$rows[]=madm_membergroup_row($groupDN,$GroupName,$urlExtension,$tpl);
+	}
+	$shown=count($rows);
 
+	$html=array();
+	$html[]="<div class='awc-card'><div class='awc-scroll'>";
+	// L'id table-my-userid-groups est une SENTINELLE, pas une ancre de style: il
+	// avait disparu lors du passage au design awc, et les DEUX lecteurs restants
+	// -- link_group_perform() et le $jsafter de new_group_popup() -- testent
+	// document.getElementById('table-my-userid-groups') pour decider de
+	// rafraichir la liste. Le test etant devenu toujours faux, rattacher un
+	// membre a un groupe ou en creer un ne mettait plus la liste a jour, sans la
+	// moindre erreur nulle part.
+	$html[]="<table id='table-my-userid-groups' class='awc-tbl'><thead><tr>";
+	$html[]="<th>{groups2}</th>";
+	$html[]="</tr></thead><tbody id='madm-grp-rows'>";
+	if($shown==0){
+		$html[]="<tr><td><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $shown</span>";
+	$html[]="<span class='awc-pg' id='madm-grp-pager'></span>";
+	$html[]="</div></div>";
 
-$ct=new external_ad_search(null,$ActiveDirectoryIndex);
+	$script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
 
-$groups=$ct->GroupsOfMember($dn);
-
-
-$TRCLASS=null;
-foreach ($groups as $dn=>$GroupName){
-	$text_class=null;
-	$md=md5($dn.$GroupName);
-	if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-	$html[]="<tr class='$TRCLASS' id='$md'>";
-    $html[]="<td width='1%'><i class='fad fa-users'></i></td>";
-	$html[]="<td width='99%'>". $tpl->td_href($GroupName,"{click_to_edit}","Loadjs('fw.groups.ad.php?dn=$dn')")."</td>";
-	$html[]="</tr>";	
-	
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n", $html))
+		.$script
+		.awc_pager_js(50,"madm-grp-rows","madm-grp-pager");
 }
 
-$html[]="</tbody>";
-$html[]="<tfoot>";
+/** Un groupe auquel le membre appartient. */
+function madm_membergroup_row($groupDN,$GroupName,$urlExtension,$tpl):string{
+	$md=md5($groupDN.$GroupName);
+	// Le DN partait NON ENCODE dans l'URL: une virgule ou une esperluette dans
+	// le nom distingue -- "CN=Doe, John,OU=..." est courant en Active Directory
+	// -- tronquait le parametre et le groupe ressortait introuvable.
+	$js="Loadjs('fw.groups.ad.php?dn=".urlencode($groupDN)."$urlExtension')";
 
-$html[]="<tr>";
-$html[]="<td colspan='2'>";
-$html[]="<ul class='pagination pull-right'></ul>";
-$html[]="</td>";
-$html[]="</tr>";
-$html[]="</tfoot>";
-$html[]="</table>";
-$html[]="
-<script>
-NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-$(document).ready(function() { $('#table-membersGroupof-$md5').footable({ \"filtering\": { \"enabled\": true },\"sorting\": {\"enabled\": true } } ); });
-</script>";
-
-echo $tpl->_ENGINE_parse_body(@implode("\n", $html));
+	$h ="<tr id='$md'>";
+	$h.="<td><div class='awc-ident'>";
+	$h.="<span class='awc-ico'><i class='fad fa-users'></i></span>";
+	$h.="<span><span class='awc-name'>";
+	$h.=$tpl->td_href(htmlspecialchars((string)$GroupName),"{click_to_edit}",$js)."</span>";
+	$h.="<div class='awc-meta awc-mono'>".htmlspecialchars((string)$groupDN)."</div>";
+	$h.="</span></div></td>";
+	$h.="</tr>";
+	return $h;
 }
 
-
+// Appartenance aux groupes (ajout, retrait, nouveau groupe du membre) : administrateur systeme
+// seulement, controle COTE SERVEUR. Sans lui, tout compte connecte pouvait s'ajouter a un groupe
+// administrateur et heriter de ses droits. Rend true = REFUSE.
+function mbrad_membership_denied($what,$post=false):bool{
+    $users=new usersMenus();
+    if($users->AsSystemAdministrator){return false;}
+    $tpl=new template_admin();
+    admin_tracks("Refused: $what (not a system administrator)");
+    if($post){echo $tpl->post_error("{ERROR_NO_PRIVS}");}else{$tpl->js_error("{ERROR_NO_PRIVS}");}
+    return true;
+}

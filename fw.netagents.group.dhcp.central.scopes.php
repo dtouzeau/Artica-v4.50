@@ -1,4 +1,6 @@
 <?php
+// awc_table_style(): feuille de style partagee des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 /**
  * Central DHCP scope management (cluster_mode).
  * CRUD operations on the management server's central config JSON.
@@ -69,7 +71,7 @@ function cscopes_page(): bool {
         return true;
     }
     $t = time();
-    $h[] = "<table id='tbl-cs-$t' class='table table-stripped' data-page-size='50'>";
+    $h[] = "<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $h[] = "<thead><tr>";
     $h[] = "  <th data-sortable=true data-type='text'>{subnet}/{netmask}</th>";
     $h[] = "  <th data-sortable=true data-type='text' nowrap>{interface}</th>";
@@ -81,7 +83,7 @@ function cscopes_page(): bool {
     $TRCLASS = null;
     foreach ($scopes as $s) {
         if (!is_object($s)) continue;
-        if ($TRCLASS === 'footable-odd') { $TRCLASS = null; } else { $TRCLASS = 'footable-odd'; }
+        $TRCLASS=null;
         $sid    = htmlspecialchars($s->id ?? '');
         $subnet = htmlspecialchars($s->subnet ?? '');
         $mask   = htmlspecialchars($s->netmask ?? '');
@@ -106,7 +108,7 @@ function cscopes_page(): bool {
     }
     $h[] = "</tbody>";
     $h[] = "<tfoot><tr><td colspan='5'><ul class='pagination pull-right'></ul></td></tr></tfoot>";
-    $h[] = "</table>";
+    $h[] = "</table></div></div></div>";
     $h[] = "<script>";
     $h[] = "    NoSpinner();";
     $h[] =      implode("\n", $tpl->ICON_SCRIPTS);
@@ -130,7 +132,7 @@ function cscopes_page(): bool {
     $h[] = "</script>";
     $h[] = "<div id='cscopes-container-$id'></div>";
 
-    echo $tpl->_ENGINE_parse_body(implode("\n", $h));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(implode("\n", $h));
     return true;
 }
 

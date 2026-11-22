@@ -1,28 +1,26 @@
-<add_local_domain_form>Give the local domain you want to store on this server</add_local_domain_form>
-<add_local_domain_text>Local domains are stored on this computer and must be deliver in it`s mailbox server.</add_local_domain_text>
+<add_local_domain_form>Podaj domen&#281; lokaln&#261;, kt&#243;r&#261; chcesz przechowywa&#263; na tym serwerze</add_local_domain_form>
+<add_local_domain_text>Local domains are stored on this computer and must be deliver in it's mailbox server.</add_local_domain_text>
 <add_relay_domain>Dodaj now%C4%85 domen%C4%99 przekazywan%C4%85</add_relay_domain>
-<add_relay_domain_text>All emails for a "relay domain" will be forwarded to an other dedicated server.</add_relay_domain_text>
-<autoaliases>Auto-aliase</autoaliases>
-<autoaliases_text>If you enable this feature, each user will have automatically a new aliase with this domain when you update it on create a new one</autoaliases_text>
-<duplicate_domain>Duplicate domain</duplicate_domain>
-<duplicate_domain_text>If you enable this feature, mails will be forwared to the local mailbox AND be duplicated to a remote target mail server</duplicate_domain_text>
-<introduction>
-This section help you to create smtp domains in your organization.[br]
-You have 2 ways to create your domains[br]
+<add_relay_domain_text>Wszystkie e-maile dla &quot;domeny przekazuj&#261;cej&quot; b&#281;d&#261; przekazywane do innego dedykowanego serwera.</add_relay_domain_text>
+<autoaliases>Automatyczny alias</autoaliases>
+<autoaliases_text>Je&#347;li w&#322;&#261;czysz t&#281; funkcj&#281;, ka&#380;dy u&#380;ytkownik automatycznie otrzyma nowy alias z t&#261; domen&#261;, gdy j&#261; zaktualizujesz lub utworzysz now&#261;</autoaliases_text>
+<duplicate_domain>Duplikuj domen&#281;</duplicate_domain>
+<duplicate_domain_text>Je&#347;li w&#322;&#261;czysz t&#281; funkcj&#281;, e-maile b&#281;d&#261; przekazywane do lokalnej skrzynki pocztowej ORAZ duplikowane na zdalny docelowy serwer pocztowy</duplicate_domain_text>
+<introduction>Ta sekcja pomaga tworzy&#263; domeny SMTP w Twojej organizacji.[br]
+Masz 2 sposoby tworzenia domen[br]
 [ul]
-[li][strong]Local domain[/strong][br]
-local domains are stored on this computer and must be deliver in it's mailbox server.[/li]
-[li][strong]Relay domains[/strong][br]
-All emails for a "relay domain" will be forwarded to an other dedicated server.[/li][/ul]
-</introduction>
-<local_domain_map>Local domains used by your organization</local_domain_map>
-<mx_look>[b]MX lookup[/b][ul]
-[li][b]Red[/b]:disable resolve the computer in DNS[/li]
-[li][b]Green[/b]:Enable resolving the computer by DNS[/li]
+[li][strong]Domena lokalna[/strong][br]
+domeny lokalne s&#261; przechowywane na tym komputerze i musz&#261; by&#263; dostarczane na jego serwer skrzynek pocztowych.[/li]
+[li][strong]Domeny przekazuj&#261;ce[/strong][br]
+Wszystkie e-maile dla &quot;domeny przekazuj&#261;cej&quot; b&#281;d&#261; przekazywane do innego dedykowanego serwera.[/li][/ul]</introduction>
+<local_domain_map>Domeny lokalne u&#380;ywane przez Twoj&#261; organizacj&#281;</local_domain_map>
+<mx_look>[b]Wyszukiwanie MX[/b][ul]
+[li][b]Czerwony[/b]: wy&#322;&#261;cz rozwi&#261;zywanie komputera w DNS[/li]
+[li][b]Zielony[/b]: w&#322;&#261;cz rozwi&#261;zywanie komputera przez DNS[/li]
 [/ul]</mx_look>
-<mx_look_text>MX lookup</mx_look_text>
-<no_remote_domain_here>Currently, no relayed domain set</no_remote_domain_here>
-<relay_domain_map>others relayed domains used by your organization</relay_domain_map>
+<mx_look_text>Wyszukiwanie MX</mx_look_text>
+<no_remote_domain_here>Obecnie nie ustawiono &#380;adnej domeny przekazuj&#261;cej</no_remote_domain_here>
+<relay_domain_map>inne domeny przekazuj&#261;ce u&#380;ywane przez Twoj&#261; organizacj&#281;</relay_domain_map>
 <roundrobin>Round Robin</roundrobin>
 <roundrobin_text>DNS Round Robin to technika dystrybucji obci%C4%85%C5%BCenia, r%C3%B3wnowa%C5%BCenia lub tolerancji na awarie, zapewniaj%C4%85ca wiele redundantnych host%C3%B3w us%C5%82ug pocztowych,[br]
 poprzez zarz%C4%85dzanie odpowiedziami systemu DNS na zapytania adresowe serwer%C3%B3w pocztowych zgodnie z odpowiednim modelem statystycznym.[br]
@@ -31,5 +29,5 @@ reprezentuj%C4%85cych kilka serwer%C3%B3w %C5%9Bwiadcz%C4%85cych identyczne us%C
 Kolejno%C5%9B%C4%87 zwracanych adres%C3%B3w IP stanowi podstaw%C4%99 dzia%C5%82ania mechanizmu round robin.[br]
 Przy ka%C5%BCdej odpowiedzi DNS sekwencja adres%C3%B3w IP jest rotowana.[br]
 Zazwyczaj klienci IP pr%C3%B3buj%C4%85 po%C5%82%C4%85czy%C4%87 si%C4%99 z pierwszym adresem zwr%C3%B3conym przez zapytanie DNS, co pozwala roz%C5%82o%C5%BCy%C4%87 obci%C4%85%C5%BCenie mi%C4%99dzy serwery.</roundrobin_text>
-<target_computer_name>Target server name or IP</target_computer_name>
+<target_computer_name>Nazwa lub IP serwera docelowego</target_computer_name>
 <target_computer_port>Port</target_computer_port>

@@ -4,6 +4,8 @@ include_once(dirname(__FILE__)."/ressources/class.squid.acls.groups.inc");
 include_once(dirname(__FILE__)."/ressources/class.squid.manager.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : cpu et table etaient recopies sans encodage dans la page (XSS) : numeros de CPU.
+foreach(array("cpu","table") as $k){if(isset($_GET[$k])){$_GET[$k]=intval($_GET[$k]);}}
 if(isset($_GET["popup"])){popup();exit;}
 if(isset($_GET["table"])){table();exit;}
 

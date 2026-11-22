@@ -1,4 +1,4 @@
-<add_share>Add a folder</add_share>
+<add_share>Dodaj folder</add_share>
 <enable_backup>W%C5%82%C4%85cz funkcj%C4%99 zdalnej kopii zapasowej</enable_backup>
-<enable_backup_text>If you turn to green this feature, Artica backup will browse this computer in order to backup remote folder you specifiy in this section</enable_backup_text>
-<remote_smb_share>Remote microsoft share (smb)</remote_smb_share>
+<enable_backup_text>Je&#347;li ustawisz t&#281; funkcj&#281; na zielono, Artica backup przejrzy ten komputer, aby wykona&#263; kopi&#281; zapasow&#261; zdalnego folderu okre&#347;lonego w tej sekcji</enable_backup_text>
+<remote_smb_share>Zdalny udzia&#322; Microsoft (smb)</remote_smb_share>

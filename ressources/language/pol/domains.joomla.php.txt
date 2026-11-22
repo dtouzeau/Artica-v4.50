@@ -1,14 +1,14 @@
 <administrator>Administrator</administrator>
 <admin_password>Globalne has%C5%82o &quot;Admina&quot;</admin_password>
-<admin_password_help>By default a Super administrator called "admin" is set in order to manage your web site.[br]This "admin" user is independant and is not stored in the global database.[br]
- [br]The default password is "secret" and you must change it for security reason</admin_password_help>
-<APP_JOOMLA_NOT_INSTALLED>Your Joomla is not installed</APP_JOOMLA_NOT_INSTALLED>
-<connection_user>Connection uid</connection_user>
-<connection_user_help>Set here an user login that helping your web site to authenticate internals users inside your web site administration panel</connection_user_help>
-<install_your_joomla>Install your joomla</install_your_joomla>
-<install_your_joomla_text>Install the joomla main program in order to open your web service</install_your_joomla_text>
+<admin_password_help>Domy&#347;lnie ustawiany jest superadministrator o nazwie &quot;admin&quot; do zarz&#261;dzania Twoj&#261; witryn&#261;.[br]Ten u&#380;ytkownik &quot;admin&quot; jest niezale&#380;ny i nie jest przechowywany w globalnej bazie danych.[br]
+ [br]Domy&#347;lne has&#322;o to &quot;secret&quot; i musisz je zmieni&#263; ze wzgl&#281;d&#243;w bezpiecze&#324;stwa</admin_password_help>
+<APP_JOOMLA_NOT_INSTALLED>Twoje Joomla nie jest zainstalowane</APP_JOOMLA_NOT_INSTALLED>
+<connection_user>UID po&#322;&#261;czenia</connection_user>
+<connection_user_help>Ustaw tutaj login u&#380;ytkownika, kt&#243;ry pomo&#380;e Twojej witrynie uwierzytelnia&#263; u&#380;ytkownik&#243;w wewn&#281;trznych w panelu administracyjnym witryny</connection_user_help>
+<install_your_joomla>Zainstaluj swoje joomla</install_your_joomla>
+<install_your_joomla_text>Zainstaluj g&#322;&#243;wny program joomla, aby otworzy&#263; swoj&#261; us&#322;ug&#281; web</install_your_joomla_text>
 <joomlaservername>Nazwa serwera internetowego</joomlaservername>
-<joomlaservername_help>Define here the domain name/server name added in your Public/Private DNS.[br]
-For example,If you want this server has www.mycompany.com, set here "www.mycompany.com"[br]
-[i]Notice this server name must be already stored on DNS servers (Internet or Intranet network)[/i]</joomlaservername_help>
-<roundcubeservername>Roundcube server name</roundcubeservername>
+<joomlaservername_help>Zdefiniuj tutaj nazw&#281; domeny/nazw&#281; serwera dodan&#261; w publicznym/prywatnym DNS.[br]
+Na przyk&#322;ad, je&#347;li chcesz, aby ten serwer by&#322; www.mycompany.com, ustaw tutaj &quot;www.mycompany.com&quot;[br]
+[i]Zwr&#243;&#263; uwag&#281;, &#380;e ta nazwa serwera musi by&#263; ju&#380; przechowywana na serwerach DNS (sie&#263; Internet lub Intranet)[/i]</joomlaservername_help>
+<roundcubeservername>Nazwa serwera Roundcube</roundcubeservername>

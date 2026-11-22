@@ -1,4 +1,5 @@
 <?php
+include_once(dirname(__FILE__)."/settings.exists.inc"); // artica_setting_exists(): settings are root-only, see the file
 define('HDOM_TYPE_ELEMENT', 1);
 define('HDOM_TYPE_COMMENT', 2);
 define('HDOM_TYPE_TEXT',    3);
@@ -39,12 +40,12 @@ class external_categorize
         if (is_file("/usr/share/phpGSB-master/phpgsb.class.php")) {
             include_once("/usr/share/phpGSB-master/phpgsb.class.php");
             if (!isset($GLOBALS["OVHMySQLPass"])) {
-                if (is_file("/etc/artica-postfix/settings/Daemons/OVHMySQLPass")) {
+                if (artica_setting_exists("OVHMySQLPass")) {
                     $GLOBALS["OVHMySQLPass"] = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("OVHMySQLPass");
                 }
             }
             if (!isset($GLOBALS["GoogleApiKey"])) {
-                if (is_file("/etc/artica-postfix/settings/Daemons/GoogleApiKey")) {
+                if (artica_setting_exists("GoogleApiKey")) {
                     $GLOBALS["GoogleApiKey"] = $GLOBALS["CLASS_SOCKETS"]->GET_INFO("GoogleApiKey");
                 }
             }

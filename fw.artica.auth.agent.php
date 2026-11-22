@@ -88,8 +88,9 @@ function edit_agent_js()
 {
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $id=$_GET["edit-agent-js"];
-    $name=$_GET["agent-name"];
+    // Pentest 2026-11-04 : edit-agent-js et agent-name etaient recopies sans encodage dans la page (XSS).
+    $id=intval($_GET["edit-agent-js"]);
+    $name=req_html(req_html($_GET["agent-name"] ?? ""));
     $title=$tpl->_ENGINE_parse_body("{edit} {aaa_agent} $name");
     $tpl->js_dialog2($title, "$page?edit-agent-section=$id");
 }
@@ -99,7 +100,9 @@ function edit_agent_popup():bool{
     $tpl=new template_admin();
     $security="AsSquidAdministrator";
     $q=new lib_sqlite("/home/artica/SQLITE/aaa.db");
-    $agentData = $q->mysqli_fetch_array("SELECT * FROM aaa_agents where ID='{$_GET["edit-agent-section"]}'");
+    // Pentest 2026-11-04 : edit-agent-section etait concatene dans la requete.
+    $agentId=intval($_GET["edit-agent-section"]);
+    $agentData = $q->mysqli_fetch_array("SELECT * FROM aaa_agents where ID='$agentId'");
     if($agentData['aaa_agent_name']==""){echo "No Agent Found";return false;}
     $form[]=$tpl->field_hidden("aaa_agent_id","{$agentData['ID']}");
     //$form[]=$tpl->field_text("aaa_agent_name","{name}","{$agentData['aaa_agent_name']}",true);
@@ -252,10 +255,11 @@ function save_agent(){
 function delete_agent_js(){
     $page = CurrentPageName();
     $tpl = new template_admin();
-    $agentID = $_GET["remove-agent-js"];
-    $agentName = $_GET["agent-name"];
+    // Pentest 2026-11-04 : remove-agent-js et agent-name etaient recopies sans encodage dans la page (XSS).
+    $agentID = intval($_GET["remove-agent-js"]);
+    $agentName = (string)($_GET["agent-name"] ?? "");
     $jsrestart = "LoadAjaxSilent('artica-agent-agents-section','$page?agents-start=yes');";
-    $tpl->js_confirm_delete("$agentName", "delete-agent-confirm", $agentID.'|'.$agentName, $jsrestart);
+    $tpl->js_confirm_delete(req_html($agentName), "delete-agent-confirm", $agentID.'|'.$agentName, $jsrestart);
 }
 
 function delete_agent_popup():bool{
@@ -319,7 +323,8 @@ function agents_section():bool{
 }
 
 function td_destinations():bool{
-    $ID=$_GET["td-destinations"];
+    // Pentest 2026-11-04 : td-destinations etait recopie sans encodage dans la page (XSS).
+    $ID=intval($_GET["td-destinations"]);
     $tpl=new template_admin();$tpl->CLUSTER_CLI=true;
     $page=CurrentPageName();
     $idDiv1="rcolor1-$ID";
@@ -367,6 +372,9 @@ function destinations_prepare():bool{
     $Timeout=1000;
     $f=array();
     foreach ($data as $ID=>$md){
+        // Pentest 2026-11-04 : destinations-prepare (donnees serialisees) etait recopie sans encodage dans la page (XSS).
+        $ID=intval($ID);
+        $md=preg_replace('#[^A-Za-z0-9_-]#','',(string)$md);
         $Timeout=$Timeout+50;
         $idDiv1="rcolor1-$ID";
         $idDiv4="rcolor4-$ID";

@@ -1,107 +1,104 @@
-<AddExcludeDarFileType>Give the extension name in order to exclude compression (like *.zip)</AddExcludeDarFileType>
-<add_backup_folder>Browse your server and define which directory will be backuped</add_backup_folder>
-<APP_RSYNC_CLIENT>Remote Client synchronization</APP_RSYNC_CLIENT>
-<APP_RSYNC_CLIENT_TEXT>Configure this server to send backup to a Remote Server synchronization</APP_RSYNC_CLIENT_TEXT>
-<artica_conf>Artica configuration files</artica_conf>
-<backup_engine>Engine parameters</backup_engine>
-<backup_engine_text>Define the backup engine parameters</backup_engine_text>
+<AddExcludeDarFileType>Indique o nome da extens&#227;o para excluir a compress&#227;o (como *.zip)</AddExcludeDarFileType>
+<add_backup_folder>Explore o seu servidor e defina que diret&#243;rio ser&#225; objeto de backup</add_backup_folder>
+<APP_RSYNC_CLIENT>Sincroniza&#231;&#227;o de cliente remoto</APP_RSYNC_CLIENT>
+<APP_RSYNC_CLIENT_TEXT>Configurar este servidor para enviar backups a um servidor remoto para sincroniza&#231;&#227;o</APP_RSYNC_CLIENT_TEXT>
+<artica_conf>Ficheiros de configura&#231;&#227;o do Artica</artica_conf>
+<backup_engine>Par&#226;metros do motor</backup_engine>
+<backup_engine_text>Defina os par&#226;metros do motor de backup</backup_engine_text>
 <backup_every>Realizar c%C3%B3pias de segurança cada</backup_every>
-<backup_foldersize>Backup Folder size</backup_foldersize>
-<browse_external_storage>Storages collection</browse_external_storage>
-<browse_external_storage_explain>These external storage will be used if there are available to perform incremental backup.[br]If some of them are connected and available, the backup will be performed[br]
-Artica will use all of these storage. So if for example,2 storages are available, the backup will be performed twice...</browse_external_storage_explain>
-<browse_external_storage_text>List your external storages collection</browse_external_storage_text>
-<collection>Collection</collection>
-<collection_number>Collection number</collection_number>
+<backup_foldersize>Tamanho da pasta de backup</backup_foldersize>
+<browse_external_storage>Cole&#231;&#227;o de armazenamentos</browse_external_storage>
+<browse_external_storage_explain>Estes armazenamentos externos ser&#227;o usados se estiverem dispon&#237;veis para realizar o backup incremental.[br]Se alguns deles estiverem ligados e dispon&#237;veis, o backup ser&#225; realizado[br]
+O Artica usar&#225; todos estes armazenamentos. Por isso, se por exemplo, 2 armazenamentos estiverem dispon&#237;veis, o backup ser&#225; realizado duas vezes...</browse_external_storage_explain>
+<browse_external_storage_text>Listar a sua cole&#231;&#227;o de armazenamentos externos</browse_external_storage_text>
+<collection>Cole&#231;&#227;o</collection>
+<collection_number>N&#250;mero da cole&#231;&#227;o</collection_number>
 <compress_level>N%C3%ADvel de compress%C3£o</compress_level>
 <compress_level_help>Esta opç%C3£o activa a compress%C3£o de arquivo Bzip2, que por defeito é desligada [br].
 Pode mesmo especificar um n%C3%ADvel de compress%C3£o numérico, que vai de 0 (sem compress%C3£o) a 9 (melhor compress%C3£o, processamento lento) [br].
 Bzip2 por defeito utiliza 6, que é a melhor relaç%C3£o velocidade/compress%C3£o para a maioria dos ficheiros</compress_level_help>
-<connecting>Connecting</connecting>
-<container_path>Directory Path to store incrementals backup</container_path>
-<dar_pub>DAR (Disk Archive) is an excellent software made by Denis Corbin that perform incremental backup.[br]It's main goal is to reduce Archives size by using specific compress/indexing systems[br]DAR can be found at http://dar.linux.free.fr</dar_pub>
-<display_dar_collection>Display backup</display_dar_collection>
-<display_dar_collection_text>View your backup files and restore backup</display_dar_collection_text>
-<enable_incremental>Enable disable incremental backup</enable_incremental>
-<exclude_compress_file_types>Exclude files in compress engine</exclude_compress_file_types>
-<exclude_compress_file_types_text>Give extensions (width *) in order to exculde these files to the compress engine</exclude_compress_file_types_text>
+<connecting>A ligar</connecting>
+<container_path>Caminho do diret&#243;rio para armazenar backups incrementais</container_path>
+<dar_pub>O DAR (Disk Archive) &#233; um excelente software criado por Denis Corbin que realiza backups incrementais.[br]O seu objetivo principal &#233; reduzir o tamanho dos arquivos usando sistemas espec&#237;ficos de compress&#227;o/indexa&#231;&#227;o[br]O DAR pode ser encontrado em http://dar.linux.free.fr</dar_pub>
+<display_dar_collection>Exibir backup</display_dar_collection>
+<display_dar_collection_text>Ver os seus ficheiros de backup e restaurar o backup</display_dar_collection_text>
+<enable_incremental>Ativar ou desativar o backup incremental</enable_incremental>
+<exclude_compress_file_types>Excluir ficheiros do motor de compress&#227;o</exclude_compress_file_types>
+<exclude_compress_file_types_text>Indique extens&#245;es (com *) para excluir estes ficheiros do motor de compress&#227;o</exclude_compress_file_types_text>
 <external_storage>Armazenamento externo</external_storage>
-<external_storage_text>You can use an external storage in order to store yours backups, currently externals storages supported are USB Mass media and remote Network share</external_storage_text>
+<external_storage_text>Pode usar um armazenamento externo para guardar os seus backups; atualmente os armazenamentos externos suportados s&#227;o suportes de massa USB e pastas partilhadas de rede remotas</external_storage_text>
 <global_settings>Configuraç%C3µes globais</global_settings>
-<global_settings_text>Define here the global parameters of the backup engine</global_settings_text>
+<global_settings_text>Defina aqui os par&#226;metros globais do motor de backup</global_settings_text>
 <homes>Diret%C3%B3rios pessoais</homes>
-<homes_folder_exclude>Exclude some home directories</homes_folder_exclude>
-<index>Index</index>
-<indexing>Building indexes</indexing>
-<in_mysql_database>in SQL Database</in_mysql_database>
+<homes_folder_exclude>Excluir alguns diret&#243;rios home</homes_folder_exclude>
+<index>&#205;ndice</index>
+<indexing>A construir &#237;ndices</indexing>
+<in_mysql_database>na base de dados SQL</in_mysql_database>
 <ldap_datas>Bases de dados LDAP</ldap_datas>
-<list_dar_collection>List collections</list_dar_collection>
-<list_dar_collection_text>Display the listing of your collections backuped in order to restore</list_dar_collection_text>
-<mailboxes>Mailboxes</mailboxes>
-<minimal_compress>Do not compress files under</minimal_compress>
-<mount_dar>Mount your backup collection</mount_dar>
-<mount_dar_text>Connect Artica to you backup area in order to query it</mount_dar_text>
-<mount_this_collection>Mount this collection</mount_this_collection>
-<mysql_datas>Mysql databases</mysql_datas>
-<nice_int>Scheduling priority (nice)</nice_int>
-<nice_int_text>Run backup process with an adjusted scheduling priority.[br]
-Range goes from -20 (highest priority) to 19 (lowest).</nice_int_text>
+<list_dar_collection>Listar cole&#231;&#245;es</list_dar_collection>
+<list_dar_collection_text>Exibir a listagem das suas cole&#231;&#245;es com backup para restaurar</list_dar_collection_text>
+<mailboxes>Caixas de correio</mailboxes>
+<minimal_compress>N&#227;o comprimir ficheiros abaixo de</minimal_compress>
+<mount_dar>Montar a sua cole&#231;&#227;o de backup</mount_dar>
+<mount_dar_text>Ligar o Artica &#224; sua &#225;rea de backup para a consultar</mount_dar_text>
+<mount_this_collection>Montar esta cole&#231;&#227;o</mount_this_collection>
+<mysql_datas>Bases de dados Mysql</mysql_datas>
+<nice_int>Prioridade de agendamento (nice)</nice_int>
+<nice_int_text>Executar o processo de backup com uma prioridade de agendamento ajustada.[br]
+O intervalo vai de -20 (prioridade mais alta) a 19 (mais baixa).</nice_int_text>
 <no_dar_installed>O Disk Archive n%C3£o est%C3¡ instalado !</no_dar_installed>
-<no_dar_installed_text>This feature support only DAR (Disk Archive).[br]You need to install it, You should go to Application Setup Center in order to peform installation</no_dar_installed_text>
-<OnFly>Backuped mails</OnFly>
-<original_path>original path</original_path>
-<populate_text>The resource will be populated in background mode...</populate_text>
-<query_collection>Query backup collection</query_collection>
-<query_collection_explain>Give the full name of your file (star * is not supported)</query_collection_explain>
-<query_collection_text>Search files under the backup collection</query_collection_text>
+<no_dar_installed_text>Esta funcionalidade suporta apenas DAR (Disk Archive).[br]Precisa de o instalar, deve ir ao Application Setup Center para realizar a instala&#231;&#227;o</no_dar_installed_text>
+<OnFly>Mensagens com backup</OnFly>
+<original_path>caminho original</original_path>
+<populate_text>O recurso ser&#225; preenchido em modo de fundo...</populate_text>
+<query_collection>Consultar a cole&#231;&#227;o de backup</query_collection>
+<query_collection_explain>Indique o nome completo do seu ficheiro (o asterisco * n&#227;o &#233; suportado)</query_collection_explain>
+<query_collection_text>Procurar ficheiros na cole&#231;&#227;o de backup</query_collection_text>
 <RebuildCollectionAsk>Reconstruir a colecç%C3£o ? Deve demorar algum tempo, dependendo do tamanho dos seus ficheiros de backup</RebuildCollectionAsk>
-<rebuild_collection>Reconstruct collection</rebuild_collection>
-<rebuild_collection_text>This operation will build a new collection index</rebuild_collection_text>
-<refresh_cache>Refresh files caches</refresh_cache>
+<rebuild_collection>Reconstruir cole&#231;&#227;o</rebuild_collection>
+<rebuild_collection_text>Esta opera&#231;&#227;o criar&#225; um novo &#237;ndice de cole&#231;&#227;o</rebuild_collection_text>
+<refresh_cache>Atualizar as caches de ficheiros</refresh_cache>
 <remote_foldersize>Tamanho de armazenamento remoto</remote_foldersize>
 <restore_choose_date>Escolha a data certa do recipiente para restaurar o seu ficheiro depende da data guardada</restore_choose_date>
 <restore_file_text>Esta operaç%C3£o ir%C3¡ extrair os ficheiros de backup dos contentores de backup. Indique aqui onde pretende restaurar o ficheiro.</restore_file_text>
-<restore_from_defined_path>Restore from defined path</restore_from_defined_path>
-<restore_from_original_path>Restore from original path</restore_from_original_path>
-<restoring_explain_operation>Success...
-The restore operation has been launched in background mode.
-in few times..
-The restore operation will be completed.
-</restoring_explain_operation>
+<restore_from_defined_path>Restaurar a partir do caminho definido</restore_from_defined_path>
+<restore_from_original_path>Restaurar a partir do caminho original</restore_from_original_path>
+<restoring_explain_operation>Sucesso...
+A opera&#231;&#227;o de restauro foi iniciada em modo de fundo.
+em breve..
+A opera&#231;&#227;o de restauro ser&#225; conclu&#237;da.</restoring_explain_operation>
 <run_backup>Executar o backup agora</run_backup>
 <run_backup_performed>O procedimento de backup foi agendado, o processo ser%C3¡ executado em modo de fundo....</run_backup_performed>
-<run_backup_text>Perform the backup now and save your containers</run_backup_text>
-<schedule_text>Define here the schedule of backup process, you can select which day the backup process will be executed</schedule_text>
-<select_your_storage>Select your storage Area</select_your_storage>
-<select_your_storage_text>In order to perform operations on your storage collection, you need to select the storage media you have set in configuration</select_your_storage_text>
-<shares_folders>Samba shared folders</shares_folders>
-<shares_folder_exclude>Exclude some shared folders</shares_folder_exclude>
-<shares_folder_exclude_text>Select yours shared folders in order to exclude them from the backup process</shares_folder_exclude_text>
-<slice_size_mb>Slice feature</slice_size_mb>
-<slice_size_mb_help>The specified size of xxx Megabytes is the maximum file size DAR will create.[br]
-If your backup is bigger, you will end up with different backup files each with a slice number before the file extension,
-so you can save each file to a different unit of your backup media (floppies, zip, CDROM, etc).</slice_size_mb_help>
-<smtp_notify>Send eMail notification</smtp_notify>
-<source_path>Source path</source_path>
-<this_device>This device</this_device>
-<userdef>User defined</userdef>
-<user_defined>User defined</user_defined>
-<user_defined_schedule_explain>By default the backup process run every day.[br]For user defined folders you can define a schedule every X minutes.[br]
-All backups will be running in incremental mode.If there is no changes, the backup will not take disk space on your backup storage media.
-[br]If you want to disable this feature, set "00" on schedule list.
-</user_defined_schedule_explain>
-<user_defined_text>Define here yours directories you want to backup</user_defined_text>
+<run_backup_text>Realizar o backup agora e guardar os seus contentores</run_backup_text>
+<schedule_text>Defina aqui o agendamento do processo de backup, pode selecionar em que dia o processo de backup ser&#225; executado</schedule_text>
+<select_your_storage>Selecione a sua &#225;rea de armazenamento</select_your_storage>
+<select_your_storage_text>Para realizar opera&#231;&#245;es na sua cole&#231;&#227;o de armazenamento, precisa de selecionar o suporte de armazenamento que definiu na configura&#231;&#227;o</select_your_storage_text>
+<shares_folders>Pastas partilhadas Samba</shares_folders>
+<shares_folder_exclude>Excluir algumas pastas partilhadas</shares_folder_exclude>
+<shares_folder_exclude_text>Selecione as suas pastas partilhadas para exclu&#237;-las do processo de backup</shares_folder_exclude_text>
+<slice_size_mb>Funcionalidade de slice</slice_size_mb>
+<slice_size_mb_help>O tamanho especificado de xxx Megabytes &#233; o tamanho m&#225;ximo de ficheiro que o DAR criar&#225;.[br]
+Se o seu backup for maior, ficar&#225; com diferentes ficheiros de backup, cada um com um n&#250;mero de slice antes da extens&#227;o do ficheiro, para que possa guardar cada ficheiro numa unidade diferente do seu suporte de backup (disquetes, zip, CD-ROM, etc.).</slice_size_mb_help>
+<smtp_notify>Enviar notifica&#231;&#227;o por e-mail</smtp_notify>
+<source_path>Caminho de origem</source_path>
+<this_device>Este dispositivo</this_device>
+<userdef>Definido pelo utilizador</userdef>
+<user_defined>Definido pelo utilizador</user_defined>
+<user_defined_schedule_explain>Por predefini&#231;&#227;o, o processo de backup &#233; executado todos os dias.[br]Para as pastas definidas pelo utilizador, pode definir um agendamento a cada X minutos.[br]
+Todos os backups ser&#227;o executados em modo incremental. Se n&#227;o houver altera&#231;&#245;es, o backup n&#227;o ocupar&#225; espa&#231;o em disco no seu suporte de armazenamento de backup.
+[br]Se quiser desativar esta funcionalidade, defina &quot;00&quot; na lista de agendamentos.</user_defined_schedule_explain>
+<user_defined_text>Defina aqui os seus diret&#243;rios dos quais pretende fazer backup</user_defined_text>
 <use_local_external_failed>Utilizar o caminho local se o armazenamento externo falhar</use_local_external_failed>
 <use_local_storage>Utilizar sistema de arquivo local</use_local_storage>
 <use_local_storage_text>Navegar no sistema de ficheiros local e escolher um direct%C3%B3rio local</use_local_storage_text>
-<use_network_storage>Use Network share folder</use_network_storage>
-<use_network_storage_text>This feature helps you to define the remote share folder in order to store your backup files</use_network_storage_text>
-<use_usb_storage>Use USB Storage</use_usb_storage>
-<use_usb_storage_explain>Plug your external device and click on "refresh" in order to display and select it</use_usb_storage_explain>
-<use_usb_storage_text>This feature helps you to define an USB Mass media disk in order to store your backup files</use_usb_storage_text>
-<view_logs>Display backup events operations</view_logs>
-<what_to_backup>what to backup ?</what_to_backup>
-<what_to_backup_text>Define here what you want to store in the backup container</what_to_backup_text>
-<WHERE_TO_BACKUP>Where to store backup files ?</WHERE_TO_BACKUP>
-<WHERE_TO_BACKUP_TEXT>Define external storages collection in order to safely store your datas</WHERE_TO_BACKUP_TEXT>
+<use_network_storage>Usar pasta partilhada de rede</use_network_storage>
+<use_network_storage_text>Esta funcionalidade ajuda-o a definir a pasta partilhada remota para armazenar os seus ficheiros de backup</use_network_storage_text>
+<use_usb_storage>Usar armazenamento USB</use_usb_storage>
+<use_usb_storage_explain>Ligue o seu dispositivo externo e clique em &quot;refresh&quot; para o exibir e selecionar</use_usb_storage_explain>
+<use_usb_storage_text>Esta funcionalidade ajuda-o a definir um disco de armazenamento em massa USB para armazenar os seus ficheiros de backup</use_usb_storage_text>
+<view_logs>Exibir as opera&#231;&#245;es de eventos de backup</view_logs>
+<what_to_backup>O que fazer backup?</what_to_backup>
+<what_to_backup_text>Defina aqui o que pretende armazenar no contentor de backup</what_to_backup_text>
+<WHERE_TO_BACKUP>Onde armazenar os ficheiros de backup?</WHERE_TO_BACKUP>
+<WHERE_TO_BACKUP_TEXT>Defina uma cole&#231;&#227;o de armazenamentos externos para guardar os seus dados em seguran&#231;a</WHERE_TO_BACKUP_TEXT>
 <you_need_to_mount_collection_first>&Eacute; necess&aacute;rio configurar uma collcection antes de continuar para esta &aacute;rea</you_need_to_mount_collection_first>

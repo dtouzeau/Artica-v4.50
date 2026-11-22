@@ -12,10 +12,7 @@ if(isset($_GET["profile"])){profile();exit;}
 if(isset($_POST["NewName"])){ChangeName();exit;}
 if(isset($_GET["members"])){members();exit;}
 if(isset($_GET["members-table"])){members_table();exit;}
-if(isset($_GET["link-group-js"])){link_group_js();exit;}
 if(isset($_GET["link-group-popup"])){link_group_popup();exit;}
-if(isset($_GET["link-js"])){link_member();exit;}
-if(isset($_GET["unlink-js"])){unlink_members();exit;}
 if(isset($_GET["privileges"])){privileges();exit;}
 if(isset($_GET["privileges-categories"])){privileges_categories();exit;}
 if(isset($_GET["privileges-categories-enable"])){privileges_categories_enable();exit;}
@@ -30,7 +27,9 @@ function js(){
     $page=CurrentPageName();
     $tpl=new template_admin();
 
-    $tpl->js_dialog5("{$_GET["group_name"]}","$page?tabs=$dnenc&group_name=$GroupName");
+    // Pentest 2026-11-04 : group_name etait recopie sans encodage dans la page (XSS).
+    // Le titre est decode (html_entity_decode) puis rendu en HTML : double encodage.
+    $tpl->js_dialog5(req_html(req_html($_GET["group_name"] ?? "")),"$page?tabs=$dnenc&group_name=$GroupName");
 }
 
 
@@ -50,7 +49,8 @@ function tabs(){
     $dnenc=urlencode($dn);
     $GroupName=urlencode($_GET["group_name"]);
 
-    $array[urldecode($GroupName)]="$page?profile=$dnenc";
+    // Pentest 2026-11-04 : group_name etait recopie sans encodage dans la page (XSS).
+    $array[req_html(urldecode($GroupName))]="$page?profile=$dnenc";
     $array["{members}"]="$page?members=$dnenc";
     $array["{privileges}"]="$page?privileges=$dnenc";
     if($EnablePersonalCategories==1){
@@ -190,12 +190,15 @@ function privileges(){
     $SQUIDEnable=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("SQUIDEnable");
     $EnablePostfix=$GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnablePostfix");
     if(preg_match("#sqlite:([0-9]+)#", $dn,$re)){
-        $ID=$re[1];
+        $ID=intval($re[1]);
         $AD=false;
-        $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
-        $ligne=$q->mysqli_fetch_array("SELECT privileges FROM groups WHERE ID='$ID'");
         $SQLITE=true;
-        $hash["ArticaGroupPrivileges"]=base64_decode($ligne["privileges"]);
+        $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/localadmins/groups/$ID/privileges")),true);
+        $privs="";
+        if(is_array($resp) && !empty($resp["success"]) && is_array($resp["data"] ?? null)){
+            $privs=strval($resp["data"]["privileges"] ?? "");
+        }
+        $hash["ArticaGroupPrivileges"]=base64_decode($privs);
 
     }
 
@@ -258,11 +261,13 @@ function privileges(){
     }
 
     $form[]=$tpl->field_section("{administrators_allow}");
-    $trings="AsArticaAdministrator,AsFirewallManager,AsVPNManager,AsDnsAdministrator,ASDCHPAdmin,AsCertifsManager,AsDatabaseAdministrator,AsSambaAdministrator";
+    $trings="AsArticaAdministrator,AsFirewallManager,AsVPNManager,AsDnsAdministrator,AsDnsMonitor,ASDCHPAdmin,AsCertifsManager,AsDatabaseAdministrator,AsSambaAdministrator";
+    // Artica Meta multi-tenant : administrateur des tenants (clients) dont le groupe est proprietaire.
+    if(intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("EnableArticaMeta"))==1){$trings.=",AsMetaAdmin";}
     $f=explode(",",$trings);
     foreach ($f as $priv){
         if(!isset($HashPrivieleges[$priv])){$HashPrivieleges[$priv]=0;}
-        $form[]=$tpl->field_checkbox($priv,"{{$priv}}",$HashPrivieleges[$priv],false,null,false,$priv);
+        $form[]=$tpl->field_checkbox($priv,"{{$priv}}",$HashPrivieleges[$priv],false,null,false,($priv=="AsMetaAdmin")?"AsSystemAdministrator":$priv);
         //$name,$label=null,$value=0,$disable_form=false,$explain=null,$disabled=false,$security=null
 
     }
@@ -289,7 +294,8 @@ function privileges_categories(){
     $dn=$_GET["privileges-categories"];
     $dnenc=urlencode($dn);
 
-    $results=$q->QUERY_SQL("SELECT id,category_id FROM personal_categories_privs WHERE dngroup='$dn'");
+    // Pentest 2026-11-04 : privileges-categories (DN) etait concatene dans la requete.
+    $results=$q->QUERY_SQL_PARAMS("SELECT id,category_id FROM personal_categories_privs WHERE dngroup=$1",array((string)$dn));
     while ($ligne = pg_fetch_assoc($results)) {
         $HASH[$ligne["category_id"]]=$ligne["id"];
     }
@@ -358,18 +364,22 @@ function privileges_categories(){
 
 }
 function privileges_categories_enable(){
+    if(grpadagent_privs_write_denied("grant personal categories",false)){return false;}
     $tpl=new template_admin();
     $dn=$_GET["privileges-categories-enable"];
     $category_id=intval($_GET["category_id"]);
     $q=new postgres_sql();
     $q->create_personal_categories();
-    $ligne=$q->QUERY_SQL("SELECT id FROM personal_categories_privs WHERE dngroup='$dn' and category_id=$category_id");
+    // Pentest 2026-11-04 : privileges-categories-enable (DN) etait concatene dans la requete
+    // (et echappe a la mode MySQL dans l'INSERT, ce qui ne protege rien sous PostgreSQL).
+    $res=$q->QUERY_SQL_PARAMS("SELECT id FROM personal_categories_privs WHERE dngroup=$1 and category_id=$2",array((string)$dn,$category_id));
+    $ligne=$res?pg_fetch_assoc($res):array();
+    if(!is_array($ligne)){$ligne=array();}
 
-    $id=intval($ligne["id"]);
+    $id=intval($ligne["id"] ?? 0);
     if($id==0){
-        $dn=str_replace("'","\'",$dn);
-        $q->QUERY_SQL("INSERT INTO personal_categories_privs (category_id,dngroup)
-        VALUES ('$category_id','$dn')");
+        $q->QUERY_SQL_PARAMS("INSERT INTO personal_categories_privs (category_id,dngroup)
+        VALUES ($1,$2)",array($category_id,(string)$dn));
         if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);}
         return;
     }
@@ -379,6 +389,7 @@ function privileges_categories_enable(){
 
 }
 function privileges_save(){
+    if(grpadagent_privs_write_denied("define Web-console privileges",true)){return false;}
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ldap=new clladp();
@@ -386,12 +397,15 @@ function privileges_save(){
     $SQLITE=false;
     $AD=true;
     if(preg_match("#sqlite:([0-9]+)#", $dn,$re)){
-        $ID=$re[1];
+        $ID=intval($re[1]);
         $AD=false;
-        $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
-        $ligne=$q->mysqli_fetch_array("SELECT `privileges` FROM groups WHERE ID='$ID'");
         $SQLITE=true;
-        $hash["ArticaGroupPrivileges"]=base64_decode($ligne["privileges"]);
+        $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API("/localadmins/groups/$ID/privileges")),true);
+        $privs="";
+        if(is_array($resp) && !empty($resp["success"]) && is_array($resp["data"] ?? null)){
+            $privs=strval($resp["data"]["privileges"] ?? "");
+        }
+        $hash["ArticaGroupPrivileges"]=base64_decode($privs);
     }
     if($AD){
         $ct=new external_ad_search();
@@ -423,10 +437,13 @@ function privileges_save(){
     $values=@implode($GroupPrivilegeNew, "\n");
 
     if($SQLITE){
-        $q=new lib_sqlite("/home/artica/SQLITE/admins.db");
         $values=base64_encode($values);
-        $q->QUERY_SQL("UPDATE `groups` SET `privileges`='$values' WHERE ID=$ID");
-        if(!$q->ok){echo $q->mysql_error;}
+        $resp=json_decode(strval($GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/localadmins/groups/$ID/privileges",
+            array("privileges"=>$values))),true);
+        if(!is_array($resp) || empty($resp["success"])){
+            echo is_array($resp)?strval($resp["error"] ?? "unknown error"):"daemon unreachable";
+        }
+        admin_tracks("Modified privileges of local administrators group ID=$ID");
         return;
 
     }
@@ -442,6 +459,7 @@ function privileges_save(){
 
 
 function ChangeName(){
+    if(grpadagent_privs_write_denied("rename",true)){return false;}
     $page=CurrentPageName();
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
@@ -463,4 +481,18 @@ function ChangeName(){
     }
     if(!$group->SaveDescription($_POST["description"])){echo $group->ldap_error;}
 
+}
+
+// Ecriture de privileges de groupe (blob ArticaGroupPrivileges, tenants SIEM, categories, ACL,
+// reverse-proxy manage) : administrateur systeme seulement, controle COTE SERVEUR -- le verrou
+// des tuiles/cases n'est qu'un affichage. Sans lui, tout compte connecte pouvait s'accorder
+// AsArticaMetaAdmin ou AsSystemAdministrator sur son propre groupe. Rend true = REFUSE.
+function grpadagent_privs_write_denied($what,$post=false):bool{
+    $users=new usersMenus();
+    if($users->AsSystemAdministrator){return false;}
+    $tpl=new template_admin();
+    $target=isset($_POST["privs"])?(string)$_POST["privs"]:"";
+    admin_tracks("Refused: $what on group $target (not a system administrator)");
+    if($post){echo $tpl->post_error("{ERROR_NO_PRIVS}");}else{$tpl->js_error("{ERROR_NO_PRIVS}");}
+    return true;
 }

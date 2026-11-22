@@ -1,21 +1,19 @@
-<add_bogo_spam>SPAM bogo user</add_bogo_spam>
-<bogo_delete>Delete mail</bogo_delete>
-<bogo_ham>used to send good mails</bogo_ham>
-<bogo_intro>
-Bogofilter is a mail filter that classifies mail as spam or ham (non-spam) by a statistical analysis of the message's header and content (body).[br]
-The program is able to learn from the user's classifications and corrections.[br]
-The statistical technique is known as the Bayesian technique and its use for spam.[br]
-Bogofilter will create a words database for each internal user.[br]
-To classify messages as ham (non-spam) or spam, bogofilter needs to learn from your users mails[br]
-In this case you need to create 2 robots users.[br][br]
-[ul][li]One for learn SPAM that your users judge[/li][li] One for Ham (not spam) that bogofilter could detect.[/li][/ul]
-</bogo_intro>
-<bogo_prepend>prepend subject</bogo_prepend>
-<bogo_quarantine>quarantine mail</bogo_quarantine>
-<bogo_robots>Add Bogofilter robots</bogo_robots>
-<bogo_spam>used to send spam</bogo_spam>
-<if_bogo_prepend>If prepend selected, prepend subject with</if_bogo_prepend>
-<robot>bogofiler robots</robot>
-<spam_action>Detected spam action</spam_action>
-<spam_action_text>When bogofilter detected mails as score exceed </spam_action_text>
+<add_bogo_spam>Usu&#225;rio SPAM bogo</add_bogo_spam>
+<bogo_delete>Excluir e-mail</bogo_delete>
+<bogo_ham>usado para enviar e-mails bons</bogo_ham>
+<bogo_intro>O Bogofilter &#233; um filtro de e-mail que classifica os e-mails como spam ou ham (n&#227;o spam) por uma an&#225;lise estat&#237;stica do cabe&#231;alho e do conte&#250;do (corpo) da mensagem.[br]
+O programa &#233; capaz de aprender com as classifica&#231;&#245;es e corre&#231;&#245;es do usu&#225;rio.[br]
+A t&#233;cnica estat&#237;stica &#233; conhecida como t&#233;cnica bayesiana e o seu uso para spam.[br]
+O Bogofilter criar&#225; um banco de dados de palavras para cada usu&#225;rio interno.[br]
+Para classificar as mensagens como ham (n&#227;o spam) ou spam, o bogofilter precisa aprender com os e-mails dos seus usu&#225;rios[br]
+Neste caso, voc&#234; precisa criar 2 usu&#225;rios rob&#244;s.[br][br]
+[ul][li]Um para aprender o SPAM que os seus usu&#225;rios julgam[/li][li] Um para Ham (n&#227;o spam) que o bogofilter poderia detectar.[/li][/ul]</bogo_intro>
+<bogo_prepend>anexar ao in&#237;cio do assunto</bogo_prepend>
+<bogo_quarantine>colocar e-mail em quarentena</bogo_quarantine>
+<bogo_robots>Adicionar rob&#244;s Bogofilter</bogo_robots>
+<bogo_spam>usado para enviar spam</bogo_spam>
+<if_bogo_prepend>Se anexar ao in&#237;cio for selecionado, anexe ao in&#237;cio do assunto</if_bogo_prepend>
+<robot>Rob&#244;s bogofilter</robot>
+<spam_action>A&#231;&#227;o para spam detectado</spam_action>
+<spam_action_text>Quando o bogofilter detecta e-mails cuja pontua&#231;&#227;o excede</spam_action_text>
 <type>tipo</type>

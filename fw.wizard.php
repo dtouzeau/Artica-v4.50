@@ -14,6 +14,11 @@ include_once(dirname(__FILE__).'/ressources/class.resolv.conf.inc');
 include_once(dirname(__FILE__).'/ressources/class.identity.inc');
 include_once(dirname(__FILE__).'/class.html.tools.inc');
 
+// Pentest 2026-11-04 : interface-js/interface-popup/change-lang etaient recopies sans encodage dans la page (XSS).
+foreach(array("interface-js","interface-popup") as $k){
+    if(isset($_GET[$k])){$_GET[$k]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET[$k]);}
+}
+if(isset($_GET["change-lang"])){$_GET["change-lang"]=preg_replace('/[^A-Za-z0-9_-]/','',(string)$_GET["change-lang"]);}
 if(isset($_POST["SaveNic"])){save_nic();exit;}
 if(isset($_POST["timezones"])){step1_save();exit;}
 if(isset($_POST["smtp_domainname"])){step2_save();exit;}
@@ -280,8 +285,9 @@ function save_nic(){
     $c1=$IPADDR[2];
     $c2=$IPADDR[3];
 
-    if($c2==0){echo "{$_POST["IPADDR"]} invalid!";return;}
-    if($c2==null){echo "{$_POST["IPADDR"]} invalid!";return;}
+    // Pentest 2026-11-04 : IPADDR etait recopie sans encodage dans la page (XSS).
+    if($c2==0){echo req_html($_POST["IPADDR"])." invalid!";return;}
+    if($c2==null){echo req_html($_POST["IPADDR"])." invalid!";return;}
     if($c2==255){echo ".$c2 invalid!";return;}
 
 
@@ -464,7 +470,8 @@ function step2_save(){
 
 
     if(!invalid_mail($_POST["mail"])){
-        echo "<br>{$_POST["mail"]} INVALID !!!!! ";
+        // Pentest 2026-11-04 : mail etait recopie sans encodage dans la page (XSS).
+        echo "<br>".req_html($_POST["mail"])." INVALID !!!!! ";
         return;
     }
     $_POST["mail"]=$tpl->CLEAN_BAD_CHARMAIL($_POST["mail"]);
@@ -839,12 +846,14 @@ function step_final(){
     $settings_final_show=$tpl->_ENGINE_parse_body("{settings_final_show}");
     $settings_final_show=str_replace("%a", "<strong style='color:#C91111'>{$savedsettings["administrator"]}</strong>", $settings_final_show);
     $settings_final_show=str_replace("%p", "<strong  style='color:#C91111'>{$passwordtoshow}</strong>", $settings_final_show);
-    $sock->getFrameWork("system.php?wizard-execute=yes");
+    // The install engine is articarest (unixconsole WizardInstall, reads TempWizard):
+    // the same route as the current setup wizard (wizard/wiz.wizard.progress.php).
+    // exec.wizard-install.php, launched here before, only ran its final cleanup.
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/wizard/install");
 
 
     $ARRAY["PROGRESS_FILE"]=PROGRESS_DIR."/wizard.progress";
     $ARRAY["LOG_FILE"]=PROGRESS_DIR."/wizard.log";
-    $ARRAY["CMD"]="system.php?wizard-execute=yes";
     $ARRAY["TITLE"]="{build_parameters}";
     $ARRAY["AFTER"]="document.location.href='fw.login.php'";
     $prgress=base64_encode(serialize($ARRAY));

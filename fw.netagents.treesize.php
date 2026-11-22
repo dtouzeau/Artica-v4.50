@@ -7,25 +7,62 @@
 include_once dirname(__FILE__) . '/ressources/class.template-admin.inc';
 include_once dirname(__FILE__) . '/ressources/class.sockets.inc';
 include_once(dirname(__FILE__)."/ressources/class.netagent.artica.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 if(isset($_GET["tabs"])){tabs();exit;}
 if(isset($_GET["directory-table"])){directory_table();exit;}
 if(isset($_GET["top-dirs"])){top_dirs();exit;}
 if(isset($_GET["chart-data"])){chart_data();exit;}
 if(isset($_GET["history-chart"])){history_chart();exit;}
+if(isset($_GET["refresh-js"])){refresh_js();exit;}
 js();
 
 function js():bool{
     $page = CurrentPageName();
     $tpl = new template_admin();
     $users=new usersMenus();
-    if(!$users->AsArticaMetaAdmin){
+    if(!meta_can_view($users)){
         return $tpl->js_error("{no_privileges}");
     }
     $id=$_GET["id"];
     $net=new ArticaNetAgents($id);
     $AgentName=$net->GetAgentHostname();
     return $tpl->js_dialog7("{disk_usage_analyzer} - $AgentName", "$page?tabs=$id", 950);
+}
+
+// Asks the node for its disk usage now (Meta otherwise reads it once a day),
+// then reopens the dialog on the fresh copy.
+function refresh_js():bool{
+    $page = CurrentPageName();
+    $tpl = new template_admin();
+    $users=new usersMenus();
+    if(!meta_can_push($users)){
+        return $tpl->js_error("{no_privileges}");
+    }
+    $id=intval($_GET["refresh-js"]);
+    $raw=$GLOBALS["CLASS_SOCKETS"]->REST_API_POST("/netagents/treesize/$id/refresh",array());
+    $json=json_decode((string)$raw);
+    if(!is_object($json)){
+        return $tpl->js_error(trim((string)$raw)==""?"{error}":substr(trim((string)$raw),0,300));
+    }
+    if(!isset($json->Status) || !$json->Status){
+        return $tpl->js_error($json->Error ?? "{error}");
+    }
+    header("content-type: application/x-javascript");
+    echo "dialogInstance7.close();Loadjs('$page?id=$id');";
+    return true;
+}
+
+// Reminder + button shown above the data and above the "no data" message alike.
+function refresh_bar(int $id):string{
+    $page=CurrentPageName();
+    $bar="<div style='display:flex;align-items:center;gap:12px;margin-bottom:10px'>";
+    $bar.="<span class='text-muted' style='flex:1'>{netagents_treesize_daily}</span>";
+    $bar.="<button type='button' class='btn btn-default btn-sm' onclick=\"Loadjs('$page?refresh-js=$id')\">";
+    $bar.="<i class='fas fa-rotate'></i> {refresh}</button>";
+    $bar.="</div>";
+    return $bar;
 }
 
 function tabs(){
@@ -40,7 +77,7 @@ function tabs(){
         return;
     }
     if(!isset($stats->exists) || !$stats->exists){
-        echo $tpl->_ENGINE_parse_body($tpl->div_info("{no_data_available}"));
+        echo $tpl->_ENGINE_parse_body(refresh_bar($id).$tpl->div_info("{no_data_available}"));
         return;
     }
 
@@ -63,6 +100,7 @@ function tabs(){
     }
 
     $html=array();
+    $html[]=refresh_bar($id);
     $html[]=$scanInfo;
 
     // Tab navigation
@@ -179,7 +217,7 @@ function directory_table(){
         $totalSize+=($entry->size ?? 0);
     }
 
-    $html[]="<table class='table table-hover table-striped'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead><tr>";
     $html[]="<th style='width:45%'>{name}</th>";
     $html[]="<th style='width:20%'>{size}</th>";
@@ -215,10 +253,10 @@ function directory_table(){
         $html[]="</tr>";
     }
 
-    $html[]="</tbody></table>";
+    $html[]="</tbody></table></div></div></div>";
     $html[]="<div class='well well-sm'><strong>{total}:</strong> ".FormatBytes($totalSize/1024)."</div>";
 
-    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html));
 }
 
 function top_dirs(){
@@ -241,7 +279,7 @@ function top_dirs(){
 
     $maxSize=$entries[0]->size ?? 1;
     $html=array();
-    $html[]="<table class='table table-hover table-striped'>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
     $html[]="<thead><tr>";
     $html[]="<th>{path}</th>";
     $html[]="<th style='width:15%'>{size}</th>";
@@ -251,7 +289,7 @@ function top_dirs(){
 
     $TRCLASS=null;
     foreach($entries as $entry){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+        $TRCLASS=null;
         $entryPath=$entry->path ?? "";
         $size=$entry->size ?? 0;
         $sizeHuman=FormatBytes($size/1024);
@@ -274,7 +312,7 @@ function top_dirs(){
         $html[]="</tr>";
     }
 
-    $html[]="</tbody></table>";
+    $html[]="</tbody></table></div></div></div>";
     echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
 }
 

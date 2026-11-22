@@ -1,30 +1,29 @@
-<about_usb>This section helps you to play with usb storage devices, you can plug devices connect them and un-connect them with this interface[br]
-When click on an item you can delegate one usb device has the usb auto-backup device[br]
-This means that when you plug you device on the computer, artica will mount it automatically and perform backup feature.[br]
-If you leave this device permanently, the backup operation will be perform every 2 hours</about_usb>
-<automount>Auto-connect</automount>
-<automount_explain>Automatically connect this device when you plug it on the system</automount_explain>
-<automount_explain_text>This operation will automatically connect the device into /automounts directory when it is plugged on the system.[br]
-the linking operation will be automatic when the system wants to access it.</automount_explain_text>
-<auto_folder>Directory name point</auto_folder>
+<about_usb>Questa sezione ti aiuta a gestire i dispositivi di archiviazione USB, puoi collegare i dispositivi, connetterli e disconnetterli con questa interfaccia[br]Cliccando su un elemento puoi delegare un dispositivo USB come dispositivo di backup automatico USB[br]Ci&#242; significa che quando colleghi il tuo dispositivo al computer, Artica lo monter&#224; automaticamente ed eseguir&#224; la funzione di backup.[br]Se lasci questo dispositivo permanentemente, l'operazione di backup verr&#224; eseguita ogni 2 ore</about_usb>
+<automount>Connessione automatica</automount>
+<automount_explain>Connetti automaticamente questo dispositivo quando lo colleghi al sistema</automount_explain>
+<automount_explain_text>Questa operazione collegher&#224; automaticamente il dispositivo alla directory /automounts quando viene inserito nel sistema.[br]
+l'operazione di collegamento sar&#224; automatica quando il sistema vorr&#224; accedervi.</automount_explain_text>
+<auto_folder>Nome della directory</auto_folder>
 <click_to_edit>Clicca per editare</click_to_edit>
 <connected>connesso</connected>
-<dismount_text>[b]Disconnect this key[/b][br]Destroy the pointer to this usb storage in order to physically remove it from the computer</dismount_text>
-<error_understand_fs>Unable to understand filesystem type</error_understand_fs>
+<dismount_text>[b]Disconnetti questa chiave[/b][br]elimina il puntatore a questa memoria USB per rimuoverla fisicamente dal computer</dismount_text>
+<error_understand_fs>Impossibile riconoscere il tipo di filesystem</error_understand_fs>
 <file_system>File system</file_system>
 <formatdevice>Formatta questa unit&agrave;</formatdevice>
 <format_warning>Sei sicuro di avviare questa operazione, tutti i dati verranno cancellati...</format_warning>
 <local>locale</local>
-<make_autobackup>Auto-backup device</make_autobackup>
+<make_autobackup>Dispositivo di backup automatico</make_autobackup>
 <manufacturer>costrutture</manufacturer>
 <model>Modello</model>
-<mounted_on>mounted on</mounted_on>
-<mount_text>[b]Connect this key[/b][br]create a pointer to this usb storage in order to access it</mount_text>
+<mounted_on>Montato su</mounted_on>
+<mount_text>[b]Connetti questa chiave[/b][br]crea un puntatore a questa memoria USB per accedervi</mount_text>
 <not_applicable>Non applicabile</not_applicable>
 <plugged>collegato</plugged>
 <speed>velocit&agrave;</speed>
 <system>Sistema</system>
 <umake_autobackup>Rimuovi l'Auto-backup</umake_autobackup>
 <vendor>Distributore</vendor>
-<warnautoback>You choose that this device will be an auto-backup device.\nThis meens that when you plug this device on this computer,\nArtica will backup automatically mandatories datas on this device</warnautoback>
-<warnautobackremove>This device will be disconnected has an auto-backup device\nContinue?</warnautobackremove>
+<warnautoback>Hai scelto che questo dispositivo sar&#224; un dispositivo di backup automatico.
+Ci&#242; significa che quando colleghi questo dispositivo a questo computer, Artica eseguir&#224; automaticamente il backup dei dati obbligatori su questo dispositivo</warnautoback>
+<warnautobackremove>Questo dispositivo verr&#224; disconnesso come dispositivo di backup automatico
+Continuare?</warnautobackremove>

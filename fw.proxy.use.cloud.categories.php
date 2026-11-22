@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
 if(!isset($GLOBALS["CLASS_SOCKETS"])){
     if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}
@@ -30,7 +31,7 @@ function popup(){
     $config["TITLE"]="{UseCloudArticaCategories}";
     $config["AFTER"]="dialogInstance4.close();if(document.getElementById('table-loader-catz-pages')){LoadAjax('table-loader-catz-pages','fw.proxy.categories.services.php?table=yes');}";
     $prgress=base64_encode(serialize($config));
-    $jsafter="Loadjs('fw.progress.php?content=$prgress&mainid=UseCloudArticaCategories-progress')";
+    $jsafter="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=UseCloudArticaCategories-progress')";
 
     $html[]="<div style='margin-top:20px;maring-bottom:20px' id='UseCloudArticaCategories-progress'></div>";
     $html[]="<div class='alert alert-info' style='margin-bottom: 10px'>{UseCloudArticaCategories_text}</div>";

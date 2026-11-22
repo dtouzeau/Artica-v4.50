@@ -1,6 +1,11 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_POST["CAA"])){record_CAA_save();exit;}
 if(isset($_POST["xdomain_id"])){exit;}
@@ -19,6 +24,27 @@ if(isset($_GET["delete-js"])){delete_js();exit;}
 if(isset($_POST["delete"])){record_delete();exit;}
 page();
 
+/**
+ * Le nom de la fonction de rafraichissement transmis dans l'URL: il repart
+ * dans des chaines JavaScript sans echappement.
+ */
+/**
+ * Neutralise une valeur avant qu'elle rejoigne un litteral SQL '...'.
+ *
+ * Plusieurs requetes de ce fichier sont assemblees par concatenation et la
+ * connexion mysqli n'est ouverte que dans QUERY_SQL(), donc
+ * mysqli_real_escape_string() n'est pas disponible au moment ou la chaine est
+ * construite. A l'interieur d'un litteral simple-quote, seuls l'apostrophe et
+ * l'antislash permettent d'en sortir.
+ */
+function pdnsrec_sqlstr($v):string{
+	return str_replace(array("'","\\"),"",(string)$v);
+}
+
+function pdnsrec_function():string{
+	return preg_replace('/[^A-Za-z0-9_]/','',(string)(isset($_GET["function"])?$_GET["function"]:""));
+}
+
 function record_js(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
@@ -28,18 +54,23 @@ function record_js(){
 		$q=new mysql_pdns();
 		$sql="SELECT name,`type`,content FROM records WHERE id=$id";
 		$ligne=mysqli_fetch_array($q->QUERY_SQL($sql));
-		$ligne["content"]=substr($ligne["content"],0,20);
-		$title="{$ligne["name"]}::{$ligne["type"]}::{$ligne["content"]}...";
-		
+		if(!is_array($ligne)){$ligne=array();}
+		// Ces trois valeurs viennent de la base et partaient BRUTES dans le
+		// titre de la modale.
+		$title=htmlspecialchars((string)($ligne["name"] ?? ""))."::"
+			  .htmlspecialchars((string)($ligne["type"] ?? ""))."::"
+			  .htmlspecialchars(substr((string)($ligne["content"] ?? ""),0,20))."...";
+
 	}
 	$domainid=intval($_GET["domain-id"]);
-	$tpl->js_dialog7($title, "$page?record-popup=$id&domain-id=$domainid&function={$_GET["function"]}",810);
+	$tpl->js_dialog7($title, "$page?record-popup=$id&domain-id=$domainid&function=".pdnsrec_function(),810);
 
 	
 }
 function record_disable(){
 	$q=new mysql_pdns();
-	$id=$_GET['enable-js'];
+	// $id partait BRUT dans un SELECT et DEUX UPDATE.
+	$id=intval($_GET['enable-js']);
 	$sql="SELECT disabled FROM records WHERE id=$id";
 	$ligne2=mysqli_fetch_array($q->QUERY_SQL($sql));
 	$disabled=intval($ligne2["disabled"]);
@@ -55,8 +86,9 @@ function record_disable(){
 }
 
 function record_info_js(){
-	$type=$_GET["type"];
-	$id=$_GET["id"];
+	// Ces deux valeurs partaient BRUTES dans une requete et dans des URL.
+	$type=preg_replace('#[^A-Za-z0-9]#','',(string)($_GET["type"] ?? ""));
+	$id=intval($_GET["id"]);
 	$q=new mysql_pdns();
 	$tpl=new template_admin();
 	$prefix="{new_record} ";
@@ -70,7 +102,8 @@ function record_info_js(){
 		$prefix="{record}: $id $name >> ";
 		
 	}else{
-		$domainid=$_GET["domainid"];
+		// Pentest 2026-11-04 : domainid etait recopie sans encodage dans la page (XSS).
+		$domainid=intval($_GET["domainid"]);
 	}
 	
 	$sql="SELECT name FROM domains WHERE id=$domainid";
@@ -82,7 +115,8 @@ function record_info_js(){
 	
 }
 function record_delete(){
-	$id=$_POST["delete"];
+	// $id partait BRUT dans un SELECT et dans le DELETE.
+	$id=intval($_POST["delete"]);
 	$q=new mysql_pdns();
     $sql="SELECT * FROM records WHERE id=$id";
     $ligne=mysqli_fetch_array($q->QUERY_SQL($sql));
@@ -249,11 +283,13 @@ function record_CAA_save():bool{
     $now            = time();
     $id             = intval($_POST["id"]);
     $domainid       = intval($_POST["domain_id"]);
-    $name           = trim($_POST["domainname"]);
+    // name, tag et value partaient BRUTS dans l'UPDATE et dans l'INSERT
+    // construits plus bas par concatenation.
+    $name           = pdnsrec_sqlstr(trim($_POST["domainname"]));
     $type           = "CAA";
     $flag           = intval($_POST["flag"]);
-    $tag            = trim($_POST["tag"]);
-    $value          = trim($_POST["value"]);
+    $tag            = preg_replace('#[^A-Za-z0-9]#','',trim((string)$_POST["tag"]));
+    $value          = pdnsrec_sqlstr(trim($_POST["value"]));
     $ttl            = intval($_POST["ttl"]);
     $q              = new mysql_pdns();
 
@@ -308,7 +344,7 @@ function record_CAA_save():bool{
     if($id==0){
         $sql="INSERT INTO records (".@implode(",",$AdzF).") VALUES (".@implode(",",$AdzV).")";
         $q->QUERY_SQL($sql);
-        if(!$q->ok){echo "jserror:" .$q->mysql_error;return false;}
+        if(!$q->ok){echo (new template_admin())->post_error("" .$q->mysql_error);return false;}
         return true;
     }
 
@@ -326,7 +362,8 @@ function record_info()
     $q              = new mysql_pdns();
     $tpl            = new template_admin();
     $domainid       = intval($_GET["domain-id"]);
-    $record_type    = $_GET["type"];
+    // Pentest 2026-11-04 : type etait recopie sans encodage dans la page (XSS).
+    $record_type    = preg_replace('#[^A-Za-z0-9]#','',(string)($_GET["type"] ?? ""));
     $page           = CurrentPageName();
     $PowerDNSEnableClusterSlave = intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
     $sql = "SELECT name FROM domains WHERE id=$domainid";
@@ -568,7 +605,7 @@ function record_save(){
     $domain_id=intval($_POST["domain_id"]);
 
     if($domain_id==0){
-        echo "jserror:Domain ID not posted";
+        echo (new template_admin())->post_error("Domain ID not posted");
         return false;
     }
 
@@ -587,7 +624,7 @@ function record_save(){
 
 	if(($_POST["type"]=="A") OR ($_POST["type"]=="AAAA")){
         if(strpos($_POST["name"],";")>0){
-            echo "Invalid character ';' in {$_POST["name"]}\n";
+            echo "Invalid character ';' in ".req_html($_POST["name"])."\n";
             return false;
         }
 		$_POST["name"]=str_replace(".$zone_name", "", $_POST["name"]);
@@ -606,17 +643,17 @@ function record_save(){
 
 	if($_POST["type"]=="PTR"){
         if(strpos($_POST["name"],";")>0){
-            echo "Invalid character ';' in {$_POST["name"]}\n";
+            echo "Invalid character ';' in ".req_html($_POST["name"])."\n";
             return false;
         }
         if(strpos($_POST["content"],";")>0){
-            echo "Invalid character ';' in {$_POST["content"]}\n";
+            echo "Invalid character ';' in ".req_html($_POST["content"])."\n";
             return false;
         }
 
 	    if(!preg_match("#in-addr\.arpa#",$_POST["name"])) {
             if(!$ipClass->isValid($_POST["name"])){
-                echo "Not a valid IP {$_POST["name"]} address";
+                echo "Not a valid IP ".req_html($_POST["name"])." address";
                 return false;
              }
 
@@ -634,7 +671,7 @@ function record_save(){
     }
     if( ($_POST["type"]=="CNAME") OR ($_POST["type"]=="ALIAS")){
         if(strpos($_POST["name"],";")>0){
-            echo "Invalid character ';' in {$_POST["name"]}\n";
+            echo "Invalid character ';' in ".req_html($_POST["name"])."\n";
             return false;
         }
         $_POST["name"]=str_replace(".$zone_name", "", $_POST["name"]);
@@ -673,9 +710,13 @@ function record_save(){
         $sock->SET_INFO("PDNSAddRecord",base64_encode(serialize($MAIN)));
         $sock->getFrameWork("pdns.php?add-record=yes");
 
-        $sql="SELECT id from records WHERE domain_id={$domain_id} and type='{$_POST["type"]}' and content='{$_POST["content"]}'";
+        // type et content venaient du POST et partaient BRUTS dans ce SELECT.
+        $ztype=preg_replace('#[^A-Za-z0-9]#','',(string)($_POST["type"] ?? ""));
+        $zcontent=str_replace(array("'","\\"),"",(string)($_POST["content"] ?? ""));
+        $sql="SELECT id from records WHERE domain_id=".intval($domain_id)." and type='$ztype' and content='$zcontent'";
 
         $ligne=$q->mysqli_fetch_array($sql);
+        if(!is_array($ligne)){$ligne=array();}
         $id=intval($ligne["id"]);
         if($id==0){ echo pdns_parse_command_line(); return false; }
         admin_tracks("Creating $fqdn_name DNS record {$_POST["type"]} with {$MAIN["content"]} value");
@@ -685,13 +726,20 @@ function record_save(){
 	}
 
 	if($id>0){
+	// Ces cinq valeurs venaient du POST et partaient BRUTES dans l'UPDATE.
+	$u_domain=intval($_POST["domain_id"]);
+	$u_type=preg_replace('#[^A-Za-z0-9]#','',(string)($_POST["type"] ?? ""));
+	$u_content=pdnsrec_sqlstr($_POST["content"] ?? "");
+	$u_ttl=intval($_POST["ttl"] ?? 0);
+	$u_prio=intval($_POST["prio"] ?? 0);
+	$u_name=pdnsrec_sqlstr($fqdn_name);
 	$sql="UPDATE records SET
-		domain_id='{$_POST["domain_id"]}',
-		name='$fqdn_name',
-		type='{$_POST["type"]}',
-		content='{$_POST["content"]}',
-		ttl='{$_POST["ttl"]}',
-		prio='{$_POST["prio"]}',
+		domain_id='$u_domain',
+		name='$u_name',
+		type='$u_type',
+		content='$u_content',
+		ttl='$u_ttl',
+		prio='$u_prio',
 		change_date=$now
 		WHERE id=$id";
 	}
@@ -702,7 +750,7 @@ function record_save(){
     admin_tracks("Modify $fqdn_name DNS record with {$_POST["content"]} value");
 
 	if($UPDATE_DNS_DOMAIN){
-        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("pdns.php?check-domain={$_POST["domain_id"]}");
+        $GLOBALS["CLASS_SOCKETS"]->getFrameWork("pdns.php?check-domain=".intval($_POST["domain_id"]));
     }
 
 	if(isset($_POST["ptr_id"])){$ptr_id=intval($_POST["ptr_id"]);}
@@ -744,8 +792,13 @@ function record_save(){
 				if($domainid<1){echo "Unable to add reverse PTR '$domain' ($domainid)??!";return false;}
 			}
 				
+			// Pentest 2026-11-04 : name (fqdn_name), ttl et prio etaient concatenes dans la requete.
+			$ptr_fqdn=mysql_escape_string2($fqdn_name);
+			$ptr_ttl=intval($_POST["ttl"]);
+			$ptr_prio=intval($_POST["prio"]);
+			$domainid=intval($domainid);
 			$sql="INSERT INTO records (domain_id, name, type, content, ttl, prio, change_date)
-			VALUES ('$domainid','$content_rev','PTR','$fqdn_name','{$_POST["ttl"]}','{$_POST["prio"]}',$now)";
+			VALUES ('$domainid','$content_rev','PTR','$ptr_fqdn','$ptr_ttl','$ptr_prio',".intval($now).")";
 			$q->QUERY_SQL($sql);
             admin_tracks("Modify PTR DNS record of $fqdn_name with $content_rev value");
             if(!$q->ok){echo $q->mysql_error;return false;}
@@ -895,7 +948,8 @@ function delete_js(){
 	$page=CurrentPageName();
 	$tpl=new templates();
 	$t=time();
-	$id=$_GET["delete-js"];
+	// $id partait BRUT dans le SELECT qui precede la suppression.
+	$id=intval($_GET["delete-js"]);
 
 	$q=new mysql_pdns();
 	$sql="SELECT content,`type`,`name` FROM records WHERE id=$id";
@@ -904,7 +958,9 @@ function delete_js(){
 	$type=$ligne["type"];
 	$name=$ligne["name"];
 	$delete=$tpl->javascript_parse_text("{delete}");
-	$final="$('#{$_GET["id"]}').remove();";
+	// Pentest 2026-11-04 : id etait recopie sans encodage dans la page (XSS).
+	$domid=preg_replace('#[^A-Za-z0-9_-]#','',(string)($_GET["id"] ?? ""));
+	$final="$('#$domid').remove();";
 
 	if(isset($_GET["function"])){
 	    if($_GET["function"]<>null){
@@ -923,7 +979,7 @@ var xSave$t=function (obj) {
 	if(results.length>0){alert(results);return;}	
 	$final
 	if(document.getElementById('TABLEAU-TOP-RECHERCHE')){
-		var Search=encodeURIComponent(document.getElementById('top-search').value);
+		var Search=encodeURIComponent(document.getElementById('TABLEAU-TOP-RECHERCHE').getAttribute('data-search')||'');
 		LoadAjax('MainContent','fw.top.search.php?search='+Search);
 	}
 }
@@ -1012,7 +1068,7 @@ function page(){
     $ARRAY["CMD"]="pdns.php?restart-recusor=yes";
     $ARRAY["TITLE"]="{reconfigure_service} {APP_PDNS_RECURSOR}";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-firehol-restart')";
+    $jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-firehol-restart')";
     if($UnboundEnabled==1){
         $jsrestart=$tpl->framework_buildjs("/unbound/restart",
             "unbound.restart.progress","unbound.restart.log",
@@ -1066,23 +1122,6 @@ function main(){
 	$record=$tpl->_ENGINE_parse_body("{record}");
 	$domains=$tpl->_ENGINE_parse_body("{domains}");
 
-	$html[]="<table id='table-dns-forward-zones' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-	$html[]="<thead>";
-	$html[]="<tr>";
-	
-
-
-	$TRCLASS=null;
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>ID</th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$record}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$domains}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$type}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{$content}</center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize' data-type='text'></center></th>";
-	$html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{$delete}</center></th>";
-	$html[]="</tr>";
-	$html[]="</thead>";
-	$html[]="<tbody>";
 	
 	if(!$q->TABLE_EXISTS("records")){
 		$sql="CREATE TABLE records ( id INT auto_increment, domain_id INT DEFAULT NULL, name VARCHAR(255) DEFAULT NULL, type VARCHAR(10) DEFAULT NULL, content VARCHAR(64000) DEFAULT NULL, ttl INT DEFAULT NULL, prio INT DEFAULT NULL, change_date INT DEFAULT NULL, disabled BOOLEAN DEFAULT 0, primary key(id) ) Engine=InnoDB;";
@@ -1103,60 +1142,82 @@ function main(){
 	$results = $q->QUERY_SQL($sql,$database);
 	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128("LINE ".__LINE__." $q->mysql_error");return;}
 	
+	$rows=array();
 	while ($ligne = mysqli_fetch_assoc($results)) {
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
 		$md=md5(serialize($ligne));
-		$id=$ligne["id"];
-		$color="#000000";
-		$domain_id=$ligne["domain_id"];
-		$domain=$ligne["domain"];
-		$type=$ligne["type"];
-		$name=$ligne["name"];
-		$content=$ligne["content"];
+		$id=intval($ligne["id"]);
+		$domain_id=intval($ligne["domain_id"]);
+		$zdomain=(string)($ligne["domain"] ?? "");
+		$ztype=(string)($ligne["type"] ?? "");
+		$zname=(string)($ligne["name"] ?? "");
+		$zcontent=(string)($ligne["content"] ?? "");
 		$disabled=intval($ligne["disabled"]);
-		if(strlen($content)>90){$content=substr($content, 0,87)."...";}
-		$jshost="Loadjs('$page?record-info-js=yes&domainid=$domain_id&type=$type&id=$id');";
+		if(strlen($zcontent)>90){$zcontent=substr($zcontent, 0,87)."...";}
+		$jshost="Loadjs('$page?record-info-js=yes&domainid=$domain_id&type=".urlencode($ztype)."&id=$id');";
+		$href_domain="Loadjs('fw.dns.domain.php?domain-id=$domain_id')";
 
-
-		if($disabled==0){$enable=true;}else{$enable=false;}
-        $href_domain="Loadjs('fw.dns.domain.php?domain-id=$domain_id')";
-		$html[]="<tr class='$TRCLASS' id='$md'>";
-		$html[]="<td>".$tpl->td_href($id,null,$jshost)."</td>";
-		$html[]="<td><span id='dns-name-$id'>".$tpl->td_href($name,null,$jshost)."</span></td>";
-		$html[]="<td><span id='dns-domain-$id'>".$tpl->td_href($domain,null,$href_domain)."</span></td>";
-		$html[]="<td><span id='dns-type-$id'>".$tpl->td_href($type,null,$jshost)."</span></td>";
-		$html[]="<td style='font-weight:bold'><span id='dns-content-$id'>$content</span></td>";
-		
-		$PowerDNSEnableClusterSlave;
+		$enable=($disabled==0);
 		$icon_check=$tpl->icon_nothing();
 		$icon_delete=$tpl->icon_nothing();
 		if($PowerDNSEnableClusterSlave==0){
-			$icon_check=$tpl->icon_check($enable,"Loadjs('$page?enable-js=$id&id=$md')","AsDnsAdministrator");
+			$icon_check=$tpl->icon_check($enable,"Loadjs('$page?enable-js=$id&id=$md')",null,"AsDnsAdministrator");
 			$icon_delete=$tpl->icon_delete("Loadjs('$page?delete-js=$id&id=$md')","AsDnsAdministrator");
 		}
-		$html[]="<td style='vertical-align:middle' class='center'>$icon_check</td>";
-		$html[]="<td style='vertical-align:middle' class='center'>$icon_delete</td>";
-		$html[]="</tr>";
+
+		// Les quatre <span id='dns-*-<id>'> sont des SENTINELLES: filltable()
+		// y reecrit la ligne apres une modification, sans recharger le tableau.
+		// Nom, domaine, type et contenu viennent de la base et partaient BRUTS.
+		// ($PowerDNSEnableClusterSlave; -- une instruction sans effet -- a ete
+		// retiree, comme $color, jamais lu.)
+		$rows[]="<tr id='$md'>"
+			."<td class='center' style='width:1%' nowrap>".$tpl->td_href($id,"{click_to_edit}",$jshost)."</td>"
+			."<td><span id='dns-name-$id' class='awc-name'>".$tpl->td_href(htmlspecialchars($zname),"{click_to_edit}",$jshost)."</span></td>"
+			."<td><span id='dns-domain-$id'>".$tpl->td_href(htmlspecialchars($zdomain),"{click_to_edit}",$href_domain)."</span></td>"
+			."<td class='center' style='width:1%' nowrap><span id='dns-type-$id' class='awc-tag'>".$tpl->td_href(htmlspecialchars($ztype),"{click_to_edit}",$jshost)."</span></td>"
+			."<td class='awc-mono' style='font-weight:bold'><span id='dns-content-$id'>".htmlspecialchars($zcontent)."</span></td>"
+			."<td class='center' style='width:1%'>$icon_check</td>"
+			."<td><div class='awc-acts'>$icon_delete</div></td>"
+			."</tr>";
 	}
+	$c=count($rows);
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
+	$html=array();
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
+	$html[]="<thead><tr>";
+	$html[]="<th class='center'>ID</th>";
+	$html[]="<th>$record</th>";
+	$html[]="<th>$domains</th>";
+	$html[]="<th class='center'>$type</th>";
+	$html[]="<th>$content</th>";
+	$html[]="<th class='center'>{enable}</th>";
+	$html[]="<th style='text-align:right'>$delete</th>";
+	$html[]="</tr></thead><tbody id='pdnsr-rows'>";
+	if($c==0){
+		$html[]="<tr><td colspan='7'><div class='awc-empty'>{no_data}</div></td></tr>";
+	}else{
+		$html[]=@implode("\n",$rows);
+	}
+	// Le <tfoot> portait un pager footable dont l'init ciblait $('.footable') --
+	// un selecteur GLOBAL, alors que ce tableau porte .awc-tbl: il ne faisait
+	// rien ici et reinitialisait tout autre tableau footable de la page.
+	$html[]="</tbody></table></div>";
+	$html[]="<div class='awc-foot'>";
+	$html[]="<span>{showing} $c {items}</span>";
+	$html[]="<span class='awc-pg' id='pdnsr-pager'></span>";
+	$html[]="</div></div></div>";
 
-	$html[]="<tr>";
-	$html[]="<td colspan='7'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
-	$html[]="<div><small>$sql</small></div>
-<script>
-	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('.footable').footable( { \"filtering\": { \"enabled\": true }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
-</script>";
+	// La requete SQL brute affichee sous le tableau etait un reste de mise au
+	// point: elle exposait le schema sans rien apprendre a l'operateur.
+	// Le <script> est concatene APRES l'analyse: la regex #{(.+?)}# de
+	// _ENGINE_parse_body lisait la configuration JSON de footable comme des
+	// {tokens}. ICON_SCRIPTS_COMPILE() est requis: ce tableau porte des
+	// icon_check().
+	$script="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."</script>";
 
-echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style()
+		.$tpl->_ENGINE_parse_body(@implode("\n",$html))
+		.$script
+		.awc_pager_js(50,"pdnsr-rows","pdnsr-pager");
 }
 function filltable(){
     $page=CurrentPageName();
@@ -1194,30 +1255,39 @@ function tests_query($query,$type){
 
 function td_column(){
     $page=CurrentPageName();
-    $id=$_GET["id"];
-    $field=$_GET["td-column"];
+    // $id partait BRUT dans le WHERE, et $field etait interpole comme NOM DE
+    // COLONNE dans le SELECT: un nom de colonne ne peut jamais etre lie par un
+    // parametre prepare, il se valide. filltable() n'en emet que quatre.
+    $id=intval($_GET["id"]);
+    $allowed=array("name"=>true,"domain"=>true,"type"=>true,"content"=>true);
+    $field=(string)($_GET["td-column"] ?? "");
+    if(!isset($allowed[$field])){return;}
     $tpl=new template_admin();
     $q = new mysql_pdns();
-    $sql = "SELECT domain_id,$field FROM records WHERE id=$id";
-    $ligne = mysqli_fetch_array($q->QUERY_SQL($sql));
-    $domain_id=$ligne["domain_id"];
-    $type=$ligne["type"];
+    // "domain" n'est pas une colonne de records: c'est GetDomainName() qui le
+    // resout plus bas a partir de domain_id.
+    $col=($field=="domain")?"name":$field;
+    $ligne = mysqli_fetch_array($q->QUERY_SQL("SELECT domain_id,`$col`,`type` FROM records WHERE id=$id"));
+    if(!is_array($ligne)){return;}
+    $domain_id=intval($ligne["domain_id"]);
+    $type=(string)($ligne["type"] ?? "");
 
-    $jshost="Loadjs('$page?record-info-js=yes&domainid=$domain_id&type=$type&id=$id');";
+    $jshost="Loadjs('$page?record-info-js=yes&domainid=$domain_id&type=".urlencode($type)."&id=$id');";
 
     if($field=="domain"){
-        $domain=$q->GetDomainName($domain_id);
+        $domain=htmlspecialchars((string)$q->GetDomainName($domain_id));
         $href_domain="Loadjs('fw.dns.domain.php?domain-id=$domain_id')";
-        echo $tpl->td_href($domain,null,$href_domain);
+        echo $tpl->td_href($domain,"{click_to_edit}",$href_domain);
         return;
     }
     if($field=="content"){
-        $content=$ligne["content"];
+        $content=(string)($ligne["content"] ?? "");
         if(strlen($content)>90){$content=substr($content, 0,87)."...";}
-        echo $content;
+        echo htmlspecialchars($content);
         return;
     }
 
-    echo $tpl->td_href($ligne[$field],null,$jshost);
+    // Cette valeur vient de la base et partait BRUTE dans le HTML.
+    echo $tpl->td_href(htmlspecialchars((string)($ligne[$col] ?? "")),"{click_to_edit}",$jshost);
 
 }

@@ -3,15 +3,15 @@
 <APP_ROUNDCUBE3_PLUGINS_EXPLAIN>La g&eacute;n&eacute;ration 3 de Roundcube Offre la gestion des extensions.[br]S&eacute;lectionnez votre extensions dans cette liste.</APP_ROUNDCUBE3_PLUGINS_EXPLAIN>
 <archive>D&eacute;placer les messages vers un dossier d'archive (s&eacute;lection par l'utilisateur)</archive>
 <artica_ldap_addr>Plugin Artica: Ajouter une connexion avec le carnet d'adresses personnel LDAP</artica_ldap_addr>
-<auto_create_user>Cr&eation automatique d`utilisateur</auto_create_user>
+<auto_create_user>Cr&#233;ation automatique d'utilisateur</auto_create_user>
 <conf>Configuration du script</conf>
 <confirm_rebuild>Attention, vous choisissez de reconstruire des tables, toutes les donn&eacute;es seront effac&eacute;es...</confirm_rebuild>
-<database_attachments>database backed storage for temporary attachment file handling</database_attachments>
+<database_attachments>Stockage en base de donn&#233;es pour la gestion des fichiers temporaires de pi&#232;ces jointes</database_attachments>
 <database_status>&Eacute;tat des tables</database_status>
 <debug_level>Rapport d'erreurs syst&egrave;me</debug_level>
 <debug_logger>Augmenter le niveau de traces</debug_logger>
 <default_host>Serveur IMAP</default_host>
-<emoticons>Replace emoticons in plain text message body with real icons</emoticons>
+<emoticons>Remplacer les &#233;motic&#244;nes dans le corps des messages en texte brut par de vraies ic&#244;nes</emoticons>
 <enable_caching>Mettre cache les bo&icirc;tes aux lettres</enable_caching>
 <example_addressbook>Exemple de carnet d'addresses</example_addressbook>
 <filesystem_attachments>C'est un plugin principal qui fournit des services basiques sur le syst&egrave;me de fichiers bas&eacute; essentiellement sur les pi&egrave;ces jointes.[br]Il inclut le stockage des pi&egrave;ces jointes des messages en cours de r&eacute;daction et sauvegard&eacute;s temporairement avant l'envoi.</filesystem_attachments>
@@ -38,10 +38,10 @@ faux causes la suppression de messages  de fa&ccedil;on permanente si il n'y a p
 <roundcube_ldap_directory>Acc&egrave;s vers le carnet d'adresses Interne LDAP</roundcube_ldap_directory>
 <roundcube_mysql_sources>Chemin source des scripts Mysql</roundcube_mysql_sources>
 <roundcube_web_folder>Chemin du r&eacute;pertoire web</roundcube_web_folder>
-<show_additional_headers>Show additional message headers</show_additional_headers>
+<show_additional_headers>Afficher des en-t&#234;tes de message suppl&#233;mentaires</show_additional_headers>
 <sieverules>filtres dans le style de Thunderbird (mode avanc&eacute;)</sieverules>
 <skip_deleted>Cacher les messages supprim&eacute;s</skip_deleted>
-<squirrelmail_usercopy>Copy a new users identity and settings from a nearby Squirrelmail installation</squirrelmail_usercopy>
+<squirrelmail_usercopy>Copier l'identit&#233; et les param&#232;tres d'un nouvel utilisateur depuis une installation Squirrelmail &#224; proximit&#233;</squirrelmail_usercopy>
 <subscriptions_option>Activer ou d&eacute;sactiver l'utilisation des abonnements imap</subscriptions_option>
 <userinfo>Afficher les informations du compte</userinfo>
 <user_link>Lien du menu Artica vers Roundcube</user_link>

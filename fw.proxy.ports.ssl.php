@@ -63,13 +63,13 @@ function port_id_popup(){
     $html[]="</center>";
 
 
-    $q=new lib_sqlite("/home/artica/SQLITE/certificates.db");
-    $sql="SELECT ID,pks12  FROM sslcertificates WHERE CommonName='$certificate'";
-    $ligne=$q->mysqli_fetch_array($sql);
-    $pks12=strlen($ligne["pks12"]);
+    include_once(dirname(__FILE__)."/ressources/class.certificates-db.inc");
+    $cdb=new CertificatesDB();
+    $row=$cdb->getByCommonName($certificate);
+    $pks12=is_object($row)?strlen((string)($row->pks12 ?? "")):0;
 
     if($pks12>50) {
-        $ID=$ligne["ID"];
+        $ID=intval($row->ID);
         $js="document.location.href='fw.certificates-center.php?download-pfx=$ID'";
         $html[]="<center style='margin:30px'>";
         $html[]=$tpl->button_autnonome("{download} PFX",$js,"fa-download",null,350);
@@ -91,15 +91,6 @@ function step1():bool{
     $html[]=$tpl->div_wizard("{activate_ssl_decryption_1}");
     $form[]=$tpl->field_certificate("CERTIFICATE","{certificate}",null);
 
-
-  /*
-  Wizard non personnalisé, change vers wizard spécifique au proxy
-
-  $newjs=$tpl->framework_buildjs("openssl.php?new-self-signed-auto=yes",
-    "ufdberror.compile.progress",
-    "ufdberror.compile.log","activate_ssl_decryption",
-    "LoadAjaxTiny('activate_ssl_decryption','$page?step2=yes&new-cert=yes')");
-*/
 
     $newjs="Loadjs('fw.proxy.ports.sslwizard.php?main-wizard=yes')";
     $tpl->form_add_button("{new_certificate}",$newjs);
@@ -142,7 +133,8 @@ function step2():bool{
         $ID=$ligne["ID"];
         $UseSSL=intval($ligne["UseSSL"]);
         if($UseSSL==1){continue;}
-        $q->QUERY_SQL("UPDATE proxy_ports SET UseSSL=1, sslcertificate='$certificate' WHERE ID=$ID");
+        // Pentest 2026-11-04 : certificate (parametre ssl-generated) etait concatene dans la requete.
+        $q->QUERY_SQL_PARAMS("UPDATE proxy_ports SET UseSSL=1, sslcertificate=? WHERE ID=?",array($certificate,intval($ID)));
     }
 
     if(!$q->ok){

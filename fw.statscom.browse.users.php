@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
@@ -90,7 +91,7 @@ function vertical_timeline(){
         $SQL_DATE = "date_part('day', zdate)";
     }
 
-    $sql="SELECT SUM(size) as size,$SQL_DATE as zdate FROM statscom WHERE $field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
+    $sql="SELECT SUM(size) as size,$SQL_DATE as zdate FROM statscom WHERE ".sbu_field($field)."='".pg_escape_string2($value)."' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by $SQL_DATE ORDER BY $SQL_DATE";
 
 
     $results=$q->QUERY_SQL($sql);
@@ -154,7 +155,7 @@ function top_sites(){
     $strtime=date("Y-m-d H:i:s",$time1);
     $strtoTime=date("Y-m-d H:i:s",$time2);
 
-    $sql="SELECT SUM(statscom.size) as size,statscom_websites.familysite FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND statscom.$field='$value' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by familysite ORDER BY size DESC LIMIT 10";
+    $sql="SELECT SUM(statscom.size) as size,statscom_websites.familysite FROM statscom,statscom_websites WHERE statscom_websites.siteid=statscom.siteid AND statscom.".sbu_field($field)."='".pg_escape_string2($value)."' AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by familysite ORDER BY size DESC LIMIT 10";
 
     $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
@@ -200,7 +201,7 @@ function top_categories(){
     $strtime=date("Y-m-d H:i:s",$time1);
     $strtoTime=date("Y-m-d H:i:s",$time2);
 
-    $sql="SELECT SUM(statscom.size) as size,statscom_websites.category FROM statscom,statscom_websites WHERE statscom.$field='$value' AND statscom_websites.siteid=statscom.siteid AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by category ORDER BY size DESC LIMIT 15";
+    $sql="SELECT SUM(statscom.size) as size,statscom_websites.category FROM statscom,statscom_websites WHERE statscom.".sbu_field($field)."='".pg_escape_string2($value)."' AND statscom_websites.siteid=statscom.siteid AND zdate >'$strtime' and zdate < '$strtoTime' GROUP by category ORDER BY size DESC LIMIT 15";
 
     $q->QUERY_SQL($sql);
     $results=$q->QUERY_SQL($sql);
@@ -237,14 +238,15 @@ function top_categories_table(){
     $html[]="<th>{category}</th>";
     $html[]="<th>{size}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["categories-table"]));
+    $table=unserialize(base64_decode($_GET["categories-table"]),array("allowed_classes"=>false));
     $catz=new mysql_catz();
     foreach ( $table as $categoryid=>$sizeM) {
 
         $category=$catz->CategoryIntToStr($categoryid);
 
         $html[]="<tr>";
-        $html[]="<td><strong>$category</strong></td>";
+        // Pentest 2026-11-04 : categorie (donnee externe) affiche sans encodage (XSS stockee).
+        $html[]="<td><strong>".req_html($category)."</strong></td>";
         $html[]="<td><strong>". FormatBytes($sizeM)."</strong></td>";
         $html[]="</tr>";
 
@@ -262,14 +264,23 @@ function top_sites_table(){
     $html[]="<th>{domains}</th>";
     $html[]="<th>{size}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["sites-table"]));
+    $table=unserialize(base64_decode($_GET["sites-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$sizeM) {
         $html[]="<tr>";
-        $html[]="<td><strong>$site</strong></td>";
+        // Pentest 2026-11-04 : site (donnee externe) affiche sans encodage (XSS stockee).
+        $html[]="<td><strong>".req_html($site)."</strong></td>";
         $html[]="<td>".FormatBytes($sizeM*1024)."</td>";
         $html[]="</tr>";
 
     }
     $html[]="</table>";
     echo $tpl->_ENGINE_parse_body($html);
+}
+// Pentest 2026-11-04 : field et value (GET) etaient concatenes dans la requete.
+// field est un nom de colonne : liste blanche ; value est echappee (pg_escape_string2).
+function sbu_field($field):string{
+    $allowed=array("username"=>true,"mac"=>true,"ipaddr"=>true);
+    $field=strval($field);
+    if(!isset($allowed[$field])){return "username";}
+    return $field;
 }

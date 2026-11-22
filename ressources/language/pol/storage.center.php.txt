@@ -1,19 +1,19 @@
-<ADD_NEW_DEPLOY_TASK>Add a new deploy task</ADD_NEW_DEPLOY_TASK>
-<ADD_NEW_DEPLOY_TASK_TEXT>Add a new task that will perform remote installation to this computer</ADD_NEW_DEPLOY_TASK_TEXT>
-<ADD_NEW_SOFTWARE>Add a new software</ADD_NEW_SOFTWARE>
-<ADD_NEW_SOFTWARE_TEXT>Create a new entry in order to perform deployment on target remote computers</ADD_NEW_SOFTWARE_TEXT>
-<APP_WINEXE_NOT_INSTALLED>Windows remote execution is not installed</APP_WINEXE_NOT_INSTALLED>
-<APP_WINEXE_NOT_INSTALLED_TEXT>if Windows remote execution is not installed you are not be able to perform remote softwares deployment trough Artica[br]
-Click on this icon to perform Windows remote execution installation</APP_WINEXE_NOT_INSTALLED_TEXT>
+<ADD_NEW_DEPLOY_TASK>Dodaj nowe zadanie wdro&#380;enia</ADD_NEW_DEPLOY_TASK>
+<ADD_NEW_DEPLOY_TASK_TEXT>Dodaj nowe zadanie, kt&#243;re wykona zdaln&#261; instalacj&#281; na tym komputerze</ADD_NEW_DEPLOY_TASK_TEXT>
+<ADD_NEW_SOFTWARE>Dodaj nowe oprogramowanie</ADD_NEW_SOFTWARE>
+<ADD_NEW_SOFTWARE_TEXT>Utw&#243;rz nowy wpis, aby wykona&#263; wdro&#380;enie na docelowych komputerach zdalnych</ADD_NEW_SOFTWARE_TEXT>
+<APP_WINEXE_NOT_INSTALLED>Zdalne wykonywanie Windows nie jest zainstalowane</APP_WINEXE_NOT_INSTALLED>
+<APP_WINEXE_NOT_INSTALLED_TEXT>Je&#347;li zdalne wykonywanie Windows nie jest zainstalowane, nie b&#281;dziesz m&#243;g&#322; wykona&#263; zdalnego wdra&#380;ania oprogramowania przez Artica[br]
+Kliknij t&#281; ikon&#281;, aby zainstalowa&#263; zdalne wykonywanie Windows</APP_WINEXE_NOT_INSTALLED_TEXT>
 <commandline>Wiersz polece%C5%84</commandline>
-<ExecuteAfter>Execute after</ExecuteAfter>
-<MinutesToWait>Max minutes processing</MinutesToWait>
-<package>Package</package>
+<ExecuteAfter>Wykonaj po</ExecuteAfter>
+<MinutesToWait>Maksymalne minuty przetwarzania</MinutesToWait>
+<package>Pakiet</package>
 <refresh>Od%C5%9Bwie%C5%BC</refresh>
-<remote_install>Remote install</remote_install>
-<remote_install_text>Create tasks in order to perform remote installations</remote_install_text>
-<resfresh_software_list>Refresh softwares list</resfresh_software_list>
-<resfresh_tasks_list>Refresh install tasks list</resfresh_tasks_list>
-<restart_task>Restart task</restart_task>
-<restart_task_text>Retry task execution another time</restart_task_text>
-<runas>Run as</runas>
+<remote_install>Instalacja zdalna</remote_install>
+<remote_install_text>Tw&#243;rz zadania w celu wykonania instalacji zdalnych</remote_install_text>
+<resfresh_software_list>Od&#347;wie&#380; list&#281; oprogramowania</resfresh_software_list>
+<resfresh_tasks_list>Od&#347;wie&#380; list&#281; zada&#324; instalacji</resfresh_tasks_list>
+<restart_task>Uruchom ponownie zadanie</restart_task>
+<restart_task_text>Pon&#243;w wykonanie zadania innym razem</restart_task_text>
+<runas>Uruchom jako</runas>

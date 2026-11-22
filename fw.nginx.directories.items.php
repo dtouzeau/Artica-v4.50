@@ -1,7 +1,9 @@
 <?php
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
-
+include_once(dirname(__FILE__)."/ressources/class.nginx.params.inc");
+// awc_table_style() / awc_pager_js(): feuille de style et pager partages des tableaux d'entites
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 if(isset($_GET["container-move"])){container_move();exit;}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["id-js"])){id_js();exit;}
@@ -10,48 +12,42 @@ if(isset($_GET["delete"])){delete_js();exit;}
 if(isset($_POST["ID"])){id_save();exit;}
 if(isset($_POST["delete"])){delete();exit;}
 
+
+
 table_start();
 function container_move(){
-	$q=new lib_sqlite(NginxGetDB()); // sqlite_num_rows
-	$page=CurrentPageName();
-	$tpl=new template_admin();
-	$ID=$_GET["container-move"];
-	$OrgID=$ID;
-	$dir=$_GET["dir"];
-	$table="ngx_subdir_items";
-	$sql="SELECT zorder FROM `$table` WHERE ID='$ID'";
+	$ID=intval($_GET["container-move"]);
+	$dir=intval($_GET["dir"]);
 
-	$results=$q->QUERY_SQL($sql);$ligne=$results[0];
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
-	$CurrentOrder=$ligne["zorder"];
+	$ligne=fetch_subdir_item_by_id($ID);
+	$CurrentOrder=isset($ligne["zorder"])?intval($ligne["zorder"]):0;
+	$NextOrder=($dir==0)?$CurrentOrder-1:$CurrentOrder+1;
 
-	if($dir==0){
-		$NextOrder=$CurrentOrder-1;
-	}else{
-		$NextOrder=$CurrentOrder+1;
-	}
+	// Swap zorder with the row currently at NextOrder (preserves the
+	// original semantics: no directoryid scope).
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	    "action"=>"update","table"=>"ngx_subdir_items",
+	    "set"=>["zorder"=>$CurrentOrder],
+	    "where"=>["zorder"=>$NextOrder]
+	]);
+	$GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	    "action"=>"update","table"=>"ngx_subdir_items",
+	    "set"=>["zorder"=>$NextOrder],
+	    "where"=>["ID"=>$ID]
+	]);
 
-	$sql="UPDATE `$table` SET zorder='$CurrentOrder' WHERE zorder='$NextOrder'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return;}
-
-
-	$sql="UPDATE `$table` SET zorder=$NextOrder WHERE ID='$ID'";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return;}
-
-	$results=$q->QUERY_SQL("SELECT ID FROM `$table` ORDER by zorder");
-	if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return;}
+	// Compact gaps — renumber 1..N across the whole table (matching original).
+	$rows=fetch_subdir_items_all();
 	$c=1;
-	foreach ($results as $index=>$ligne){
-		$ID=$ligne["ID"];
-		$sql="UPDATE `$table` SET zorder='$c' WHERE ID='$ID'";
-		$q->QUERY_SQL($sql,"artica_backup");
-		if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error."<br>$sql");return;}
-		$c++;
+	foreach ($rows as $r){
+	    $rid=isset($r["ID"])?intval($r["ID"]):0;
+	    if($rid<=0){continue;}
+	    $GLOBALS["CLASS_SOCKETS"]->REST_API_NGINX_POST_JSON("/nginx-db/exec",[
+	        "action"=>"update","table"=>"ngx_subdir_items",
+	        "set"=>["zorder"=>$c],"where"=>["ID"=>$rid]
+	    ]);
+	    $c++;
 	}
-
-
 }
 
 
@@ -73,12 +69,13 @@ function delete_js():bool{
 	$ID             = $_GET["delete"];
 	$md5            = $_GET["md5"];
 	$directoryid    = intval($_GET["directoryid"]);
-    $q=new lib_sqlite(NginxGetDB());
-    $ligne=$q->mysqli_fetch_array("SELECT serviceid FROM ngx_directories WHERE ID=$directoryid");
-    $serviceid=$ligne["serviceid"];
 
-	$ligne=$q->mysqli_fetch_array("SELECT `item` FROM ngx_subdir_items WHERE ID=$ID");
-	$tpl->js_confirm_delete("{$ligne["item"]}", "delete", "$ID","$('#$md5').remove();LoadAjaxSilent('itemsofdir-$directoryid','fw.nginx.directories.php?items=$directoryid');Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid')");
+	$dir=fetch_directory_by_id($directoryid);
+	$serviceid=isset($dir["serviceid"])?intval($dir["serviceid"]):0;
+
+	$item=fetch_subdir_item_by_id($ID);
+	$itemLabel=isset($item["item"])?$item["item"]:"#$ID";
+	$tpl->js_confirm_delete($itemLabel, "delete", "$ID","$('#$md5').remove();LoadAjaxSilent('itemsofdir-$directoryid','fw.nginx.directories.php?items=$directoryid');Loadjs('fw.nginx.hup.php?hup=yes&serviceid=$serviceid')");
 
    return true;
 }
@@ -165,7 +162,7 @@ function table(){
     $html[]="<div style='margin-top:10px'>";
     $html[]=$tpl->th_buttons($topbuttons);
     $html[]="</div>";
-	$html[]="<table id='table-ngx_subdir_items-$directoryid' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
+	$html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'><table class='awc-tbl awc-tbl-compact'>";
 	$html[]="<thead>";
 	$html[]="<tr>";
 	$html[]="<th data-sortable=true class='text-capitalize' data-type='text' nowrap>{item}</th>";
@@ -178,29 +175,14 @@ function table(){
 
 	
 
-	$q=new lib_sqlite(NginxGetDB());
-	
-	
-	$sql="CREATE TABLE IF NOT EXISTS `ngx_subdir_items` (
-		`ID` INTEGER PRIMARY KEY AUTOINCREMENT,
-		`zorder` INTEGER,
-		`directoryid` INTEGER,
-		`serviceid` INTEGER,
-		`item` text
-	)";
-	$q->QUERY_SQL($sql);
-	if(!$q->ok){echo "$q->mysql_error (".__LINE__.")\n$sql\n";}
-	$q->QUERY_SQL("CREATE INDEX IF NOT EXISTS KeyService ON ngx_subdir_items (serviceid,zorder,directoryid)");
-	
-	
-	
-	$results=$q->QUERY_SQL("SELECT * FROM ngx_subdir_items WHERE directoryid='$directoryid' ORDER BY zorder");
-	if(!$q->ok){echo $tpl->FATAL_ERROR_SHOW_128($q->mysql_error);return;}
+	// Daemon owns the schema (nginxsites.FixTables creates ngx_subdir_items
+	// at startup and after restore), so no CREATE TABLE / INDEX needed here.
+	$results=fetch_subdir_items_by_directoryid($directoryid);
 
 
 	$TRCLASS=null;
 	foreach ($results as $md5=>$ligne){
-		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
+		$TRCLASS=null;
 		
 		$md5        = md5(serialize($ligne));
 		$ID         = $ligne["ID"];
@@ -222,39 +204,12 @@ function table(){
 		$html[]="</tr>";
 	}
 
-	$html[]="</tbody>";
-	$html[]="<tfoot>";
-
-	$html[]="<tr>";
-	$html[]="<td colspan='4'>";
-	$html[]="<ul class='pagination pull-right'></ul>";
-	$html[]="</td>";
-	$html[]="</tr>";
-	$html[]="</tfoot>";
-	$html[]="</table>";
+	$html[]="</tbody></table></div></div></div>";
 	$html[]="
 	<script>
 	NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."
-	$(document).ready(function() { $('#table-ngx_subdir_items-$directoryid').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });
 	</script>";
-	echo $tpl->_ENGINE_parse_body($html);
+	echo awc_table_style().$tpl->_ENGINE_parse_body($html);
 
 }
 
-function isHarmpID():bool{
-    if(!isset($_SESSION["HARMPID"])){
-        return false;
-    }
-    if(intval($_SESSION["HARMPID"])==0){
-        return false;
-    }
-
-    return true;
-}
-function NginxGetDB():string{
-    if(!isHarmpID()){
-        return "/home/artica/SQLITE/nginx.db";
-    }
-    $Gpid=$_SESSION["HARMPID"];
-    return "/home/artica/SQLITE/nginx.$Gpid.db";
-}

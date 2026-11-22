@@ -1,4 +1,4 @@
-<conditions>conditions</conditions>
-<give_the_rulename>Give the new rule name</give_the_rulename>
-<sieve_rule_explain>This section display master rules stored on your account.[br]Only one rule can be activated on your account.[br] You can disable all rules and enable the desired one</sieve_rule_explain>
-<the_following_matches>the following matches</the_following_matches>
+<conditions>condi&#231;&#245;es</conditions>
+<give_the_rulename>Indique o nome da nova regra</give_the_rulename>
+<sieve_rule_explain>Esta se&#231;&#227;o exibe as regras master armazenadas na sua conta.[br]Apenas uma regra pode ser ativada na sua conta.[br] Voc&#234; pode desativar todas as regras e ativar a desejada</sieve_rule_explain>
+<the_following_matches>as seguintes correspond&#234;ncias</the_following_matches>

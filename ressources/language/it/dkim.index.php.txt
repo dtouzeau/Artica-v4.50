@@ -1,11 +1,8 @@
-<dkim_about>DKIM is an email authentication framework that addresses the widespread issue of email forgery,
-using cryptography to verify the domain of the sender.[br]
-It allows email providers to validate an emailâ€™s originating domain, making use of blacklists and whitelists more effective.
-[br]It also makes phishing attacks easier to detect by helping to identify abusive domains.</dkim_about>
-<On-BadSignature>Signature fails to validate</On-BadSignature>
-<On-DNSError>Transient DNS error is encountered</On-DNSError>
-<On-InternalError>Internal error of some kind is encountered</On-InternalError>
-<On-NoSignature>Message arrives unsigned</On-NoSignature>
-<On-Security>Message arrives containing properties that may be a security concern</On-Security>
-<On-SignatureMissing>Message is unsigned from a domain which advertises a "we sign everything" policy</On-SignatureMissing>
-<select_action>Selects the action to be taken when</select_action>
+<dkim_about>DKIM è un meccanismo di autenticazione delle email che affronta il problema diffuso della falsificazione dei messaggi, utilizzando la crittografia per verificare il dominio del mittente.[br] Consente ai provider di posta elettronica di convalidare il dominio di origine di unâ%80%99email, rendendo più efficace lâ%80%99utilizzo di blacklist e whitelist.[br]Facilita inoltre il rilevamento degli attacchi di phishing, aiutando a identificare i domini abusivi.</dkim_about>
+<On-BadSignature>La firma non riesce a validare</On-BadSignature>
+<On-DNSError>Viene rilevato un errore DNS transitorio</On-DNSError>
+<On-InternalError>Viene rilevato un errore interno di qualche tipo</On-InternalError>
+<On-NoSignature>Il messaggio arriva non firmato</On-NoSignature>
+<On-Security>Il messaggio arriva contenente propriet&#224; che potrebbero essere un problema di sicurezza</On-Security>
+<On-SignatureMissing>Il messaggio non &#232; firmato da un dominio che pubblicizza una policy &quot;firmiamo tutto&quot;</On-SignatureMissing>
+<select_action>Seleziona l'azione da eseguire quando</select_action>

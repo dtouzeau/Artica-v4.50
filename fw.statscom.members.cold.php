@@ -18,9 +18,17 @@ if(isset($_GET["member-stats-notcategorized"])){echo member_stats_notcategorized
 if(isset($_GET["member-stats-websites"])){echo member_stats_websites();exit;}
 
 
+// Pentest 2026-11-04 : srctype (nom de colonne) et data etaient concatenes dans la requete.
+// srctype est choisi dans une liste blanche, data est echappe (pg_escape_string2).
+function scmc_srctype():string{
+    $v=isset($_GET["srctype"])?strtolower(trim((string)$_GET["srctype"])):"";
+    if($v==="ipaddr" || $v==="mac"){return $v;}
+    return "username";
+}
+
 function member_stats_pane_sites(){
     $page=CurrentPageName();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $usernameenc=urlencode($username);
     $Date1=$_GET["date-from"];
@@ -49,7 +57,7 @@ function member_stats_pane_sites(){
 
 function member_stats_pane_hours(){
     $page=CurrentPageName();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $usernameenc=urlencode($username);
     $Date1=$_GET["date-from"];
@@ -67,7 +75,7 @@ function member_stats_pane_hours(){
 
 function member_stats_pane_sites_graph(){
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $Date1=$_GET["date-from"];
     $Date2=$_GET["date-to"];
@@ -75,7 +83,7 @@ function member_stats_pane_sites_graph(){
     $strtoTime=date("Y-m-d H:i:s",$Date2);
 
     $q=new postgres_sql();
-    $sql="SELECT SUM(statscom_days.size) as size,statscom_websites.familysite,statscom_days.siteid FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='$username' GROUP by familysite,statscom_days.siteid ORDER BY size DESC LIMIT 20";
+    $sql="SELECT SUM(statscom_days.size) as size,statscom_websites.familysite,statscom_days.siteid FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='".pg_escape_string2($username)."' GROUP by familysite,statscom_days.siteid ORDER BY size DESC LIMIT 20";
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
@@ -100,7 +108,7 @@ function member_stats_pane_sites_graph(){
 
 function member_stats_pane_sites_graph3(){
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $Date1=$_GET["date-from"];
     $Date2=$_GET["date-to"];
@@ -109,7 +117,7 @@ function member_stats_pane_sites_graph3(){
 
     $q=new postgres_sql();
     $catz=new mysql_catz();
-    $sql="SELECT SUM(statscom_days.size) as size,statscom_websites.category FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='$username' GROUP by category ORDER BY size DESC LIMIT 15";
+    $sql="SELECT SUM(statscom_days.size) as size,statscom_websites.category FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='".pg_escape_string2($username)."' GROUP by category ORDER BY size DESC LIMIT 15";
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
@@ -134,7 +142,7 @@ function member_stats_pane_sites_graph3(){
 }
 function member_stats_pane_sites_graph4(){
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $Date1=$_GET["date-from"];
     $Date2=$_GET["date-to"];
@@ -142,7 +150,7 @@ function member_stats_pane_sites_graph4(){
     $strtoTime=date("Y-m-d H:i:s",$Date2);
 
     $q=new postgres_sql(); $catz=new mysql_catz();
-    $sql="SELECT SUM(statscom_days.hits) as size,statscom_websites.category FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='$username' GROUP by category ORDER BY size DESC LIMIT 15";
+    $sql="SELECT SUM(statscom_days.hits) as size,statscom_websites.category FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='".pg_escape_string2($username)."' GROUP by category ORDER BY size DESC LIMIT 15";
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
@@ -164,7 +172,7 @@ function member_stats_pane_sites_graph4(){
 }
 function member_stats_pane_sites_graph2(){
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $Date1=$_GET["date-from"];
     $Date2=$_GET["date-to"];
@@ -172,7 +180,7 @@ function member_stats_pane_sites_graph2(){
     $strtoTime=date("Y-m-d H:i:s",$Date2);
 
     $q=new postgres_sql();
-    $sql="SELECT SUM(statscom_days.hits) as size,statscom_websites.familysite,statscom_days.siteid FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='$username' GROUP by familysite,statscom_days.siteid ORDER BY size DESC LIMIT 20";
+    $sql="SELECT SUM(statscom_days.hits) as size,statscom_websites.familysite,statscom_days.siteid FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid AND zdate >'$strtime' and zdate < '$strtoTime' and $srctype='".pg_escape_string2($username)."' GROUP by familysite,statscom_days.siteid ORDER BY size DESC LIMIT 20";
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
@@ -195,7 +203,7 @@ function member_stats_pane_sites_graph2(){
 
 function member_stats_pane_hours_graph(){
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $Date1=$_GET["date-from"];
     $Date2=$_GET["date-to"];
@@ -204,7 +212,7 @@ function member_stats_pane_hours_graph(){
 
 
     $q=new postgres_sql();
-    $sql="SELECT SUM(size) as size,zdate FROM statscom_days WHERE ( zdate >'$strtime' and zdate < '$strtoTime' and $srctype='$username') GROUP BY zdate ORDER BY zdate";
+    $sql="SELECT SUM(size) as size,zdate FROM statscom_days WHERE ( zdate >'$strtime' and zdate < '$strtoTime' and $srctype='".pg_escape_string2($username)."') GROUP BY zdate ORDER BY zdate";
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
@@ -242,7 +250,7 @@ function member_stats_pane_hours_graph(){
 function member_stats_pane_hours_graph2(){
 
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $Date1=$_GET["date-from"];
     $Date2=$_GET["date-to"];
@@ -251,7 +259,7 @@ function member_stats_pane_hours_graph2(){
 
 
     $q=new postgres_sql();
-    $sql="SELECT SUM(hits) as hits,zdate FROM statscom_days WHERE ( zdate >'$strtime' and zdate < '$strtoTime' and $srctype='$username') GROUP BY zdate ORDER BY zdate";
+    $sql="SELECT SUM(hits) as hits,zdate FROM statscom_days WHERE ( zdate >'$strtime' and zdate < '$strtoTime' and $srctype='".pg_escape_string2($username)."') GROUP BY zdate ORDER BY zdate";
     $results=$q->QUERY_SQL($sql);
     if(!$q->ok){$tpl->js_mysql_alert($q->mysql_error);return;}
 
@@ -287,7 +295,7 @@ function member_stats_pane_hours_graph2(){
 
 function member_stats_websites(){
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $usernameenc=urlencode($username);
     $Date1=$_GET["date-from"];
@@ -302,7 +310,7 @@ function member_stats_websites(){
     FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid 
     AND zdate >'$strtime' 
     AND zdate < '$strtoTime' 
-    AND statscom_days.$srctype='$username'
+    AND statscom_days.$srctype='".pg_escape_string2($username)."'
     GROUP by sitename,statscom_websites.siteid,statscom_websites.category ORDER BY size DESC";
 
 
@@ -325,7 +333,8 @@ function member_stats_websites(){
     while ($ligne = pg_fetch_assoc($results)) {
         $sizeM=$ligne["size"];
         $sizeR=$ligne["hits"];
-        $siteid=$ligne["siteid"];
+        // Pentest 2026-11-04 : siteid dans le Loadjs (donnee externe) affiche sans encodage (XSS stockee).
+        $siteid=intval($ligne["siteid"]);
         $site=$ligne["sitename"];
 
         $category=$catz->CategoryIntToStr($ligne["category"]);
@@ -362,7 +371,7 @@ $(document).ready(function() { $('#$id').footable({ \"filtering\": { \"enabled\"
 
 function member_stats_notcategorized(){
     $tpl=new template_admin();
-    $srctype=$_GET["srctype"];
+    $srctype=scmc_srctype();
     $username=$_GET["data"];
     $usernameenc=urlencode($username);
     $Date1=$_GET["date-from"];
@@ -376,7 +385,7 @@ function member_stats_notcategorized(){
     FROM statscom_days,statscom_websites WHERE statscom_websites.siteid=statscom_days.siteid 
     AND zdate >'$strtime' 
     AND zdate < '$strtoTime' 
-    AND statscom_days.$srctype='$username'
+    AND statscom_days.$srctype='".pg_escape_string2($username)."'
     AND statscom_websites.category=0
     GROUP by sitename,statscom_websites.siteid ORDER BY size DESC";
 
@@ -397,7 +406,8 @@ function member_stats_notcategorized(){
     while ($ligne = pg_fetch_assoc($results)) {
         $sizeM=$ligne["size"];
         $sizeR=$ligne["hits"];
-        $siteid=$ligne["siteid"];
+        // Pentest 2026-11-04 : siteid dans le Loadjs (donnee externe) affiche sans encodage (XSS stockee).
+        $siteid=intval($ligne["siteid"]);
         $site=$ligne["sitename"];
 
 
@@ -422,7 +432,7 @@ function users_table(){
     $html[]="<tr>";
     $html[]="<th>{member}</th>";
     $html[]="</tr>";
-    $table=unserialize(base64_decode($_GET["users-table"]));
+    $table=unserialize(base64_decode($_GET["users-table"]),array("allowed_classes"=>false));
     foreach ( $table as $site=>$sizeM) {
         $h=explode("|",$site);
         $t=array();

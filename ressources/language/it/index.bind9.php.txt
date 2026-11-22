@@ -1,60 +1,49 @@
-<AddNewDnsReverseZone>To create the reverse Zone, give the first IP address of your DNS Domain
-For example: 192.168.1.1 or 10.10.10.1 or 192.168.0.1...
-</AddNewDnsReverseZone>
-<AddNewDnsZone_explain>Give here the domain that will be added after your computer names
-for example :
-if you set "domain.tld", your computer "computer" will be "computer.domain.tld"
-</AddNewDnsZone_explain>
-<add_forwarder>Add a new DNS</add_forwarder>
-<add_new_zone>Add a new Zone</add_new_zone>
-<add_new_zone_tex>Add a new net domain zone in order to query in DNS your computer has "computer.*.*"</add_new_zone_tex>
-<computers>computers</computers>
+<AddNewDnsReverseZone>Per creare la zona inversa, fornisci il primo indirizzo IP del tuo dominio DNS
+Ad esempio: 192.168.1.1 o 10.10.10.1 o 192.168.0.1...</AddNewDnsReverseZone>
+<AddNewDnsZone_explain>Fornisci qui il dominio che verr&#224; aggiunto dopo i nomi dei tuoi computer
+ad esempio:
+se imposti &quot;domain.tld&quot;, il tuo computer &quot;computer&quot; sar&#224; &quot;computer.domain.tld&quot;</AddNewDnsZone_explain>
+<add_forwarder>Aggiungi un nuovo DNS</add_forwarder>
+<add_new_zone>Aggiungi una nuova zona</add_new_zone>
+<add_new_zone_tex>Aggiungi una nuova zona di dominio di rete per interrogare in DNS il tuo computer come &quot;computer.*.*&quot;</add_new_zone_tex>
+<computers>computer</computers>
 <config>File di configurazione</config>
 <dns_zones>Zone DNS</dns_zones>
-<expire_time_text>Time that wait DNS servers before reject zones datas if the Primary server is no longer available</expire_time_text>
-<forward>forward zone</forward>
-<forwarders>Public DNS</forwarders>
-<forwarders_text>Specify here the Public DNS (Your FAI Dns servers) used to query DNS</forwarders_text>
-<forwarder_add>Give the IP address of your Public ISP DNS</forwarder_add>
-<forward_text>
-A "forward zone" is a way to configure forwarding on a per-domain basis.[br]
-A zone statement of type forward can contain a forward and/or forwarders statement,
-which will apply to queries within the domain given by the zone name.[br]
-If no forwarders statement is present or an empty list for forwarders is given, then no forwarding will be done for the domain,
-canceling the effects of any forwarders in the options statement.[br]
-Thus if you want to use this type of zone to change the behavior of the global forward option
-(that is, "forward first to", then "forward only", or vice versa, but want to use the same servers as set globally) you need to respecify the global forwarders.
-</forward_text>
+<expire_time_text>Tempo che i server DNS attendono prima di rifiutare i dati delle zone se il server primario non &#232; pi&#249; disponibile</expire_time_text>
+<forward>Zona forward</forward>
+<forwarders>DNS pubblici</forwarders>
+<forwarders_text>Specifica qui i DNS pubblici (i server DNS del tuo provider) usati per interrogare il DNS</forwarders_text>
+<forwarder_add>Fornisci l'indirizzo IP del tuo DNS pubblico dell'ISP</forwarder_add>
+<forward_text>Una &quot;zona forward&quot; &#232; un modo per configurare l'inoltro su base per-dominio.[br]
+Una dichiarazione di zona di tipo forward pu&#242; contenere una dichiarazione forward e/o forwarders, che si applicher&#224; alle query all'interno del dominio dato dal nome della zona.[br]
+Se non &#232; presente alcuna dichiarazione forwarders o viene fornito un elenco vuoto per forwarders, allora non verr&#224; eseguito alcun inoltro per il dominio, annullando gli effetti di eventuali forwarders nella dichiarazione options.[br]
+Quindi, se vuoi usare questo tipo di zona per modificare il comportamento dell'opzione globale forward (cio&#232; &quot;forward first to&quot;, poi &quot;forward only&quot;, o viceversa, ma vuoi usare gli stessi server impostati globalmente) devi rispecificare i forwarders globali.</forward_text>
 <global_directory>Directory di lavoro</global_directory>
 <global_settings>Impostazioni globali</global_settings>
 <hint>Hint zone</hint>
-<hint_text>
-The initial set of root nameservers is specified using a "hint zone".[br]
-When the server starts up, it uses the root hints to find a root nameserver and get the most recent list of root nameservers.[br]
-If no hint zone is specified for class IN, the server uses a compiled-in default set of root servers hints.[br]
-Classes other than IN have no built-in defaults hints.
-</hint_text>
-<Hostmaster_email>email of the postmaster of this server</Hostmaster_email>
-<Hostmaster_email_text>Wich email address we can use to contact this zone administrator</Hostmaster_email_text>
-<hosts>Hosts</hosts>
-<master>Authoritative answers</master>
-<master_text>The server has a master copy of the data for the zone and will be able to provide authoritative answers for it.</master_text>
-<minimal_ttl>Minimal Time To Live</minimal_ttl>
-<minimal_ttl_text>Minimal time that records are cached before deleted to refresh them</minimal_ttl_text>
-<PrimaryServerName>Primary server name</PrimaryServerName>
-<PrimaryServerName_text>The fqdn name of the server that serve queries</PrimaryServerName_text>
+<hint_text>L'insieme iniziale di name server radice viene specificato usando una &quot;hint zone&quot;.[br]
+Quando il server si avvia, usa i root hints per trovare un name server radice e ottenere l'elenco pi&#249; recente di name server radice.[br]
+Se non viene specificata alcuna hint zone per la classe IN, il server usa un insieme predefinito di hint dei server radice compilato.[br]
+Le classi diverse da IN non hanno hint predefiniti integrati.</hint_text>
+<Hostmaster_email>email del postmaster di questo server</Hostmaster_email>
+<Hostmaster_email_text>Quale indirizzo email possiamo usare per contattare l'amministratore di questa zona</Hostmaster_email_text>
+<hosts>Host</hosts>
+<master>Risposte autorevoli</master>
+<master_text>Il server ha una copia master dei dati per la zona e sar&#224; in grado di fornire risposte autorevoli per essa.</master_text>
+<minimal_ttl>Time To Live minimo</minimal_ttl>
+<minimal_ttl_text>Tempo minimo per cui i record vengono memorizzati nella cache prima di essere eliminati per aggiornarli</minimal_ttl_text>
+<PrimaryServerName>Nome del server primario</PrimaryServerName>
+<PrimaryServerName_text>Il nome FQDN del server che serve le query</PrimaryServerName_text>
 <refresh_time>Tempo di aggiornamento</refresh_time>
-<refresh_time_text>Time that wait DNS servers before verify or update the primary server SOA record</refresh_time_text>
-<retry_time>Retry time</retry_time>
-<retry_time_text>Expire time</retry_time_text>
-<retry_time_text>Expire time</retry_time_text>
-<search_computer>Search hosts</search_computer>
-<search_computer_text>Query the database in order to find computers/hosts</search_computer_text>
-<search_explain>You can find a computer by giving the IP address or the computer name in your Dns Zone,
-star caracter (*) is supported.
-if you want to query all computers in all DNS Zones, type your pattern and "all" word after
-Example : PC-10* all
-</search_explain>
+<refresh_time_text>Tempo che i server DNS attendono prima di verificare o aggiornare il record SOA del server primario</refresh_time_text>
+<retry_time>Tempo di nuovo tentativo</retry_time>
+<retry_time_text>Tempo di nuovo tentativo</retry_time_text>
+<retry_time_text>Tempo di nuovo tentativo</retry_time_text>
+<search_computer>Cerca host</search_computer>
+<search_computer_text>Interroga il database per trovare computer/host</search_computer_text>
+<search_explain>Puoi trovare un computer fornendo l'indirizzo IP o il nome del computer nella tua zona DNS; il carattere asterisco (*) &#232; supportato.
+Se vuoi interrogare tutti i computer in tutte le zone DNS, digita il tuo pattern e la parola &quot;all&quot; dopo.
+Esempio: PC-10* all</search_explain>
 <slave>slave</slave>
 <slave_text>Una zona slave è una replica in sola lettura di una zona master.[br]
 Lâ%80%99elenco masters definisce uno o più indirizzi IP dei server master che lo slave contatta per aggiornare la propria copia della zona.[br]
@@ -63,13 +52,12 @@ questo pu%C3² essere modificato globalmente specificando una porta prima dellâ
 Lâ%80%99autenticazione verso i server master pu%C3² essere configurata tramite chiavi TSIG per ciascun server.[br]
 Se viene specificato un file, la replica viene salvata in tale file ogni volta che la zona cambia e ricaricata da esso al riavvio del server.[br]</slave_text>
 <stub>stub</stub>
-<stub_text>A stub zone is similar to a slave zone, except that it replicates only the NS records of a master zone instead of the entire zone.[br]
-Stub zones are not a standard part of the DNS;[br]
-they are a feature specific to the BIND implementation.[br]
-Stub zones can be used to eliminate the need for glue NS record in a parent zone at the expense of maintaining a
-stub zone entry and a set of name server addresses in global settings.[br]
-This usage is not recommended for new configurations, and BIND 9 supports it only in a limited way.</stub_text>
+<stub_text>Una zona stub &#232; simile a una zona slave, tranne che replica solo i record NS di una zona master invece dell'intera zona.[br]
+Le zone stub non sono una parte standard del DNS;[br]
+sono una funzionalit&#224; specifica dell'implementazione BIND.[br]
+Le zone stub possono essere usate per eliminare la necessit&#224; di un record glue NS in una zona padre a costo di mantenere una voce di zona stub e un insieme di indirizzi di name server nelle impostazioni globali.[br]
+Questo uso non &#232; consigliato per le nuove configurazioni e BIND 9 lo supporta solo in modo limitato.</stub_text>
 <ttl>Tempo di vivere</ttl>
-<ttl_text>The Time To Libe describes how long a record can be cached before it should be discarded.</ttl_text>
-<zone>zone</zone>
-<ZoneDeleteWarning>Are your sure to delete this zone ?</ZoneDeleteWarning>
+<ttl_text>Il Time To Live descrive per quanto tempo un record pu&#242; essere memorizzato nella cache prima di essere scartato.</ttl_text>
+<zone>zona</zone>
+<ZoneDeleteWarning>Sei sicuro di voler eliminare questa zona?</ZoneDeleteWarning>

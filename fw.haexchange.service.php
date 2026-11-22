@@ -1,4 +1,7 @@
 <?php
+// POST SP10 20261023-12
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.openvpn.inc");
@@ -73,7 +76,7 @@ function table(){
 	$ARRAY["TITLE"]="{restart}";
 	$ARRAY["AFTER"]="LoadAjax('table-haexchnage','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsrestart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-haexchnage-restart')";
+	$jsrestart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-haexchnage-restart')";
 
     $q=new lib_sqlite("/home/artica/SQLITE/haproxy.db");
 	$sql="SELECT count(*) as tcount FROM haexchange WHERE enabled=1";
@@ -89,7 +92,7 @@ function table(){
 	$ARRAY["TITLE"]="{reloading}";
 	$ARRAY["AFTER"]="LoadAjax('table-haexchnage','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsreload="Loadjs('fw.progress.php?content=$prgress&mainid=progress-haexchnage-restart')";
+	$jsreload="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-haexchnage-restart')";
 	
 	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/haproxy-stop.progress";
 	$ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/haproxy-stop.progress.txt";
@@ -97,7 +100,7 @@ function table(){
 	$ARRAY["TITLE"]="{stopping_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-haexchnage','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsstop="Loadjs('fw.progress.php?content=$prgress&mainid=progress-haexchnage-restart')";
+	$jsstop="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-haexchnage-restart')";
 	
 	$ARRAY["PROGRESS_FILE"]="/usr/share/artica-postfix/ressources/logs/web/haproxy-stop.progress";
 	$ARRAY["LOG_FILE"]="/usr/share/artica-postfix/ressources/logs/web/haproxy-stop.progress.txt";
@@ -105,7 +108,7 @@ function table(){
 	$ARRAY["TITLE"]="{starting_service}";
 	$ARRAY["AFTER"]="LoadAjax('table-haexchnage','$page?table=yes');";
 	$prgress=base64_encode(serialize($ARRAY));
-	$jsstart="Loadjs('fw.progress.php?content=$prgress&mainid=progress-haexchnage-restart')";
+	$jsstart="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-haexchnage-restart')";
 	
 	
 	$html[]="<table style='width:100%;margin-top:20px'>

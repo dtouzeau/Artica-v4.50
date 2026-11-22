@@ -1,9 +1,14 @@
 <?php
+// Post SP10 - 13/10/2026
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.patch.tables.fw.inc");
 include_once(dirname(__FILE__)."/ressources/class.mysql.powerdns.inc");
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
+// Pentest 2026-11-04 : container et data etaient recopies sans encodage dans la page (XSS) ; data servait aussi de chemin de fichier.
+if(isset($_GET["container"])){$_GET["container"]=preg_replace('#[^A-Za-z0-9_-]#','',(string)$_GET["container"]);}
+if(isset($_GET["data"])){$_GET["data"]=preg_replace('#[^A-Za-z0-9_.-]#','',basename((string)$_GET["data"]));}
 if(isset($_GET["table"])){table();exit;}
 if(isset($_GET["dsc-current-users"])){current_users();exit;}
 if(isset($_GET["dsc-current-requests"])){current_requests();exit;}
@@ -12,10 +17,6 @@ if(isset($_GET["dsc-top-domains-list"])){top_domains_list();exit;}
 
 if(isset($_GET["dsc-top-ipaddr"])){top_ipaddr();exit;}
 if(isset($_GET["dsc-top-ipaddr-list"])){top_ipaddr_list();exit;}
-if(isset($_GET["ufdbconf-popup"])){ufdbconf_popup();exit;}
-if(isset($_GET["ufdbdebug-popup"])){ufdbdebug_popup();exit;}
-if(isset($_GET["purge-js"])){purge_js();exit;}
-if(isset($_GET["replicate-js"])){replicate_js();exit;}
 if(isset($_GET["status"])){status();exit;}
 
 if(isset($_GET["tabs"])){tabs();exit;}
@@ -103,7 +104,7 @@ function status(){
     $ARRAY["TITLE"]="{APP_DSC} {restarting_service}";
     $ARRAY["AFTER"]="LoadAjaxSilent('unbound-status','$page?unbound-status=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    $jsRestartDSC="Loadjs('fw.progress.php?content=$prgress&mainid=progress-dsc-restart')";
+    $jsRestartDSC="Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-dsc-restart')";
     $DISTANCE_DATE=$DSC_DASHBOARD["TOTAL"]["ALL"]["DISTANCE"];
 
     $InfluxAdminRetentionTime=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("InfluxAdminRetentionTime"));
@@ -136,7 +137,7 @@ function status(){
         $tpl->widget_style1("navy-bg", "fas fa-alarm-clock", "{retention} ($DISTANCE_DATE)", $tpl->FormatNumber($RtMDays)."/$InfluxAdminRetentionTime {days}") .
         "</td>";
     $html[] = "<td style='padding:2px'>" .
-        $tpl->widget_style1("navy-bg", "fas fa-database", "{data_size}", $tables_size) .
+        $tpl->widget_style1("navy-bg", ico_database, "{data_size}", $tables_size) .
         "</td>";
     $html[] = "<td style='padding:2px'>" . $tpl->widget_style1("navy-bg", "fas fa-server", "{daily_volume}", "$tables_size_day/{day}")."</td>";
 
@@ -299,7 +300,7 @@ function current_requests(){
 function top_domains(){
 	$tpl=new templates();
 	$page=CurrentPageName();
-	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"));
+	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"),array("allowed_classes"=>false));
 	$highcharts=new highcharts();
 	$highcharts->container=$_GET["container"];
 	$highcharts->PieDatas=$PieData;
@@ -312,7 +313,7 @@ function top_domains(){
 function top_ipaddr(){
 	$tpl=new templates();
 	$page=CurrentPageName();
-	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"));
+	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"),array("allowed_classes"=>false));
 	$highcharts=new highcharts();
 	$highcharts->container=$_GET["container"];
 	$highcharts->PieDatas=$PieData;
@@ -336,7 +337,7 @@ function top_domains_list(){
 	$html[]="</thead>";
 	$html[]="<tbody>";
 	
-	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"));
+	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"),array("allowed_classes"=>false));
     $TRCLASS=null;
 	foreach ($PieData as $domain=>$requests){
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
@@ -381,7 +382,7 @@ function top_ipaddr_list(){
 	$html[]="</thead>";
 	$html[]="<tbody>";
 
-	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"));
+	$PieData=unserialize(@file_get_contents(PROGRESS_DIR."/{$_GET["data"]}"),array("allowed_classes"=>false));
 
 	foreach ($PieData as $domain=>$requests){
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}

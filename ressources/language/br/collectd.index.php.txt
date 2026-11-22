@@ -1,26 +1,26 @@
-<battery>Battery</battery>
+<battery>Bateria</battery>
 <cpu>C.P.U</cpu>
-<cpufreq>CPU Frequency</cpufreq>
-<df>Disks space</df>
-<disk>disk</disk>
+<cpufreq>Frequ&#234;ncia da CPU</cpufreq>
+<df>Espa&#231;o dos discos</df>
+<disk>disco</disk>
 <dns>Consultas DNS</dns>
-<enable_collected_daemon>Enable Collectd daemon</enable_collected_daemon>
-<entropy>Entropy</entropy>
-<hddtemp>Hard Drive temperature</hddtemp>
+<enable_collected_daemon>Ativar o daemon Collectd</enable_collected_daemon>
+<entropy>Entropia</entropy>
+<hddtemp>Temperatura do disco r&#237;gido</hddtemp>
 <interface>Interface de rede</interface>
-<irq>Interrups</irq>
+<irq>Interrup&#231;&#245;es</irq>
 <load>Média de carga</load>
-<mysql>Mysql database</mysql>
-<netlink>Network link</netlink>
+<mysql>Banco de dados Mysql</mysql>
+<netlink>Link de rede</netlink>
 <ntpd>Network Time Daemon</ntpd>
 <plugin>Serviço</plugin>
-<show_graph>View graph</show_graph>
-<span_plugin_instance_text>Instance:</span_plugin_instance_text>
-<span_type_instance_text>Graph Type:</span_type_instance_text>
-<swap>Memory swap</swap>
-<tcpconns>TCP Connections</tcpconns>
-<thermal>Thermal</thermal>
-<vmem>Virtual memory page</vmem>
-<wireless>Wireless Network</wireless>
+<show_graph>Ver gr&#225;fico</show_graph>
+<span_plugin_instance_text>Inst&#226;ncia:</span_plugin_instance_text>
+<span_type_instance_text>Tipo de gr&#225;fico:</span_type_instance_text>
+<swap>Swap de mem&#243;ria</swap>
+<tcpconns>Conex&#245;es TCP</tcpconns>
+<thermal>T&#233;rmico</thermal>
+<vmem>P&#225;gina de mem&#243;ria virtual</vmem>
+<wireless>Rede sem fio</wireless>
 <zoom_in>Zoom +</zoom_in>
 <zoom_out>Zoom -</zoom_out>

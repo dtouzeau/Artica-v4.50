@@ -1,12 +1,12 @@
-<ArticaMaxDayTemplate>Max Day Delete template</ArticaMaxDayTemplate>
-<ArticaReportQuarantineTemplate>Scheduled users reports quarantine</ArticaReportQuarantineTemplate>
-<ArticaReportQuarantineTemplate_text>This template is used to send reports to user of current stored messages and allows them to release them[br] Reports are sended by artica-quarantine program and it must be scheduled</ArticaReportQuarantineTemplate_text>
-<close_form>Close Template form</close_form>
-<quarantine_max_day>quarantine Max day</quarantine_max_day>
-<quarantine_max_day_text>Specify in day how long messages are stored on users quarantine folder[br]When messages exceed max day value, all message will be deleted automatically</quarantine_max_day_text>
+<ArticaMaxDayTemplate>Vorlage f&#252;r L&#246;schung nach max. Tagen</ArticaMaxDayTemplate>
+<ArticaReportQuarantineTemplate>Geplante Quarant&#228;ne-Benutzerberichte</ArticaReportQuarantineTemplate>
+<ArticaReportQuarantineTemplate_text>Diese Vorlage wird verwendet, um Benutzern Berichte &#252;ber aktuell gespeicherte Nachrichten zu senden und ihnen das Freigeben zu erm&#246;glichen[br] Berichte werden vom Programm artica-quarantine gesendet und m&#252;ssen geplant werden</ArticaReportQuarantineTemplate_text>
+<close_form>Vorlagenformular schlie&#223;en</close_form>
+<quarantine_max_day>Quarant&#228;ne max. Tage</quarantine_max_day>
+<quarantine_max_day_text>Geben Sie in Tagen an, wie lange Nachrichten im Quarant&#228;neordner der Benutzer gespeichert werden[br]Wenn Nachrichten den Maximalwert in Tagen &#252;berschreiten, werden alle Nachrichten automatisch gel&#246;scht</quarantine_max_day_text>
 <templates>Templates</templates>
-<templates_explain>You can personnalize here the content of email notifications when artica-quarantine tool execute operations on your quarantine area</templates_explain>
-<template_deleted>When mails are automatically deleted</template_deleted>
-<template_deleted_text>When messages are over than "quarantine Max day" limit, artica-quarantine delete automatically all mails and send to users an email to inform them that their emails are deleted</template_deleted_text>
-<template_token>Tokens supported [strong]%NUMBER%[/strong] number of emails; [strong]%MAXDAY%[/strong] maximum day live of the quarantine area;
-[strong]%MAILTABLE%[/strong] HTML table of all mails query</template_token>
+<templates_explain>Sie k&#246;nnen hier den Inhalt der E-Mail-Benachrichtigungen anpassen, wenn das artica-quarantine-Tool Vorg&#228;nge in Ihrem Quarant&#228;nebereich ausf&#252;hrt</templates_explain>
+<template_deleted>Wenn E-Mails automatisch gel&#246;scht werden</template_deleted>
+<template_deleted_text>Wenn Nachrichten das Limit &quot;Quarant&#228;ne Max. Tage&quot; &#252;berschreiten, l&#246;scht artica-quarantine automatisch alle E-Mails und sendet den Benutzern eine E-Mail, um sie dar&#252;ber zu informieren, dass ihre E-Mails gel&#246;scht wurden</template_deleted_text>
+<template_token>Unterst&#252;tzte Tokens [strong]%NUMBER%[/strong] Anzahl der E-Mails; [strong]%MAXDAY%[/strong] maximale Lebensdauer des Quarant&#228;nebereichs in Tagen;
+[strong]%MAILTABLE%[/strong] HTML-Tabelle aller abgefragten E-Mails</template_token>

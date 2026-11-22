@@ -55,6 +55,8 @@ echo $tpl->build_firewall();
 function app_status(){
 	$q=new mysql_squid_builder();
 	while (list ($gpid, $val) = each ($_SESSION["SQUID_DYNAMIC_ACLS"]) ){
+		// Pentest 2026-11-04 : gpid etait concatene dans la requete.
+		$gpid=intval($gpid);
 		$ligne=mysqli_fetch_array($q->QUERY_SQL("SELECT GroupName,params FROM webfilters_sqgroups WHERE ID=$gpid"));
 		$params=unserialize(base64_decode($ligne["params"]));
 		

@@ -24,10 +24,12 @@ function js(){
 	
 }
 function delete_js(){
-	$id=$_GET["delete-js"];
+	// Pentest 2026-11-04 : delete-js et id etaient recopies sans encodage dans la page (XSS).
+	$id=intval($_GET["delete-js"]);
+	$domid=preg_replace('#[^A-Za-z0-9_-]#','',(string)($_GET["id"] ?? ""));
 	$page=CurrentPageName();
 	$tpl=new template_admin();
-	$tpl->js_confirm_delete($id, "delete", $id,"$('#{$_GET["id"]}').remove();");
+	$tpl->js_confirm_delete($id, "delete", $id,"$('#$domid').remove();");
 }
 
 function item_js(){
@@ -66,10 +68,11 @@ function item_save(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
 	$tpl->CLEAN_POST();
-	$id=$_POST["id"];
-	$domain_id=$_POST["domain_id"];
-	$kind=$_POST["xkind"];
-	$content=$_POST["content"];
+	// Pentest 2026-11-04 : id/domain_id/xkind/content etaient concatenes dans la requete.
+	$id=intval($_POST["id"]);
+	$domain_id=intval($_POST["domain_id"]);
+	$kind=mysql_escape_string2($_POST["xkind"]);
+	$content=mysql_escape_string2($_POST["content"]);
 	if($id==0){
 		$q->QUERY_SQL("insert into domainmetadata(domain_id, kind, content) 
 				values($domain_id, '$kind','$content');");

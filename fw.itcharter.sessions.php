@@ -1,10 +1,13 @@
 <?php
-include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
+include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");
+include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
+$GLOBALS["CLASS_SOCKETS"]=new sockets();
 include_once(dirname(__FILE__)."/ressources/class.squid.templates-simple.inc");
+include_once(dirname(__FILE__)."/ressources/class.statistics_appliance.inc");
 
 
     if(isset($_GET["table"])){table();exit;}
-
+    if(isset($_GET["count-sessions"])){count_sessions();exit;}
     if(isset($_GET["sessions-delete-all"])){sessions_delete_all();exit;}
     if(isset($_POST["sessions-delete-all"])){sessions_delete_all_confirm();exit;}
 
@@ -15,7 +18,9 @@ include_once(dirname(__FILE__)."/ressources/class.squid.templates-simple.inc");
     if(isset($_GET["itchart-tabs"])){itchart_tabs();exit;}
     if(isset($_GET["itchart-settings"])){itchart_settings();exit;}
     if(isset($_POST["itchart-settings"])){itchart_settings_save();exit;}
-    if(isset($_GET["itchart-enable"])){itchart_enable();exit;}
+    // itchart_enable() n'existe que dans fw.itcharter.table.php: cette route
+    // etait un Fatal "Call to undefined function", et aucune URL de cette page
+    // ne la visait. Aiguillage retire.
     if(isset($_GET["itchart-content"])){itchart_content();exit;}
     if(isset($_POST["itchart-content"])){itchart_content_save();exit;}
 
@@ -27,10 +32,10 @@ include_once(dirname(__FILE__)."/ressources/class.squid.templates-simple.inc");
     if(isset($_POST["itchart-pdf"])){itchart_pdf_save();exit;}
     if(isset($_GET["itchart-pdf-down"])){itchart_pdf_output();exit;}
     if(isset($_GET["file-uploaded"])){itchart_pdf_uploaded();exit;}
-
+    if(isset($_GET["table-start"])){table_start();exit;}
 xStart();
 
-function reload_proxy(){
+function reload_proxy():bool{
     $libmem=new lib_memcached();
     $keys = $libmem->allKeys();
     $regex = 'itchart_cache_.*';
@@ -40,19 +45,30 @@ function reload_proxy(){
         }
     }
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/nohup/reload");
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/clients/proxy/reload");
     $tpl=new template_admin();
-    $tpl->js_error("{empty_cache} {done}");
+    return $tpl->js_error("{empty_cache} {done}");
 
 }
 
-function xStart(){
-
+function xStart():bool{
     $page=CurrentPageName();
     echo "<div id='itcharters-sessions-table' style='margin-top: 20px'></div>";
-    echo "<script>LoadAjax('itcharters-sessions-table','$page?table=yes');</script>";
-
+    echo "<script>LoadAjax('itcharters-sessions-table','$page?table-start=yes');</script>";
+    return true;
 }
-function session_delete(){
+function table_start():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $html=array();
+    $html[]="<div style='margin-top:10px'>";
+    $html[]=$tpl->search_block($page,"","","","&table=yes");
+    $html[]="</div>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+    return true;
+}
+
+function session_delete():bool{
     $tpl=new template_admin();
     $ID     = $_GET["session-delete"];
     $redis=new redis();
@@ -62,19 +78,53 @@ function session_delete(){
         $tpl->js_error($e->getMessage());
         die();
     }
-    $md=$_GET["md"];
+    $md=md5($ID);
     $redis->del($ID);
     $redis->close();
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/clients/proxy/reload");
     echo "$('#$md').remove();\n";
+    return admin_tracks("ITChart: Delete session #$ID");
 }
 
-function sessions_delete_all(){
+function sessions_delete_all():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
-    $tpl->js_confirm_delete("{delete_all}","sessions-delete-all","0","LoadAjax('itcharters-sessions-table','$page?table=yes');");
+    return $tpl->js_confirm_delete("{delete_all}","sessions-delete-all","0","LoadAjax('itcharters-sessions-table','$page?table=yes');");
 
 }
-function sessions_delete_all_confirm(){
+
+function count_sessions():bool{
+    $mem="";
+    $tpl=new template_admin();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/dumpmem"),true);
+
+    if(isset($json["list"])){
+       $list=json_decode($json["list"],true);
+        //var_dump($list);
+       if(is_array($list)){
+           $CountMem=count($list);
+           $mem="&nbsp;<small>(<i class='".ico_mem."'></i>&nbsp;".$tpl->FormatNumber($CountMem).")</small>";
+
+       }
+    }
+
+    $redis=new redis();
+    try {
+        $redis->connect('127.0.0.1','6123');
+    } catch (Exception $e) {
+        die();
+    }
+    $results=$redis->keys("*|*");
+    if(is_array($results) && count($results)>0){
+
+        echo $tpl->FormatNumber(count($results)).$mem;
+    }
+    $redis->close();
+    return true;
+
+}
+
+function sessions_delete_all_confirm():bool{
 
     $redis=new redis();
     try {
@@ -89,32 +139,51 @@ function sessions_delete_all_confirm(){
         $redis->del($key);
     }
     $redis->close();
-
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/hacluster/server/clients/proxy/reload");
+    return admin_tracks("ITChart: Delete all sessions");
 }
 
-function itchart_js(){
+function itchart_db_get($ID){
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/db/".intval($ID)));
+    if(!is_object($json)){return null;}
+    if(empty($json->Status)){return null;}
+    if(!isset($json->Row)){return null;}
+    return $json->Row;
+}
+
+function itchart_db_put($ID,$payload){
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_PUT_JSON("/itcharter/db/".intval($ID),$payload));
+    if(!is_object($json)){return "Invalid daemon response";}
+    if(empty($json->Status)){
+        if(isset($json->Error)){return (string)$json->Error;}
+        return "Unknown daemon error";
+    }
+    return "";
+}
+
+function itchart_js():bool{
     $page=CurrentPageName();
     $tpl=new template_admin();
     $ID=intval($_GET["itchart-js"]);
     $title="{new_itchart}";
     if($ID>0){
-        $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-        $ligne=$q->mysqli_fetch_array("SELECT title FROM itcharters WHERE ID=$ID");
-        $title=$ligne["title"];
+        $row=itchart_db_get($ID);
+        if(is_object($row)){$title=$row->title;}
     }
 
-    $tpl->js_dialog1($title,"$page?itchart-tabs=$ID",990);
+    return $tpl->js_dialog1($title,"$page?itchart-tabs=$ID",990);
 
 }
-function itchart_content(){
+function itchart_content():bool{
 
     $tpl=new template_admin();
     $ID=intval($_GET["itchart-content"]);
 
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT ChartContent FROM itcharters WHERE ID='$ID'");
-
-    $ChartContent=trim(base64_decode($ligne["ChartContent"]));
+    $row=itchart_db_get($ID);
+    $ChartContent="";
+    if(is_object($row) && isset($row->ChartContent)){
+        $ChartContent=trim(base64_decode($row->ChartContent));
+    }
     $ChartContent=str_replace("%C2%A0"," ",$ChartContent);
 
     if(strlen($ChartContent)<10){
@@ -125,17 +194,18 @@ function itchart_content(){
     $form[]=$tpl->field_textareacode("ChartContent",null,$ChartContent);
 
     echo $tpl->form_outside("{content}",$form,null ,"{apply}", null,"AsSquidAdministrator",true);
-
+    return true;
 }
 
-function itchart_headers(){
+function itchart_headers():bool{
     $tpl=new template_admin();
     $ID=intval($_GET["itchart-headers"]);
 
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT ChartHeaders FROM itcharters WHERE ID='$ID'");
-
-    $Content=trim(base64_decode($ligne["ChartHeaders"]));
+    $row=itchart_db_get($ID);
+    $Content="";
+    if(is_object($row) && isset($row->ChartHeaders)){
+        $Content=trim(base64_decode($row->ChartHeaders));
+    }
 
     if(strlen($Content)<10){
         $Content=@file_get_contents("ressources/databases/DefaultAcceptableUsePolicyH.html");
@@ -145,23 +215,27 @@ function itchart_headers(){
     $form[]=$tpl->field_textareacode("ChartHeaders",null,$Content);
 
     echo $tpl->form_outside("{headers}",$form,null ,"{apply}", null,"AsSquidAdministrator",true);
-
+    return true;
 }
-function itchart_pdf(){
+function itchart_pdf():bool{
     $page=CurrentPageName();
     $ID=intval($_GET["itchart-pdf"]);
     echo "<div id='itcharter-pdf-$ID' style='margin-top:20px'></div><script>LoadAjax('itcharter-pdf-$ID','$page?itchart-pdf2=$ID');</script>";
-
+    return true;
 
 }
 
 function itchart_pdf_output(){
 
     $ID=intval($_GET["itchart-pdf-down"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ligne=$q->mysqli_fetch_array("SELECT PdfFileName,PdfFileSize,PdfContent FROM itcharters WHERE ID='$ID'");
-    $PdfFileName=$ligne["PdfFileName"];
-    $PdfFileSize=$ligne["PdfFileSize"];
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/db/$ID/pdf"));
+    if(!is_object($json) || empty($json->Status) || !isset($json->Row)){
+        header("HTTP/1.1 404 Not Found");
+        return;
+    }
+    $row=$json->Row;
+    $PdfFileName=$row->PdfFileName;
+    $PdfFileSize=intval($row->PdfFileSize);
     header('Content-type: application/pdf');
     header('Content-Transfer-Encoding: binary');
     header("Content-Disposition: attachment; filename=\"$PdfFileName\"");
@@ -170,11 +244,11 @@ function itchart_pdf_output(){
     header("Content-Length: ".$PdfFileSize);
     ob_clean();
     flush();
-    echo base64_decode($ligne["PdfContent"]);
+    echo base64_decode($row->PdfContent);
 
 }
 
-function itchart_pdf_uploaded(){
+function itchart_pdf_uploaded():bool{
     header("content-type: application/x-javascript");
     $page=CurrentPageName();
     $tpl=new template_admin();
@@ -184,38 +258,38 @@ function itchart_pdf_uploaded(){
     if(intval( $_SESSION["PDF-ID"])==0){
             $tpl->js_error("NO ID !");
             @unlink($filepath);
-            return;
+            return false;
     }
 
     $ID=intval( $_SESSION["PDF-ID"]);
 
     if(!is_file($filepath)){
         $tpl->js_error($filepath ." no such file");
-        return;
+        return false;
     }
 
     if(!preg_match("#^.*?\.pdf$#",$filename)){
         $tpl->js_error($filepath ." NOT A PDF");
         @unlink($filepath);
-        return;
+        return false;
     }
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $size=@filesize($filepath);
     $data=base64_encode(@file_get_contents($filepath));
     @unlink($filepath);
 
-    if(!$q->FIELD_EXISTS("itcharters", "PdfContent")){
-        $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `PdfContent` TEXT NULL");
-        if(!$q->ok){echo $tpl->js_error($q->mysql_error); @unlink($filepath);return;}
-    }
     $filename=replace_accents($filename);
     $filename=str_replace(" ","_",$filename);
     $filename=str_replace("'","_",$filename);
 
-    $q->QUERY_SQL("UPDATE itcharters SET enablepdf=1,PdfFileName='$filename',PdfFileSize='$size',PdfContent='$data' WHERE ID=$ID");
-    if(!$q->ok){echo $tpl->js_error($q->mysql_error); return;}
+    $error=itchart_db_put($ID,array(
+        "enablepdf"=>1,
+        "PdfFileName"=>$filename,
+        "PdfFileSize"=>intval($size),
+        "PdfContent"=>$data));
+    if($error<>""){echo $tpl->js_error($error); return false;}
     echo "LoadAjax('itcharter-pdf-$ID','$page?itchart-pdf2=$ID')\n";
     echo "LoadAjax('itcharters-sessions-table','$page?table=yes');";
+    return admin_tracks("ITChart: Upload a new PDF file $filename for ITCharter #$ID");
 
 
 }
@@ -225,45 +299,25 @@ function itchart_pdf2()
     $tpl = new template_admin();
     $page = CurrentPageName();
     $ID = intval($_GET["itchart-pdf2"]);
-    $q = new lib_sqlite("/home/artica/SQLITE/proxy.db");
 
-    if (!$q->FIELD_EXISTS("itcharters", "enablepdf")) {
-        $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `enablepdf` INTEGER NOT NULL DEFAULT '0'");
-        if (!$q->ok) {
-            echo $q->mysql_error . "\n";
-        }
+    $row = itchart_db_get($ID);
+    $title = "";
+    $enablepdf = 0;
+    $PdfFileSize = 0;
+    $PdfFileName = "";
+    if (is_object($row)) {
+        $title = $row->title;
+        $enablepdf = intval($row->enablepdf);
+        $PdfFileSize = intval($row->PdfFileSize);
+        $PdfFileName = $row->PdfFileName;
     }
 
-    if (!$q->FIELD_EXISTS("itcharters", "PdfFileName")) {
-        $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `PdfFileName` TEXT NULL");
-        if (!$q->ok) {
-            echo $q->mysql_error . "\n";
-        }
-    }
-
-    if (!$q->FIELD_EXISTS("itcharters", "PdfFileSize")) {
-        $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `PdfFileSize` INTEGER NULL");
-        if (!$q->ok) {
-            echo $q->mysql_error . "\n";
-        }
-    }
-    if (!$q->FIELD_EXISTS("itcharters", "PdfContent")) {
-        $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `PdfContent` TEXT NULL");
-        if (!$q->ok) {
-            echo $q->mysql_error . "\n";
-        }
-    }
-
-
-    $ligne = $q->mysqli_fetch_array("SELECT title,enablepdf,PdfFileSize,PdfFileName FROM itcharters WHERE ID='$ID'");
-    $title = $ligne["title"];
-
-    if (intval($ligne["PdfFileSize"]) > 0) {
-        $title = "PDF {$ligne["PdfFileName"]} (" . FormatBytes(intval($ligne["PdfFileSize"]) / 1024) . ")";
+    if ($PdfFileSize > 0) {
+        $title = "PDF $PdfFileName (" . FormatBytes($PdfFileSize / 1024) . ")";
     }
 
     $tpl->field_hidden("itchart-pdf", $ID);
-    $form[] = $tpl->field_checkbox("enablepdf", "{enabled}", $ligne["enablepdf"]);
+    $form[] = $tpl->field_checkbox("enablepdf", "{enabled}", $enablepdf);
     $tpl->form_add_button_upload("{upload}:PDF", $page, "AsSquidAdministrator");
 
     $_SESSION["PDF-ID"] = $ID;
@@ -278,7 +332,7 @@ function itchart_pdf2()
     $html[] = "</td>";
     $html[] = "</tr>";
     $html[] = "</table>";
-    if($ligne["PdfFileSize"]>0) {
+    if($PdfFileSize>0) {
         $html[] = "<script>";
         $html[] = "var loadingTask = pdfjsLib.getDocument('$page?itchart-pdf-down=$ID');";
         $html[] = "loadingTask.promise.then(function(pdf) {";
@@ -306,19 +360,17 @@ function itchart_pdf_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["itchart-pdf"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $q->QUERY_SQL("UPDATE itcharters SET enablepdf='{$_POST["enablepdf"]}' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    $error=itchart_db_put($ID,array("enablepdf"=>intval($_POST["enablepdf"])));
+    if($error<>""){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($error));return;}
 }
 
 function itchart_content_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["itchart-content"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $content=base64_encode($_POST["ChartContent"]);
-    $q->QUERY_SQL("UPDATE itcharters SET ChartContent='$content' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    $error=itchart_db_put($ID,array("ChartContent"=>$content));
+    if($error<>""){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($error));return;}
 }
 
 function itchart_tabs(){
@@ -348,29 +400,34 @@ function itchart_settings(){
     $t=time();
     $jsAfter="LoadAjax('itcharters-sessions-table','$page?table=yes');";
 
-    if($ID>0){
-        $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-        $ligne=$q->mysqli_fetch_array("SELECT TextIntro,TextButton,`title` FROM itcharters WHERE ID='$ID'");
+    $TextIntro=null;
+    $TextButton=null;
 
-        if(!$q->ok){echo $tpl->div_error($q->mysql_error);}
-        $title=$ligne["title"];
+    if($ID>0){
+        $row=itchart_db_get($ID);
+        if(!is_object($row)){echo $tpl->div_error("Unable to fetch IT Charter #$ID from the daemon");}
+        if(is_object($row)){
+            $title=$row->title;
+            $TextIntro=$row->TextIntro;
+            $TextButton=$row->TextButton;
+        }
         $title_form=$title;
         $btname="{apply}";
         $jsAfter=$jsAfter."dialogInstance1.close();";
 
     }
 
-    if($ligne["TextIntro"]==null){
-        $ligne["TextIntro"]="Please read the IT chart before accessing trough Internet";
+    if($TextIntro==null){
+        $TextIntro="Please read the IT chart before accessing trough Internet";
     }
-    if($ligne["TextButton"]==null){
-        $ligne["TextButton"]="I accept the terms and conditions of this agreement";
+    if($TextButton==null){
+        $TextButton="I accept the terms and conditions of this agreement";
 
     }
     $tpl->field_hidden("itchart-settings",$ID);
     $form[]=$tpl->field_text("title","{page_title}",$title,true);
-    $form[]=$tpl->field_text("TextButton","{text_button}",$ligne["TextButton"],true);
-    $form[]=$tpl->field_textareacode("TextIntro","{introduction_text}",$ligne["TextIntro"]);
+    $form[]=$tpl->field_text("TextButton","{text_button}",$TextButton,true);
+    $form[]=$tpl->field_textareacode("TextIntro","{introduction_text}",$TextIntro);
 
     echo $tpl->form_outside($title_form,$form,null ,$btname, $jsAfter,"AsSquidAdministrator",true);
 
@@ -380,64 +437,44 @@ function itchart_headers_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
     $ID=intval($_POST["itchart-headers"]);
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
     $content=base64_encode($_POST["ChartHeaders"]);
-    $q->QUERY_SQL("UPDATE itcharters SET ChartHeaders='$content' WHERE ID=$ID");
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    $error=itchart_db_put($ID,array("ChartHeaders"=>$content));
+    if($error<>""){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($error));return;}
 }
 
 function itchart_settings_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $ID=$_POST["itchart-settings"];
-
-
-    if(!$q->FIELD_EXISTS("itcharters", "PdfContent")){
-        $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `PdfContent` TEXT NULL");
-        if(!$q->ok){echo $q->mysql_error."\n";}
-    }
-
-    if(!$q->FIELD_EXISTS("itcharters", "enablepdf")){
-        $q->QUERY_SQL("ALTER TABLE `itcharters` ADD `enablepdf` INTEGER NOT NULL DEFAULT '0'");
-        if(!$q->ok){echo $q->mysql_error."\n";}
-    }
-
+    $ID=intval($_POST["itchart-settings"]);
 
     unset($_POST["itchart-settings"]);
+    $payload=array();
     foreach ($_POST as $key=>$value){
-        $fields[]="`$key`";
-        $values[]="'".$q->sqlite_escape_string2($value)."'";
-        $edit[]="`$key`='".$q->sqlite_escape_string2($value)."'";
-
+        $payload[$key]=$value;
     }
 
     if($ID>0){
-        $sql="UPDATE itcharters SET ".@implode(",", $edit)." WHERE ID='$ID'";
-    }else{
-        $fields[]="`ChartHeaders`";
-        $fields[]="`explain`";
-        $values[]="''";
-        $values[]="''";
-
-        $sql="INSERT INTO itcharters (".@implode(",", $fields).") VALUES (".@implode(",", $values).")";
+        $error=itchart_db_put($ID,$payload);
+        if($error<>""){echo (new template_admin())->post_error("".$tpl->javascript_parse_text($error));return;}
+        return;
     }
 
-    itchart_compile();
-
-
-    $q->QUERY_SQL($sql);
-    if(!$q->ok){echo "jserror:".$tpl->javascript_parse_text($q->mysql_error);return;}
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API_POST_JSON("/itcharter/db",$payload));
+    if(!is_object($json) || empty($json->Status)){
+        $error="Unknown daemon error";
+        if(is_object($json) && isset($json->Error)){$error=(string)$json->Error;}
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text($error));
+        return;
+    }
 }
 
 
+// repondeur ?search=&table=yes : possede le tableau ET le TINY (skill §7d, §13b)
 function table(){
     $page=CurrentPageName();
-    $t=time();
     $tpl=new template_admin();
     $tpl->CLUSTER_CLI=true;
     $HaClusterClient= intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("HaClusterClient"));
-    $TRCLASS=null;
     $PowerDNSEnableClusterSlave=intval($GLOBALS["CLASS_SOCKETS"]->GET_INFO("PowerDNSEnableClusterSlave"));
 
     $redis=new redis();
@@ -451,103 +488,102 @@ function table(){
     }
 
     if($PowerDNSEnableClusterSlave==1){$ClusterEnabled=1;}
+    $html=array();
     if($HaClusterClient==1){
         $ClusterEnabled=1;
-        echo $tpl->_ENGINE_parse_body($tpl->div_info("{feature_to_hacluster}"));
+        $html[]=$tpl->div_info("{feature_to_hacluster}");
     }
-
-
-    $html[]="<table id='table-$t' class=\"footable table table-stripped\" data-page-size=\"100\" data-paging=\"true\">";
-    $html[]="<thead>";
-    $html[]="<tr>";
-    $html[]="<th data-sortable=true class='text-capitalize'>{members}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize' data-type='text'>{it_charters}</th>";
-    $html[]="<th data-sortable=true class='text-capitalize center' data-type='text'>{date}</th>";
-    $html[]="<th data-sortable=false>{delete}</th>";
-    $html[]="</tr>";
-    $html[]="</thead>";
-    $html[]="<tbody>";
-
-
-
 
     $results=$redis->keys("*|*");
+    if(!is_array($results)){ $results=array(); }
     $itchart_compile=itchart_compile();
-    $td1prc=$tpl->table_td1prc();
+    $search=trim((string)($_GET["search"] ?? ""));
+    $search=trim($search,"*");
 
+    $rows=array();
     foreach ($results as $key){
-        if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
-
-        $Time=$redis->get($key);
-        $zdate=$tpl->time_to_date($Time,true);
+        if($search!=="" && stripos($key,$search)===false){ continue; }
+        $Time=intval($redis->get($key));
         $zkey=explode("|",$key);
-        $User=$zkey[0];
-        $ChartID=$zkey[1];
-        $title=$itchart_compile[$ChartID];
-        $md=md5($key);
-        $delete     = $tpl->icon_delete("Loadjs('$page?session-delete=". urlencode($key)."&md=$md')");
-        if($HaClusterClient==1){
-            $delete     = $tpl->icon_delete("");
-        }
-        $html[]="<tr class='$TRCLASS' id='$md'>";
-        $html[]="<td style='font-weight:bold;width=1%' nowrap><i class=\"fas fa-user\"></i>&nbsp;$User</td>";
-        $html[]="<td style='width:99%'>$title</td>";
-        $html[]="<td $td1prc>$zdate</td>";
-        $html[]="<td $td1prc>$delete</td>";
-        $html[]="</tr>";
+        $User=(string)$zkey[0];
+        $ChartID=intval($zkey[1] ?? 0);
+        $title=isset($itchart_compile[$ChartID]) ? (string)$itchart_compile[$ChartID] : "#$ChartID";
+        $rows[]=session_row($tpl,$page,$key,$User,$ChartID,$title,$Time,$HaClusterClient);
     }
+    $redis->close();
 
-    $html[]="</tbody>";
-    $html[]="<tfoot>";
-
-    $html[]="<tr>";
-    $html[]="<td colspan='4'>";
-    $html[]="<ul class='pagination pull-right'></ul>";
-    $html[]="</td>";
-    $html[]="</tr>";
-    $html[]="</tfoot>";
-    $html[]="</table>";
-    $html[]="<script>";
+    $html[]="<div class='awc-wrap'><div class='awc-card'><div class='awc-scroll'>";
+    $html[]="<table class='awc-tbl'><thead><tr>";
+    $html[]="<th>{members}</th>";
+    $html[]="<th>{it_charters}</th>";
+    $html[]="<th class='awc-nowrap'>{date}</th>";
+    $html[]="<th style='text-align:right'>{actions}</th>";
+    $html[]="</tr></thead><tbody id='awc-rows'>";
+    if(count($rows)==0){ $html[]="<tr><td colspan='4'><div class='awc-empty'>{no_data}</div></td></tr>"; }
+    else { $html[]=implode("\n",$rows); }
+    $html[]="</tbody></table></div>";
+    $html[]="<div class='awc-foot'><span>{showing} ".count($rows)." / ".count($results)." {items}</span><span class='awc-pg' id='awc-pager'></span></div>";
+    $html[]="</div></div>";
 
     $items=0;
     $libmem=new lib_memcached();
     $keys = $libmem->allKeys();
-    $regex = 'itchart_cache_.*';
-    foreach($keys as $item) {
-        if(preg_match('/'.$regex.'/', $item)) {
-           $items++;
+    if(is_array($keys)){
+        foreach($keys as $item) {
+            if(preg_match('/itchart_cache_.*/', $item)) { $items++; }
         }
     }
 
+    // TINY : titre + boutons, emis en DERNIER, apres le tableau (skill §2, §7d)
+    $topbuttons=array();
     $topbuttons[] = array("Loadjs('$page?reload-proxy=yes')", ico_refresh, "{empty_cache} ($items)");
     if($ClusterEnabled==0) {
         $topbuttons[] = array("Loadjs('$page?sessions-delete-all=yes');", ico_trash, "{delete_all}");
     }
-    $TINY_ARRAY["TITLE"]="{it_charters} {sessions}";
+    $TINY_ARRAY=array();
+    $TINY_ARRAY["TITLE"]="{it_charters} <span id='NumSessions'></span> {sessions}";
     $TINY_ARRAY["ICO"]=ico_users;
     $TINY_ARRAY["EXPL"]="{IT_charter_explain}";
     $TINY_ARRAY["BUTTONS"]=$tpl->table_buttons($topbuttons);
     $headsjs= "Loadjs('fw.progress.php?tiny-page=".urlencode(base64_encode(serialize($TINY_ARRAY)))."');";
+    $SessionsPing=$tpl->RefreshInterval_js("NumSessions",$page,"count-sessions=yes",5);
 
-    $html[]=$headsjs;
-    $html[]="NoSpinner();";
-    $html[]=@implode("\n",$tpl->ICON_SCRIPTS);
-    $html[]="$(document).ready(function() { $('#table-$t').footable( { \"filtering\": { \"enabled\": false }, \"sorting\": { \"enabled\": true },\"paging\": { \"size\": {$GLOBALS["FOOTABLE_PSIZE"]} } } ); });";
-    $html[]="</script>";
+    // CSS, scripts d'icones et pager concatenes AUTOUR du parse, jamais dedans (skill §17 regle 1)
+    $js="<script>NoSpinner();\n".$tpl->ICON_SCRIPTS_COMPILE()."\n$headsjs\n$SessionsPing</script>";
+    echo awc_table_style().$tpl->_ENGINE_parse_body(@implode("\n",$html)).$js.awc_pager_js(25);
+}
 
-    echo $tpl->_ENGINE_parse_body($html);
-
-
+// une ligne du tableau (skill §13b)
+function session_row(template_admin $tpl,string $page,string $key,string $User,int $ChartID,string $title,int $Time,int $HaClusterClient):string{
+    $md=md5($key);
+    $zdate=htmlspecialchars($tpl->time_to_date($Time,true));
+    $h ="<tr id='$md'>";
+    $h.="<td><div class='awc-ident'>";
+    $h.="<span class='awc-ico'><i class='fas fa-user'></i></span>";
+    $h.="<span><span class='awc-name'>".htmlspecialchars($User)."</span>";
+    $h.="<div class='awc-meta'>{it_charters} #$ChartID</div>";
+    $h.="</span></div></td>";
+    $h.="<td>".htmlspecialchars($title)."</td>";
+    $h.="<td class='awc-nowrap'><span class='awc-seen'>$zdate</span></td>";
+    $h.="<td><div class='awc-acts'>";
+    if($HaClusterClient!=1){
+        $h.="<a class='awc-act awc-act-danger' title='{delete}' href=\"javascript:blur();\" onclick=\"Loadjs('$page?session-delete=".urlencode($key)."&md=$md')\"><i class='fas fa-trash-can'></i></a>";
+    }
+    $h.="</div></td>";
+    $h.="</tr>";
+    return $h;
 }
 
 function itchart_compile(){
-    $q=new lib_sqlite("/home/artica/SQLITE/proxy.db");
-    $results=$q->QUERY_SQL("SELECT ID,title FROM itcharters ORDER BY ID DESC");
+    $icharters=array();
+    $json=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/itcharter/db/list"));
+    if(!is_object($json)){return $icharters;}
+    if(empty($json->Status)){return $icharters;}
+    if(!isset($json->Rows)){return $icharters;}
+    if(!is_array($json->Rows)){return $icharters;}
 
-    foreach ($results as $index=>$ligne){
-        $ID=$ligne["ID"];
-        $icharters[$ID]=$ligne["title"];
-
+    foreach ($json->Rows as $row){
+        $icharters[intval($row->ID)]=$row->title;
     }
 
    return $icharters;

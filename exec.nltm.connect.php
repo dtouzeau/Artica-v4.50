@@ -27,10 +27,6 @@ if(isset($argv[1])){
         winbindd_privileges();
         exit;
     }
-    if($argv[1]=="--ntpad"){
-        sync_time();
-        exit;
-    }
 
     if($argv[1]=="--restart"){
         restart();

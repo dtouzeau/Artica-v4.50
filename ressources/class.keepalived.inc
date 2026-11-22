@@ -72,6 +72,8 @@ class keepalives_primary_nodes
     public $weight = 0;
     public $timeout = 0;
     public $nopreempt = 0;
+    public $preempt_delay = 0;
+    public $init_fail=0;
     public $unicast_src_ip = 0;
     public $enable_peers_ttl = 0;
     public $max_peers_ttl = 0;
@@ -170,7 +172,13 @@ class keepalives_primary_nodes
         if(!$q->FIELD_EXISTS("keepalived_primary_nodes","vmac_xmit_base")){
             $q->QUERY_SQL("ALTER TABLE keepalived_primary_nodes ADD vmac_xmit_base INTEGER");
         }
+        if(!$q->FIELD_EXISTS("keepalived_primary_nodes","preempt_delay")){
+            $q->QUERY_SQL("ALTER TABLE keepalived_primary_nodes ADD preempt_delay INTEGER");
+        }
 
+        if(!$q->FIELD_EXISTS("keepalived_primary_nodes","init_fail")){
+            $q->QUERY_SQL("ALTER TABLE keepalived_primary_nodes ADD init_fail INTEGER");
+        }
         if ($primary_node_id <> null) {
             $this->primary_node_id = $primary_node_id;
             $this->load();
@@ -199,6 +207,7 @@ class keepalives_primary_nodes
         $this->priority = intval($ligne['priority']);
         $this->advert_int = intval($ligne['advert_int']);
         $this->nopreempt = intval($ligne['nopreempt']);
+        $this->preempt_delay= intval($ligne['preempt_delay']);
         $this->unicast_src_ip = intval($ligne['unicast_src_ip']);
         $this->auth_enable = intval($ligne['auth_enable']);
         $this->auth_pass = $ligne['auth_pass'];
@@ -209,6 +218,8 @@ class keepalives_primary_nodes
         $this->rise = intval($ligne['rise']);
         $this->weight = intval($ligne['weight']);
         $this->timeout = intval($ligne['timeout']);
+        $this->init_fail = intval($ligne['init_fail']);
+
         $this->enable = intval($ligne['enable']);
         $this->isPrimaryNode = intval($ligne['isPrimaryNode']);
         $this->primaryNodeIP = $ligne['primaryNodeIP'];
@@ -256,8 +267,8 @@ class keepalives_primary_nodes
         $t = time();
         if ($this->primary_node_id == 0) {
 
-            $sql = "INSERT INTO keepalived_primary_nodes (primary_node_name,interface,state,virtual_router_id,priority,advert_int,nopreempt,unicast_src_ip,enable_peers_ttl,max_peers_ttl,min_peers_ttl,auth_enable,auth_type,auth_pass,notifty_enable,notifty,interval,fall,rise,weight,timeout,enable,isPrimaryNode,primaryNodeIP,primaryNodePort,secondaryNodeIsDisconnected,synckey,primaryNodeID,last_sync,testDom,testDomDNS,enableProxyCurl,disklimit,ramlimit,loadlimit,checkDisk,checkRam,checkLoad,dnstesttimeout,proxytesttimeout,checkDebugLevel,enableDnsResolver,use_vmac,vmac_xmit_base) 
-			VALUES ('$this->primary_node_name','$this->interface','$this->primary_node_state','$this->virtual_router_id','$this->priority','$this->advert_int','$this->nopreempt','$this->unicast_src_ip','$this->enable_peers_ttl','$this->max_peers_ttl','$this->min_peers_ttl','$this->auth_enable','PASS','$this->auth_pass','$this->notifty_enable','$this->notifty','$this->interval','$this->fall','$this->rise','$this->weight','$this->timeout','1','$this->isPrimaryNode','$this->primaryNodeIP','$this->primaryNodePort','$this->secondaryNodeIsDisconnected','$this->synckey','$this->primaryNodeID','$t','$this->testDom','$this->testDomDNS','$this->enableProxyCurl','$this->disklimit','$this->ramlimit','$this->loadlimit','$this->checkDisk','$this->checkRam','$this->checkLoad','$this->dnstesttimeout','$this->proxytesttimeout','$this->checkDebugLevel','$this->enableDnsResolver','$this->use_vmac','$this->vmac_xmit_base')";
+            $sql = "INSERT INTO keepalived_primary_nodes (primary_node_name,interface,state,virtual_router_id,priority,advert_int,nopreempt,unicast_src_ip,enable_peers_ttl,max_peers_ttl,min_peers_ttl,auth_enable,auth_type,auth_pass,notifty_enable,notifty,interval,fall,rise,weight,timeout,enable,isPrimaryNode,primaryNodeIP,primaryNodePort,secondaryNodeIsDisconnected,synckey,primaryNodeID,last_sync,testDom,testDomDNS,enableProxyCurl,disklimit,ramlimit,loadlimit,checkDisk,checkRam,checkLoad,dnstesttimeout,proxytesttimeout,checkDebugLevel,enableDnsResolver,use_vmac,vmac_xmit_base,preempt_delay,init_fail) 
+			VALUES ('$this->primary_node_name','$this->interface','$this->primary_node_state','$this->virtual_router_id','$this->priority','$this->advert_int','$this->nopreempt','$this->unicast_src_ip','$this->enable_peers_ttl','$this->max_peers_ttl','$this->min_peers_ttl','$this->auth_enable','PASS','$this->auth_pass','$this->notifty_enable','$this->notifty','$this->interval','$this->fall','$this->rise','$this->weight','$this->timeout','1','$this->isPrimaryNode','$this->primaryNodeIP','$this->primaryNodePort','$this->secondaryNodeIsDisconnected','$this->synckey','$this->primaryNodeID','$t','$this->testDom','$this->testDomDNS','$this->enableProxyCurl','$this->disklimit','$this->ramlimit','$this->loadlimit','$this->checkDisk','$this->checkRam','$this->checkLoad','$this->dnstesttimeout','$this->proxytesttimeout','$this->checkDebugLevel','$this->enableDnsResolver','$this->use_vmac','$this->vmac_xmit_base','$this->preempt_delay','$this->init_fail')";
 
             $q->QUERY_SQL($sql);
             if (!$q->ok) {
@@ -325,7 +336,9 @@ proxytesttimeout='$this->proxytesttimeout',
 checkDebugLevel='$this->checkDebugLevel',
 enableDnsResolver='$this->enableDnsResolver',
 use_vmac='$this->use_vmac',
-vmac_xmit_base='$this->vmac_xmit_base'
+vmac_xmit_base='$this->vmac_xmit_base',
+preempt_delay='$this->preempt_delay',
+init_fail='$this->init_fail'
 				WHERE ID='$this->primary_node_id'
 				";
             $q->QUERY_SQL($sql);
@@ -1037,6 +1050,7 @@ class keepalived_secondary_nodes
     public $synckey = null;
     public $last_id = null;
     public $nopreempt = 0;
+    public $preempt_delay = 0;
     public $priority;
     public $hostname=null;
     public $count_secondary_nodes = 0;
@@ -1048,6 +1062,9 @@ class keepalived_secondary_nodes
         $q = new lib_sqlite("/home/artica/SQLITE/keepalived.db");
         if(!$q->FIELD_EXISTS("keepalived_secondary_nodes","rewriteInterface")){
             $q->QUERY_SQL("ALTER TABLE keepalived_secondary_nodes ADD rewriteInterface TEXT");
+        }
+        if(!$q->FIELD_EXISTS("keepalived_secondary_nodes","preempt_delay")){
+            $q->QUERY_SQL("ALTER TABLE keepalived_secondary_nodes ADD preempt_delay INTEGER");
         }
         if ($primary_node_id <> null) {
             $this->primary_node_id = $primary_node_id;
@@ -1074,6 +1091,7 @@ class keepalived_secondary_nodes
         $this->enable = intval($ligne['enable']);
         $this->synckey = $ligne['synckey'];
         $this->nopreempt = intval($ligne['nopreempt']);
+        $this->preempt_delay= intval($ligne['preempt_delay']);
         $this->priority = intval($ligne['priority']);
         $this->hostname = intval($ligne['hostname']);
         $this->force_action = intval($ligne['force_action']);
@@ -1105,8 +1123,8 @@ class keepalived_secondary_nodes
     {
         $q = new lib_sqlite("/home/artica/SQLITE/keepalived.db");
         if ($this->secondary_node_id == 0) {
-            $sql = "INSERT INTO keepalived_secondary_nodes (primary_node_id,secondary_node_ip,secondary_node_port,primary_node_ip,secondary_node_can_overwrite_settings,enable,synckey,nopreempt,priority,last_sync,rewriteInterface) 
-			VALUES ('$this->primary_node_id','$this->secondary_node_ip','$this->secondary_node_port','$this->primary_node_ip','$this->secondary_node_can_overwrite_settings','1','$this->synckey','$this->nopreempt','$this->priority',DateTime('now'),'$this->rewriteInterface')";
+            $sql = "INSERT INTO keepalived_secondary_nodes (primary_node_id,secondary_node_ip,secondary_node_port,primary_node_ip,secondary_node_can_overwrite_settings,enable,synckey,nopreempt,priority,last_sync,rewriteInterface,preempt_delay) 
+			VALUES ('$this->primary_node_id','$this->secondary_node_ip','$this->secondary_node_port','$this->primary_node_ip','$this->secondary_node_can_overwrite_settings','1','$this->synckey','$this->nopreempt','$this->priority',DateTime('now'),'$this->rewriteInterface','$this->preempt_delay')";
             $q->QUERY_SQL($sql);
             if (!$q->ok) {
                 echo $q->mysql_error . "<br>" . __CLASS__ . "<br>$sql<br>";
@@ -1123,7 +1141,8 @@ class keepalived_secondary_nodes
                 nopreempt='$this->nopreempt',
                 priority='$this->priority',
                 last_sync=DateTime('now'),
-                rewriteInterface='$this->rewriteInterface'
+                rewriteInterface='$this->rewriteInterface',
+                preempt_delay='$this->preempt_delay'
 				WHERE ID='$this->secondary_node_id'
 				";
             $q->QUERY_SQL($sql);

@@ -10,18 +10,18 @@ y permite la interoperabilidad entre servidores Linux / Unix y clientes basados 
 <browseable_text>Esto controla si esta proporci&oacute;n se observa en la lista de acciones disponibles en una vista de red y en la lista de exploraci&oacute;n.</browseable_text>
 <CHANGE_SID_COMPUTERS>En espera, el cambio de SID de los equipos instalados en la base de datos LDAP ...</CHANGE_SID_COMPUTERS>
 <CHANGE_SID_GROUPS>De espera, cambiando SID de los grupos de ...</CHANGE_SID_GROUPS>
-<CHANGE_SID_TEXT>Change the main SID of this server</CHANGE_SID_TEXT>
-<clamav_protect>Clam Antivirus protection</clamav_protect>
+<CHANGE_SID_TEXT>Cambiar el SID principal de este servidor</CHANGE_SID_TEXT>
+<clamav_protect>Protecci&#243;n Clam Antivirus</clamav_protect>
 <config>Script de configuracion</config>
 <Cure>Activar limpieza de objetos infectados</Cure>
 <del_folder_name>&iquest;Esta seguro de eliminar esta carpeta??</del_folder_name>
 <del_sub_folder>Eliminar folder</del_sub_folder>
 <disable netbios>Deshabilitar NetBios</disable netbios>
-<disable netbios_text>Enabling  this parameter will disable netbios support in Samba.
-[br]Netbios is the only available form of browsing in all windows versions except for 2000 and XP.[br]
-[i]Clients that only support netbios wonâ€™t be able to see your samba server when netbios support is disabled.[/i][br]
-Default: disable netbios =disabled</disable netbios_text>
-<domain logons>domain logons</domain logons>
+<disable netbios_text>Activar este par&#225;metro desactivar&#225; la compatibilidad con netbios en Samba.
+[br]Netbios es la &#250;nica forma de exploraci&#243;n disponible en todas las versiones de Windows excepto 2000 y XP.[br]
+[i]Los clientes que solo admiten netbios no podr&#225;n ver su servidor samba cuando la compatibilidad con netbios est&#233; desactivada.[/i][br]
+Predeterminado: disable netbios = disabled</disable netbios_text>
+<domain logons>Inicios de sesi&#243;n de dominio</domain logons>
 <domain logons_text>Si se activa, el servidor Samba proporcionar%C3¡ el servicio de inicio de sesi%C3%B3n en red de Windows 9X para el grupo de trabajo en el que se encuentra.
 Esto también har%C3¡ que el servidor Samba act%C3%BAe como un controlador de dominio para los servicios de dominio estilo NT4.[br]
 Para m%C3¡s detalles sobre la configuraci%C3%B3n de esta funci%C3%B3n, consulte el cap%C3%ADtulo de Control de Dominio de la Colecci%C3%B3n de C%C3%93MOs de Samba</domain logons_text>
@@ -43,115 +43,107 @@ Cuando est%C3¡ activo, el motor de compartici%C3%B3n de archivos opera como Pri
 Cuando est%C3¡ inactivo, opera como Backup Domain Controller (BDC).[br]
 En general, este par%C3¡metro solo deber%C3%ADa deshabilitarse en un BDC.</domain master_text>
 <domain_admin>Privilegios del administrador de dominio</domain_admin>
-<domain_admin_text>Update the Administrator Account that allow to link computers to your Primary Domain Controler and be able to perform administration operations.</domain_admin_text>
+<domain_admin_text>Actualice la cuenta de administrador que permite vincular equipos a su Controlador de Dominio Primario y poder realizar operaciones de administraci&#243;n.</domain_admin_text>
 <enable_disable_samba>Activar o desactivar el servicio</enable_disable_samba>
-<enable_disable_samba_text>Shutdown or start file share service provided by Samba software</enable_disable_samba_text>
-<enable_Editposix>Editposix extension</enable_Editposix>
-<enable_Editposix_text>The ldapsam:editposix extension is based on the ldapsam:trusted optimization.[br]
-The ldapsam:trusted optimization has been developed as a performance optimization for server that uses ldap as user and group account storage.[br]
-</enable_Editposix_text>
+<enable_disable_samba_text>Apagar o iniciar el servicio de uso compartido de archivos proporcionado por el software Samba</enable_disable_samba_text>
+<enable_Editposix>Extensi&#243;n Editposix</enable_Editposix>
+<enable_Editposix_text>La extensi&#243;n ldapsam:editposix se basa en la optimizaci&#243;n ldapsam:trusted.[br]
+La optimizaci&#243;n ldapsam:trusted se ha desarrollado como una optimizaci&#243;n de rendimiento para servidores que usan ldap como almacenamiento de cuentas de usuarios y grupos.[br]</enable_Editposix_text>
 <find>Buscando ...</find>
-<give_folder_name>Give your new folder name</give_folder_name>
+<give_folder_name>Indique el nombre de su nueva carpeta</give_folder_name>
 <how_to_scan>&iquest;Como escanear?</how_to_scan>
-<Ichecker>Enable Ichecker technology</Ichecker>
+<Ichecker>Activar la tecnolog&#237;a Ichecker</Ichecker>
 <kantivirus_protect>Proteccion antivirus</kantivirus_protect>
-<kav4samba_about>Kaspersky Anti-Virus for Samba Server is designed to protect file storage areas on Samba Servers,
-which emulate Windows file servers under the Linux operating system.[br]
-Thus, Windows-based users within a heterogeneous network are provided with safe and transparent access to data stored on Linux file servers.[br]
-Kaspersky Anti-Virus is easily integrated with the Samba Server and does not require the Samba Server or parts of the operating system to be re-compiled.</kav4samba_about>
-<kavsamba_licence_text>Upload the *.key file about Kaspersky For Samba server in order to update the licence</kavsamba_licence_text>
+<kav4samba_about>Kaspersky Anti-Virus for Samba Server est&#225; dise&#241;ado para proteger las &#225;reas de almacenamiento de archivos en servidores Samba, que emulan servidores de archivos Windows bajo el sistema operativo Linux.[br]
+As&#237;, los usuarios basados en Windows dentro de una red heterog&#233;nea disponen de acceso seguro y transparente a los datos almacenados en servidores de archivos Linux.[br]
+Kaspersky Anti-Virus se integra f&#225;cilmente con el servidor Samba y no requiere recompilar el servidor Samba ni partes del sistema operativo.</kav4samba_about>
+<kavsamba_licence_text>Suba el archivo *.key sobre Kaspersky For Samba server para actualizar la licencia</kavsamba_licence_text>
 <kav_events>Eventos</kav_events>
-<local master>local master</local master>
-<local master_text>This  option allows your server to try and become a local master browser on a subnet.
-[br]If set to disabled then your server will not attempt to become a local master browser on a subnet and will also lose in all browsing elections.
-By default this value is set to enabled.[br]
-Setting  this value to enabled doesnâ€™t mean that Samba will become the local master browser on a subnet,
-just that your server will participate in elections for local master browser.[br]
-Setting this value to disabled will cause your server never to become a local master browser.
-</local master_text>
-<LocalFS>Scanning only the local file system</LocalFS>
-<LOCAL_MASTER>Local master</LOCAL_MASTER>
+<local master>Maestro local</local master>
+<local master_text>Esta opci&#243;n permite que su servidor intente convertirse en un explorador maestro local en una subred.[br]
+Si est&#225; desactivada, su servidor no intentar&#225; convertirse en un explorador maestro local en una subred y tambi&#233;n perder&#225; en todas las elecciones de exploraci&#243;n.
+De forma predeterminada, este valor est&#225; activado.[br]
+Activar este valor no significa que Samba se convertir&#225; en el explorador maestro local de una subred, solo que su servidor participar&#225; en las elecciones para explorador maestro local.[br]
+Desactivar este valor har&#225; que su servidor nunca se convierta en explorador maestro local.</local master_text>
+<LocalFS>Analizar solo el sistema de archivos local</LocalFS>
+<LOCAL_MASTER>Maestro local</LOCAL_MASTER>
 <LOCAL_MASTER_TEXT>Su servidor es el %C3%BAnico servidor de su grupo de trabajo/dominio y siempre est%C3¡ disponible, su comportamiento es manejar la navegaci%C3%B3n y el intercambio de archivos sin manejar sesiones</LOCAL_MASTER_TEXT>
 <log level>Nivel de log</log level>
-<log level_text>Allows the debug level (logging level)</log level_text>
-<MailBases>Scanning Mail banks</MailBases>
+<log level_text>Permite el nivel de depuraci&#243;n (nivel de registro)</log level_text>
+<MailBases>An&#225;lisis de bancos de correo</MailBases>
 <MailPlain>Escaneo mensajes en formato de texto plano</MailPlain>
-<MaxLoadAvg>Max System Load limit</MaxLoadAvg>
-<movePath>Move to quarantine</movePath>
-<mysql_stats>Mysql Statistics injection</mysql_stats>
+<MaxLoadAvg>L&#237;mite m&#225;ximo de carga del sistema</MaxLoadAvg>
+<movePath>Mover a cuarentena</movePath>
+<mysql_stats>Inyecci&#243;n de estad&#237;sticas Mysql</mysql_stats>
 <no>Desactivado</no>
 <no_action>No hacer nada</no_action>
 <Objects_action>Accion de los Objetos</Objects_action>
 <OnCorrupted>Medidas que deben adoptarse en caso de detecci&oacute;n de archivos corruptos</OnCorrupted>
 <OnCured>Acciones a realizar en caso de una deteccion y exito de desinfeccion de un objeto infectado</OnCured>
 <OnError>Acciones que deben realizarse si ocurre un error durante la exploraci&oacute;n de objetos</OnError>
-<OnInfected>Actions to be taken in the event of infected file detection.</OnInfected>
-<OnProtected>Actions to be performed in case of a detection of a password-protected object</OnProtected>
+<OnInfected>Acciones que se tomar&#225;n en caso de detecci&#243;n de un archivo infectado.</OnInfected>
+<OnProtected>Acciones que se realizar&#225;n en caso de detecci&#243;n de un objeto protegido por contrase&#241;a</OnProtected>
 <OnSuspicion>Acciones a realizar en caso de detectar un fichero sospechoso</OnSuspicion>
-<OnWarning>Actions to be taken in the event of detection of a file</OnWarning>
+<OnWarning>Acciones que se tomar&#225;n en caso de detecci&#243;n de un archivo</OnWarning>
 <options>Opciones</options>
 <os level>Simular sistema operativo</os level>
-<os level_text>This  value  controls  what  level Samba advertises itself as for browse elections.[br]
-The value of this parameter determines whether your server has a chance of becoming a local master browser for the workgroup in the local broadcast area.[br]
-[i]Note :By default, Samba will win a local master browsing election over  all  Microsoft  operating  systems  except  a  Windows  NT 4.0/2000 Domain Controller.[br]
-This means that a misconfigured Samba host can effectively isolate a subnet for browsing purposes.[br][/i]
-This parameter is largely auto-configured in the Samba-3 release series and it is seldom necessary to  manually  over-ride  the  default setting.
+<os level_text>Este valor controla en qu&#233; nivel se anuncia Samba para las elecciones de exploraci&#243;n.[br]
+El valor de este par&#225;metro determina si su servidor tiene la oportunidad de convertirse en el explorador maestro local del grupo de trabajo en el &#225;rea de difusi&#243;n local.[br]
+[i]Nota: De forma predeterminada, Samba ganar&#225; una elecci&#243;n de exploraci&#243;n maestra local sobre todos los sistemas operativos de Microsoft excepto un controlador de dominio Windows NT 4.0/2000.[br]
+Esto significa que un host Samba mal configurado puede aislar efectivamente una subred a efectos de exploraci&#243;n.[br][/i]
+Este par&#225;metro se autoconfigura en gran medida en la serie de versiones Samba-3 y rara vez es necesario anular manualmente la configuraci&#243;n predeterminada.
 [blk]
 [li]Windows for Workgroup=0[/li]
 [li]Windows 95/98=1[/li]
 [li]Windows 2000/XP=3[/li]
 [li]NT server=32[/li]
-[/blk]
-
-</os level_text>
+[/blk]</os level_text>
 <Packed>Paquetes de archivos scaneados</Packed>
-<PDC>Primary Domain Controler</PDC>
+<PDC>Controlador de dominio primario</PDC>
 <PDC_TEXT>El servidor simula el comportamiento del servidor PDC de Windows y puede manejar a los clientes de Windows que establecen sesiones a través de este servidor.</PDC_TEXT>
 <public>Publico</public>
 <public_text>Si este par%C3¡metro est%C3¡ habilitado para esta carpeta, no se requiere contrase%C3%B1a para conectarse al servicio.</public_text>
 <query>Consulta</query>
 <read>Leer</read>
-<rebuild_samba_groups>Rebuild Common groups</rebuild_samba_groups>
-<rebuild_samba_groups_text>This operation rebuild domains/builtin samba groups</rebuild_samba_groups_text>
-<Recursion>Enable recursive directory scanning</Recursion>
-<recycle>Recycle Bin-like</recycle>
+<rebuild_samba_groups>Reconstruir grupos comunes</rebuild_samba_groups>
+<rebuild_samba_groups_text>Esta operaci&#243;n reconstruye los grupos de samba de dominios/integrados</rebuild_samba_groups_text>
+<Recursion>Activar el an&#225;lisis recursivo de directorios</Recursion>
+<recycle>Similar a la papelera de reciclaje</recycle>
 <remove>Eliminar</remove>
 <samba_synchronize>Reconstruir los Parametros</samba_synchronize>
-<samba_synchronize_explain>This operation will rebuild system parameters (links between system and samba,SID, folders) and reboot the samba service.
-Do you want to perform this operation ?</samba_synchronize_explain>
-<samba_synchronize_text>Synchronize all system parameters and restart samba service</samba_synchronize_text>
+<samba_synchronize_explain>Esta operaci&#243;n reconstruir&#225; los par&#225;metros del sistema (enlaces entre el sistema y samba, SID, carpetas) y reiniciar&#225; el servicio samba.
+&#191;Desea realizar esta operaci&#243;n?</samba_synchronize_explain>
+<samba_synchronize_text>Sincronizar todos los par&#225;metros del sistema y reiniciar el servicio samba</samba_synchronize_text>
 <security>Seguridad</security>
-<selectuserfirst>Error:Please select item in the list first...</selectuserfirst>
-<SelfExtArchives>Scanning Self-extractive archives</SelfExtArchives>
+<selectuserfirst>Error: Por favor, seleccione primero un elemento de la lista...</selectuserfirst>
+<SelfExtArchives>An&#225;lisis de archivos autoextra&#237;bles</SelfExtArchives>
 <server string>Informacion del servidor</server string>
-<server string_text>
- This  controls  what string will show up in the printer comment box in print manager and next to the IPC connection in net view.
- [br]It can be any string that you wish to show to your users</server string_text>
+<server string_text>Esto controla qu&#233; cadena aparecer&#225; en el cuadro de comentario de la impresora en el administrador de impresi&#243;n y junto a la conexi&#243;n IPC en la vista de red.
+ [br]Puede ser cualquier cadena que desee mostrar a sus usuarios</server string_text>
 <share>Compartir</share>
 <shared_folders>Carpetas compartidas</shared_folders>
 <shared_properties>Propiedades compartidas</shared_properties>
-<SID_CHANGE_PROCESS>Please wait, changing the SID of this computer</SID_CHANGE_PROCESS>
-<SID_EXPLAIN>The SID is a unique name :alphanumeric character string ( [b]S-1-5-21-2596694876-1976058220-2319217280[/b] for example ) that is used to identify an object, such as a user or a group of users in a network of NT/2000/XP/2003 systems.[br]
-Windows grants or denies access and privileges to resources based on ACLs, which use SIDs to uniquely identify users and their group memberships.[br]
-When a user requests access to a resource, the user's SID is checked by the ACL to determine if that user is allowed to perform that action or if that user is part of a 
-group that is allowed to perform that action.</SID_EXPLAIN>
-<SINGLE_MODE>StandAlone Mode</SINGLE_MODE>
+<SID_CHANGE_PROCESS>Espere, cambiando el SID de este equipo</SID_CHANGE_PROCESS>
+<SID_EXPLAIN>El SID es un nombre &#250;nico: una cadena de caracteres alfanum&#233;ricos ( [b]S-1-5-21-2596694876-1976058220-2319217280[/b] por ejemplo ) que se usa para identificar un objeto, como un usuario o un grupo de usuarios en una red de sistemas NT/2000/XP/2003.[br]
+Windows concede o deniega el acceso y los privilegios a los recursos en funci&#243;n de las ACL, que usan SID para identificar de forma &#250;nica a los usuarios y sus pertenencias a grupos.[br]
+Cuando un usuario solicita acceso a un recurso, la ACL comprueba el SID del usuario para determinar si ese usuario puede realizar esa acci&#243;n o si ese usuario forma parte de un grupo que puede realizar esa acci&#243;n.</SID_EXPLAIN>
+<SINGLE_MODE>Modo independiente</SINGLE_MODE>
 <SINGLE_MODE_TEXT>El servidor s%C3%B3lo es miembro del dominio o del grupo de trabajo definido y s%C3%B3lo proporciona la compartici%C3%B3n de archivos sin ning%C3%BAn privilegio de &quot;sesiones de dominios&quot;.</SINGLE_MODE_TEXT>
 <title1>Controlador de Dominio o solo servidor</title1>
-<tree_select_folder_text>Double-click on the tree's item to add folder</tree_select_folder_text>
-<UseAVbasesSet>Specifies the anti-virus bases set to use</UseAVbasesSet>
+<tree_select_folder_text>Haga doble clic en el elemento del &#225;rbol para a&#241;adir una carpeta</tree_select_folder_text>
+<UseAVbasesSet>Especifica el conjunto de bases antivirus que se usar&#225;</UseAVbasesSet>
 <users_and_groups>Usuarios y grupos</users_and_groups>
 <valid>Valido</valid>
-<wich_to_scan>Wich to scan ?</wich_to_scan>
-<windows_network_neighborhood>Windows Network Neighborhood</windows_network_neighborhood>
-<windows_network_neighborhood_text>Define your server workgroup browsing, by set if your server if it is a Primary Domain Controler, a standalone server...</windows_network_neighborhood_text>
+<wich_to_scan>&#191;Qu&#233; escanear?</wich_to_scan>
+<windows_network_neighborhood>Entorno de red de Windows</windows_network_neighborhood>
+<windows_network_neighborhood_text>Defina la exploraci&#243;n del grupo de trabajo de su servidor, estableciendo si su servidor es un Controlador de Dominio Primario, un servidor independiente...</windows_network_neighborhood_text>
 <workgroup>Grupo de Trabajo</workgroup>
-<workgroup_text>This controls what workgroup your server will appear to be in when queried by clients.</workgroup_text>
+<workgroup_text>Esto controla en qu&#233; grupo de trabajo aparecer&#225; su servidor cuando lo consulten los clientes.</workgroup_text>
 <write>Escribir</write>
 <writeable>Escriba en</writeable>
-<writeable_text>Can write in the folder</writeable_text>
-<write_list_text>list of users that are given read-write access to a service.[br]
-If the connecting user is in this list then they will be given write access, no matter what the read only option is set to.</write_list_text>
-<YahooSelectedFolders_ask>Get this folder has shared folder ?</YahooSelectedFolders_ask>
-<YahooSelectedFolders_ask2>Give a name of this Shared folder</YahooSelectedFolders_ask2>
+<writeable_text>Puede escribir en la carpeta</writeable_text>
+<write_list_text>lista de usuarios a los que se les concede acceso de lectura y escritura a un servicio.[br]
+Si el usuario que se conecta est&#225; en esta lista, se le conceder&#225; acceso de escritura, sin importar c&#243;mo est&#233; configurada la opci&#243;n de solo lectura.</write_list_text>
+<YahooSelectedFolders_ask>&#191;Obtener esta carpeta como carpeta compartida?</YahooSelectedFolders_ask>
+<YahooSelectedFolders_ask2>Indique un nombre para esta carpeta compartida</YahooSelectedFolders_ask2>
 <yes>Habilitado</yes>

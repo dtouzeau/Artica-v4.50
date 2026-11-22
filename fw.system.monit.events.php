@@ -61,10 +61,24 @@ function search(){
 	$max=0;$date=null;$c=0;
 	
 	$MAIN=$tpl->format_search_protocol($tpl->CLEAN_BAD_XSS($_GET["search"]));
-	
-	$line=base64_encode(serialize($MAIN));
-	$sock->getFrameWork("monit.php?events=$line");
-	$filename=PROGRESS_DIR."/monit.syslog";
+
+	// Migrated from getFrameWork("monit.php?events=...") which built a
+	// shell-injecting grep against /var/log/monit.log and wrote a temp
+	// file. The new REST endpoint greps in-process and returns lines
+	// directly. The legacy field names (TERM, PID, SRC, DST, DATE, MAX)
+	// map straight onto the eventsFilter struct in monit/events.go.
+	$filter = [
+		"max"    => isset($MAIN["MAX"])  ? intval($MAIN["MAX"])  : 500,
+		"date"   => $MAIN["DATE"]   ?? "",
+		"term"   => $MAIN["TERM"]   ?? "",
+		"pid"    => $MAIN["PID"]    ?? "",
+		"source" => $MAIN["SRC"]    ?? "",
+		"dest"   => $MAIN["DST"]    ?? "",
+	];
+	$resp = json_decode($sock->REST_API_POST_JSON("/system/monit/events", $filter));
+	$lines = (is_object($resp) && ($resp->success ?? false) && isset($resp->data->lines))
+		? $resp->data->lines
+		: [];
 
 	$html[]="
 <table class=\"table table-hover\">
@@ -78,7 +92,7 @@ function search(){
 	<tbody>
 ";
 	
-	$data=explode("\n",@file_get_contents($filename));
+	$data=$lines;
 	if(count($data)>3){$_SESSION["MONIT_SEARCH"]=$_GET["search"];}
 	rsort($data);
     $months=array("Jan"=>"01","Feb"=>"02" ,"Mar"=>"03","Apr"=>"04", "May"=>"05","Jun"=>"06", "Jul"=>"07", "Aug"=>"08", "Sep"=>"09", "Oct"=>"10","Nov"=>"11", "Dec"=>"12");
@@ -90,7 +104,8 @@ function search(){
 		if(!preg_match("#^(.+?)\s+([0-9]+)\s+([0-9:]+).*?monit\[([0-9]+)\]: (.+)#",$line,$re)){
 
             if(!preg_match("#^(.+?)\s+([0-9]+)\s+([0-9:]+).*?monit(.*?)(.+)#",$line,$re)) {
-                echo $line . "<br>";
+                // Pentest 2026-11-04 : ligne de journal monit (donnee externe) affichee sans encodage (XSS stockee).
+                echo req_html($line) . "<br>";
                 continue;
             }
         }
@@ -99,13 +114,14 @@ function search(){
 		$Year=date("Y");
 		$Day=$re[2];
 		$Time=$re[3];
-		$PID=$re[4];
-		$line=$re[5];
+		// Pentest 2026-11-04 : ligne de journal monit (donnee externe) affiche sans encodage (XSS stockee).
+		$PID=req_html($re[4]);
+		$line=req_html($re[5]);
         $color=null;
 		$zTime=strtotime("$Day-$Month-$Year $Time");
         $zDate=$tpl->time_to_date($zTime,true);
 
-        if(preg_match("#'APP_(.+?)'#",$line,$re)){
+        if(preg_match("#(?:'|&\#039;)APP_([A-Za-z0-9_]+?)(?:'|&\#039;)#",$line,$re)){
             $line=$line." ({APP_{$re[1]}})";
         }
 

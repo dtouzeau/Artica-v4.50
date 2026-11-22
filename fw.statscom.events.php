@@ -1,18 +1,28 @@
 <?php
+// Post SP10 - 13/10/2026
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 include_once(dirname(__FILE__)."/ressources/class.computers.inc");
 $users=new usersMenus();if(!$users->AsFirewallManager){exit();}
+// Pentest 2026-11-04 : t/eth etaient recopies sans encodage dans la page (XSS).
+if(isset($_GET["t"])){$_GET["t"]=intval($_GET["t"]);}
+if(isset($_GET["eth"])){$_GET["eth"]=preg_replace('/[^A-Za-z0-9_.:@-]/','',(string)$_GET["eth"]);}
+// Les repartiteurs ?enable-signature= et ?enable-firewall= appelaient
+// enable_signature() et enable_firewall(), qui ne sont definies NI dans ce
+// fichier NI ailleurs: les deux URL repondaient un fatal « Call to undefined
+// function ». La paire appartient a la famille Suricata (elle bascule une
+// signature dans suricata-rules.db et un drapeau dans suricata_sig) et n'a
+// rien a faire ici; seul fw.ids.rules.php produit reellement
+// « ?enable-signature= ».
+// Repartiteur(s) mort(s) retire(s): rule_settings()/rule_save() ne sont
+// definies NI dans ce fichier NI ailleurs, et aucun code du depot ne produit
+// le parametre qui les declenchait -- ni cette page, ni une autre. Les URL
+// repondaient donc un fatal « Call to undefined function ». Vestige d'un
+// squelette de page recopie; les pages qui utilisent VRAIMENT ?rule-popup=
+// ou ?rule-settings= definissent leur propre handler.
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 
 
 if(isset($_GET["table"])){table();exit;}
-if(isset($_GET["enable-signature"])){enable_signature();exit;}
-if(isset($_GET["enable-firewall"])){enable_firewall();exit;}
-if(isset($_GET["rule-popup"])){rule_settings();exit;}
-if(isset($_GET["rule-settings"])){rule_settings();exit;}
-if(isset($_POST["ID"])){rule_save();exit;}
-if(isset($_GET["delete-rule-js"])){delete_js();exit;}
-if(isset($_POST["delete-remove"])){delete_remove();exit;}
 page();
 
 
@@ -20,6 +30,7 @@ page();
 function page(){
 	$page=CurrentPageName();
 	$tpl=new template_admin();
+	// Pentest 2026-11-04 : search (garde en session) etait recopie sans encodage dans la page (XSS).
 	if(!isset($_GET["t"])){$t=time();}else{$t=$_GET["t"];}
 	if($_SESSION["STATSREDIS_SEARCH"]==null){$_SESSION["STATSREDIS_SEARCH"]="limit 200";}
 	
@@ -27,7 +38,7 @@ function page(){
 	<div class=\"row\"> 
 		<div class='ibox-content'>
 		<div class=\"input-group\">
-      		<input type=\"text\" class=\"form-control\" value=\"{$_SESSION["STATSREDIS_SEARCH"]}\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
+      		<input type=\"text\" class=\"form-control\" value=\"".req_html($_SESSION["STATSREDIS_SEARCH"] ?? "")."\" placeholder=\"{search}\" id='search-this-$t' OnKeyPress=\"Search$t(event);\">
       		<span class=\"input-group-btn\">
        		 <button style=\"text-transform: capitalize;\" class=\"btn btn-default\" type=\"button\" OnClick=\"ss$t();\">Go!</button>
       	</span>
@@ -131,15 +142,16 @@ function table(){
 		if($TRCLASS=="footable-odd"){$TRCLASS=null;}else{$TRCLASS="footable-odd";}
 		$text_class=null;
 		if(trim($line)==null){continue;}
-		if($GLOBALS['VERBOSE']){echo "FOUND $line\n";}
+		if($GLOBALS['VERBOSE']){echo "FOUND ".req_html($line)."\n";}
 
         if(!preg_match("#^([0-9]+):([A-Z]+)\s+(.+?)\.[0-9]+\s+.*?\s+(.+)#",$line,$re)){continue;}
 
-        $datetext=$re[3];
+        // Pentest 2026-11-04 : ligne de journal PostgreSQL (donnee externe) affiche sans encodage (XSS stockee).
+        $datetext=req_html($re[3]);
 
 		$pid=$re[1];
 		$status=$re[2];
-		$line=$re[4];
+		$line=req_html($re[4]);
 
 		if(preg_match("#(does not exist|Error while|Can not)#i", $line)){
 			$text_class="text-danger";

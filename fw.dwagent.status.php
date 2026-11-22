@@ -1,4 +1,5 @@
 <?php
+// Service Pack 9 2026-10-10
 include_once(dirname(__FILE__)."/ressources/class.template-admin.inc");if(!isset($GLOBALS["CLASS_SOCKETS"])){if(!class_exists("sockets")){include_once("/usr/share/artica-postfix/ressources/class.sockets.inc");}$GLOBALS["CLASS_SOCKETS"]=new sockets();}
 
 if(isset($_GET["table"])){table();exit;}
@@ -83,7 +84,7 @@ function table_edit(){
         $sform[]="<table class='table' style='width: 70%'>";
         $sform[]="<tr>";
         $sform[]="<td style='width:1%' nowrap>{key}:</td>";
-        $sform[]="<td style='width:99%;padding-left:10px;font-weight: bold' nowrap>$DWAgentKey</td>";
+        $sform[]="<td style='width:99%;padding-left:10px;font-weight: bold' nowrap>".req_html($DWAgentKey)."</td>"; // Pentest 2026-11-04 : cle/config dwagent affichees sans encodage (XSS stockee).
         $sform[]="</tr>";
         $sform[]="<tr>";
         $sform[]="<td style='width:1%' nowrap>{status}:</td>";
@@ -95,7 +96,7 @@ function table_edit(){
         }
         $sform[]="<tr>";
         $sform[]="<td style='width:1%' nowrap>{service}:</td>";
-        $sform[]="<td style='width:99%;padding-left:10px;font-weight: bold' nowrap>$json->url_primary</td>";
+        $sform[]="<td style='width:99%;padding-left:10px;font-weight: bold' nowrap>".req_html($json->url_primary)."</td>";
         $sform[]="</tr>";
 
         $sform[]="<tr>";
@@ -108,7 +109,7 @@ function table_edit(){
                 $sform[]="<td style='width:99%;padding-left:10px;font-weight: bold' nowrap><span class='label label-primary'>{active2}</span></td>";
                 $sform[]="<tr>";
                 $sform[]="<td style='width:1%' nowrap>Proxy:</td>";
-                $sform[]="<td style='width:99%;padding-left:10px;font-weight: bold' nowrap>$json->proxy_host:$json->proxy_port</td>";
+                $sform[]="<td style='width:99%;padding-left:10px;font-weight: bold' nowrap>".req_html($json->proxy_host.":".$json->proxy_port)."</td>";
                 $sform[]="</tr>";
 
             }
@@ -259,7 +260,7 @@ function rebuild_js():string{
     $ARRAY["TITLE"]="{restarting_service}";
     $ARRAY["AFTER"]="LoadAjax('table-loader-dwservice-pages','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-dwservice-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-dwservice-restart')";
 }
 function restart_js():string{
     $page=CurrentPageName();
@@ -269,7 +270,7 @@ function restart_js():string{
     $ARRAY["TITLE"]="{restarting_service}";
     $ARRAY["AFTER"]="LoadAjax('table-loader-dwservice-pages','$page?table=yes');";
     $prgress=base64_encode(serialize($ARRAY));
-    return "Loadjs('fw.progress.php?content=$prgress&mainid=progress-dwservice-restart')";
+    return "Loadjs('fw.progress.php?".fw_progress_args_b64($prgress)."&mainid=progress-dwservice-restart')";
 }
 
 function status(){
@@ -283,7 +284,8 @@ function status(){
 function Save():bool{
 	$tpl=new template_admin();
 	if(!preg_match("#^[0-9]+-[0-9]+-[0-9]+$#",$_POST["DWAgentKey"])){
-        echo $tpl->_ENGINE_parse_body("{wrong_value} {$_POST["DWAgentKey"]}");
+        // Pentest 2026-11-04 : DWAgentKey etait recopie sans encodage dans la page (XSS).
+        echo $tpl->_ENGINE_parse_body("{wrong_value} ".req_html($_POST["DWAgentKey"]));
         return false;
     }
     $tpl->SAVE_POSTs();

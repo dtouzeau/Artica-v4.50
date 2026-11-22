@@ -9,6 +9,50 @@ include_once(dirname(__FILE__)."/ressources/class.sockets.inc");
 include_once(dirname(__FILE__)."/ressources/PowerShellKTPass.inc.php");
 $GLOBALS["CLASS_SOCKETS"]=new sockets();
 
+// Pentest 2026-11-04 : aucun handler ne verifiait de droit. Cette page porte le compte
+// administrateur AD (mot de passe pre-rempli dans auth-popup), la jonction au domaine,
+// les keytabs et les SPN. Lecture : AsProxyMonitor (le statut AD l'interroge, cf.
+// fw.system.ActiveDirectory.php). Actions et secrets : memes droits que les boutons.
+function kerb_is_admin():bool{
+    $users=new usersMenus();
+    return $users->AsSquidAdministrator || $users->AsSystemAdministrator;
+}
+function kerb_privileges_gate(){
+    $users=new usersMenus();
+    if(!$users->AsProxyMonitor && !kerb_is_admin()){exit();}
+    if(kerb_is_admin()){return;}
+    $tpl=new template_admin();
+    foreach (array("WINDOWS_SERVER_ADMIN_MOD","ktpass","fullhosname","conf","spn-add","spn-delete") as $key){
+        if(isset($_POST[$key])){echo $tpl->post_error("{ERROR_NO_PRIVS2}");exit();}
+    }
+    foreach (array("auth-js","renew-keytab-js","file-uploaded","spns-delete-js") as $key){
+        if(isset($_GET[$key])){header("content-type: application/x-javascript");$tpl->js_no_privileges();exit();}
+    }
+    if(isset($_GET["auth-popup"])){echo $tpl->div_error("{ERROR_NO_PRIVS2}");exit();}
+}
+kerb_privileges_gate();
+// Noeud de ferme HaCluster : la jonction vient du LB, pas de ce formulaire.
+include_once(dirname(__FILE__)."/ressources/class.hacluster.node.inc");
+hacluster_node_ad_gate(
+    array("WINDOWS_SERVER_ADMIN_MOD","ktpass","fullhosname","conf","spn-add","spn-delete"),
+    array("auth-js","ktpass-js","configuration-file","renew-keytab-js","spns-delete-js","file-uploaded"),
+    array("auth-popup","ktpass-popup","ktpass2","ktpass3","ktpass4","configuration-popup")
+);
+
+// Pentest 2026-11-04 : le mot de passe AD n'est plus pre-rempli dans les formulaires.
+// Un champ laisse vide garde le mot de passe enregistre, a condition que le compte soit
+// le meme : un nouveau compte doit venir avec son propre mot de passe.
+// A appeler APRES CLEAN_POST(), pour ne pas retraiter la valeur stockee.
+function kerb_keep_stored_password($userKey){
+    if(!isset($_POST["WINDOWS_SERVER_PASS"]) || (string)$_POST["WINDOWS_SERVER_PASS"]!==""){return;}
+    $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
+    if(!is_array($array) || !isset($array["WINDOWS_SERVER_PASS"])){return;}
+    $stored=isset($array["WINDOWS_SERVER_ADMIN"])?strtolower(trim((string)$array["WINDOWS_SERVER_ADMIN"])):"";
+    $posted=isset($_POST[$userKey])?strtolower(trim((string)$_POST[$userKey])):"";
+    if($stored==="" || $stored!==$posted){return;}
+    $_POST["WINDOWS_SERVER_PASS"]=(string)$array["WINDOWS_SERVER_PASS"];
+}
+
 if(isset($_GET["verbose"])){$GLOBALS["VERBOSE"]=true;ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);}
 if(isset($_GET["ActiveDirectoryReportInterface-js"])){ActiveDirectoryReportInterface_js();exit;}
 if(isset($_GET["ActiveDirectoryReportInterface-popup"])){ActiveDirectoryReportInterface_popup();exit;}
@@ -17,7 +61,7 @@ if(isset($_GET["auth-popup"])){auth_popup();exit;}
 if(isset($_POST["WINDOWS_SERVER_ADMIN_MOD"])){auth_save();exit;}
 if(isset($_POST["ktpass"])){ktpass_save();exit;}
 if(isset($_GET["ticket-audit-js"])){ticket_audit_js();exit;}
-if(isset($_GET["table"])){features();exit;}
+if(isset($_GET["table"])){echo hacluster_node_ad_banner();features();exit;}
 if(isset($_POST["fullhosname"])){Save();exit;}
 if(isset($_GET["file-uploaded"])){file_uploaded();exit;}
 if(isset($_GET["configuration-file"])){configuration_file_js();exit;}
@@ -33,6 +77,12 @@ if(isset($_GET["ticket-audit"])){ticket_audit();exit;}
 if(isset($_GET["ticket-audit-popup"])){ticket_audit_popup();exit;}
 if(isset($_GET["renew-keytab-js"])){renew_key_tab_js();exit;}
 if(isset($_GET["download-ps1"])){DownloadKeyTab();exit;}
+if(isset($_GET["spns-js"])){spns_js();exit;}
+if(isset($_GET["spns-popup"])){spns_popup();exit;}
+if(isset($_GET["spns-listing"])){spns_listing();exit;}
+if(isset($_GET["spns-delete-js"])){spns_delete_js();exit;}
+if(isset($_POST["spn-add"])){spns_add_save();exit;}
+if(isset($_POST["spn-delete"])){spns_delete_save();exit;}
 page();
 
 function renew_key_tab_js():bool{
@@ -127,6 +177,7 @@ function ktpass_popup(){
 function ktpass_save(){
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
+    kerb_keep_stored_password("WINDOWS_SERVER_ADMIN");
     $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
     if(!is_array($array)){$array=array();}
     if(!isset($array["WINDOWS_SERVER_NETBIOSNAME"])) {
@@ -206,7 +257,7 @@ function ktpass_popup3():bool{
 
     $form[]=$tpl->field_hidden("ktpass","yes");
     $form[] = $tpl->field_text("WINDOWS_SERVER_ADMIN", "{administrator}", $array["WINDOWS_SERVER_ADMIN"], true);
-    $form[] = $tpl->field_password("WINDOWS_SERVER_PASS", "{password}", $array["WINDOWS_SERVER_PASS"], true);
+    $form[] = $tpl->field_password("WINDOWS_SERVER_PASS", "{password}", "", false, "{leave_blank_keep}");
     $html[]= $tpl->form_outside("<a href=\"$Link\">{spauser}</a>",$form,"{spauser_explain}","{connect}",$js);
     $html[]="</div>";
     echo $tpl->_ENGINE_parse_body($html);
@@ -280,16 +331,19 @@ function configuration_file_save():bool{
     $errfile="/usr/share/artica-postfix/ressources/logs/authenticate.error";
     $tpl->CLEAN_POST();
     @file_put_contents("/usr/share/artica-postfix/ressources/conf/upload/authenticate.conf",$_POST["conf"]);
-    $sock=new sockets();
-    $sock->getFrameWork("squid2.php?kerberos-manual-conf=yes");
+    // articarest /proxy/config/manual/authenticate : installe, verifie (squid -k check),
+    // restaure si la configuration est refusee ; l'erreur revient dans la reponse.
+    $json=json_decode((string)$GLOBALS["CLASS_SOCKETS"]->REST_API("/proxy/config/manual/authenticate"));
+    $data="";
+    if(!is_object($json)){$data="articarest: ".json_last_error_msg();}
+    elseif(!$json->Status){$data=isset($json->Error)?(string)$json->Error:"articarest: unknown error";}
 
-    if(is_file($errfile)){
-        $data=@file_get_contents($errfile);
+    if($data<>""){
         if(preg_match("#^[0-9]+.*?\.conf(.+)#",$data,$re)){
             $data="Line $re[1]";
         }
         admin_tracks("Fatal error $data while modify directly proxy kerberos configuration file");
-        echo "jserror:".$tpl->javascript_parse_text($data);
+        echo (new template_admin())->post_error("".$tpl->javascript_parse_text($data));
         return true;
     }
     admin_tracks("Success modify directly proxy kerberos configuration file");
@@ -381,8 +435,9 @@ function features(){
         $form[] = $tpl->field_checkbox("LDAP_TLS", "{useTLS}", $array["LDAP_TLS"], false, null);
         $form[] = $tpl->field_checkbox("LDAP_SSL", "{enable_ssl} (port 636)", $array["LDAP_SSL"], false, null);
         $form[] = $tpl->field_email("WINDOWS_SERVER_ADMIN", "{administrator}", $array["WINDOWS_SERVER_ADMIN"], true);
-        $form[] = $tpl->field_password("WINDOWS_SERVER_PASS", "{password}", $array["WINDOWS_SERVER_PASS"], true);
-        $form[] = $tpl->field_checkbox("LockActiveDirectoryToKerberosBasic", "{LockActiveDirectoryToKerberosBasic}", $LockActiveDirectoryToKerberosBasic, false, null);
+        $form[] = $tpl->field_password("WINDOWS_SERVER_PASS", "{password}", "", false, "{leave_blank_keep}");
+        $form[] = $tpl->field_checkbox("LockActiveDirectoryToKerberosBasic", "{LockActiveDirectoryToKerberosBasic}", $LockActiveDirectoryToKerberosBasic,
+            false, "{LockActiveDirectoryToKerberosBasic_explain}");
         $form[] = $tpl->field_checkbox("NtpdateAD", "url:https://wiki.articatech.com/en/active-directory/Time-synchronization-with-Active-Directory;{synchronize_time_with_ad}", $NtpdateAD, false, "{synchronize_time_with_ad_explain}");
 
         $html[] = $tpl->form_outside("{join_activedirectory_domain} / {kerberos_authentication}", @implode("\n", $form), "", "{apply}", Kerberos_connect(), "AsSquidAdministrator", true);
@@ -421,7 +476,7 @@ function auth_popup():bool{
     $array = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
 
     $form[] = $tpl->field_email("WINDOWS_SERVER_ADMIN_MOD", "{administrator}", $array["WINDOWS_SERVER_ADMIN"], true);
-    $form[] = $tpl->field_password("WINDOWS_SERVER_PASS", "{password}", $array["WINDOWS_SERVER_PASS"], true);
+    $form[] = $tpl->field_password("WINDOWS_SERVER_PASS", "{password}", "", false, "{leave_blank_keep}");
 
     $html[] = $tpl->form_outside("", @implode("\n", $form), "", "{apply}", "LoadAjax('table-kerberos-single','$page?table=yes');", "AsSquidAdministrator", true);
     echo $tpl->_ENGINE_parse_body($html);
@@ -430,6 +485,7 @@ function auth_popup():bool{
 function auth_save():bool{
     $tpl=new template_admin();
     $tpl->CLEAN_POST();
+    kerb_keep_stored_password("WINDOWS_SERVER_ADMIN_MOD");
     $array = $GLOBALS["CLASS_SOCKETS"]->unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
     $array["WINDOWS_SERVER_ADMIN"]=$_POST["WINDOWS_SERVER_ADMIN_MOD"];
     $array["WINDOWS_SERVER_PASS"]=$_POST["WINDOWS_SERVER_PASS"];
@@ -574,7 +630,12 @@ function flat_config():string{
 
     $tpl->table_form_field_text("{ad_full_hostname}",$fullhosname,ico_microsoft);
     $tpl->table_form_field_text("{ad_computers_branch}",$array["COMPUTER_BRANCH"],ico_directory);
+    // Clickable row → CRUD modal for the additional SPNs (comma-separated list
+    // stored in KerbAuthInfos["ADDITIONAL_SPNs"]). Arm switchjs for THIS row only,
+    // then disarm so the following read-only rows keep no edit pencil (§9 trap).
+    $tpl->table_form_field_js("Loadjs('$page?spns-js=yes')");
     $tpl->table_form_field_text("{additional_spns}", $array["ADDITIONAL_SPNs"], ico_directory);
+    $tpl->table_form_field_js("");
 
     $tpl->table_form_field_text("{suffix}",$array["LDAP_SUFFIX"],ico_earth);
     $tpl->table_form_field_text("{WINDOWS_SERVER_TYPE}", $severtype[$array["WINDOWS_SERVER_TYPE"]],ico_microsoft);
@@ -591,7 +652,7 @@ function flat_config():string{
     }
 
     $tpl->table_form_field_bool("{web_portal_authentication} (HotSpot)",$EnableSquidMicroHotSpot,ico_computer);
-    $tpl->table_form_field_bool("{LockActiveDirectoryToKerberosBasic}",$LockActiveDirectoryToKerberosBasic,ico_user);
+    $tpl->table_form_field_bool("{http_authentication}",$LockActiveDirectoryToKerberosBasic,ico_user);
     $tpl->table_form_field_bool("{synchronize_time_with_ad}",$NtpdateAD,ico_clock);
 
     $tpl->table_form_field_js("Loadjs('$page?configuration-file=yes')");
@@ -637,9 +698,15 @@ function CheckUPSettings(){
     $kread=json_decode($GLOBALS["CLASS_SOCKETS"]->REST_API("/mktutils/kread"));
     $div_explain=array();
     if(!$kread->Status){
+        if(isset($_GET["ntlmcheck"])){
+            return "";
+        }
+
+
         $btn=$tpl->button_autnonome("{welcome_ad_wizard}","Loadjs('fw.system.kerberos.wizard.php?js=yes')",
             ico_wizard,"AsSquidAdministrator");
         echo $tpl->div_warning("{mustkinit}<div style='margin:30px;text-align:right'>$btn</div>'");
+
         return true;
     }else{
         $klistexplain=$tpl->_ENGINE_parse_body("{klistexplain}");
@@ -749,6 +816,7 @@ function CheckUPSettings(){
     $userprincipalnameText="";
     $DetectedSamAccountnames=array();
     $SPNsText="";
+    $SPNsKVNO="";
     $page=CurrentPageName();
 
     VERBOSE("(&(sAMAccountName=$NetBiosName$)(objectclass=computer))",__LINE__);
@@ -827,7 +895,9 @@ function CheckUPSettings(){
         VERBOSE("DetectedSamAccountname=$DetectedSamAccountname",__LINE__);
         $UserPrincipalName="&nbsp;-&nbsp;".$json->Info->UserPrincipalName;
         if(property_exists($json->Info,"ObjectSid")) {
-            $ObjectSid = $json->ObjectSid;
+            if(isset($json->ObjectSid)) {
+                $ObjectSid = $json->ObjectSid;
+            }
         }
 
     }
@@ -909,6 +979,7 @@ function Save(){
     $tpl=new template_admin();
     ini_set('display_errors', 1);ini_set('error_reporting', E_ALL);ini_set('error_prepend_string',null);ini_set('error_append_string',null);
     $tpl->CLEAN_POST();
+    kerb_keep_stored_password("WINDOWS_SERVER_ADMIN");
     $IP=new IP();
     $_POST["ADDITIONAL_SPNs"]=str_replace(";",",",$_POST["ADDITIONAL_SPNs"]);
     $_POST["ADDITIONAL_SPNs"]=str_replace(" ",",",$_POST["ADDITIONAL_SPNs"]);
@@ -926,7 +997,7 @@ function Save(){
     if(!$IP->isValid($ipaddr)){
         $err=$tpl->_ENGINE_parse_body("{ad_full_hostname_resolve_issue}");
         $err=str_replace("%s",$kerberosActiveDirectoryHost,$err);
-        echo "jserror:$err";
+        echo (new template_admin())->post_error("$err");
         return false;
     }
 
@@ -945,7 +1016,7 @@ function Save(){
     $GLOBALS["CLASS_SOCKETS"]->REST_API("/reset/cache");$GLOBALS["CLASS_SOCKETS"]->SET_INFO("WINDOWS_DNS_SUFFIX",$ldap_prefix);
 
     if(!checkPort($ipaddr,$ldap_port)){
-        echo "jserror:$ipaddr:$ldap_port access denied (DC Firewall enabled ?)";
+        echo (new template_admin())->post_error("$ipaddr:$ldap_port access denied (DC Firewall enabled ?)");
         return false;
     }
 
@@ -954,7 +1025,7 @@ function Save(){
     if(!$ldap_connection){
         $DIAG[]="{Connection_Failed_to_connect_to_DC} $ldap_prefix$ldapserver:$ldap_port";
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror:".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG)));
         return false;
     }
 
@@ -973,7 +1044,7 @@ function Save(){
             }
             $DIAG[]=ldap_err2str(ldap_errno($ldap_connection));
             if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-            echo "jserror:".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+            echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG)));
             return false;
         }
     }
@@ -985,7 +1056,7 @@ function Save(){
 
         $DIAG[]=ldap_err2str($error_code);
         if (@ldap_get_option($ldap_connection, LDAP_OPT_DIAGNOSTIC_MESSAGE, $extended_error)) {$DIAG[]="$extended_error";}
-        echo "jserror:".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG));
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body(@implode("<br>", $DIAG)));
         return false;
     }
 
@@ -993,7 +1064,7 @@ function Save(){
     $dse=new ad_rootdse($_POST["ADNETIPADDR"], $ldap_port, $KerberosUsername, $KerberosPassword,$_POST["LDAP_SSL"],$_POST["LDAP_TLS"]);
     $RootDSE=$dse->RootDSE();
     if(!$dse->ok){
-        echo "jserror:".$tpl->_ENGINE_parse_body($dse->mysql_error);
+        echo (new template_admin())->post_error("".$tpl->_ENGINE_parse_body($dse->mysql_error));
         return false;
     }
 
@@ -1008,13 +1079,16 @@ function file_uploaded():bool{
     header("content-type: application/x-javascript");
     $tpl=new template_admin();
     $page=CurrentPageName();
-    $file=$_GET["file-uploaded"];
+    // Pentest 2026-11-04 : le nom part dans le chemin de la route REST.
+    $file=preg_replace('/[^A-Za-z0-9._-]/','',basename((string)$_GET["file-uploaded"]));
+    if($file=="" || $file=="." || $file==".."){return $tpl->js_error("{error}");}
 
     $sock=new sockets();
     $data=json_decode($sock->REST_API("/kerberos/keytab/simple/$file"));
 
     if(!$data->Status){
-        return $tpl->js_error($data->Error);
+        // Pentest 2026-11-04 : file-uploaded pouvait revenir sans encodage dans la page (XSS) via le message d'erreur.
+        return $tpl->js_error(req_html($data->Error));
 
     }
     echo  "dialogInstance1.close();LoadAjax('table-kerberos-single','$page?table=yes');";
@@ -1036,7 +1110,7 @@ function ticket_audit():bool{
 
     if(!$json->Status){
 
-        if(!$json->KeyTabExists){
+        if(isset($json->KeyTabExists) && !$json->KeyTabExists){
 
             $btn["ico"]=ico_wizard;
             $btn["name"]="{wizard}";
@@ -1135,4 +1209,119 @@ function ticket_audit_popup():bool{
     echo $tpl->_ENGINE_parse_body(@implode("",$html));
 
 return true;
+}
+
+// --- Additional SPNs CRUD (modal opened from the {additional_spns} flat row) ---
+// The list is a comma-separated string in KerbAuthInfos["ADDITIONAL_SPNs"]. Every
+// handler does a READ-MODIFY-WRITE of the KerbAuthInfos map so it only touches
+// ADDITIONAL_SPNs — never re-serialising a partial $_POST over the whole map the
+// way Save() does. The daemon prepends "HTTP/" to each entry (see msktutils
+// MsktUtilsCmdline / reconcileAdditionalSPNs), so the operator enters the host
+// name alone.
+
+function spns_kerbauth_array():array{
+    $array=unserializeb64($GLOBALS["CLASS_SOCKETS"]->GET_INFO("KerbAuthInfos"));
+    if(!is_array($array)){$array=array();}
+    return $array;
+}
+function spns_load_list():array{
+    $array=spns_kerbauth_array();
+    $raw=isset($array["ADDITIONAL_SPNs"])?(string)$array["ADDITIONAL_SPNs"]:"";
+    $raw=str_replace(array(";"," "),array(",",","),$raw);
+    $out=array();
+    foreach(explode(",",$raw) as $s){
+        $s=trim($s);
+        if(strlen($s)<1){continue;}
+        $out[strtolower($s)]=$s; // dedup, case-insensitive, preserve first casing
+    }
+    return array_values($out);
+}
+function spns_save_list(array $list){
+    $array=spns_kerbauth_array();
+    $array["ADDITIONAL_SPNs"]=@implode(",",$list);
+    $GLOBALS["CLASS_SOCKETS"]->REST_API("/reset/cache");
+    $GLOBALS["CLASS_SOCKETS"]->SET_INFO("KerbAuthInfos",base64_encode(serialize($array)));
+}
+
+function spns_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    return $tpl->js_dialog2("{additional_spns}","$page?spns-popup=yes",720);
+}
+function spns_popup(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $html=array();
+    $html[]=$tpl->div_explain("{additional_spns}||{additional_spns_explain}");
+    $html[]="<div id='kspns-list' style='margin-top:10px'></div>";
+    $html[]="<script>LoadAjax('kspns-list','$page?spns-listing=yes');</script>";
+    // Add form: stays in the modal on success (no dialogInstance close), refreshes
+    // the in-modal list AND the outer flat row.
+    $jsafter="LoadAjax('kspns-list','$page?spns-listing=yes');LoadAjax('table-kerberos-single','$page?table=yes');";
+    $form=array();
+    $form[]=$tpl->field_text("spn-add","{additional_spn}","",false,"{additional_spn_add_explain}");
+    $html[]=$tpl->form_outside("",$form,"","{add}",$jsafter,"AsSquidAdministrator");
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+}
+function spns_listing(){
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    $list=spns_load_list();
+    $html=array();
+    if(count($list)==0){
+        $html[]="<div style='padding:15px' class='center'><i>{no_additional_spns}</i></div>";
+    }else{
+        $html[]="<table class='table table-stripped' style='width:100%'>";
+        foreach($list as $spn){
+            $del=$tpl->icon_delete("Loadjs('$page?spns-delete-js=".urlencode($spn)."')");
+            $html[]="<tr>";
+            $html[]="<td style='width:99%'><span style='font-family:monospace'>HTTP/".htmlspecialchars($spn)."</span></td>";
+            $html[]="<td style='width:1%' nowrap>$del</td>";
+            $html[]="</tr>";
+        }
+        $html[]="</table>";
+    }
+    $html[]="<script>NoSpinner();\n".@implode("\n",$tpl->ICON_SCRIPTS)."</script>";
+    echo $tpl->_ENGINE_parse_body(@implode("\n",$html));
+}
+function spns_delete_js():bool{
+    $page=CurrentPageName();
+    $tpl=new template_admin();
+    // Pentest 2026-11-04 : spns-delete-js etait recopie sans encodage dans la page (XSS) ; c'est un nom d'hote (cf. spns_add_save).
+    $spn=preg_replace('/[^A-Za-z0-9._-]/','',(string)$_GET["spns-delete-js"]);
+    $jsafter="LoadAjax('kspns-list','$page?spns-listing=yes');LoadAjax('table-kerberos-single','$page?table=yes');";
+    return $tpl->js_confirm_delete("HTTP/$spn","spn-delete",$spn,$jsafter);
+}
+function spns_add_save(){
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $spn=trim((string)$_POST["spn-add"]);
+    $spn=preg_replace('/^HTTP\//i',"",$spn); // tolerate a pasted "HTTP/" prefix
+    $spn=trim($spn);
+    if(strlen($spn)<3 || !preg_match('/^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?$/',$spn)){
+        echo $tpl->post_error("{additional_spn_invalid}");
+        return;
+    }
+    $list=spns_load_list();
+    foreach($list as $e){
+        if(strtolower($e)==strtolower($spn)){
+            echo $tpl->post_error("{additional_spn_exists}");
+            return;
+        }
+    }
+    $list[]=$spn;
+    spns_save_list($list);
+    // success => echo nothing => the form's $jsafter runs
+}
+function spns_delete_save(){
+    $tpl=new template_admin();
+    $tpl->CLEAN_POST();
+    $spn=trim((string)$_POST["spn-delete"]);
+    $list=spns_load_list();
+    $out=array();
+    foreach($list as $e){
+        if(strtolower($e)!=strtolower($spn)){$out[]=$e;}
+    }
+    spns_save_list($out);
+    // success => echo nothing => js_confirm_delete's $jsafter runs
 }
